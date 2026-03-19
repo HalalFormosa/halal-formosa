@@ -2,7 +2,7 @@
   <ion-page>
     <ion-header>
       <app-header
-          title="Users"
+          :title="$t('profile.admin.users')"
           :icon="peopleOutline"
           :showBack="true"
       />
@@ -30,7 +30,7 @@
             <img
                 v-if="user.avatar_url"
                 :src="user.avatar_url"
-                alt="User Avatar"
+                :alt="$t('admin.userAvatar')"
             />
             <div v-else class="avatar-placeholder">
               👤
@@ -40,7 +40,7 @@
           <!-- Info -->
           <ion-label>
             <h2 class="user-name">
-              {{ user.display_name || user.email || 'Unknown User' }}
+              {{ user.display_name || user.email || $t('admin.unknownUser') }}
             </h2>
 
             <p class="user-email">
@@ -49,11 +49,11 @@
 
             <div class="user-meta">
               <ion-badge :color="user.total_activities > 1000 ? 'warning' : 'primary'">
-              {{ user.total_activities }} activities
+              {{ $t('admin.activitiesCount', { count: user.total_activities }) }}
               </ion-badge>
 
               <span class="last-active">
-                Last active {{ fromNow(user.last_active) }}
+                {{ $t('admin.lastActive', { time: fromNow(user.last_active) }) }}
               </span>
             </div>
           </ion-label>
@@ -69,7 +69,7 @@
       >
         <ion-infinite-scroll-content
             loading-spinner="bubbles"
-            loading-text="Loading users..."
+            :loading-text="$t('admin.loadingUsers')"
         />
       </ion-infinite-scroll>
 
@@ -99,12 +99,14 @@ import {
 
 import AppHeader from "@/components/AppHeader.vue"
 import { peopleOutline } from "ionicons/icons"
+import { useI18n } from 'vue-i18n'
 
 import dayjs from "dayjs"
 import relativeTime from "dayjs/plugin/relativeTime"
 dayjs.extend(relativeTime)
 
 const router = useRouter()
+const { t } = useI18n()
 
 const users = ref<any[]>([])
 const limit = 15
@@ -113,7 +115,7 @@ const noMoreData = ref(false)
 
 /** Relative time */
 function fromNow(date?: string) {
-  if (!date) return "Never active"
+  if (!date) return t('admin.neverActive')
   return dayjs(date).fromNow()
 }
 

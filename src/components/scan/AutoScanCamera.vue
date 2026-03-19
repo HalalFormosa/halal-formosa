@@ -109,7 +109,7 @@ async function initCamera() {
           width: { ideal: 1920 },
           height: { ideal: 1080 },
           // Request continuous focus if supported
-          // @ts-ignore
+          // @ts-expect-error - focusMode is not in MediaTrackConstraints type but works in Chrome/Android
           focusMode: 'continuous'
       },
       audio: false
@@ -246,7 +246,7 @@ function calculateROI(annotations: any[], keyword: string, canvasW: number, canv
         // Combine all blocks to find the character offset, then map it back to the bounding block.
         if (!target || !target.boundingPoly) {
             let concatenated = "";
-            let blockMap: any[] = [];
+            const blockMap: any[] = [];
             
             for (let i = 1; i < annotations.length; i++) {
                 const desc = annotations[i].description || "";
@@ -390,7 +390,6 @@ async function handleDetection(roi: any = null) {
       let finalBlob: Blob | null = null;
       try {
         const videoTrack = stream.getVideoTracks()[0];
-        // @ts-ignore
         if ('ImageCapture' in window && videoTrack) {
           const capture: any = new (window as any).ImageCapture(videoTrack);
           finalBlob = await capture.takePhoto();
@@ -413,7 +412,6 @@ async function handleDetection(roi: any = null) {
       }
 
       if (finalBlob) {
-          // @ts-ignore
           emit('detected', { blob: finalBlob, roi });
       }
   }

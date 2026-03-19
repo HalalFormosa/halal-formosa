@@ -13,7 +13,7 @@
         <ion-item v-for="log in logs" :key="log.id">
           <!-- Avatar -->
           <ion-avatar slot="start" v-if="log.avatar_url">
-            <img :src="log.avatar_url" alt="User Avatar" />
+            <img :src="log.avatar_url" :alt="$t('admin.userAvatar')" />
           </ion-avatar>
 
           <!-- Label & details -->
@@ -27,7 +27,7 @@
                 <strong>🎯 {{ log.label }}</strong>
               </ion-text>
               <ion-badge color="primary" class="log-badge">
-                +{{ log.points }} pts
+                +{{ log.points }} {{ $t('admin.pts') }}
               </ion-badge>
             </div>
 
@@ -42,7 +42,7 @@
               slot="end"
               @click="retractLog(log.id)"
           >
-            Retract
+            {{ $t('common.delete') }}
           </ion-button>
         </ion-item>
       </ion-list>
@@ -73,7 +73,9 @@ import timezone from "dayjs/plugin/timezone";
 import relativeTime from "dayjs/plugin/relativeTime";
 import { isAdmin } from "@/composables/userProfile";
 import { usePoints } from "@/composables/usePoints";
+import { useI18n } from 'vue-i18n';
 
+const { t } = useI18n();
 const logs = ref<any[]>([]);
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -82,13 +84,13 @@ dayjs.extend(relativeTime);
 const { currentPoints } = usePoints();
 
 async function retractLog(logId: string) {
-  if (!confirm("Are you sure you want to retract this log?")) return;
+  if (!confirm(t('admin.retractConfirm'))) return;
 
   const { error, data } = await supabase.rpc("retract_point_log", { log_id: logId });
 
   if (error) {
     console.error("❌ Error retracting log:", error);
-    alert("Failed to retract log: " + error.message);
+    alert(t('admin.retractFailed', { error: error.message }));
   } else {
     // remove from UI
     logs.value = logs.value.filter((log) => log.id !== logId);

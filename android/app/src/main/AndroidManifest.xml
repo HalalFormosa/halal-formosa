@@ -48,6 +48,16 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="myapp" />
             </intent-filter>
+
+            <!-- Handle https://app.halalformosa.com and halalformosa.com App Links -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="halalformosa.com" />
+                <data android:scheme="https" android:host="www.halalformosa.com" />
+                <data android:scheme="https" android:host="app.halalformosa.com" />
+            </intent-filter>
         </activity>
 
         <provider

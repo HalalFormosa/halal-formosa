@@ -46,8 +46,7 @@ import {
 import {
   compassOutline,
   homeOutline,
-  newspaperOutline,
-  gridOutline, airplaneOutline, sendOutline, globeOutline, mapSharp, mapOutline
+  gridOutline, mapOutline
 } from 'ionicons/icons'
 import { supabase } from '@/plugins/supabaseClient'
 import { useDailyMissions } from '@/composables/useDailyMissions'
@@ -110,7 +109,7 @@ onBeforeUnmount(() => {
   border-radius: 50%;
   border: 2px solid var(--ion-tab-bar-background, #fff);
   box-shadow: 0 0 5px rgba(var(--ion-color-danger-rgb), 0.5);
-  z-index: 10;
+  z-index: 10001; /* Stay above ion-modal sheet */
 }
 
 /* Ensure tab buttons have enough vertical space */

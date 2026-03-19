@@ -1,0 +1,11 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "P8K2V3CC9R.com.rcreative.halalformosa",
+        "paths": ["/place/*", "/item/*", "/news/*", "/partner/*"]
+      }
+    ]
+  }
+}

@@ -1,48 +1,57 @@
 <template>
   <ion-app>
+    <SmartAppBanner />
     <ion-router-outlet />
+
+    <!-- 🎁 Global Reward Popup -->
+    <div v-if="rewardOpen" class="reward-overlay">
+      <div class="reward-float ion-text-center">
+        <h2>🎉 {{ $t('main.congratulation') }}</h2>
+
+        <!-- Avatar -->
+        <ion-avatar style="margin: 0 auto; width: 80px; height: 80px;" v-if="rewardAvatar">
+          <img :src="rewardAvatar" alt="Profile Picture" />
+        </ion-avatar>
+
+        <!-- Reward points -->
+        <p style="margin-top: 1rem;">
+          {{ $t('main.increasePoint') }} <strong>+{{ rewardPoints }}</strong> {{ $t('main.point') }}
+          {{ $t('main.for') }} <em>{{ rewardAction }}</em>!
+        </p>
+
+        <!-- Animated EXP progress -->
+        <ion-progress-bar
+            :value="rewardProgress"
+            color="success"
+            style="margin-top: 10px; border-radius: 8px;"
+        ></ion-progress-bar>
+        <small>
+          Level {{ rewardLevel }} — {{ rewardDisplay }} / {{ rewardNextXp }} XP
+        </small>
+
+        <ion-button expand="block" color="success" @click="closeReward" style="margin-top: 1rem;">
+          OK
+        </ion-button>
+      </div>
+    </div>
+
+    <!-- Only UI responsibilities left -->
+    <ion-alert
+        :is-open="showUpdateAlert"
+        header="Update Available"
+        message="A new version is available. Update now?"
+        :buttons="alertButtons"
+        @didDismiss="showUpdateAlert = false"
+    />
+
+    <ForceUpdateModal 
+      :is-open="isUpdateRequired" 
+      :store-url="storeUrl"
+      :current-version="currentVersion"
+      :min-version="minVersion"
+    />
   </ion-app>
 
-  <!-- 🎁 Global Reward Popup -->
-  <div v-if="rewardOpen" class="reward-overlay">
-    <div class="reward-float ion-text-center">
-      <h2>🎉 {{ $t('main.congratulation') }}</h2>
-
-      <!-- Avatar -->
-      <ion-avatar style="margin: 0 auto; width: 80px; height: 80px;" v-if="rewardAvatar">
-        <img :src="rewardAvatar" alt="Profile Picture" />
-      </ion-avatar>
-
-      <!-- Reward points -->
-      <p style="margin-top: 1rem;">
-        {{ $t('main.increasePoint') }} <strong>+{{ rewardPoints }}</strong> {{ $t('main.point') }}
-        {{ $t('main.for') }} <em>{{ rewardAction }}</em>!
-      </p>
-
-      <!-- Animated EXP progress -->
-      <ion-progress-bar
-          :value="rewardProgress"
-          color="success"
-          style="margin-top: 10px; border-radius: 8px;"
-      ></ion-progress-bar>
-      <small>
-        Level {{ rewardLevel }} — {{ rewardDisplay }} / {{ rewardNextXp }} XP
-      </small>
-
-      <ion-button expand="block" color="success" @click="closeReward" style="margin-top: 1rem;">
-        OK
-      </ion-button>
-    </div>
-  </div>
-
-  <!-- Only UI responsibilities left -->
-  <ion-alert
-      :is-open="showUpdateAlert"
-      header="Update Available"
-      message="A new version is available. Update now?"
-      :buttons="alertButtons"
-      @didDismiss="showUpdateAlert = false"
-  />
   <Analytics mode="production" />
   <SpeedInsights/>
 </template>
@@ -56,6 +65,23 @@ import { Capacitor } from '@capacitor/core'
 import { Geolocation } from '@capacitor/geolocation'
 import { AppUpdate, AppUpdateAvailability } from '@capawesome/capacitor-app-update';
 import { AppReview } from '@capawesome/capacitor-app-review';
+import dayjs from 'dayjs';
+import relativeTime from 'dayjs/plugin/relativeTime';
+import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
+import 'dayjs/locale/zh-tw';
+import 'dayjs/locale/id';
+import 'dayjs/locale/ms';
+import { useI18n } from 'vue-i18n';
+import { watch } from 'vue';
+import { useTheme } from '@/composables/useTheme';
+import { useAppUpdate } from '@/composables/useAppUpdate';
+import ForceUpdateModal from '@/components/ForceUpdateModal.vue';
+import SmartAppBanner from '@/components/SmartAppBanner.vue';
+
+dayjs.extend(relativeTime);
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 import {
   rewardOpen,
@@ -68,6 +94,8 @@ import {
   rewardNextXp,
   rewardProgress
 } from "@/composables/useRewardOverlay";
+const { initTheme } = useTheme();
+const { isUpdateRequired, storeUrl, currentVersion, minVersion } = useAppUpdate();
 
 const askedKey = 'askedLocationPermission';
 const showUpdateAlert = ref(false);
@@ -139,7 +167,21 @@ const checkAndAskForReview = async () => {
   }
 };
 
+const { locale } = useI18n();
+
+// ✅ Sync dayjs locale with i18n locale
+watch(locale, (newLocale) => {
+  const dayjsLocale = newLocale === 'zh' ? 'zh-tw' : newLocale;
+  dayjs.locale(dayjsLocale);
+}, { immediate: true });
+
+import { App as CapApp } from '@capacitor/app';
+import { useRouter } from 'vue-router';
+
+const router = useRouter();
+
 onMounted(async () => {
+  initTheme();
   await askGeolocationPermission();
   await checkAppUpdate();
   await checkAndAskForReview();

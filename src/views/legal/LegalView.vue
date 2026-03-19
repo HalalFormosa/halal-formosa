@@ -5,7 +5,7 @@
         <ion-buttons slot="start">
           <ion-back-button default-href="/profile" />
         </ion-buttons>
-        <ion-title>Legal</ion-title>
+        <ion-title>{{ $t('legal.title') }}</ion-title>
       </ion-toolbar>
     </ion-header>
 
@@ -17,7 +17,7 @@
           detail
           @click="openExternal('https://halalformosa.com/terms')"
       >
-        <ion-label>Terms of Service</ion-label>
+        <ion-label>{{ $t('legal.terms') }}</ion-label>
       </ion-item>
 
       <!-- Privacy Policy -->
@@ -26,7 +26,7 @@
           detail
           @click="openExternal('https://halalformosa.com/privacy')"
       >
-        <ion-label>Privacy Policy</ion-label>
+        <ion-label>{{ $t('legal.privacy') }}</ion-label>
       </ion-item>
 
     </ion-content>

@@ -10,7 +10,7 @@ export const isContributor = computed(() => userRole.value === "contributor");
 
 // Leaderboard privacy
 export const currentUser = ref<any | null>(null);
-export const isPublicLeaderboard = ref<boolean | null>(null);
+export const isPublicProfile = ref<boolean | null>(null);
 
 /* ---------------- Profile fields ---------------- */
 export const donorType = ref("Free");
@@ -32,14 +32,14 @@ export const isProfileComplete = computed(() => {
 });
 
 const donorKey = (userId: string) => `donor_type:${userId}`
-const roleKey  = (userId: string) => `user_role:${userId}`
-const pubKey   = (userId: string) => `public_leaderboard:${userId}`
+const roleKey = (userId: string) => `user_role:${userId}`
+const pubKey = (userId: string) => `public_profile:${userId}`
 
 
 /* ---------------- Types ---------------- */
 type UserProfileRow = {
     donor_type: string;
-    public_leaderboard: boolean;
+    public_profile: boolean;
     date_of_birth: string | null;
     nationality: string | null;
     gender: string | null;
@@ -50,10 +50,10 @@ type UserProfileRow = {
 };
 
 /* ---------------- Leaderboard privacy ---------------- */
-export async function setPublicLeaderboard(value: boolean) {
+export async function setPublicProfile(value: boolean) {
     if (!currentUser.value?.id) return
 
-    isPublicLeaderboard.value = value
+    isPublicProfile.value = value
     localStorage.setItem(
         pubKey(currentUser.value.id),
         JSON.stringify(value)
@@ -61,7 +61,7 @@ export async function setPublicLeaderboard(value: boolean) {
 
     await supabase
         .from("user_profiles")
-        .update({ public_leaderboard: value })
+        .update({ public_profile: value })
         .eq("id", currentUser.value.id)
 }
 
@@ -85,7 +85,7 @@ export function loadUserRoleFromCache(userId: string) {
 
 export function loadPublicLeaderboardFromCache(userId: string) {
     const stored = localStorage.getItem(pubKey(userId))
-    isPublicLeaderboard.value = stored !== null ? JSON.parse(stored) : false
+    isPublicProfile.value = stored !== null ? JSON.parse(stored) : false
 }
 
 
@@ -115,7 +115,7 @@ export async function loadUserProfile(userId: string) {
         .from("user_profiles")
         .select(`
           donor_type,
-          public_leaderboard,
+          public_profile,
           date_of_birth,
           nationality,
           gender,
@@ -125,14 +125,14 @@ export async function loadUserProfile(userId: string) {
           )
         `)
         .eq("id", userId)
-        .single<UserProfileRow>();
+        .maybeSingle<UserProfileRow>();
 
     if (!error && data) {
         setDonorType(userId, data.donor_type || "Free")
         setUserRole(userId, data.user_roles?.role ?? null)
 
-        isPublicLeaderboard.value = data.public_leaderboard ?? false;
-        localStorage.setItem(pubKey(userId), JSON.stringify(isPublicLeaderboard.value));
+        isPublicProfile.value = data.public_profile ?? false;
+        localStorage.setItem(pubKey(userId), JSON.stringify(isPublicProfile.value));
 
         editDOB.value = data.date_of_birth;
         editNationality.value = data.nationality;
@@ -141,7 +141,7 @@ export async function loadUserProfile(userId: string) {
     } else {
         console.warn("⚠️ No profile found, resetting defaults");
 
-        isPublicLeaderboard.value = false;
+        isPublicProfile.value = false;
         localStorage.setItem(pubKey(userId), JSON.stringify(false));
 
         setDonorType(userId, "Free");
@@ -175,7 +175,7 @@ export async function updateUserProfile(userId: string) {
 export function resetUserProfileState() {
     userRole.value = null
     donorType.value = "Free"
-    isPublicLeaderboard.value = false
+    isPublicProfile.value = false
     currentUser.value = null
 
     editDOB.value = null

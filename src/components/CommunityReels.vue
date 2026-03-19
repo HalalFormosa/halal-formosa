@@ -74,16 +74,6 @@ const CONTENT_LINK = {
   // facebook: 'https://www.facebook.com/watch/?v=XXXXXXXX'
 }
 
-const PLACEHOLDER_REELS = [
-  {
-    platform: 'instagram',
-    media_partner: 'nihaoindo',
-    content_url: 'https://www.instagram.com/reel/DMr2W7dy5Gr/',
-    place_id: 123,
-    place_name: 'Imtiaz Bhai Pakistan Food'
-  }
-]
-
 const reel = {
   platform: 'instagram',
   media_partner: 'nihaoindo',

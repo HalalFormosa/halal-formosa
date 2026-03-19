@@ -2,7 +2,7 @@
   <ion-page>
     <ion-header>
       <app-header
-          title="User Detail"
+          :title="$t('admin.userDetail')"
           :icon="listOutline"
           :showBack="true"
       />
@@ -19,7 +19,7 @@
           </ion-avatar>
 
           <ion-label>
-            <h2>{{ user.display_name || 'Unknown User' }}</h2>
+            <h2>{{ user.display_name || $t('admin.unknownUser') }}</h2>
             <p>{{ user.email }}</p>
           </ion-label>
         </ion-item>
@@ -32,24 +32,24 @@
           <div class="stats-row">
             <div class="stat-item">
               <strong>{{ summary.total_activities }}</strong>
-              <span>Activities</span>
+              <span>{{ $t('admin.activities') }}</span>
             </div>
 
             <div class="stat-item">
               <strong>{{ fromNow(summary.last_active) }}</strong>
-              <span>Last Active</span>
+              <span>{{ $t('admin.lastActiveLabel') }}</span>
             </div>
           </div>
 
           <div class="stats-row">
             <div class="stat-item">
               <strong>{{ summary.points }}</strong>
-              <span>Points</span>
+              <span>{{ $t('admin.points') }}</span>
             </div>
 
             <div class="stat-item">
               <strong>{{ summary.donor_type }}</strong>
-              <span>Account Type</span>
+              <span>{{ $t('admin.accountType') }}</span>
             </div>
           </div>
 
@@ -59,25 +59,25 @@
       <!-- ================= USER PROFILE DETAILS ================= -->
       <ion-card v-if="user">
         <ion-card-header>
-          <ion-card-title>Profile Details</ion-card-title>
+          <ion-card-title>{{ $t('admin.profileDetails') }}</ion-card-title>
         </ion-card-header>
 
         <ion-list lines="none">
 
           <ion-item>
-            <ion-label>Date of Birth</ion-label>
+            <ion-label>{{ $t('profile.editProfile.dob') }}</ion-label>
             <ion-note slot="end">
               {{ user.date_of_birth || '—' }}
             </ion-note>
           </ion-item>
 
           <ion-item>
-            <ion-label>Nationality</ion-label>
+            <ion-label>{{ $t('profile.editProfile.nationality') }}</ion-label>
             <ion-note slot="end" v-if="getNationality(user.nationality)">
               <img
                   :src="getNationality(user.nationality)?.flag"
-                  alt="flag"
-                  style="width:20px;height:14px;margin-right:6px;vertical-align:middle;"
+                  :alt="$t('admin.flag')"
+                  style="width: 24px; height: 16px; margin-right: 8px; border-radius: 2px;"
               />
               {{ getNationality(user.nationality)?.name }}
             </ion-note>
@@ -86,30 +86,30 @@
 
 
           <ion-item>
-            <ion-label>Gender</ion-label>
+            <ion-label>{{ $t('profile.editProfile.gender') }}</ion-label>
             <ion-note slot="end">
               {{ user.gender || '—' }}
             </ion-note>
           </ion-item>
 
           <ion-item>
-            <ion-label>Bio</ion-label>
+            <ion-label>{{ $t('profile.editProfile.bio') }}</ion-label>
             <ion-note slot="end" class="bio-text">
-              {{ user.bio || 'No bio provided' }}
+              {{ user.bio || $t('profile.noBio') }}
             </ion-note>
           </ion-item>
 
           <ion-item>
-            <ion-label>Public Leaderboard</ion-label>
+            <ion-label>{{ $t('admin.publicProfile') }}</ion-label>
             <ion-note slot="end">
-              {{ user.public_leaderboard ? 'Yes' : 'No' }}
+              {{ user.public_profile ? $t('common.yes') : $t('common.no') }}
             </ion-note>
           </ion-item>
 
           <ion-item>
-            <ion-label>Profile Completed</ion-label>
+            <ion-label>{{ $t('admin.profileCompleted') }}</ion-label>
             <ion-note slot="end">
-              {{ user.profile_completed_notified ? 'Yes' : 'No' }}
+              {{ user.profile_completed_notified ? $t('common.yes') : $t('common.no') }}
             </ion-note>
           </ion-item>
 
@@ -120,25 +120,25 @@
       <!-- ================= ADMIN METADATA ================= -->
       <ion-card>
         <ion-card-header>
-          <ion-card-title>Technical Details</ion-card-title>
+          <ion-card-title>{{ $t('admin.technicalDetails') }}</ion-card-title>
         </ion-card-header>
 
         <ion-list lines="none">
 
           <ion-item>
-            <ion-label>User ID</ion-label>
+            <ion-label>{{ $t('admin.userId') }}</ion-label>
             <ion-note slot="end" class="mono">{{ userId }}</ion-note>
           </ion-item>
 
           <ion-item v-if="user?.created_at">
-            <ion-label>Account Created</ion-label>
+            <ion-label>{{ $t('admin.accountCreated') }}</ion-label>
             <ion-note slot="end">
               {{ new Date(user.created_at).toLocaleDateString() }}
             </ion-note>
           </ion-item>
 
           <ion-item v-if="user?.created_at">
-            <ion-label>Member Since</ion-label>
+            <ion-label>{{ $t('admin.memberSince') }}</ion-label>
             <ion-note slot="end">
               {{ sinceUser(user.created_at) }}
             </ion-note>
@@ -146,35 +146,35 @@
 
 
           <ion-item v-if="user?.last_sign_in_at">
-            <ion-label>Last Sign In (Auth)</ion-label>
+            <ion-label>{{ $t('admin.lastSignInAuth') }}</ion-label>
             <ion-note slot="end">
               {{ fromNow(user.last_sign_in_at) }}
             </ion-note>
           </ion-item>
 
           <ion-item v-if="lastDevice?.last_scan_at">
-            <ion-label>Last Scan Activity</ion-label>
+            <ion-label>{{ $t('admin.lastScanActivity') }}</ion-label>
             <ion-note slot="end">
               {{ fromNow(lastDevice.last_scan_at) }}
             </ion-note>
           </ion-item>
 
           <ion-item v-if="lastDevice?.platform">
-            <ion-label>Platform</ion-label>
+            <ion-label>{{ $t('admin.platform') }}</ion-label>
             <ion-note slot="end">
               {{ lastDevice.platform }}
             </ion-note>
           </ion-item>
 
           <ion-item v-if="lastDevice?.device_model">
-            <ion-label>Device</ion-label>
+            <ion-label>{{ $t('admin.device') }}</ion-label>
             <ion-note slot="end">
               {{ lastDevice.device_model }}
             </ion-note>
           </ion-item>
 
           <ion-item v-if="lastDevice?.app_version">
-            <ion-label>App Version</ion-label>
+            <ion-label>{{ $t('admin.appVersion') }}</ion-label>
             <ion-note slot="end">
               {{ lastDevice.app_version }}
             </ion-note>
@@ -185,7 +185,7 @@
 
       <ion-card v-if="recentSearches.length">
         <ion-card-header>
-          <ion-card-title>Recent Searches</ion-card-title>
+          <ion-card-title>{{ $t('admin.recentSearches') }}</ion-card-title>
         </ion-card-header>
 
         <ion-list lines="none">
@@ -201,7 +201,7 @@
 
       <ion-card v-if="recentProducts.length">
         <ion-card-header>
-          <ion-card-title>Recent Products</ion-card-title>
+          <ion-card-title>{{ $t('admin.recentProducts') }}</ion-card-title>
         </ion-card-header>
 
         <ion-list lines="none">
@@ -221,7 +221,7 @@
 
       <ion-card v-if="recentPlaces.length">
         <ion-card-header>
-          <ion-card-title>Recent Places</ion-card-title>
+          <ion-card-title>{{ $t('admin.recentPlaces') }}</ion-card-title>
         </ion-card-header>
 
         <ion-list lines="none">
@@ -243,7 +243,7 @@
       <!-- ================= ACTIVITY TIMELINE ================= -->
       <ion-card>
         <ion-card-header>
-          <ion-card-title>Activity Timeline</ion-card-title>
+          <ion-card-title>{{ $t('admin.activityTimeline') }}</ion-card-title>
         </ion-card-header>
 
         <ion-list>
@@ -280,7 +280,7 @@
       >
         <ion-infinite-scroll-content
             loading-spinner="bubbles"
-            loading-text="Loading activity..."
+            :loading-text="$t('admin.loadingActivity')"
         />
       </ion-infinite-scroll>
 
@@ -314,12 +314,14 @@ import {
 
 import AppHeader from '@/components/AppHeader.vue'
 import { listOutline } from 'ionicons/icons'
+import { useI18n } from 'vue-i18n'
 
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 dayjs.extend(relativeTime)
 
 const route = useRoute()
+const { t } = useI18n()
 const userId = route.params.id as string
 
 const user = ref<any | null>(null)
@@ -362,7 +364,7 @@ const sinceUser = (date: string) => {
 }
 
 const fromNow = (date?: string) =>
-    date ? dayjs(date).fromNow() : 'Never'
+    date ? dayjs(date).fromNow() : t('admin.never')
 
 const lastDevice = ref<any | null>(null)
 

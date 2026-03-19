@@ -6,19 +6,6 @@ const path = require('path');
 const localesDir = path.join(process.cwd(), 'src', 'locales');
 const enPath = path.join(localesDir, 'en.json');
 const enData = JSON.parse(fs.readFileSync(enPath, 'utf8'));
-function getAllKeys(obj, prefix = '') {
-    let keys = [];
-    for (const k in obj) {
-        const val = obj[k];
-        const newKey = prefix ? `${prefix}.${k}` : k;
-        if (typeof val === 'object' && val !== null && !Array.isArray(val)) {
-            keys = keys.concat(getAllKeys(val, newKey));
-        } else {
-            keys.push(newKey);
-        }
-    }
-    return keys;
-}
 function setMissingKeys(targetObj, sourceObj) {
     let changed = false;
     for (const k in sourceObj) {

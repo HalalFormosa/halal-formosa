@@ -531,7 +531,25 @@
           position="bottom"
           @did-dismiss="showLimitToast=false"
       />
-
+      
+      <!-- Hidden input for Web Gallery selection to avoid garbage collection drop off -->
+      <input 
+        type="file" 
+        accept="image/*" 
+        ref="hiddenWebFileInput" 
+        @change="onWebFileSelected" 
+        style="display: none;" 
+      />
+      
+      <!-- Hidden input for Web Camera capture -->
+      <input 
+        type="file" 
+        accept="image/*" 
+        capture="environment"
+        ref="hiddenWebCameraInput" 
+        @change="onWebCameraSelected" 
+        style="display: none;" 
+      />
     </ion-content>
   </ion-page>
 </template>
@@ -540,7 +558,7 @@
 import {
   IonPage, IonContent, IonButton, IonIcon, IonCard, IonCardContent, IonInput, IonItem,
   IonTextarea, IonModal, IonHeader, IonToolbar, IonTitle, IonButtons, IonToast,
-  IonSpinner, IonProgressBar, IonChip, IonLabel, onIonViewWillEnter, IonList, IonAccordionGroup, IonAccordion
+  IonProgressBar, IonChip, IonLabel, onIonViewWillEnter, IonList, IonAccordionGroup, IonAccordion
 } from '@ionic/vue'
 import {
   cameraOutline,
@@ -550,7 +568,7 @@ import {
   shareSocialOutline
 } from 'ionicons/icons'
 import AppHeader from '@/components/AppHeader.vue'
-import {ref, onUnmounted} from 'vue'
+import {ref, onUnmounted, computed} from 'vue'
 import { Swiper, SwiperSlide } from 'swiper/vue'
 import { Autoplay, Pagination } from 'swiper/modules'
 import 'swiper/css'
@@ -580,15 +598,16 @@ import { Capacitor } from '@capacitor/core'
 import { ActivityLogService } from "@/services/ActivityLogService";
 
 import { RevenueCatUI, PAYWALL_RESULT } from '@revenuecat/purchases-capacitor-ui'
-import { Purchases } from '@revenuecat/purchases-capacitor'
 import { refreshSubscriptionStatus } from '@/composables/useSubscriptionStatus'
 import { useRouter } from 'vue-router'
 import { useAutoScanStore } from '@/composables/useAutoScanStore'
-import { eyeOutline, createOutline } from 'ionicons/icons'
+import { eyeOutline } from 'ionicons/icons'
+import { useNotifier } from "@/composables/useNotifier"
 
 /** ---------- State ---------- */
 const showCopied = ref(false)
 const { errorMsg, showErr, setError, clearError } = useError()
+const { notifyEvent } = useNotifier()
 const showTutorial = ref(true)
 const showMuslimFriendly = ref(false)
 const showLimitToast = ref(false);
@@ -600,7 +619,48 @@ const originalFile = ref<File | null>(null)
 const croppedFile = ref<File | null>(null)
 
 const originalPreviewUrl = ref<string | null>(null) // original file preview
+const hiddenWebFileInput = ref<HTMLInputElement | null>(null)
+const hiddenWebCameraInput = ref<HTMLInputElement | null>(null)
 
+function onWebCameraSelected(e: Event) {
+  ActivityLogService.log("scan_ingredients_start", {source: "camera"});
+  if (!canScan.value) {
+    showLimitToast.value = true;
+    return;
+  }
+  currentSource.value = 'camera'
+
+  const target = e.target as HTMLInputElement
+  if (target.files && target.files[0]) {
+    const file = target.files[0]
+    originalFile.value = file
+    if (originalPreviewUrl.value) URL.revokeObjectURL(originalPreviewUrl.value)
+    originalPreviewUrl.value = URL.createObjectURL(file)
+    showTutorial.value = false
+    openCropper(file)
+  }
+  target.value = '' // Reset
+}
+
+function onWebFileSelected(e: Event) {
+  ActivityLogService.log("scan_ingredients_start", {source: "gallery"});
+  if (!canScan.value) {
+    showLimitToast.value = true;
+    return;
+  }
+  currentSource.value = 'gallery'
+
+  const target = e.target as HTMLInputElement
+  if (target.files && target.files[0]) {
+    const file = target.files[0]
+    originalFile.value = file
+    if (originalPreviewUrl.value) URL.revokeObjectURL(originalPreviewUrl.value)
+    originalPreviewUrl.value = URL.createObjectURL(file)
+    showTutorial.value = false
+    openCropper(file)
+  }
+  target.value = '' // Reset so the same file can be picked again
+}
 const currentSource = ref<'camera' | 'gallery' | null>(null)
 const ocrStartTime = ref<number | null>(null)
 // @ts-expect-error – injected global
@@ -778,28 +838,7 @@ async function checkDailyScanLimit() {
   return data.length < (10 + bonusScans.value);
 }
 // Gallery
-async function scanFromGallery() {
-  await ActivityLogService.log("scan_ingredients_start", {source: "gallery"});
 
-  const allowed = await checkDailyScanLimit();
-  if (!allowed) {
-    showLimitToast.value = true;
-    return;
-  }
-
-  currentSource.value = 'gallery'
-  const input = document.createElement('input')
-  input.type = 'file'
-  input.accept = 'image/*'
-  input.onchange = (e: Event) => {
-    const target = e.target as HTMLInputElement
-    if (target.files && target.files[0]) {
-      originalFile.value = target.files[0]
-      openCropper(target.files[0])
-    }
-  }
-  input.click()
-}
 
 function calculateReadingTime(text: string) {
   const words = text.trim().split(/\s+/).length
@@ -831,6 +870,21 @@ async function presentPaywall(): Promise<boolean> {
       case PAYWALL_RESULT.RESTORED:
         await refreshSubscriptionStatus()
         await ActivityLogService.log("pro_purchase_success", { source: "ai_summary" })
+
+        const { data: { user } } = await supabase.auth.getUser();
+        await notifyEvent(
+          'pro_purchase_success',
+          '💎 New Pro Member!',
+          `User ${user?.email ?? 'unknown'} has just subscribed to Halal Formosa Pro!`,
+          undefined,
+          {
+            source: 'scan_ingredients_view',
+            email: user?.email,
+            user_id: user?.id
+          },
+          ['discord']
+        ).catch(console.error);
+
         return true
       case PAYWALL_RESULT.CANCELLED:
         return false
@@ -1011,28 +1065,83 @@ async function handleConfirmCrop() {
 }
 
 
-/** ---------- UI actions ---------- */
-async function scanFromCamera() {
-  await ActivityLogService.log("scan_ingredients_start", {source: "camera"});
+const canScan = computed(() => {
+  if (isDonor.value) return true;
+  return todayScanCount.value < (10 + bonusScans.value);
+});
 
-  const allowed = await checkDailyScanLimit();
-  if (!allowed) {
+/** ---------- UI actions ---------- */
+function scanFromCamera() {
+  ActivityLogService.log("scan_ingredients_start", {source: "camera"});
+
+  if (!canScan.value) {
     showLimitToast.value = true;
     return;
   }
 
   currentSource.value = 'camera'
-  const image = await Camera.getPhoto({
-    quality: 90,
-    allowEditing: false,
-    resultType: CameraResultType.Uri,
-    source: CameraSource.Camera,
-    direction: CameraDirection.Rear // ✅ ensures back camera
-  });
-  const blob = await fetch(image.webPath!).then(r => r.blob())
-  const file = new File([blob], `ingredients-${Date.now()}.jpg`, { type: 'image/jpeg' })
-  originalFile.value = file
-  openCropper(file)
+  
+  if (Capacitor.isNativePlatform()) {
+    Camera.getPhoto({
+      quality: 90,
+      allowEditing: false,
+      resultType: CameraResultType.Uri,
+      source: CameraSource.Camera,
+      direction: CameraDirection.Rear
+    }).then(async (image) => {
+      if (image.webPath) {
+        if (originalPreviewUrl.value) URL.revokeObjectURL(originalPreviewUrl.value)
+        originalPreviewUrl.value = image.webPath
+        
+        const blob = await fetch(image.webPath).then(r => r.blob())
+        const file = new File([blob], `ingredients-${Date.now()}.jpg`, { type: 'image/jpeg' })
+        originalFile.value = file
+        
+        showTutorial.value = false
+        openCropper(file)
+      }
+    }).catch((err) => {
+      console.warn('Camera failed:', err)
+      if (err.message !== 'User cancelled photos app' && !err.message?.includes('cancelled')) {
+        setError(err.message || 'Could not access camera')
+      }
+    });
+  } else {
+    // Web: Use hidden input attached to template to prevent Safari garbage collection
+    hiddenWebCameraInput.value?.click()
+  }
+}
+
+function scanFromGallery() {
+  ActivityLogService.log("scan_ingredients_start", {source: "gallery"});
+
+  if (!canScan.value) {
+    showLimitToast.value = true;
+    return;
+  }
+
+  currentSource.value = 'gallery'
+
+  if (Capacitor.isNativePlatform()) {
+    Camera.getPhoto({
+      quality: 90,
+      resultType: CameraResultType.Uri,
+      source: CameraSource.Photos
+    }).then(async (image) => {
+      if (image.webPath) {
+        if (originalPreviewUrl.value) URL.revokeObjectURL(originalPreviewUrl.value)
+        originalPreviewUrl.value = image.webPath
+        const blob = await fetch(image.webPath).then(r => r.blob())
+        const file = new File([blob], `gallery-ingredients-${Date.now()}.jpg`, { type: 'image/jpeg' })
+        originalFile.value = file
+        showTutorial.value = false
+        openCropper(file)
+      }
+    }).catch(err => console.warn('Gallery failed:', err));
+  } else {
+    // Web: Use hidden input attached to template to prevent Safari garbage collection
+    hiddenWebFileInput.value?.click()
+  }
 }
 
 /** ---------- Auto Scan Handler ---------- */

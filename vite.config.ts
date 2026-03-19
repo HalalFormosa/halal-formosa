@@ -3,11 +3,10 @@
 import legacy from '@vitejs/plugin-legacy'
 import vue from '@vitejs/plugin-vue'
 import path from 'path'
-import { defineConfig } from 'vite'
+import { defineConfig } from 'vitest/config'
 
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const pkg = require('./package.json')
+import pkg from './package.json' assert { type: 'json' }
 
 // https://vitejs.dev/config/
 export default defineConfig({

@@ -1,33 +1,35 @@
 <template>
   <ion-page>
-    <ion-header>
-      <app-header
-          :title="$t('explore.details.title')"
-          show-back
-          :useRouterBack="true"
-          :backRoute="'/explore'"
-          :icon="mapOutline"
-      >
-        <template #actions>
-          <ion-item v-if="canEdit" button @click="editItem" lines="none">
-            <ion-icon :icon="createOutline" slot="start"/>
-            <ion-label>Edit</ion-label>
-          </ion-item>
+   <ion-header class="ion-no-border immersive-header" :class="{ 'is-scrolled': isScrolled }">
+       <app-header
+           :title="$t('explore.details.title')"
+           show-back
+           :useRouterBack="true"
+           :backRoute="'/explore'"
+           :icon="mapOutline"
+           :transparent="!isScrolled"
+           :contrast="!isScrolled"
+       >
+         <template #actions>
+           <ion-item v-if="canEdit" button @click="editItem" lines="none">
+             <ion-icon :icon="createOutline" slot="start"/>
+             <ion-label>{{ $t('search.details.edit') }}</ion-label>
+           </ion-item>
 
-          <ion-item button @click="reportItem" lines="none">
-            <ion-icon :icon="alertCircleOutline" slot="start"/>
-            <ion-label>Report</ion-label>
-          </ion-item>
+           <ion-item button @click="reportItem" lines="none">
+             <ion-icon :icon="alertCircleOutline" slot="start"/>
+             <ion-label>{{ $t('search.details.report') }}</ion-label>
+           </ion-item>
 
-          <ion-item button @click="share" lines="none">
-            <ion-icon :icon="shareSocialOutline" slot="start"/>
-            <ion-label>Share</ion-label>
-          </ion-item>
-        </template>
-      </app-header>
-    </ion-header>
+           <ion-item button @click="share" lines="none">
+             <ion-icon :icon="shareSocialOutline" slot="start"/>
+             <ion-label>{{ $t('search.details.share') }}</ion-label>
+           </ion-item>
+         </template>
+       </app-header>
+     </ion-header>
 
-    <ion-content>
+    <ion-content :scroll-events="true" @ionScroll="handleScroll" fullscreen>
       <div v-if="!loading && place">
         <!-- 🖼️ Image carousel (Swiper) -->
         <Swiper
@@ -49,66 +51,96 @@
         </Swiper>
 
         <!-- 📍 Location Info Section -->
-        <div class="ion-padding-horizontal ion-margin-top">
-          <h2 class="font-bold text-xl">{{ place.name }}</h2>
-          <ion-chip color="carrot" class="capitalize">{{ place.type }}</ion-chip>
+        <div 
+          :class="[
+            'details-container', 
+            place?.partner_tier ? 'tier-' + place.partner_tier.toLowerCase() : ''
+          ]"
+        >
+          <!-- Premium Flare for Gold/Silver -->
+          <div v-if="['gold', 'silver'].includes(String(place?.partner_tier || '').toLowerCase())" class="premium-flare"></div>
 
-          <!-- Certified By (Gold Partner) -->
-          <div
-              v-if="!loadingCertifications && certifications.length"
-              class="ion-margin-bottom"
-          >
-            <p>
-              <strong><small>Certified by</small></strong>
+          <div class="ion-padding" style="position: relative; z-index: 2;">
+            <div class="title-row">
+              <h2 class="product-title">{{ place?.name }}</h2>
+              <div v-if="place?.partner_tier" class="premium-badge-wrapper">
+                <div :class="['premium-badge-pill', place.partner_tier.toLowerCase()]">
+                  <ion-icon :icon="sparkles" />
+                  <span>{{ place.partner_tier.toUpperCase() }}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="status-action-row">
+              <ion-chip color="carrot" class="capitalize">{{ place?.type }}</ion-chip>
+              <div v-if="place?.partner_tier" class="official-verified-tag">
+                <ion-icon :icon="shieldCheckmarkOutline" />
+                <span>OFFICIAL PARTNER</span>
+              </div>
+            </div>
+
+            <p v-if="place?.author?.public_profile" class="attribution-text">
+              {{ $t('home.addedBy', { author: place.author.display_name }) }} - {{ fromNowToTaipei(place.created_at) }}
+            </p>
+            <p v-else class="attribution-text">
+              {{ $t('home.added') }} {{ fromNowToTaipei(place.created_at) }}
             </p>
 
+            <!-- Certified By (Gold Partner) -->
             <div
-                v-for="c in certifications"
-                :key="c.partner.id"
-                class="gold-cert-card"
-                role="button"
-                tabindex="0"
-                @click="goToPartner(c.partner.id)"
+                v-if="!loadingCertifications && certifications.length"
+                class="ion-margin-top"
             >
-              <div class="gold-glow"></div>
+              <p class="section-title">
+                <strong><small>Certified by</small></strong>
+              </p>
 
-              <div class="gold-cert-content">
-                <div class="gold-cert-left">
-                  <img
-                      v-if="c.partner.logo_url"
-                      :src="c.partner.logo_url"
-                      alt="logo"
-                      class="gold-cert-logo"
-                  />
+              <div
+                  v-for="c in certifications"
+                  :key="c.partner.id"
+                  class="gold-cert-card"
+                  role="button"
+                  tabindex="0"
+                  @click="goToPartner(c.partner.id)"
+              >
+                <div class="gold-glow"></div>
 
-                  <div class="gold-cert-text">
-                    <div class="gold-cert-name">
-                      {{ c.partner.name }}
-                    </div>
-                    <div class="gold-cert-sub">
-                      Gold Partner · Verified
+                <div class="gold-cert-content">
+                  <div class="gold-cert-left">
+                    <img
+                        v-if="c.partner.logo_url"
+                        :src="c.partner.logo_url"
+                        alt="logo"
+                        class="gold-cert-logo"
+                    />
+
+                    <div class="gold-cert-text">
+                      <div class="gold-cert-name">
+                        {{ c.partner.name }}
+                      </div>
+                      <div class="premium-verified-tag">
+                        <ion-icon :icon="sparkles" />
+                        Verified Gold Partner
+                      </div>
                     </div>
                   </div>
+
+                  <!-- RIGHT SIDE ACTION -->
+                  <ion-button
+                      v-if="c.proof_url"
+                      fill="clear"
+                      size="small"
+                      color="carrot"
+                      @click.stop
+                      :href="c.proof_url"
+                      target="_blank"
+                      aria-label="View certificate"
+                  >
+                    <ion-icon slot="icon-only" :icon="documentTextOutline" />
+                  </ion-button>
                 </div>
-
-                <!-- RIGHT SIDE ACTION -->
-                <ion-button
-                    v-if="c.proof_url"
-                    fill="clear"
-                    size="small"
-                    color="carrot"
-                    @click.stop
-                    :href="c.proof_url"
-                    target="_blank"
-                    aria-label="View certificate"
-                >
-                  <ion-icon slot="icon-only" :icon="documentTextOutline" />
-                </ion-button>
-
               </div>
-
             </div>
-          </div>
 
 
           <!-- 📝 Description -->
@@ -248,8 +280,9 @@
             </template>
 
           </div>
+          </div>
+          </div>
         </div>
-      </div>
 
       <!-- Skeleton while loading -->
       <div v-else>
@@ -302,8 +335,10 @@ import {
   IonModal,
   IonButton, IonHeader, IonChip,
   IonList,
+  popoverController
 } from '@ionic/vue'
 import {ref, onMounted, computed} from 'vue'
+import {useI18n} from 'vue-i18n'
 import {onIonViewWillEnter} from '@ionic/vue'
 import {useRoute, useRouter} from 'vue-router'
 import {supabase} from '@/plugins/supabaseClient'
@@ -319,8 +354,23 @@ import {
   createOutline, documentTextOutline, logoInstagram,
   mapOutline,
   navigateOutline,
-  shareSocialOutline
+  shareSocialOutline,
+  sparkles,
+  shieldCheckmarkOutline
 } from 'ionicons/icons'
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+import timezone from "dayjs/plugin/timezone";
+import relativeTime from "dayjs/plugin/relativeTime";
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
+dayjs.extend(relativeTime);
+
+function fromNowToTaipei(dateString?: string) {
+  if (!dateString) return ''
+  return dayjs.utc(dateString).tz('Asia/Taipei').fromNow()
+}
 
 import {ActivityLogService} from "@/services/ActivityLogService";
 
@@ -349,6 +399,12 @@ type PlaceDetail = {
   line_id?: string | null
   price_range?: string | null
   opening_hours?: OpeningHours | null
+  created_at?: string
+  author?: {
+    display_name: string | null;
+    public_profile: boolean;
+  } | null;
+  partner_tier?: 'Gold' | 'Silver' | 'Bronze' | null;
 }
 
 type LocationCertification = {
@@ -367,11 +423,17 @@ type LocationCertification = {
 const certifications = ref<LocationCertification[]>([])
 const loadingCertifications = ref(false)
 
+const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const place = ref<PlaceDetail | null>(null)
 const canEdit = ref(false)
 const modules = [Pagination, Zoom]
+
+const isScrolled = ref(false)
+const handleScroll = (ev: any) => {
+  isScrolled.value = ev.detail.scrollTop > 80
+}
 
 const showImageModal = ref(false)
 
@@ -437,7 +499,9 @@ const loadPlace = async () => {
     line_id,
     price_range,
     opening_hours,
-    location_types(name)
+    created_at,
+    location_types(name),
+    partner:partners(partner_tier)
   `)
       .eq('id', route.params.id)
       .maybeSingle()
@@ -466,8 +530,23 @@ const loadPlace = async () => {
       line_id: data.line_id,
       price_range: data.price_range,
       opening_hours: data.opening_hours,
+      created_at: data.created_at,
+      author: null,
+      location_types: locationType ?? null,
+      partner_tier: Array.isArray(data.partner) ? data.partner[0]?.partner_tier : (data.partner as any)?.partner_tier
+    }
 
-      location_types: locationType ?? null
+    // 🔹 Fetch author details separately since join is missing in schema
+    if (data.created_by) {
+      const { data: authorData } = await supabase
+        .from('user_profiles')
+        .select('display_name, public_profile')
+        .eq('id', data.created_by)
+        .maybeSingle()
+      
+      if (authorData && place.value) {
+        place.value.author = authorData
+      }
     }
 
     await fetchLocationCertifications(data.id)
@@ -577,8 +656,8 @@ const share = async () => {
 
   await Share.share({
     title: place.value.name,
-    text: `${place.value.name} (${place.value.type})\n📍 https://maps.google.com/?q=${place.value.lat},${place.value.lng}\n\nShared via Halal Formosa 🕌`,
-    dialogTitle: 'Share place',
+    text: `${place.value.name} (${place.value.type})\n🔗 https://app.halalformosa.com/place/${place.value.id}\n\nShared via Halal Formosa 🕌`,
+    dialogTitle: t('search.details.share'),
   })
 }
 
@@ -599,7 +678,7 @@ const logCall = () => {
 };
 
 
-const editItem = () => {
+const editItem = async () => {
   if (!place.value) return;
 
   ActivityLogService.log("explore_detail_edit", {
@@ -607,16 +686,24 @@ const editItem = () => {
     name: place.value.name
   });
 
+  try {
+    await popoverController.dismiss();
+  } catch (e) {}
+
   router.push(`/place/${place.value.id}/edit`);
 };
 
-const reportItem = () => {
+const reportItem = async () => {
   if (!place.value) return;
 
   ActivityLogService.log("explore_detail_report", {
     id: place.value.id,
     name: place.value.name
   });
+
+  try {
+    await popoverController.dismiss();
+  } catch (e) {}
 
   router.push(`/place/${place.value.id}/report`);
 };
@@ -632,13 +719,142 @@ const logLine = () => {
 </script>
 
 
-<style>
+<style scoped>
+/* TIERED PAGE STYLES - Inherit from global variables if needed, otherwise clean up redundant local backgrounds */
+.tier-gold .official-verified-tag {
+  color: #ca8a04;
+}
+.tier-silver .official-verified-tag {
+  color: #64748b;
+}
+
+.details-container {
+  background: var(--ion-background-color); /* Default theme background */
+  margin-top: -24px;
+  position: relative;
+  border-radius: 24px 24px 0 0;
+  min-height: 100vh; /* Ensure background fills to bottom */
+  z-index: 10;
+  overflow: hidden;
+}
+
+/* PREMIUM FLARE */
+.premium-flare {
+  position: absolute;
+  top: 0;
+  left: -150%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(
+    to right,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.4) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  transform: skewX(-25deg);
+  z-index: 1;
+  pointer-events: none;
+  animation: details-shimmer 4s infinite linear;
+}
+
+@keyframes details-shimmer {
+  0% { left: -150%; }
+  30% { left: 150%; }
+  100% { left: 150%; }
+}
+
+/* TITLES AND TEXT */
+.title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.product-title {
+  margin: 0;
+  font-weight: 800;
+  font-size: 1.6rem;
+  line-height: 1.2;
+}
+
+.attribution-text {
+  font-size: 12px;
+  color: var(--ion-color-medium);
+  margin: 2px 0 12px 0;
+}
+
+.section-title {
+  margin-bottom: 4px;
+  color: var(--ion-color-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  font-size: 10px;
+}
+
+/* PREMIUM BADGES */
+.premium-badge-wrapper {
+  flex-shrink: 0;
+}
+
+.premium-badge-pill {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 99px;
+  font-weight: 800;
+  font-size: 11px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.premium-badge-pill.gold {
+  background: #facc15;
+  color: #854d0e;
+}
+
+.premium-badge-pill.silver {
+  background: #94a3b8;
+  color: #1e293b;
+}
+
+.status-action-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 12px;
+  gap: 8px;
+}
+
+.official-verified-tag {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--ion-color-medium);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.5px;
+}
+
+.tier-gold .official-verified-tag {
+  color: #ca8a04;
+}
+
+.image-modal-close-btn {
+  position: absolute;
+  top: calc(env(safe-area-inset-top, 0px) + 16px);
+  right: 16px;
+  z-index: 9999;
+}
+
 .place-swiper {
   margin: 0 !important;
   padding: 0 !important;
   width: 100%;
-  height: 300px;
-  border-radius: 0; /* full edge-to-edge */
+  height: 350px;
+  border-radius: 0 0 24px 24px;
+  overflow: hidden;
 }
 
 .fullscreen-swiper,
@@ -659,13 +875,6 @@ const logLine = () => {
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
-}
-
-.image-modal-close-btn {
-  position: absolute;
-  top: calc(env(safe-area-inset-top, 0px) + 60px);
-  right: 16px;
-  z-index: 9999;
 }
 
 iframe {

@@ -125,7 +125,7 @@ export function useDailyMissions() {
                 }
 
                 switch (log.activity_type) {
-                    case 'scan_ingredients_success':
+                    case 'scan_ingredients_success': {
                         const mScan = missions.value.find(m => m.id === 'scan_ingredients')
                         if (mScan && mScan.current < mScan.required) mScan.current++
 
@@ -134,31 +134,36 @@ export function useDailyMissions() {
                             if (mMF && mMF.current < mMF.required) mMF.current++
                         }
                         break
+                    }
 
-                    case 'explore_place_detail_open':
+                    case 'explore_place_detail_open': {
                         const mView = missions.value.find(m => m.id === 'view_place_details')
                         if (mView && mView.current < mView.required) mView.current++
                         break
+                    }
 
-                    case 'home_page_open':
+                    case 'home_page_open': {
                         const mOpen = missions.value.find(m => m.id === 'open_app')
                         if (mOpen && mOpen.current < mOpen.required) mOpen.current++
                         break
+                    }
 
-                    case 'barcode_scan_success':
+                    case 'barcode_scan_success': {
                         const mBarcode = missions.value.find(m => m.id === 'scan_barcode')
                         if (mBarcode && mBarcode.current < mBarcode.required) mBarcode.current++
                         break
+                    }
 
-                    case 'add_product_success':
+                    case 'add_product_success': {
                         const mAddProd = missions.value.find(m => m.id === 'add_product')
                         if (mAddProd && mAddProd.current < mAddProd.required) mAddProd.current++
                         break
+                    }
                 }
             })
 
             // Fetch point logs to determine claimed status
-            const { data: pointLogs, error: pointsError } = await supabase
+            const { data: pointLogs } = await supabase
                 .from('point_logs')
                 .select('action')
                 .eq('user_id', user.id)

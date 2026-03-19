@@ -57,6 +57,8 @@
 	<string>We need access to your location to provide personalized recommendations based on where you are.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>We need access to your photos so you can upload pictures of products and places.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>We need access to add photos to your photo library.</string>
 	<key>GADApplicationIdentifier</key>
 	<string>ca-app-pub-9588373061537955~6845513245</string>
 </dict>

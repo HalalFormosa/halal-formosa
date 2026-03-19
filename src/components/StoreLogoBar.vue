@@ -23,9 +23,7 @@
 
 
 <script setup lang="ts">
-import { defineProps, defineEmits } from "vue"
 import { Capacitor } from "@capacitor/core"
-import { Browser } from "@capacitor/browser"
 import { AppLauncher } from '@capacitor/app-launcher'
 
 interface Store {

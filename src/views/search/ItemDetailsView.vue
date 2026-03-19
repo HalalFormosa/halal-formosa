@@ -1,21 +1,28 @@
 <template>
   <ion-page>
-    <ion-header>
-      <app-header :title="$t('search.details.title')" show-back back-route="/search" :icon="bagOutline">
+    <ion-header class="ion-no-border immersive-header" :class="{ 'is-scrolled': isScrolled }">
+      <app-header 
+        :title="$t('search.details.title')" 
+        show-back 
+        back-route="/search" 
+        :icon="bagOutline"
+        :transparent="!isScrolled"
+        :contrast="!isScrolled"
+      >
         <template #actions>
           <ion-item v-if="userId" button @click="openSaveModal" lines="none">
             <ion-icon :icon="isItemSaved ? bookmark : bookmarkOutline" slot="start" />
-            <ion-label>Save</ion-label>
+            <ion-label>{{ $t('search.details.save') }}</ion-label>
           </ion-item>
 
           <ion-item v-if="canEdit" button @click="editItem" lines="none">
             <ion-icon :icon="createOutline" slot="start" />
-            <ion-label>Edit</ion-label>
+            <ion-label>{{ $t('search.details.edit') }}</ion-label>
           </ion-item>
 
-          <ion-item button @click="reportItem" lines="none">
-            <ion-icon :icon="alertCircleOutline" slot="start" />
-            <ion-label>Report</ion-label>
+          <ion-item button @click="share" lines="none">
+            <ion-icon :icon="shareSocialOutline" slot="start" />
+            <ion-label>{{ $t('search.details.share') }}</ion-label>
           </ion-item>
         </template>
       </app-header>
@@ -25,7 +32,8 @@
     <!-- If this page should show ads, include this slot and set meta.adSpaceId above -->
     <div v-if="isNative && showAds" id="ad-space-item-details" style="height:60px;"></div>
 
-    <ion-content>
+    <ion-content :scroll-events="true" @ionScroll="handleScroll" fullscreen>
+
       <div v-if="loading">
         <!-- Image carousel skeleton -->
         <ion-skeleton-text
@@ -116,174 +124,205 @@
         </Swiper>
 
         <!-- Details below the slider -->
-        <div style="margin-top: 1rem; padding-top: 0" class="ion-padding">
-          <h2 style="margin-bottom: 0;">{{ item.name }}</h2>
+        <div 
+          :class="[
+            'details-container', 
+            item?.partner_tier ? 'tier-' + item.partner_tier.toLowerCase() : ''
+          ]"
+        >
+          <!-- Premium Flare for Gold/Silver -->
+          <div v-if="['gold', 'silver'].includes(String(item?.partner_tier || '').toLowerCase())" class="premium-flare"></div>
 
-          <!-- Barcode row -->
-          <p style="margin-top: 3px; margin-bottom: 0; display: flex; align-items: center; justify-content: space-between;">
-            <!-- Left side: barcode -->
-            <span style="display: flex; align-items: center; gap: 6px;">
-              <ion-icon :icon="barcodeOutline" style="font-size: 18px;" />
-              <small>{{ item.barcode }}</small>
-            </span>
+          <div class="ion-padding" style="position: relative; z-index: 2;">
+            <div class="title-row">
+              <h2 class="product-title">{{ item?.name }}</h2>
+              <div v-if="item?.partner_tier" class="premium-badge-wrapper">
+                <div :class="['premium-badge-pill', item.partner_tier.toLowerCase()]">
+                  <ion-icon :icon="sparkles" />
+                  <span>{{ $t('home.partnerTier', { tier: item.partner_tier.toUpperCase() }) }}</span>
+                </div>
+              </div>
+            </div>
 
-            <!-- Right side: category -->
-            <small>{{ item.product_categories?.name }}</small>
-          </p>
+            <!-- Barcode row -->
+            <p class="barcode-row">
+              <!-- Left side: barcode -->
+              <span class="barcode-wrapper">
+                <ion-icon :icon="barcodeOutline" />
+                <small>{{ item.barcode }}</small>
+              </span>
 
-
-          <!-- Status -->
-          <p style="margin-top: 10px">
-            <ion-chip :class="statusToChipClass(item.status)">
-              {{ $t(`search.status.${item.status}`) }}
-            </ion-chip>
-          </p>
-
-          <!-- Certified By (Gold Partner) -->
-          <div
-              v-if="!loadingCertifications && certifications.length"
-              class="ion-margin-top"
-          >
-            <p>
-              <strong><small>Certified by</small></strong>
+              <!-- Right side: category -->
+              <small class="category-text">{{ $te('search.categoriesList.' + item.product_categories?.name) ? $t('search.categoriesList.' + item.product_categories?.name) : item.product_categories?.name }}</small>
             </p>
 
+            <p v-if="item.author?.public_profile" class="attribution-text">
+              {{ $t('home.addedBy', { author: item.author.display_name }) }} - {{ fromNowToTaipei(item.created_at) }}
+            </p>
+            <p v-else class="attribution-text">
+              {{ $t('home.added') }} {{ fromNowToTaipei(item.created_at) }}
+            </p>
+
+            <!-- Status & Verified Tag -->
+            <div class="status-action-row">
+              <ion-chip :class="statusToChipClass(item?.status || '')">
+                {{ $t(`search.status.${item?.status}`) }}
+              </ion-chip>
+              
+              <div v-if="item?.partner_tier" class="official-verified-tag">
+                <ion-icon :icon="shieldCheckmarkOutline" />
+                <span>{{ $t('search.officialPartner') }}</span>
+              </div>
+            </div>
+
+            <!-- Certified By (Gold Partner) -->
             <div
-                v-for="c in certifications"
-                :key="c.partner.id"
-                class="gold-cert-card"
-                role="button"
-                tabindex="0"
-                @click="goToPartner(c.partner.id)"
+                v-if="!loadingCertifications && certifications.length"
+                class="ion-margin-top"
             >
-              <!-- Glow layer -->
-              <div class="gold-glow"></div>
+              <p class="section-title">
+                <strong><small>{{ $t('search.details.certifiedBy') }}</small></strong>
+              </p>
 
-              <!-- Content -->
-              <div class="gold-cert-content">
-                <div class="gold-cert-left">
-                  <img
-                      v-if="c.partner.logo_url"
-                      :src="c.partner.logo_url"
-                      alt="logo"
-                      class="gold-cert-logo"
-                  />
+              <div
+                  v-for="c in certifications"
+                  :key="c.partner.id"
+                  class="gold-cert-card"
+                  role="button"
+                  tabindex="0"
+                  @click="goToPartner(c.partner.id)"
+              >
+                <!-- Glow layer -->
+                <div class="gold-glow"></div>
 
-                  <div class="gold-cert-text">
-                    <div class="gold-cert-name">
-                      {{ c.partner.name }}
-                    </div>
-                    <div class="gold-cert-sub">
-                      Gold Partner · Verified
-                    </div>
+                <!-- Content -->
+                <div class="gold-cert-content">
+                  <div class="gold-cert-left">
+                    <img
+                        v-if="c.partner.logo_url"
+                        :src="c.partner.logo_url"
+                        alt="logo"
+                        class="gold-cert-logo"
+                    />
+
+                      <div class="gold-cert-text">
+                        <div class="gold-cert-name">
+                          {{ c.partner.name }}
+                        </div>
+                        <div class="premium-verified-tag">
+                          <ion-icon :icon="sparkles" />
+                          {{ $t('search.details.verifiedGoldPartner') }}
+                        </div>
+                      </div>
                   </div>
                 </div>
+              </div>
+            </div>
 
+            <!-- Stores where this product is available -->
+            <div v-if="item.stores?.length" class="ion-margin-top">
+              <p class="section-title">
+                <strong><small>{{ $t('search.details.availableAt') }}</small></strong>
+              </p>
+              <StoreLogoBar
+                  :stores="item.stores"
+                  mode="readonly"
+              />
+            </div>
+
+            <!-- Description -->
+            <p class="section-title ion-margin-top">
+              <strong><small>{{ $t('search.details.description') }}</small></strong>
+            </p>
+            <h5
+                class="description-text ion-no-margin"
+                v-html="highlightedDescription"
+            ></h5>
+
+            <!-- Ingredients -->
+            <p class="section-title ion-margin-top">
+              <strong><small>{{ $t('search.details.ingredients') }}</small></strong>
+            </p>
+
+            <ul class="ingredients-list">
+              <li v-for="(ing, idx) in visibleIngredients"
+                  :key="idx"
+                  v-html="ing.html">
+              </li>
+            </ul>
+
+            <!-- Toggle button -->
+            <div v-if="highlightedIngredients.length > maxVisible" class="ion-margin-top">
+              <ion-button
+                  fill="clear"
+                  size="small"
+                  @click="showAllIngredients = !showAllIngredients"
+              >
+                {{ !showAllIngredients ? $t('search.details.viewMore') : $t('search.details.viewLess') }}
+              </ion-button>
+            </div>
+
+            <!-- Color Legend -->
+            <div v-if="usedColors.length" class="ion-margin-top ingredient-legend">
+              <p class="section-title"><strong><small>{{ $t('search.details.colorLegend') }}</small></strong></p>
+              <div class="legend-chips">
+                <ion-chip
+                    v-for="color in usedColors"
+                    :key="color"
+                    :class="colorToChipClass(color)"
+                >
+                  {{ $t(colorLabels[color]) }}
+                </ion-chip>
+              </div>
+            </div>
+
+            <!-- Related Products -->
+            <div v-if="relatedProducts.length" class="related-section">
+              <p class="section-title">
+                <strong><small>{{ $t('search.details.relatedProducts') }}</small></strong>
+              </p>
+              <div class="discover-grid">
+                <ion-card
+                    v-for="p in relatedProducts"
+                    :key="p.barcode"
+                    class="discover-item"
+                    :class="p.partner_tier ? 'tier-card-' + p.partner_tier.toLowerCase() : ''"
+                    button
+                    @click="openRelated(p)"
+                >
+                  <div v-if="p.partner_tier" class="tier-badge" :class="p.partner_tier.toLowerCase()">
+                    <ion-icon :icon="sparkles" />
+                    {{ $t('home.partnerTier', { tier: p.partner_tier.toUpperCase() }) }}
+                  </div>
+
+                  <div v-if="p.partner_tier === 'Gold' || p.partner_tier === 'Silver'" class="premium-flare"></div>
+
+                  <img
+                      :src="p.photo_front_url || 'https://placehold.co/200x200'"
+                      alt="product"
+                      class="discover-img"
+                  />
+                  <ion-label class="discover-label">
+                    <div class="discover-meta-row">
+                      <ion-chip
+                          :class="statusToChipClass(p.status)"
+                          style="margin: 0; height: 20px; font-weight: 700; border-radius: 6px;"
+                      >
+                        {{ $t('search.status.' + p.status) }}
+                      </ion-chip>
+                    </div>
+                    <h3 :class="p.partner_tier ? 'product-name-' + p.partner_tier.toLowerCase() : ''">
+                      {{ p.name }}
+                    </h3>
+                    <div class="discover-footer">
+                      <p>{{ fromNowToTaipei(p.created_at) }}</p>
+                      <span v-if="p.partner_tier" class="premium-verified-tag">{{ $t('search.officialPartner') }}</span>
+                    </div>
+                  </ion-label>
+                </ion-card>
               </div>
             </div>
           </div>
-
-
-
-          <!-- Stores where this product is available -->
-          <div v-if="item.stores?.length" class="ion-margin-top">
-            <p>
-              <strong><small>{{ $t('search.details.availableAt') }}</small></strong>
-            </p>
-            <StoreLogoBar
-                :stores="item.stores"
-                mode="readonly"
-            />
-
-          </div>
-
-          <!-- Description -->
-          <p class="ion-margin-top">
-            <strong><small>{{ $t('search.details.description') }}</small></strong>
-          </p>
-          <h5
-              class="ion-no-margin"
-              style="margin-top: 2px"
-              v-html="highlightedDescription"
-          ></h5>
-
-          <!-- Ingredients -->
-          <p class="ion-margin-top">
-            <strong><small>{{ $t('search.details.ingredients') }}</small></strong>
-          </p>
-
-          <ul style="margin:0; padding-left:1.2rem">
-            <li v-for="(ing, idx) in visibleIngredients"
-                :key="idx"
-                v-html="ing.html">
-            </li>
-          </ul>
-
-          <!-- Toggle button -->
-          <div v-if="highlightedIngredients.length > maxVisible" class="ion-margin-top">
-            <ion-button
-                fill="clear"
-                size="small"
-                @click="showAllIngredients = !showAllIngredients"
-            >
-              {{ !showAllIngredients ? $t('search.details.viewMore') : $t('search.details.viewLess') }}
-            </ion-button>
-          </div>
-
-          <!-- Color Legend -->
-          <div v-if="usedColors.length" class="ion-margin-top ingredient-legend">
-            <p><strong><small>{{ $t('search.details.colorLegend') }}</small></strong></p>
-            <ion-chip
-                v-for="color in usedColors"
-                :key="color"
-                :class="colorToChipClass(color)"
-            >
-              {{ $t(colorLabels[color]) }}
-            </ion-chip>
-          </div>
-
-          <!-- Edit Modal -->
-          <ion-modal :is-open="showEditModal" @didDismiss="closeEditModal">
-            <AddProductView
-                :edit-product="item!"
-                @close="closeEditModal"
-                @updated="handleProductUpdated"
-            />
-          </ion-modal>
-
-          <!-- === Discover More Products in Same Category === -->
-          <div v-if="relatedProducts.length">
-            <div class="card-header-row" style="margin-top: 10px">
-              <strong><small>{{ $t('search.details.relatedProducts') }}</small></strong>
-
-            </div>
-            <div class="discover-grid">
-              <ion-card
-                  v-for="p in relatedProducts"
-                  :key="p.barcode"
-                  class="discover-item"
-                  button
-                  @click="openRelated(p)"
-              >
-              <img
-                    :src="p.photo_front_url || 'https://placehold.co/200x200'"
-                    alt="product"
-                    class="discover-img"
-                />
-                <ion-label class="discover-label">
-                  <ion-chip
-                      :class="statusToChipClass(p.status)"
-                      style="font-size: 14px; margin-bottom: 4px;"
-                  >
-                    {{ p.status }}
-                  </ion-chip>
-                  <h3>{{ p.name }}</h3>
-                  <p>Added {{ fromNowToTaipei(p.created_at) }}</p>
-                </ion-label>
-              </ion-card>
-            </div>
-          </div>
-
         </div>
 
       </div>
@@ -329,12 +368,12 @@
     <!-- Save to Folder Modal -->
     <ion-modal :is-open="showSaveModal" @didDismiss="showSaveModal = false" :initial-breakpoint="0.5" :breakpoints="[0, 0.5, 0.75]">
       <ion-content class="ion-padding">
-        <h3>Save to Folder</h3>
+        <h3>{{ $t('search.details.saveToFolder') }}</h3>
         
         <ion-item lines="full">
           <ion-input 
             v-model="newFolderName" 
-            placeholder="New collection name..." 
+            :placeholder="$t('search.details.newCollectionPlaceholder')" 
             @keyup.enter="createNewFolder"
           ></ion-input>
           <ion-button fill="clear" slot="end" @click="createNewFolder">
@@ -343,16 +382,26 @@
         </ion-item>
 
         <ion-list class="ion-margin-top">
-          <ion-list-header>Your Collections</ion-list-header>
+          <ion-list-header>{{ $t('search.details.yourCollections') }}</ion-list-header>
           
           <ion-item v-for="folder in folders" :key="folder.id" button @click="saveToFolder(folder.id)">
             <ion-icon :icon="folderOutline" slot="start"></ion-icon>
             <ion-label>{{ folder.name }}</ion-label>
           </ion-item>
           
-          <p v-if="folders.length === 0" class="ion-text-center ion-padding">You haven't created any folders yet.</p>
+          <p v-if="folders.length === 0" class="ion-text-center ion-padding">{{ $t('search.details.noCollections') }}</p>
         </ion-list>
       </ion-content>
+    </ion-modal>
+    
+    <!-- ✏️ Edit Product Modal -->
+    <ion-modal :is-open="showEditModal" @didDismiss="closeEditModal">
+      <AddProductView
+        v-if="item"
+        :edit-product="item"
+        @updated="handleProductUpdated"
+        @close="closeEditModal"
+      />
     </ion-modal>
 
     <!-- Toasts for save actions -->
@@ -387,10 +436,13 @@
 import {
   IonPage,
   IonContent, IonSkeletonText, IonChip, IonButton, IonHeader, IonModal,
-    IonIcon, IonItem, IonLabel, IonCard, IonInput, IonList, IonListHeader, IonToast, alertController
+  IonIcon, IonItem, IonLabel, IonCard, IonInput, IonList, IonListHeader, IonToast,
+  popoverController
 } from '@ionic/vue'
-import {onMounted, ref, nextTick, computed} from 'vue'
-import { useRoute } from 'vue-router'
+import { onMounted, ref, nextTick, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { useRoute, useRouter } from 'vue-router'
+import { useIonRouter } from '@ionic/vue'
 import { Capacitor } from '@capacitor/core'
 import { supabase } from '@/plugins/supabaseClient'
 import {Swiper, SwiperSlide} from "swiper/vue";
@@ -399,16 +451,26 @@ import 'swiper/css'
 import 'swiper/css/pagination'
 import 'swiper/css/zoom'
 import AppHeader from "@/components/AppHeader.vue";
-import {alertCircleOutline, bagOutline, barcodeOutline, createOutline, bookmarkOutline, bookmark, addOutline, folderOutline} from "ionicons/icons";
+import {alertCircleOutline, bagOutline, barcodeOutline, createOutline, bookmarkOutline, bookmark, addOutline, folderOutline, sparkles, star, shieldCheckmarkOutline, shareSocialOutline} from "ionicons/icons";
 import AddProductView from "@/views/add-product/AddProductView.vue";
 import { userRole } from '@/composables/userProfile'
 import { isDonor, refreshSubscriptionStatus } from '@/composables/useSubscriptionStatus'
 import { ActivityLogService } from "@/services/ActivityLogService";
 import { RevenueCatUI, PAYWALL_RESULT } from '@revenuecat/purchases-capacitor-ui'
+import { useNotifier } from "@/composables/useNotifier";
 
 const showEditModal = ref(false)
 const route = useRoute()
+const ionRouter = useIonRouter()
+const router = useRouter()
 const barcode = route.params.barcode as string
+const { t } = useI18n()
+const { notifyEvent } = useNotifier()
+
+const isScrolled = ref(false)
+const handleScroll = (ev: any) => {
+  isScrolled.value = ev.detail.scrollTop > 80
+}
 
 const loading = ref(true)
 const isNative = ref(Capacitor.isNativePlatform())
@@ -431,7 +493,6 @@ const showErrorToast = ref(false);
 const toastMessage = ref('');
 
 import type { Product } from '@/types/Product'
-import router from "@/router";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
@@ -447,6 +508,7 @@ type RelatedProduct = {
   photo_front_url?: string | null
   product_category_id: number | null
   created_at: string
+  partner_tier?: string | null
 }
 
 type ProductCertification = {
@@ -575,6 +637,20 @@ async function presentPaywall(): Promise<boolean> {
           source: "save_item_limit"
         })
 
+        const { data: { user } } = await supabase.auth.getUser();
+        await notifyEvent(
+          'pro_purchase_success',
+          '💎 New Pro Member!',
+          `User ${user?.email ?? 'unknown'} has just subscribed to Halal Formosa Pro!`,
+          undefined,
+          {
+            source: 'item_details_view',
+            email: user?.email,
+            user_id: user?.id
+          },
+          ['discord']
+        ).catch(console.error);
+
         return true
 
       case PAYWALL_RESULT.CANCELLED:
@@ -592,6 +668,8 @@ async function presentPaywall(): Promise<boolean> {
 }
 
 async function openSaveModal() {
+  await popoverController.dismiss();
+  
   if (!isItemSaved.value && !isDonor.value && totalSavedItems.value >= 10) {
     await ActivityLogService.log("pro_paywall_trigger", {
       source: "save_item_limit"
@@ -642,7 +720,7 @@ async function saveToFolder(folderId: string) {
   if (existing) {
     isItemSaved.value = true;
     showSaveModal.value = false;
-    toastMessage.value = 'This item is already saved in this folder.';
+    toastMessage.value = t('search.details.itemAlreadySaved');
     showWarningToast.value = true;
     return;
   }
@@ -661,15 +739,15 @@ async function saveToFolder(folderId: string) {
     showSaveModal.value = false;
     
     if (error?.code === '23505') {
-      toastMessage.value = 'This item is already saved in this folder.';
+      toastMessage.value = t('search.details.itemAlreadySaved');
       showWarningToast.value = true;
     } else {
-      toastMessage.value = 'Item saved successfully!';
+      toastMessage.value = t('search.details.itemSavedSuccess');
       showSuccessToast.value = true;
     }
   } else {
     console.error("Failed to save", error);
-    toastMessage.value = 'Failed to save item. Please try again.';
+    toastMessage.value = t('search.details.saveFailed');
     showErrorToast.value = true;
   }
 }
@@ -679,36 +757,70 @@ async function fetchRelatedProducts() {
 
   const firstWord = item.value.name.split(" ")[0].toLowerCase()
 
-  // Fetch all products in the same category (or increase limit)
   const { data, error } = await supabase
       .from("products")
-      .select("barcode, name, status, photo_front_url, product_category_id, created_at")
+      .select("barcode, name, status, photo_front_url, product_category_id, created_at, partner:partners(partner_tier)")
       .eq("approved", true)
       .eq("product_category_id", item.value.product_category_id)
       .neq("barcode", item.value.barcode)
       .order("created_at", { ascending: false })
-      .limit(100) // ⬅ increase so we don’t cut off variants
+      .limit(100)
 
   if (!error && data) {
-    // All same-category products
-    const allCategoryProducts = data
+    // 🟢 Flatten partner_tier for sorting
+    const flattenedData = data.map((p: any) => ({
+      ...p,
+      partner_tier: Array.isArray(p.partner) ? p.partner[0]?.partner_tier : p.partner?.partner_tier
+    }))
 
-    // Variants with same brand/keyword
-    const similar = allCategoryProducts.filter(p =>
-        p.name.toLowerCase().includes(firstWord)
-    )
+    // Define priorities
+    const tierPriority: Record<string, number> = {
+      'gold': 1,
+      'silver': 2,
+      'bronze': 3
+      // undefined/null -> 4
+    }
 
-    // Fallback: other products in same category
-    const others = allCategoryProducts.filter(p =>
-        !p.name.toLowerCase().includes(firstWord)
-    )
+    const statusPriority: Record<string, number> = {
+      'Halal': 1,
+      'Muslim-friendly': 2,
+      'Syubhah': 3,
+      'Haram': 4,
+      'Unknown': 5
+    }
 
-    // Merge: similar first, then others
-    const combined = [...similar, ...others].slice(0, 15) // cap display
+    // Merge and sort
+    const combined = [...flattenedData]
+    
+    combined.sort((a, b) => {
+      // 1. Priority by Partner Tier (Case-insensitive)
+      const tierA = (a.partner_tier || '').toLowerCase();
+      const tierB = (b.partner_tier || '').toLowerCase();
+      const tA = tierPriority[tierA] || 4
+      const tB = tierPriority[tierB] || 4
+      if (tA !== tB) return tA - tB
 
-    // Deduplicate
+      // 2. Priority by status (Normalize for comparison)
+      const sA = a.status || 'Unknown'
+      const sB = b.status || 'Unknown'
+      const pA = statusPriority[sA] || 99
+      const pB = statusPriority[sB] || 99
+      if (pA !== pB) return pA - pB
+
+      // 3. Priority by similarity (brand match)
+      const aSimilar = a.name.toLowerCase().includes(firstWord)
+      const bSimilar = b.name.toLowerCase().includes(firstWord)
+      if (aSimilar && !bSimilar) return -1
+      if (!aSimilar && bSimilar) return 1
+
+      // 4. Newest first
+      return dayjs(b.created_at).valueOf() - dayjs(a.created_at).valueOf()
+    })
+
+    // Deduplicate and cap visibility
+    const cap = combined.slice(0, 15)
     relatedProducts.value = Array.from(
-        new Map(combined.map(p => [p.barcode, p])).values()
+        new Map(cap.map(p => [p.barcode, p])).values()
     )
   }
 }
@@ -732,40 +844,43 @@ function closeImageModal() {
   showImageModal.value = false
 }
 
-const canEdit = computed(() => {
-  if (!item.value) return false
-
-  if (['admin', 'contributor'].includes(userRole.value || '')) {
-    return true
-  }
-
-  return userId.value && item.value.added_by === userId.value
-})
-
-
 const userId = ref<string | null>(null)
 
+const canEdit = computed(() => {
+  if (!item.value) return false
+  const role = userRole.value || ''
+  if (['admin', 'contributor'].includes(role)) return true
+  return !!(userId.value && item.value.added_by === userId.value)
+})
 
-function editItem() {
+async function editItem() {
   if (item.value) {
     ActivityLogService.log("product_edit_click", {
       barcode: item.value.barcode,
       product_name: item.value.name
     });
+    
+    await popoverController.dismiss();
+    showEditModal.value = true;
   }
-
-  showEditModal.value = true
 }
 
-function reportItem() {
-  if (!item.value) return;
+async function reportItem() {
+  if (item.value) {
+    ActivityLogService.log("product_report_click", {
+      barcode: item.value.barcode,
+      product_name: item.value.name
+    });
 
-  ActivityLogService.log("product_report_click", {
-    barcode: item.value.barcode,
-    product_name: item.value.name
-  });
+    try {
+      // Safely attempt to dismiss any overlay before navigating
+      await popoverController.dismiss();
+    } catch (e) {
+      // No popover found, which is fine
+    }
 
-  router.push({ name: 'report', params: { barcode: item.value.barcode } });
+    router.push(`/report/${item.value!.barcode}`);
+  }
 }
 
 
@@ -800,7 +915,19 @@ async function handleProductUpdated() {
   if (!error && data) {
     item.value = {
       ...data,
+      author: null,
       stores: data.product_stores?.map((ps: any) => ps.stores) || []
+    }
+
+    if (data.added_by) {
+      const { data: authorData } = await supabase
+        .from('user_profiles')
+        .select('display_name, public_profile')
+        .eq('id', data.added_by)
+        .maybeSingle()
+      if (authorData && item.value) {
+        item.value.author = authorData
+      }
     }
   }
 }
@@ -924,7 +1051,8 @@ onMounted(async () => {
           product_stores (
             store_id,
             stores ( id, name, logo_url )
-          )
+          ),
+          partner:partners(partner_tier)
         `)
           .eq('barcode', barcode)
           .maybeSingle(),
@@ -944,6 +1072,8 @@ onMounted(async () => {
     } else if (prodRes.data) {
       const product: Product = {
         ...prodRes.data,
+        author: null,
+        partner_tier: Array.isArray(prodRes.data.partner) ? prodRes.data.partner[0]?.partner_tier : (prodRes.data.partner as any)?.partner_tier,
         stores: prodRes.data.product_stores?.map((ps: any) => ({
           id: ps.stores.id as string,
           name: ps.stores.name,
@@ -954,6 +1084,17 @@ onMounted(async () => {
       // ✅ assign once
       item.value = product
 
+      // Fetch author separately due to missing schema relationship
+      if (prodRes.data.added_by) {
+        const { data: authorData } = await supabase
+          .from('user_profiles')
+          .select('display_name, public_profile')
+          .eq('id', prodRes.data.added_by)
+          .maybeSingle()
+        if (authorData && item.value) {
+          item.value.author = authorData
+        }
+      }
       if (product.id) {
         await fetchProductCertifications(product.id)
       }
@@ -1001,10 +1142,199 @@ function openRelated(p: RelatedProduct) {
   router.replace(`/item/${p.barcode}`);
 }
 
+const share = async () => {
+  if (!item.value) return
+
+  await ActivityLogService.log("product_share", {
+    barcode: item.value.barcode,
+    product_name: item.value.name
+  });
+
+  const { Share } = await import('@capacitor/share')
+  await Share.share({
+    title: item.value.name,
+    text: `${item.value.name} (${t('search.status.' + item.value.status)})\n🔗 https://app.halalformosa.com/item/${item.value.barcode}\n\nShared via Halal Formosa 🕌`,
+    dialogTitle: t('search.details.share'),
+  })
+}
+
 
 </script>
 
-<style>
+<style scoped>
+/* TIERED PAGE STYLES - Inherit from global variables if needed, otherwise clean up redundant local backgrounds */
+.tier-gold .official-verified-tag {
+  color: #ca8a04;
+}
+.tier-silver .official-verified-tag {
+  color: #64748b;
+}
+
+.details-container {
+  background: var(--ion-background-color); /* Default theme background */
+  margin-top: -24px;
+  position: relative;
+  border-radius: 24px 24px 0 0;
+  min-height: 100vh; /* Ensure background fills to bottom */
+  z-index: 10;
+  overflow: hidden;
+}
+
+/* PREMIUM FLARE */
+.premium-flare {
+  position: absolute;
+  top: 0;
+  left: -150%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(
+    to right,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.4) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  transform: skewX(-25deg);
+  z-index: 1;
+  pointer-events: none;
+  animation: details-shimmer 4s infinite linear;
+}
+
+@keyframes details-shimmer {
+  0% { left: -150%; }
+  30% { left: 150%; }
+  100% { left: 150%; }
+}
+
+/* TITLES AND TEXT */
+.title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.product-title {
+  margin: 0;
+  font-weight: 800;
+  font-size: 1.6rem;
+  line-height: 1.2;
+}
+
+.barcode-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 4px 0;
+  color: var(--ion-color-medium);
+}
+
+.barcode-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.category-text {
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.attribution-text {
+  font-size: 12px;
+  color: var(--ion-color-medium);
+  margin: 2px 0 12px 0;
+}
+
+.section-title {
+  margin-bottom: 4px;
+  color: var(--ion-color-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  font-size: 10px;
+}
+
+/* PREMIUM BADGES */
+.premium-badge-wrapper {
+  flex-shrink: 0;
+}
+
+.premium-badge-pill {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 99px;
+  font-weight: 800;
+  font-size: 11px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.premium-badge-pill.gold {
+  background: #facc15;
+  color: #854d0e;
+}
+
+.premium-badge-pill.silver {
+  background: #94a3b8;
+  color: #1e293b;
+}
+
+.status-action-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 12px;
+  gap: 8px;
+}
+
+.official-verified-tag {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--ion-color-medium);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.5px;
+}
+
+.tier-gold .official-verified-tag {
+  color: #ca8a04;
+}
+
+/* TEXT CONTENT */
+.description-text {
+  font-size: 1.1rem;
+  line-height: 1.5;
+  font-weight: 500;
+  margin-top: 4px;
+}
+
+.tier-gold .description-text {
+  color: var(--ion-color-dark);
+}
+
+.ingredients-list {
+  margin: 4px 0 0;
+  padding-left: 1.2rem;
+  line-height: 1.6;
+}
+
+.legend-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+/* RELATED SECTION */
+.related-section {
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(var(--ion-color-dark-rgb), 0.08);
+}
+
 .product-swiper {
   margin: 0 !important;
   padding: 0 !important;
@@ -1066,4 +1396,73 @@ ion-skeleton-text {
   right: 16px;
   z-index: 9999;
 }
+/* === Related Items Tier Styling === */
+.discover-item {
+  border: 1px solid rgba(var(--ion-color-dark-rgb), 0.1);
+  transition: all 0.3s ease;
+  position: relative;
+  --background: var(--ion-card-background, #ffffff);
+}
+
+/* GOLD THEME */
+.discover-item.tier-gold {
+  --border-color: #facc15;
+  border: 1.5px solid #facc15;
+  --background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+  box-shadow: 0 10px 30px rgba(250, 204, 21, 0.25);
+}
+
+/* SILVER THEME */
+.discover-item.tier-silver {
+  --border-color: #94a3b8;
+  border: 1.5px solid #94a3b8;
+  --background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  box-shadow: 0 8px 25px rgba(148, 163, 184, 0.15);
+}
+
+/* BRONZE THEME */
+.discover-item.tier-bronze {
+  --border-color: #d97706;
+  border: 1.5px solid #d97706;
+  --background: linear-gradient(135deg, #fffafb 0%, #fff7ed 100%);
+}
+@keyframes premium-shine {
+  0% { transform: translateX(0); }
+  25% { transform: translateX(250%); }
+  100% { transform: translateX(250%); }
+}
+
+.product-swiper {
+  margin: 0 !important;
+  padding: 0 !important;
+  width: 100%;
+  height: 350px;
+  border-radius: 0 0 24px 24px;
+  overflow: hidden;
+  --ion-safe-area-top: 0px; /* Force image to ignore safe area */
+}
+
+.product-swiper img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.discover-label h3 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  white-space: normal;
+  display: -webkit-box;
+  line-clamp: 2;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin: 4px 0;
+  color: var(--ion-color-dark); /* default: theme-based */
+}
+
+/* Tier-specific product name colors in related list */
+.product-name-gold   { color: #ca8a04 !important; }
+.product-name-silver { color: #475569 !important; }
+.product-name-bronze { color: #b45309 !important; }
 </style>

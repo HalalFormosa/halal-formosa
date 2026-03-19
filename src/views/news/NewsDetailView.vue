@@ -22,15 +22,25 @@
 
         <div class="ion-padding" style="padding-top: 0;">
           <h1>{{ newsItem.title }}</h1>
-          <p style="margin: 4px 0 8px 0; font-size: 13px;">
-            Added by {{ newsItem.author_name }} - {{ fromNowToTaipei(newsItem.created_at) }}
+          <p style="margin: 4px 0 8px 0; font-size: 13px; color: var(--ion-color-medium);">
+            <template v-if="authorProfile?.public_profile">
+              {{ $t('home.addedBy', { author: authorProfile.display_name }) }} - {{ fromNowToTaipei(newsItem.created_at) }}
+            </template>
+            <template v-else>
+              {{ $t('home.added') }} {{ fromNowToTaipei(newsItem.created_at) }}
+            </template>
           </p>
           <div class="article-content" v-html="newsItem.content"></div>
           <p
               class="ion-text-end ion-margin-top"
               style="color: var(--ion-color-shade); font-size: 0.8rem;"
           >
-            Added by {{ newsItem.author_name || 'Unknown' }} •
+            <template v-if="authorProfile?.public_profile">
+              {{ $t('home.addedBy', { author: authorProfile.display_name }) }} •
+            </template>
+            <template v-else>
+              {{ $t('home.added') }} •
+            </template>
             {{ new Date(newsItem.created_at).toLocaleDateString() }}
           </p>
         </div>
@@ -73,6 +83,7 @@ const user = ref<User | null>(null)
 
 const route = useRoute();
 const newsItem = ref<any>(null);
+const authorProfile = ref<{ display_name: string | null; public_profile: boolean } | null>(null);
 const loading = ref(true);
 const isNative = ref(Capacitor.isNativePlatform())
 
@@ -106,6 +117,18 @@ onMounted(async () => {
 
   if (!error && data) {
     newsItem.value = data;
+
+    // 🔹 Fetch author details separately
+    if (data.author_id) {
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('display_name, public_profile')
+        .eq('id', data.author_id)
+        .maybeSingle()
+      if (profile) {
+        authorProfile.value = profile
+      }
+    }
   }
 
   loading.value = false;

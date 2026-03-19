@@ -1,7 +1,7 @@
 <template>
   <ion-page>
     <ion-header>
-      <app-header title="Find Qibla" icon="none" :showBack="true" />
+      <app-header :title="$t('qibla.title')" icon="none" :showBack="true" />
     </ion-header>
 
     <ion-content class="ion-padding qibla-page">
@@ -16,20 +16,20 @@
         />
 
         <div class="info">
-          <h2>Qibla Direction</h2>
+          <h2>{{ $t('qibla.direction') }}</h2>
 
           <p v-if="hasCompass && !loading" class="bearing">
-            {{ qiblaBearing.toFixed(0) }}° • {{ bearingLabel }} from True North
+            {{ qiblaBearing.toFixed(0) }}° • {{ bearingLabel }} {{ $t('qibla.fromNorth') }}
           </p>
 
           <div v-else class="loading-row">
             <ion-spinner name="crescent" />
-            <span>Preparing compass…</span>
+            <span>{{ $t('qibla.preparing') }}</span>
           </div>
 
 
           <p v-if="aligned && hasCompass" class="aligned-text">
-            You are facing Qibla
+            {{ $t('qibla.facing') }}
           </p>
         </div>
       </div>
@@ -39,24 +39,18 @@
 </template>
 
 <script setup lang="ts">
-import {computed, onMounted} from 'vue'
+import {computed} from 'vue'
 import {
   IonHeader,
   IonPage,
   IonContent,
   IonSpinner,
-  IonButton,
-  IonIcon, onIonViewWillEnter
+  onIonViewWillEnter
 } from '@ionic/vue'
-import { useRouter } from 'vue-router'
 
 import AppHeader from '@/components/AppHeader.vue'
 import CompassDial from '@/components/CompassDial.vue'
 import { useQiblaCompass } from '@/composables/useQiblaCompass'
-import {warningOutline} from "ionicons/icons";
-
-/* ---------------- Router ---------------- */
-const router = useRouter()
 
 /* ---------------- Qibla Logic ---------------- */
 const {

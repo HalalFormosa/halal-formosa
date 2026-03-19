@@ -166,22 +166,20 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { 
-  IonIcon, IonBadge, IonSpinner, IonButton, IonModal,
+  IonIcon, IonButton, IonModal,
   IonHeader, IonToolbar, IonTitle, IonButtons, IonContent, IonProgressBar,
   IonCard, IonCardHeader, IonCardTitle, IonCardContent, onIonViewWillEnter, IonSkeletonText, IonLabel
 } from '@ionic/vue'
 import { 
   rocketOutline, scanOutline, heartOutline, locationOutline, 
-  barcodeOutline, addCircleOutline, mapOutline, checkmarkCircle, homeOutline,
+  barcodeOutline, addCircleOutline, checkmarkCircle, homeOutline,
   giftOutline
 } from 'ionicons/icons'
 import { useDailyMissions } from '@/composables/useDailyMissions'
 
 const showModal = ref(false)
-const { t } = useI18n()
 const { missions, loading, claimedBonus, allCompleted, fetchProgress, checkAndAwardBonus } = useDailyMissions()
 const router = useRouter()
 

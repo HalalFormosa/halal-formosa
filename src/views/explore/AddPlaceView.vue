@@ -920,7 +920,6 @@ const submitPlace = async () => {
     if (!user) throw new Error('You must be logged in.')
 
     // ✅ Decide approval mode (same logic as AddProduct)
-    const role = myRole.value ?? 'user'
     const autoApprove = isPrivileged(myRole.value)
 
     // delete old image if editing + new image selected

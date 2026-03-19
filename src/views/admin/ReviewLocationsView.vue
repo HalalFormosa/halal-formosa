@@ -2,7 +2,7 @@
   <ion-page>
     <ion-header>
       <app-header
-          title="Review Locations"
+          :title="$t('profile.admin.locationsReview')"
           :icon="listOutline"
           :showBack="true"
           backRoute="/profile"
@@ -40,7 +40,7 @@
             @click="openLocationModal(loc)"
         >
           <ion-thumbnail slot="start">
-            <img :src="loc.image" alt="Location image" />
+            <img :src="loc.image" :alt="$t('admin.locationImage')" />
           </ion-thumbnail>
 
           <ion-label>
@@ -52,16 +52,16 @@
 
       <!-- Empty -->
       <ion-text v-else color="medium">
-        No pending locations.
+        {{ $t('admin.noPendingLocations') }}
       </ion-text>
 
       <!-- Modal -->
       <ion-modal :is-open="showModal" @didDismiss="closeModal">
         <ion-header>
           <ion-toolbar>
-            <ion-title>Review Location</ion-title>
+            <ion-title>{{ $t('admin.reviewLocation') }}</ion-title>
             <ion-buttons slot="end">
-              <ion-button @click="closeModal">Close</ion-button>
+              <ion-button @click="closeModal">{{ $t('admin.close') }}</ion-button>
             </ion-buttons>
           </ion-toolbar>
         </ion-header>
@@ -70,17 +70,17 @@
           <ion-list v-if="selectedLocation">
 
             <ion-item>
-              <ion-label position="stacked">Name</ion-label>
+              <ion-label position="stacked">{{ $t('admin.name') }}</ion-label>
               <ion-input v-model="selectedLocation.name" />
             </ion-item>
 
             <ion-item>
-              <ion-label position="stacked">Address</ion-label>
+              <ion-label position="stacked">{{ $t('admin.address') }}</ion-label>
               <ion-input v-model="selectedLocation.address" />
             </ion-item>
 
             <ion-item>
-              <ion-label position="stacked">Description</ion-label>
+              <ion-label position="stacked">{{ $t('admin.description') }}</ion-label>
               <ion-textarea v-model="selectedLocation.description" auto-grow />
             </ion-item>
 
@@ -97,7 +97,7 @@
                   color="success"
                   @click="approveLocation(selectedLocation)"
               >
-                Approve
+                {{ $t('admin.approve') }}
               </ion-button>
 
               <ion-button
@@ -105,7 +105,7 @@
                   color="danger"
                   @click="rejectLocation(selectedLocation.id)"
               >
-                Reject
+                {{ $t('admin.reject') }}
               </ion-button>
             </div>
 

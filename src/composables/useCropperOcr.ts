@@ -1,5 +1,5 @@
 // composables/useCropperOcr.ts
-import { ref, nextTick } from "vue"
+import { ref } from "vue"
 import { useOcrService } from "@/composables/useOcrService"
 import { useImageResizer } from "@/composables/useImageResizer"
 

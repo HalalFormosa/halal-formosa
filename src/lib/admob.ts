@@ -7,13 +7,13 @@ let jobId = 0 // increments to cancel in-flight updates
 
 export async function initAdMob() {
     if (!Capacitor.isNativePlatform() || initialized) return
-    try { await AdMob.initialize(); initialized = true } catch { /* empty */ }
+    try { await AdMob.initialize(); initialized = true } catch (e) { console.debug('AdMob init skip', e) }
 }
 
 export async function hideBanner() {
     if (!Capacitor.isNativePlatform()) return
     jobId++ // cancel any in-flight move
-    try { await AdMob.removeBanner() } catch { /* empty */ }
+    try { await AdMob.removeBanner() } catch (e) { console.debug('AdMob remove skip', e) }
 }
 
 function delay(ms: number) { return new Promise(r => setTimeout(r, ms)) }
@@ -35,7 +35,7 @@ export async function moveBanner(adId: string, spaceId: string, isTesting: boole
     const el = await waitForEl(spaceId)
     if (!el) {
         // page never produced the slot -> ensure nothing shows
-        if (myJob === jobId) { try { await AdMob.removeBanner() } catch {} }
+        if (myJob === jobId) { try { await AdMob.removeBanner() } catch (e) { console.debug('AdMob remove skip', e) } }
         return
     }
 
@@ -46,7 +46,7 @@ export async function moveBanner(adId: string, spaceId: string, isTesting: boole
     const topOffset = Math.max(0, Math.round(rect.top + window.scrollY))
 
     // hard reset before re-show to avoid carry-over margins
-    try { await AdMob.removeBanner() } catch { /* empty */ }
+    try { await AdMob.removeBanner() } catch (e) { console.debug('AdMob remove skip', e) }
 
     // if a newer navigation happened, abort
     if (myJob !== jobId) return

@@ -2,7 +2,7 @@
   <ion-page>
     <ion-header>
       <app-header
-          title="Analytics Dashboard"
+          :title="$t('profile.admin.analytics')"
           :icon="listOutline"
           :showBack="true"
       />
@@ -17,18 +17,18 @@
           <!-- segmented control -->
           <ion-list>
             <ion-item>
-              <ion-label>Range</ion-label>
+              <ion-label>{{ $t('admin.range') }}</ion-label>
               <ion-select
                   v-model="selectedRange"
                   interface="popover"
-                  placeholder="Select Range"
+                  :placeholder="$t('admin.selectRange')"
                   @ionChange="onRangeChange($event)"
 
               >
 
-              <ion-select-option value="daily">Daily</ion-select-option>
-                <ion-select-option value="weekly">Weekly</ion-select-option>
-                <ion-select-option value="monthly">Monthly</ion-select-option>
+              <ion-select-option value="daily">{{ $t('admin.daily') }}</ion-select-option>
+                <ion-select-option value="weekly">{{ $t('admin.weekly') }}</ion-select-option>
+                <ion-select-option value="monthly">{{ $t('admin.monthly') }}</ion-select-option>
               </ion-select>
             </ion-item>
           </ion-list>
@@ -63,7 +63,7 @@
           </p>
 
 
-          <p><strong>Total Events:</strong> {{ totalEvents }}</p>
+          <p><strong>{{ $t('admin.totalEvents') }}:</strong> {{ totalEvents }}</p>
         </ion-card-content>
       </ion-card>
 
@@ -72,7 +72,7 @@
       ============================ -->
       <ion-card>
         <ion-card-header>
-          <ion-card-title>🔥 Most Used Features</ion-card-title>
+          <ion-card-title>🔥 {{ $t('admin.mostUsedFeatures') }}</ion-card-title>
         </ion-card-header>
 
         <ion-card-content>
@@ -105,7 +105,7 @@
                 size="small"
                 @click="showAllFeatures = !showAllFeatures"
             >
-              {{ showAllFeatures ? "Show Less" : "View More" }}
+              {{ showAllFeatures ? $t('common.viewLess') : $t('common.viewMore') }}
             </ion-button>
           </div>
 
@@ -121,7 +121,7 @@
       ============================ -->
       <ion-card>
         <ion-card-header>
-          <ion-card-title>🥘 Most Viewed Products</ion-card-title>
+          <ion-card-title>🥘 {{ $t('admin.mostViewedProducts') }}</ion-card-title>
         </ion-card-header>
         <ion-card-content>
 
@@ -150,7 +150,7 @@
                 size="small"
                 @click="showAllProducts = !showAllProducts"
             >
-              {{ showAllProducts ? "Show Less" : "View More" }}
+              {{ showAllProducts ? $t('common.viewLess') : $t('common.viewMore') }}
             </ion-button>
           </div>
 
@@ -166,7 +166,7 @@
       ============================ -->
       <ion-card>
         <ion-card-header>
-          <ion-card-title>🕌 Most Viewed Locations</ion-card-title>
+          <ion-card-title>🕌 {{ $t('admin.mostViewedLocations') }}</ion-card-title>
         </ion-card-header>
         <ion-card-content>
 
@@ -196,7 +196,7 @@
                 size="small"
                 @click="showAllLocations = !showAllLocations"
             >
-              {{ showAllLocations ? "Show Less" : "View More" }}
+              {{ showAllLocations ? $t('common.viewLess') : $t('common.viewMore') }}
             </ion-button>
           </div>
 
@@ -211,7 +211,7 @@
       ============================ -->
       <ion-card>
         <ion-card-header>
-          <ion-card-title>⏳ Activity by Hour ({{ activityRangeLabel }})</ion-card-title>
+          <ion-card-title>⏳ {{ $t('admin.activityByHour', { range: activityRangeLabel }) }}</ion-card-title>
         </ion-card-header>
         <ion-card-content>
           <div class="chart-container">
@@ -231,7 +231,7 @@
 =============================== -->
       <ion-card>
         <ion-card-header>
-          <ion-card-title>🧭 Top User Paths</ion-card-title>
+          <ion-card-title>🧭 {{ $t('admin.topUserPaths') }}</ion-card-title>
         </ion-card-header>
 
         <ion-card-content>
@@ -243,11 +243,11 @@
               <ion-label>
                 <strong>{{ p.path }}</strong>
                 <br />
-                <small>{{ p.steps }} steps</small>
+                <small>{{ $t('admin.stepsCount', { count: p.steps }) }}</small>
               </ion-label>
 
               <ion-badge slot="end" color="warning">
-                {{ p.users }} users
+                {{ $t('admin.usersCount', { count: p.users }) }}
               </ion-badge>
             </ion-item>
           </ion-list>
@@ -259,7 +259,7 @@
                 size="small"
                 @click="showAllPaths = !showAllPaths"
             >
-              {{ showAllPaths ? "Show Less" : "View More" }}
+              {{ showAllPaths ? $t('common.viewLess') : $t('common.viewMore') }}
             </ion-button>
           </div>
         </ion-card-content>
@@ -272,7 +272,7 @@
       ============================ -->
       <ion-card>
         <ion-card-header>
-          <ion-card-title>🔍 Recent Searches</ion-card-title>
+          <ion-card-title>🔍 {{ $t('admin.recentSearches') }}</ion-card-title>
         </ion-card-header>
         <ion-card-content>
           <ion-list>
@@ -291,7 +291,7 @@
                 size="small"
                 @click="showAllSearches = !showAllSearches"
             >
-              {{ showAllSearches ? "Show Less" : "View More" }}
+              {{ showAllSearches ? $t('common.viewLess') : $t('common.viewMore') }}
             </ion-button>
           </div>
 
@@ -321,6 +321,7 @@ import { isAdmin } from "@/composables/userProfile";
 import { useRouter } from "vue-router";
 import {informationCircleOutline, listOutline} from "ionicons/icons";
 import AppHeader from "@/components/AppHeader.vue";
+import { useI18n } from 'vue-i18n';
 
 /* Chart.js */
 import { Bar } from "vue-chartjs";
@@ -368,6 +369,7 @@ interface ChartData {
    State Variables
 ----------------------------------- */
 const router = useRouter();
+const { t } = useI18n();
 
 const dau = ref(0);
 const totalEvents = ref(0);
@@ -395,7 +397,7 @@ const featureChartData = computed<ChartData>(() => {
     labels: items.map(f => f.activity_type),
     datasets: [
       {
-        label: "Usage",
+        label: t('admin.usage'),
         data: items.map(f => f.count),
         backgroundColor: "rgba(255,159,64,0.8)"
       }
@@ -412,7 +414,7 @@ const productChartData = computed(() => {
     labels: items.map(p => shortName(p.product_name)),
     datasets: [
       {
-        label: "Views",
+        label: t('admin.views'),
         data: items.map(p => p.count),
         backgroundColor: "#2ecc71"
       }
@@ -430,7 +432,7 @@ const locationChartData = computed(() => {
     labels: items.map(l => l.name || l.place_name || "(Unknown)"),
     datasets: [
       {
-        label: "Views",
+        label: t('admin.views'),
         data: items.map(l => Number(l.count)),
         backgroundColor: "#3498db"
       }
@@ -471,16 +473,16 @@ const hourlyChartOptions = {
 };
 
 const activityTitle = computed(() => {
-  if (selectedRange.value === "daily") return "Today's Activity";
-  if (selectedRange.value === "weekly") return "This Week's Activity";
-  if (selectedRange.value === "monthly") return "This Month's Activity";
-  return "Activity";
+  if (selectedRange.value === "daily") return t('admin.activityToday');
+  if (selectedRange.value === "weekly") return t('admin.activityWeekly');
+  if (selectedRange.value === "monthly") return t('admin.activityMonthly');
+  return t('admin.activity');
 });
 
 const activityRangeLabel = computed(() => {
-  if (selectedRange.value === "daily") return "Today";
-  if (selectedRange.value === "weekly") return "This Week";
-  if (selectedRange.value === "monthly") return "This Month";
+  if (selectedRange.value === "daily") return t('admin.daily');
+  if (selectedRange.value === "weekly") return t('admin.weekly');
+  if (selectedRange.value === "monthly") return t('admin.monthly');
   return "";
 });
 
@@ -493,13 +495,13 @@ const dauLabel = computed(() => {
 
 const dauTooltip = computed(() => {
   if (selectedRange.value === "daily")
-    return "<b>DAU</b> = Daily Active Users<br>Unique users who opened the app today.";
+    return t('admin.dauTooltip');
 
   if (selectedRange.value === "weekly")
-    return "<b>WAU</b> = Weekly Active Users<br>Unique users who opened the app this week.";
+    return t('admin.wauTooltip');
 
   if (selectedRange.value === "monthly")
-    return "<b>MAU</b> = Monthly Active Users<br>Unique users who opened the app this month.";
+    return t('admin.mauTooltip');
 
   return "";
 });
@@ -555,7 +557,7 @@ async function fetchAnalytics() {
     datasets: [
       {
         type: "bar",
-        label: "Events (Bar)",
+        label: t('admin.totalEvents'),
         data: hours,
         backgroundColor: "rgba(255,159,64,0.6)",
         borderRadius: 4,
@@ -563,7 +565,7 @@ async function fetchAnalytics() {
       },
       {
         type: "line",
-        label: "Trend",
+        label: t('admin.trend'),
         data: trendData,
         borderColor: "#bb86fc",
         backgroundColor: "rgba(187,134,252,0.15)",
@@ -623,13 +625,6 @@ function shortName(name: string | null, max = 20) {
   return name.length > max ? name.slice(0, max) + "…" : name;
 }
 
-function groupEvent(event: string) {
-  if (event.startsWith("home_")) return "Home";
-  if (event.startsWith("product_")) return "Product";
-  if (event.startsWith("explore_")) return "Explore";
-  if (event.startsWith("search_")) return "Search";
-  return event;
-}
 
 
 function loess(data: number[], bandwidth = 0.25): number[] {

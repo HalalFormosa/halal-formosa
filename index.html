@@ -1,50 +1,49 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <title>Halal Formosa</title>
 
-    <base href="/" />
+<head>
+  <meta charset="utf-8" />
+  <title>Halal Formosa</title>
 
-    <meta name="color-scheme" content="light dark" />
+  <base href="/" />
 
-    <meta
-      name="viewport"
-      content="viewport-fit=cover, width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no"
-    />
-    <meta name="format-detection" content="telephone=no" />
-    <meta name="msapplication-tap-highlight" content="no" />
+  <meta name="color-scheme" content="light dark" />
 
-    <link rel="shortcut icon" type="image/png" href="/favicon-16x16.png" />
-      <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
-      <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-      <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
-      <link rel="manifest" href="/site.webmanifest">
+  <meta name="viewport"
+    content="viewport-fit=cover, width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="format-detection" content="telephone=no" />
+  <meta name="msapplication-tap-highlight" content="no" />
 
-    <!-- add to homescreen for ios -->
-    <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-title" content="Halal Formosa" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+  <link rel="shortcut icon" type="image/png" href="/favicon-16x16.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+  <link rel="manifest" href="/site.webmanifest">
 
-  </head>
+  <!-- add to homescreen for ios -->
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Halal Formosa" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+  <meta name="apple-itunes-app" content="app-id=YOUR_APP_ID_HERE, app-argument=https://app.halalformosa.com">
 
-  <body>
-    <div id="app"></div>
-    <script type="module" src="/src/main.ts"></script>
-  </body>
+</head>
 
-  <!-- public/index.html -->
-  <script>
-      const savedTheme = localStorage.getItem('preferred-theme');
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      const isDark = savedTheme === 'dark' || (savedTheme === null && prefersDark);
+<body>
+  <div id="app"></div>
+  <script type="module" src="/src/main.ts"></script>
+</body>
 
-      if (isDark) {
-          document.documentElement.classList.add('ion-palette-dark');
-      } else {
-          document.documentElement.classList.remove('ion-palette-dark');
-      }
-  </script>
+<!-- public/index.html -->
+<script>
+  const savedTheme = localStorage.getItem('preferred-theme');
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const isDark = savedTheme === 'dark' || (savedTheme === null && prefersDark);
+
+  if (isDark) {
+    document.documentElement.classList.add('ion-palette-dark');
+  } else {
+    document.documentElement.classList.remove('ion-palette-dark');
+  }
+</script>
 
 </html>
-

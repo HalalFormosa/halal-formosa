@@ -268,32 +268,15 @@ document.addEventListener('deviceready', async () => {
 
         // 🧭 Handle incoming push when tapped/opened
         OneSignal.Notifications.addEventListener('click', (event: any) => {
-            console.log('📬 Notification opened (full event):', JSON.stringify(event, null, 2));
+            console.log('📬 [OneSignal] Notification opened:', JSON.stringify(event, null, 2));
 
             const link =
                 event?.notification?.additionalData?.link ||
                 event?.notification?.url ||
                 event?.notification?.launchURL;
 
-            console.log('🔍 Extracted link:', link);
-
             if (link) {
-                // 🛑 Prevent duplicate routing if already handled by appUrlOpen
-                if (lastHandledUrl === link) {
-                    console.log('⏭️ Skipping duplicate navigation for', link);
-                    return;
-                }
-                lastHandledUrl = link;
-
-                try {
-                    const path = new URL(link).pathname;
-                    console.log('🔗 Navigating to:', path);
-                    import('@/router').then(({ default: router }) => router.push(path));
-                } catch (err) {
-                    console.warn('⚠️ Invalid deep link:', link, err);
-                }
-            } else {
-                console.warn('⚠️ No link field found in notification payload');
+                handleDeepLink(link);
             }
         });
 
@@ -310,34 +293,63 @@ document.addEventListener('deviceready', async () => {
     }
 });
 
-// 🔗 Handle OS-level deep link (when app cold-starts)
-CapacitorApp.addListener('appUrlOpen', ({ url }) => {
+// 🔗 Unified Deep Link Handler
+const handleDeepLink = async (url: string, isColdBoot = false) => {
     if (!url) return;
-    console.log('🌐 appUrlOpen:', url);
+    console.log(`🌐 [DeepLink] ${isColdBoot ? 'Cold Boot' : 'Open'}:`, url);
 
-    lastHandledUrl = url; // ✅ Mark this as already handled
+    lastHandledUrl = url;
 
-    if (url.startsWith('myapp://item/') || url.startsWith('myapp://place/') || url.startsWith('myapp://news/')) {
-        const path = url.replace('myapp://', '/');
-        console.log('➡️ Navigating to:', path);
-        import('@/router').then(({ default: router }) => router.push(path));
-        return;
-    }
-
-    if (url.startsWith('myapp://callback')) {
-        const hash = new URL(url).hash.substring(1);
-        const params = new URLSearchParams(hash);
-        const access_token = params.get('access_token');
-        const refresh_token = params.get('refresh_token');
-        if (access_token && refresh_token) {
-            supabase.auth.setSession({ access_token, refresh_token });
-            console.log('🔐 OAuth session restored.');
+    try {
+        let path = '';
+        if (url.startsWith('myapp://')) {
+            path = url.replace('myapp://', '/');
+        } else if (url.includes('app.halalformosa.com') || url.includes('halalformosa.com')) {
+            const urlObj = new URL(url);
+            path = urlObj.pathname + urlObj.search;
         }
+
+        if (path && path !== '/') {
+            await router.isReady();
+            console.log('➡️ [DeepLink] Navigating to:', path);
+            if (isColdBoot) {
+                router.replace(path);
+            } else {
+                router.push(path);
+            }
+        }
+
+        // Handle OAuth callback
+        if (url.startsWith('myapp://callback') || url.includes('/callback')) {
+            const hash = new URL(url).hash.substring(1);
+            const params = new URLSearchParams(hash);
+            const access_token = params.get('access_token');
+            const refresh_token = params.get('refresh_token');
+            if (access_token && refresh_token) {
+                supabase.auth.setSession({ access_token, refresh_token });
+                console.log('🔐 [DeepLink] OAuth session restored.');
+            }
+        }
+    } catch (err) {
+        console.warn('⚠️ [DeepLink] Invalid URL:', url, err);
     }
+};
+
+// 🔗 Handle OS-level deep link (when app is already running)
+CapacitorApp.addListener('appUrlOpen', ({ url }) => {
+    handleDeepLink(url);
 });
 
+// 🚀 Start verification and handle Cold Boot
 async function bootstrap() {
-    // 1️⃣ Mount the app IMMEDIATELY so the user sees the UI even if plugins are slow
+    // Check if app was launched by a URL (Cold Boot)
+    CapacitorApp.getLaunchUrl().then((launchData) => {
+        if (launchData?.url) {
+            handleDeepLink(launchData.url, true);
+        }
+    });
+
+    // Mount the app IMMEDIATELY so the user sees the UI even if plugins are slow
     router.isReady().then(() => {
         app.mount('#app');
         scheduleBannerUpdate();

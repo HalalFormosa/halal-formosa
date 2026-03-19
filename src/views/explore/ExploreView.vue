@@ -1,16 +1,86 @@
 <template>
   <ion-page>
-    <ion-header>
+    <ion-header class="explore-header" :class="{ 'is-native': isNative && !isDonor }">
       <!-- Native AdMob banner -->
       <div v-if="isNative && !isDonor" id="ad-space-explore" style="height:65px;"></div>
+
+      <ion-toolbar class="header-search-toolbar">
+        <!-- Search & Add Row -->
+        <div class="search-row">
+          <ion-searchbar
+              class="search-explore"
+              :debounce="1000"
+              v-model="searchQuery"
+              @ionInput="onSearchInput"
+              @ionSearch="onSearchCommit"
+              @keyup.enter.capture="onSearchCommit"
+              :placeholder="$t('explore.placeholder')"
+              :disabled="isGeocoding"
+          />
+
+          <ion-button
+              v-if="isLoggedIn"
+              @click="goToAddPlace"
+              class="header-btn"
+              color="carrot"
+          >
+            <ion-icon :icon="addOutline"/>
+          </ion-button>
+
+          <ion-button
+              @click="viewMode = viewMode === 'map' ? 'list' : 'map'"
+              class="header-btn"
+              color="carrot"
+          >
+            <ion-icon :icon="viewMode === 'map' ? listOutline : mapOutline"/>
+          </ion-button>
+          
+        </div>
+
+        <!-- Category bar row -->
+        <div class="category-bar-row">
+          <div v-show="!loadingCategories" class="category-bar">
+            <ion-chip
+                v-for="cat in categories"
+                :key="cat.id"
+                class="modern-category-chip"
+                :class="{ active: activeCategoryIds.includes(cat.id) }"
+                :style="{ 
+                  '--cat-color': cat.color || 'var(--ion-color-carrot)',
+                  '--cat-bg': activeCategoryIds.includes(cat.id) ? (cat.color || 'var(--ion-color-carrot)') : 'transparent'
+                }"
+                @click="toggleCategory(cat)"
+            >
+              <span v-if="typeof categoryIconMap[cat.name] === 'string' && categoryIconMap[cat.name].length === 2" class="category-emoji">
+                {{ categoryIconMap[cat.name] }}
+              </span>
+              <ion-icon v-else :icon="categoryIconMap[cat.name]" class="category-icon" />
+              <ion-label>{{ cat.name }}</ion-label>
+            </ion-chip>
+          </div>
+
+          <ion-chip
+              v-if="activeCategoryIds.length"
+              class="clear-chip floating-clear"
+              @click="activeCategoryIds = []"
+          >
+            ✖ Clear
+          </ion-chip>
+
+          <!-- Skeleton placeholder -->
+          <div v-if="loadingCategories" class="category-skeletons">
+            <ion-skeleton-text animated style="width:120px; height:28px; border-radius:12px; margin-right:8px;"/>
+            <ion-skeleton-text animated style="width:120px; height:28px; border-radius:12px; margin-right:8px;"/>
+            <ion-skeleton-text animated style="width:120px; height:28px; border-radius:12px;"/>
+          </div>
+        </div>
+      </ion-toolbar>
     </ion-header>
 
     <div
-        v-show="viewMode !== 'list'"
-        style="position: relative; height: 100%; width: 100%;"
+        style="position: absolute; height: 100%; width: 100%; top: 0; left: 0; z-index: 0;"
     >
-
-      <div id="map" style="height: 100%; width: 100%;"></div>
+      <div id="map" :class="{ 'map-dimmed': viewMode === 'list' }" style="height: 100%; width: 100%;"></div>
 
       <!-- Map is always present, hidden when loading -->
       <ion-skeleton-text
@@ -25,267 +95,205 @@
           animated
           style="height:100%;width:100%;border-radius:0;position:absolute;top:0;left:0;z-index:0;"
       />
-
-      <!-- FAB stays visible -->
-      <ion-fab
-          v-show="viewMode !== 'list'"
-          vertical="bottom"
-          horizontal="end"
-          slot="fixed"
-          :class="['fab-right', fabPosition]"
-      >
-
-
-        <ion-fab-button color="carrot" @click="centerOnUser">
-          <ion-icon style="color: var(--ion-color-light)" :icon="navigateCircleOutline"></ion-icon>
-        </ion-fab-button>
-      </ion-fab>
-
-
     </div>
 
-    <ion-fab
-        v-show="viewMode !== 'list'"
-        vertical="bottom"
-        horizontal="start"
-        slot="fixed"
-        class="view-mode-fab"
-        :class="fabPosition"
-    >
+    <!-- 4. List View Overlay -->
+    <transition name="fade-slide">
+      <div v-if="viewMode === 'list'" class="list-view-overlay">
+        <div class="list-container">
+          <div class="list-header">
+            <h3>{{ $t('explore.results') }} ({{ displayedLocations.length }})</h3>
 
-      <!-- Main FAB -->
-      <ion-fab-button size="small" color="dark">
-        <ion-icon :icon="layersOutline"/>
-      </ion-fab-button>
-
-      <!-- FAB List -->
-      <ion-fab-list side="top">
-        <ion-fab-button
-            size="small"
-            :color="viewMode === 'map' ? 'carrot' : 'medium'"
-            @click="viewMode = 'map'"
-        >
-          <ion-icon :icon="mapOutline"/>
-        </ion-fab-button>
-
-        <ion-fab-button
-            size="small"
-            :color="viewMode === 'both' ? 'carrot' : 'medium'"
-            @click="viewMode = 'both'"
-        >
-          <ion-icon :icon="gridOutline"/>
-        </ion-fab-button>
-
-        <ion-fab-button
-            size="small"
-            color="medium"
-            @click="viewMode = 'list'"
-        >
-          <ion-icon :icon="listOutline"/>
-        </ion-fab-button>
-      </ion-fab-list>
-    </ion-fab>
-
-
-    <div
-        v-if="viewMode === 'both'"
-        class="panel-toggle"
-        :class="panelVisible ? 'toggle-open' : 'toggle-collapsed'"
-        @click="panelVisible = !panelVisible"
-    >
-      <ion-icon :icon="panelVisible ? chevronDownOutline : chevronUpOutline"></ion-icon>
-    </div>
-
-
-    <!-- FIXED WRAPPER -->
-    <div
-        v-show="viewMode !== 'map'"
-        class="bottom-panel-wrapper"
-        :class="{
-    collapsed: viewMode === 'both' && !panelVisible,
-    'list-only': viewMode === 'list'
-  }"
-    >
-
-
-      <ion-toolbar class="explore-toolbar">
-
-        <!-- INLINE switch (List only) -->
-        <div
-            v-if="viewMode === 'list'"
-            class="view-mode-switch inline"
-            :style="{ marginTop: topOffset }"
-        >
-          <button @click="viewMode = 'map'">🗺️ Map</button>
-          <button @click="viewMode = 'both'">🧱 Both</button>
-          <button class="active">📋 List</button>
-        </div>
-
-        <!-- Search row -->
-        <div style="display: flex; align-items: center;">
-
-
-          <ion-searchbar
-              class="search-explore"
-              :debounce="1000"
-              v-model="searchQuery"
-              show-search-button="always"
-              @ionInput="onSearchInput"
-              @ionSearch="onSearchCommit"
-              @keyup.enter.capture="onSearchCommit"
-              style="flex-grow: 1; margin-right: 8px;"
-              :placeholder="$t('explore.placeholder')"
-              :disabled="isGeocoding"
-          />
-
-
-          <ion-button
-              v-if="isLoggedIn"
-              @click="goToAddPlace"
-              color="carrot"
-              size="small"
-              style="margin-right: 12px; margin-top: 12px;"
-          >
-            <ion-icon :icon="addOutline"/>
-          </ion-button>
-        </div>
-
-
-        <!-- ✅ Category bar right under search input -->
-        <div class="category-bar-wrapper">
-          <!-- Real category bar -->
-          <div v-show="!loadingCategories" class="category-bar">
-            <ion-chip
-                v-for="cat in categories"
-                :key="cat.id"
-                class="category-chip"
-                :style="{ '--cat-color': cat.color || 'var(--ion-color-medium)' } as Record<string,string>"
-                :class="{ active: activeCategoryIds.includes(cat.id) }"
-
-                @click="toggleCategory(cat)"
-            >
-
-              <!-- If icon is emoji -->
-              <span
-                  v-if="typeof categoryIconMap[cat.name] === 'string' && categoryIconMap[cat.name].length === 2"
-                  style="margin-right:4px;"
+            <div class="list-sort-container">
+              <ion-button
+                  class="sort-btn-simple"
+                  fill="clear"
+                  id="sort-trigger-explore"
               >
-        {{ categoryIconMap[cat.name] }}
-      </span>
-              <!-- If icon is Ionicon -->
-              <ion-icon
-                  v-else
-                  :icon="categoryIconMap[cat.name]"
-                  style="margin-right:4px;"
-              />
-              <ion-label>{{ cat.name }}</ion-label>
-            </ion-chip>
+                <ion-icon :icon="sortIcon" slot="start" />
+                <ion-label>{{ sortLabel }}</ion-label>
+                <ion-icon :icon="chevronDownOutline" slot="end" style="font-size: 12px; margin-left: 4px;" />
+              </ion-button>
+              
+              <ion-popover trigger="sort-trigger-explore" trigger-action="click" :dismiss-on-select="true" class="width-190">
+                <ion-list lines="none">
+                  <ion-item button @click="sortBy = 'nearest'">
+                    <ion-icon :icon="locationOutline" slot="start" />
+                    <ion-label>{{ $t('search.sortNearest') }}</ion-label>
+                    <ion-icon v-if="sortBy === 'nearest'" :icon="checkmarkCircle" slot="end" color="success" style="font-size: 14px;" />
+                  </ion-item>
+                  
+                  <ion-item button @click="sortBy = 'recent'">
+                    <ion-icon :icon="timeOutline" slot="start" />
+                    <ion-label>{{ $t('search.sortRecent') }}</ion-label>
+                    <ion-icon v-if="sortBy === 'recent'" :icon="checkmarkCircle" slot="end" color="success" style="font-size: 14px;" />
+                  </ion-item>
+                  
+                  <ion-item button @click="sortBy = 'trending'">
+                    <ion-icon :icon="trendingUpOutline" slot="start" />
+                    <ion-label>{{ $t('search.sortTrending') }}</ion-label>
+                    <ion-icon v-if="sortBy === 'trending'" :icon="checkmarkCircle" slot="end" color="success" style="font-size: 14px;" />
+                  </ion-item>
 
+                  <ion-item button @click="sortBy = 'popular'">
+                    <ion-icon :icon="flameOutline" slot="start" />
+                    <ion-label>{{ $t('search.sortViews') }}</ion-label>
+                    <ion-icon v-if="sortBy === 'popular'" :icon="checkmarkCircle" slot="end" color="success" style="font-size: 14px;" />
+                  </ion-item>
+                </ion-list>
+              </ion-popover>
+            </div>
           </div>
-
-          <ion-chip
-              v-if="activeCategoryIds.length"
-              class="clear-chip"
-              @click="activeCategoryIds = []"
-          >
-            ✖ Clear
-          </ion-chip>
-
-          <!-- Skeleton placeholder -->
-          <div v-if="loadingCategories" class="category-skeletons">
-            <ion-skeleton-text animated style="width:150px; height:28px; border-radius:5px; margin-right:8px;"/>
-            <ion-skeleton-text animated style="width:150px; height:28px; border-radius:5px; margin-right:8px;"/>
-            <ion-skeleton-text animated style="width:150px; height:28px; border-radius:5px; margin-right:8px;"/>
-            <ion-skeleton-text animated style="width:150px; height:28px; border-radius:5px;"/>
+          
+          <div class="vertical-cards-stack">
+            <div
+              v-for="place in displayedLocations"
+              :key="place.id"
+              class="modern-location-card list-mode-card"
+              :class="['tier-' + String(place.partner_tier || 'basic').toLowerCase()]"
+              @click="goToDetail(place.id)"
+            >
+              <div class="card-inner">
+                <div class="card-image-section">
+                  <img 
+                    loading="lazy" 
+                    :src="place.image || PLACEHOLDER" 
+                    :alt="place.name" 
+                    @error="onImageError"
+                  />
+                  <div v-if="place.partner_tier" class="floating-tier-badge">
+                    <div :class="['tier-pill', place.partner_tier.toLowerCase()]">
+                      <ion-icon :icon="sparkles" />
+                      <span>{{ place.partner_tier.toUpperCase() }}</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="card-info-section">
+                  <div class="info-top">
+                    <h5 class="title-text">
+                      {{ place.name }}
+                      <ion-icon v-if="place.partner_tier" :icon="checkmarkCircle" class="verified-badge" />
+                    </h5>
+                    <div class="metas">
+                      <span class="meta">{{ place.type }}</span>
+                      <span class="meta-dot">•</span>
+                      <span class="meta">👁️ {{ place.view_count || 0 }}</span>
+                    </div>
+                    <div v-if="userLocation && (place as any).distance !== undefined" class="distance">
+                      📍 {{ formatKm((place as any).distance) }} km
+                    </div>
+                  </div>
+                </div>
+                <div v-if="['gold', 'silver'].includes(String(place.partner_tier || '').toLowerCase())" class="premium-flare"></div>
+              </div>
+            </div>
+            
+            <div v-if="displayedLocations.length === 0 && !loading" class="empty-state">
+              <ion-icon :icon="informationCircleOutline" />
+              <p>{{ $t('explore.noResults') }}</p>
+            </div>
           </div>
         </div>
+      </div>
+    </transition>
 
+    <!-- 5. Floating UI (Locate Me) -->
+    <div v-if="viewMode === 'map'" class="map-floating-actions">
+      <ion-button class="locate-me-btn" color="carrot" @click="centerOnUser">
+        <ion-icon :icon="navigateCircleOutline" />
+      </ion-button>
+    </div>
 
-      </ion-toolbar>
-
-      <!-- Place list scrolls -->
-      <ion-content class="ion-padding" style="margin-top:0; --padding-top:0;" ref="contentRef">
-        <div class="place-list">
-          <!-- ✅ Skeleton list while loading -->
+    <!-- 6. Bottom Results Slider (Map Only) -->
+    <div 
+      v-if="viewMode === 'map' && displayedLocations.length > 0"
+      class="floating-results-bar"
+    >
+      <div 
+        ref="contentRef" 
+        class="horizontal-scroll-wrapper"
+      >
+        <div class="cards-track">
+          <!-- Skeleton list while loading -->
           <template v-if="loadingPlaces">
-            <ion-card v-for="n in 3" :key="'skeleton-' + n">
-              <div style="display: flex; align-items: center;">
-                <!-- Thumbnail skeleton -->
-                <ion-skeleton-text
-                    animated
-                    style="width:115px; height:115px; border-radius:10px;"
-                />
-                <!-- Text skeletons -->
-                <div style="flex:1; margin-left:12px;">
+            <div v-for="n in 3" :key="'skeleton-' + n" class="skeleton-card-wrapper">
+              <ion-card class="modern-location-card">
+                <div style="display: flex; align-items: center; height: 100%;">
                   <ion-skeleton-text
                       animated
-                      style="width:70%; height:18px; margin-bottom:8px;"
+                      style="width:115px; height:115px; border-radius:10px;"
                   />
-                  <ion-skeleton-text
-                      animated
-                      style="width:50%; height:14px; margin-bottom:6px;"
-                  />
-                  <ion-skeleton-text
-                      animated
-                      style="width:40%; height:14px;"
-                  />
+                  <div style="flex:1; margin-left:12px;">
+                    <ion-skeleton-text animated style="width:70%; height:18px; margin-bottom:8px;" />
+                    <ion-skeleton-text animated style="width:50%; height:14px; margin-bottom:6px;" />
+                    <ion-skeleton-text animated style="width:40%; height:14px;" />
+                  </div>
                 </div>
-              </div>
-            </ion-card>
+              </ion-card>
+            </div>
           </template>
 
-          <!-- ✅ Real data after loaded -->
+          <!-- Real data after loaded -->
           <template v-else>
-            <ion-card
+            <div
                 v-for="place in displayedLocations"
                 :key="place.id"
                 :ref="setCardRef(place.id)"
-                :class="{ 'active-card': selectedPlace?.id === place.id }"
+                :class="[
+                  'modern-location-card', 
+                  { 'active-card': selectedPlace?.id === place.id },
+                  place.partner_tier ? 'tier-' + place.partner_tier.toLowerCase() : ''
+                ]"
                 @click="selectPlace(place)"
             >
-              <div style="display: flex; align-items: center;">
-                <ion-thumbnail
-                    slot="start"
-                    style="width: 115px; height: 115px; border-radius: 10px; overflow: hidden;"
-                >
+              <div class="card-inner">
+                <div class="card-image-section">
                   <img
                       loading="lazy"
-                      :src="place.image || 'https://placehold.co/200x100'"
-                      alt="thumbnail"
-                      style="object-fit: cover; width: 100%; height: 100%; border-radius: 8px;"
+                      :src="place.image || PLACEHOLDER"
+                      :alt="place.name"
                       @error="onImageError"
                   />
-                </ion-thumbnail>
-
-                <div
-                    style="flex: 1; margin-left: 12px; display: flex; flex-direction: column; justify-content: space-between;">
-                  <div>
-                    <h5 class="title-text">{{ place.name }}</h5>
-                    <p class="type-text">{{ place.type }}</p>
-                    <p class="type-text">👁️ {{ place.view_count || 0 }} views</p>
+                  <!-- Floating Tier Badge -->
+                  <div v-if="place.partner_tier" class="floating-tier-badge">
+                    <div :class="['tier-pill', place.partner_tier.toLowerCase()]">
+                      <ion-icon :icon="sparkles" />
+                      <span>{{ (place.partner_tier || '').toUpperCase() }}</span>
+                    </div>
                   </div>
-
-                  <div v-if="userLocation">
-                    📍 {{ formatKm(getDistanceInKm(place.position)) }} km away
-                  </div>
-
-                  <!-- 🧭 Details Button -->
-                  <ion-button
-                      fill="clear"
-                      size="small"
-                      color="carrot"
-                      @click.stop="goToDetail(place.id)"
-                      style="align-self: flex-start;"
-                  >
-                    <ion-icon slot="start" :icon="informationCircleOutline"/>
-                    Details
-                  </ion-button>
                 </div>
+
+                <div class="card-info-section">
+                  <div class="info-top">
+                    <h5 class="title-text">
+                      {{ place.name }}
+                      <ion-icon v-if="place.partner_tier" :icon="checkmarkCircle" class="verified-badge" />
+                    </h5>
+                    <div class="metas">
+                      <span class="meta">{{ place.type }}</span>
+                      <span class="meta-dot">•</span>
+                      <span class="meta">👁️ {{ place.view_count || 0 }}</span>
+                    </div>
+                    
+                    <div v-if="userLocation && (place as any).distance !== undefined" class="distance">
+                      📍 {{ formatKm((place as any).distance) }} km
+                    </div>
+                  </div>
+
+                  <div class="info-actions">
+                    <div class="action-row">
+                      <ion-button fill="clear" size="small" color="carrot" @click.stop="goToDetail(place.id)" class="detail-btn">
+                        DETAILS
+                      </ion-button>
+                    </div>
+                  </div>
+                </div>
+                <div v-if="['gold', 'silver'].includes(String(place.partner_tier || '').toLowerCase())" class="premium-flare"></div>
               </div>
-            </ion-card>
+            </div>
           </template>
         </div>
-      </ion-content>
+      </div>
     </div>
   </ion-page>
 </template>
@@ -297,13 +305,15 @@
 import {
   IonPage, IonContent, IonToolbar, IonSearchbar, IonIcon, IonFab, IonFabButton,
   IonCard, IonThumbnail, IonButton, onIonViewDidEnter, IonLabel, IonChip, IonHeader,
-  IonSkeletonText, onIonViewWillEnter, IonFabList, onIonViewWillLeave
+  IonSkeletonText, onIonViewWillEnter, IonFabList, onIonViewWillLeave, IonModal,
+  IonPopover, IonList, IonItem
 } from '@ionic/vue'
 import {
   navigateCircleOutline,
   addOutline,
   restaurant, informationCircleOutline, chevronUpOutline, chevronDownOutline, restaurantOutline, leaf, home,
-  layersOutline, listOutline, gridOutline, mapOutline
+  layersOutline, listOutline, gridOutline, mapOutline, sparkles, shieldCheckmarkOutline, checkmarkCircle,
+  trendingUpOutline, flameOutline, timeOutline, locationOutline, filterOutline
 } from 'ionicons/icons'
 import {ref, computed, nextTick, onMounted, watch} from 'vue'
 import type {ComponentPublicInstance, VNodeRef} from 'vue'
@@ -324,8 +334,13 @@ const ionIconMap: Record<string, any> = {
   restaurant,
   restaurantOutline,
   leaf,
-  home
+  home,
+  listOutline,
+  mapOutline
 }
+
+/* ---------------- State ---------------- */
+const viewMode = ref<'map' | 'list'>('map')
 
 /* ---------------- Types ---------------- */
 type LatLng = { lat: number; lng: number }
@@ -347,6 +362,8 @@ type Place = {
   typeId: number | null
   type: string
   view_count?: number
+  partner_tier?: 'Gold' | 'Silver' | 'Bronze'
+  created_at?: string
 }
 
 
@@ -360,6 +377,8 @@ type LocationRow = {
   type_id: number | null
   location_types: { name: string } | null
   view_count?: number
+  partner_tier?: 'Gold' | 'Silver' | 'Bronze'
+  created_at: string
 }
 
 // Local type for ion-content (no external import needed)
@@ -367,11 +386,8 @@ type HTMLIonContentElement = HTMLElement & {
   getScrollElement: () => Promise<HTMLElement>
 }
 
-type FabPosition = 'map' | 'panel-open' | 'panel-collapsed'
-
-type ViewMode = 'map' | 'list' | 'both'
-
-const viewMode = ref<ViewMode>('both')
+// No longer using viewMode switcher
+const isPageActive = ref(false)
 
 
 /* ---------------- Constants ---------------- */
@@ -398,7 +414,8 @@ const isNative = ref(Capacitor.isNativePlatform())
 const loading = ref(true)
 const loadingCategories = ref(true)
 const loadingPlaces = ref(true)
-const panelVisible = ref(false)
+const sortBy = ref<'nearest' | 'recent' | 'popular' | 'trending'>('nearest')
+const trendingPlaceIds = ref<number[]>([])
 
 /* Google Maps runtime objects */
 let mapInstance: google.maps.Map | null = null
@@ -540,7 +557,6 @@ const lastGeocodeQuery = ref<string | null>(null)
 const GEOCODE_COOLDOWN_MS = 1500 // 1.5 seconds
 
 const onSearchCommit = async () => {
-  if (viewMode.value === 'list') return
   if (!mapInstance) return
 
   const q = searchQuery.value.trim()
@@ -702,6 +718,22 @@ const topOffset = computed(() => {
   return `${offset}px`;
 });
 
+const sortLabel = computed(() => {
+  if (sortBy.value === 'nearest') return 'Nearest'
+  if (sortBy.value === 'recent') return 'Recent'
+  if (sortBy.value === 'trending') return 'Trending'
+  if (sortBy.value === 'popular') return 'Hot'
+  return 'Sort'
+})
+
+const sortIcon = computed(() => {
+  if (sortBy.value === 'nearest') return locationOutline
+  if (sortBy.value === 'recent') return timeOutline
+  if (sortBy.value === 'trending') return trendingUpOutline
+  if (sortBy.value === 'popular') return flameOutline
+  return filterOutline
+})
+
 const markerStyles = computed<Record<string, {
   color: string
   emoji?: string
@@ -718,13 +750,7 @@ const markerStyles = computed<Record<string, {
   return map
 })
 
-const fabPosition = computed<FabPosition>(() => {
-  if (viewMode.value === 'map') return 'map'
-  if (viewMode.value === 'both') {
-    return panelVisible.value ? 'panel-open' : 'panel-collapsed'
-  }
-  return 'map'
-})
+// No viewMode logic needed
 
 /* ---------------- Utilities ---------------- */
 
@@ -967,30 +993,31 @@ const applyInfoWindowDarkClass = () => {
 }
 
 // Resolve the actual host element from a ref that may be a component or an element
-const asIonContentEl = (node: unknown): HTMLIonContentElement | null => {
+const asEl = (node: unknown): HTMLElement | null => {
   if (!node) return null
   const maybeCmp = node as { $el?: Element }
-  const host = (maybeCmp && '$el' in maybeCmp && maybeCmp.$el) ? maybeCmp.$el : (node as Element)
-  return host as HTMLIonContentElement
+  return ((maybeCmp && '$el' in maybeCmp && maybeCmp.$el) ? maybeCmp.$el : (node as Element)) as HTMLElement
 }
 
 const scrollCardIntoView = async (id: number) => {
   await nextTick()
 
-  const host = asIonContentEl(contentRef.value)
-  if (!host) return
+  const cardRef = cardRefs.value[id]
+  const cardEl = getDomEl(cardRef)
+  if (!cardEl || !contentRef.value) return
 
-  const scrollEl = await host.getScrollElement()
-
-  const rawNode = cardRefs.value[id]
-  if (!rawNode) return
-  const cardEl = getDomEl(rawNode)
-  if (!cardEl) return
-
+  const containerEl = contentRef.value as HTMLElement
+  
+  // For horizontal slider, we use scrollLeft
+  const containerRect = containerEl.getBoundingClientRect()
   const cardRect = cardEl.getBoundingClientRect()
-  const containerRect = scrollEl.getBoundingClientRect()
-  const y = scrollEl.scrollTop + (cardRect.top - containerRect.top) - 12
-  scrollEl.scrollTo({top: Math.max(0, y), behavior: 'smooth'})
+  
+  const scrollOffset = containerEl.scrollLeft + (cardRect.left - containerRect.left) - (containerRect.width / 2) + (cardRect.width / 2)
+  
+  containerEl.scrollTo({
+    left: scrollOffset,
+    behavior: 'smooth'
+  })
 }
 
 /* ---------------- Roles ---------------- */
@@ -1030,7 +1057,9 @@ const fetchLocations = async () => {
     type_id,
     address,
     view_count,
-    location_types(name)
+    created_at,
+    location_types(name),
+    partner:partners(partner_tier)
   `)
       .eq('approved', true)
 
@@ -1039,7 +1068,7 @@ const fetchLocations = async () => {
     //@ts-expect-error LocationRow
     const typedData = data as LocationRow[]
 
-    locations.value = typedData.map((loc) => ({
+    locations.value = typedData.map((loc: any) => ({
       id: loc.id,
       name: loc.name,
       address: loc.address ?? null,
@@ -1047,12 +1076,38 @@ const fetchLocations = async () => {
       image: loc.image,
       typeId: loc.type_id,
       type: loc.location_types?.name ?? '',
-      view_count: loc.view_count ?? 0
+      view_count: loc.view_count ?? 0,
+      partner_tier: Array.isArray(loc.partner) ? loc.partner[0]?.partner_tier : loc.partner?.partner_tier,
+      created_at: loc.created_at
     }))
   }
 
   initMarkers()
   loadingPlaces.value = false
+}
+
+const fetchTrendingPlaces = async () => {
+  const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+  
+  const { data, error } = await supabase
+    .from('activity_log')
+    .select('entity_id')
+    .eq('entity_type', 'place')
+    .in('activity_type', ['explore_place_detail_open', 'explore_place_card_click', 'explore_marker_click'])
+    .gte('created_at', yesterday)
+
+  if (!error && data) {
+    const counts: Record<string, number> = {}
+    data.forEach(log => {
+      if (log.entity_id) {
+        counts[log.entity_id] = (counts[log.entity_id] || 0) + 1
+      }
+    })
+    
+    trendingPlaceIds.value = Object.keys(counts)
+      .sort((a, b) => counts[b] - counts[a])
+      .map(id => parseInt(id))
+  }
 }
 
 const categories = computed(() => locationTypes.value)
@@ -1173,12 +1228,9 @@ const initMarkers = (places: Place[] = locations.value) => {
   }
 }
 
-watch([viewMode, panelVisible], async () => {
-  await nextTick()
-  if (mapInstance) {
-    google.maps.event.trigger(mapInstance, 'resize')
-  }
-})
+// Final centerOnUser trigger or modal resize logic
+// viewMode was removed, so we only need resize logic if general state change occurs, 
+// usually IonModal handles its own viewport.
 
 watch(searchQuery, q => {
   if (!q && addressMarker.value) {
@@ -1291,11 +1343,37 @@ const sortedLocations = computed(() => {
   }
 
 
-  // sort by distance if available
-  if (userLocation.value) {
-    base.sort((a, b) => getDistanceInKm(a.position) - getDistanceInKm(b.position))
+  // 🏆 Hybrid Sorting Strategy
+  const mapped = base.map(p => {
+    const distance = userLocation.value ? getDistanceInKm(p.position) : 999999;
+    return { ...p, distance };
+  });
+
+  if (sortBy.value === 'nearest') {
+    const PROMOTION_RADIUS_KM = 30;
+    mapped.sort((a, b) => {
+      const aGold = a.partner_tier?.toLowerCase() === 'gold' && a.distance <= PROMOTION_RADIUS_KM;
+      const bGold = b.partner_tier?.toLowerCase() === 'gold' && b.distance <= PROMOTION_RADIUS_KM;
+      if (aGold && !bGold) return -1;
+      if (!aGold && bGold) return 1;
+      return a.distance - b.distance;
+    });
+  } else if (sortBy.value === 'recent') {
+    mapped.sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
+  } else if (sortBy.value === 'popular') {
+    mapped.sort((a, b) => (b.view_count || 0) - (a.view_count || 0));
+  } else if (sortBy.value === 'trending') {
+    mapped.sort((a, b) => {
+      const aIndex = trendingPlaceIds.value.indexOf(a.id);
+      const bIndex = trendingPlaceIds.value.indexOf(b.id);
+      if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex;
+      if (aIndex !== -1) return -1;
+      if (bIndex !== -1) return 1;
+      return (b.view_count || 0) - (a.view_count || 0);
+    });
   }
-  return base
+
+  return mapped;
 })
 
 watch(sortedLocations, (filtered) => {
@@ -1310,6 +1388,7 @@ onMounted(async () => {
   await loadRole()
   fetchLocationTypes()
   await fetchLocations()
+  await fetchTrendingPlaces()
   await refreshViewCounts()
 
   // 🔥 START GPS WATCH HERE
@@ -1319,6 +1398,7 @@ onMounted(async () => {
 let firstEnter = true
 
 onIonViewWillEnter(async () => {
+  isPageActive.value = true
   if (firstEnter) {
     firstEnter = false
     return
@@ -1346,6 +1426,7 @@ onIonViewDidEnter(async () => {
 });
 
 onIonViewWillLeave(() => {
+  isPageActive.value = false
   if (locationWatchId) {
     Geolocation.clearWatch({ id: locationWatchId })
     locationWatchId = null
@@ -1460,43 +1541,59 @@ button.gm-ui-hover-effect > span {
 /*********************************************
  * MAP PINS
  *********************************************/
-.custom-pin {
-  width: 26px;
-  height: 26px;
-  background: var(--ion-color-carrot);
-  border-radius: 50% 50% 50% 0;
-  transform: rotate(-45deg);
+.pin-wrapper {
   position: relative;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  width: 34px;
+  height: 46px;
+  cursor: pointer;
+}
+
+.pin {
+  position: relative;
+  width: 34px;
+  height: 46px;
+}
+
+.pin-head {
+  width: 25px;
+  height: 25px;
+  background: rgba(255, 255, 255, 0.85); /* Slightly more opaque head */
+  border-radius: 50%;
+  position: absolute;
+  top: 5px;
+  left: 4.5px;
 
   display: flex;
   align-items: center;
   justify-content: center;
-}
 
-.pin-emoji {
-  transform: rotate(45deg); /* counter-rotate */
   font-size: 14px;
-  line-height: 1;
-  user-select: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  z-index: 2;
 }
 
-
-.custom-pin-dot {
-  width: 10px;
-  height: 10px;
-  background: white;
-  border-radius: 50%;
+.pin-body {
+  width: 35px;
+  height: 35px;
   position: absolute;
-  top: 7px;
-  left: 7px;
+  top: 1px;
+
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+.ion-palette-dark .pin-head {
+  background: rgba(40, 40, 40, 0.9);
+  color: #fff;
 }
 
 /*********************************************
  * USER LOCATION DOT
  *********************************************/
 .user-location-dot {
-  position: relative; /* 🔥 REQUIRED */
+  position: relative;
   width: 18px;
   height: 18px;
   background: var(--ion-color-carrot);
@@ -1515,304 +1612,691 @@ button.gm-ui-hover-effect > span {
   }
 }
 
-/*********************************************
- * SEARCH BAR + CATEGORY TOOLS
- *********************************************/
-.search-explore {
-  margin-top: 10px;
-  margin-left: 5px;
-  width: 96%;
-  --border-radius: 10px;
-  --box-shadow: 0 4px 12px rgba(124, 124, 124, 0.05);
+/* =========================
+   EXPLORE HEADER & SEARCH
+   (Floating Glassmorphism Design)
+========================= */
+.explore-header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  pointer-events: none;
+  background: transparent !important;
+  box-shadow: none !important;
 }
 
-.explore-toolbar {
-  --background: var(--ion-background-color);
-  border-top-left-radius: 25px;
-  border-top-right-radius: 25px;
-  overflow: hidden;
-  margin-top: -30px;
-  z-index: 2;
+.header-search-toolbar {
+  --background: transparent !important;
+  --border-width: 0 !important;
+  padding-top: var(--ion-safe-area-top, 0);
+  background: transparent !important;
 }
 
-.category-bar-wrapper {
+.search-row {
   display: flex;
-  gap: 8px;
-  overflow-x: auto;
-  padding: 4px 6px;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px 0;
+  pointer-events: auto;
+}
+
+.search-explore {
+  flex: 1;
+  margin: 0;
+  --background: var(--ion-background-color) !important;
+  --border-radius: 14px;
+  --box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  font-weight: 500;
+  height: 50px;
+  --padding-start: 12px;
+  --padding-end: 12px;
+  background: var(--ion-background-color) !important;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  --color: var(--ion-color-dark) !important;
+  --placeholder-color: var(--ion-color-step-600) !important;
+  --icon-color: var(--ion-color-carrot) !important;
+  --clear-button-color: var(--ion-color-step-600) !important;
+  border: 1px solid rgba(var(--ion-color-dark-rgb), 0.15);
+  border-radius: 14px;
+}
+
+.header-btn {
+  --border-radius: 14px;
+  height: 50px;
+  width: 50px;
+  margin: 0;
+  --background: var(--ion-background-color) !important;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  --color: var(--ion-color-carrot);
+  border: 1px solid rgba(var(--ion-color-dark-rgb), 0.15);
+  flex-shrink: 0;
+}
+
+.category-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  pointer-events: auto;
 }
 
 .category-bar {
+  flex: 1;
   display: flex;
-  gap: 8px;
+  gap: 10px;
   overflow-x: auto;
-  padding: 4px 6px;
+  padding-bottom: 2px;
+  scrollbar-width: none;
 }
 
 .category-bar::-webkit-scrollbar {
   display: none;
 }
 
-.category-skeletons {
-  display: flex;
-  gap: 8px;
-  width: 100%;
-}
-
-/* =========================
-   CATEGORY CHIP – DEFAULT
-========================= */
-.category-chip {
-
-  --cat-color: "";
-  --base: var(--cat-color);
-
-  --background: transparent;
-  --color: var(--base);
-
-  border: 1.5px solid var(--base);
-  border-radius: 999px;
-
-  font-weight: 500;
+.modern-category-chip {
+  background: var(--ion-background-color) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: var(--cat-color);
+  height: 36px;
+  border-radius: 10px;
+  padding: 0 14px;
+  border: 1px solid rgba(var(--ion-color-dark-rgb), 0.18);
+  font-weight: 600;
+  font-size: 0.8rem;
   transition: all 0.2s ease;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
+
+.modern-category-chip.active {
+  background: var(--cat-color) !important;
+  color: #ffffff;
+  border-color: var(--cat-color);
+  box-shadow: 0 4px 12px rgba(6, 182, 212, 0.2);
+}
+
+.category-emoji, .category-icon { margin-right: 6px; }
+
+
 
 /* =========================
-   ACTIVE CHIP
+   PREMIUM LOCATION CARDS
 ========================= */
-.category-chip.active {
-  --background: var(--base);
-  --color: #ffffff;
-
-  border-color: var(--base);
-}
-
-/* =========================
-   OPTIONAL: Hover (desktop)
-========================= */
-.category-chip:hover {
-  filter: brightness(1.1);
-}
-
-
-/*********************************************
- * LIST CARD TYPOGRAPHY
- *********************************************/
-.title-text {
-  font-size: 21px;
-  margin: 3px 0 0;
-}
-
-.type-text {
-  margin-top: 3px;
-  font-size: 14px;
-  color: var(--ion-color-medium);
-  margin-bottom: 3px;
+.modern-location-card {
+  margin: 16px 0;
+  background: var(--ion-card-background, #ffffff);
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+  border: 1px solid rgba(var(--ion-color-dark-rgb), 0.05);
+  transition: all 0.3s ease;
+  cursor: pointer;
+  position: relative;
 }
 
 .active-card {
-  border: 2px solid var(--ion-color-carrot);
+  border: 1.5px solid var(--ion-color-carrot);
+  box-shadow: 0 0 0 2px var(--ion-color-carrot), 0 8px 25px rgba(234, 113, 10, 0.15);
 }
 
-/*********************************************
- * GOOGLE-MAPS STYLE PANEL (SLIDING PANEL)
- *********************************************/
-.bottom-panel-wrapper {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
+.card-inner {
+  display: flex;
+  height: 145px;
+}
 
-  height: 55vh;
-  background: var(--ion-background-color);
+.card-image-section {
+  width: 125px;
+  height: 100%;
+  flex-shrink: 0;
+  position: relative;
+  background: var(--ion-background-color-step-100, #f0f0f0);
+}
 
-  border-radius: 22px 22px 0 0;
-  box-shadow: 0 -5px 18px rgba(0, 0, 0, 0.1);
+.card-image-section img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
 
+.card-info-section {
+  flex: 1;
+  padding: 14px 16px;
   display: flex;
   flex-direction: column;
-
-  z-index: 11;
-}
-
-/* Hidden (collapsed) */
-.bottom-panel-wrapper.collapsed {
-  transform: translateY(calc(40vh - 40px));
-}
-
-/*********************************************
- * PANEL CONTENT AREA
- *********************************************/
-.panel-content {
-  height: 100%;
-  --padding-top: 0;
-  --padding-bottom: 20px;
-  overflow-y: auto;
-}
-
-/*********************************************
- * PANEL TOGGLE BUTTONS (shared + variants)
- *********************************************/
-:root {
-  --map-height: 45vh;
-  --panel-height: 55vh;
-  --toggle-offset-open: -15vh;
-  --toggle-offset-collapsed: 35vh;
-}
-
-.panel-toggle {
-  padding: 6px 14px;
-  background: var(--ion-background-color);
-  border-radius: 30px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
-  color: var(--ion-color-carrot);
-
-  position: fixed;
-  left: 50%;
-  transform: translate(-50%, 0);
-  z-index: 200;
-  cursor: pointer;
-
-  transition: transform 0.50s cubic-bezier(.25, .8, .25, 1); /* smoother easing */
-}
-
-/* Panel OPEN — on top edge of panel */
-.toggle-open {
-  transform: translate(
-      -50%,
-      calc(var(--map-height) + var(--toggle-offset-open))
-  );
-}
-
-
-/* Panel COLLAPSED — floating above nav */
-.toggle-collapsed {
-  transform: translate(
-      -50%,
-      calc(100vh - var(--toggle-offset-collapsed))
-  );
-}
-
-/*********************************************
- * TOOLBAR INLINE UTILITY
- *********************************************/
-.toolbar-inline {
-  --min-height: auto;
-  --padding-start: 0;
-  --padding-end: 0;
-  --padding-top: 0;
-  --padding-bottom: 0;
-  --background: none;
-}
-
-.toolbar-inline-content {
-  display: flex;
-  align-items: center;
+  justify-content: flex-start;
   gap: 8px;
-  padding: 4px 16px;
+  min-width: 0;
 }
 
-/* FAB when panel is OPEN */
-.fab-with-panel {
-  position: absolute;
-  bottom: 60vh; /* Raises button above panel */
-  right: 20px;
-  z-index: 15;
-  transition: bottom 0.25s ease;
+.info-top .title-text {
+  margin: 0 0 4px 0;
+  font-size: 1.1rem;
+  font-weight: 850;
+  line-height: 1.25;
+  color: var(--ion-color-dark);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
-/* FAB when panel is CLOSED */
-.fab-collapsed {
-  position: absolute;
-  bottom: 25vh; /* Slightly above collapsed toggle */
-  right: 20px;
-  z-index: 15;
-  transition: bottom 0.50s ease;
-}
-
-/* Overall pin */
-.pin {
-  position: relative;
-  width: 34px;
-  height: 46px;
-}
-
-/* White circle head */
-.pin-head {
-  width: 25px;
-  height: 25px;
-  background: rgba(255, 255, 255, 0.8);
-  border-radius: 50%;
-  position: absolute;
-  top: 5px;
-  left: 4px;
-
+.metas {
   display: flex;
   align-items: center;
-  justify-content: center;
-
-  font-size: 14px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
-  z-index: 2;
+  gap: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--ion-color-medium);
+  opacity: 0.8;
 }
 
-/* Colored body */
-.pin-body {
-  width: 35px;
-  height: 35px;
-  position: absolute;
-  top: 1px;
+.meta-dot { font-size: 1rem; opacity: 0.5; }
 
-  border-radius: 50% 50% 50% 0;
-  transform: rotate(-45deg);
-
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
-}
-
-.bottom-panel-wrapper.list-only {
-  height: 100vh;
-  top: 0;
-  bottom: auto;
-  border-radius: 0;
-}
-
-
-.bottom-panel-wrapper.list-only .explore-toolbar {
-  margin-top: 0;
-  border-radius: 0;
-}
-
-
-/* =========================
-   VIEW MODE SWITCH (BASE)
-========================= */
-.view-mode-switch {
+.info-bottom {
+  margin-top: auto;
   display: flex;
+  flex-direction: column;
   gap: 6px;
 }
 
-.view-mode-switch button {
-  border: none;
-  padding: 6px 10px;
-  border-radius: 10px;
-
-  font-size: 13px;
-  font-weight: 500;
-
-  background: transparent;
+.distance {
+  font-size: 0.8rem;
+  font-weight: 800;
   color: var(--ion-color-medium);
+}
+
+.action-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin-left: -12px; /* Pull button to align text */
+  margin-top: 4px;
+}
+
+/* =========================
+   PARTNER TIERS (EXPLORE)
+========================= */
+/* Partner Tiers (Explore) */
+.modern-location-card {
+  --tier-bg: var(--ion-background-color, #ffffff);
+  --tier-border: rgba(var(--ion-color-dark-rgb), 0.05);
+  background: var(--tier-bg) !important;
+  border-color: var(--tier-border) !important;
+  overflow: hidden;
+}
+
+.modern-location-card.tier-gold {
+  --tier-bg: var(--tier-gold-bg);
+  --tier-border: #facc15;
+}
+
+.modern-location-card.tier-silver {
+  --tier-bg: var(--tier-silver-bg);
+  --tier-border: #cbd5e1;
+}
+
+.modern-location-card.tier-bronze {
+  --tier-bg: var(--tier-bronze-bg);
+  --tier-border: #fed7aa;
+}
+
+/* Dark Mode Overrides */
+
+
+
+
+
+
+/* Tier Badges (below) */
+
+.tier-header { margin-bottom: 6px; display: flex; }
+
+.tier-badge {
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 0.55rem;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  color: #fff;
+}
+
+.tier-badge.gold { background: linear-gradient(135deg, #facc15 0%, #ca8a04 100%); color: #422006; }
+.tier-badge.silver { background: linear-gradient(135deg, #cbd5e1 0%, #64748b 100%); color: #0f172a; }
+.tier-badge.bronze { background: linear-gradient(135deg, #d97706 0%, #78350f 100%); color: #fff; }
+
+.premium-verified {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: 0.65rem;
+  font-weight: 900;
+  width: 130px; /* Fixed width for consistency */
+  height: 30px;
+  border-radius: 10px;
+  letter-spacing: 0.02em;
+  background: rgba(var(--ion-color-dark-rgb), 0.05);
+  flex-shrink: 0;
+}
+
+.tier-gold .premium-verified { color: #ca8a04; background: rgba(202, 138, 4, 0.1); }
+.tier-silver .premium-verified { color: #64748b; background: rgba(100, 116, 139, 0.1); }
+.tier-bronze .premium-verified { color: #d97706; background: rgba(217, 119, 6, 0.1); }
+
+/* Metallic Flare */
+.premium-flare {
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    110deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0) 35%,
+    rgba(255, 255, 255, 0.45) 50%,
+    rgba(255, 255, 255, 0) 65%,
+    transparent 70%
+  );
+  animation: shine-flare 5s infinite cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
+  z-index: 10;
+}
+
+@keyframes shine-flare {
+  0% { transform: translateX(0); }
+  25% { transform: translateX(300%); }
+  100% { transform: translateX(300%); }
+}
+
+/* FLOATING RESULTS BAR (HORIZONTAL SLIDER) */
+.floating-results-bar {
+  position: absolute;
+  bottom: calc(var(--ion-safe-area-bottom, 0px) + 8px); /* Lowered position */
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  pointer-events: none;
+}
+
+.horizontal-scroll-wrapper {
+  display: flex;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 6px 0 6px;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  pointer-events: auto;
+  scrollbar-width: none;
+}
+
+.horizontal-scroll-wrapper::-webkit-scrollbar {
+  display: none;
+}
+
+.cards-track {
+  display: flex;
+  padding: 0 16px;
+  gap: 12px;
+}
+
+.modern-location-card {
+  flex: 0 0 85vw;
+  max-width: 380px;
+  margin: 0;
+  background: rgba(var(--ion-card-background-rgb, 255, 255, 255), 0.7); /* Glass base */
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3); /* Glass border */
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
-
-  transition: all 0.2s ease;
+  position: relative;
+  scroll-snap-align: center;
 }
 
-.view-mode-switch button.active {
-  background: var(--ion-color-carrot);
-  color: white;
+.modern-location-card {
+  flex: 0 0 85vw;
+  max-width: 380px;
+  margin: 0;
+  /* Light Mode Base - higher opacity for text readability */
+  background: rgba(255, 255, 255, 0.85); 
+  backdrop-filter: blur(25px) saturate(200%);
+  -webkit-backdrop-filter: blur(25px) saturate(200%);
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  position: relative;
+  scroll-snap-align: center;
 }
 
-.view-mode-switch button:hover {
-  filter: brightness(1.1);
+/* Dark Mode Base Case */
+.ion-palette-dark .modern-location-card {
+  background: rgba(28, 28, 30, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+}
+
+@media (min-width: 768px) {
+  .modern-location-card {
+    flex: 0 0 350px;
+  }
+}
+
+.card-inner {
+  display: flex;
+  height: 155px; 
+}
+
+.card-image-section {
+  width: 130px;
+  height: 100%;
+  flex-shrink: 0;
+  position: relative;
+  background: var(--ion-background-color-step-100, #f0f0f0);
+}
+
+.card-image-section img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.floating-tier-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 5;
+}
+
+.tier-pill {
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.65rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+.tier-pill.gold { background: linear-gradient(135deg, #fbbf24 0%, #d97706 100%); color: #451a03; }
+.tier-pill.silver { background: linear-gradient(135deg, #94a3b8 0%, #475569 100%); color: #f8fafc; }
+.tier-pill.bronze { background: linear-gradient(135deg, #b45309 0%, #78350f 100%); color: #fff; }
+
+.card-info-section {
+  flex: 1;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-width: 0; 
+}
+
+.title-text {
+  margin: 0 0 4px 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--ion-color-dark);
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.verified-badge {
+  color: #3897f0; /* Instagram Blue */
+  font-size: 1rem;
+  filter: drop-shadow(0 0 2px rgba(56, 151, 240, 0.3));
+  flex-shrink: 0;
+  vertical-align: middle;
+}
+
+.metas {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.meta {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--ion-color-step-600, #666);
+}
+
+.ion-palette-dark .meta { color: var(--ion-color-step-400, #aaa); }
+
+.meta-dot { opacity: 0.5; }
+
+.distance {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: var(--ion-color-carrot);
+  margin-top: 2px;
+}
+
+.info-actions {
+  margin-top: auto;
+}
+
+.action-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.detail-btn {
+  --padding-start: 12px;
+  --padding-end: 12px;
+  height: 34px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  background: rgba(var(--ion-color-carrot-rgb), 0.12);
+  border-radius: 10px;
+  margin: 0;
+}
+
+/* Tier Specific Overrides - ensure contrast in both modes */
+.modern-location-card.tier-gold {
+  background: linear-gradient(135deg, rgba(255, 251, 235, 0.9) 0%, rgba(254, 243, 199, 0.9) 100%) !important;
+  border-color: rgba(251, 191, 36, 0.45) !important;
+}
+.modern-location-card.tier-gold .title-text { color: #451a03; }
+.modern-location-card.tier-gold .meta { color: #713f12; }
+
+/* Tiered Dark Mode Overrides */
+.ion-palette-dark .modern-location-card.tier-gold {
+  background: linear-gradient(135deg, rgba(66, 32, 6, 0.5) 0%, rgba(28, 28, 30, 0.8) 100%) !important;
+  border-color: rgba(251, 191, 36, 0.3) !important;
+}
+.ion-palette-dark .modern-location-card.tier-gold .title-text { color: #fef3c7; }
+.ion-palette-dark .modern-location-card.tier-gold .meta { color: #fde68a; }
+
+.modern-location-card.tier-silver {
+  background: linear-gradient(135deg, rgba(248, 250, 252, 0.9) 0%, rgba(226, 232, 240, 0.9) 100%) !important;
+  border-color: rgba(148, 163, 184, 0.4) !important;
+}
+.modern-location-card.tier-silver .title-text { color: #0f172a; }
+
+.modern-location-card.tier-bronze {
+  background: linear-gradient(135deg, rgba(255, 251, 235, 0.9) 0%, rgba(255, 237, 213, 0.9) 100%) !important;
+  border-color: rgba(180, 83, 9, 0.4) !important;
+}
+.modern-location-card.tier-bronze .title-text { color: #431407; }
+
+/* Metallic Flare Animation */
+.premium-flare {
+  position: absolute;
+  top: 0;
+  left: -150%;
+  width: 150%;
+  height: 100%;
+  background: linear-gradient(
+    110deg,
+    transparent 40%,
+    rgba(255, 255, 255, 0.6) 50%,
+    transparent 60%
+  );
+  animation: shine-flare 5s infinite cubic-bezier(0.42, 0, 0.58, 1);
+  pointer-events: none;
+  z-index: 10;
+}
+
+@keyframes shine-flare {
+  0% { transform: translateX(0); }
+  25% { transform: translateX(250%); }
+  100% { transform: translateX(250%); }
+}
+
+.ion-palette-dark .premium-flare {
+  background: linear-gradient(
+    110deg,
+    transparent 40%,
+    rgba(255, 255, 255, 0.25) 50%,
+    transparent 60%
+  );
+}
+
+/* =========================
+   NEW UI ELEMENTS (MODE TOGGLE & FAB)
+========================= */
+.map-floating-actions {
+  position: absolute;
+  bottom: calc(var(--ion-safe-area-bottom, 0px) + 180px);
+  right: 16px;
+  z-index: 1001;
+  pointer-events: auto;
+}
+
+.locate-me-btn {
+  --background: rgba(var(--ion-background-color-rgb), 0.85);
+  --color: var(--ion-color-carrot);
+  --box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+  --border-radius: 14px;
+  width: 48px;
+  height: 48px;
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+}
+
+.list-view-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 800;
+  background: var(--ion-background-color);
+  padding-top: 140px; /* Below search/filters */
+  overflow-y: auto;
+}
+
+.list-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 0 16px 100px;
+}
+
+.list-header {
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(var(--ion-color-dark-rgb), 0.05);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sort-btn-simple {
+  --padding-start: 8px;
+  --padding-end: 8px;
+  height: 32px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--ion-color-medium);
+  margin: 0;
+}
+
+.sort-btn-simple ion-icon {
+  color: var(--ion-color-carrot);
+  font-size: 18px;
+}
+
+.list-header h3 {
+  font-size: 1.4rem;
+  font-weight: 800;
+  margin: 0;
+  color: var(--ion-color-dark);
+}
+
+.vertical-cards-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.list-mode-card {
+  flex: none !important;
+  max-width: none !important;
+  width: 100% !important;
+}
+
+.map-dimmed {
+  filter: grayscale(0.5) blur(2px);
+  opacity: 0.8;
+}
+
+/* Transitions */
+.fade-slide-enter-active,
+.fade-slide-leave-active {
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.fade-slide-enter-from {
+  opacity: 0;
+  transform: translateY(30px);
+}
+
+.fade-slide-leave-to {
+  opacity: 0;
+  transform: translateY(30px);
+}
+
+.empty-state {
+  padding: 60px 20px;
+  text-align: center;
+  color: var(--ion-color-medium);
+}
+
+.empty-state ion-icon {
+  font-size: 64px;
+  margin-bottom: 16px;
+  opacity: 0.3;
 }
 
 /* =========================
@@ -1839,11 +2323,11 @@ button.gm-ui-hover-effect > span {
    FLOATING (Map / Both)
 ========================= */
 .view-mode-switch.floating {
-  position: absolute;
-  top: 1vh;
+  position: fixed;
+  top: 150px; /* Below the search/category header */
   left: 50%;
   transform: translateX(-50%);
-  z-index: 20;
+  z-index: 2000; /* Above header */
 }
 
 /* =========================
@@ -1912,21 +2396,40 @@ button.gm-ui-hover-effect > span {
 
 .clear-chip {
   --background: rgba(255,255,255,0.08);
-  --color: var(--ion-color-medium);
-
+  --color: var(--ion-color-carrot);
   border: 1px dashed var(--ion-color-medium);
-  border-radius: 999px;
-  font-weight: 500;
+  border-radius: 12px;
+  font-weight: 700;
+  width: auto;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 38px;
+  padding: 0 16px;
+  margin: 0;
+  background: var(--ion-background-color) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
 
-  width: 30rem;
-  display: inline-flex;       /* ensure flex */
-  align-items: center;        /* vertical center */
-  justify-content: center;    /* horizontal center */
-  height: 28px;               /* control height */
-  padding: 0 10px;            /* balanced padding */
-  margin: 8px 1px 5px 1px
+.floating-clear {
+  border: 1px solid var(--ion-color-carrot) !important;
+  color: var(--ion-color-carrot) !important;
+  margin-left: 0;
+  flex-shrink: 0;
 }
 
 
 
+</style>
+
+<style>
+/* Force readable text colors for tiered cards in dark mode */
+
+/* Force readable text colors for tiered cards in dark mode */
+.ion-palette-dark .modern-location-card.tier-gold .title-text,
+.ion-palette-dark .modern-location-card.tier-silver .title-text,
+.ion-palette-dark .modern-location-card.tier-bronze .title-text {
+  color: #ffffff !important;
+}
 </style>

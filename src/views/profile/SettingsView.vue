@@ -13,60 +13,55 @@
       <!-- 🌙 Appearance -->
       <ion-list style="border-radius: 12px;">
         <ion-list-header>{{ $t('settings.appearance')}}</ion-list-header>
-        <ion-list :inset="true">
-          <ion-item>
-            <ion-toggle
-                :checked="paletteToggle"
-                @ionChange="(e) => {paletteToggle = e.detail.checked; toggleDarkPalette(e.detail.checked);}"
-            >
-              {{ $t('settings.darkMode') }}
-            </ion-toggle>
-          </ion-item>
-        </ion-list>
+        <ion-item lines="full" style="--border-radius: 12px;">
+          <ion-toggle
+              :checked="paletteToggle"
+              @ionChange="(e) => {paletteToggle = e.detail.checked; toggleDarkPalette(e.detail.checked);}"
+          >
+            {{ $t('settings.darkMode') }}
+          </ion-toggle>
+        </ion-item>
       </ion-list>
 
-      <!-- 🔒 Privacy: only if logged in -->
+      <!-- 🔒 Privacy -->
       <ion-list
           v-if="currentUser"
           style="border-radius: 12px; margin-top: 20px;"
       >
         <ion-list-header>{{ $t('settings.privacy')}}</ion-list-header>
-        <ion-list :inset="true">
-          <ion-item v-if="isPublicLeaderboard !== null">
+        <ion-item v-if="isPublicProfile !== null" lines="full" style="--border-radius: 12px;">
+          <div style="width: 100%; padding: 8px 0;">
             <ion-toggle
-                :checked="!!isPublicLeaderboard"
-                @ionChange="(e) => setPublicLeaderboard(e.detail.checked)"
+                :checked="!!isPublicProfile"
+                @ionChange="(e) => setPublicProfile(e.detail.checked)"
             >
-              {{ $t('settings.leaderboardPrivacy') }}
+              {{ $t('settings.publicProfile') }}
             </ion-toggle>
-          </ion-item>
-        </ion-list>
+            <ion-note style="display: block; margin-top: 8px; font-size: 0.85rem;">
+              {{ $t('settings.publicProfileNote') }}
+            </ion-note>
+          </div>
+        </ion-item>
       </ion-list>
 
       <!-- 🌐 Language -->
       <ion-list style="border-radius: 12px; margin-top: 20px;">
         <ion-list-header>{{ $t('settings.language')}}</ion-list-header>
-        <ion-list :inset="true">
-          <ion-item>
-            <ion-select
-                interface="action-sheet"
-                placeholder="Select Language"
-                v-model="lang"
-                @ionChange="changeLanguage"
-            >
-              <ion-select-option value="en">🇺🇸 English</ion-select-option>
-              <ion-select-option value="id">🇮🇩 Bahasa Indonesia</ion-select-option>
-              <ion-select-option value="ms">🇲🇾 Bahasa Melayu</ion-select-option>
-              <ion-select-option value="zh">🇹🇼 繁體中文</ion-select-option>
-            </ion-select>
+        <ion-radio-group :value="lang" @ionChange="(e) => changeLanguage(e.detail.value)">
+          <ion-item v-for="l in languages" :key="l.code" lines="full">
+            <div slot="start" style="width: 32px; height: 22px; border-radius: 4px; overflow: hidden; border: 1px solid rgba(0,0,0,0.1); margin-right: 12px;">
+              <img :src="l.flag" :alt="l.name" style="width: 100%; height: 100%; object-fit: cover;" />
+            </div>
+            <ion-label style="font-weight: 500;">{{ l.name }}</ion-label>
+            <ion-radio slot="end" :value="l.code"></ion-radio>
           </ion-item>
-        </ion-list>
+        </ion-radio-group>
       </ion-list>
     </ion-content>
   </ion-page>
 </template>
 
-<script lang="ts">
+<script setup lang="ts">
 import {
   IonBackButton,
   IonButtons,
@@ -79,84 +74,41 @@ import {
   IonToolbar,
   IonTitle,
   IonPage,
-  IonSelect,
-  IonSelectOption
+  IonRadio,
+  IonRadioGroup,
+  IonNote,
+  IonLabel
 } from '@ionic/vue'
-import { personCircle, personCircleOutline, sunnyOutline, sunny } from 'ionicons/icons'
-import { defineComponent, ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-
-// 👉 import global state directly
 import {
   currentUser,
-  isPublicLeaderboard,
-  setPublicLeaderboard,
+  isPublicProfile,
+  setPublicProfile,
 } from '@/composables/userProfile'
+import { useTheme } from '@/composables/useTheme'
 
-export default defineComponent({
-  components: {
-    IonBackButton,
-    IonButtons,
-    IonContent,
-    IonHeader,
-    IonItem,
-    IonList,
-    IonListHeader,
-    IonToggle,
-    IonToolbar,
-    IonTitle,
-    IonPage,
-    IonSelect,
-    IonSelectOption
-  },
-  setup() {
-    const { locale } = useI18n()
-    const lang = ref(locale.value)
+const { locale } = useI18n()
+const lang = ref(locale.value)
 
-    const changeLanguage = () => {
-      locale.value = lang.value
-      localStorage.setItem('lang', lang.value)
-    }
+const languages = [
+  { code: 'en', name: 'English', flag: 'https://flagcdn.com/w80/us.png' },
+  { code: 'zh', name: '繁體中文', flag: 'https://flagcdn.com/w80/tw.png' },
+  { code: 'id', name: 'Bahasa Indonesia', flag: 'https://flagcdn.com/w80/id.png' },
+  { code: 'ms', name: 'Bahasa Melayu', flag: 'https://flagcdn.com/w80/my.png' }
+]
 
-    const paletteToggle = ref(false)
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)')
+const changeLanguage = (newLang: string) => {
+  if (!newLang) return
+  lang.value = newLang
+  locale.value = newLang
+  localStorage.setItem('lang', newLang)
+}
 
-    const toggleDarkPalette = (enabled: boolean) => {
-      document.documentElement.classList.toggle('ion-palette-dark', enabled)
-      localStorage.setItem('preferred-theme', enabled ? 'dark' : 'light')
-    }
+// Dark Mode logic
+const { isDark: paletteToggle, toggleDarkPalette, initTheme } = useTheme()
 
-    const initializeDarkPalette = (isDark: boolean) => {
-      paletteToggle.value = isDark
-      toggleDarkPalette(isDark)
-    }
-
-    const savedTheme = localStorage.getItem('preferred-theme')
-    if (savedTheme === 'dark') {
-      initializeDarkPalette(true)
-    } else if (savedTheme === 'light') {
-      initializeDarkPalette(false)
-    } else {
-      initializeDarkPalette(prefersDark.matches)
-    }
-
-    prefersDark.addEventListener('change', (mediaQuery) =>
-        initializeDarkPalette(mediaQuery.matches)
-    )
-
-    return {
-      personCircle,
-      personCircleOutline,
-      sunnyOutline,
-      sunny,
-      paletteToggle,
-      toggleDarkPalette,
-      changeLanguage,
-      lang,
-      currentUser,
-      isPublicLeaderboard,
-      setPublicLeaderboard
-    }
-  }
+onMounted(() => {
+  initTheme()
 })
 </script>

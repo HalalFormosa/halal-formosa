@@ -1,25 +1,31 @@
-import { StatusBar, Style } from '@capacitor/status-bar'
+import { Style, StatusBar } from '@capacitor/status-bar'
 import { NavigationBar } from '@capgo/capacitor-navigation-bar'
 import { Capacitor } from '@capacitor/core'
 
-export async function initSystemBars() {
+/**
+ * Legacy init function. 
+ * Now dynamic updates are handled in useTheme.ts
+ */
+export async function initSystemBars(isDark: boolean = false) {
     if (!Capacitor.isNativePlatform()) return
 
-    // Status bar (white icons on dark bg)
     try {
-        await StatusBar.setStyle({ style: Style.Light }) // white text/icons
-        await StatusBar.setBackgroundColor({ color: '#000000' })
+        if (isDark) {
+            await StatusBar.setStyle({ style: Style.Light })
+            await StatusBar.setBackgroundColor({ color: '#1c1c1d' })
+            await NavigationBar.setNavigationBarColor({
+                color: '#1c1c1d',
+                darkButtons: false,
+            })
+        } else {
+            await StatusBar.setStyle({ style: Style.Dark })
+            await StatusBar.setBackgroundColor({ color: '#ffffff' })
+            await NavigationBar.setNavigationBarColor({
+                color: '#ffffff',
+                darkButtons: true,
+            })
+        }
     } catch (e) {
-        console.warn('StatusBar not available', e)
-    }
-
-    // Navigation bar (white icons on dark bg)
-    try {
-        await NavigationBar.setNavigationBarColor({
-            color: '#000000',
-            darkButtons: false, // false = white icons
-        })
-    } catch (e) {
-        console.warn('NavigationBar not available', e)
+        console.warn('System bars init failed:', e)
     }
 }

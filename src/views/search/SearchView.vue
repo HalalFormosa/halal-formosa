@@ -16,91 +16,93 @@
           :showProfile="true"
       />
 
-      <ion-toolbar style="padding: 8px;">
-        <div style="display: flex; align-items: center; width: 100%; gap: 8px;">
-          <!-- Searchbar -->
-          <ion-searchbar
-              :placeholder="$t('search.placeholder')"
-              :debounce="1000"
-              @ionInput="handleSearchInput($event)"
-              :value="searchQuery"
-              class="rounded"
-              style="flex: 1;"
-          ></ion-searchbar>
-
-          <!-- Scan Button (Styled like FAB but inline) -->
-          <ion-button
-              @click="startScan"
-              v-if="!scanning"
-              color="carrot"
-              style="
-              width: 30px;
-              height: 50px;
-              min-width: 50px;
-              padding: 0;
-              display: flex;
-              justify-content: center;
-              align-items: center;
-              "
-          >
-            <ion-icon :icon="barcodeOutline" style="font-size: 22px;"/>
+      <ion-toolbar class="actions-toolbar">
+        <div class="header-main-actions">
+          <!-- 🎚️ Sort Button (Left Side) -->
+          <ion-button fill="clear" class="classic-action-btn sort-btn-wrapper" id="sort-trigger">
+            <ion-icon :icon="sortIcon" />
+            <span class="btn-label">{{ sortLabel }}</span>
           </ion-button>
+
+          <ion-popover trigger="sort-trigger" trigger-action="click" :dismiss-on-select="true" class="width-190">
+            <ion-list lines="none">
+              <ion-item button @click="sortBy = 'recent'">
+                <ion-icon :icon="timeOutline" slot="start" />
+                <ion-label>{{ $t('search.sortRecent') }}</ion-label>
+                <ion-icon v-if="sortBy === 'recent'" :icon="checkmarkCircle" slot="end" color="success" style="font-size: 14px;" />
+              </ion-item>
+              
+              <ion-item button @click="sortBy = 'trending'">
+                <ion-icon :icon="trendingUpOutline" slot="start" />
+                <ion-label>{{ $t('search.sortTrending') }}</ion-label>
+                <ion-icon v-if="sortBy === 'trending'" :icon="checkmarkCircle" slot="end" color="success" style="font-size: 14px;" />
+              </ion-item>
+
+              <ion-item button @click="sortBy = 'views'">
+                <ion-icon :icon="flameOutline" slot="start" />
+                <ion-label>{{ $t('search.sortViews') }}</ion-label>
+                <ion-icon v-if="sortBy === 'views'" :icon="checkmarkCircle" slot="end" color="success" style="font-size: 14px;" />
+              </ion-item>
+
+              <ion-item v-if="canShowForYouSort" button @click="sortBy = 'for_you'">
+                <ion-icon :icon="sparklesOutline" slot="start" />
+                <ion-label>{{ $t('search.sortForYou') }}</ion-label>
+                <ion-icon v-if="sortBy === 'for_you'" :icon="checkmarkCircle" slot="end" color="success" style="font-size: 14px;" />
+              </ion-item>
+            </ion-list>
+          </ion-popover>
+
+
+          <div class="right-actions-group">
+            <!-- 🔍 Search Toggle Button -->
+            <ion-button
+                fill="clear"
+                @click="showSearchbar = !showSearchbar"
+                :color="showSearchbar ? 'carrot' : 'dark'"
+                class="classic-action-btn"
+            >
+              <ion-icon :icon="showSearchbar ? closeCircle : searchOutline" />
+            </ion-button>
+
+            <!-- 📷 Scan Button (Classic Style) -->
+            <ion-button
+                @click="startScan"
+                v-if="!scanning"
+                color="carrot"
+                class="classic-scan-btn"
+            >
+              <ion-icon :icon="barcodeOutline" />
+            </ion-button>
+
+            <!-- 🌪️ Filter Toggle -->
+            <ion-button fill="clear" @click="toggleFilters" class="classic-action-btn">
+              <ion-icon :icon="funnelOutline" />
+              <div v-if="hasActiveFilters" class="badge-dot"></div>
+            </ion-button>
+          </div>
         </div>
       </ion-toolbar>
 
-      <!-- Row: Filters -->
-      <ion-toolbar class="search-toolbar">
-        <div style="display:flex; align-items:center; justify-content:space-between; width:100%;">
-          <ion-button
-              fill="clear"
-              size="small"
-              class="sort-button"
-          >
-            <!-- ✅ Visible label (your typography) -->
-            <ion-text class="toolbar-label ion-padding-horizontal">
-              {{ sortLabel }}
-            </ion-text>
-            <ion-icon :icon="chevronDownOutline"/>
-
-            <!-- ✅ Hidden controller -->
-            <ion-select
-                v-model="sortBy"
-                interface="popover"
-                class="hidden-select"
-                :interface-options="{ cssClass: 'sort-popover' }"
-            >
-              <ion-select-option value="recent">
-                {{ $t('search.sortRecent') }}
-              </ion-select-option>
-              <ion-select-option value="views">
-                {{ $t('search.sortViews') }}
-              </ion-select-option>
-              <!-- ✨ For You (only if logged in) -->
-              <ion-select-option
-                  v-if="canShowForYouSort"
-                  value="for_you"
-              >
-                {{ $t('search.sortForYou') }}
-              </ion-select-option>
-            </ion-select>
-          </ion-button>
-
-
-          <ion-button fill="clear" size="small" @click="toggleFilters">
-            <ion-text class="toolbar-label ion-padding-horizontal">
-              <ion-icon :icon="funnelOutline" style="vertical-align: middle; margin-right: 6px;"/>
-              <strong>{{ $t('search.filtersLabel') }}</strong>
-            </ion-text>
-
-            <ion-icon :icon="showFilters ? chevronUpOutline : chevronDownOutline"/>
-          </ion-button>
-        </div>
-
-        <transition name="collapse">
-          <div v-show="showFilters" class="filter-section">
-
+      <transition name="fade-down">
+        <ion-toolbar v-if="showSearchbar" class="search-row-toolbar">
+          <div class="search-container">
+            <ion-searchbar
+                :placeholder="$t('search.placeholder')"
+                :debounce="1000"
+                @ionInput="handleSearchInput($event)"
+                :value="searchQuery"
+                class="compact-searchbar"
+                :animated="true"
+            ></ion-searchbar>
+          </div>
+        </ion-toolbar>
+      </transition>
+      <!-- Filter Section (Still inside header, below search if open) -->
+      <transition name="collapse">
+        <ion-toolbar v-show="showFilters" class="filter-toolbar">
+          <div class="filter-section">
             <!-- Stores -->
-            <div style="margin: 8px 0;">
+            <div class="filter-group">
               <div class="filter-title">
                 <ion-icon :icon="storefrontOutline"/>
                 {{ $t('search.filters.stores') }}
@@ -125,7 +127,7 @@
             </div>
 
             <!-- Categories -->
-            <div style="margin: 8px 0;">
+            <div class="filter-group">
               <div class="filter-title">
                 <ion-icon :icon="pricetagsOutline"/>
                 {{ $t('search.filters.categories') }}
@@ -143,22 +145,24 @@
                   <ion-chip
                       v-for="cat in categories"
                       :key="cat.id"
-                      :class="[
-  'category-chip',
-  activeCategories.some(c => c.id === cat.id)
-    ? 'chip-carrot'
-    : 'chip-medium'
-]"
+                      class="modern-category-chip"
+                      :class="{ active: activeCategories.some(c => c.id === cat.id) }"
+                      :style="{ 
+                        '--cat-color': 'var(--ion-color-carrot)',
+                        '--cat-contrast': 'var(--ion-color-carrot-contrast)',
+                        '--cat-bg': activeCategories.some(c => c.id === cat.id) ? 'var(--ion-color-carrot)' : 'transparent'
+                      }"
                       @click="toggleCategory(cat)"
                   >
-                    <ion-label>{{ categoryIcons[cat.name] || '📦' }} {{ cat.name }}</ion-label>
+                    <span class="category-emoji">{{ categoryIcons[cat.name] || '📦' }}</span>
+                    <ion-label>{{ $te('search.categoriesList.' + cat.name) ? $t('search.categoriesList.' + cat.name) : cat.name }}</ion-label>
                   </ion-chip>
                 </template>
               </div>
             </div>
 
             <!-- Status Filter -->
-            <div style="margin: 8px 0;">
+            <div class="filter-group">
               <div class="filter-title">
                 <ion-icon :icon="shieldCheckmarkOutline"/>
                 {{ $t('search.filters.statuses') }}
@@ -167,20 +171,20 @@
                 <ion-chip
                     v-for="status in statuses"
                     :key="status.key"
-                    :class="[
-    'category-chip',
-    activeStatuses.includes(status.key)
-      ? `chip-${STATUS_COLOR_MAP[status.key]}`
-      : 'chip-medium'
-  ]"
+                    class="modern-category-chip"
+                    :class="{ active: activeStatuses.includes(status.key) }"
+                    :style="{ 
+                      '--cat-color': `var(--ion-color-${STATUS_COLOR_MAP[status.key]})`,
+                      '--cat-contrast': `var(--ion-color-${STATUS_COLOR_MAP[status.key]}-contrast)`,
+                      '--cat-bg': activeStatuses.includes(status.key) ? `var(--ion-color-${STATUS_COLOR_MAP[status.key]})` : 'transparent'
+                    }"
                     @click="toggleStatus(status.key)"
                 >
+                  <span class="category-emoji">{{ status.emoji }}</span>
                   <ion-label>
-                    {{ status.emoji }} {{ $t(`search.status.${status.key}`) }}
+                    {{ $t(`search.status.${status.key}`) }}
                   </ion-label>
                 </ion-chip>
-
-
               </div>
             </div>
 
@@ -194,12 +198,9 @@
                 {{ $t('search.clear') }}
               </ion-chip>
             </div>
-
           </div>
-        </transition>
-
-
-      </ion-toolbar>
+        </ion-toolbar>
+      </transition>
 
     </ion-header>
     <ion-content ref="contentRef">
@@ -232,40 +233,42 @@
 
           <!-- Skeleton loader -->
           <template v-if="loadingProducts && results.length === 0 && !showForYouGate">
-            <ion-card v-for="n in 10" :key="'skeleton-' + n" class="product-card">
-              <div style="display: flex; align-items: center;">
-                <!-- Skeleton Image -->
-                <ion-skeleton-text
-                    animated
-                    style="width: 115px; height: 115px; border-radius: 10px;"
-                ></ion-skeleton-text>
-
-                <!-- Skeleton Text & Chip -->
-                <div
-                    style="flex: 1; margin-left: 12px; display: flex; flex-direction: column; justify-content: space-between;">
-                  <div>
-                    <ion-skeleton-text
-                        animated
-                        style="width: 70%; height: 20px; margin-bottom: 8px;"
-                    ></ion-skeleton-text>
-                    <ion-skeleton-text
-                        animated
-                        style="width: 50%; height: 14px;"
-                    ></ion-skeleton-text>
-                  </div>
-
-                  <!-- Skeleton Chip -->
+            <div class="product-grid">
+              <ion-card v-for="n in 12" :key="'skeleton-' + n" class="product-card" style="margin: 0;">
+                <div style="display: flex; align-items: center; padding: 12px;">
+                  <!-- Skeleton Image -->
                   <ion-skeleton-text
                       animated
-                      style="width: 80px; height: 28px; border-radius: 12px; margin-top: 12px;"
+                      style="width: 115px; height: 110px; border-radius: 10px; flex-shrink: 0;"
                   ></ion-skeleton-text>
+  
+                  <!-- Skeleton Text & Chip -->
+                  <div
+                      style="flex: 1; margin-left: 12px; display: flex; flex-direction: column; justify-content: space-between;">
+                    <div>
+                      <ion-skeleton-text
+                          animated
+                          style="width: 70%; height: 20px; margin-bottom: 8px;"
+                      ></ion-skeleton-text>
+                      <ion-skeleton-text
+                          animated
+                          style="width: 50%; height: 14px;"
+                      ></ion-skeleton-text>
+                    </div>
+  
+                    <!-- Skeleton Chip -->
+                    <ion-skeleton-text
+                        animated
+                        style="width: 80px; height: 24px; border-radius: 12px; margin-top: 12px;"
+                    ></ion-skeleton-text>
+                  </div>
                 </div>
-              </div>
-            </ion-card>
+              </ion-card>
+            </div>
           </template>
 
           <!-- 🔒 For You (Non-Pro Gate MUST COME FIRST) -->
-          <template v-if="showForYouGate">
+          <template v-else-if="showForYouGate">
             <ion-card class="for-you-info">
               <ion-card-content>
                 <div class="for-you-row">
@@ -338,54 +341,73 @@
               </ion-card-content>
             </ion-card>
 
-            <ion-card
-                class="product-card"
-                v-for="product in results"
-                :key="product.barcode"
-                @click="openDetails(product)"
-                :class="['product-card', getStatusClass(product.status)]"
-            >
-              <div style="display: flex; align-items: center;">
-                <!-- Image -->
-                <ion-thumbnail slot="start" style="width: 115px; height: 115px; border-radius: 10px; overflow: hidden;">
-                  <img
-                      loading="lazy"
-                      :src="product.photo_front_url || 'https://via.placeholder.com/80.webp'"
-                      :alt="product.name"
-                      style="object-fit: cover; width: 100%; height: 100%; border-radius: 8px;"
-                  />
-                </ion-thumbnail>
-
-                <!-- Info block -->
-                <div
-                    style="flex: 1; margin-left: 12px; display: flex; flex-direction: column; justify-content: space-between;">
-                  <div>
-                    <h5 style="margin: 0;">{{ product.name }}</h5>
-
-                    <p style="margin: 4px 0; font-size: 12px; color: var(--ion-color-medium);">
-                      {{ $t('search.viewedCount', { count: product.view_count || 0 }) }}
-                    </p>
-
-                    <p style="margin: 0 0 8px 0; font-size: 13px;">
-                      {{ $t('search.addedDate', { date: fromNowToTaipei(product.created_at) }) }}
-                    </p>
-
+            <div class="product-grid">
+              <div
+                  v-for="product in results"
+                  :key="product.barcode"
+                  :class="[
+                    'modern-product-card', 
+                    getStatusClass(product.status),
+                    product.partner_tier ? 'tier-card-' + product.partner_tier.toLowerCase() : ''
+                  ]"
+                  @click="openDetails(product)"
+              >
+                <div class="card-inner">
+                  <!-- Left: Full Height Image -->
+                  <div class="card-image-section">
+                    <img
+                        loading="lazy"
+                        :src="product.photo_front_url || 'https://via.placeholder.com/150x150.webp?text=No+Photo'"
+                        :alt="product.name"
+                    />
+                    <!-- Floating Status Pill on Image (Bottom Left) -->
+                    <div :class="['floating-status-pill bottom-left', product.status.toLowerCase().replace(' ', '-')]">
+                      <ion-icon :icon="getStatusIcon(product.status)" />
+                      <span>{{ $t('search.status.' + product.status) }}</span>
+                    </div>
+                    <!-- Vertical Separator Strip -->
+                    <div :class="['status-strip', product.status.toLowerCase().replace(' ', '-')]"></div>
                   </div>
-
-                  <!-- Status -->
-                  <ion-chip
-                      :class="product.status === 'Halal' ? 'chip-success'
-    : product.status === 'Muslim-friendly' ? 'chip-primary'
-    : product.status === 'Syubhah' ? 'chip-warning'
-    : product.status === 'Haram' ? 'chip-danger'
-    : 'chip-medium'"
-                      style="align-self: flex-start; font-size: 14px;"
-                  >
-                    {{ $t('search.status.' + product.status) }}
-                  </ion-chip>
+  
+                  <!-- Right: Information -->
+                  <div class="card-info-section">
+                    <!-- TOP: Tier badge + Name -->
+                    <div class="info-top">
+                      <!-- Tier Badge (Gold, Silver, Bronze) -->
+                      <div v-if="product.partner_tier" class="tier-header">
+                        <div :class="['tier-badge', product.partner_tier.toLowerCase()]">
+                          <ion-icon :icon="sparkles" />
+                          <span>{{ $t('home.partnerTier', { tier: (product.partner_tier || '').toUpperCase() }) }}</span>
+                        </div>
+                      </div>
+                      <h3 class="name">{{ product.name }}</h3>
+                    </div>
+  
+                    <!-- BOTTOM: Official partner (if any) + metas, always at the bottom -->
+                    <div class="info-bottom">
+                      <div v-if="product.partner_tier" class="premium-verified-tag">
+                        <ion-icon :icon="shieldCheckmarkOutline" />
+                        <span class="verified-label">{{ $t('search.officialPartner') }}</span>
+                      </div>
+                      <div class="metas" :class="{ 'metas-indent': product.partner_tier }">
+                        <span class="meta">
+                          <ion-icon :icon="eyeOutline" class="meta-icon" />
+                          {{ product.view_count || 0 }}
+                        </span>
+                        <span class="meta-dot">•</span>
+                        <span class="meta">
+                          <ion-icon :icon="timeOutline" class="meta-icon" />
+                          {{ fromNowToTaipei(product.created_at) }}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
+                
+                <!-- Premium Flare for Gold/Silver -->
+                <div v-if="['gold', 'silver'].includes(String(product.partner_tier || '').toLowerCase())" class="premium-flare"></div>
               </div>
-            </ion-card>
+            </div>
           </template>
         </div>
       </div>
@@ -436,10 +458,10 @@
 
 /* ---------------- Imports ---------------- */
 import {
-  IonPage, IonHeader, IonContent, IonSearchbar, IonText, IonModal, IonToolbar, IonButton, IonIcon, IonFooter, IonChip,
+  IonPage, IonHeader, IonContent, IonSearchbar, IonText, IonModal, IonPopover, IonToolbar, IonButton, IonIcon, IonFooter, IonChip,
   IonInfiniteScroll, IonInfiniteScrollContent, IonRefresher, IonRefresherContent,
   IonSkeletonText, IonThumbnail, IonCard, IonCardContent,
-  onIonViewDidEnter, modalController, IonLabel, IonFab, IonFabButton, onIonViewWillEnter, IonSelect, IonSelectOption,
+  onIonViewDidEnter, IonLabel, IonFab, IonFabButton, onIonViewWillEnter, IonList, IonItem,
   toastController
 } from '@ionic/vue'
 import { ref, onMounted, nextTick, watch, computed } from 'vue'
@@ -454,7 +476,15 @@ import {
   chevronUpOutline,
   chevronDownOutline,
   funnelOutline,
-  pricetagsOutline, storefrontOutline, shieldCheckmarkOutline
+  pricetagsOutline, storefrontOutline, shieldCheckmarkOutline,
+  checkmarkCircle, warning, closeCircle, alertCircle, sparkles,
+  swapVerticalOutline,
+  searchOutline,
+  eyeOutline,
+  timeOutline,
+  flameOutline,
+  sparklesOutline,
+  trendingUpOutline
 } from 'ionicons/icons'
 import {Capacitor} from '@capacitor/core'
 import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
@@ -490,7 +520,8 @@ interface Product {
   photo_front_url?: string
   photo_back_url?: string
   created_at?: string
-  view_count?: number   // <-- ADD THIS LINE
+  view_count?: number
+  partner_tier?: 'Gold' | 'Silver' | 'Bronze'
 }
 
 const STATUS_COLOR_MAP: Record<string, string> = {
@@ -512,6 +543,7 @@ const allProducts = ref<Product[]>([])
 const results = ref<Product[]>([])
 const errorMsg = ref('')
 const scanning = ref(false)
+const isScanning = ref(false)
 const searchQuery = ref('')
 const categories = ref<{ id: number; name: string }[]>([])
 const activeCategories = ref<{ id: number; name: string }[]>([])
@@ -542,12 +574,26 @@ const categoryIcons: Record<string, string> = {
   "Spices & Condiments": "🌶️",
   "Vegetarian & Tofu": "🥗",
   "Fresh Meat": "🥩",
+  "Bread & Bakery": "🍞",
+  "Health & Beauty": "💄",
+  "Ready-to-Eat": "🍱",
+  "Spreads & Jams": "🍯",
+  "Fresh Meat & Seafood": "🐟",
+  "Frozen Food": "❄️",
+  "Canned Food": "🥫",
+  "Cooking Oil": "🧴",
+  "Rice & Noodles": "🍚",
+  "Supplements": "💊",
+  "Household Products": "🧹",
+  "Gifts & Hampers": "🎁",
+  "Others": "📦"
 }
 
 const stores = ref<{ id: string; name: string; logo_url?: string }[]>([])
 const activeStores = ref<{ id: string; name: string }[]>([])
 const loadingStores = ref(true)
 const showFilters = ref(false)
+const showSearchbar = ref(false)
 
 
 const statuses = [
@@ -557,7 +603,7 @@ const statuses = [
   {key: 'Haram', emoji: '⛔'}
 ]
 
-const sortBy = ref<'recent' | 'views' | 'for_you'>('recent')
+const sortBy = ref<'recent' | 'views' | 'trending' | 'for_you'>('recent')
 const forYouReason = ref<string | null>(null)
 
 
@@ -799,9 +845,17 @@ function dismissForYouInfo() {
 const { t } = useI18n()
 
 const sortLabel = computed(() => {
-  if (sortBy.value === 'for_you') return t('search.sortForYou')
-  if (sortBy.value === 'views') return t('search.sortViews')
-  return t('search.sortRecent')
+  if (sortBy.value === 'for_you') return 'For You'
+  if (sortBy.value === 'views') return 'Hot'
+  if (sortBy.value === 'trending') return 'Trending'
+  return 'New'
+})
+
+const sortIcon = computed(() => {
+  if (sortBy.value === 'for_you') return sparklesOutline
+  if (sortBy.value === 'views') return flameOutline
+  if (sortBy.value === 'trending') return trendingUpOutline
+  return timeOutline
 })
 
 function toggleCategory(cat: { id: number; name: string }) {
@@ -847,10 +901,6 @@ async function stopScan() {
   }
 }
 
-function dismissModal() {
-  stopScan() // ✅ ensure cleanup
-  scanning.value = false
-}
 
 async function startScan() {
   await ActivityLogService.log("barcode_scan_start");
@@ -879,6 +929,7 @@ async function startScan() {
           activeStores.value = [];
           activeCategories.value = [];
           activeStatuses.value = [];
+          isScanning.value = true;
           searchQuery.value = barcode;
 
           await ActivityLogService.log("barcode_scan_success", {
@@ -941,6 +992,7 @@ async function onScannerModalPresented() {
           activeStores.value = []
           activeCategories.value = []
           activeStatuses.value = []
+          isScanning.value = true
           searchQuery.value = decodedText
           
           await ActivityLogService.log("barcode_scan_success", { barcode: decodedText });
@@ -1006,7 +1058,7 @@ const fetchProducts = async (reset = false) => {
   try {
     const from = currentPage.value * pageSize
 
-    let baseSelect = "barcode, name, status, view_count, created_at, photo_front_url, product_category_id, product_categories(name)"
+    let baseSelect = "barcode, name, status, view_count, created_at, updated_at, photo_front_url, product_category_id, product_categories(name), partner:partners(partner_tier)"
     if (activeStores.value.length > 0) {
       baseSelect += ", product_stores!inner(store_id)"
     }
@@ -1027,6 +1079,11 @@ const fetchProducts = async (reset = false) => {
           .single() as { data: Product | null }
 
         if (barcodeMatch) {
+          if (isScanning.value) {
+            isScanning.value = false;
+            router.push({path: `/item/${barcodeMatch.barcode}`});
+            return;
+          }
           results.value = [barcodeMatch]
           allLoaded.value = true
           isFetching.value = false
@@ -1040,7 +1097,10 @@ const fetchProducts = async (reset = false) => {
         p_query: q,
         p_limit: pageSize,
         p_offset: from,
-        p_sort: sortBy.value
+        p_sort: sortBy.value,
+        p_store_ids: activeStores.value.length > 0 ? activeStores.value.map(s => s.id) : null,
+        p_category_ids: activeCategories.value.length > 0 ? activeCategories.value.map(c => c.id) : null,
+        p_statuses: activeStatuses.value.length > 0 ? activeStatuses.value : null
       })
 
       if (error) {
@@ -1050,13 +1110,85 @@ const fetchProducts = async (reset = false) => {
           allLoaded.value = true
         }
 
+        const processedData = (data || []).map((p: any) => ({
+          ...p,
+          partner_tier: Array.isArray(p.partner) ? p.partner[0]?.partner_tier : p.partner?.partner_tier
+        }))
+
         results.value = reset
-            ? data
-            : [...results.value, ...data]
+            ? processedData
+            : [...results.value, ...processedData]
 
         currentPage.value++
       }
 
+      return
+    }
+
+    /* =========================================================
+       📈 TRENDING MODE (NEW)
+    ========================================================= */
+    if (sortBy.value === 'trending') {
+      const oneDayAgo = dayjs().subtract(1, 'day').toISOString()
+      
+      // 1. Fetch activities from last 24h
+      // We group by entity_id to find most popular items
+      const { data: trendingLogs } = await supabase
+        .from('activity_log')
+        .select('entity_id')
+        .eq('entity_type', 'product')
+        .gte('created_at', oneDayAgo)
+        .limit(2000)
+
+      if (trendingLogs && trendingLogs.length > 0) {
+        const counts: Record<string, number> = {}
+        trendingLogs.forEach(log => {
+          if (log.entity_id) counts[log.entity_id] = (counts[log.entity_id] || 0) + 1
+        })
+
+        const sortedBarcodes = Object.keys(counts)
+          .sort((a, b) => counts[b] - counts[a])
+          .slice(from, from + pageSize)
+
+        if (sortedBarcodes.length > 0) {
+          let trendingQuery = supabase
+            .from("products")
+            .select(baseSelect)
+            .eq("approved", true)
+            .in("barcode", sortedBarcodes)
+
+          if (activeStores.value.length > 0) {
+             trendingQuery = trendingQuery.in("product_stores.store_id", activeStores.value.map(s => s.id))
+          }
+          if (activeCategories.value.length > 0) {
+             trendingQuery = trendingQuery.in("product_category_id", activeCategories.value.map(c => c.id))
+          }
+          if (activeStatuses.value.length > 0) {
+             trendingQuery = trendingQuery.in("status", activeStatuses.value)
+          }
+
+          const { data: trendingProducts } = await trendingQuery.returns<Product[]>()
+
+          if (trendingProducts) {
+            // Sort by popularity again since .in() is unordered
+            const ordered = trendingProducts.sort((a,b) => (counts[b.barcode] || 0) - (counts[a.barcode] || 0))
+            
+            results.value = reset ? ordered : [...results.value, ...ordered]
+            if (sortedBarcodes.length < pageSize) allLoaded.value = true
+            
+            currentPage.value++
+            isFetching.value = false
+            loadingProducts.value = false
+            return
+          }
+        }
+      }
+      
+      // Fallback if no logs 
+      if (reset) results.value = []
+      allLoaded.value = true
+      isFetching.value = false
+      loadingProducts.value = false
       return
     }
 
@@ -1080,15 +1212,21 @@ const fetchProducts = async (reset = false) => {
           allLoaded.value = true
         }
 
+        const processedData = (data || []).map((p: any) => ({
+          ...p,
+          partner_tier: Array.isArray(p.partner) ? p.partner[0]?.partner_tier : p.partner?.partner_tier
+        }))
+
         results.value = reset
-            ? data
-            : [...results.value, ...data]
+            ? processedData
+            : [...results.value, ...processedData]
 
         currentPage.value++
       }
 
       return
     }
+
 
     /* =========================================================
        📦 NORMAL BROWSING MODE
@@ -1134,9 +1272,46 @@ const fetchProducts = async (reset = false) => {
         allLoaded.value = true
       }
 
-      results.value = reset
-          ? data
-          : [...results.value, ...data]
+      let processedData = data || []
+      
+      // 🏎️ Special Sort for "Recent" mode: Gold/Silver < 7 days old go to the top
+      if (sortBy.value === 'recent' && processedData.length > 0) {
+        const sevenDaysAgo = dayjs().subtract(7, 'day');
+        // Sort the ENTIRE current results plus new data to ensure pinning works
+        const allResults = reset ? processedData : [...results.value, ...processedData];
+        
+        allResults.sort((a: any, b: any) => {
+          const getWeight = (p: any) => {
+            const t = Array.isArray(p.partner) ? p.partner[0]?.partner_tier : p.partner?.partner_tier;
+            const tier = String(t || '').toLowerCase();
+            const isNew = dayjs(p.created_at).isAfter(sevenDaysAgo) || (p.updated_at && dayjs(p.updated_at).isAfter(sevenDaysAgo));
+            
+            if (tier === 'gold' && isNew) return 3; // Absolute priority
+            if (tier === 'gold') return 2;          // Regular Gold
+            if (tier === 'silver' && isNew) return 1;
+            return 0;
+          };
+          
+          const weightA = getWeight(a);
+          const weightB = getWeight(b);
+
+          if (weightA !== weightB) return weightB - weightA;
+          return dayjs(b.created_at).valueOf() - dayjs(a.created_at).valueOf();
+        });
+
+        results.value = allResults.map((p: any) => ({
+          ...p,
+          partner_tier: Array.isArray(p.partner) ? p.partner[0]?.partner_tier : p.partner?.partner_tier
+        }));
+      } else {
+        const mapped = processedData.map((p: any) => ({
+          ...p,
+          partner_tier: Array.isArray(p.partner) ? p.partner[0]?.partner_tier : p.partner?.partner_tier
+        }));
+        results.value = reset
+            ? mapped
+            : [...results.value, ...mapped]
+      }
 
       currentPage.value++
     }
@@ -1144,6 +1319,7 @@ const fetchProducts = async (reset = false) => {
   } finally {
     isFetching.value = false
     loadingProducts.value = false
+    isScanning.value = false
   }
 }
 
@@ -1321,6 +1497,16 @@ onIonViewDidEnter(async () => {
 });
 
 
+const getStatusIcon = (status: string) => {
+  switch (status.toLowerCase()) {
+    case 'halal': return checkmarkCircle
+    case 'muslim-friendly': return shieldCheckmarkOutline
+    case 'syubhah': return alertCircle
+    case 'haram': return closeCircle
+    default: return warning
+  }
+}
+
 </script>
 
 
@@ -1372,50 +1558,243 @@ ion-searchbar.rounded {
   --box-shadow: 0 1px 3px rgba(41, 40, 40, 0.1);
 }
 
-.product-card {
-  border: 1px solid var(--border-color, transparent);
-  box-shadow: var(--box-shadow, none);
-  transition: box-shadow 0.3s, border 0.3s;
+/* =========================
+   Modern Product Card Redesign
+   ========================= */
+
+.product-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  padding: 4px 0;
 }
 
-ion-card.status-halal {
-  --border-color: rgba(0, 200, 83, 0.6);
-  --box-shadow: 0 0 15px rgba(0, 200, 83, 0.4);
+/* Laptop & Computer Only: Multiple columns */
+@media (min-width: 1024px) {
+  .product-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
 }
 
-ion-card.status-muslim {
-  --border-color: rgba(0, 123, 255, 0.6);
-  --box-shadow: 0 0 15px rgba(0, 123, 255, 0.4);
+@media (min-width: 1440px) {
+  .product-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
 }
 
-ion-card.status-syubhah {
-  --border-color: rgba(255, 193, 7, 0.6);
-  --box-shadow: 0 0 15px rgba(255, 193, 7, 0.4);
+/* Tablet: 2 columns */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .product-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
-ion-card.status-haram {
-  --border-color: rgba(244, 67, 54, 0.6);
-  --box-shadow: 0 0 15px rgba(244, 67, 54, 0.4);
+.modern-product-card {
+  margin: 0; /* Reset margin for grid layout */
+  background: var(--ion-card-background, #ffffff);
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  border: 1px solid rgba(var(--ion-color-dark-rgb), 0.05);
+  transition: transform 0.2s ease, box-shadow 0.3s ease;
+  cursor: pointer;
+  position: relative;
+  height: 140px; /* Fixed height for clean grid rows */
 }
 
-.category-bar {
+/* Mobile: restore bottom margin if grid is 1 column */
+@media (max-width: 767px) {
+  .modern-product-card {
+    margin-bottom: 12px;
+  }
+}
+
+.modern-product-card:active {
+  transform: scale(0.98);
+}
+
+.card-inner {
   display: flex;
-  gap: 8px;
-  overflow-x: auto;
-  padding: 4px 6px;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-  -webkit-overflow-scrolling: touch;
+  height: 140px; /* Slightly taller for better product display */
 }
 
-.category-bar::-webkit-scrollbar {
-  display: none;
-}
-
-.category-chip {
-  font-size: 13px;
+/* Image Section */
+.card-image-section {
+  width: 140px;
+  height: 100%;
   flex-shrink: 0;
-  width: auto;
+  position: relative;
+  background: var(--ion-background-color-step-100, #f8fafc);
+}
+
+.card-image-section img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Status Strip on Image Side */
+.status-strip {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 5px;
+  height: 100%;
+}
+.status-strip.halal { background: var(--ion-color-success); }
+.status-strip.muslim-friendly { background: var(--ion-color-primary); }
+.status-strip.syubhah { background: var(--ion-color-warning); }
+.status-strip.haram { background: var(--ion-color-danger); }
+
+/* Status Strip Separator */
+.status-strip {
+  position: absolute;
+  top: 0;
+  right: 0; /* Move to right of image as separator */
+  width: 4px;
+  height: 100%;
+  opacity: 0.8;
+}
+.status-strip.halal { background: #00c853; }
+.status-strip.muslim-friendly { background: #007bff; }
+.status-strip.syubhah { background: #ffc107; }
+.status-strip.haram { background: #f44336; }
+
+/* Floating Status Pill on Image */
+.floating-status-pill {
+  position: absolute;
+  padding: 4px 10px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  z-index: 2;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.3);
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #fff;
+}
+
+.floating-status-pill.bottom-left {
+  bottom: 24px;
+  left: 8px;
+}
+
+.floating-status-pill.top-left {
+  top: 8px;
+  left: 8px;
+}
+
+.floating-status-pill ion-icon {
+  font-size: 14px;
+}
+
+.floating-status-pill.halal { background: rgba(var(--ion-color-success-rgb), 0.9); }
+.floating-status-pill.muslim-friendly { 
+  background: rgba(var(--ion-color-primary-rgb), 0.95); 
+  font-size: 0.58rem; /* Smaller for longer text */
+  padding: 3px 8px;
+  gap: 3px;
+  letter-spacing: 0.01em;
+}
+.floating-status-pill.muslim-friendly ion-icon { font-size: 12px; }
+.floating-status-pill.syubhah { background: rgba(var(--ion-color-warning-rgb), 0.95); color: var(--ion-color-warning-contrast); }
+.floating-status-pill.syubhah ion-icon { color: var(--ion-color-warning-contrast); }
+.floating-status-pill.haram { background: rgba(var(--ion-color-danger-rgb), 0.9); }
+
+/* Info Section */
+.card-info-section {
+  flex: 1;
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-width: 0;
+  gap: 8px;
+}
+
+.info-top .name {
+  margin: 0;
+  font-size: 1.15rem; /* Larger */
+  font-weight: 850; /* Heavier */
+  color: var(--ion-color-dark);
+  line-height: 1.25;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* metas is now inside info-bottom */
+.info-bottom .metas {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.73rem;
+  color: var(--ion-color-medium);
+}
+
+.meta-dot { opacity: 0.5; margin: 0 4px; }
+
+.meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.meta-icon {
+  font-size: 11px;
+  flex-shrink: 0;
+}
+
+/* Bottom row: partner badge stacked above metas, both pinned to bottom */
+.info-bottom {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  width: 100%;
+}
+
+.vibrant-status-tag {
+  display: flex;
+  align-items: center;
+  justify-content: center; /* Center the text */
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 12px;
+  font-size: 0.75rem; /* Slightly smaller for long text */
+  font-weight: 800;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  transition: transform 0.2s ease;
+  width: 145px; /* Fixed width to longest text 'Muslim-friendly' */
+  flex-shrink: 0;
+}
+
+.vibrant-status-tag .tag-icon {
+  font-size: 16px;
+}
+
+.vibrant-status-tag.halal {
+  background: var(--ion-color-success);
+  color: var(--ion-color-success-contrast);
+}
+.vibrant-status-tag.muslim-friendly {
+  background: var(--ion-color-primary);
+  color: var(--ion-color-primary-contrast);
+}
+.vibrant-status-tag.syubhah {
+  background: var(--ion-color-warning);
+  color: var(--ion-color-warning-contrast);
+}
+.vibrant-status-tag.haram {
+  background: var(--ion-color-danger);
+  color: var(--ion-color-danger-contrast);
 }
 
 .end-of-list {
@@ -1442,68 +1821,158 @@ ion-card.status-haram {
   opacity: 1;
 }
 
+.filter-group {
+  margin: 16px 0;
+}
+
 .filter-title {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  font-weight: 600;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 700;
   color: var(--ion-color-dark);
-  margin-left: 12px;
-  margin-bottom: 6px;
+  padding: 0 16px;
+  margin-bottom: 8px;
 }
 
 .filter-title ion-icon {
-  font-size: 14px;
+  font-size: 16px;
+  color: var(--ion-color-carrot);
 }
 
-.sort-button {
-  position: relative;
-  height: 32px; /* lock height */
-  min-height: 32px;
+/* Consolidated Search Header Styles (3-Row Layout) */
+.header-main-actions {
   display: flex;
   align-items: center;
-  text-transform: none;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 16px;
+  width: 100%;
 }
 
-
-.sort-button ion-select {
-  padding: 0;
+.classic-scan-btn {
+  width: 50px;
+  height: 50px;
+  min-width: 50px;
+  --padding-start: 0;
+  --padding-end: 0;
+  --border-radius: 12px;
   margin: 0;
-  font-weight: 600;
 }
 
-.sort-button::part(native) {
-  padding: 0;
+.classic-scan-btn ion-icon {
+  font-size: 24px;
 }
 
-/* Hide select but keep it clickable */
-.hidden-select {
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-}
-
-/* Shared toolbar typography */
-.toolbar-label {
-  font-size: 14px;
-  font-weight: 600;
+.classic-action-btn {
+  height: 50px;
+  margin: 0;
+  --color: var(--ion-color-dark);
+  position: relative;
+  font-weight: 700;
   text-transform: none;
+}
+
+.classic-action-btn ion-icon {
+  font-size: 22px;
+}
+
+.sort-btn-wrapper {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
 }
 
-.sort-button {
-  position: relative;
-  text-transform: none;
+.right-actions-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
+
+.btn-label {
+  margin-left: 4px;
+  font-size: 13px;
+}
+
+.badge-dot {
+  position: absolute;
+  top: 10px;
+  right: 8px;
+  width: 8px;
+  height: 8px;
+  background: var(--ion-color-carrot);
+  border-radius: 50%;
+  border: 2px solid var(--ion-background-color);
+}
+
+.search-container {
+  padding: 0 16px 12px;
+}
+
+.compact-searchbar {
+  --border-radius: 12px;
+  --background: var(--ion-background-color);
+  --color: var(--ion-color-dark);
+  --placeholder-color: var(--ion-color-step-600);
+  --icon-color: var(--ion-color-carrot);
+  --clear-button-color: var(--ion-color-step-600);
+  border: 1px solid rgba(var(--ion-color-dark-rgb), 0.1);
+  border-radius: 12px;
+  padding: 0;
+  width: 100%;
+}
+
+.search-row-toolbar {
+  --min-height: auto;
+}
+
+/* Animation for searchbar row */
+.fade-down-enter-active,
+.fade-down-leave-active {
+  transition: all 0.25s ease-out;
+  transform-origin: top;
+}
+
+.fade-down-enter-from,
+.fade-down-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+
+.actions-toolbar,
+.search-row-toolbar,
+.filter-toolbar {
+  --background: var(--ion-background-color);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  --border-width: 0;
+}
+
+/* Make seamless with app-header */
+ion-header :deep(app-header ion-toolbar) {
+  --border-width: 0;
+  border-bottom: none !important;
+}
+
+ion-header {
+  border-bottom: none !important;
+  box-shadow: none !important;
+}
+
+
+
+
 
 /* Force neutral text color in toolbar controls */
-.search-toolbar ion-button,
-.search-toolbar ion-text,
-.search-toolbar ion-icon {
+.actions-toolbar ion-button,
+.actions-toolbar ion-icon {
   color: var(--ion-color-dark);
+}
+
+.filter-section {
+  padding-bottom: 16px;
 }
 
 .for-you-info {
@@ -1528,10 +1997,60 @@ ion-card.status-haram {
   margin: 4px 0 0;
 }
 
+/* =========================
+   MODERN CATEGORY CHIPS
+========================= */
+.category-bar {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding: 0 16px 8px;
+}
+
+.modern-category-chip {
+  --cat-color: var(--ion-color-dark);
+  --cat-bg: var(--ion-background-color);
+  background: var(--cat-bg);
+  color: var(--cat-color);
+  height: 38px;
+  border-radius: 12px;
+  padding: 0 16px;
+  border: 1.5px solid var(--cat-color);
+  font-weight: 700;
+  font-size: 0.82rem;
+  transition: all 0.2s ease;
+  margin: 0;
+  flex-shrink: 0;
+  width: auto;
+}
+
+.ion-palette-dark .modern-category-chip {
+  --cat-bg: var(--ion-background-color);
+}
+
+.modern-category-chip.active {
+  background: var(--cat-color) !important;
+  color: var(--cat-contrast, #ffffff);
+  border-color: var(--cat-color);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  transform: translateY(-1px);
+}
+
+.category-emoji { margin-right: 6px; font-size: 1.1rem; }
+.category-icon { margin-right: 6px; font-size: 1.1rem; }
+
 .filter-clear-row {
   display: flex;
   justify-content: flex-start;
   padding: 4px 12px 8px;
 }
+</style>
 
+<style>
+/* Force readable text colors for tiered cards in dark mode */
+
+/* Force readable text colors for tiered cards in dark mode */
+.ion-palette-dark .modern-product-card[class*="tier-card-"] .name {
+  color: #ffffff !important;
+}
 </style>

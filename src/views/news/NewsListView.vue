@@ -104,7 +104,7 @@ import {
   IonInfiniteScrollContent, IonCard, IonCardTitle, IonCardContent, IonCardSubtitle, IonCardHeader, IonIcon, IonFabButton, IonFab, IonSkeletonText
 } from '@ionic/vue';
 import { supabase } from '@/plugins/supabaseClient';
-import {addOutline, chevronDownCircleOutline, newspaperOutline} from 'ionicons/icons';
+import {addOutline, chevronDownCircleOutline} from 'ionicons/icons';
 
 
 interface NewsItem {

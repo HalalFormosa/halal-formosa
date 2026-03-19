@@ -2,7 +2,7 @@
   <ion-page>
     <ion-header>
       <ion-toolbar>
-        <ion-title>Master Data</ion-title>
+        <ion-title>{{ $t('admin.masterData') }}</ion-title>
 
         <ion-buttons slot="start">
           <ion-back-button default-href="/profile" />
@@ -14,23 +14,23 @@
     <ion-content class="ion-padding">
       <ion-list>
         <ion-item button @click="go('product_categories')">
-          <ion-label>Product Categories</ion-label>
+          <ion-label>{{ $t('admin.productCategories') }}</ion-label>
         </ion-item>
 
         <ion-item button @click="go('ingredient_highlights')">
-          <ion-label>Ingredient Highlights</ion-label>
+          <ion-label>{{ $t('admin.ingredientHighlights') }}</ion-label>
         </ion-item>
 
         <ion-item button @click="go('location_types')">
-          <ion-label>Location Types</ion-label>
+          <ion-label>{{ $t('admin.locationTypes') }}</ion-label>
         </ion-item>
 
         <ion-item button @click="go('stores')">
-          <ion-label>Stores</ion-label>
+          <ion-label>{{ $t('admin.stores') }}</ion-label>
         </ion-item>
 
         <ion-item button @click="go('category_rules')">
-          <ion-label>Category Rules</ion-label>
+          <ion-label>{{ $t('admin.categoryRules') }}</ion-label>
         </ion-item>
       </ion-list>
     </ion-content>

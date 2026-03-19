@@ -335,7 +335,7 @@ export default function useOcrPipeline({
                 throw new Error(json?.error?.message || 'Empty translation');
             }
             return json.data.translations[0].translatedText;
-        } catch (e) {
+        } catch {
             if (attempt < 2) {
                 console.warn(`Retrying translation (attempt ${attempt + 1})...`);
                 return translateToEnglish(text, attempt + 1);
@@ -538,7 +538,6 @@ export default function useOcrPipeline({
         // Status logic (union)
         const hasHaram = ingredientHighlights.value.some(h => extractIonColor(h.color) === 'danger')
         const hasSyubhah = ingredientHighlights.value.some(h => extractIonColor(h.color) === 'warning')
-        const hasMuslimFriendly = ingredientHighlights.value.some(h => extractIonColor(h.color) === 'primary')
 
         const hasIngredients =
             !!ingredientsTextZh.value?.trim() ||
@@ -581,7 +580,6 @@ export default function useOcrPipeline({
 
         const isEnglish = lang === 'english';
         const isChinese = lang === 'chinese';
-        const isMixed = lang === 'mixed';
 
         checkingIngredients.value = true
         try {

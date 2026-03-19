@@ -1,4 +1,4 @@
-import {onUnmounted, ref} from 'vue'
+import { onUnmounted, ref } from 'vue'
 import { onIonViewWillLeave } from "@ionic/vue";
 
 const KAABA_LAT = 21.422487;
@@ -44,7 +44,7 @@ export function useQiblaCompass() {
             try {
                 const res = await DeviceOrientation.requestPermission();
                 return res === 'granted';
-            } catch (err) {
+            } catch {
                 return false;
             }
         }

@@ -338,14 +338,14 @@
           <ion-card-title>{{ $t('profile.appInfo') }}</ion-card-title>
         </ion-card-header>
         <ion-card-content>
-          <ion-list lines="none">
+          <ion-list lines="inset" class="info-list">
             <ion-item>
               <ion-label>{{ $t('profile.appNameTitle') }}</ion-label>
-              <ion-note slot="end">{{ $t('profile.appName') }}</ion-note>
+              <ion-note slot="end" class="info-note">{{ $t('profile.appName') }}</ion-note>
             </ion-item>
-            <ion-item>
+            <ion-item lines="none">
               <ion-label>{{ $t('profile.appVersion') }}</ion-label>
-              <ion-note slot="end">{{ appVersion }}</ion-note>
+              <ion-note slot="end" class="info-note">{{ appVersion || '1.0.0' }}</ion-note>
             </ion-item>
           </ion-list>
         </ion-card-content>
@@ -420,7 +420,10 @@ import {refreshSubscriptionStatus} from "@/composables/useSubscriptionStatus";
 import {toastController} from "@ionic/vue";
 import { ActivityLogService } from '@/services/ActivityLogService'
 import { useI18n } from 'vue-i18n'
+import { useNotifier } from "@/composables/useNotifier";
+
 const { t } = useI18n()
+const { notifyEvent } = useNotifier();
 const pendingLocationsCount = ref(0)
 
 interface RcProduct {
@@ -448,9 +451,7 @@ const user = ref<any | null>(null);
 const router = useRouter();
 
 const userBio = editBio;
-const userDOB = editDOB;
 const userNationality = editNationality;
-const userGender = editGender;
 const donationProduct = ref<RcProduct | null>(null);
 const paywallOpening = ref(false);
 
@@ -852,6 +853,19 @@ async function openProPaywall() {
       entitlement: 'Halal Formosa Pro'
     })
 
+    await notifyEvent(
+      'pro_purchase_success',
+      '💎 New Pro Member!',
+      `User ${userEmail.value} has just subscribed to Halal Formosa Pro!`,
+      undefined,
+      {
+        source: 'profile_view',
+        email: userEmail.value,
+        user_id: user.value?.id
+      },
+      ['discord']
+    ).catch(console.error);
+
   } finally {
     // 🔓 ALWAYS release the lock
     paywallOpening.value = false;
@@ -999,8 +1013,9 @@ ion-toast {
 }
 
 .social-icon {
-  width: 30px;
-  height: 30px;
+  font-size: 24px;
+  width: 24px;
+  height: 24px;
 }
 
 
@@ -1017,16 +1032,28 @@ ion-toast {
 }
 
 .social-button.website {
-  background-color: transparent;
+  background: linear-gradient(135deg, #334155 0%, #1e293b 100%);
   color: #ffffff;
-  border: 2px solid #ffffff33; /* subtle outline */
-  backdrop-filter: blur(3px);
+  border: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .social-button.website:hover {
   transform: translateY(-2px);
-  border-color: #ffffff66;
+  background: linear-gradient(135deg, #475569 0%, #334155 100%);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
+
+.info-list {
+  background: transparent;
+  padding: 0;
+}
+
+.info-note {
+  font-weight: 600;
+  color: var(--ion-color-dark);
+}
+
 
 
 </style>

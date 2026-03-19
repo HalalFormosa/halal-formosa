@@ -21,6 +21,21 @@ export interface Product {
     // ✅ relation
     product_categories: { id: number; name: string }
 
+    author?: {
+        display_name: string | null;
+        public_profile: boolean;
+    } | null;
+
     // ✅ stores (flattened for UI use)
     stores?: { id: string; name: string; logo_url?: string | null }[]
+
+    // ✅ partner relation
+    partner?: {
+        id: string;
+        name: string;
+        partner_tier: string | null;
+    } | null;
+
+    partner_id?: string | null;
+    partner_tier?: string | null;
 }

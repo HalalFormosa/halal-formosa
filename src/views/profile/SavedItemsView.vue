@@ -1,7 +1,7 @@
 <template>
   <ion-page>
     <ion-header>
-      <app-header title="Saved Items" show-back back-route="/profile" :icon="bookmarkOutline" />
+      <app-header :title="$t('profile.savedItems')" show-back back-route="/profile" :icon="bookmarkOutline" />
     </ion-header>
 
     <ion-content class="ion-padding">
@@ -14,7 +14,7 @@
         <ion-card v-if="!isDonor" class="ion-margin-bottom" style="margin-left: 0; margin-right: 0; box-shadow: none; border: 1px solid var(--ion-color-light); border-radius: 12px; margin-top: 0;">
           <div class="ion-padding" style="padding-bottom: 12px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-              <span style="font-size: 14px; font-weight: 600; color: var(--ion-color-medium);">Free Tier Usage</span>
+              <span style="font-size: 14px; font-weight: 600; color: var(--ion-color-medium);">{{ $t('savedItems.freeTier') }}</span>
               <span style="font-size: 14px; font-weight: bold; color: var(--ion-color-carrot);">
                 {{ totalSavedItems }} / 10
               </span>
@@ -22,25 +22,25 @@
             <ion-progress-bar :value="totalSavedItems / 10" color="carrot" style="border-radius: 4px; height: 8px;"></ion-progress-bar>
             
             <p v-if="totalSavedItems >= 10" style="font-size: 12px; color: var(--ion-color-danger); margin-top: 12px; margin-bottom: 0;">
-              You've reached your free limit. Upgrade to Pro to save unlimited items!
+              {{ $t('savedItems.freeLimitReached') }}
             </p>
             <p v-else style="font-size: 12px; color: var(--ion-color-medium); margin-top: 12px; margin-bottom: 0;">
-              Upgrade to <span style="font-weight: 600; color: var(--ion-color-dark);">Halal Formosa Pro</span> for unlimited saves.
+              {{ $t('savedItems.proUpgrade', { pro: 'Halal Formosa Pro' }) }}
             </p>
             
             <ion-button expand="block" color="carrot" size="small" style="margin-top: 12px; margin-bottom: 0;" @click="presentRcPaywall">
-              Upgrade to Pro
+              {{ $t('profile.pro.upgrade') }}
             </ion-button>
           </div>
         </ion-card>
 
         <div v-if="folders.length === 0" class="ion-text-center ion-margin-top" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 50vh;">
           <ion-icon :icon="folderOutline" style="font-size: 64px; color: var(--ion-color-medium); margin-bottom: 16px;"></ion-icon>
-          <h3 style="margin-top: 0; font-weight: 600;">No Collections Yet</h3>
-          <p style="color: var(--ion-color-medium); max-width: 80%;">Create a folder to start organizing your saved items!</p>
+          <h3 style="margin-top: 0; font-weight: 600;">{{ $t('savedItems.noCollections') }}</h3>
+          <p style="color: var(--ion-color-medium); max-width: 80%;">{{ $t('savedItems.noCollectionsDesc') }}</p>
           <ion-button color="carrot" style="margin-top: 16px;" @click="promptCreateFolder">
             <ion-icon :icon="addOutline" slot="start" />
-            Create Folder
+            {{ $t('savedItems.createFolder') }}
           </ion-button>
         </div>
 
@@ -49,7 +49,7 @@
         <div v-if="!activeFolder">
           <!-- View Toggle Header -->
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-            <h2 style="margin: 0; font-size: 1.2rem; font-weight: 600;">My Collections</h2>
+            <h2 style="margin: 0; font-size: 1.2rem; font-weight: 600;">{{ $t('savedItems.myCollections') }}</h2>
             <div style="background: var(--ion-color-light); border-radius: 8px; display: flex; padding: 2px;">
               <ion-button 
                 fill="clear" 
@@ -85,7 +85,7 @@
               </div>
               <div class="folder-info">
                 <span class="folder-name">{{ folder.name }}</span>
-                <span class="folder-count">{{ folder.saved_items.length }} items</span>
+                <span class="folder-count">{{ $t('savedItems.itemsCount', { count: folder.saved_items.length }) }}</span>
               </div>
             </div>
           </div>
@@ -103,7 +103,7 @@
               <ion-icon :icon="folderOutline" slot="start" color="carrot" />
               <ion-label>
                 <h3>{{ folder.name }}</h3>
-                <p style="font-size: 13px; color: var(--ion-color-medium);">{{ folder.saved_items.length }} items</p>
+                <p style="font-size: 13px; color: var(--ion-color-medium);">{{ $t('savedItems.itemsCount', { count: folder.saved_items.length }) }}</p>
               </ion-label>
             </ion-item>
           </ion-list>
@@ -140,7 +140,7 @@
           </div>
 
           <p v-if="activeFolder.saved_items.length === 0" class="ion-text-center ion-margin-top">
-            <small>No items saved here.</small>
+            <small>{{ $t('savedItems.noItems') }}</small>
           </p>
           
           <!-- GRID VIEW FOR ITEMS -->
@@ -247,6 +247,8 @@ import {
 } from '@ionic/vue';
 import { bookmarkOutline, folderOutline, trashOutline, gridOutline, listOutline, arrowBackOutline, addOutline, folderOpenOutline } from 'ionicons/icons';
 import AppHeader from '@/components/AppHeader.vue';
+import { useI18n } from 'vue-i18n';
+import { useNotifier } from "@/composables/useNotifier";
 
 // Subscription Logic
 import { isDonor, refreshSubscriptionStatus } from '@/composables/useSubscriptionStatus';
@@ -255,6 +257,8 @@ import { Capacitor } from '@capacitor/core';
 import { ActivityLogService } from '@/services/ActivityLogService';
 
 const router = useRouter();
+const { t } = useI18n();
+const { notifyEvent } = useNotifier();
 const loading = ref(true);
 const folders = ref<any[]>([]);
 
@@ -292,6 +296,21 @@ async function presentRcPaywall() {
       ActivityLogService.log('pro_purchase_success', {
         source: 'saved_items_view'
       });
+
+      const { data: { user } } = await supabase.auth.getUser();
+      await notifyEvent(
+        'pro_purchase_success',
+        '💎 New Pro Member!',
+        `User ${user?.email ?? 'unknown'} has just subscribed to Halal Formosa Pro!`,
+        undefined,
+        {
+          source: 'saved_items_view',
+          email: user?.email,
+          user_id: user?.id
+        },
+        ['discord']
+      ).catch(console.error);
+
       return true;
     }
   } catch (err) {
@@ -349,21 +368,21 @@ async function loadFoldersAndItems() {
 
 async function promptCreateFolder() {
   const alert = await alertController.create({
-    header: 'New Folder',
+    header: t('savedItems.newFolder'),
     inputs: [
       {
         name: 'folderName',
         type: 'text',
-        placeholder: 'Folder Name'
+        placeholder: t('savedItems.folderName')
       }
     ],
     buttons: [
       {
-        text: 'Cancel',
+        text: t('common.cancel'),
         role: 'cancel'
       },
       {
-        text: 'Create',
+        text: t('savedItems.create'),
         handler: async (data) => {
           if (data.folderName && data.folderName.trim() !== '') {
             await createFolder(data.folderName.trim());
@@ -394,12 +413,12 @@ function goToItem(barcode: string) {
 
 async function removeItem(saveId: string) {
   const alert = await alertController.create({
-    header: 'Remove Item',
-    message: 'Are you sure you want to remove this item from your folder?',
+    header: t('savedItems.removeItem'),
+    message: t('savedItems.removeConfirm'),
     buttons: [
-      { text: 'Cancel', role: 'cancel' },
+      { text: t('common.cancel'), role: 'cancel' },
       {
-        text: 'Remove',
+        text: t('savedItems.remove'),
         role: 'destructive',
         handler: async () => {
           await supabase.from('saved_items').delete().eq('id', saveId);
@@ -418,9 +437,9 @@ async function moveItem(saveId: string, currentFolderId: string, productId: stri
   
   if (otherFolders.length === 0) {
     const alert = await alertController.create({
-      header: 'No Other Folders',
-      message: 'You have no other folders to move this item to. Create a new folder first!',
-      buttons: ['OK']
+      header: t('savedItems.noOtherFolders'),
+      message: t('savedItems.noOtherFoldersDesc'),
+      buttons: [t('common.ok')]
     });
     await alert.present();
     return;
@@ -442,7 +461,7 @@ async function moveItem(saveId: string, currentFolderId: string, productId: stri
       if (error && error.code === '23505') {
         // Unique constraint triggered, user already saved it in that target folder
         const toast = await toastController.create({
-          message: 'Item already exists in that folder!',
+          message: t('savedItems.itemAlreadyInFolder'),
           duration: 2000,
           color: 'warning',
           position: 'bottom'
@@ -459,7 +478,7 @@ async function moveItem(saveId: string, currentFolderId: string, productId: stri
         activeFolderId.value = folder.id;
         
         const toast = await toastController.create({
-          message: `Moved to ${folder.name}`,
+          message: t('savedItems.moveSuccess', { name: folder.name }),
           duration: 2000,
           color: 'success',
           position: 'bottom'
@@ -467,7 +486,7 @@ async function moveItem(saveId: string, currentFolderId: string, productId: stri
         await toast.present();
       } else {
         const toast = await toastController.create({
-          message: 'Failed to move item.',
+          message: t('savedItems.moveFailed'),
           duration: 2000,
           color: 'danger',
           position: 'bottom'
@@ -485,7 +504,7 @@ async function moveItem(saveId: string, currentFolderId: string, productId: stri
   } as any);
 
   const actionSheet = await actionSheetController.create({
-    header: 'Move to folder...',
+    header: t('savedItems.moveToFolder'),
     buttons: actionButtons
   });
   

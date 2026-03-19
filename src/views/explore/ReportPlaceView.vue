@@ -1,11 +1,21 @@
 <script setup lang="ts">
 import { useRoute, useRouter } from 'vue-router'
 import { ref, onMounted } from 'vue'
+import { onIonViewWillEnter } from '@ionic/vue'
 import { supabase } from '@/plugins/supabaseClient'
 import {
   IonPage, IonContent, IonHeader, IonToolbar, IonTitle, IonItem, IonLabel,
-  IonTextarea, IonButton, IonCard, IonCardHeader, IonCardContent, IonCardTitle, IonToast
+  IonTextarea, IonButton, IonInput, IonCard, IonCardHeader, IonCardContent, IonCardTitle, IonToast,
+  IonIcon, IonButtons, IonProgressBar
 } from '@ionic/vue'
+import { cameraOutline, cloudUploadOutline, closeCircle, alertCircleOutline } from 'ionicons/icons'
+import { Camera, CameraResultType, CameraSource } from '@capacitor/camera'
+import { useImageResizer } from '@/composables/useImageResizer'
+import AppHeader from '@/components/AppHeader.vue'
+
+const props = defineProps<{
+  id: string | number
+}>()
 
 // --- Routing + State
 const route = useRoute()
@@ -15,18 +25,62 @@ const showToast = ref(false)
 const toastMessage = ref('')
 const toastColor = ref<'success' | 'danger'>('success')
 
-const locationId = Number(route.params.id)
+const locationId = Number(props.id)
 const place = ref<any>(null)
 const reportDescription = ref('')
 const currentUser = ref<any>(null)
 const loading = ref(false)
+const { resizeImage } = useImageResizer()
+
+const imageFile = ref<File | null>(null)
+const imagePreview = ref<string | null>(null)
+const uploading = ref(false)
+
+async function takePicture() {
+  try {
+    const image = await Camera.getPhoto({
+      quality: 90,
+      allowEditing: false,
+      resultType: CameraResultType.Uri,
+      source: CameraSource.Camera
+    })
+    imagePreview.value = image.webPath || null
+    imageFile.value = await resizeImage(image.webPath || '')
+  } catch (error) {
+    console.error('Error taking photo:', error)
+  }
+}
+
+function uploadFromGallery() {
+  const input = document.createElement('input')
+  input.type = 'file'
+  input.accept = 'image/*'
+  input.onchange = (event: Event) => {
+    const target = event.target as HTMLInputElement
+    if (target.files && target.files[0]) {
+      const file = target.files[0]
+      const reader = new FileReader()
+      reader.onload = async () => {
+        imagePreview.value = reader.result as string
+        imageFile.value = await resizeImage(reader.result as string)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+  input.click()
+}
+
+function clearImage() {
+  imageFile.value = null
+  imagePreview.value = null
+}
 
 // --- Fetch location by ID
 async function fetchPlace() {
   const { data, error } = await supabase
       .from('locations')
       .select(`id, name, image, lat, lng, location_types(name)`)
-      .eq('id', locationId)
+      .eq('id', props.id)
       .single()
 
   if (error) {
@@ -43,32 +97,59 @@ async function fetchPlace() {
 async function submitReport() {
   if (!place.value || !reportDescription.value.trim()) return
   loading.value = true
+  uploading.value = true
 
-  const { error } = await supabase.from('location_reports').insert([
-    {
-      location_id: place.value.id,
-      description: reportDescription.value.trim(),
-      created_at: new Date().toISOString(),
-      reported_by: currentUser.value?.id ?? null,
-    },
-  ])
+  try {
+    let imageUrl = null
 
-  loading.value = false
-  if (error) {
-    toastMessage.value = 'Failed to submit report.'
-    toastColor.value = 'danger'
-  } else {
+    if (imageFile.value) {
+      const fileName = `${Date.now()}_loc_${locationId}.jpg`
+      const { error: uploadError } = await supabase.storage
+          .from('reports')
+          .upload(`locations/${fileName}`, imageFile.value)
+
+      if (uploadError) throw uploadError
+
+      const { data: publicUrl } = supabase.storage
+          .from('reports')
+          .getPublicUrl(`locations/${fileName}`)
+
+      imageUrl = publicUrl.publicUrl
+    }
+
+    const { error } = await supabase.from('location_reports').insert([
+      {
+        location_id: place.value.id,
+        description: reportDescription.value.trim(),
+        image_url: imageUrl,
+        created_at: new Date().toISOString(),
+        reported_by: currentUser.value?.id ?? null,
+      },
+    ])
+
+    if (error) throw error
+
     toastMessage.value = '✅ Report submitted successfully!'
     toastColor.value = 'success'
     setTimeout(() => router.back(), 1000)
+  } catch (error: any) {
+    console.error('Error submitting report:', error)
+    toastMessage.value = error.message || 'Failed to submit report.'
+    toastColor.value = 'danger'
+  } finally {
+    loading.value = false
+    uploading.value = false
+    showToast.value = true
   }
-  showToast.value = true
 }
 
 // --- Load user + place
 onMounted(async () => {
   const { data: { user } } = await supabase.auth.getUser()
   currentUser.value = user
+})
+
+onIonViewWillEnter(() => {
   if (locationId) fetchPlace()
 })
 </script>
@@ -76,9 +157,7 @@ onMounted(async () => {
 <template>
   <ion-page>
     <ion-header>
-      <ion-toolbar>
-        <ion-title>Report Location</ion-title>
-      </ion-toolbar>
+      <app-header title="Report Location" show-back :icon="alertCircleOutline" />
     </ion-header>
 
     <ion-content class="ion-padding">
@@ -93,7 +172,28 @@ onMounted(async () => {
             <ion-input :value="place.location_types?.name || 'Halal Location'" readonly />
           </ion-item>
 
-          <ion-item>
+          <ion-item lines="none" class="ion-margin-top">
+            <ion-label>Evidence Image (Optional)</ion-label>
+            <ion-buttons slot="end">
+              <ion-button @click="takePicture">
+                <ion-icon :icon="cameraOutline" slot="icon-only" />
+              </ion-button>
+              <ion-button @click="uploadFromGallery">
+                <ion-icon :icon="cloudUploadOutline" slot="icon-only" />
+              </ion-button>
+            </ion-buttons>
+          </ion-item>
+
+          <div v-if="imagePreview" class="image-preview-container">
+            <img :src="imagePreview" class="image-preview" />
+            <ion-button fill="clear" color="danger" class="clear-image-btn" @click="clearImage">
+              <ion-icon :icon="closeCircle" slot="icon-only" />
+            </ion-button>
+          </div>
+
+          <ion-progress-bar v-if="uploading" type="indeterminate" class="ion-margin-top" />
+
+          <ion-item style="margin-top: 10px;">
             <ion-textarea
                 label="Reason"
                 label-placement="floating"
@@ -129,3 +229,30 @@ onMounted(async () => {
     </ion-content>
   </ion-page>
 </template>
+<style scoped>
+.image-preview-container {
+  position: relative;
+  margin: 10px 0;
+  border-radius: 8px;
+  overflow: hidden;
+  max-height: 200px;
+  display: flex;
+  justify-content: center;
+  background: var(--ion-color-step-50);
+}
+
+.image-preview {
+  max-width: 100%;
+  object-fit: contain;
+}
+
+.clear-image-btn {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  --padding-start: 0;
+  --padding-end: 0;
+  height: 30px;
+  width: 30px;
+}
+</style>

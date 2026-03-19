@@ -146,7 +146,7 @@
             </ion-item>
 
             <ion-item>
-              <ion-select v-model.number="form.product_category_id" interface="popover" required>
+              <ion-select v-model.number="form.product_category_id" interface="alert" required>
                 <div slot="label">{{ $t('addProduct.category') }} <ion-text color="danger">*</ion-text></div>
                 <ion-select-option v-for="cat in categories" :key="cat.id" :value="cat.id">
                   {{ cat.name }}

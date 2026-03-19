@@ -5,9 +5,29 @@
     </ion-header>
 
     <ion-content class="ion-padding">
+      <!-- === Announcement Banner === -->
+      <transition name="slide-down">
+        <div v-if="showAnnouncement && announcement" class="announcement-banner" :class="[announcement.type || 'info', { 'clickable': announcement.link_url }]">
+          <div class="announcement-content" @click="handleBannerClick">
+            <template v-if="announcement.image_url">
+              <div class="announcement-thumb-wrapper">
+                <img :src="announcement.image_url" class="announcement-thumb" alt="announcement" />
+              </div>
+            </template>
+            <ion-icon v-else :icon="sparkles" class="announcement-icon" />
+            <div class="announcement-text">
+              <span class="announcement-title">{{ announcement.title }}</span>
+              <p class="announcement-body">{{ announcement.content }}</p>
+            </div>
+          </div>
+          <ion-button fill="clear" color="dark" class="close-btn" @click.stop="dismissAnnouncement">
+            <ion-icon :icon="closeOutline" />
+          </ion-button>
+        </div>
+      </transition>
 
       <!-- === Prayer Times Horizontal === -->
-      <ion-card class="prayer-card">
+      <ion-card>
         <ion-card-header>
           <div class="prayer-header-row">
             <ion-card-title>
@@ -27,12 +47,13 @@
             <!-- 🧭 Find Qibla (header action) -->
             <ion-button
                 size="small"
-                fill="outline"
+                fill="clear"
                 color="carrot"
                 class="qibla-header-btn"
                 @click="goQibla"
             >
-              🧭 {{ $t('home.qibla') }}
+              <ion-icon :icon="compassOutline" slot="start" />
+              {{ $t('home.qibla') }}
             </ion-button>
           </div>
         </ion-card-header>
@@ -101,33 +122,39 @@
 
 
 
-      <!-- === Main Feature: Scan + Stats === -->
-      <ion-card class="featured-card">
-        <ion-card-header>
-          <ion-card-title>{{ $t('home.mainFeature') }}</ion-card-title>
-        </ion-card-header>
-
-        <ion-card-content>
-
-          <!-- Scan Buttons -->
-          <div class="scan-row">
-            <ion-button expand="block" color="carrot" @click="goScan">
-              <ion-icon :icon="scanOutline" slot="start" />
-              {{ $t('home.scan') }}
-            </ion-button>
-          </div>
-          <div class="scan-row">
-            <ion-button expand="block" color="carrot" @click="goToSearchAndScan">
-              <ion-icon :icon="barcodeOutline" slot="start" />
-              {{ $t('home.scanBarcode') }}
-            </ion-button>
-          </div>
-
-        </ion-card-content>
+      <!-- === Main Feature: Scan === -->
+      <ion-card class="main-feature-section clear-card">
+        <div class="main-features-grid">
+          <button class="feature-card feature-primary" @click="goScan">
+            <div class="feature-icon-wrapper">
+              <ion-icon :icon="scanOutline" />
+            </div>
+            <div class="feature-text">
+              <h3>{{ $t('home.scan') }}</h3>
+              <p>{{ $t('home.scanDesc') }}</p>
+            </div>
+            <div class="feature-bg-icon">
+              <ion-icon :icon="scanOutline" />
+            </div>
+          </button>
+          
+          <button class="feature-card feature-secondary" @click="goToSearchAndScan">
+            <div class="feature-icon-wrapper">
+              <ion-icon :icon="barcodeOutline" />
+            </div>
+            <div class="feature-text">
+              <h3>{{ $t('home.scanBarcode') }}</h3>
+              <p>{{ $t('home.scanBarcodeDesc') }}</p>
+            </div>
+            <div class="feature-bg-icon">
+              <ion-icon :icon="barcodeOutline" />
+            </div>
+          </button>
+        </div>
       </ion-card>
 
       <!-- === Our Partner=== -->
-      <ion-card class="compact-section">
+      <ion-card>
         <ion-card-header>
           <div class="card-header-row">
             <ion-card-title>
@@ -164,7 +191,7 @@
                 :class="[
   'discover-item',
   'discover-item--compact',
-  partner.partner_tier
+  partner.partner_tier ? 'tier-card-' + partner.partner_tier.toLowerCase() : ''
 ]"
 
                 button
@@ -172,9 +199,10 @@
             >
               <ion-badge
                   v-if="partner.partner_tier"
-                  :class="['tier-badge', partner.partner_tier]"
+                  :class="['tier-badge', partner.partner_tier.toLowerCase()]"
               >
-                {{ $t('home.partnerTier', { tier: partner.partner_tier.toUpperCase() }) }}
+              <ion-icon :icon="sparkles" />
+              {{ $t('home.partnerTier', { tier: (partner.partner_tier || '').toUpperCase() }) }}
               </ion-badge>
 
 
@@ -189,6 +217,8 @@
                   {{ partner.name }}
                 </p>
               </ion-label>
+              <!-- Premium Flare for Gold/Silver -->
+              <div v-if="['gold', 'silver'].includes(String(partner.partner_tier || '').toLowerCase())" class="premium-flare"></div>
             </ion-card>
 
           </div>
@@ -231,22 +261,44 @@
             <ion-card
                 v-for="p in recentProducts"
                 :key="p.barcode"
-                class="discover-item"
+                :class="[
+                  'discover-item', 
+                  p.partner_tier ? 'tier-card-' + p.partner_tier.toLowerCase() : ''
+                ]"
                 button
                 @click="openProduct(p)"
             >
+              <!-- Tier Badge -->
+              <ion-badge
+                  v-if="p.partner_tier"
+                  :class="['tier-badge', p.partner_tier.toLowerCase()]"
+              >
+                <ion-icon :icon="sparkles" />
+                <span>{{ $t('home.partnerTier', { tier: (p.partner_tier || '').toUpperCase() }) }}</span>
+              </ion-badge>
+
+              <!-- Shine Effect (Gold ONLY) -->
+              <div v-if="['gold', 'silver'].includes(String(p.partner_tier || '').toLowerCase())" class="premium-flare"></div>
+
               <img :src="p.image || 'https://placehold.co/200x200'" :alt="$t('home.altProduct')" class="discover-img" />
               <ion-label class="discover-label">
-                <ion-chip
-                    :class="p.status === 'Halal' ? 'chip-success'
-              : p.status === 'Muslim-friendly' ? 'chip-primary'
-              : p.status === 'Syubhah' ? 'chip-warning'
-              : p.status === 'Haram' ? 'chip-danger'
-              : 'chip-medium'"
-                    style="font-size: 14px; margin-bottom: 4px;"
-                >
-                  {{ p.status }}
-                </ion-chip>
+                <div class="status-row">
+                  <ion-chip
+                      :class="p.status === 'Halal' ? 'chip-success'
+                : p.status === 'Muslim-friendly' ? 'chip-primary'
+                : p.status === 'Syubhah' ? 'chip-warning'
+                : p.status === 'Haram' ? 'chip-danger'
+                : 'chip-medium'"
+                      style="font-size: 14px; margin-bottom: 4px;"
+                  >
+                    {{ $t('search.status.' + p.status) }}
+                  </ion-chip>
+
+                  <!-- Official Partner Tag -->
+                  <div v-if="p.partner_tier" class="home-partner-verified">
+                    <ion-icon :icon="shieldCheckmarkOutline" />
+                  </div>
+                </div>
                 <p>{{ $t('home.added') }} {{ fromNowToTaipei(p.created_at) }}</p>
               </ion-label>
             </ion-card>
@@ -284,17 +336,38 @@
             <ion-card
                 v-for="loc in recentLocations"
                 :key="loc.id"
-                class="discover-item"
+                :class="[
+                  'discover-item', 
+                  loc.partner_tier ? 'tier-card-' + loc.partner_tier.toLowerCase() : ''
+                ]"
                 button
                 @click="openLocation(loc)"
             >
+              <!-- Tier Badge -->
+              <ion-badge
+                  v-if="loc.partner_tier"
+                  :class="['tier-badge', loc.partner_tier.toLowerCase()]"
+              >
+                <ion-icon :icon="sparkles" />
+                <span>{{ $t('home.partnerTier', { tier: (loc.partner_tier || '').toUpperCase() }) }}</span>
+              </ion-badge>
+
+              <!-- Premium Flare for Gold/Silver -->
+              <div v-if="['gold', 'silver'].includes(String(loc.partner_tier || '').toLowerCase())" class="premium-flare"></div>
+
               <img
                   :src="loc.image || 'https://placehold.co/200x200'"
                   :alt="$t('home.altLocation')"
                   class="discover-img"
               />
               <ion-label class="discover-label">
-                <h3>{{ loc.name }}</h3>
+                <div class="name-row">
+                  <h3>{{ loc.name }}</h3>
+                  <!-- Official Partner Tag -->
+                  <div v-if="loc.partner_tier" class="home-partner-verified">
+                    <ion-icon :icon="shieldCheckmarkOutline" />
+                  </div>
+                </div>
                 <p>{{ $t('home.added') }} {{ fromNowToTaipei(loc.created_at) }}</p>
               </ion-label>
             </ion-card>
@@ -341,7 +414,6 @@
                 v-for="news in recentNews"
                 :key="news.id"
                 class="discover-item"
-                style="height: 210px"
                 button
                 @click="openNews(news)"
             >
@@ -366,25 +438,52 @@
       </ion-card>
 
 
-      <!-- === Product Status Chart === -->
-      <ion-card>
-        <ion-card-header>
-          <ion-card-title>{{ $t('home.productStatus') }}</ion-card-title>
-        </ion-card-header>
-        <div class="chart-flex">
-          <DoughnutChart ref="doughnutRef" :data="statusChartData" :options="chartOptions" />
-        </div>
-      </ion-card>
+      <!-- === Insights Horizontal Scroll === -->
+      <div class="insights-container">
+        <div class="insights-scroll">
+          <!-- Card 1: Total Products -->
+          <div class="insight-card stat-card">
+            <div class="stat-icon-wrapper products">
+              <ion-icon :icon="sparkles" />
+            </div>
+            <div class="stat-content">
+              <span class="stat-label">{{ $t('home.totalProducts') }}</span>
+              <h2 class="stat-value">{{ totalProductCount }}</h2>
+            </div>
+          </div>
 
-      <!-- === Location Categories Chart === -->
-      <ion-card>
-        <ion-card-header>
-          <ion-card-title>{{ $t('home.locationCategories') }}</ion-card-title>
-        </ion-card-header>
-        <div class="chart-flex">
-          <DoughnutChart ref="locationChartRef" :data="locationChartData" :options="chartOptions" />
+          <!-- Card 2: Total Locations -->
+          <div class="insight-card stat-card">
+            <div class="stat-icon-wrapper locations">
+              <ion-icon :icon="locationOutline" />
+            </div>
+            <div class="stat-content">
+              <span class="stat-label">{{ $t('home.totalLocations') }}</span>
+              <h2 class="stat-value">{{ totalLocationCount }}</h2>
+            </div>
+          </div>
+
+          <!-- Card 3: Product Status Chart -->
+          <div class="insight-card chart-card">
+            <div class="insight-header">
+              <h3>{{ $t('home.productStatus') }}</h3>
+            </div>
+            <div class="chart-wrapper">
+              <DoughnutChart ref="doughnutRef" :data="statusChartData" :options="chartOptions" />
+            </div>
+          </div>
+
+          <!-- Card 4: Location Categories Chart -->
+          <div class="insight-card chart-card">
+            <div class="insight-header">
+              <h3>{{ $t('home.locationCategories') }}</h3>
+            </div>
+            <div class="chart-wrapper">
+              <DoughnutChart ref="locationChartRef" :data="locationChartData" :options="chartOptions" />
+            </div>
+          </div>
         </div>
-      </ion-card>
+      </div>
 
       <!-- === Leaderboard === -->
       <ion-card >
@@ -404,27 +503,27 @@
               <div style="display: flex; align-items: center; width: 100%;">
 
                 <!-- Rank -->
-                <div style="width: 28px; text-align: center; font-weight: 600;">
-                  <span v-if="index === 0">🥇</span>
-                  <span v-else-if="index === 1">🥈</span>
-                  <span v-else-if="index === 2">🥉</span>
+                <div style="width: 28px; text-align: center; font-weight: 600; display: flex; align-items: center; justify-content: center;">
+                  <ion-icon v-if="index === 0" :icon="medalOutline" style="color: #FFD700; font-size: 1.2rem;" />
+                  <ion-icon v-else-if="index === 1" :icon="medalOutline" style="color: #C0C0C0; font-size: 1.2rem;" />
+                  <ion-icon v-else-if="index === 2" :icon="medalOutline" style="color: #CD7F32; font-size: 1.2rem;" />
                   <span v-else>{{ index + 1 }}</span>
                 </div>
 
                 <!-- Avatar -->
                 <ion-avatar style="width: 40px; height: 40px; margin: 0 10px;">
                   <img
-                      :src="user.public_leaderboard ? (user.avatar_url || 'https://placehold.co/64x64') : `https://placehold.co/64x64?text=${$t('home.unknownAvatar')}`"
+                      :src="user.public_profile ? (user.avatar_url || 'https://placehold.co/64x64') : `https://placehold.co/64x64?text=${$t('home.unknownAvatar')}`"
                        :alt="$t('home.altAvatar')"/>
                 </ion-avatar>
 
                 <!-- Info -->
                 <ion-label style="flex: 1; min-width: 0;">
                   <h2 style="margin: 0; font-weight: 600; font-size: 1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                    {{ user.public_leaderboard ? user.display_name : $t('home.anonymousWithIndex', { index: index + 1 }) }}
+                    {{ user.public_profile ? user.display_name : $t('home.anonymousWithIndex', { index: index + 1 }) }}
                   </h2>
                   <p style="margin: 0; font-size: 0.8rem; color: var(--ion-color-medium);">
-                    {{ getLevelLabel(user.points) }}
+                    {{ $t('profile.level', { level: getLevelFromPoints(user.points) }) }}
                   </p>
                 </ion-label>
 
@@ -460,7 +559,7 @@
         <div v-if="selectedUser">
 
           <!-- ✅ Public profile shown -->
-          <template v-if="selectedUser.public_leaderboard">
+          <template v-if="selectedUser.public_profile">
             <ion-avatar style="width:60px;height:60px;margin:auto;">
               <img :src="selectedUser.avatar_url || 'https://placehold.co/60x60?text=?'"  :alt="$t('home.altAvatar')"/>
             </ion-avatar>
@@ -470,7 +569,7 @@
             </h3>
 
             <p style="margin:4px 0; font-size:0.85rem; color:var(--ion-color-medium);">
-              {{ getLevelLabel(selectedUser.points) }} ({{ $t('home.pointsCount', { points: selectedUser.points }) }})
+              {{ $t('profile.level', { level: getLevelFromPoints(selectedUser.points) }) }} ({{ $t('home.pointsCount', { points: selectedUser.points }) }})
             </p>
 
             <p v-if="selectedUser.bio" style="margin-top:6px; font-size:0.8rem; color:var(--ion-color-dark)">
@@ -484,7 +583,7 @@
               {{ $t('home.anonymous') }}
             </p>
             <p style="margin:4px 0; font-size:0.85rem; color:var(--ion-color-medium);">
-              {{ getLevelLabel(selectedUser.points) }} ({{ $t('home.pointsCount', { points: selectedUser.points }) }})
+              {{ $t('profile.level', { level: getLevelFromPoints(selectedUser.points) }) }} ({{ $t('home.pointsCount', { points: selectedUser.points }) }})
             </p>
           </template>
 
@@ -502,7 +601,7 @@ import { useI18n } from 'vue-i18n'
 import {
   IonPage, IonContent, IonCard, IonCardHeader, IonCardTitle,
   IonCardContent, IonButton, IonIcon, IonHeader, onIonViewWillEnter, IonLabel, IonChip, IonSkeletonText,
-    IonList, IonBadge, IonAvatar, IonItem, IonPopover, IonRefresher, IonRefresherContent
+    IonList, IonBadge, IonAvatar, IonItem, IonPopover
 } from '@ionic/vue'
 import { useRouter } from 'vue-router'
 import { Chart as ChartJS, Title, Tooltip, Legend, ArcElement, BarElement, CategoryScale, LinearScale } from 'chart.js'
@@ -514,9 +613,19 @@ import relativeTime from 'dayjs/plugin/relativeTime'
 import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
 import timezone from 'dayjs/plugin/timezone'
-import {barcodeOutline, locationOutline, scanOutline} from "ionicons/icons"
+import {
+  barcodeOutline,
+  locationOutline,
+  scanOutline,
+  compassOutline,
+  medalOutline,
+  sparkles,
+  closeOutline,
+  shieldCheckmarkOutline
+} from "ionicons/icons"
 import { useLeaderboard } from "@/composables/useLeaderboard";
-import {getLevelColor, getLevelLabel} from "@/composables/useLevels";
+import {getLevelColor} from "@/composables/useLevels";
+import {getLevelFromPoints} from "@/utils/xp";
 import {ActivityLogService} from "@/services/ActivityLogService";
 import { refreshSubscriptionStatus} from "@/composables/useSubscriptionStatus";
 import {Capacitor} from "@capacitor/core";
@@ -536,7 +645,7 @@ const DoughnutChart = Doughnut
 
 /* ---------------- State ---------------- */
 const router = useRouter()
-const { t } = useI18n()
+const { t, te, locale } = useI18n()
 const { fetchProgress } = useDailyMissions()
 const doughnutRef = ref<any>(null)
 const locationChartRef = ref<any>(null)
@@ -548,6 +657,52 @@ const recentProducts = ref<any[]>([])
 const recentLocations = ref<any[]>([])
 const loadingNews = ref(true)
 const recentNews = ref<any[]>([])
+const totalProductCount = ref(0)
+const totalLocationCount = ref(0)
+
+/* ---------------- Announcement logic ---------------- */
+const announcement = ref<any | null>(null)
+const showAnnouncement = ref(false)
+
+async function fetchLatestAnnouncement() {
+  try {
+    const { data, error } = await supabase
+      .from('announcements')
+      .select('*')
+      .eq('is_active', true)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    if (error || !data) return
+
+    const dismissedId = localStorage.getItem('last_dismissed_announcement')
+    if (dismissedId !== data.id) {
+      announcement.value = data
+      showAnnouncement.value = true
+    }
+  } catch (err) {
+    console.error("Failed to fetch announcement:", err)
+  }
+}
+
+function dismissAnnouncement() {
+  if (announcement.value) {
+    localStorage.setItem('last_dismissed_announcement', announcement.value.id)
+    showAnnouncement.value = false
+  }
+}
+
+function handleBannerClick() {
+  if (announcement.value?.link_url) {
+    ActivityLogService.log('announcement_click', {
+      id: announcement.value.id,
+      url: announcement.value.link_url
+    })
+    window.open(announcement.value.link_url, '_blank')
+  }
+}
+
 
 const userLocation = ref<{
   lat: number
@@ -559,11 +714,17 @@ const userLocation = ref<{
 const { leaderboard, loading: loadingLeaderboard, fetchLeaderboard } = useLeaderboard();
 const isAuthenticated = ref(false)
 
-const ionColorDark = getComputedStyle(document.documentElement)
-    .getPropertyValue('--ion-color-dark')
-    .trim()
+const isDark = ref(document.documentElement.classList.contains('ion-palette-dark'))
 
-const chartOptions: ChartOptions<'doughnut'> = {
+onMounted(() => {
+  fetchLatestAnnouncement()
+  const observer = new MutationObserver(() => {
+    isDark.value = document.documentElement.classList.contains('ion-palette-dark')
+  })
+  observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
+})
+
+const chartOptions = computed<ChartOptions<'doughnut'>>(() => ({
   responsive: true,
   maintainAspectRatio: false,
   plugins: {
@@ -571,22 +732,46 @@ const chartOptions: ChartOptions<'doughnut'> = {
       position: 'right',
       align: 'center',
       labels: {
-        color: ionColorDark,
+        color: isDark.value ? '#ffffff' : '#1e1e1e',
         boxWidth: 14,
         font: { size: 12 },
         padding: 8
       }
     }
   }
-}
+}))
 
 /* ---------------- Product Status Chart ---------------- */
 const statusChartData = ref<ChartData<'doughnut'>>({
-  labels: ['Halal', 'Muslim-friendly', 'Syubhah', 'Haram'],
+  labels: [],
   datasets: [{
     backgroundColor: ['#28a745', '#007bff', '#ffc107', '#dc3545'],
-    data: [0, 0, 0, 0]
+    data: []
   }]
+})
+
+watch([() => locale.value, isDark], () => {
+  // Update status labels if we have data
+  if (statusChartData.value && statusChartData.value.labels && statusChartData.value.labels.length > 0) {
+    statusChartData.value = {
+      ...statusChartData.value,
+      labels: [
+        t('home.statuses.halal'),
+        t('home.statuses.muslimFriendly'),
+        t('home.statuses.syubhah'),
+        t('home.statuses.haram')
+      ]
+    }
+  }
+
+  // Refresh location category labels because they are translated in the fetcher
+  fetchLocationCategoryStats()
+  
+  // Re-render charts
+  nextTick(() => {
+    if (doughnutRef.value?.chart) doughnutRef.value.chart.update();
+    if (locationChartRef.value?.chart) locationChartRef.value.chart.update();
+  })
 })
 
 /* ---------------- Location Categories Chart ---------------- */
@@ -756,7 +941,7 @@ async function getUserLocation(): Promise<{
 
     return userLocation.value
 
-  } catch (error) {
+  } catch {
     console.warn('[GPS] Using fallback Taipei')
 
     userLocation.value = {
@@ -937,14 +1122,7 @@ const upcomingCountdown = computed(() => {
 })
 
 
-function updateChartSmoothly(chartRef: any, newData: number[]) {
-  nextTick(() => {
-    if (!chartRef.value?.chart) return
-    const chart = chartRef.value.chart
-    chart.data.datasets[0].data = newData
-    chart.update('active')
-  })
-}
+// Removed updateChartSmoothly as we are using reactive data objects now
 
 function openUserProfile(user: any, ev: Event) {
   ActivityLogService.log("home_leaderboard_profile", {
@@ -966,19 +1144,54 @@ async function fetchRecentProducts() {
   loadingProducts.value = true
   const { data, error } = await supabase
       .from("products")
-      .select("barcode, name, status, photo_front_url, created_at, product_categories(name)")
+      .select(`
+        barcode, 
+        name, 
+        status, 
+        photo_front_url, 
+        created_at, 
+        updated_at, 
+        product_categories(name),
+        partner:partners(partner_tier)
+      `)
       .eq("approved", true)
       .order("created_at", { ascending: false })
-      .limit(RECENT_DISCOVER_LIMIT)
+      .limit(100) // 🏁 Fetch more to ensure we catch recent Gold items
 
   if (!error && data) {
-    recentProducts.value = data.map(p => ({
+    // 📅 Determine "New Gold" threshold (7 days)
+    const sevenDaysAgo = dayjs().subtract(7, 'day');
+
+    // 🏎️ Sort: Gold/Silver < 7 days old go to the top
+    const sortedData = [...data].sort((a: any, b: any) => {
+      const getWeight = (p: any) => {
+        const t = Array.isArray(p.partner) ? p.partner[0]?.partner_tier : p.partner?.partner_tier;
+        const tier = String(t || '').toLowerCase();
+        // Check both created_at and potentially updated_at if available
+        const isNew = dayjs(p.created_at).isAfter(sevenDaysAgo) || (p.updated_at && dayjs(p.updated_at).isAfter(sevenDaysAgo));
+        
+        if (tier === 'gold' && isNew) return 3; // Absolute priority for fresh Gold
+        if (tier === 'gold') return 2;          // Regular Gold
+        if (tier === 'silver' && isNew) return 1;
+        return 0;
+      };
+
+      const weightA = getWeight(a);
+      const weightB = getWeight(b);
+
+      if (weightA !== weightB) return weightB - weightA;
+      
+      return dayjs(b.created_at).valueOf() - dayjs(a.created_at).valueOf();
+    }).slice(0, RECENT_DISCOVER_LIMIT);
+
+    recentProducts.value = sortedData.map(p => ({
       barcode: p.barcode,
       name: p.name,
       status: p.status,
-      category: p.product_categories?.[0]?.name || "",
+      category: (p.product_categories as any)?.name || "",
       image: p.photo_front_url,
-      created_at: p.created_at
+      created_at: p.created_at,
+      partner_tier: Array.isArray(p.partner) ? p.partner[0]?.partner_tier : (p.partner as any)?.partner_tier
     }))
   }
   loadingProducts.value = false
@@ -988,18 +1201,51 @@ async function fetchRecentLocations() {
   loadingLocations.value = true
   const { data, error } = await supabase
       .from('locations')
-      .select('id, name, image, type_id, location_types(name), created_at')
+      .select(`
+        id, 
+        name, 
+        image, 
+        type_id, 
+        location_types(name), 
+        created_at, 
+        updated_at, 
+        partner:partners(partner_tier)
+      `)
       .eq('approved', true)
       .order('created_at', { ascending: false })
-      .limit(RECENT_DISCOVER_LIMIT)
+      .limit(100)
 
   if (!error && data) {
-    recentLocations.value = data.map(l => ({
+    const sevenDaysAgo = dayjs().subtract(7, 'day');
+
+    // 🏎️ Sort: Gold/Silver < 7 days old go to the top
+    const sortedData = [...data].sort((a: any, b: any) => {
+      const getWeight = (p: any) => {
+        const t = Array.isArray(p.partner) ? p.partner[0]?.partner_tier : p.partner?.partner_tier;
+        const tier = String(t || '').toLowerCase();
+        const isNew = dayjs(p.created_at).isAfter(sevenDaysAgo) || (p.updated_at && dayjs(p.updated_at).isAfter(sevenDaysAgo));
+        
+        if (tier === 'gold' && isNew) return 3;
+        if (tier === 'gold') return 2;
+        if (tier === 'silver' && isNew) return 1;
+        return 0;
+      };
+
+      const weightA = getWeight(a);
+      const weightB = getWeight(b);
+
+      if (weightA !== weightB) return weightB - weightA;
+      
+      return dayjs(b.created_at).valueOf() - dayjs(a.created_at).valueOf();
+    }).slice(0, RECENT_DISCOVER_LIMIT);
+
+    recentLocations.value = sortedData.map(l => ({
       id: l.id,
       name: l.name,
       image: l.image,
-      type: l.location_types?.[0]?.name || '',
-      created_at: l.created_at
+      type: (l.location_types as any)?.name || '',
+      created_at: l.created_at,
+      partner_tier: Array.isArray(l.partner) ? l.partner[0]?.partner_tier : (l.partner as any)?.partner_tier
     }))
   }
   loadingLocations.value = false
@@ -1007,15 +1253,30 @@ async function fetchRecentLocations() {
 
 async function fetchStats() {
   loadingStats.value = true
-  const { data: products } = await supabase.from('products').select('status, created_at')
+  const { data: products } = await supabase.from('products').select('status')
   if (products) {
+    totalProductCount.value = products.length
     const statusCount = { Halal:0,'Muslim-friendly':0,Syubhah:0,Haram:0 }
+    
     products.forEach((p) => {
-      if (statusCount[p.status as keyof typeof statusCount] !== undefined) {
-        statusCount[p.status as keyof typeof statusCount]++
+      const s = p.status as keyof typeof statusCount
+      if (statusCount[s] !== undefined) {
+        statusCount[s]++
       }
     })
-    updateChartSmoothly(doughnutRef, Object.values(statusCount))
+
+    statusChartData.value = {
+      labels: [
+        t('home.statuses.halal'),
+        t('home.statuses.muslimFriendly'),
+        t('home.statuses.syubhah'),
+        t('home.statuses.haram')
+      ],
+      datasets: [{
+        backgroundColor: ['#28a745', '#007bff', '#ffc107', '#dc3545'],
+        data: [statusCount.Halal, statusCount['Muslim-friendly'], statusCount.Syubhah, statusCount.Haram]
+      }]
+    }
   }
 
   loadingStats.value = false
@@ -1026,19 +1287,21 @@ async function fetchLocationCategoryStats() {
       .from("locations")
       .select(`
     id,
-    name,
-    image,
-    created_at,
-    location_types!inner ( name )
+    location_types ( name )
   `)
       .eq('approved', true)
 
   if (!error && data) {
+    totalLocationCount.value = data.length
     const counts: Record<string, number> = {}
 
     data?.forEach(loc => {
-      //@ts-expect-error always name
-      const typeName = loc.location_types?.name || t('home.unknown')
+      // Handle potential array or object response for location_types
+      const rawType = Array.isArray(loc.location_types) ? loc.location_types[0] : loc.location_types
+      const typeKey = rawType?.name || 'Unknown'
+      
+      // Try to translate the type, fallback to raw name
+      const typeName = te(`explore.types.${typeKey}`) ? t(`explore.types.${typeKey}`) : typeKey
       counts[typeName] = (counts[typeName] || 0) + 1
     })
 
@@ -1118,10 +1381,6 @@ async function refreshAllData() {
   if (Capacitor.isNativePlatform()) refreshSubscriptionStatus();
 }
 
-async function handleRefresh(event: any) {
-  await refreshAllData()
-  event.target.complete()
-}
 
 onIonViewWillEnter(async () => {
   ActivityLogService.log("home_page_open");
@@ -1231,80 +1490,226 @@ function openPartner(partner: any) {
 </script>
 
 <style scoped>
-/* === Featured Card === */
-.featured-card {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
 
-/* === Chart === */
-.chart-flex {
+/* === Announcement Banner === */
+.announcement-banner {
   display: flex;
-  justify-content: center;
   align-items: center;
-  width: 100%;
-  padding: 20px 0;
-}
-.chart-flex canvas {
-  width: 100%;
-  max-height: 400px;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-radius: 12px;
+  margin-bottom: 16px;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(0,0,0,0.05);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  transition: all 0.2s ease;
 }
 
-/* === Scan Buttons === */
-.scan-row {
-  margin-top: 10px;
-  display: flex;
-  gap: 1rem;
-  flex-wrap: wrap;
+.announcement-banner.clickable {
+  cursor: pointer;
 }
-.scan-row > * {
+
+.announcement-banner.clickable:active {
+  transform: scale(0.98);
+  opacity: 0.9;
+}
+
+.announcement-banner.info {
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border-color: #bae6fd;
+}
+
+.announcement-banner.warning {
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+  border-color: #fde68a;
+}
+
+.announcement-banner.success {
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+  border-color: #bbf7d0;
+}
+
+.announcement-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
   flex: 1;
 }
-.scan-row ion-button {
-  text-transform: none;
-  font-size: 1.4rem;
-  font-weight: 600;
-  height: 80px;
-  --border-radius: 16px;
+
+.announcement-thumb-wrapper {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  overflow: hidden;
+  flex-shrink: 0;
+  border: 1px solid rgba(0,0,0,0.1);
 }
+
+.announcement-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.announcement-icon {
+  font-size: 20px;
+  color: var(--ion-color-carrot);
+}
+
+.announcement-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.announcement-title {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: #1e293b;
+}
+
+.announcement-body {
+  margin: 2px 0 0;
+  font-size: 0.8rem;
+  color: #475569;
+  line-height: 1.25;
+}
+
+.close-btn {
+  --padding-start: 4px;
+  --padding-end: 4px;
+  margin-left: 8px;
+  height: 32px;
+  width: 32px;
+  font-size: 18px;
+}
+
+.slide-down-enter-active, .slide-down-leave-active {
+  transition: all 0.3s ease;
+}
+.slide-down-enter-from, .slide-down-leave-to {
+  transform: translateY(-20px);
+  opacity: 0;
+}
+
+.ion-palette-dark .announcement-banner.info { background: linear-gradient(135deg, #0c4a6e 0%, #075985 100%); border-color: #0369a1; }
+.ion-palette-dark .announcement-banner.warning { background: linear-gradient(135deg, #78350f 0%, #92400e 100%); border-color: #b45309; }
+.ion-palette-dark .announcement-banner.success { background: linear-gradient(135deg, #064e3b 0%, #065f46 100%); border-color: #047857; }
+.ion-palette-dark .announcement-title { color: #f1f5f9; }
+.ion-palette-dark .announcement-body { color: #cbd5e1; }
+.ion-palette-dark .close-btn { --color: #94a3b8; }
+
+
 
 /* ===============================
    Prayer Times
    =============================== */
-.prayer-card {
-  --padding-start: 0;
-  --padding-end: 0;
-  --padding-top: 0;
-  --padding-bottom: 0;
+
+/* 🔥 App Features Redesign */
+.clear-card {
+  background: transparent;
+  --background: transparent;
+  box-shadow: none;
+  border-radius: 0;
+  contain: none;
+  overflow: visible;
+  border: none;
 }
 
-.prayer-card ion-card-header {
-  padding: 4px 4px 2px;
-}
-
-.prayer-card ion-card-title {
-  font-size: 1rem;
-  font-weight: 600;
-}
-.prayer-card ion-card-content {
+.main-feature-section {
   padding: 0;
-
+  margin-top: 10px;
+  margin-bottom: 10px;
 }
 
-.prayer-header {
+.main-features-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+}
+
+.feature-card {
   display: flex;
+  flex-direction: column;
+  align-items: flex-start;
   justify-content: space-between;
+  padding: 16px;
+  border-radius: 16px;
+  border: none;
+  text-align: left;
+  height: 150px;
+  width: 100%;
+  margin: 0;
+  box-sizing: border-box;
+  transition: transform 0.2s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.2s;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+.feature-card:active {
+  transform: scale(0.96);
+}
+
+.feature-primary {
+  background: linear-gradient(135deg, var(--ion-color-carrot) 0%, #ff8c3a 100%);
+  color: white;
+  box-shadow: 0 8px 16px rgba(217, 119, 6, 0.25);
+}
+
+.feature-secondary {
+  /* Using a contrasting premium color for barcode */
+  background: linear-gradient(135deg, var(--ion-color-tertiary, #5260ff) 0%, #7b88ff 100%);
+  color: white;
+  box-shadow: 0 8px 16px rgba(82, 96, 255, 0.25);
+}
+
+.feature-icon-wrapper {
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 12px;
+  width: 44px;
+  height: 44px;
+  display: flex;
   align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  backdrop-filter: blur(4px);
+  z-index: 2;
 }
 
-.current-time {
-  font-size: 0.8rem;
-  font-weight: 500;
-  color: var(--ion-color-medium);
-  letter-spacing: 0.04em;
+.feature-text {
+  margin-top: 16px;
+  z-index: 2;
 }
 
+.feature-text h3 {
+  margin: 0 0 4px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: normal;
+}
+
+.feature-text p {
+  margin: 0;
+  font-size: 0.75rem;
+  opacity: 0.9;
+  line-height: 1.3;
+  white-space: normal;
+  word-wrap: break-word;
+}
+
+.feature-bg-icon {
+  position: absolute;
+  right: -10px;
+  bottom: -15px;
+  font-size: 90px;
+  opacity: 0.15;
+  z-index: 1;
+  transform: rotate(-10deg);
+  pointer-events: none;
+}
 
 .prayer-horizontal {
   display: flex;
@@ -1318,7 +1723,7 @@ function openPartner(partner: any) {
   scrollbar-width: none;        /* Firefox */
   -ms-overflow-style: none;     /* IE / Edge */
 
-  padding: 4px 4px 2px;
+  padding: 4px 4px 12px;
 }
 
 .prayer-horizontal::-webkit-scrollbar {
@@ -1333,7 +1738,7 @@ function openPartner(partner: any) {
   gap: 12px;
 
   width: 100%;
-  padding: 4px 12px 2px;
+  padding: 4px 12px 12px;
 }
 
 @media (min-width: 1024px) {
@@ -1351,8 +1756,6 @@ function openPartner(partner: any) {
 
 .qibla-header-btn {
   font-weight: 600;
-  --padding-start: 10px;
-  --padding-end: 10px;
 }
 
 
@@ -1372,9 +1775,6 @@ function openPartner(partner: any) {
   flex-shrink: 0;
 }
 
-.prayer-pill.now {
-  border: 1px dashed rgba(217, 119, 6, 0.6);
-}
 
 .prayer-pill .label {
   font-size: 0.7rem;
@@ -1406,18 +1806,6 @@ function openPartner(partner: any) {
   padding: 6px 12px 4px;   /* horizontal padding = card padding feel */
 }
 
-.qibla-btn {
-  font-size: 0.75rem;
-  height: 28px;
-  --padding-start: 12px;
-  --padding-end: 12px;
-}
-
-.qibla-btn--block {
-  width: 100%;
-  height: 32px;
-  font-size: 0.8rem;
-}
 
 .prayer-title-main {
   font-size: 1rem;
@@ -1429,5 +1817,128 @@ function openPartner(partner: any) {
   color: var(--ion-color-medium);
   margin-top: 2px;
 }
+
+/* === Insights Dashboard Section === */
+.insights-container {
+  margin: 0px; /* Remove side margins here, handled by card margin + scroll padding */
+}
+
+.insights-scroll {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding: 0px; /* Allow card margins to breathe */
+  scrollbar-width: none;
+  -ms-overflow-style: none; 
+}
+
+/* 🖥️ Desktop: Transform Scroll to Grid */
+@media (min-width: 1024px) {
+  .insights-scroll {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    overflow-x: visible;
+    padding: 8px 16px; /* Match standard page margins */
+  }
+}
+
+.insights-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.insight-card {
+  flex: 0 0 280px;
+  scroll-snap-align: center;
+  margin: 8px; /* Match the exact 8px margin from the inspector */
+  background: var(--card-bg);
+  border-radius: 16px; /* Match the exact 16px radius from the inspector */
+  padding: 16px; /* Match the 16px inner padding */
+  box-shadow: var(--card-shadow);
+  border: 1px solid var(--card-border);
+  display: flex;
+  flex-direction: column;
+  height: 220px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+@media (min-width: 1024px) {
+  .insight-card {
+    flex: 1; /* Fit width */
+    min-width: 0;
+  }
+}
+
+/* Stat Cards (Centered Icons) */
+.stat-card {
+  flex: 0 0 220px;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 16px;
+}
+
+.stat-icon-wrapper {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+}
+
+.stat-icon-wrapper.products {
+  background: rgba(var(--ion-color-carrot-rgb), 0.1);
+  color: var(--ion-color-carrot);
+}
+
+.stat-icon-wrapper.locations {
+  background: rgba(var(--ion-color-primary-rgb), 0.1);
+  color: var(--ion-color-primary);
+}
+
+.stat-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--ion-color-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.stat-value {
+  margin: 2px 0 0;
+  font-size: 1.6rem;
+  font-weight: 850;
+  color: var(--ion-color-dark);
+}
+
+/* Chart Cards */
+.chart-card {
+  flex: 0 0 320px;
+}
+
+.insight-header h3 {
+  margin: 0 0 12px;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--ion-color-dark);
+}
+
+.chart-wrapper {
+  flex: 1;
+  width: 100%;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Dark mode handled by global variables */
+
 
 </style>

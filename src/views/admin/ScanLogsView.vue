@@ -2,7 +2,7 @@
   <ion-page>
     <ion-header>
       <app-header
-          title="Ingredient Scan Logs"
+          :title="$t('profile.admin.scanLogs')"
           :icon="listOutline"
           :showBack="true"
       />
@@ -24,7 +24,7 @@
 
         <!-- Avatar -->
           <ion-avatar slot="start" v-if="log.avatar_url">
-            <img :src="log.avatar_url" alt="User Avatar" />
+            <img :src="log.avatar_url" :alt="$t('admin.userAvatar')" />
           </ion-avatar>
 
           <!-- Label section -->
@@ -32,18 +32,18 @@
 
             <!-- USER NAME -->
             <h2 class="log-user">
-              {{ log.full_name || log.display_name || log.email || "Unknown User" }}
+              {{ log.full_name || log.display_name || log.email || $t('admin.unknownUser') }}
             </h2>
 
             <!-- PRODUCT -->
             <p class="log-product">
-              🛒 <strong>{{ log.product_name || "Unknown Product" }}</strong>
+              🛒 <strong>{{ log.product_name || $t('admin.unknownProduct') }}</strong>
             </p>
 
             <!-- STATUS + SOURCE -->
             <div class="log-action">
               <ion-text color="dark">
-                <strong>Status: {{ log.auto_status || "N/A" }}</strong>
+                <strong>{{ $t('admin.status') }}: {{ log.auto_status || "N/A" }}</strong>
               </ion-text>
 
               <ion-badge
@@ -65,9 +65,9 @@
       <ion-modal :is-open="showModal" @didDismiss="closeModal">
         <ion-header>
           <ion-toolbar>
-            <ion-title>Scan Details</ion-title>
+            <ion-title>{{ $t('admin.scanDetails') }}</ion-title>
             <ion-buttons slot="end">
-              <ion-button @click="closeModal">Close</ion-button>
+              <ion-button @click="closeModal">{{ $t('admin.close') }}</ion-button>
             </ion-buttons>
           </ion-toolbar>
         </ion-header>
@@ -77,7 +77,7 @@
           <ion-card v-if="selectedLog">
             <ion-card-header>
               <ion-card-title>
-                {{ selectedLog.product_name || "Unknown Product" }}
+                {{ selectedLog.product_name || $t('admin.unknownProduct') }}
               </ion-card-title>
               <p class="log-time">
                 {{ fromNowToTaipei(selectedLog.created_at) }}
@@ -89,7 +89,7 @@
               <ion-list lines="none">
 
                 <ion-item>
-                  <ion-label>Status</ion-label>
+                  <ion-label>{{ $t('admin.status') }}</ion-label>
                   <ion-badge :color="selectedLog.auto_status === 'Haram' ? 'danger' :
                                selectedLog.auto_status === 'Syubhah' ? 'warning' :
                                selectedLog.auto_status === 'Halal' ? 'success' : 'primary'">
@@ -98,38 +98,38 @@
                 </ion-item>
 
                 <ion-item>
-                  <ion-label>Source</ion-label>
+                  <ion-label>{{ $t('admin.source') }}</ion-label>
                   <ion-note slot="end">{{ selectedLog.source }}</ion-note>
                 </ion-item>
 
                 <ion-item>
-                  <ion-label>Device</ion-label>
+                  <ion-label>{{ $t('admin.device') }}</ion-label>
                   <ion-note slot="end">
                     {{ selectedLog.device_model }} ({{ selectedLog.platform }})
                   </ion-note>
                 </ion-item>
 
                 <ion-item v-if="selectedLog.processing_time_ms">
-                  <ion-label>Processing Time</ion-label>
+                  <ion-label>{{ $t('admin.processingTime') }}</ion-label>
                   <ion-note slot="end">{{ selectedLog.processing_time_ms }} ms</ion-note>
                 </ion-item>
 
                 <ion-item v-if="selectedLog.error_message">
-                  <ion-label>Error</ion-label>
+                  <ion-label>{{ $t('admin.error') }}</ion-label>
                   <ion-note slot="end" color="danger">
                     {{ selectedLog.error_message }}
                   </ion-note>
                 </ion-item>
 
                 <ion-item>
-                  <ion-label>App Version</ion-label>
+                  <ion-label>{{ $t('admin.appVersion') }}</ion-label>
                   <ion-note slot="end">{{ selectedLog.app_version }}</ion-note>
                 </ion-item>
 
               </ion-list>
 
               <!-- OCR TEXT -->
-              <h1 style="margin-top: 16px;">OCR Chinese</h1>
+              <h1 style="margin-top: 16px;">{{ $t('admin.ocrChinese') }}</h1>
               <ion-textarea
                   readonly
                   :auto-grow="true"
@@ -138,7 +138,7 @@
               ></ion-textarea>
 
 
-              <h1>OCR English</h1>
+              <h1>{{ $t('admin.ocrEnglish') }}</h1>
               <ion-textarea
                   readonly
                   :auto-grow="true"
@@ -148,7 +148,7 @@
 
 
               <!-- HIGHLIGHT SUMMARY (JSON pretty) -->
-              <h1>Detected Highlights</h1>
+              <h1>{{ $t('admin.detectedHighlights') }}</h1>
               <ion-textarea
                   readonly
                   :auto-grow="true"
@@ -157,7 +157,7 @@
               ></ion-textarea>
 
 
-              <h1>Raw OCR Text</h1>
+              <h1>{{ $t('admin.rawOcrText') }}</h1>
               <ion-textarea
                   readonly
                   :auto-grow="true"
@@ -178,7 +178,7 @@
       >
         <ion-infinite-scroll-content
             loading-spinner="bubbles"
-            loading-text="Loading more logs..."
+            :loading-text="$t('admin.loadingMoreLogs')"
         ></ion-infinite-scroll-content>
       </ion-infinite-scroll>
 

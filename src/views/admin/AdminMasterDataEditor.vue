@@ -3,7 +3,7 @@
     <ion-header>
       <ion-toolbar>
         <ion-title>
-          {{ config?.label || 'Master Data' }}
+          {{ config?.i18nKey ? $t(config.i18nKey) : (config?.label || $t('admin.masterData')) }}
         </ion-title>
 
         <ion-buttons slot="start">
@@ -17,7 +17,7 @@
               size="small"
               @click="resetForm"
           >
-            Cancel Edit
+            {{ $t('admin.cancelEdit') }}
           </ion-button>
         </ion-buttons>
       </ion-toolbar>
@@ -30,7 +30,7 @@
       <ion-card v-if="config">
         <ion-card-header>
           <ion-card-title>
-            {{ editingId ? 'Edit' : 'Add New' }} {{ config.label }}
+            {{ editingId ? $t('common.edit') : $t('admin.addNew') }} {{ config?.i18nKey ? $t(config.i18nKey) : config?.label }}
           </ion-card-title>
         </ion-card-header>
 
@@ -41,7 +41,7 @@
               lines="full"
           >
             <ion-label position="stacked">
-              {{ field.label }}
+              {{ field.i18nKey ? $t(field.i18nKey) : field.label }}
               <span v-if="field.required" style="color: red">*</span>
             </ion-label>
 
@@ -50,7 +50,7 @@
                 v-if="['text','url','number'].includes(field.type)"
                 v-model="form[field.key]"
                 :type="getIonInputType(field.type)"
-                :placeholder="field.label"
+                :placeholder="field.i18nKey ? $t(field.i18nKey) : field.label"
             />
 
             <!-- COLOR (semantic select) -->
@@ -64,7 +64,7 @@
                   :key="opt.value"
                   :value="opt.value"
               >
-                {{ opt.label }}
+                {{ opt.i18nKey ? $t(opt.i18nKey) : opt.label }}
               </ion-select-option>
             </ion-select>
 
@@ -74,9 +74,7 @@
                 :color="form.color"
                 style="margin-top: 8px"
             >
-              {{
-                field.options?.find(o => o.value === form.color)?.label
-              }}
+              {{ getOptionLabel(field, form.color) }}
             </ion-chip>
 
             <!-- SELECT (FOREIGN KEY) -->
@@ -103,7 +101,7 @@
               :disabled="saving"
               @click="save"
           >
-            {{ editingId ? 'Update' : 'Add' }}
+            {{ editingId ? $t('common.update') : $t('common.add') }}
           </ion-button>
         </ion-card-content>
       </ion-card>
@@ -113,7 +111,7 @@
       ======================== -->
       <ion-card v-if="rows.length">
         <ion-card-header>
-          <ion-card-title>Existing {{ config.label }}</ion-card-title>
+          <ion-card-title>{{ $t('admin.existing') }} {{ config?.i18nKey ? $t(config.i18nKey) : config?.label }}</ion-card-title>
         </ion-card-header>
 
         <ion-card-content>
@@ -165,7 +163,7 @@
                     color="primary"
                     @click="editRow(row)"
                 >
-                  Edit
+                  {{ $t('common.edit') }}
                 </ion-button>
 
                 <ion-button
@@ -174,7 +172,7 @@
                     color="danger"
                     @click="remove(row[config.pk])"
                 >
-                  Delete
+                  {{ $t('common.delete') }}
                 </ion-button>
               </ion-buttons>
             </ion-item>
@@ -195,11 +193,11 @@
               :disabled="page === 1"
               @click="prevPage"
           >
-            Previous
+            {{ $t('common.previous') }}
           </ion-button>
 
           <ion-text style="align-self:center">
-            Page {{ page }} of {{ totalPages }}
+            {{ $t('admin.pageOf', { page: page, total: totalPages }) }}
           </ion-text>
 
           <ion-button
@@ -208,7 +206,7 @@
               :disabled="page >= totalPages"
               @click="nextPage"
           >
-            Next
+            {{ $t('common.next') }}
           </ion-button>
         </div>
 
@@ -216,7 +214,7 @@
 
       <ion-text v-if="!rows.length && !loading" color="medium">
         <p style="text-align:center;margin-top:2rem;">
-          No data yet.
+          {{ $t('admin.noDataYet') }}
         </p>
       </ion-text>
 
@@ -230,6 +228,7 @@ import { ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { supabase } from '@/plugins/supabaseClient'
 import { masterDataConfig } from '@/config/masterDataConfig'
+import { useI18n } from 'vue-i18n'
 
 // Ionic
 import {
@@ -264,6 +263,7 @@ type MasterRow = Record<string, any>
 interface MasterField {
   key: string
   label: string
+  i18nKey?: string
   type: 'text' | 'url' | 'number' | 'color' | 'select'
   required?: boolean
 
@@ -278,18 +278,21 @@ interface MasterField {
   options?: {
     value: string | number
     label: string
+    i18nKey?: string
   }[]
 }
 
 
 interface MasterConfig {
   label: string
+  i18nKey?: string
   pk: string
   fields: MasterField[]
 }
 
 
 const route = useRoute()
+const { t } = useI18n()
 const table = route.params.table as string
 const config = masterDataConfig[table] as MasterConfig
 
@@ -405,7 +408,7 @@ function resetForm() {
 }
 
 async function remove(id: number | string) {
-  if (!confirm('Are you sure you want to delete this item?')) return
+  if (!confirm(t('admin.retractConfirm'))) return
 
   await supabase.from(table).delete().eq(config.pk, id)
 
@@ -439,6 +442,12 @@ function prevPage() {
 /* ======================
    DISPLAY HELPERS
 ====================== */
+function getOptionLabel(field: MasterField, value: any) {
+  const opt = field.options?.find(o => o.value === value)
+  if (!opt) return ''
+  return opt.i18nKey ? t(opt.i18nKey) : opt.label
+}
+
 function displayPrimary(row: any) {
   return row.name || row.keyword || row.id
 }
@@ -456,13 +465,16 @@ function displaySecondary(row: any) {
 }
 
 function getHighlightLabel(color: string): string {
+  const opt = config.fields.find((f: any) => f.key === 'color')?.options?.find((o: any) => o.value === normalizeIonColor(color))
+  if (opt?.i18nKey) return t(opt.i18nKey)
+  
   switch (color) {
     case '--ion-color-primary':
-      return 'Muslim-friendly'
+      return t('review.statusMuslimFriendly')
     case '--ion-color-warning':
-      return 'Syubhah'
+      return t('review.statusSyubhah')
     case '--ion-color-danger':
-      return 'Haram'
+      return t('review.statusHaram')
     default:
       return color
   }

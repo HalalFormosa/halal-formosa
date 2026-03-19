@@ -154,7 +154,7 @@ export default defineComponent({
 </script>
 
 <script setup lang="ts">
-import {onMounted, ref} from 'vue';
+import { ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { supabase } from '@/plugins/supabaseClient';
 import { Capacitor } from '@capacitor/core';
