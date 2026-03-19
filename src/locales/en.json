@@ -15,7 +15,8 @@
     "update": "Update",
     "add": "Add",
     "previous": "Previous",
-    "next": "Next"
+    "next": "Next",
+    "clear": "Clear"
   },
   "dailyMissions": {
     "title": "Daily Missions",
@@ -40,7 +41,7 @@
       "scan_barcode": "Scan Barcode",
       "find_muslim_friendly": "Find Muslim-friendly product",
       "view_place_details": "Check location details",
-      "add_product": "Add A New Product"
+      "add_product": "Add A New Product or Location"
     }
   },
   "auth": {

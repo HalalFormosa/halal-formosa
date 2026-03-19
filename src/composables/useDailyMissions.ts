@@ -31,27 +31,27 @@ const missions = ref<Mission[]>([
     {
         id: 'scan_ingredients',
         label: 'Scan Ingredients',
-        required: 5,
+        required: 1,
         current: 0,
-        points: 10,
+        points: 5,
         completed: false,
         icon: 'scan-outline'
     },
     {
         id: 'scan_barcode',
         label: 'Scan Barcode',
-        required: 5,
+        required: 1,
         current: 0,
-        points: 10,
+        points: 5,
         completed: false,
         icon: 'barcode-outline'
     },
     {
         id: 'find_muslim_friendly',
         label: 'Find Muslim-friendly product',
-        required: 3,
+        required: 1,
         current: 0,
-        points: 10,
+        points: 5,
         completed: false,
         icon: 'heart-outline'
     },
@@ -154,7 +154,8 @@ export function useDailyMissions() {
                         break
                     }
 
-                    case 'add_product_success': {
+                    case 'add_product_success':
+                    case 'add_place_success': {
                         const mAddProd = missions.value.find(m => m.id === 'add_product')
                         if (mAddProd && mAddProd.current < mAddProd.required) mAddProd.current++
                         break

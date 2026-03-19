@@ -15,7 +15,8 @@
     "update": "更新",
     "add": "添加",
     "previous": "上一頁",
-    "next": "下一頁"
+    "next": "下一頁",
+    "clear": "清除"
   },
   "dailyMissions": {
     "title": "每日任務",
@@ -40,7 +41,7 @@
       "scan_barcode": "掃描條碼",
       "find_muslim_friendly": "尋找穆斯林友善產品",
       "view_place_details": "查看地點詳情",
-      "add_product": "新增產品"
+      "add_product": "新增產品或地點"
     }
   },
   "auth": {

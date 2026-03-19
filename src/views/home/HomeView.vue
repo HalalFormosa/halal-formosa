@@ -45,16 +45,29 @@
             </ion-card-title>
 
             <!-- 🧭 Find Qibla (header action) -->
-            <ion-button
-                size="small"
-                fill="clear"
-                color="carrot"
-                class="qibla-header-btn"
-                @click="goQibla"
-            >
-              <ion-icon :icon="compassOutline" slot="start" />
-              {{ $t('home.qibla') }}
-            </ion-button>
+            <div class="prayer-header-actions">
+              <ion-button
+                  size="small"
+                  fill="clear"
+                  color="carrot"
+                  class="qibla-header-btn"
+                  @click="handleRefreshLocation"
+                  :disabled="loadingPrayerTimes"
+              >
+                <ion-icon :icon="locateOutline" />
+              </ion-button>
+
+              <ion-button
+                  size="small"
+                  fill="clear"
+                  color="carrot"
+                  class="qibla-header-btn"
+                  @click="goQibla"
+              >
+                <ion-icon :icon="compassOutline" slot="start" />
+                {{ $t('home.qibla') }}
+              </ion-button>
+            </div>
           </div>
         </ion-card-header>
 
@@ -553,9 +566,10 @@
     <ion-popover
         :is-open="!!selectedUser"
         :event="popoverEvent"
+        class="leaderboard-popover"
         @didDismiss="closePopover"
     >
-      <ion-content class="ion-padding" style="text-align:center; min-width: 220px;">
+      <ion-content class="ion-padding" style="text-align:center; min-width: 250px;">
         <div v-if="selectedUser">
 
           <!-- ✅ Public profile shown -->
@@ -621,7 +635,8 @@ import {
   medalOutline,
   sparkles,
   closeOutline,
-  shieldCheckmarkOutline
+  shieldCheckmarkOutline,
+  locateOutline
 } from "ionicons/icons"
 import { useLeaderboard } from "@/composables/useLeaderboard";
 import {getLevelColor} from "@/composables/useLevels";
@@ -979,6 +994,12 @@ async function fetchPrayerTimes() {
   }
 
   loadingPrayerTimes.value = false
+}
+
+async function handleRefreshLocation() {
+  ActivityLogService.log("home_prayer_refresh_location");
+  localStorage.removeItem('hf_user_location'); // 🏁 Clear cache
+  await fetchPrayerTimes();
 }
 
 
@@ -1756,6 +1777,12 @@ function openPartner(partner: any) {
 
 .qibla-header-btn {
   font-weight: 600;
+}
+
+.prayer-header-actions {
+  display: flex;
+  gap: 4px;
+  align-items: center;
 }
 
 

@@ -554,6 +554,7 @@ const loadingCount = ref(true)
 
 const allLoaded = ref(false)
 const isFetching = ref(false)
+const shouldResetSearch = ref(false)
 
 const pageSize = 15
 const currentPage = ref(0)
@@ -1081,6 +1082,7 @@ const fetchProducts = async (reset = false) => {
         if (barcodeMatch) {
           if (isScanning.value) {
             isScanning.value = false;
+            shouldResetSearch.value = true;
             router.push({path: `/item/${barcodeMatch.barcode}`});
             return;
           }
@@ -1449,6 +1451,11 @@ onMounted(async () => {
 
 onIonViewWillEnter(async () => {
   if (Capacitor.isNativePlatform()) refreshSubscriptionStatus();
+
+  if (shouldResetSearch.value) {
+    clearAllFilters();
+    shouldResetSearch.value = false;
+  }
 })
 
 
@@ -1680,7 +1687,7 @@ ion-searchbar.rounded {
 }
 
 .floating-status-pill.bottom-left {
-  bottom: 24px;
+  bottom: 42px;
   left: 8px;
 }
 

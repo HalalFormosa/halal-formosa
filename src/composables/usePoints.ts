@@ -17,10 +17,10 @@ const fallbackRules: Record<string, { points: number; label: string }> = {
     share_card: { points: 5, label: "Sharing Card" },
     daily_mission_bonus: { points: 50, label: "Daily Missions Completion" },
     mission_open_app: { points: 5, label: "Opening App" },
-    mission_find_muslim_friendly: { points: 10, label: "Find 3 Muslim-friendly products" },
-    mission_scan_barcode: { points: 10, label: "Scan 5 Barcodes" },
-    mission_scan_ingredients: { points: 10, label: "Scan 5 Ingredients" },
-    mission_view_place_details: { points: 5, label: "Check 1 Location Details" },
+    mission_find_muslim_friendly: { points: 5, label: "Find Muslim-friendly product" },
+    mission_scan_barcode: { points: 5, label: "Scan Barcode" },
+    mission_scan_ingredients: { points: 5, label: "Scan Ingredients" },
+    mission_view_place_details: { points: 5, label: "Check location details" },
 };
 
 // 🎉 Confetti helper

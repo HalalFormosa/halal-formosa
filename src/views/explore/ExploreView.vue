@@ -19,20 +19,20 @@
           />
 
           <ion-button
+              @click="viewMode = viewMode === 'map' ? 'list' : 'map'"
+              class="header-btn"
+              color="carrot"
+          >
+            <ion-icon :icon="viewMode === 'map' ? listOutline : mapOutline"/>
+          </ion-button>
+
+          <ion-button
               v-if="isLoggedIn"
               @click="goToAddPlace"
               class="header-btn"
               color="carrot"
           >
             <ion-icon :icon="addOutline"/>
-          </ion-button>
-
-          <ion-button
-              @click="viewMode = viewMode === 'map' ? 'list' : 'map'"
-              class="header-btn"
-              color="carrot"
-          >
-            <ion-icon :icon="viewMode === 'map' ? listOutline : mapOutline"/>
           </ion-button>
           
         </div>
@@ -54,7 +54,7 @@
               <span v-if="typeof categoryIconMap[cat.name] === 'string' && categoryIconMap[cat.name].length === 2" class="category-emoji">
                 {{ categoryIconMap[cat.name] }}
               </span>
-              <ion-icon v-else :icon="categoryIconMap[cat.name]" class="category-icon" />
+              <ion-icon v-else-if="categoryIconMap[cat.name]" :icon="categoryIconMap[cat.name]" class="category-icon" />
               <ion-label>{{ cat.name }}</ion-label>
             </ion-chip>
           </div>
@@ -64,14 +64,16 @@
               class="clear-chip floating-clear"
               @click="activeCategoryIds = []"
           >
-            ✖ Clear
+            <ion-icon :icon="closeCircleOutline" style="margin-right: 4px; font-size: 16px;" />
+            {{ $t('common.clear') }}
           </ion-chip>
 
           <!-- Skeleton placeholder -->
-          <div v-if="loadingCategories" class="category-skeletons">
-            <ion-skeleton-text animated style="width:120px; height:28px; border-radius:12px; margin-right:8px;"/>
-            <ion-skeleton-text animated style="width:120px; height:28px; border-radius:12px; margin-right:8px;"/>
-            <ion-skeleton-text animated style="width:120px; height:28px; border-radius:12px;"/>
+          <div v-if="loadingCategories" class="category-skeletons" style="display: flex; gap: 10px;">
+            <ion-skeleton-text animated style="width:110px; height:36px; border-radius:10px; margin: 0;"/>
+            <ion-skeleton-text animated style="width:85px; height:36px; border-radius:10px; margin: 0;"/>
+            <ion-skeleton-text animated style="width:120px; height:36px; border-radius:10px; margin: 0;"/>
+            <ion-skeleton-text animated style="width:90px; height:36px; border-radius:10px; margin: 0;"/>
           </div>
         </div>
       </ion-toolbar>
@@ -102,8 +104,6 @@
       <div v-if="viewMode === 'list'" class="list-view-overlay">
         <div class="list-container">
           <div class="list-header">
-            <h3>{{ $t('explore.results') }} ({{ displayedLocations.length }})</h3>
-
             <div class="list-sort-container">
               <ion-button
                   class="sort-btn-simple"
@@ -143,9 +143,32 @@
                 </ion-list>
               </ion-popover>
             </div>
+
+            <h3>{{ $t('explore.results') }} ({{ displayedLocations.length }})</h3>
           </div>
           
           <div class="vertical-cards-stack">
+            <!-- Skeleton list while loading -->
+            <template v-if="loadingPlaces">
+              <div v-for="n in 5" :key="'skeleton-list-' + n" class="modern-location-card list-mode-card">
+                <div class="card-inner">
+                  <div class="card-image-section">
+                    <ion-skeleton-text animated style="width:100%; height:100%; border-radius:10px;" />
+                  </div>
+                  <div class="card-info-section">
+                    <div class="info-top">
+                      <ion-skeleton-text animated style="width:70%; height:20px; margin-bottom:12px;" />
+                      <div class="metas">
+                        <ion-skeleton-text animated style="width:30%; height:14px;" />
+                        <ion-skeleton-text animated style="width:20%; height:14px;" />
+                      </div>
+                      <ion-skeleton-text animated style="width:40%; height:14px; margin-top:8px;" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </template>
+
             <div
               v-for="place in displayedLocations"
               :key="place.id"
@@ -177,10 +200,10 @@
                     <div class="metas">
                       <span class="meta">{{ place.type }}</span>
                       <span class="meta-dot">•</span>
-                      <span class="meta">👁️ {{ place.view_count || 0 }}</span>
+                      <span class="meta"><ion-icon :icon="eyeOutline" style="vertical-align: middle; margin-top: -2px;" /> {{ place.view_count || 0 }}</span>
                     </div>
                     <div v-if="userLocation && (place as any).distance !== undefined" class="distance">
-                      📍 {{ formatKm((place as any).distance) }} km
+                      <ion-icon :icon="locationOutline" style="font-size: 0.85rem; vertical-align: middle; margin-top: -2px;" /> {{ formatKm((place as any).distance) }} km
                     </div>
                   </div>
                 </div>
@@ -206,7 +229,7 @@
 
     <!-- 6. Bottom Results Slider (Map Only) -->
     <div 
-      v-if="viewMode === 'map' && displayedLocations.length > 0"
+      v-if="viewMode === 'map' && (displayedLocations.length > 0 || loadingPlaces)"
       class="floating-results-bar"
     >
       <div 
@@ -216,20 +239,25 @@
         <div class="cards-track">
           <!-- Skeleton list while loading -->
           <template v-if="loadingPlaces">
-            <div v-for="n in 3" :key="'skeleton-' + n" class="skeleton-card-wrapper">
-              <ion-card class="modern-location-card">
-                <div style="display: flex; align-items: center; height: 100%;">
+            <div v-for="n in 3" :key="'skeleton-map-' + n" class="modern-location-card">
+              <div class="card-inner">
+                <div class="card-image-section">
                   <ion-skeleton-text
                       animated
-                      style="width:115px; height:115px; border-radius:10px;"
+                      style="width:100%; height:100%;"
                   />
-                  <div style="flex:1; margin-left:12px;">
-                    <ion-skeleton-text animated style="width:70%; height:18px; margin-bottom:8px;" />
-                    <ion-skeleton-text animated style="width:50%; height:14px; margin-bottom:6px;" />
-                    <ion-skeleton-text animated style="width:40%; height:14px;" />
+                </div>
+                <div class="card-info-section">
+                  <div class="info-top">
+                    <ion-skeleton-text animated style="width:75%; height:20px; margin-bottom:12px;" />
+                    <div class="metas">
+                      <ion-skeleton-text animated style="width:35%; height:14px;" />
+                      <ion-skeleton-text animated style="width:25%; height:14px;" />
+                    </div>
+                    <ion-skeleton-text animated style="width:45%; height:14px; margin-top:8px;" />
                   </div>
                 </div>
-              </ion-card>
+              </div>
             </div>
           </template>
 
@@ -238,6 +266,7 @@
             <div
                 v-for="place in displayedLocations"
                 :key="place.id"
+                :data-id="place.id"
                 :ref="setCardRef(place.id)"
                 :class="[
                   'modern-location-card', 
@@ -272,11 +301,11 @@
                     <div class="metas">
                       <span class="meta">{{ place.type }}</span>
                       <span class="meta-dot">•</span>
-                      <span class="meta">👁️ {{ place.view_count || 0 }}</span>
+                      <span class="meta"><ion-icon :icon="eyeOutline" style="vertical-align: middle; margin-top: -2px;" /> {{ place.view_count || 0 }}</span>
                     </div>
                     
                     <div v-if="userLocation && (place as any).distance !== undefined" class="distance">
-                      📍 {{ formatKm((place as any).distance) }} km
+                      <ion-icon :icon="locationOutline" style="font-size: 0.85rem; vertical-align: middle; margin-top: -2px;" /> {{ formatKm((place as any).distance) }} km
                     </div>
                   </div>
 
@@ -313,9 +342,10 @@ import {
   addOutline,
   restaurant, informationCircleOutline, chevronUpOutline, chevronDownOutline, restaurantOutline, leaf, home,
   layersOutline, listOutline, gridOutline, mapOutline, sparkles, shieldCheckmarkOutline, checkmarkCircle,
-  trendingUpOutline, flameOutline, timeOutline, locationOutline, filterOutline
+  trendingUpOutline, flameOutline, timeOutline, locationOutline, filterOutline,
+  eyeOutline, shareSocialOutline, navigateOutline, closeCircleOutline
 } from 'ionicons/icons'
-import {ref, computed, nextTick, onMounted, watch} from 'vue'
+import {ref, computed, nextTick, onMounted, onUnmounted, watch} from 'vue'
 import type {ComponentPublicInstance, VNodeRef} from 'vue'
 import {useRouter} from 'vue-router'
 import mapsLoader from '@/plugins/googleMapsLoader'
@@ -416,6 +446,9 @@ const loadingCategories = ref(true)
 const loadingPlaces = ref(true)
 const sortBy = ref<'nearest' | 'recent' | 'popular' | 'trending'>('nearest')
 const trendingPlaceIds = ref<number[]>([])
+
+let cardObserver: IntersectionObserver | null = null
+let isProgrammaticScroll = false
 
 /* Google Maps runtime objects */
 let mapInstance: google.maps.Map | null = null
@@ -917,9 +950,13 @@ const buildInfoHtml = (p: Place) => {
             color: #6b7280;
             margin-top: 4px;
             line-height: 1.3;
+            display: flex;
+            align-items: center;
+            gap: 4px;
           "
         >
-          📍 ${p.address}
+          <ion-icon :icon="locationOutline" style="font-size: 14px; flex-shrink: 0;"></ion-icon>
+          <span>${p.address}</span>
         </div>
       ` : ''}
 
@@ -937,12 +974,16 @@ const buildInfoHtml = (p: Place) => {
           rel="noopener noreferrer"
           style="
             color: var(--ion-color-carrot);
-            font-weight: 500;
+            font-weight: 600;
             text-decoration: none;
             font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
           "
         >
-          ➡️ Navigate
+          <ion-icon :icon="navigateOutline"></ion-icon>
+          Navigate
         </a>
 
         <button
@@ -953,10 +994,15 @@ const buildInfoHtml = (p: Place) => {
             border: none;
             color: var(--ion-color-carrot);
             font-size: 13px;
+            font-weight: 600;
             cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
           "
         >
-          🔗 Share
+          <ion-icon :icon="shareSocialOutline"></ion-icon>
+          Share
         </button>
       </div>
     </div>
@@ -1014,10 +1060,16 @@ const scrollCardIntoView = async (id: number) => {
   
   const scrollOffset = containerEl.scrollLeft + (cardRect.left - containerRect.left) - (containerRect.width / 2) + (cardRect.width / 2)
   
+  isProgrammaticScroll = true
   containerEl.scrollTo({
     left: scrollOffset,
     behavior: 'smooth'
   })
+
+  // Reset after scroll likely finishes
+  setTimeout(() => {
+    isProgrammaticScroll = false
+  }, 800)
 }
 
 /* ---------------- Roles ---------------- */
@@ -1256,7 +1308,13 @@ const selectPlace = (place: Place) => {
 
   const currentZoom = mapInstance.getZoom() || 14
   const targetZoom = currentZoom < 16 ? 17 : currentZoom
-  mapInstance.panTo(place.position)
+  
+  // Calculate offset to center info card (~100px North)
+  const latOffset = 100 * 360 / (256 * Math.pow(2, targetZoom))
+  mapInstance.panTo({
+    lat: place.position.lat + latOffset,
+    lng: place.position.lng
+  })
   mapInstance.setZoom(targetZoom)
 
   const m = markerMap.get(place.id)
@@ -1296,6 +1354,49 @@ const selectPlace = (place: Place) => {
       }
     }, 50)
   }
+}
+
+const initCardObserver = () => {
+  if (!contentRef.value) return
+  if (cardObserver) cardObserver.disconnect()
+
+  cardObserver = new IntersectionObserver((entries) => {
+    if (isProgrammaticScroll) return
+    
+    entries.forEach(entry => {
+      if (entry.isIntersecting && entry.intersectionRatio >= 0.6) {
+        const id = Number(entry.target.getAttribute('data-id'))
+        const p = locations.value.find(l => l.id === id)
+        if (p && selectedPlace.value?.id !== p.id) {
+          // Sync selective metadata but don't recursive scroll
+          selectedPlace.value = p
+          if (mapInstance) {
+             const currentZoom = mapInstance.getZoom() || 14
+             const latOffset = 100 * 360 / (256 * Math.pow(2, currentZoom))
+             mapInstance.panTo({
+               lat: p.position.lat + latOffset,
+               lng: p.position.lng
+             })
+             const m = markerMap.get(p.id)
+             if (m && infoWindow) {
+               infoWindow.setContent(buildInfoHtml(p))
+               infoWindow.open(mapInstance, m)
+               setTimeout(applyInfoWindowDarkClass, 50)
+             }
+          }
+        }
+      }
+    })
+  }, {
+    root: contentRef.value,
+    threshold: 0.6
+  })
+
+  // Observe all current cards
+  nextTick(() => {
+    const cards = (contentRef.value as HTMLElement)?.querySelectorAll('.modern-location-card')
+    cards?.forEach(c => cardObserver?.observe(c))
+  })
 }
 
 const centerOnUser = async () => {
@@ -1380,6 +1481,20 @@ watch(sortedLocations, (filtered) => {
   initMarkers(filtered)
 })
 
+watch(displayedLocations, () => {
+  if (viewMode.value === 'map') {
+    initCardObserver()
+  }
+}, { deep: true })
+
+watch(viewMode, (mode) => {
+  if (mode === 'map') {
+    initCardObserver()
+  } else if (cardObserver) {
+    cardObserver.disconnect()
+  }
+})
+
 /* ---------------- Lifecycle ---------------- */
 onMounted(async () => {
   await ActivityLogService.log("explore_page_open")
@@ -1393,6 +1508,14 @@ onMounted(async () => {
 
   // 🔥 START GPS WATCH HERE
   await startWatchingUserLocation()
+  
+  if (viewMode.value === 'map') {
+    initCardObserver()
+  }
+})
+
+onUnmounted(() => {
+  if (cardObserver) cardObserver.disconnect()
 })
 
 let firstEnter = true
@@ -1668,12 +1791,8 @@ button.gm-ui-hover-effect > span {
   height: 50px;
   width: 50px;
   margin: 0;
-  --background: var(--ion-background-color) !important;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+
   --color: var(--ion-color-carrot);
-  border: 1px solid rgba(var(--ion-color-dark-rgb), 0.15);
   flex-shrink: 0;
 }
 
@@ -1699,6 +1818,9 @@ button.gm-ui-hover-effect > span {
 }
 
 .modern-category-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   background: var(--ion-background-color) !important;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
@@ -1712,6 +1834,10 @@ button.gm-ui-hover-effect > span {
   transition: all 0.2s ease;
   flex-shrink: 0;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.modern-category-chip ion-label {
+  margin: 0;
 }
 
 .modern-category-chip.active {
@@ -1747,7 +1873,7 @@ button.gm-ui-hover-effect > span {
 
 .card-inner {
   display: flex;
-  height: 145px;
+  height: 175px;
 }
 
 .card-image-section {
@@ -1966,6 +2092,7 @@ button.gm-ui-hover-effect > span {
   cursor: pointer;
   position: relative;
   scroll-snap-align: center;
+  scroll-snap-stop: always;
 }
 
 .modern-location-card {
@@ -1984,13 +2111,14 @@ button.gm-ui-hover-effect > span {
   cursor: pointer;
   position: relative;
   scroll-snap-align: center;
+  scroll-snap-stop: always;
 }
 
 /* Dark Mode Base Case */
 .ion-palette-dark .modern-location-card {
-  background: rgba(28, 28, 30, 0.7);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+  background: rgba(28, 28, 30, 0.92); /* Higher opacity for better contrast */
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.45);
 }
 
 @media (min-width: 768px) {
@@ -2001,7 +2129,7 @@ button.gm-ui-hover-effect > span {
 
 .card-inner {
   display: flex;
-  height: 155px; 
+  height: 175px; 
 }
 
 .card-image-section {
@@ -2044,7 +2172,7 @@ button.gm-ui-hover-effect > span {
 
 .card-info-section {
   flex: 1;
-  padding: 12px 14px;
+  padding: 12px 18px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -2107,19 +2235,26 @@ button.gm-ui-hover-effect > span {
 .action-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 8px;
 }
 
 .detail-btn {
-  --padding-start: 12px;
-  --padding-end: 12px;
-  height: 34px;
-  font-size: 0.75rem;
-  font-weight: 700;
-  background: rgba(var(--ion-color-carrot-rgb), 0.12);
-  border-radius: 10px;
+  --padding-start: 14px;
+  --padding-end: 14px;
+  height: 36px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  background: rgba(var(--ion-color-carrot-rgb), 0.15);
+  border-radius: 12px;
   margin: 0;
+  letter-spacing: 0.05em;
+}
+
+.ion-palette-dark .detail-btn {
+  background: var(--ion-color-carrot);
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(var(--ion-color-carrot-rgb), 0.3);
 }
 
 /* Tier Specific Overrides - ensure contrast in both modes */
@@ -2188,21 +2323,18 @@ button.gm-ui-hover-effect > span {
 ========================= */
 .map-floating-actions {
   position: absolute;
-  bottom: calc(var(--ion-safe-area-bottom, 0px) + 180px);
-  right: 16px;
+  bottom: calc(var(--ion-safe-area-bottom, 0px) + 200px); /* Lifted slightly more above the 175px cards */
+  right: 20px;
   z-index: 1001;
   pointer-events: auto;
 }
 
 .locate-me-btn {
-  --background: rgba(var(--ion-background-color-rgb), 0.85);
   --color: var(--ion-color-carrot);
-  --box-shadow: 0 8px 32px rgba(0,0,0,0.15);
   --border-radius: 14px;
   width: 48px;
   height: 48px;
-  backdrop-filter: blur(15px);
-  -webkit-backdrop-filter: blur(15px);
+
 }
 
 .list-view-overlay {

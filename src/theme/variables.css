@@ -952,6 +952,20 @@ ion-popover::part(content) {
     border-color: rgba(255, 255, 255, 0.1);
 }
 
+/* 🏆 Leaderboard Popover Override - High Contrast & Opaque */
+.leaderboard-popover::part(content) {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background: var(--ion-item-background, #ffffff) !important;
+    border: 1px solid var(--ion-color-step-200, #e0e0e0);
+    box-shadow: 0 12px 48px rgba(0, 0, 0, 0.25);
+}
+
+.ion-palette-dark .leaderboard-popover::part(content) {
+    background: #1c1c1d !important;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
 /* List container inside popover */
 ion-popover ion-list,
 ion-popover ion-content {

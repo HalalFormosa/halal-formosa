@@ -15,7 +15,8 @@
     "update": "Perbarui",
     "add": "Tambah",
     "previous": "Sebelumnya",
-    "next": "Berikutnya"
+    "next": "Berikutnya",
+    "clear": "Hapus"
   },
   "dailyMissions": {
     "title": "Misi Harian",
@@ -40,7 +41,7 @@
       "scan_barcode": "Scan Barcode",
       "find_muslim_friendly": "Cari produk ramah Muslim",
       "view_place_details": "Cek detail lokasi",
-      "add_product": "Tambah Produk Baru"
+      "add_product": "Tambah Produk atau Lokasi Baru"
     }
   },
   "auth": {
