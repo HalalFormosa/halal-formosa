@@ -381,15 +381,11 @@
                         </div>
                       </div>
                       <h3 class="name">{{ product.name }}</h3>
-                    </div>
-  
-                    <!-- BOTTOM: Official partner (if any) + metas, always at the bottom -->
-                    <div class="info-bottom">
-                      <div v-if="product.partner_tier" class="premium-verified-tag">
-                        <ion-icon :icon="shieldCheckmarkOutline" />
-                        <span class="verified-label">{{ $t('search.officialPartner') }}</span>
-                      </div>
                       <div class="metas" :class="{ 'metas-indent': product.partner_tier }">
+                        <span v-if="product.product_categories?.name" class="meta">
+                          {{ $te('search.categoriesList.' + product.product_categories.name) ? $t('search.categoriesList.' + product.product_categories.name) : product.product_categories.name }}
+                        </span>
+                        <span v-if="product.product_categories?.name" class="meta-dot">•</span>
                         <span class="meta">
                           <ion-icon :icon="eyeOutline" class="meta-icon" />
                           {{ product.view_count || 0 }}
@@ -399,6 +395,14 @@
                           <ion-icon :icon="timeOutline" class="meta-icon" />
                           {{ fromNowToTaipei(product.created_at) }}
                         </span>
+                      </div>
+                    </div>
+  
+                    <!-- BOTTOM: Official partner (if any) + metas, always at the bottom -->
+                    <div class="info-bottom">
+                      <div v-if="product.partner_tier" class="premium-verified-tag">
+                        <ion-icon :icon="shieldCheckmarkOutline" />
+                        <span class="verified-label">{{ $t('search.officialPartner') }}</span>
                       </div>
                     </div>
                   </div>
@@ -1737,25 +1741,29 @@ ion-searchbar.rounded {
   overflow: hidden;
 }
 
-/* metas is now inside info-bottom */
-.info-bottom .metas {
+/* metas is now inside info-top */
+.info-top .metas {
   display: flex;
   align-items: center;
-  gap: 4px;
-  font-size: 0.73rem;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 0.78rem;
   color: var(--ion-color-medium);
+  margin-top: 4px;
 }
 
 .meta-dot { opacity: 0.5; margin: 0 4px; }
 
 .meta {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: 3px;
+  white-space: nowrap;
 }
 
 .meta-icon {
-  font-size: 11px;
+  font-size: 0.85rem;
+  margin-right: 2px;
   flex-shrink: 0;
 }
 
@@ -2055,9 +2063,12 @@ ion-header {
 
 <style>
 /* Force readable text colors for tiered cards in dark mode */
-
-/* Force readable text colors for tiered cards in dark mode */
 .ion-palette-dark .modern-product-card[class*="tier-card-"] .name {
   color: #ffffff !important;
+}
+
+.ion-palette-dark .meta,
+.ion-palette-dark .meta-dot {
+  color: #d1d5db !important;
 }
 </style>

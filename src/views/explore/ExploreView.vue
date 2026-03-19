@@ -201,6 +201,11 @@
                       <span class="meta">{{ place.type }}</span>
                       <span class="meta-dot">•</span>
                       <span class="meta"><ion-icon :icon="eyeOutline" style="vertical-align: middle; margin-top: -2px;" /> {{ place.view_count || 0 }}</span>
+                      <span class="meta-dot">•</span>
+                      <span class="meta">
+                        <ion-icon :icon="calendarOutline" style="vertical-align: middle; margin-top: -2px;" />
+                        {{ fromNowToTaipei(place.created_at) }}
+                      </span>
                     </div>
                     <div v-if="userLocation && (place as any).distance !== undefined" class="distance">
                       <ion-icon :icon="locationOutline" style="font-size: 0.85rem; vertical-align: middle; margin-top: -2px;" /> {{ formatKm((place as any).distance) }} km
@@ -251,8 +256,9 @@
                   <div class="info-top">
                     <ion-skeleton-text animated style="width:75%; height:20px; margin-bottom:12px;" />
                     <div class="metas">
-                      <ion-skeleton-text animated style="width:35%; height:14px;" />
-                      <ion-skeleton-text animated style="width:25%; height:14px;" />
+                      <ion-skeleton-text animated style="width:30%; height:14px;" />
+                      <ion-skeleton-text animated style="width:20%; height:14px;" />
+                      <ion-skeleton-text animated style="width:20%; height:14px;" />
                     </div>
                     <ion-skeleton-text animated style="width:45%; height:14px; margin-top:8px;" />
                   </div>
@@ -302,6 +308,11 @@
                       <span class="meta">{{ place.type }}</span>
                       <span class="meta-dot">•</span>
                       <span class="meta"><ion-icon :icon="eyeOutline" style="vertical-align: middle; margin-top: -2px;" /> {{ place.view_count || 0 }}</span>
+                      <span class="meta-dot">•</span>
+                      <span class="meta">
+                        <ion-icon :icon="calendarOutline" style="vertical-align: middle; margin-top: -2px;" />
+                        {{ fromNowToTaipei(place.created_at) }}
+                      </span>
                     </div>
                     
                     <div v-if="userLocation && (place as any).distance !== undefined" class="distance">
@@ -343,7 +354,8 @@ import {
   restaurant, informationCircleOutline, chevronUpOutline, chevronDownOutline, restaurantOutline, leaf, home,
   layersOutline, listOutline, gridOutline, mapOutline, sparkles, shieldCheckmarkOutline, checkmarkCircle,
   trendingUpOutline, flameOutline, timeOutline, locationOutline, filterOutline,
-  eyeOutline, shareSocialOutline, navigateOutline, closeCircleOutline
+  eyeOutline, shareSocialOutline, navigateOutline, closeCircleOutline,
+  calendarOutline
 } from 'ionicons/icons'
 import {ref, computed, nextTick, onMounted, onUnmounted, watch} from 'vue'
 import type {ComponentPublicInstance, VNodeRef} from 'vue'
@@ -352,6 +364,10 @@ import mapsLoader from '@/plugins/googleMapsLoader'
 import {Capacitor} from '@capacitor/core'
 import {Geolocation} from '@capacitor/geolocation'
 import {supabase} from '@/plugins/supabaseClient'
+import dayjs from 'dayjs'
+import relativeTime from 'dayjs/plugin/relativeTime'
+import utc from 'dayjs/plugin/utc'
+import timezone from 'dayjs/plugin/timezone'
 import {MarkerClusterer, SuperClusterAlgorithm} from "@googlemaps/markerclusterer"
 import {Cluster, Renderer} from "@googlemaps/markerclusterer"
 
@@ -802,6 +818,16 @@ const getDistanceInKm = (locPos: LatLng) => {
       Math.cos(locPos.lat * Math.PI / 180) *
       Math.sin(dLon / 2) ** 2
   return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)))
+}
+
+// ✅ initialize dayjs
+dayjs.extend(relativeTime)
+dayjs.extend(utc)
+dayjs.extend(timezone)
+
+function fromNowToTaipei(dateString?: string) {
+  if (!dateString) return ''
+  return dayjs.utc(dateString).tz('Asia/Taipei').fromNow()
 }
 
 const displayedLocations = computed(() => {
@@ -2207,17 +2233,21 @@ button.gm-ui-hover-effect > span {
 .metas {
   display: flex;
   align-items: center;
-  gap: 6px;
-  margin-bottom: 4px;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 2px;
 }
 
 .meta {
-  font-size: 0.75rem;
-  font-weight: 600;
+  font-size: 0.72rem;
+  font-weight: 500;
   color: var(--ion-color-step-600, #666);
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
 }
 
-.ion-palette-dark .meta { color: var(--ion-color-step-400, #aaa); }
+.ion-palette-dark .meta { color: #d1d5db; }
 
 .meta-dot { opacity: 0.5; }
 
@@ -2252,9 +2282,8 @@ button.gm-ui-hover-effect > span {
 }
 
 .ion-palette-dark .detail-btn {
-  background: var(--ion-color-carrot);
-  color: #ffffff;
-  box-shadow: 0 4px 12px rgba(var(--ion-color-carrot-rgb), 0.3);
+  --background: var(--ion-color-carrot);
+  --color: #ffffff;
 }
 
 /* Tier Specific Overrides - ensure contrast in both modes */
