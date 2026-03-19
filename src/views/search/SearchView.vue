@@ -64,6 +64,15 @@
               <ion-icon :icon="showSearchbar ? closeCircle : searchOutline" />
             </ion-button>
 
+            <!-- 📱 Grid/List Toggle -->
+            <ion-button
+                fill="clear"
+                @click="toggleViewMode"
+                class="classic-action-btn"
+            >
+              <ion-icon :icon="viewMode === 'grid' ? listOutline : gridOutline" />
+            </ion-button>
+
             <!-- 📷 Scan Button (Classic Style) -->
             <ion-button
                 @click="startScan"
@@ -233,37 +242,44 @@
 
           <!-- Skeleton loader -->
           <template v-if="loadingProducts && results.length === 0 && !showForYouGate">
-            <div class="product-grid">
-              <ion-card v-for="n in 12" :key="'skeleton-' + n" class="product-card" style="margin: 0;">
-                <div style="display: flex; align-items: center; padding: 12px;">
-                  <!-- Skeleton Image -->
-                  <ion-skeleton-text
-                      animated
-                      style="width: 115px; height: 110px; border-radius: 10px; flex-shrink: 0;"
-                  ></ion-skeleton-text>
-  
-                  <!-- Skeleton Text & Chip -->
-                  <div
-                      style="flex: 1; margin-left: 12px; display: flex; flex-direction: column; justify-content: space-between;">
-                    <div>
-                      <ion-skeleton-text
-                          animated
-                          style="width: 70%; height: 20px; margin-bottom: 8px;"
-                      ></ion-skeleton-text>
-                      <ion-skeleton-text
-                          animated
-                          style="width: 50%; height: 14px;"
-                      ></ion-skeleton-text>
-                    </div>
-  
-                    <!-- Skeleton Chip -->
+            <div :class="['product-grid', viewMode + '-mode']">
+              <template v-if="viewMode === 'list'">
+                <ion-card v-for="n in 12" :key="'skeleton-' + n" class="product-card" style="margin: 0;">
+                  <div style="display: flex; align-items: center; padding: 12px;">
+                    <!-- Skeleton Image -->
                     <ion-skeleton-text
                         animated
-                        style="width: 80px; height: 24px; border-radius: 12px; margin-top: 12px;"
+                        style="width: 115px; height: 110px; border-radius: 10px; flex-shrink: 0;"
                     ></ion-skeleton-text>
+    
+                    <!-- Skeleton Text & Chip -->
+                    <div
+                        style="flex: 1; margin-left: 12px; display: flex; flex-direction: column; justify-content: space-between;">
+                      <div>
+                        <ion-skeleton-text
+                            animated
+                            style="width: 70%; height: 20px; margin-bottom: 8px;"
+                        ></ion-skeleton-text>
+                        <ion-skeleton-text
+                            animated
+                            style="width: 50%; height: 14px;"
+                        ></ion-skeleton-text>
+                      </div>
+    
+                      <!-- Skeleton Chip -->
+                      <ion-skeleton-text
+                          animated
+                          style="width: 80px; height: 24px; border-radius: 12px; margin-top: 12px;"
+                      ></ion-skeleton-text>
+                    </div>
                   </div>
+                </ion-card>
+              </template>
+              <template v-else>
+                <div v-for="n in 12" :key="'skeleton-grid-' + n" class="grid-product-card">
+                  <ion-skeleton-text animated style="width: 100%; height: 100%; margin: 0;"></ion-skeleton-text>
                 </div>
-              </ion-card>
+              </template>
             </div>
           </template>
 
@@ -341,76 +357,98 @@
               </ion-card-content>
             </ion-card>
 
-            <div class="product-grid">
-              <div
-                  v-for="product in results"
-                  :key="product.barcode"
-                  :class="[
-                    'modern-product-card', 
-                    getStatusClass(product.status),
-                    product.partner_tier ? 'tier-card-' + product.partner_tier.toLowerCase() : ''
-                  ]"
-                  @click="openDetails(product)"
-              >
-                <div class="card-inner">
-                  <!-- Left: Full Height Image -->
-                  <div class="card-image-section">
+            <div :class="['product-grid', viewMode + '-mode']">
+              <template v-for="product in results" :key="product.barcode">
+                <!-- LIST MODE -->
+                <div
+                    v-if="viewMode === 'list'"
+                    :class="[
+                      'modern-product-card', 
+                      getStatusClass(product.status),
+                      product.partner_tier ? 'tier-card-' + product.partner_tier.toLowerCase() : ''
+                    ]"
+                    @click="openDetails(product)"
+                >
+                  <div class="card-inner">
+                    <!-- Left: Full Height Image -->
+                    <div class="card-image-section">
+                      <img
+                          loading="lazy"
+                          :src="product.photo_front_url || 'https://via.placeholder.com/150x150.webp?text=No+Photo'"
+                          :alt="product.name"
+                      />
+                      <!-- Floating Status Pill on Image (Bottom Left) -->
+                      <div :class="['floating-status-pill bottom-left', product.status.toLowerCase().replace(' ', '-')]">
+                        <ion-icon :icon="getStatusIcon(product.status)" />
+                        <span>{{ $t('search.status.' + product.status) }}</span>
+                      </div>
+                      <!-- Vertical Separator Strip -->
+                      <div :class="['status-strip', product.status.toLowerCase().replace(' ', '-')]"></div>
+                    </div>
+    
+                    <!-- Right: Information -->
+                    <div class="card-info-section">
+                      <!-- TOP: Tier badge + Name -->
+                      <div class="info-top">
+                        <!-- Tier Badge (Gold, Silver, Bronze) -->
+                        <div v-if="product.partner_tier" class="tier-header">
+                          <div :class="['tier-badge', product.partner_tier.toLowerCase()]">
+                            <ion-icon :icon="sparkles" />
+                            <span>{{ $t('home.partnerTier', { tier: (product.partner_tier || '').toUpperCase() }) }}</span>
+                          </div>
+                        </div>
+                        <h3 class="name">{{ product.name }}</h3>
+                        <div class="metas" :class="{ 'metas-indent': product.partner_tier }">
+                          <span v-if="product.product_categories?.name" class="meta">
+                            {{ $te('search.categoriesList.' + product.product_categories.name) ? $t('search.categoriesList.' + product.product_categories.name) : product.product_categories.name }}
+                          </span>
+                          <span v-if="product.product_categories?.name" class="meta-dot">•</span>
+                          <span class="meta">
+                            <ion-icon :icon="eyeOutline" class="meta-icon" />
+                            {{ product.view_count || 0 }}
+                          </span>
+                          <span class="meta-dot">•</span>
+                          <span class="meta">
+                            <ion-icon :icon="timeOutline" class="meta-icon" />
+                            {{ fromNowToTaipei(product.created_at) }}
+                          </span>
+                        </div>
+                      </div>
+    
+                      <!-- BOTTOM: Official partner (if any) + metas, always at the bottom -->
+                      <div class="info-bottom">
+                        <div v-if="product.partner_tier" class="premium-verified-tag">
+                          <ion-icon :icon="shieldCheckmarkOutline" />
+                          <span class="verified-label">{{ $t('search.officialPartner') }}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <!-- Premium Flare for Gold/Silver -->
+                  <div v-if="['gold', 'silver'].includes(String(product.partner_tier || '').toLowerCase())" class="premium-flare"></div>
+                </div>
+
+                <!-- GRID MODE -->
+                <div
+                    v-else
+                    :class="['grid-product-card', getStatusClass(product.status)]"
+                    @click="openDetails(product)"
+                >
+                  <div class="grid-card-image">
                     <img
                         loading="lazy"
                         :src="product.photo_front_url || 'https://via.placeholder.com/150x150.webp?text=No+Photo'"
                         :alt="product.name"
                     />
-                    <!-- Floating Status Pill on Image (Bottom Left) -->
-                    <div :class="['floating-status-pill bottom-left', product.status.toLowerCase().replace(' ', '-')]">
+                    <!-- Small Status Label -->
+                    <div :class="['grid-status-label', product.status.toLowerCase().replace(' ', '-')]">
                       <ion-icon :icon="getStatusIcon(product.status)" />
                       <span>{{ $t('search.status.' + product.status) }}</span>
                     </div>
-                    <!-- Vertical Separator Strip -->
-                    <div :class="['status-strip', product.status.toLowerCase().replace(' ', '-')]"></div>
-                  </div>
-  
-                  <!-- Right: Information -->
-                  <div class="card-info-section">
-                    <!-- TOP: Tier badge + Name -->
-                    <div class="info-top">
-                      <!-- Tier Badge (Gold, Silver, Bronze) -->
-                      <div v-if="product.partner_tier" class="tier-header">
-                        <div :class="['tier-badge', product.partner_tier.toLowerCase()]">
-                          <ion-icon :icon="sparkles" />
-                          <span>{{ $t('home.partnerTier', { tier: (product.partner_tier || '').toUpperCase() }) }}</span>
-                        </div>
-                      </div>
-                      <h3 class="name">{{ product.name }}</h3>
-                      <div class="metas" :class="{ 'metas-indent': product.partner_tier }">
-                        <span v-if="product.product_categories?.name" class="meta">
-                          {{ $te('search.categoriesList.' + product.product_categories.name) ? $t('search.categoriesList.' + product.product_categories.name) : product.product_categories.name }}
-                        </span>
-                        <span v-if="product.product_categories?.name" class="meta-dot">•</span>
-                        <span class="meta">
-                          <ion-icon :icon="eyeOutline" class="meta-icon" />
-                          {{ product.view_count || 0 }}
-                        </span>
-                        <span class="meta-dot">•</span>
-                        <span class="meta">
-                          <ion-icon :icon="timeOutline" class="meta-icon" />
-                          {{ fromNowToTaipei(product.created_at) }}
-                        </span>
-                      </div>
-                    </div>
-  
-                    <!-- BOTTOM: Official partner (if any) + metas, always at the bottom -->
-                    <div class="info-bottom">
-                      <div v-if="product.partner_tier" class="premium-verified-tag">
-                        <ion-icon :icon="shieldCheckmarkOutline" />
-                        <span class="verified-label">{{ $t('search.officialPartner') }}</span>
-                      </div>
-                    </div>
                   </div>
                 </div>
-                
-                <!-- Premium Flare for Gold/Silver -->
-                <div v-if="['gold', 'silver'].includes(String(product.partner_tier || '').toLowerCase())" class="premium-flare"></div>
-              </div>
+              </template>
             </div>
           </template>
         </div>
@@ -488,7 +526,8 @@ import {
   timeOutline,
   flameOutline,
   sparklesOutline,
-  trendingUpOutline
+  trendingUpOutline,
+  listOutline
 } from 'ionicons/icons'
 import {Capacitor} from '@capacitor/core'
 import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
@@ -613,6 +652,14 @@ const forYouReason = ref<string | null>(null)
 
 
 const activeStatuses = ref<string[]>([])
+
+const viewMode = ref<'grid' | 'list'>((localStorage.getItem('searchViewMode') as 'grid' | 'list') || 'list')
+
+function toggleViewMode() {
+  viewMode.value = viewMode.value === 'grid' ? 'list' : 'grid'
+  localStorage.setItem('searchViewMode', viewMode.value)
+  Haptics.impact({ style: ImpactStyle.Light })
+}
 
 function toggleFilters() {
   showFilters.value = !showFilters.value
@@ -2059,6 +2106,86 @@ ion-header {
   justify-content: flex-start;
   padding: 4px 12px 8px;
 }
+
+/* =========================
+   Grid View Styles
+   ========================= */
+
+.product-grid.grid-mode {
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  padding: 8px;
+}
+
+@media (min-width: 768px) {
+  .product-grid.grid-mode {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .product-grid.grid-mode {
+    grid-template-columns: repeat(6, 1fr);
+  }
+}
+
+.grid-product-card {
+  aspect-ratio: 1 / 1;
+  border-radius: 16px;
+  overflow: hidden;
+  background: var(--ion-card-background, #ffffff);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  border: 1px solid rgba(var(--ion-color-dark-rgb), 0.05);
+  position: relative;
+  transition: transform 0.2s ease;
+}
+
+.grid-product-card:active {
+  transform: scale(0.95);
+}
+
+.grid-card-image {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.grid-card-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.grid-status-label {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255,255,255,0.3);
+  z-index: 2;
+  font-size: 0.65rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.grid-status-label ion-icon {
+  font-size: 16px;
+}
+
+.grid-status-label.halal { background: rgba(var(--ion-color-success-rgb), 0.9); }
+.grid-status-label.muslim-friendly { background: rgba(var(--ion-color-primary-rgb), 0.95); }
+.grid-status-label.syubhah { background: rgba(var(--ion-color-warning-rgb), 0.95); color: var(--ion-color-warning-contrast); }
+.grid-status-label.haram { background: rgba(var(--ion-color-danger-rgb), 0.9); }
 </style>
 
 <style>
