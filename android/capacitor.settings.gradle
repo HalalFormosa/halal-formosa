@@ -11,8 +11,8 @@ project(':capacitor-mlkit-barcode-scanning').projectDir = new File('../node_modu
 include ':capacitor-app'
 project(':capacitor-app').projectDir = new File('../node_modules/@capacitor/app/android')
 
-include ':capacitor-barcode-scanner'
-project(':capacitor-barcode-scanner').projectDir = new File('../node_modules/@capacitor/barcode-scanner/android')
+include ':capacitor-app-launcher'
+project(':capacitor-app-launcher').projectDir = new File('../node_modules/@capacitor/app-launcher/android')
 
 include ':capacitor-browser'
 project(':capacitor-browser').projectDir = new File('../node_modules/@capacitor/browser/android')
@@ -22,6 +22,9 @@ project(':capacitor-camera').projectDir = new File('../node_modules/@capacitor/c
 
 include ':capacitor-clipboard'
 project(':capacitor-clipboard').projectDir = new File('../node_modules/@capacitor/clipboard/android')
+
+include ':capacitor-device'
+project(':capacitor-device').projectDir = new File('../node_modules/@capacitor/device/android')
 
 include ':capacitor-filesystem'
 project(':capacitor-filesystem').projectDir = new File('../node_modules/@capacitor/filesystem/android')
@@ -44,8 +47,26 @@ project(':capacitor-share').projectDir = new File('../node_modules/@capacitor/sh
 include ':capacitor-status-bar'
 project(':capacitor-status-bar').projectDir = new File('../node_modules/@capacitor/status-bar/android')
 
+include ':capawesome-team-capacitor-datetime-picker'
+project(':capawesome-team-capacitor-datetime-picker').projectDir = new File('../node_modules/@capawesome-team/capacitor-datetime-picker/android')
+
 include ':capawesome-capacitor-app-review'
 project(':capawesome-capacitor-app-review').projectDir = new File('../node_modules/@capawesome/capacitor-app-review/android')
 
 include ':capawesome-capacitor-app-update'
 project(':capawesome-capacitor-app-update').projectDir = new File('../node_modules/@capawesome/capacitor-app-update/android')
+
+include ':capgo-capacitor-navigation-bar'
+project(':capgo-capacitor-navigation-bar').projectDir = new File('../node_modules/@capgo/capacitor-navigation-bar/android')
+
+include ':capgo-native-purchases'
+project(':capgo-native-purchases').projectDir = new File('../node_modules/@capgo/native-purchases/android')
+
+include ':revenuecat-purchases-capacitor'
+project(':revenuecat-purchases-capacitor').projectDir = new File('../node_modules/@revenuecat/purchases-capacitor/android')
+
+include ':revenuecat-purchases-capacitor-ui'
+project(':revenuecat-purchases-capacitor-ui').projectDir = new File('../node_modules/@revenuecat/purchases-capacitor-ui/android')
+
+include ':capacitor-plugin-safe-area'
+project(':capacitor-plugin-safe-area').projectDir = new File('../node_modules/capacitor-plugin-safe-area/android')

@@ -7,7 +7,11 @@ export default function useError() {
 
     function setError(msg: string) {
         errorMsg.value = msg
-        showErr.value = true
+        showErr.value = false
+        // ensure Vue processes the change before setting true
+        requestAnimationFrame(() => {
+            showErr.value = true
+        })
     }
 
     function clearError() {

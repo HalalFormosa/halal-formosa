@@ -5,7 +5,7 @@
         <ion-buttons slot="start">
           <ion-back-button default-href="/news" />
         </ion-buttons>
-        <ion-title>Write News Article</ion-title>
+        <ion-title>{{ isEdit ? $t('newsAdmin.editTitle') : $t('newsAdmin.title') }}</ion-title>
       </ion-toolbar>
     </ion-header>
 
@@ -15,16 +15,16 @@
       <ion-item>
         <ion-input
             v-model="title"
-            label="Article Title"
+            :label="$t('newsAdmin.articleTitle')"
             label-placement="stacked"
-            placeholder="Enter news title"
+            :placeholder="$t('newsAdmin.titlePlaceholder')"
             required
         />
       </ion-item>
 
       <!-- Header Image Upload -->
       <div class="upload-section">
-        <label class="upload-label">Header Image</label>
+        <label class="upload-label">{{ $t('newsAdmin.headerImage') }}</label>
         <input type="file" accept="image/*" @change="handleHeaderImage" />
         <div v-if="headerPreview" class="image-preview">
           <img :src="headerPreview" alt="Header Preview" />
@@ -34,29 +34,29 @@
       <!-- Toggle -->
       <ion-segment v-model="useRawHtml" class="mode-toggle">
       <ion-segment-button value="editor">
-          <ion-label>Editor</ion-label>
+          <ion-label>{{ $t('newsAdmin.editor') }}</ion-label>
         </ion-segment-button>
         <ion-segment-button value="raw">
-          <ion-label>Raw HTML</ion-label>
+          <ion-label>{{ $t('newsAdmin.rawHtml') }}</ion-label>
         </ion-segment-button>
       </ion-segment>
 
       <!-- Editor Section -->
       <div class="editor-section">
-        <label class="upload-label">Content</label>
+        <label class="upload-label">{{ $t('newsAdmin.content') }}</label>
         <div v-if="useRawHtml === 'editor'">
           <QuillEditor
               ref="quillRef"
               theme="snow"
               toolbar="full"
-              placeholder="Write your article..."
+              :placeholder="$t('newsAdmin.editorPlaceholder')"
               @text-change="onQuillTextChange"
           />
         </div>
         <div v-else>
           <ion-textarea
               v-model="content"
-              label="Raw HTML"
+              :label="$t('newsAdmin.rawHtml')"
               label-placement="stacked"
               auto-grow
               :rows="10"
@@ -66,7 +66,7 @@
 
       <!-- Actions -->
       <ion-button expand="block" color="carrot" class="ion-margin-top" @click="submitArticle" :disabled="loading">
-        {{ loading ? 'Publishing...' : 'Publish Article' }}
+        {{ loading ? $t('newsAdmin.publishing') : (isEdit ? $t('newsAdmin.update') : $t('newsAdmin.publish')) }}
       </ion-button>
 
       <ion-toast
@@ -115,6 +115,9 @@ import { supabase } from '@/plugins/supabaseClient';
 import type { User } from '@supabase/supabase-js';
 import { QuillEditor } from '@vueup/vue-quill';
 import '@vueup/vue-quill/dist/vue-quill.snow.css';
+import {usePoints} from "@/composables/usePoints";
+import { useNotifier } from "@/composables/useNotifier";
+import { useI18n } from 'vue-i18n';
 
 const user = ref<User | null>(null);
 const title = ref('');
@@ -133,8 +136,12 @@ const errorMsg = ref('');
 
 const route = useRoute();
 const router = useRouter();
+const { t } = useI18n();
 const isEdit = computed(() => !!route.params.id);
 const editingId = computed(() => route.params.id as string);
+
+const { notifyEvent } = useNotifier()
+const { awardAndCelebrate } = usePoints();
 
 // Prefill form if editing
 onMounted(async () => {
@@ -194,19 +201,18 @@ function handleHeaderImage(e: Event) {
 
 async function submitArticle() {
   if (!user.value) {
-    errorMsg.value = "You must be logged in.";
+    errorMsg.value = t('newsAdmin.loginRequired');
     showErrorToast.value = true;
     return;
   }
 
   if (!title.value || !content.value) {
-    alert('Title and content are required');
+    alert(t('newsAdmin.requiredFields'));
     return;
   }
 
   loading.value = true;
   let newsId = editingId.value;
-  let headerUrl = null;
 
   // Step 1: Insert or update article (without image)
   if (isEdit.value) {
@@ -225,6 +231,16 @@ async function submitArticle() {
       loading.value = false;
       return;
     }
+
+    // 🔔 Notify Discord about edit
+    await notifyEvent(
+        "update_article",
+        "📝 News Article Updated",
+        `${title.value}`,
+        headerPreview.value || undefined,   // use preview (existing or uploaded)
+        { id: newsId }                      // use the correct article ID
+    );
+
   } else {
     const { data: insertResult, error: insertError } = await supabase
         .from('news')
@@ -245,6 +261,14 @@ async function submitArticle() {
       return;
     }
     newsId = insertResult.id;
+
+    await notifyEvent(
+        "new_article",
+        "📰 New News Article Published",
+        `${title.value}`,
+        headerPreview.value || undefined,   // show header image preview (if any)
+        { id: newsId }                      // pass article ID for deep link
+    );
   }
 
   // Step 2: Upload image if selected
@@ -261,7 +285,7 @@ async function submitArticle() {
           .from('news-images')
           .getPublicUrl(filePath);
 
-      headerUrl = urlData?.publicUrl;
+      const headerUrl = urlData?.publicUrl;
 
       // Step 3: Update header_image field
       if (headerUrl) {
@@ -278,7 +302,15 @@ async function submitArticle() {
   }
 
   loading.value = false;
-  toastMessage.value = isEdit.value ? '✅ Article updated!' : '✅ Article published!';
+  if (!isEdit.value) {
+    // Only give points if it's a new article
+    await awardAndCelebrate("create_news", 10000);
+  }
+
+  toastMessage.value = isEdit.value
+      ? t('newsAdmin.updateSuccess')
+      : t('newsAdmin.publishSuccess');
+
   showToast.value = true;
 
   // Clear form or redirect

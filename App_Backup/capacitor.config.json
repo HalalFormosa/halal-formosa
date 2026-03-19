@@ -1,0 +1,44 @@
+{
+	"appId": "com.rcreative.halalformosa",
+	"appName": "Halal Formosa",
+	"webDir": "dist",
+	"server": {
+		"androidScheme": "https"
+	},
+	"plugins": {
+		"CapacitorHttp": {
+			"enabled": true
+		},
+		"Keyboard": {
+			"resize": "body",
+			"resizeOnFullScreen": true
+		}
+	},
+	"packageClassList": [
+		"AdMobPlugin",
+		"BarcodeScannerPlugin",
+		"AppPlugin",
+		"AppLauncherPlugin",
+		"CapacitorBarcodeScannerPlugin",
+		"CAPBrowserPlugin",
+		"CAPCameraPlugin",
+		"ClipboardPlugin",
+		"DevicePlugin",
+		"FilesystemPlugin",
+		"GeolocationPlugin",
+		"HapticsPlugin",
+		"KeyboardPlugin",
+		"PreferencesPlugin",
+		"SharePlugin",
+		"StatusBarPlugin",
+		"DatetimePickerPlugin",
+		"AppReviewPlugin",
+		"AppUpdatePlugin",
+		"CapgoNavigationBarPlugin",
+		"NativePurchasesPlugin",
+		"PurchasesPlugin",
+		"RevenueCatUIPlugin",
+		"SafeAreaPlugin",
+		"CDVPlugin"
+	]
+}

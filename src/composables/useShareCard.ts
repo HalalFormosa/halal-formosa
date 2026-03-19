@@ -4,7 +4,7 @@ import { Filesystem, Directory } from '@capacitor/filesystem'
 import { Clipboard } from '@capacitor/clipboard'
 import { loadImageFromFile, loadImageFromUrl, roundRect, blobToBase64 } from '@/utils/imageHelpers'
 import type { Ref } from 'vue'
-import type { IngredientHighlight } from '@/types/ingredients'
+import type { IngredientHighlight } from '@/types/Ingredient'
 import { extractIonColor } from '@/utils/ingredientHelpers'
 
 interface ShareCardOptions {
@@ -33,7 +33,7 @@ export default function useShareCard(
 ) {
     const shareCTA = `
 Join us and contribute to make Halal Formosa more beneficial for others 🌟
-Get it here: https://play.google.com/store/apps/details?id=com.rcreative.halalformosa
+Get it here: bit.ly/DownloadHalalFormosa
 (iOS coming soon)
 `
 
@@ -184,10 +184,24 @@ Get it here: https://play.google.com/store/apps/details?id=com.rcreative.halalfo
             { label: 'Ingredients: ', highlightRules: opts.highlightRules ?? [] }
         )
 
+        const filteredHighlights = ingredientHighlightsRef.value.filter(h => {
+            const aliases: string[] = []
+            if (h.keyword) aliases.push(...h.keyword.split('|'))
+            if (h.keyword_zh) aliases.push(...h.keyword_zh.split('|'))
+
+            const ingText = (opts.ingredients || '').trim()
+            const matchedAlias = aliases.find(a =>
+                new RegExp(escapeRegex(a.trim()), 'i').test(ingText)
+            )
+
+            return matchedAlias && extractIonColor(h.color) !== 'primary' // only keep actual draws
+        })
+
         let cardH = 72
         let gap = 12
-        const cardsBlockH = ingredientHighlightsRef.value.length > 0
-            ? ingredientHighlightsRef.value.length * (cardH + gap) - gap + 32
+
+        const cardsBlockH = filteredHighlights.length > 0
+            ? filteredHighlights.length * (cardH + gap) - gap + 32
             : 0
 
         const H = Math.ceil(ingredientsYStart + blockH + cardsBlockH + footerH + cardY)
@@ -286,7 +300,7 @@ Get it here: https://play.google.com/store/apps/details?id=com.rcreative.halalfo
         cardH = 72
         gap = 12
 
-        ingredientHighlightsRef.value.forEach((h, idx) => {
+        filteredHighlights.forEach((h, idx) => {
             const aliases: string[] = []
             if (h.keyword) aliases.push(...h.keyword.split('|'))
             if (h.keyword_zh) aliases.push(...h.keyword_zh.split('|'))
@@ -295,8 +309,6 @@ Get it here: https://play.google.com/store/apps/details?id=com.rcreative.halalfo
             const matchedAlias = aliases.find(a =>
                 new RegExp(escapeRegex(a.trim()), 'i').test(ingText)
             )
-
-            if (!matchedAlias) return // skip if nothing matched
 
             const rawColor = extractIonColor(h.color)
             const color = resolveColor(rawColor)
@@ -310,20 +322,20 @@ Get it here: https://play.google.com/store/apps/details?id=com.rcreative.halalfo
             roundRect(ctx, contentX, cardY, contentW, cardH, 16)
             ctx.stroke()
 
-            // text (only matched alias, not the whole list)
+            // text
             ctx.font = '500 30px system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial'
             ctx.fillStyle = '#111'
             ctx.fillText(`${matchedAlias} = ${h.keyword} — ${status}`, contentX + 20, cardY + 25)
         })
 
         // push y down for footer
-        y += ingredientHighlightsRef.value.length * (cardH + gap) + 12
+        y += filteredHighlights.length * (cardH + gap) + 12
 
         // Footer (place relative to y, not just H)
         ctx.fillStyle = '#777'
         ctx.font = '500 26px system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial'
         const year = new Date().getFullYear()
-        ctx.fillText(`Halal Formosa (c) ${year}`, contentX, y)
+        ctx.fillText(`Halal Formosa © ${year}`, contentX, y)
 
         const blob: Blob = await new Promise(res => canvas.toBlob(b => res(b!), 'image/jpeg', 0.92))
         return new File([blob], `halal-formosa-card-${Date.now()}.jpg`, { type: 'image/jpeg' })

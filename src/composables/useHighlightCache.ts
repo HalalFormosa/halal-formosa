@@ -1,6 +1,6 @@
 import { ref } from 'vue'
 import { supabase } from '@/plugins/supabaseClient'
-import type { IngredientHighlight } from '@/types/ingredients'
+import type { IngredientHighlight } from '@/types/Ingredient'
 
 interface BlacklistPattern {
     pattern: string

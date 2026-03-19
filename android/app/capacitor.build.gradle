@@ -12,10 +12,11 @@ dependencies {
     implementation project(':capacitor-community-admob')
     implementation project(':capacitor-mlkit-barcode-scanning')
     implementation project(':capacitor-app')
-    implementation project(':capacitor-barcode-scanner')
+    implementation project(':capacitor-app-launcher')
     implementation project(':capacitor-browser')
     implementation project(':capacitor-camera')
     implementation project(':capacitor-clipboard')
+    implementation project(':capacitor-device')
     implementation project(':capacitor-filesystem')
     implementation project(':capacitor-geolocation')
     implementation project(':capacitor-haptics')
@@ -23,11 +24,18 @@ dependencies {
     implementation project(':capacitor-preferences')
     implementation project(':capacitor-share')
     implementation project(':capacitor-status-bar')
+    implementation project(':capawesome-team-capacitor-datetime-picker')
     implementation project(':capawesome-capacitor-app-review')
     implementation project(':capawesome-capacitor-app-update')
-
+    implementation project(':capgo-capacitor-navigation-bar')
+    implementation project(':capgo-native-purchases')
+    implementation project(':revenuecat-purchases-capacitor')
+    implementation project(':revenuecat-purchases-capacitor-ui')
+    implementation project(':capacitor-plugin-safe-area')
+    implementation "com.onesignal:OneSignal:5.6.1"
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.7.10"
 }
-
+apply from: "../../node_modules/onesignal-cordova-plugin/build-extras-onesignal.gradle"
 
 if (hasProperty('postBuildExtras')) {
   postBuildExtras()

@@ -15,6 +15,9 @@ const config: CapacitorConfig = {
       resize: 'body',           // or 'native' for Android 12+
       resizeOnFullScreen: true, // helpful for fullscreen mode
     },
+    SystemBars: {
+      insetsHandling: 'css',
+    },
   },
 };
 

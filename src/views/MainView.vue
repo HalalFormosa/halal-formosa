@@ -6,27 +6,32 @@
       <!-- Bottom tab bar -->
       <ion-tab-bar slot="bottom" id="footer-tabs">
         <ion-tab-button tab="home" href="/home">
-          <ion-icon :icon="homeOutline" />
-          <ion-label>Home</ion-label>
+          <div class="tab-icon-wrapper">
+            <ion-icon :icon="homeOutline" />
+            <div v-if="isAuthenticated && !claimedBonus" class="tab-dot"></div>
+          </div>
+          <ion-label>{{ $t('main.home') }}</ion-label>
         </ion-tab-button>
 
         <ion-tab-button tab="search" href="/search">
-          <ion-icon :icon="searchOutline" />
-          <ion-label>Search</ion-label>
+          <div class="tab-icon-wrapper">
+            <ion-icon :icon="gridOutline" />
+          </div>
+          <ion-label>{{ $t('main.product') }}</ion-label>
         </ion-tab-button>
 
         <ion-tab-button tab="explore" href="/explore">
-          <ion-icon :icon="compassOutline" />
-          <ion-label>Explore</ion-label>
+          <div class="tab-icon-wrapper">
+            <ion-icon :icon="mapOutline" />
+          </div>
+          <ion-label>{{ $t('main.explore') }}</ion-label>
         </ion-tab-button>
 
-        <ion-tab-button
-            v-if="!isRoleLoading && userRole === 'admin'"
-            tab="add"
-            href="/add"
-        >
-          <ion-icon :icon="cameraOutline" />
-          <ion-label>Add Products</ion-label>
+        <ion-tab-button tab="trip" href="/trip">
+          <div class="tab-icon-wrapper">
+            <ion-icon :icon="compassOutline" />
+          </div>
+          <ion-label>{{ $t('main.trip') }}</ion-label>
         </ion-tab-button>
       </ion-tab-bar>
     </ion-tabs>
@@ -34,86 +39,82 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, onBeforeUnmount } from 'vue'
 import {
   IonTabBar, IonTabButton, IonTabs, IonLabel, IonIcon, IonRouterOutlet, IonPage
-} from '@ionic/vue';
+} from '@ionic/vue'
 import {
-  cameraOutline,
-  searchOutline,
   compassOutline,
-  homeOutline
-} from 'ionicons/icons';
-import { supabase } from '@/plugins/supabaseClient';
+  homeOutline,
+  gridOutline, mapOutline
+} from 'ionicons/icons'
+import { supabase } from '@/plugins/supabaseClient'
+import { useDailyMissions } from '@/composables/useDailyMissions'
 
-const isAuthenticated = ref(false);
-const userRole = ref<string | null>(null);
-const isRoleLoading = ref(true);
-const profilePic = ref<string | null>(null);
+const { claimedBonus, fetchProgress } = useDailyMissions()
 
-async function checkSession() {
-  const { data: { session } } = await supabase.auth.getSession();
-  isAuthenticated.value = !!session;
+const isAuthenticated = ref(false)
+const profilePic = ref<string | null>(null)
 
+let authSub: any = null
+
+async function syncSession(session?: any) {
   if (!session) {
-    userRole.value = null;
-    isRoleLoading.value = false;
+    const res = await supabase.auth.getSession()
+    session = res.data.session
+  }
+
+  isAuthenticated.value = !!session
+  profilePic.value = session?.user?.user_metadata?.avatar_url ?? null
+
+  if (isAuthenticated.value) {
+    fetchProgress()
   }
 }
 
-async function fetchUserRole() {
-  isRoleLoading.value = true;
-  try {
-    const user = supabase.auth.getUser();
-    const userId = (await user).data.user?.id;
-    if (userId) {
-      const { data, error } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', userId)
-          .single();
+onMounted(async () => {
+  await syncSession()
 
-      if (error) {
-        console.error('Failed to fetch user role:', error);
-        userRole.value = null;
-      } else {
-        userRole.value = data?.role || null;
-      }
-    }
-  } catch (err) {
-    console.error('Error fetching user role:', err);
-    userRole.value = null;
-  } finally {
-    isRoleLoading.value = false;
-  }
-}
+  const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+    syncSession(session)
+  })
 
-async function fetchProfilePic(session?: any) {
-  profilePic.value = null;
-  if (!session) {
-    const { data } = await supabase.auth.getSession();
-    session = data.session;
-  }
-  if (session?.user) {
-    profilePic.value = session.user.user_metadata?.avatar_url || null;
-  }
-}
+  authSub = data.subscription
+})
 
-onMounted(() => {
-  checkSession();
-  fetchUserRole();
-  fetchProfilePic();
-
-  supabase.auth.onAuthStateChange((_event, session) => {
-    isAuthenticated.value = !!session;
-    if (session) {
-      fetchUserRole();
-      fetchProfilePic(session);
-    } else {
-      userRole.value = null;
-      isRoleLoading.value = false;
-      profilePic.value = null;
-    }
-  });
-});
+onBeforeUnmount(() => {
+  authSub?.unsubscribe()
+})
 </script>
+
+<style scoped>
+.tab-icon-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tab-icon-wrapper ion-icon {
+  font-size: 21px;
+}
+
+.tab-dot {
+  position: absolute;
+  top: -2px;
+  right: -4px;
+  width: 9px;
+  height: 9px;
+  background-color: var(--ion-color-danger);
+  border-radius: 50%;
+  border: 2px solid var(--ion-tab-bar-background, #fff);
+  box-shadow: 0 0 5px rgba(var(--ion-color-danger-rgb), 0.5);
+  z-index: 10001; /* Stay above ion-modal sheet */
+}
+
+/* Ensure tab buttons have enough vertical space */
+ion-tab-button {
+  --padding-top: 8px;
+  --padding-bottom: 8px;
+}
+</style>

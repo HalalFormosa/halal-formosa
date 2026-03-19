@@ -1,0 +1,1 @@
+System.register(["./index-legacy-DryGZUwD.js","./html5-qrcode-legacy-D5DtuMLO.js"],function(e,n){"use strict";var r;return{setters:[e=>{r=e.cG},null],execute:function(){e("AppLauncherWeb",class AppLauncherWeb extends r{async canOpenUrl(e){return{value:!0}}async openUrl(e){return window.open(e.url,"_blank"),{completed:!0}}})}}});

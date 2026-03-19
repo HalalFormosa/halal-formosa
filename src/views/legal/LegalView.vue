@@ -5,32 +5,30 @@
         <ion-buttons slot="start">
           <ion-back-button default-href="/profile" />
         </ion-buttons>
-        <ion-title>Legal</ion-title>
+        <ion-title>{{ $t('legal.title') }}</ion-title>
       </ion-toolbar>
     </ion-header>
 
     <ion-content class="ion-padding">
-      <ion-accordion-group :value="'tos'">
-        <!-- Terms of Service -->
-        <ion-accordion value="tos">
-          <ion-item slot="header" color="light">
-            <ion-label>Terms of Service</ion-label>
-          </ion-item>
-          <div slot="content" class="ion-padding">
-            <TermsOfService />
-          </div>
-        </ion-accordion>
 
-        <!-- Privacy Policy -->
-        <ion-accordion value="privacy">
-          <ion-item slot="header" color="light">
-            <ion-label>Privacy Policy</ion-label>
-          </ion-item>
-          <div slot="content" class="ion-padding">
-            <PrivacyPolicy />
-          </div>
-        </ion-accordion>
-      </ion-accordion-group>
+      <!-- Terms of Service -->
+      <ion-item
+          button
+          detail
+          @click="openExternal('https://halalformosa.com/terms')"
+      >
+        <ion-label>{{ $t('legal.terms') }}</ion-label>
+      </ion-item>
+
+      <!-- Privacy Policy -->
+      <ion-item
+          button
+          detail
+          @click="openExternal('https://halalformosa.com/privacy')"
+      >
+        <ion-label>{{ $t('legal.privacy') }}</ion-label>
+      </ion-item>
+
     </ion-content>
   </ion-page>
 </template>
@@ -46,22 +44,20 @@ import {
   IonContent,
   IonItem,
   IonLabel,
-  IonAccordion,
-  IonAccordionGroup,
-} from '@ionic/vue';
-import TermsOfService from "@/components/TermsOfService.vue";
-import PrivacyPolicy from "@/components/PrivacyPolicy.vue";
+} from "@ionic/vue";
+import { Browser } from '@capacitor/browser';
+
+const openExternal = async (url: string) => {
+  await Browser.open({ url });
+};
 </script>
 
 <style scoped>
-h3 {
-  margin-top: 16px;
-  font-size: 18px;
-  font-weight: bold;
-}
-p {
+ion-item {
+  --padding-start: 0;
+  --inner-padding-end: 8px;
   margin-bottom: 12px;
-  font-size: 15px;
-  line-height: 1.6;
+  border-radius: 12px;
+  border: 1px solid var(--ion-color-light);
 }
 </style>

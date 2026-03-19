@@ -1,0 +1,322 @@
+PODS:
+  - Capacitor (8.1.0):
+    - CapacitorCordova
+  - CapacitorApp (8.0.1):
+    - Capacitor
+  - CapacitorAppLauncher (8.0.1):
+    - Capacitor
+  - CapacitorBrowser (8.0.1):
+    - Capacitor
+  - CapacitorCamera (8.0.1):
+    - Capacitor
+  - CapacitorClipboard (8.0.1):
+    - Capacitor
+  - CapacitorCommunityAdmob (8.0.0):
+    - Capacitor
+    - Google-Mobile-Ads-SDK (~> 12.14)
+    - GoogleUserMessagingPlatform (~> 3.1)
+  - CapacitorCordova (8.1.0)
+  - CapacitorDevice (8.0.1):
+    - Capacitor
+  - CapacitorFilesystem (8.1.2):
+    - Capacitor
+    - IONFilesystemLib (~> 1.1.1)
+  - CapacitorGeolocation (8.1.0):
+    - Capacitor
+    - IONGeolocationLib (= 2.0.0)
+  - CapacitorHaptics (8.0.1):
+    - Capacitor
+  - CapacitorKeyboard (8.0.1):
+    - Capacitor
+  - CapacitorMlkitBarcodeScanning (8.0.1):
+    - Capacitor
+    - GoogleMLKit/BarcodeScanning (~> 8.0.0)
+  - CapacitorPluginSafeArea (5.0.0):
+    - Capacitor
+  - CapacitorPreferences (8.0.1):
+    - Capacitor
+  - CapacitorShare (8.0.1):
+    - Capacitor
+  - CapacitorStatusBar (8.0.1):
+    - Capacitor
+  - CapawesomeCapacitorAppReview (8.0.1):
+    - Capacitor
+  - CapawesomeCapacitorAppUpdate (8.0.3):
+    - Capacitor
+  - CapawesomeTeamCapacitorDatetimePicker (8.0.1):
+    - Capacitor
+  - CapgoCapacitorNavigationBar (8.0.22):
+    - Capacitor
+  - CapgoNativePurchases (8.1.1):
+    - Capacitor
+  - CordovaPluginsStatic (8.1.0):
+    - CapacitorCordova
+    - OneSignalXCFramework (= 5.4.1)
+  - Google-Mobile-Ads-SDK (12.14.0):
+    - GoogleUserMessagingPlatform (>= 1.1)
+  - GoogleDataTransport (10.1.0):
+    - nanopb (~> 3.30910.0)
+    - PromisesObjC (~> 2.4)
+  - GoogleMLKit/BarcodeScanning (8.0.0):
+    - GoogleMLKit/MLKitCore
+    - MLKitBarcodeScanning (~> 7.0.0)
+  - GoogleMLKit/MLKitCore (8.0.0):
+    - MLKitCommon (~> 13.0.0)
+  - GoogleToolboxForMac/Defines (4.2.1)
+  - GoogleToolboxForMac/Logger (4.2.1):
+    - GoogleToolboxForMac/Defines (= 4.2.1)
+  - "GoogleToolboxForMac/NSData+zlib (4.2.1)":
+    - GoogleToolboxForMac/Defines (= 4.2.1)
+  - GoogleUserMessagingPlatform (3.1.0)
+  - GoogleUtilities/Environment (8.1.0):
+    - GoogleUtilities/Privacy
+  - GoogleUtilities/Logger (8.1.0):
+    - GoogleUtilities/Environment
+    - GoogleUtilities/Privacy
+  - GoogleUtilities/Privacy (8.1.0)
+  - GoogleUtilities/UserDefaults (8.1.0):
+    - GoogleUtilities/Logger
+    - GoogleUtilities/Privacy
+  - GTMSessionFetcher/Core (3.5.0)
+  - IONFilesystemLib (1.1.1)
+  - IONGeolocationLib (2.0.0)
+  - MLImage (1.0.0-beta7)
+  - MLKitBarcodeScanning (7.0.0):
+    - MLKitCommon (~> 13.0)
+    - MLKitVision (~> 9.0)
+  - MLKitCommon (13.0.0):
+    - GoogleDataTransport (~> 10.0)
+    - GoogleToolboxForMac/Logger (< 5.0, >= 4.2.1)
+    - "GoogleToolboxForMac/NSData+zlib (< 5.0, >= 4.2.1)"
+    - GoogleUtilities/Logger (~> 8.0)
+    - GoogleUtilities/UserDefaults (~> 8.0)
+    - GTMSessionFetcher/Core (< 4.0, >= 3.3.2)
+  - MLKitVision (9.0.0):
+    - GoogleToolboxForMac/Logger (< 5.0, >= 4.2.1)
+    - "GoogleToolboxForMac/NSData+zlib (< 5.0, >= 4.2.1)"
+    - GTMSessionFetcher/Core (< 4.0, >= 3.3.2)
+    - MLImage (= 1.0.0-beta7)
+    - MLKitCommon (~> 13.0)
+  - nanopb (3.30910.0):
+    - nanopb/decode (= 3.30910.0)
+    - nanopb/encode (= 3.30910.0)
+  - nanopb/decode (3.30910.0)
+  - nanopb/encode (3.30910.0)
+  - OneSignalXCFramework (5.4.1):
+    - OneSignalXCFramework/OneSignalComplete (= 5.4.1)
+  - OneSignalXCFramework/OneSignal (5.4.1):
+    - OneSignalXCFramework/OneSignalCore
+    - OneSignalXCFramework/OneSignalExtension
+    - OneSignalXCFramework/OneSignalLiveActivities
+    - OneSignalXCFramework/OneSignalNotifications
+    - OneSignalXCFramework/OneSignalOSCore
+    - OneSignalXCFramework/OneSignalOutcomes
+    - OneSignalXCFramework/OneSignalUser
+  - OneSignalXCFramework/OneSignalComplete (5.4.1):
+    - OneSignalXCFramework/OneSignal
+    - OneSignalXCFramework/OneSignalInAppMessages
+    - OneSignalXCFramework/OneSignalLocation
+  - OneSignalXCFramework/OneSignalCore (5.4.1)
+  - OneSignalXCFramework/OneSignalExtension (5.4.1):
+    - OneSignalXCFramework/OneSignalCore
+    - OneSignalXCFramework/OneSignalOutcomes
+  - OneSignalXCFramework/OneSignalInAppMessages (5.4.1):
+    - OneSignalXCFramework/OneSignalCore
+    - OneSignalXCFramework/OneSignalNotifications
+    - OneSignalXCFramework/OneSignalOSCore
+    - OneSignalXCFramework/OneSignalOutcomes
+    - OneSignalXCFramework/OneSignalUser
+  - OneSignalXCFramework/OneSignalLiveActivities (5.4.1):
+    - OneSignalXCFramework/OneSignalCore
+    - OneSignalXCFramework/OneSignalOSCore
+    - OneSignalXCFramework/OneSignalUser
+  - OneSignalXCFramework/OneSignalLocation (5.4.1):
+    - OneSignalXCFramework/OneSignalCore
+    - OneSignalXCFramework/OneSignalNotifications
+    - OneSignalXCFramework/OneSignalOSCore
+    - OneSignalXCFramework/OneSignalUser
+  - OneSignalXCFramework/OneSignalNotifications (5.4.1):
+    - OneSignalXCFramework/OneSignalCore
+    - OneSignalXCFramework/OneSignalExtension
+    - OneSignalXCFramework/OneSignalOutcomes
+  - OneSignalXCFramework/OneSignalOSCore (5.4.1):
+    - OneSignalXCFramework/OneSignalCore
+  - OneSignalXCFramework/OneSignalOutcomes (5.4.1):
+    - OneSignalXCFramework/OneSignalCore
+  - OneSignalXCFramework/OneSignalUser (5.4.1):
+    - OneSignalXCFramework/OneSignalCore
+    - OneSignalXCFramework/OneSignalNotifications
+    - OneSignalXCFramework/OneSignalOSCore
+    - OneSignalXCFramework/OneSignalOutcomes
+  - PromisesObjC (2.4.0)
+  - PurchasesHybridCommon (17.41.1):
+    - RevenueCat (= 5.59.2)
+  - PurchasesHybridCommonUI (17.41.1):
+    - PurchasesHybridCommon (= 17.41.1)
+    - RevenueCatUI (= 5.59.2)
+  - RevenueCat (5.59.2)
+  - RevenuecatPurchasesCapacitor (12.2.0):
+    - Capacitor
+    - PurchasesHybridCommon (= 17.41.1)
+  - RevenuecatPurchasesCapacitorUi (12.2.0):
+    - Capacitor
+    - PurchasesHybridCommonUI (= 17.41.1)
+  - RevenueCatUI (5.59.2):
+    - RevenueCat (= 5.59.2)
+
+DEPENDENCIES:
+  - "Capacitor (from `../../node_modules/@capacitor/ios`)"
+  - "CapacitorApp (from `../../node_modules/@capacitor/app`)"
+  - "CapacitorAppLauncher (from `../../node_modules/@capacitor/app-launcher`)"
+  - "CapacitorBrowser (from `../../node_modules/@capacitor/browser`)"
+  - "CapacitorCamera (from `../../node_modules/@capacitor/camera`)"
+  - "CapacitorClipboard (from `../../node_modules/@capacitor/clipboard`)"
+  - "CapacitorCommunityAdmob (from `../../node_modules/@capacitor-community/admob`)"
+  - "CapacitorCordova (from `../../node_modules/@capacitor/ios`)"
+  - "CapacitorDevice (from `../../node_modules/@capacitor/device`)"
+  - "CapacitorFilesystem (from `../../node_modules/@capacitor/filesystem`)"
+  - "CapacitorGeolocation (from `../../node_modules/@capacitor/geolocation`)"
+  - "CapacitorHaptics (from `../../node_modules/@capacitor/haptics`)"
+  - "CapacitorKeyboard (from `../../node_modules/@capacitor/keyboard`)"
+  - "CapacitorMlkitBarcodeScanning (from `../../node_modules/@capacitor-mlkit/barcode-scanning`)"
+  - CapacitorPluginSafeArea (from `../../node_modules/capacitor-plugin-safe-area`)
+  - "CapacitorPreferences (from `../../node_modules/@capacitor/preferences`)"
+  - "CapacitorShare (from `../../node_modules/@capacitor/share`)"
+  - "CapacitorStatusBar (from `../../node_modules/@capacitor/status-bar`)"
+  - "CapawesomeCapacitorAppReview (from `../../node_modules/@capawesome/capacitor-app-review`)"
+  - "CapawesomeCapacitorAppUpdate (from `../../node_modules/@capawesome/capacitor-app-update`)"
+  - "CapawesomeTeamCapacitorDatetimePicker (from `../../node_modules/@capawesome-team/capacitor-datetime-picker`)"
+  - "CapgoCapacitorNavigationBar (from `../../node_modules/@capgo/capacitor-navigation-bar`)"
+  - "CapgoNativePurchases (from `../../node_modules/@capgo/native-purchases`)"
+  - CordovaPluginsStatic (from `../capacitor-cordova-ios-plugins`)
+  - "RevenuecatPurchasesCapacitor (from `../../node_modules/@revenuecat/purchases-capacitor`)"
+  - "RevenuecatPurchasesCapacitorUi (from `../../node_modules/@revenuecat/purchases-capacitor-ui`)"
+
+SPEC REPOS:
+  trunk:
+    - Google-Mobile-Ads-SDK
+    - GoogleDataTransport
+    - GoogleMLKit
+    - GoogleToolboxForMac
+    - GoogleUserMessagingPlatform
+    - GoogleUtilities
+    - GTMSessionFetcher
+    - IONFilesystemLib
+    - IONGeolocationLib
+    - MLImage
+    - MLKitBarcodeScanning
+    - MLKitCommon
+    - MLKitVision
+    - nanopb
+    - OneSignalXCFramework
+    - PromisesObjC
+    - PurchasesHybridCommon
+    - PurchasesHybridCommonUI
+    - RevenueCat
+    - RevenueCatUI
+
+EXTERNAL SOURCES:
+  Capacitor:
+    :path: "../../node_modules/@capacitor/ios"
+  CapacitorApp:
+    :path: "../../node_modules/@capacitor/app"
+  CapacitorAppLauncher:
+    :path: "../../node_modules/@capacitor/app-launcher"
+  CapacitorBrowser:
+    :path: "../../node_modules/@capacitor/browser"
+  CapacitorCamera:
+    :path: "../../node_modules/@capacitor/camera"
+  CapacitorClipboard:
+    :path: "../../node_modules/@capacitor/clipboard"
+  CapacitorCommunityAdmob:
+    :path: "../../node_modules/@capacitor-community/admob"
+  CapacitorCordova:
+    :path: "../../node_modules/@capacitor/ios"
+  CapacitorDevice:
+    :path: "../../node_modules/@capacitor/device"
+  CapacitorFilesystem:
+    :path: "../../node_modules/@capacitor/filesystem"
+  CapacitorGeolocation:
+    :path: "../../node_modules/@capacitor/geolocation"
+  CapacitorHaptics:
+    :path: "../../node_modules/@capacitor/haptics"
+  CapacitorKeyboard:
+    :path: "../../node_modules/@capacitor/keyboard"
+  CapacitorMlkitBarcodeScanning:
+    :path: "../../node_modules/@capacitor-mlkit/barcode-scanning"
+  CapacitorPluginSafeArea:
+    :path: "../../node_modules/capacitor-plugin-safe-area"
+  CapacitorPreferences:
+    :path: "../../node_modules/@capacitor/preferences"
+  CapacitorShare:
+    :path: "../../node_modules/@capacitor/share"
+  CapacitorStatusBar:
+    :path: "../../node_modules/@capacitor/status-bar"
+  CapawesomeCapacitorAppReview:
+    :path: "../../node_modules/@capawesome/capacitor-app-review"
+  CapawesomeCapacitorAppUpdate:
+    :path: "../../node_modules/@capawesome/capacitor-app-update"
+  CapawesomeTeamCapacitorDatetimePicker:
+    :path: "../../node_modules/@capawesome-team/capacitor-datetime-picker"
+  CapgoCapacitorNavigationBar:
+    :path: "../../node_modules/@capgo/capacitor-navigation-bar"
+  CapgoNativePurchases:
+    :path: "../../node_modules/@capgo/native-purchases"
+  CordovaPluginsStatic:
+    :path: "../capacitor-cordova-ios-plugins"
+  RevenuecatPurchasesCapacitor:
+    :path: "../../node_modules/@revenuecat/purchases-capacitor"
+  RevenuecatPurchasesCapacitorUi:
+    :path: "../../node_modules/@revenuecat/purchases-capacitor-ui"
+
+SPEC CHECKSUMS:
+  Capacitor: 47b825120c6b8b6d6f9f053e9350a8960d436710
+  CapacitorApp: 942306cd1acf7774a00e89a3986af3a67c8cad7a
+  CapacitorAppLauncher: 43949ccc5aaa5139a1ebe27a98c0a4d76c883fa7
+  CapacitorBrowser: e72e572d5dbdbb854fda5950586a2451e981f2d6
+  CapacitorCamera: fcacb82cc319e62f8d8c93e20f3f70e2464efe5e
+  CapacitorClipboard: c75fdaa6e622111119f35e7914ecfc67b05efecb
+  CapacitorCommunityAdmob: 9c36b466f46da413e5c105f7484e7603178c6223
+  CapacitorCordova: e8b76fd95fc1e157775abc484c59cc0de464095d
+  CapacitorDevice: ff033fa0c4ec19f5e059a073769a9b2347e69f57
+  CapacitorFilesystem: 2db285a1ac6e475cc27cae2e1bea999000f9e2be
+  CapacitorGeolocation: 7132de914f9d853ec4642dc1d36e4e2018a4e8a8
+  CapacitorHaptics: 4df2c625445cef39b67ea635a21802bc92df3b82
+  CapacitorKeyboard: 867eb4b3c901d9bb5c3d0c93b546185d52484e19
+  CapacitorMlkitBarcodeScanning: d97b2398adb4a8686fce9b1c0c6f09623f1baae8
+  CapacitorPluginSafeArea: 9d0682951c011bf0b36e513a89103c5fbff7ac49
+  CapacitorPreferences: cca2021f386efb75947c850334447d9ff22b14f1
+  CapacitorShare: 0c58305114538568059bfc07111f22dcb9cb2a82
+  CapacitorStatusBar: 32206abd53b14f339763da26f71286deaa891e16
+  CapawesomeCapacitorAppReview: 73b307a15e5052ecbaa3126ddae25e8bfa82fad1
+  CapawesomeCapacitorAppUpdate: 3a7537c6a6696837b51d06f26b2e909fd7b9226f
+  CapawesomeTeamCapacitorDatetimePicker: 859adffaef2ac2f43f8c530f5b182ea13d5678d6
+  CapgoCapacitorNavigationBar: b38f5c3fda336ab2e8493f8cc0c8093aa1a385c5
+  CapgoNativePurchases: ef1797e57514fe6521912d1bcc554f07634b0429
+  CordovaPluginsStatic: b1e0cb61738004841352e28a8dcf8629f495d919
+  Google-Mobile-Ads-SDK: 4534fd2dfcd3f705c5485a6633c5188d03d4eed2
+  GoogleDataTransport: aae35b7ea0c09004c3797d53c8c41f66f219d6a7
+  GoogleMLKit: ddd51d7dff36ff28defa69afedd9cdce684fd857
+  GoogleToolboxForMac: d1a2cbf009c453f4d6ded37c105e2f67a32206d8
+  GoogleUserMessagingPlatform: befe603da6501006420c206222acd449bba45a9c
+  GoogleUtilities: 00c88b9a86066ef77f0da2fab05f65d7768ed8e1
+  GTMSessionFetcher: 5aea5ba6bd522a239e236100971f10cb71b96ab6
+  IONFilesystemLib: dfa8706539ac9ab77ccfd6e5b3830ce9b5e57f6c
+  IONGeolocationLib: a5e40b54edc2ee9902036eda5aaa41ddf07bb68d
+  MLImage: 2ab9c968e75f57911c16f4c9d9e8a8e9604a86a1
+  MLKitBarcodeScanning: 72c6437f13a900833b400136be53a8a5d86f42fa
+  MLKitCommon: 26b779f072a182c1603d4c88a101c350cac837b1
+  MLKitVision: fa8dea9012ac59497c79ddbe9ebf32051047ac4c
+  nanopb: fad817b59e0457d11a5dfbde799381cd727c1275
+  OneSignalXCFramework: 0b85a8d949247f80809a9d5598200cc263591129
+  PromisesObjC: f5707f49cb48b9636751c5b2e7d227e43fba9f47
+  PurchasesHybridCommon: 8eb130ab98f8dab600dea932a2599dee79304bb5
+  PurchasesHybridCommonUI: 59c7bf053558417dcabc06ec6ac072fa8181b865
+  RevenueCat: f352b3661288080bd8bf30bbb96e331940e73c88
+  RevenuecatPurchasesCapacitor: a94a3691cbc02eeed9959c0ab8cb679976f8b365
+  RevenuecatPurchasesCapacitorUi: 59851dc7076d29f5f010e3dca51902898659f2d1
+  RevenueCatUI: 5f7b3496a7fd7a16a254a6b78de2e221c117d9d2
+
+PODFILE CHECKSUM: 16f6270c9dab452cee9ca03f867e856d53a33e36
+
+COCOAPODS: 1.16.2

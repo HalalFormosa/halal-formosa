@@ -27,3 +27,13 @@ export function colorMeaning(color: string): string {
         default: return 'Unknown'
     }
 }
+
+export function statusToChipClass(status: string): string {
+    switch (status) {
+        case 'Halal': return 'chip-success'
+        case 'Muslim-friendly': return 'chip-primary'
+        case 'Syubhah': return 'chip-warning'
+        case 'Haram': return 'chip-danger'
+        default: return 'chip-medium'
+    }
+}

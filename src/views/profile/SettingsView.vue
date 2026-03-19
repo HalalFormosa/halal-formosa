@@ -5,29 +5,63 @@
         <ion-buttons slot="start">
           <ion-back-button default-href="/profile" />
         </ion-buttons>
-        <ion-title>Settings</ion-title>
+        <ion-title>{{ $t('settings.title')}}</ion-title>
       </ion-toolbar>
     </ion-header>
 
     <ion-content class="ion-padding">
+      <!-- 🌙 Appearance -->
       <ion-list style="border-radius: 12px;">
-        <ion-list-header>Appearance</ion-list-header>
-        <ion-list :inset="true">
-          <ion-item>
+        <ion-list-header>{{ $t('settings.appearance')}}</ion-list-header>
+        <ion-item lines="full" style="--border-radius: 12px;">
+          <ion-toggle
+              :checked="paletteToggle"
+              @ionChange="(e) => {paletteToggle = e.detail.checked; toggleDarkPalette(e.detail.checked);}"
+          >
+            {{ $t('settings.darkMode') }}
+          </ion-toggle>
+        </ion-item>
+      </ion-list>
+
+      <!-- 🔒 Privacy -->
+      <ion-list
+          v-if="currentUser"
+          style="border-radius: 12px; margin-top: 20px;"
+      >
+        <ion-list-header>{{ $t('settings.privacy')}}</ion-list-header>
+        <ion-item v-if="isPublicProfile !== null" lines="full" style="--border-radius: 12px;">
+          <div style="width: 100%; padding: 8px 0;">
             <ion-toggle
-                :checked="paletteToggle"
-                @ionChange="(e) => {paletteToggle = e.detail.checked; toggleDarkPalette(e.detail.checked);}"
+                :checked="!!isPublicProfile"
+                @ionChange="(e) => setPublicProfile(e.detail.checked)"
             >
-              Dark Mode
+              {{ $t('settings.publicProfile') }}
             </ion-toggle>
+            <ion-note style="display: block; margin-top: 8px; font-size: 0.85rem;">
+              {{ $t('settings.publicProfileNote') }}
+            </ion-note>
+          </div>
+        </ion-item>
+      </ion-list>
+
+      <!-- 🌐 Language -->
+      <ion-list style="border-radius: 12px; margin-top: 20px;">
+        <ion-list-header>{{ $t('settings.language')}}</ion-list-header>
+        <ion-radio-group :value="lang" @ionChange="(e) => changeLanguage(e.detail.value)">
+          <ion-item v-for="l in languages" :key="l.code" lines="full">
+            <div slot="start" style="width: 32px; height: 22px; border-radius: 4px; overflow: hidden; border: 1px solid rgba(0,0,0,0.1); margin-right: 12px;">
+              <img :src="l.flag" :alt="l.name" style="width: 100%; height: 100%; object-fit: cover;" />
+            </div>
+            <ion-label style="font-weight: 500;">{{ l.name }}</ion-label>
+            <ion-radio slot="end" :value="l.code"></ion-radio>
           </ion-item>
-        </ion-list>
+        </ion-radio-group>
       </ion-list>
     </ion-content>
   </ion-page>
 </template>
 
-<script lang="ts">
+<script setup lang="ts">
 import {
   IonBackButton,
   IonButtons,
@@ -39,96 +73,42 @@ import {
   IonToggle,
   IonToolbar,
   IonTitle,
-  IonPage
-} from '@ionic/vue';
-import type { ToggleCustomEvent } from '@ionic/vue';
-import { personCircle, personCircleOutline, sunnyOutline, sunny } from 'ionicons/icons';
-import {defineComponent, onMounted, ref} from 'vue';
+  IonPage,
+  IonRadio,
+  IonRadioGroup,
+  IonNote,
+  IonLabel
+} from '@ionic/vue'
+import { ref, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
+import {
+  currentUser,
+  isPublicProfile,
+  setPublicProfile,
+} from '@/composables/userProfile'
+import { useTheme } from '@/composables/useTheme'
 
-export default defineComponent({
-  components: {
-    IonBackButton,
-    IonButtons,
-    IonContent,
-    IonHeader,
-    IonItem,
-    IonList,
-    IonListHeader,
-    IonToggle,
-    IonToolbar,
-    IonTitle,
-    IonPage
-  },
-  setup() {
-    const paletteToggle = ref(false);
+const { locale } = useI18n()
+const lang = ref(locale.value)
 
-    // Use matchMedia to check the user preference
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)');
+const languages = [
+  { code: 'en', name: 'English', flag: 'https://flagcdn.com/w80/us.png' },
+  { code: 'zh', name: '繁體中文', flag: 'https://flagcdn.com/w80/tw.png' },
+  { code: 'id', name: 'Bahasa Indonesia', flag: 'https://flagcdn.com/w80/id.png' },
+  { code: 'ms', name: 'Bahasa Melayu', flag: 'https://flagcdn.com/w80/my.png' }
+]
 
+const changeLanguage = (newLang: string) => {
+  if (!newLang) return
+  lang.value = newLang
+  locale.value = newLang
+  localStorage.setItem('lang', newLang)
+}
 
-    const initializeTheme = () => {
-      if (savedTheme === 'dark') {
-        paletteToggle.value = true;
-        toggleDarkPalette(true);
-      } else if (savedTheme === 'light') {
-        paletteToggle.value = false;
-        toggleDarkPalette(false);
-      } else {
-        // default to system preference
-        paletteToggle.value = prefersDark.matches;
-        toggleDarkPalette(prefersDark.matches);
-      }
-    };
+// Dark Mode logic
+const { isDark: paletteToggle, toggleDarkPalette, initTheme } = useTheme()
 
-    // Add or remove the "dark" class on the body
-    const toggleDarkPalette = (enabled: boolean) => {
-      document.documentElement.classList.toggle('ion-palette-dark', enabled);
-      localStorage.setItem('preferred-theme', enabled ? 'dark' : 'light');
-    };
-
-    // Update the toggle and theme class
-    const initializeDarkPalette = (isDark: boolean) => {
-      paletteToggle.value = isDark;
-      toggleDarkPalette(isDark);
-    };
-
-    // Toggle listener
-    const toggleChange = (event: ToggleCustomEvent) => {
-      const isDark = event.detail.checked;
-      toggleDarkPalette(isDark);
-      localStorage.setItem('preferred-theme', isDark ? 'dark' : 'light');
-    };
-
-    // === ✅ APPLY THE THEME BASED ON SAVED PREFERENCE OR SYSTEM DEFAULT ===
-    const savedTheme = localStorage.getItem('preferred-theme');
-    if (savedTheme === 'dark') {
-      initializeDarkPalette(true);
-    } else if (savedTheme === 'light') {
-      initializeDarkPalette(false);
-    } else {
-      initializeDarkPalette(prefersDark.matches); // system preference
-    }
-
-    // Optional: listen for system theme changes
-    prefersDark.addEventListener('change', (mediaQuery) =>
-        initializeDarkPalette(mediaQuery.matches)
-    );
-
-    onMounted(() => {
-      initializeTheme();
-    });
-
-    return {
-      personCircle,
-      personCircleOutline,
-      sunnyOutline,
-      sunny,
-      initializeDarkPalette,
-      toggleChange,
-      toggleDarkPalette,
-      paletteToggle,
-      initializeTheme
-    };
-  },
-});
+onMounted(() => {
+  initTheme()
+})
 </script>

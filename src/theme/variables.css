@@ -5,21 +5,67 @@
  * http://ionicframework.com/docs/theming/
  */
 
-@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700&display=swap');
+/* Import Roboto instead of Nunito */
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
 
 /* This sets a different item border color for the default theme on ios and md */
 :root {
-    --ion-font-family: 'Nunito', sans-serif;
+    --ion-font-family: 'Roboto', sans-serif;
 
+    /* Success (Halal green) */
+    --ion-color-success: #2ecc71;
+    --ion-color-success-rgb: 46, 204, 113;
+    --ion-color-success-contrast: #ffffff;
+    --ion-color-success-contrast-rgb: 255, 255, 255;
+    --ion-color-success-shade: #27ae60;
+    --ion-color-success-tint: #58d68d;
+
+    /* Warning (Yellow) */
+    --ion-color-warning: #f1c40f;
+    --ion-color-warning-rgb: 241, 196, 15;
+    --ion-color-warning-contrast: #000000;
+    --ion-color-warning-contrast-rgb: 0, 0, 0;
+    --ion-color-warning-shade: #d4ac0d;
+    --ion-color-warning-tint: #f4d03f;
+
+    /* Danger (Red) */
+    --ion-color-danger: #e74c3c;
+    --ion-color-danger-rgb: 231, 76, 60;
+    --ion-color-danger-contrast: #ffffff;
+    --ion-color-danger-contrast-rgb: 255, 255, 255;
+    --ion-color-danger-shade: #c0392b;
+    --ion-color-danger-tint: #ec7063;
+
+    /* Primary (Blue) */
+    --ion-color-primary: #3498db;
+    --ion-color-primary-rgb: 52, 152, 219;
+    --ion-color-primary-contrast: #ffffff;
+    --ion-color-primary-contrast-rgb: 255, 255, 255;
+    --ion-color-primary-shade: #2c80b4;
+    --ion-color-primary-tint: #5dade2;
+
+    /* ✅ Carrot */
     --ion-color-carrot: #e67e22;
-    --ion-color-carrot-rgb: 230,126,34;
+    --ion-color-carrot-rgb: 230, 126, 34;
     --ion-color-carrot-contrast: #000000;
-    --ion-color-carrot-contrast-rgb: 0,0,0;
+    --ion-color-carrot-contrast-rgb: 0, 0, 0;
     --ion-color-carrot-shade: #ca6f1e;
     --ion-color-carrot-tint: #e98b38;
 
     /* existing variables */
     --ion-item-border-color: var(--ion-background-color-step-200);
+
+    /* ✅ Safe area fallbacks */
+    --safe-area-inset-top: env(safe-area-inset-top, 0px);
+    --safe-area-inset-right: env(safe-area-inset-right, 0px);
+    --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-area-inset-left: env(safe-area-inset-left, 0px);
+
+    /* Tier Colors */
+    --tier-gold-bg: linear-gradient(135deg, #fffbeb 0%, #fef3c7 60%, #fde68a 100%);
+    --tier-silver-bg: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 60%, #e2e8f0 100%);
+    --tier-bronze-bg: linear-gradient(135deg, #fffafb 0%, #fff7ed 60%, #ffedd5 100%);
+
 }
 
 /* This sets a different background and item background for the default theme on ios */
@@ -33,6 +79,20 @@
 :root.md {
     --ion-background-color: var(--ion-background-color-step-100, #f9f9f9);
     --ion-item-background: #fff;
+}
+
+/* Match the actual <ion-app> element */
+.safe-area {
+    padding: var(--safe-area-inset-top) var(--safe-area-inset-right) var(--safe-area-inset-bottom) var(--safe-area-inset-left);
+    box-sizing: border-box;
+}
+
+.safe-area ion-header {
+    padding-top: var(--safe-area-inset-top);
+}
+
+.safe-area ion-tab-bar {
+    padding-bottom: calc(var(--safe-area-inset-bottom) - (var(--safe-area-inset-bottom) / 1.75));
 }
 
 /* This sets a different item background when dark mode is enabled on ios and md */
@@ -49,6 +109,53 @@ ion-title.title-brand {
 ion-title.title-large {
     font-size: 20px;
     font-weight: 1000;
+    display: flex;
+    align-items: center;
+    /* ✅ vertical centering */
+}
+
+ion-title.title-large img,
+ion-title.title-large ion-icon {
+    vertical-align: middle;
+}
+
+/* ✅ Then classes just reference the root vars */
+.ion-color-primary {
+    --background: var(--ion-color-primary) !important;
+    --ion-color-base: var(--ion-color-primary) !important;
+    --ion-color-base-rgb: var(--ion-color-primary-rgb) !important;
+    --ion-color-contrast: var(--ion-color-primary-contrast) !important;
+    --ion-color-contrast-rgb: var(--ion-color-primary-contrast-rgb) !important;
+    --ion-color-shade: var(--ion-color-primary-shade) !important;
+    --ion-color-tint: var(--ion-color-primary-tint) !important;
+    --color: var(--ion-color-primary-contrast) !important;
+}
+
+.ion-color-success {
+    --ion-color-base: var(--ion-color-success) !important;
+    --ion-color-base-rgb: var(--ion-color-success-rgb) !important;
+    --ion-color-contrast: var(--ion-color-success-contrast) !important;
+    --ion-color-contrast-rgb: var(--ion-color-success-contrast-rgb) !important;
+    --ion-color-shade: var(--ion-color-success-shade) !important;
+    --ion-color-tint: var(--ion-color-success-tint) !important;
+}
+
+.ion-color-warning {
+    --ion-color-base: var(--ion-color-warning) !important;
+    --ion-color-base-rgb: var(--ion-color-warning-rgb) !important;
+    --ion-color-contrast: var(--ion-color-warning-contrast) !important;
+    --ion-color-contrast-rgb: var(--ion-color-warning-contrast-rgb) !important;
+    --ion-color-shade: var(--ion-color-warning-shade) !important;
+    --ion-color-tint: var(--ion-color-warning-tint) !important;
+}
+
+.ion-color-danger {
+    --ion-color-base: var(--ion-color-danger) !important;
+    --ion-color-base-rgb: var(--ion-color-danger-rgb) !important;
+    --ion-color-contrast: var(--ion-color-danger-contrast) !important;
+    --ion-color-contrast-rgb: var(--ion-color-danger-contrast-rgb) !important;
+    --ion-color-shade: var(--ion-color-danger-shade) !important;
+    --ion-color-tint: var(--ion-color-danger-tint) !important;
 }
 
 .ion-color-carrot {
@@ -67,10 +174,976 @@ ion-tab-button {
     --ripple-color: var(--ion-color-carrot-tint)
 }
 
+ion-chip.chip-success {
+    --background: var(--ion-color-success);
+    --color: var(--ion-color-success-contrast);
+}
+
+ion-chip.chip-primary {
+    --background: var(--ion-color-primary);
+    --color: var(--ion-color-primary-contrast);
+}
+
+ion-chip.chip-warning {
+    --background: var(--ion-color-warning);
+    --color: var(--ion-color-warning-contrast);
+}
+
+ion-chip.chip-danger {
+    --background: var(--ion-color-danger);
+    --color: var(--ion-color-danger-contrast);
+}
+
+ion-chip.chip-carrot {
+    --background: var(--ion-color-carrot);
+    --color: var(--ion-color-carrot-contrast);
+}
+
+ion-chip.chip-medium {
+    --background: var(--ion-color-medium, #7f8c8d);
+    /* fallback gray */
+    --color: var(--ion-color-medium-contrast, #fff);
+}
+
+/* ===============================
+   Halal Status Chips (Soft Style)
+   =============================== */
+
+ion-chip.status-chip {
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 6px;
+    padding: 2px 10px;
+    height: 26px;
+    line-height: 1;
+    text-transform: none;
+
+    /* neutral defaults */
+    background: transparent;
+    border: 1px solid transparent;
+}
+
+/* 🟢 Halal */
+ion-chip.status-chip.chip-success {
+    background: rgba(var(--ion-color-success-rgb), 0.15);
+    color: var(--ion-color-success);
+    border-color: rgba(var(--ion-color-success-rgb), 0.5);
+}
+
+/* 🔵 Muslim-friendly */
+ion-chip.status-chip.chip-primary {
+    background: rgba(var(--ion-color-primary-rgb), 0.15);
+    color: var(--ion-color-primary);
+    border-color: rgba(var(--ion-color-primary-rgb), 0.5);
+}
+
+/* 🟡 Syubhah */
+ion-chip.status-chip.chip-warning {
+    background: rgba(var(--ion-color-warning-rgb), 0.18);
+    color: var(--ion-color-warning);
+    border-color: rgba(var(--ion-color-warning-rgb), 0.6);
+}
+
+/* 🔴 Haram */
+ion-chip.status-chip.chip-danger {
+    background: rgba(var(--ion-color-danger-rgb), 0.15);
+    color: var(--ion-color-danger);
+    border-color: rgba(var(--ion-color-danger-rgb), 0.6);
+}
+
+/* ⚪ Inactive / unselected */
+ion-chip.status-chip.chip-medium {
+    background: rgba(127, 140, 141, 0.15);
+    color: var(--ion-color-medium);
+    border-color: rgba(127, 140, 141, 0.4);
+}
+
+
+:root {
+    --card-bg: var(--ion-color-step-50, #ffffff);
+    --card-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    --card-border: rgba(0, 0, 0, 0.06);
+}
+
+.ion-palette-dark {
+    /* Tier Colors Dark */
+    --tier-gold-bg: linear-gradient(135deg, #1c1c1e 0%, #422006 100%);
+    --tier-silver-bg: linear-gradient(135deg, #1c1c1e 0%, #1e293b 100%);
+    --tier-bronze-bg: linear-gradient(135deg, #1c1c1e 0%, #431407 100%);
+    --card-bg: linear-gradient(145deg, #242426 0%, #18181a 100%);
+    --card-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    --card-border: rgba(255, 255, 255, 0.06);
+}
+
 ion-card {
+    --background: var(--card-bg);
     --color: var(--ion-color-dark);
-    box-shadow: rgba(149, 157, 165, 0.2) 0 8px 24px;
-    border-radius: 20px;
-    padding: 8px;
+    box-shadow: var(--card-shadow);
+    border-radius: 16px;
+    margin: 10px 8px 10px 8px;
     cursor: pointer;
+    border: 1px solid var(--card-border);
+}
+
+ion-card ion-list,
+ion-card ion-item {
+    --background: transparent;
+    --ion-item-background: transparent;
+}
+
+.card-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    margin-bottom: 4px;
+}
+
+.discover-grid {
+    display: flex;
+    overflow-x: auto;
+    padding: 4px 0;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    -webkit-overflow-scrolling: touch;
+}
+
+.discover-grid::-webkit-scrollbar {
+    display: none;
+}
+
+.compact-grid {
+    margin: 0;
+    padding: 4px 16px;
+}
+
+.compact-section {
+    --padding-start: 0;
+    --padding-end: 0;
+}
+
+.discover-item {
+    flex: 0 0 210px;
+    border-radius: 16px;
+    overflow: hidden;
+    text-align: center;
+    box-shadow: none;
+    --background: var(--card-inner-bg);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Partner Tier Width Overrides (for non-compact items) */
+.discover-item.tier-card-gold {
+    flex: 0 0 300px;
+}
+
+.discover-item.tier-card-silver {
+    flex: 0 0 240px;
+}
+
+.discover-item.tier-card-bronze {
+    flex: 0 0 220px;
+}
+
+.discover-img {
+    width: 100%;
+    height: 140px;
+    object-fit: cover;
+    border-top-left-radius: 16px;
+    border-top-right-radius: 16px;
+    display: block;
+}
+
+.discover-label {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    flex: 1;
+    padding: 12px 8px;
+    margin: 0;
+}
+
+.discover-label h3 {
+    font-size: 14px;
+    margin: 0 0 8px 0;
+    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.discover-label p {
+    font-size: 12px;
+    color: var(--ion-color-medium);
+    margin: 0;
+    padding-bottom: 0;
+}
+
+/* ===============================
+   Compact Discover Variant
+   =============================== */
+
+.discover-item--compact {
+    flex: 0 0 140px;
+    /* ⬅ narrower than normal */
+    padding: 8px;
+    position: relative;
+}
+
+/* Partner Tiers (Now using unified tier-card classes) */
+.discover-item--compact.tier-card-gold {
+    flex: 0 0 320px;
+}
+
+.discover-item--compact.tier-card-gold .discover-img--compact {
+    height: 90px;
+}
+
+.discover-item--compact.tier-card-silver {
+    flex: 0 0 220px;
+}
+
+.discover-item--compact.tier-card-silver .discover-img--compact {
+    height: 80px;
+}
+
+.discover-item--compact.tier-card-bronze {
+    flex: 0 0 190px;
+}
+
+
+.discover-img--compact {
+    height: 70px;
+    /* ⬅ controlled logo size */
+    object-fit: contain;
+    background: var(--ion-color-step-50, #fff);
+    padding: 6px;
+    border-radius: 10px;
+}
+
+.discover-label--compact {
+    margin-top: 6px;
+    padding: 0;
+}
+
+.discover-label--compact .discover-name {
+    font-size: 0.8rem;
+    font-weight: 600;
+    line-height: 1.2;
+    text-align: center;
+
+    /* prevent overflow */
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+
+.reward-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+}
+
+.reward-float {
+    background: var(--ion-background-color, #ffffff);
+    color: var(--ion-text-color, #000000);
+    padding: 1.5rem;
+    border-radius: 20px;
+    width: 90%;
+    max-width: 380px;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(var(--ion-color-dark-rgb), 0.08);
+}
+
+.ion-palette-dark .reward-float {
+    background: #1c1c1e;
+    border-color: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+}
+
+/* === Skeleton Helpers === */
+.skeleton-store {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.skeleton-category {
+    width: 100px;
+    height: 28px;
+    border-radius: 6px;
+    flex-shrink: 0;
+}
+
+.skeleton-product-img {
+    width: 115px;
+    height: 115px;
+    border-radius: 10px;
+    flex-shrink: 0;
+}
+
+.skeleton-product-text {
+    height: 18px;
+    margin-bottom: 6px;
+    border-radius: 4px;
+}
+
+
+/* === Store Scroll List === */
+.store-scroll {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    padding: 6px 8px;
+    flex-wrap: nowrap;
+    width: 100%;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    -webkit-overflow-scrolling: touch;
+}
+
+.store-scroll::-webkit-scrollbar {
+    display: none;
+    /* Chrome/Safari */
+}
+
+.store-scroll.readonly .store-option {
+    cursor: default;
+}
+
+.store-scroll.readonly .store-option::after {
+    display: none;
+    /* hide ✓ checkmark */
+}
+
+.store-scroll.readonly .store-option.selected .store-logo {
+    border: none;
+    box-shadow: none;
+    transform: none;
+}
+
+/* === Store Option (wrapper) === */
+.store-option {
+    flex-shrink: 0;
+    width: 65px;
+    text-align: center;
+    cursor: pointer;
+    transition: transform 0.2s, border 0.2s;
+    position: relative;
+    /* needed for checkmark */
+    border-radius: 10px;
+}
+
+/* === Store Logo Wrapper === */
+.store-logo-wrapper {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: none;
+    transition: border 0.2s, transform 0.2s;
+    margin: 0 auto;
+}
+
+/* === Store Logo (the image) === */
+.store-logo {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    background: white;
+    /* keeps transparent logos visible */
+    padding: 4px;
+    border-radius: 50%;
+    display: block;
+}
+
+/* === Store Name === */
+.store-name {
+    font-size: 11px;
+    margin-top: 4px;
+    color: var(--ion-color-dark);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* === Selected State === */
+.store-option.selected .store-logo-wrapper {
+    border: 3px solid var(--ion-color-carrot);
+    transform: scale(1.05);
+}
+
+.store-option.selected .store-name {
+    color: var(--ion-color-carrot);
+    font-weight: bold;
+}
+
+/* Read-only stores (e.g. ItemDetailsView) */
+.store-option.readonly {
+    cursor: default;
+    pointer-events: none;
+    /* disable clicks */
+}
+
+.store-option.readonly::after {
+    display: none;
+    /* hide checkmark */
+}
+
+/* =========================
+   Gold Certification Card
+   ========================= */
+
+.gold-cert-card {
+    position: relative;
+    border-radius: 14px;
+    padding: 12px;
+    margin-top: 6px;
+    cursor: pointer;
+    overflow: hidden;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.gold-cert-card.tier-card-gold,
+.gold-cert-card {
+    /* Legacy override to ensure it matches unified tier card */
+    border: 2px solid #facc15 !important;
+    background: linear-gradient(135deg, rgba(250, 204, 21, 0.05), transparent) !important;
+}
+
+.ion-palette-dark .gold-cert-card {
+    background: linear-gradient(135deg, rgba(250, 204, 21, 0.1), rgba(0, 0, 0, 0.2)) !important;
+    border-color: #facc15 !important;
+}
+
+.gold-cert-card:active {
+    transform: scale(0.98);
+}
+
+.gold-cert-card:hover {
+    transform: translateY(-1px);
+}
+
+/* Subtle glowing aura */
+.gold-glow {
+    position: absolute;
+    inset: -2px;
+    border-radius: 16px;
+    background: radial-gradient(circle at top left,
+            rgba(255, 215, 0, 0.35),
+            transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* Content layout */
+.gold-cert-content {
+    position: relative;
+    z-index: 1;
+
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+/* Logo */
+.gold-cert-logo {
+    width: 42px;
+    height: 42px;
+    object-fit: contain;
+    background: white;
+    border-radius: 8px;
+    padding: 6px;
+
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+/* Text */
+.gold-cert-name {
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--ion-color-dark);
+}
+
+
+
+.gold-cert-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.gold-cert-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+
+/* =========================
+   Tier badge
+   ========================= */
+.tier-badge {
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-weight: 600;
+    z-index: 2;
+}
+
+.tier-badge.gold {
+    background: linear-gradient(135deg, #facc15, #f59e0b);
+    color: #111;
+    box-shadow: 0 0 8px rgba(250, 204, 21, 0.7);
+}
+
+.tier-badge.silver {
+    background: linear-gradient(135deg, #e5e7eb, #9ca3af);
+    color: #111;
+}
+
+.tier-badge.bronze {
+    background: linear-gradient(135deg, #f59e0b, #b45309);
+    color: #fff;
+}
+
+/* ===============================
+   Unified Partner Tier Styles
+   =============================== */
+
+/* 1. Tier Badges (Floating or inline) */
+.tier-badge {
+    padding: 4px 10px;
+    border-radius: 8px;
+    font-size: 0.65rem;
+    font-weight: 900;
+    letter-spacing: 0.05em;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: #fff;
+    text-transform: uppercase;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+    z-index: 10;
+}
+
+.tier-badge.gold {
+    background: linear-gradient(135deg, #facc15 0%, #ca8a04 100%);
+    color: #422006;
+}
+
+.tier-badge.silver {
+    background: linear-gradient(135deg, #cbd5e1 0%, #64748b 100%);
+    color: #0f172a;
+}
+
+.tier-badge.bronze {
+    background: linear-gradient(135deg, #d97706 0%, #78350f 100%);
+    color: #fff;
+}
+
+/* 2. Tier Card Backgrounds & Borders */
+.tier-card-gold {
+    border: 2px solid #facc15 !important;
+    background: var(--tier-gold-bg) !important;
+    --background: var(--tier-gold-bg) !important;
+}
+
+.tier-card-silver {
+    border: 1.5px solid #cbd5e1 !important;
+    background: var(--tier-silver-bg) !important;
+    --background: var(--tier-silver-bg) !important;
+}
+
+.tier-card-bronze {
+    border: 1.2px solid #d97706 !important;
+    background: var(--tier-bronze-bg) !important;
+    --background: var(--tier-bronze-bg) !important;
+}
+
+.tier-gold {
+    background: var(--tier-gold-bg) !important;
+    --background: var(--tier-gold-bg) !important;
+}
+
+.tier-silver {
+    background: var(--tier-silver-bg) !important;
+    --background: var(--tier-silver-bg) !important;
+}
+
+.tier-bronze {
+    background: var(--tier-bronze-bg) !important;
+    --background: var(--tier-bronze-bg) !important;
+}
+
+.tier-card-gold,
+.tier-card-silver,
+.tier-card-bronze {
+    overflow: hidden !important;
+    position: relative !important;
+}
+
+/* Product name h3 in tiered cards: use branded tier color */
+.tier-card-gold h3 {
+    color: #ca8a04 !important;
+}
+
+/* warm amber gold */
+.tier-card-silver h3 {
+    color: #475569 !important;
+}
+
+/* slate */
+.tier-card-bronze h3 {
+    color: #b45309 !important;
+}
+
+/* amber */
+
+/* Other text in tiered cards: keep dark/readable */
+.tier-card-gold p,
+.tier-card-gold ion-label,
+.tier-card-silver p,
+.tier-card-silver ion-label,
+.tier-card-bronze p,
+.tier-card-bronze ion-label {
+    color: var(--ion-color-dark) !important;
+}
+
+/* Dark mode: lighter shades for tier name colors */
+.ion-palette-dark .tier-card-gold h3 {
+    color: #fde68a !important;
+}
+
+.ion-palette-dark .tier-card-silver h3 {
+    color: #cbd5e1 !important;
+}
+
+.ion-palette-dark .tier-card-bronze h3 {
+    color: #fcd34d !important;
+}
+
+.ion-palette-dark .tier-card-gold p,
+.ion-palette-dark .tier-card-gold ion-label,
+.ion-palette-dark .tier-card-silver p,
+.ion-palette-dark .tier-card-silver ion-label,
+.ion-palette-dark .tier-card-bronze p,
+.ion-palette-dark .tier-card-bronze ion-label {
+    color: #ffffff !important;
+}
+
+.tier-gold ion-item,
+.tier-silver ion-item,
+.tier-bronze ion-item {
+    --background: transparent !important;
+    background: transparent !important;
+}
+
+/* 3. Premium Shine Effect (Flare) */
+.premium-flare {
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(110deg,
+            transparent 30%,
+            rgba(255, 255, 255, 0.4) 50%,
+            transparent 70%);
+    animation: premium-shine 5s infinite cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: none;
+    z-index: 100;
+    /* Ensure it stays above images and other absolute elements */
+}
+
+@keyframes premium-shine {
+    0% {
+        transform: translateX(0);
+    }
+
+    20% {
+        transform: translateX(250%);
+    }
+
+    100% {
+        transform: translateX(250%);
+    }
+}
+
+/* 4. Verification Tag / Verified Label */
+.premium-verified-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.65rem;
+    font-weight: 800;
+    letter-spacing: 0.03em;
+    padding: 3px 8px;
+    border-radius: 6px;
+    background: rgba(var(--ion-color-dark-rgb), 0.05);
+    color: var(--ion-color-medium);
+}
+
+.ion-palette-dark .premium-verified-tag {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.tier-card-gold .premium-verified-tag {
+    color: #ca8a04;
+    background: rgba(202, 138, 4, 0.1);
+}
+
+.tier-card-silver .premium-verified-tag {
+    color: #64748b;
+    background: rgba(100, 116, 139, 0.1);
+}
+
+.tier-card-bronze .premium-verified-tag {
+    color: #d97706;
+    background: rgba(217, 119, 6, 0.1);
+}
+
+
+/* ===============================
+   Global Popover & Select Menu (Premium Look)
+   =============================== */
+
+/* Base container variables */
+ion-popover {
+    --border-radius: 16px;
+    --box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+}
+
+/* Glassmorphism content shell */
+ion-popover::part(content) {
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    background: rgba(255, 255, 255, 0.75) !important;
+    border: 0.5px solid rgba(0, 0, 0, 0.1);
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+.ion-palette-dark ion-popover::part(content) {
+    background: rgba(28, 28, 30, 0.75) !important;
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+/* 🏆 Leaderboard Popover Override - High Contrast & Opaque */
+.leaderboard-popover::part(content) {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background: var(--ion-item-background, #ffffff) !important;
+    border: 1px solid var(--ion-color-step-200, #e0e0e0);
+    box-shadow: 0 12px 48px rgba(0, 0, 0, 0.25);
+}
+
+.ion-palette-dark .leaderboard-popover::part(content) {
+    background: #1c1c1d !important;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+/* List container inside popover */
+ion-popover ion-list,
+ion-popover ion-content {
+    --background: transparent !important;
+    background: transparent !important;
+}
+
+ion-popover ion-list {
+    padding: 6px !important;
+}
+
+/* Individual items in the menu */
+ion-popover ion-item {
+    --padding-start: 12px;
+    --padding-end: 12px;
+    --inner-padding-end: 8px;
+    --min-height: 48px;
+    --background: transparent !important;
+    --background-hover: rgba(var(--ion-color-carrot-rgb), 0.1) !important;
+    --background-focused: rgba(var(--ion-color-carrot-rgb), 0.12) !important;
+    --border-radius: 12px;
+    --border-style: none;
+    margin: 4px;
+    font-weight: 500;
+}
+
+/* Icons inside popover items */
+ion-popover ion-item ion-icon {
+    font-size: 1.1rem;
+    color: var(--ion-color-carrot);
+    margin-right: 12px;
+}
+
+/* Label text */
+ion-popover ion-item ion-label {
+    font-size: 0.95rem;
+    margin-right: 8px;
+}
+
+/* Specialized width class if needed */
+.width-190 {
+    --width: 190px;
+}
+
+.ion-palette-dark ion-popover ion-item ion-label {
+    color: white !important;
+}
+
+.ion-palette-dark ion-popover ion-item {
+    --background-hover: rgba(255, 255, 255, 0.08) !important;
+}
+
+
+/* ===============================
+   Premium Header — Flat / WhatsApp-style (no separator)
+   =============================== */
+.premium-header {
+    --background: var(--ion-background-color);
+    --box-shadow: none;
+    --border-width: 0;
+    --padding-start: 12px;
+    --padding-end: 12px;
+    --min-height: 56px;
+    padding-top: var(--ion-safe-area-top, 0);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border-bottom: none !important;
+    box-shadow: none !important;
+}
+
+.ion-palette-dark .premium-header {
+    --background: var(--ion-background-color);
+    border-bottom: none !important;
+    box-shadow: none !important;
+}
+
+/* Ensure visibility in dark mode when NOT in contrast mode */
+.ion-palette-dark .premium-header .title-text {
+    color: var(--ion-text-color) !important;
+}
+
+.ion-palette-dark .premium-header .header-action-button,
+.ion-palette-dark .premium-header .custom-back-button {
+    --color: var(--ion-text-color) !important;
+}
+
+
+/* All toolbars inside ion-header are flat — no blur, no border, matches page bg */
+ion-header ion-toolbar {
+    --background: var(--ion-background-color);
+    --border-width: 0;
+    --box-shadow: none;
+    border-bottom: none !important;
+    box-shadow: none !important;
+}
+
+/* ion-header itself has no bottom shadow/border */
+ion-header {
+    --box-shadow: none !important;
+    box-shadow: none !important;
+    border-bottom: none !important;
+    contain: none !important;
+    background: var(--ion-background-color);
+}
+
+/* Transparent Variant */
+.premium-header.is-transparent {
+    --background: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border-bottom: none !important;
+    box-shadow: none !important;
+}
+
+/* Immersive Header (Absolute Positioning) */
+.immersive-header {
+    position: absolute !important;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: transparent;
+    z-index: 100;
+    transition: background-color 0.3s ease, backdrop-filter 0.3s ease;
+}
+
+.immersive-header.is-scrolled {
+    background: transparent !important;
+}
+
+/* Apply background filter to the actual header when scrolled */
+ion-header.is-scrolled {
+    background: var(--ion-background-color) !important;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    transition: background-color 0.3s ease;
+}
+
+
+.premium-header {
+    transition: background-color 0.3s ease;
+}
+
+
+/* Typography & Contrast inside Premium Header */
+.premium-header .title-text {
+    font-size: 1.15rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--ion-text-color);
+}
+
+.premium-header .contrast {
+    --color: white !important;
+    color: white !important;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+}
+
+.premium-header .header-action-button,
+.premium-header .custom-back-button {
+    --color: white !important;
+    --icon-color: white !important;
+    color: white !important;
+    font-size: 22px;
+    z-index: 101;
+    background: rgba(0, 0, 0, 0.25);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-radius: 50%;
+    margin: 4px;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s ease;
+}
+
+.premium-header .header-action-button:active,
+.premium-header .custom-back-button:active {
+    transform: scale(0.95);
 }

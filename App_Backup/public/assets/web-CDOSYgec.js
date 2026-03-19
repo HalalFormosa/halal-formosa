@@ -1,0 +1,1 @@
+import{cG as e}from"./index-D9IhqqAc.js";import"./html5-qrcode-D_4nuB1t.js";class AppLauncherWeb extends e{async canOpenUrl(e){return{value:!0}}async openUrl(e){return window.open(e.url,"_blank"),{completed:!0}}}export{AppLauncherWeb};
