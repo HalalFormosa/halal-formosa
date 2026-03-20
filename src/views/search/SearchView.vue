@@ -147,7 +147,7 @@
                       v-for="n in 4"
                       :key="'cat-skeleton-' + n"
                       animated
-                      style="width: 100px; height: 28px; border-radius: 5px; margin-right: 8px;"
+                      style="width: 100px; height: 28px; border-radius: 100px; margin-right: 8px;"
                   />
                 </template>
                 <template v-else>
@@ -269,7 +269,7 @@
                       <!-- Skeleton Chip -->
                       <ion-skeleton-text
                           animated
-                          style="width: 80px; height: 24px; border-radius: 12px; margin-top: 12px;"
+                          style="width: 80px; height: 24px; border-radius: 100px; margin-top: 12px;"
                       ></ion-skeleton-text>
                     </div>
                   </div>
@@ -599,7 +599,7 @@ const allLoaded = ref(false)
 const isFetching = ref(false)
 const shouldResetSearch = ref(false)
 
-const pageSize = 15
+const pageSize = 20
 const currentPage = ref(0)
 const ingredientDictionary = ref<Record<string, string>>({})
 const infiniteScroll = ref<HTMLIonInfiniteScrollElement | null>(null)
@@ -1596,10 +1596,8 @@ const getStatusIcon = (status: string) => {
 }
 
 ion-chip {
-  display: block;
-  border-radius: 5px;
-  width: 95%;
-  text-align: center;
+  border-radius: 999px !important;
+  --border-radius: 999px !important;
 }
 
 @keyframes shimmer {
@@ -2069,13 +2067,14 @@ ion-header {
   padding: 0 16px 8px;
 }
 
-.modern-category-chip {
+ion-chip.modern-category-chip {
   --cat-color: var(--ion-color-dark);
   --cat-bg: var(--ion-background-color);
   background: var(--cat-bg);
   color: var(--cat-color);
   height: 38px;
-  border-radius: 12px;
+  border-radius: 100px !important;
+  --border-radius: 100px !important;
   padding: 0 16px;
   border: 1.5px solid var(--cat-color);
   font-weight: 700;
@@ -2084,6 +2083,7 @@ ion-header {
   margin: 0;
   flex-shrink: 0;
   width: auto;
+  overflow: hidden;
 }
 
 .ion-palette-dark .modern-category-chip {
@@ -2093,7 +2093,9 @@ ion-header {
 .modern-category-chip.active {
   background: var(--cat-color) !important;
   color: var(--cat-contrast, #ffffff);
-  border-color: var(--cat-color);
+  border-color: var(--cat-color) !important;
+  border-radius: 100px !important;
+  --border-radius: 100px !important;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
   transform: translateY(-1px);
 }
