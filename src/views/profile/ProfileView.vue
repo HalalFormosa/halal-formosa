@@ -1,7 +1,7 @@
 <template>
   <ion-page>
     <ion-header class="ion-no-border">
-      <app-header :title="$t('profile.title')" icon="person-circle-outline" />
+      <app-header :title="$t('profile.title')" :icon="personCircleOutline" />
     </ion-header>
 
     <ion-content class="ion-padding">
@@ -848,6 +848,11 @@ const goToMasterData = () => router.push('/admin/master-data')
 
 
 <style scoped>
+:host {
+  --primary-gradient: linear-gradient(135deg, var(--ion-color-carrot-tint), var(--ion-color-carrot));
+  --accent-gradient: linear-gradient(135deg, #ff9f43, var(--ion-color-carrot));
+}
+
 /* Standard Card Overrides */
 ion-card {
   margin: 16px;
@@ -967,20 +972,34 @@ ion-card:active {
 }
 
 .progress-container {
-  height: 10px;
-  background: rgba(var(--ion-color-step-200-rgb), 0.15);
-  border-radius: 5px;
+  height: 12px;
+  background: rgba(255, 255, 255, 0.15); /* Brighter in dark mode */
+  border-radius: 6px;
   overflow: hidden;
   position: relative;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .progress-bar-fill {
   height: 100%;
-  background: var(--primary-gradient);
+  background: linear-gradient(90deg, var(--ion-color-carrot-tint), var(--ion-color-carrot));
   border-radius: 6px;
   transition: width 1s ease-out;
-  box-shadow: 0 0 12px rgba(var(--ion-color-carrot-rgb), 0.5);
+  box-shadow: 
+    0 0 10px rgba(var(--ion-color-carrot-rgb), 0.5),
+    0 0 20px rgba(var(--ion-color-carrot-rgb), 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.progress-bar-fill::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.25), transparent);
 }
 
 /* Menu List Styling */
