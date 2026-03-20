@@ -1,355 +1,286 @@
 <template>
   <ion-page>
-    <ion-header>
-      <ion-toolbar>
-        <ion-title class="title-large">
-          <ion-icon :icon="personCircleOutline" style="vertical-align: middle;"/>
-          {{ $t('profile.title') }}
-        </ion-title>
-      </ion-toolbar>
+    <ion-header class="ion-no-border">
+      <app-header :title="$t('profile.title')" icon="person-circle-outline" />
     </ion-header>
 
     <ion-content class="ion-padding">
-      <ion-header collapse="condense">
+
+      <ion-header collapse="condense" class="ion-no-border">
         <ion-toolbar>
           <ion-title size="large">{{ $t('profile.title') }}</ion-title>
         </ion-toolbar>
       </ion-header>
 
-      <!-- ================= PROFILE / PRO / ABOUT / XP ================= -->
+      <!-- ================= LOADING STATE ================= -->
       <template v-if="loadingProfile">
-
-        <!-- Profile Skeleton -->
-        <ion-card class="profile-card ion-text-center">
-          <ion-skeleton-text animated style="width:120px;height:120px;border-radius:50%;margin:0 auto"/>
-          <ion-skeleton-text animated style="width:60%;height:20px;margin:1rem auto"/>
-          <ion-skeleton-text animated style="width:80px;height:20px;margin:0 auto"/>
-          <ion-skeleton-text animated style="width:70%;height:16px;margin:.5rem auto"/>
-          <ion-skeleton-text animated style="width:100%;height:36px;margin:1.5rem auto"/>
+        <ion-card class="fade-in">
+          <div class="profile-header-premium">
+            <ion-skeleton-text animated class="skeleton-avatar-premium" />
+            <ion-skeleton-text animated style="width: 50%; height: 24px;" class="skeleton-text-center" />
+            <ion-skeleton-text animated style="width: 30%; height: 16px;" class="skeleton-text-center" />
+          </div>
         </ion-card>
 
-        <!-- Pro Skeleton -->
-        <ion-card v-if="userEmail && isNative" class="profile-card ion-text-center">
-          <ion-card-header>
-            <ion-skeleton-text animated style="width:60%;height:20px;margin:0 auto"/>
-          </ion-card-header>
-          <ion-card-content>
-            <ion-skeleton-text animated style="width:100%;height:40px"/>
-          </ion-card-content>
+        <ion-card class="fade-in">
+          <div class="xp-section">
+            <ion-skeleton-text animated style="width: 40%; height: 20px; margin-bottom: 12px;" />
+            <ion-skeleton-text animated style="width: 100%; height: 12px; border-radius: 6px;" />
+          </div>
         </ion-card>
-
-        <!-- About Skeleton -->
-        <ion-card class="profile-card">
-          <ion-card-header>
-            <ion-toolbar class="profile-toolbar">
-              <ion-skeleton-text animated style="width:40%;height:18px"/>
-              <ion-skeleton-text slot="end" animated style="width:60px;height:28px"/>
-            </ion-toolbar>
-          </ion-card-header>
-          <ion-card-content>
-            <ion-skeleton-text animated style="width:80%;height:14px;margin-bottom:8px"/>
-            <ion-skeleton-text animated style="width:60%;height:14px"/>
-          </ion-card-content>
-        </ion-card>
-
-        <!-- XP Skeleton -->
-        <ion-card class="profile-card ion-text-center">
-          <ion-card-header>
-            <ion-skeleton-text animated style="width:50%;height:20px;margin:0 auto"/>
-          </ion-card-header>
-          <ion-card-content>
-            <ion-skeleton-text animated style="width:40%;height:32px;margin:0 auto 8px"/>
-            <ion-skeleton-text animated style="width:30%;height:14px;margin:0 auto 12px"/>
-            <ion-skeleton-text animated style="width:100%;height:10px"/>
-            <ion-skeleton-text animated style="width:50%;height:12px;margin:8px auto 0"/>
-          </ion-card-content>
-        </ion-card>
-
       </template>
 
+      <!-- ================= ACTUAL CONTENT ================= -->
       <template v-else>
+        <!-- Profile Header Card -->
+        <ion-card class="fade-in">
+          <div class="profile-header-premium">
+            <div class="avatar-container">
+              <img v-if="userAvatar" :src="userAvatar" class="avatar-premium" />
+              <ion-icon v-else :icon="personCircleOutline" class="avatar-premium" style="font-size: 120px; color: var(--ion-color-step-600)" />
+            </div>
 
-        <!-- Profile -->
-        <ion-card class="profile-card ion-text-center">
-          <div v-if="userAvatar" class="avatar-wrapper">
-            <img :src="userAvatar" class="avatar"/>
-          </div>
+            <div class="profile-info text-center" v-if="userEmail">
+              <h2 class="profile-name-main">{{ userDisplayName || 'User' }}</h2>
+              <p class="profile-email-sub">{{ userEmail }}</p>
+              
+              <div class="badge-row">
+                <ion-badge v-if="isSubscribed" class="badge-pro">
+                  <ion-icon :icon="bookmarkOutline" style="margin-right: 4px" />
+                  {{ $t('profile.proMember') }}
+                </ion-badge>
+                <ion-badge v-else :color="donorBadge.color" style="border-radius: 12px; padding: 6px 12px;">
+                  {{ donorBadge.emoji }} {{ $t('profile.donors.' + donorBadge.label) }}
+                </ion-badge>
+              </div>
+            </div>
 
-          <ion-text v-if="userDisplayName" class="profile-name">
-            <h2>{{ userDisplayName }}</h2>
-            <ion-badge v-if="isSubscribed" color="warning">{{ $t('profile.proMember') }}</ion-badge>
-            <ion-badge v-else :color="donorBadge.color">
-              {{ donorBadge.emoji }} {{ $t('profile.donors.' + donorBadge.label) }}
-            </ion-badge>
-          </ion-text>
-
-          <ion-text v-if="userEmail" class="profile-email">
-            <p>{{ userEmail }}</p>
-          </ion-text>
-
-          <ion-button v-if="userEmail" color="danger" expand="block" @click="handleLogout">
-            {{ $t('profile.logout') }}
-          </ion-button>
-
-          <div v-else class="login-prompt">
-            <p>{{ $t('profile.noUserLogged') }}</p>
-            <ion-button color="carrot" expand="block" @click="goToLogin">
-              {{ $t('profile.login') }}
-            </ion-button>
-          </div>
-        </ion-card>
-
-        <!-- Pro -->
-        <ion-card v-if="userEmail && isNative" class="profile-card ion-text-center">
-          <ion-card-header>
-            <ion-card-title>{{ $t('profile.pro.title') }}</ion-card-title>
-          </ion-card-header>
-          <ion-card-content>
-            <ion-button v-if="!isSubscribed" color="carrot" expand="block" @click="openProPaywall">
-              {{ $t('profile.pro.upgrade') }}
-            </ion-button>
-
-            <div v-else>
-              <p style="font-weight:600;color:var(--ion-color-success)">{{ $t('profile.pro.active') }}</p>
-              <p style="font-size:14px">{{ renewalMessage }}</p>
-              <p style="font-size:14px;color:var(--ion-color-medium)">
-                {{ $t('profile.pro.accessUntil') }}
-                <strong>{{ formattedExpirationDate }}</strong>
-              </p>
-              <ion-button fill="outline" size="small" @click="openManageSubscription">
-                {{ $t('profile.pro.manage') }}
+            <div v-else class="login-prompt">
+              <p>{{ $t('profile.noUserLogged') }}</p>
+              <ion-button color="carrot" expand="block" shape="round" @click="goToLogin">
+                {{ $t('profile.login') }}
               </ion-button>
             </div>
-          </ion-card-content>
-        </ion-card>
-
-        <!-- About -->
-        <ion-card v-if="userEmail" class="profile-card">
-          <ion-card-header>
-            <ion-toolbar class="profile-toolbar">
-              <ion-title class="profile-title">{{ $t('profile.aboutMe') }}</ion-title>
-              <ion-buttons slot="end">
-                <ion-button color="carrot" size="small" @click="goToEditProfile">
-                  <ion-icon :icon="createOutline" slot="start"/>
-                  {{ $t('profile.edit') }}
-                </ion-button>
-              </ion-buttons>
-            </ion-toolbar>
-          </ion-card-header>
-          <ion-card-content>
-            <ion-list lines="none">
-              <ion-item>
-                <ion-label>{{ $t('profile.bio') }}</ion-label>
-                <ion-note slot="end">{{ userBio || $t('profile.noBio') }}</ion-note>
-              </ion-item>
-            </ion-list>
-          </ion-card-content>
-        </ion-card>
-
-        <!-- XP -->
-        <ion-card v-if="userEmail" class="profile-card ion-text-center">
-          <ion-card-header>
-            <ion-card-title>{{ $t('profile.experiencePoints') }}</ion-card-title>
-          </ion-card-header>
-          <ion-card-content>
-            <h2 style="font-size: 2rem; margin: 0; color: var(--ion-color-primary);">
-              {{ currentPoints }}
-            </h2>
-            <p>{{ $t('profile.level', { level: level }) }}</p>
-            <ion-progress-bar
-                :value="progressPercent / 100"
-                color="success"
-                style="margin-top: 10px; border-radius: 8px;"
-            ></ion-progress-bar>
-            <small>{{ currentPoints }} / {{ nextLevelXp }} XP</small>
-          </ion-card-content>
-        </ion-card>
-
-      </template>
-
-      <!-- ================= ADMIN ================= -->
-      <template v-if="isAdmin">
-        <ion-list v-if="loadingAdmin" class="profile-menu">
-          <ion-item v-for="i in 5" :key="i">
-            <ion-skeleton-text animated style="width:70%;height:16px"/>
-          </ion-item>
-        </ion-list>
-
-        <ion-list v-else class="profile-menu" style="border-radius: 10px; margin-top: 20px">
-          <ion-item button @click="goToReviewSubmissions">
-            <ion-icon :icon="listOutline"/>&nbsp;
-            <ion-label>{{ $t('profile.review') }}</ion-label>
-
-            <!-- ✅ Put badge at end slot -->
-            <ion-badge
-                v-if="pendingCount > 0"
-                color="danger"
-                slot="end"
-            >
-              {{ pendingCount }}
-            </ion-badge>
-          </ion-item>
-
-          <ion-item button @click="goToReviewLocations">
-            <ion-icon :icon="listOutline" />&nbsp;
-            <ion-label>{{ $t('profile.admin.locationsReview') }}</ion-label>
-
-            <ion-badge
-                v-if="pendingLocationsCount > 0"
-                color="danger"
-                slot="end"
-            >
-              {{ pendingLocationsCount }}
-            </ion-badge>
-          </ion-item>
-
-          <ion-item button @click="goToPointsLogs">
-            <ion-icon :icon="listOutline"/>&nbsp;
-            <ion-label>{{ $t('profile.admin.pointsLogs') }}</ion-label>
-          </ion-item>
-
-          <ion-item button @click="goToScanLogs">
-            <ion-icon :icon="listOutline"/>&nbsp;
-            <ion-label>{{ $t('profile.admin.scanLogs') }}</ion-label>
-          </ion-item>
-
-          <ion-item button @click="goToUsersList">
-            <ion-icon :icon="peopleOutline" />&nbsp;
-            <ion-label>{{ $t('profile.admin.users') }}</ion-label>
-          </ion-item>
-
-          <ion-item button @click="goToAnalyticsDashboard">
-            <ion-icon :icon="listOutline"/>&nbsp;
-            <ion-label>{{ $t('profile.admin.analytics') }}</ion-label>
-          </ion-item>
-
-          <ion-item button @click="goToMasterData" lines="none">
-            <ion-icon :icon="constructOutline"/>&nbsp;
-            <ion-label>{{ $t('profile.admin.masterData') }}</ion-label>
-          </ion-item>
-
-
-        </ion-list>
-      </template>
-
-
-      <!-- Menu -->
-      <ion-list class="profile-menu" style="border-radius: 10px; margin-top: 20px">
-        <ion-item button @click="goToSavedItems">
-          <ion-icon :icon="bookmarkOutline" />&nbsp;
-          <ion-label>{{ $t('profile.savedItems') }}</ion-label>
-        </ion-item>
-        <ion-item button @click="goToSettings">
-          <ion-icon :icon="settingsOutline"/>&nbsp;
-          <ion-label>{{ $t('profile.settings') }}</ion-label>
-        </ion-item>
-        <ion-item button @click="goToLegal">
-          <ion-icon :icon="documentTextOutline"/>&nbsp;
-          <ion-label>{{ $t('profile.legal') }}</ion-label>
-        </ion-item>
-        <ion-item button @click="goToCredits" style="--inner-border-width: 0">
-          <ion-icon :icon="peopleOutline"/>&nbsp;
-          <ion-label>{{ $t('profile.credits') }}</ion-label>
-        </ion-item>
-      </ion-list>
-
-      <!-- Support -->
-      <ion-card v-if="donationProduct" class="profile-card ion-text-center">
-        <ion-card-header>
-          <ion-card-title>{{ $t('profile.support') }}</ion-card-title>
-        </ion-card-header>
-
-        <ion-card-content>
-          <ion-item button @click="donate">
-            <ion-label>
-              <strong>{{ donationProduct.title }}</strong>
-              <br/>
-              {{ donationProduct.description }}
-            </ion-label>
-            <ion-note slot="end">{{ donationProduct.priceString }}</ion-note>
-          </ion-item>
-        </ion-card-content>
-      </ion-card>
-
-
-      <ion-card v-else class="profile-card ion-text-center">
-        <ion-card-header>
-          <ion-card-title>{{ $t('profile.support') }}</ion-card-title>
-        </ion-card-header>
-        <ion-card-content>
-          <p>{{ $t('profile.supportDescription') }}</p>
-          <a href="https://halalformosa.bobaboba.me" target="_blank" class="boba-button">
-            <img
-                src="https://s3.ap-southeast-1.amazonaws.com/media.anyonelab.com/images/boba/boba-embed-icon.png"
-                alt="boba-icon"
-                style="height: 100%; margin-right: 8px;"
-            />
-            {{ $t('profile.bobaMe') }}
-          </a>
-          <p class="support-thank">{{ $t('profile.supportThank') }}</p>
-          <p><small>{{ $t('profile.voluntary') }}</small></p>
-        </ion-card-content>
-      </ion-card>
-
-      <!-- ✅ Social Media / Follow Us -->
-      <ion-card class="profile-card ion-text-center">
-        <ion-card-header>
-          <ion-card-title>{{ $t('profile.followUs') }}</ion-card-title>
-        </ion-card-header>
-        <ion-card-content>
-          <div class="social-links">
-
-            <!-- Instagram -->
-            <a
-                class="social-button instagram"
-                @click.prevent="logAndOpen('instagram', 'https://www.instagram.com/halalformosa/')"
-            >
-              <ion-icon :icon="logoInstagram" class="social-icon"></ion-icon>
-              <span>Instagram</span>
-            </a>
-
-            <!-- LINE -->
-            <a
-                class="social-button line"
-                @click.prevent="logAndOpen('line', 'https://line.me/R/ti/p/@975schpu')"
-            >
-              <img src="/social-logo/line-logo.png" alt="LINE" class="social-icon"/>
-              <span>LINE</span>
-            </a>
-
-            <!-- Official Website -->
-            <a
-                class="social-button website"
-                @click.prevent="logAndOpen('web', 'https://halalformosa.com')"
-            >
-              <ion-icon :icon="globeOutline" class="social-icon"></ion-icon>
-              <span>Website</span>
-            </a>
-
-
           </div>
+        </ion-card>
 
-        </ion-card-content>
-      </ion-card>
+        <!-- Pro Status / Support Card -->
+        <ion-card v-if="userEmail && isNative" class="fade-in">
+          <ion-item lines="none">
+            <div class="icon-box" slot="start">
+              <ion-icon :icon="bookmarkOutline" color="carrot" />
+            </div>
+            <ion-label>
+              <h3 style="font-weight: 700;">{{ $t('profile.pro.title') }}</h3>
+              <p v-if="isSubscribed" style="color: var(--ion-color-carrot)">{{ $t('profile.pro.active') }}</p>
+              <p v-else>{{ $t('profile.pro.upgrade') }}</p>
+            </ion-label>
+            <ion-button v-if="!isSubscribed" slot="end" fill="solid" color="carrot" shape="round" size="small" @click="openProPaywall">
+              {{ $t('profile.pro.upgrade') }}
+            </ion-button>
+            <ion-button v-else slot="end" fill="outline" color="medium" shape="round" size="small" @click="openManageSubscription">
+              {{ $t('profile.pro.manage') }}
+            </ion-button>
+          </ion-item>
+          
+          <div v-if="isSubscribed" style="padding: 0 16px 16px 64px;">
+            <p style="font-size: 0.8rem; margin: 0; color: var(--ion-color-medium)">
+              {{ renewalMessage }} • {{ $t('profile.pro.accessUntil') }} {{ formattedExpirationDate }}
+            </p>
+          </div>
+        </ion-card>
 
-      <!-- App Info -->
-      <ion-card class="profile-card ion-text-center">
-        <ion-card-header>
-          <ion-card-title>{{ $t('profile.appInfo') }}</ion-card-title>
-        </ion-card-header>
-        <ion-card-content>
-          <ion-list lines="inset" class="info-list">
-            <ion-item>
-              <ion-label>{{ $t('profile.appNameTitle') }}</ion-label>
-              <ion-note slot="end" class="info-note">{{ $t('profile.appName') }}</ion-note>
-            </ion-item>
-            <ion-item lines="none">
-              <ion-label>{{ $t('profile.appVersion') }}</ion-label>
-              <ion-note slot="end" class="info-note">{{ appVersion || '1.0.0' }}</ion-note>
+        <!-- XP Card -->
+        <ion-card v-if="userEmail" class="fade-in">
+          <div class="xp-section">
+            <div class="xp-header">
+              <div class="level-badge">
+                <span class="level-label">LEVEL</span>
+                <span class="level-num">{{ level }}</span>
+              </div>
+              <div class="xp-total">
+                <span class="xp-val">{{ currentPoints || 0 }} XP</span>
+                <span class="xp-next">{{ nextLevelXp }} XP TO NEXT LEVEL</span>
+              </div>
+            </div>
+            
+            <div class="progress-container">
+              <div class="progress-bar-fill" :style="{ width: progressPercent + '%' }"></div>
+            </div>
+          </div>
+        </ion-card>
+
+        <!-- About Me Section -->
+        <ion-card v-if="userEmail" class="fade-in">
+          <ion-list lines="none">
+            <ion-item button @click="goToEditProfile">
+              <div class="icon-box" slot="start">
+                <ion-icon :icon="createOutline" />
+              </div>
+              <ion-label>
+                <h3>{{ $t('profile.aboutMe') }}</h3>
+                <p>{{ userBio || $t('profile.noBio') }}</p>
+              </ion-label>
+              <ion-icon :icon="settingsOutline" slot="end" size="small" style="opacity: 0.3" />
             </ion-item>
           </ion-list>
-        </ion-card-content>
-      </ion-card>
+        </ion-card>
+
+        <!-- Admin Section -->
+        <ion-card v-if="isAdmin" class="fade-in">
+          <ion-list lines="none">
+            <ion-item button @click="goToReviewSubmissions">
+              <div class="icon-box" slot="start">
+                <ion-icon :icon="listOutline" />
+              </div>
+              <ion-label>{{ $t('profile.review') }}</ion-label>
+              <ion-badge v-if="pendingCount > 0" color="danger" slot="end" style="border-radius: 8px;">{{ pendingCount }}</ion-badge>
+            </ion-item>
+
+            <ion-item button @click="goToReviewLocations">
+              <div class="icon-box" slot="start">
+                <ion-icon :icon="listOutline" />
+              </div>
+              <ion-label>{{ $t('profile.admin.locationsReview') }}</ion-label>
+              <ion-badge v-if="pendingLocationsCount > 0" color="danger" slot="end" style="border-radius: 8px;">{{ pendingLocationsCount }}</ion-badge>
+            </ion-item>
+
+            <ion-item button @click="goToPointsLogs">
+              <div class="icon-box" slot="start">
+                <ion-icon :icon="listOutline" />
+              </div>
+              <ion-label>{{ $t('profile.admin.pointsLogs') }}</ion-label>
+            </ion-item>
+
+            <ion-item button @click="goToScanLogs">
+              <div class="icon-box" slot="start">
+                <ion-icon :icon="listOutline" />
+              </div>
+              <ion-label>{{ $t('profile.admin.scanLogs') }}</ion-label>
+            </ion-item>
+
+            <ion-item button @click="goToUsersList">
+              <div class="icon-box" slot="start">
+                <ion-icon :icon="peopleOutline" />
+              </div>
+              <ion-label>{{ $t('profile.admin.users') }}</ion-label>
+            </ion-item>
+
+            <ion-item button @click="goToAnalyticsDashboard">
+              <div class="icon-box" slot="start">
+                <ion-icon :icon="listOutline" />
+              </div>
+              <ion-label>{{ $t('profile.admin.analytics') }}</ion-label>
+            </ion-item>
+
+            <ion-item button @click="goToMasterData">
+              <div class="icon-box" slot="start">
+                <ion-icon :icon="constructOutline" />
+              </div>
+              <ion-label>{{ $t('profile.admin.masterData') }}</ion-label>
+            </ion-item>
+          </ion-list>
+        </ion-card>
+
+        <!-- Main Menu Section -->
+        <ion-card class="fade-in">
+          <ion-list lines="none">
+            <ion-item button @click="goToSavedItems">
+              <div class="icon-box" slot="start">
+                <ion-icon :icon="bookmarkOutline" />
+              </div>
+              <ion-label>{{ $t('profile.savedItems') }}</ion-label>
+            </ion-item>
+            
+            <ion-item button @click="goToSettings">
+              <div class="icon-box" slot="start">
+                <ion-icon :icon="settingsOutline" />
+              </div>
+              <ion-label>{{ $t('profile.settings') }}</ion-label>
+            </ion-item>
+            
+            <ion-item button @click="goToLegal">
+              <div class="icon-box" slot="start">
+                <ion-icon :icon="documentTextOutline" />
+              </div>
+              <ion-label>{{ $t('profile.legal') }}</ion-label>
+            </ion-item>
+
+            <ion-item button @click="goToCredits">
+              <div class="icon-box" slot="start">
+                <ion-icon :icon="peopleOutline" />
+              </div>
+              <ion-label>{{ $t('profile.credits') }}</ion-label>
+            </ion-item>
+          </ion-list>
+        </ion-card>
+
+        <!-- Support Section -->
+        <ion-card class="fade-in">
+          <div class="xp-section" style="text-align: center; padding-top: 10px;">
+            <h3 style="font-weight: 700; margin-bottom: 12px;">{{ $t('profile.support') }}</h3>
+            
+            <template v-if="donationProduct">
+              <ion-item button style="text-align: left;" @click="donate">
+                <ion-label>
+                  <strong>{{ donationProduct.title }}</strong>
+                  <br/>
+                  <small>{{ donationProduct.description }}</small>
+                </ion-label>
+                <ion-note slot="end">{{ donationProduct.priceString }}</ion-note>
+              </ion-item>
+            </template>
+            
+            <template v-else>
+              <p style="font-size: 0.85rem; color: var(--ion-color-medium); margin-bottom: 16px;">
+                {{ $t('profile.supportDescription') }}
+              </p>
+              <a href="https://halalformosa.bobaboba.me" target="_blank" class="boba-button" style="margin: 0 auto 16px;">
+                <img
+                    src="https://s3.ap-southeast-1.amazonaws.com/media.anyonelab.com/images/boba/boba-embed-icon.png"
+                    alt="boba-icon"
+                    class="boba-img-premium"
+                />
+                <span class="boba-text-premium">{{ $t('profile.bobaMe') }}</span>
+              </a>
+              <p class="support-thank" style="font-size: 0.8rem;">{{ $t('profile.supportThank') }}</p>
+              <p style="margin-top: 4px;"><small>{{ $t('profile.voluntary') }}</small></p>
+            </template>
+          </div>
+        </ion-card>
+
+        <!-- Social Media Card -->
+        <ion-card class="fade-in">
+          <div class="social-grid-premium">
+            <a class="social-item-premium" @click.prevent="logAndOpen('instagram', 'https://www.instagram.com/halalformosa/')">
+              <ion-icon :icon="logoInstagram" class="social-icon-btn" style="color: #E1306C" />
+              <span class="social-label-premium">Instagram</span>
+            </a>
+            
+            <a class="social-item-premium" @click.prevent="logAndOpen('line', 'https://line.me/R/ti/p/@975schpu')">
+              <img src="/social-logo/line-logo.png" alt="LINE" class="social-img-premium" />
+              <span class="social-label-premium">LINE</span>
+            </a>
+            
+            <a class="social-item-premium" @click.prevent="logAndOpen('web', 'https://halalformosa.com')">
+              <ion-icon :icon="globeOutline" class="social-icon-btn" style="color: var(--ion-color-carrot)" />
+              <span class="social-label-premium">Website</span>
+            </a>
+          </div>
+        </ion-card>
+
+        <!-- App Info (Subtle) -->
+        <div class="system-section fade-in">
+          <p class="app-info-text">
+            {{ $t('profile.appName') }} • v{{ appVersion || '1.0.0' }}
+          </p>
+          
+          <button v-if="userEmail" class="logout-button" @click.prevent="handleLogout">
+            <ion-icon :icon="logOutOutline" />
+            <span>{{ $t('profile.logout') }}</span>
+          </button>
+        </div>
+      </template>
     </ion-content>
   </ion-page>
 </template>
@@ -384,16 +315,20 @@ import {
   onIonViewWillEnter,
   onIonViewDidEnter
 } from "@ionic/vue";
+import AppHeader from "@/components/AppHeader.vue";
 
 import {
   constructOutline,
   createOutline,
-  documentTextOutline, globeOutline,
+  documentTextOutline,
+  globeOutline,
   listOutline,
   logoInstagram,
   peopleOutline,
   personCircleOutline,
-  settingsOutline, bookmarkOutline
+  settingsOutline,
+  bookmarkOutline,
+  logOutOutline
 } from "ionicons/icons";
 
 // ✅ Composables
@@ -913,147 +848,331 @@ const goToMasterData = () => router.push('/admin/master-data')
 
 
 <style scoped>
-ion-toast {
-  transform: translateY(-55px);
+/* Standard Card Overrides */
+ion-card {
+  margin: 16px;
+  border-radius: 20px;
+  overflow: hidden;
+  transition: transform 0.3s ease;
 }
 
-.profile-card {
-  margin: 1rem auto;
-  padding: 1rem 1rem;
-  border-radius: 10px;
+ion-card:active {
+  transform: scale(0.98);
 }
 
-.avatar-wrapper {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 1rem;
+/* Profile Header Section */
+.profile-header-premium {
+  padding: 32px 16px 24px;
+  text-align: center;
+  position: relative;
 }
 
-.avatar {
+.avatar-container {
+  position: relative;
   width: 120px;
   height: 120px;
+  margin: 0 auto 16px;
+}
+
+.avatar-premium {
+  width: 100%;
+  height: 100%;
   border-radius: 50%;
+  border: 4px solid var(--ion-color-carrot);
   object-fit: cover;
-  border: 2px solid var(--ion-color-tertiary);
+  position: relative;
+  z-index: 1;
+  box-shadow: 0 4px 12px rgba(var(--ion-color-carrot-rgb), 0.3);
 }
 
-.profile-name h2 {
-  margin: 0 0 0.25rem;
+.profile-info {
+  margin-top: 12px;
+}
+
+.profile-name-main {
+  font-size: 1.6rem;
+  font-weight: 800;
+  margin: 0;
+  background: linear-gradient(to bottom, var(--ion-color-carrot), var(--ion-color-carrot-shade));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.profile-email-sub {
+  font-size: 0.9rem;
+  color: var(--ion-color-medium);
+  margin: 4px 0 16px;
+}
+
+.badge-pro {
+  --background: var(--accent-gradient);
+  --color: #fff;
+  padding: 6px 12px;
+  border-radius: 12px;
   font-weight: 700;
-  color: var(--ion-color-tertiary);
+  font-size: 0.75rem;
+  letter-spacing: 0.5px;
+  box-shadow: 0 4px 12px rgba(230, 126, 34, 0.3);
 }
 
-.profile-email p {
-  margin: 0 0 1.5rem;
-  font-size: 1rem;
-  color: var(--ion-color-medium);
+/* XP Visualization */
+.xp-section {
+  padding: 20px;
 }
 
-.logout-button,
-.login-prompt ion-button {
-  margin-top: 1rem;
+.xp-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 12px;
 }
 
-.login-prompt p {
-  margin-bottom: 1rem;
-  font-size: 1rem;
-  color: var(--ion-color-medium);
+.level-badge {
+  background: var(--primary-gradient);
+  padding: 8px 16px;
+  border-radius: 16px;
+  color: #fff;
 }
 
+.level-num {
+  font-size: 1.4rem;
+  font-weight: 900;
+}
+
+.level-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  opacity: 0.8;
+  display: block;
+}
+
+.xp-total {
+  text-align: right;
+}
+
+.xp-val {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--ion-color-carrot);
+}
+
+.xp-next {
+  font-size: 0.7rem;
+  color: var(--ion-color-step-600);
+  display: block;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.progress-container {
+  height: 10px;
+  background: rgba(var(--ion-color-step-200-rgb), 0.15);
+  border-radius: 5px;
+  overflow: hidden;
+  position: relative;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: var(--primary-gradient);
+  border-radius: 6px;
+  transition: width 1s ease-out;
+  box-shadow: 0 0 12px rgba(var(--ion-color-carrot-rgb), 0.5);
+}
+
+/* Menu List Styling */
+ion-item {
+  --padding-start: 16px;
+  --padding-end: 16px;
+  --inner-padding-top: 12px;
+  --inner-padding-bottom: 12px;
+}
+
+.icon-box {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 12px;
+  background: rgba(var(--ion-color-carrot-rgb), 0.1);
+  border: 1px solid rgba(var(--ion-color-carrot-rgb), 0.1);
+}
+
+.icon-box ion-icon {
+  font-size: 20px;
+  color: var(--ion-color-carrot);
+}
+
+/* Social Media */
+.social-grid-premium {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  padding: 16px;
+}
+
+.social-item-premium {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.social-item-premium:active {
+  background: rgba(var(--ion-color-dark-rgb), 0.1);
+  transform: translateY(2px);
+}
+
+.social-img-premium {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+
+.social-icon-btn {
+  font-size: 24px;
+}
+
+/* Boba Button Styling */
 .boba-button {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 200px;
-  height: 44px;
-  margin: 1rem auto;
-  padding: 8px 16px;
-  background-color: #ad5138;
-  color: #f8e0be;
-  border-radius: 12px;
+  background: #5d4037;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 16px;
   text-decoration: none;
-  font-weight: bold;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  max-width: fit-content;
 }
 
-.support-thank {
-  font-size: 0.9rem;
+.boba-button:active {
+  transform: scale(0.95);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+
+.boba-img-premium {
+  height: 24px;
+  width: auto;
+  margin-right: 10px;
+}
+
+.boba-text-premium {
+  color: white;
+  font-weight: 800;
+  font-size: 1rem;
+}
+
+.social-label-premium {
+  font-size: 0.7rem;
+  font-weight: 600;
   color: var(--ion-color-medium);
 }
 
-.profile-toolbar {
-  --padding-start: 0;
-  --padding-end: 0;
-  --min-height: 40px;
+/* Light/Dark Mode handling for text */
+.profile-content ion-content {
+  --background: var(--ion-background-color);
 }
 
-.profile-title {
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: var(--ion-color-dark);
+@media (prefers-color-scheme: light) {
+  .profile-name-main {
+    background: linear-gradient(to bottom, var(--ion-color-carrot), var(--ion-color-carrot-shade));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
 }
 
-.social-links {
+/* System Section & Logout */
+.system-section {
+  margin: 40px 16px;
+  text-align: center;
   display: flex;
-  justify-content: center;
-  gap: 16px;
-  flex-wrap: wrap;
-  margin-top: 0.5rem;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
 }
 
-.social-button {
+.app-info-text {
+  font-size: 0.75rem;
+  color: var(--ion-color-medium);
+  margin: 0;
+  opacity: 0.7;
+}
+
+.logout-button {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
-  border-radius: 10px;
-  font-weight: 600;
-  text-decoration: none;
-  transition: transform 0.2s ease;
-  color: #fff;
+  gap: 8px;
+  background: rgba(var(--ion-color-danger-rgb), 0.08);
+  color: var(--ion-color-danger);
+  border: 1px solid rgba(var(--ion-color-danger-rgb), 0.15);
+  padding: 12px 24px;
+  border-radius: 14px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  transition: all 0.2s ease;
+  cursor: pointer;
 }
 
-.social-icon {
-  font-size: 24px;
-  width: 24px;
-  height: 24px;
+.logout-button ion-icon {
+  font-size: 1.2rem;
 }
 
-
-.social-button:hover {
-  transform: translateY(-2px);
+.logout-button:active {
+  background: rgba(var(--ion-color-danger-rgb), 0.15);
+  transform: scale(0.97);
 }
 
-.social-button.instagram {
-  background: linear-gradient(45deg, #f58529, #dd2a7b, #8134af, #515bd4);
+@keyframes pulse {
+  0% { transform: scale(1); opacity: 0.3; }
+  50% { transform: scale(1.05); opacity: 0.5; }
+  100% { transform: scale(1); opacity: 0.3; }
 }
 
-.social-button.line {
-  background-color: #06c755;
+/* Animations */
+.fade-in {
+  animation: fadeIn 0.8s ease-out;
 }
 
-.social-button.website {
-  background: linear-gradient(135deg, #334155 0%, #1e293b 100%);
-  color: #ffffff;
-  border: none;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
-.social-button.website:hover {
-  transform: translateY(-2px);
-  background: linear-gradient(135deg, #475569 0%, #334155 100%);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+/* Skeletons */
+.skeleton-avatar-premium {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  margin: 0 auto 16px;
 }
 
-.info-list {
+.skeleton-text-center {
+  margin: 0 auto 8px;
+  border-radius: 4px;
+}
+
+/* Overrides */
+ion-toolbar {
+  --background: transparent;
+  --border-width: 0;
+}
+
+ion-header {
   background: transparent;
-  padding: 0;
 }
-
-.info-note {
-  font-weight: 600;
-  color: var(--ion-color-dark);
-}
-
-
-
 </style>

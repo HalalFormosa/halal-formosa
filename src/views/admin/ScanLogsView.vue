@@ -5,6 +5,7 @@
           :title="$t('profile.admin.scanLogs')"
           :icon="listOutline"
           :showBack="true"
+          :contrast="true"
       />
     </ion-header>
 
@@ -18,156 +19,180 @@
             v-for="log in logs"
             :key="log.id"
             button
-            detail
+            :detail="false"
             @click="openDetails(log)"
+            class="scan-log-item"
         >
-
-        <!-- Avatar -->
-          <ion-avatar slot="start" v-if="log.avatar_url">
-            <img :src="log.avatar_url" :alt="$t('admin.userAvatar')" />
+          <!-- User Avatar -->
+          <ion-avatar slot="start" class="user-avatar">
+            <img v-if="log.avatar_url" :src="log.avatar_url" :alt="log.display_name" />
+            <ion-icon v-else :icon="personOutline" class="placeholder-icon" />
           </ion-avatar>
-
-          <!-- Label section -->
-          <ion-label class="log-label">
-
-            <!-- USER NAME -->
-            <h2 class="log-user">
-              {{ log.full_name || log.display_name || log.email || $t('admin.unknownUser') }}
-            </h2>
-
-            <!-- PRODUCT -->
-            <p class="log-product">
-              🛒 <strong>{{ log.product_name || $t('admin.unknownProduct') }}</strong>
-            </p>
-
-            <!-- STATUS + SOURCE -->
-            <div class="log-action">
-              <ion-text color="dark">
-                <strong>{{ $t('admin.status') }}: {{ log.auto_status || "N/A" }}</strong>
-              </ion-text>
-
+        
+          <ion-label>
+            <div class="product-header">
+              <h2 class="product-name">
+                {{ log.product_name || $t('admin.unknownProduct') }}
+              </h2>
               <ion-badge
-                  :color="log.source === 'camera' ? 'primary' : 'secondary'"
+                class="status-badge"
+                :color="getStatusConfig(log.auto_status).color"
+                mode="ios"
               >
-                {{ log.source }}
+                {{ log.auto_status || 'N/A' }}
               </ion-badge>
             </div>
+          
+            <div class="user-row">
+              <span class="user-name">
+                {{ log.full_name || log.display_name || log.email || $t('admin.unknownUser') }}
+              </span>
+            </div>
 
-            <!-- TIME -->
-            <p class="log-time">{{ fromNowToTaipei(log.created_at) }}</p>
-
+            <div class="metadata">
+              <span class="time-stamp">
+                <ion-icon :icon="timeOutline" class="inline-icon" />
+                {{ fromNowToTaipei(log.created_at) }}
+              </span>
+              <span class="source-tag">
+                <ion-icon :icon="getSourceIcon(log.source)" class="inline-icon" />
+                {{ log.source }}
+              </span>
+            </div>
           </ion-label>
-
         </ion-item>
       </ion-list>
 
-      <!-- 🔍 Scan Log Details Modal -->
-      <ion-modal :is-open="showModal" @didDismiss="closeModal">
+      <ion-modal :is-open="showModal" @didDismiss="closeModal" class="scan-details-modal">
         <ion-header>
-          <ion-toolbar>
-            <ion-title>{{ $t('admin.scanDetails') }}</ion-title>
-            <ion-buttons slot="end">
-              <ion-button @click="closeModal">{{ $t('admin.close') }}</ion-button>
-            </ion-buttons>
-          </ion-toolbar>
+          <app-header
+            :title="$t('admin.scanDetails')"
+            :icon="listOutline"
+            :showBack="true"
+            :useRouterBack="false"
+            @back="closeModal"
+            :contrast="true"
+          />
         </ion-header>
 
-        <ion-content class="ion-padding">
+        <ion-content class="ion-padding modal-content">
+          <div v-if="selectedLog" class="details-container">
+            <!-- Header Card -->
+            <div class="header-section" :class="'status-' + getStatusConfig(selectedLog.auto_status).color">
+              <div class="user-info">
+                <ion-avatar class="modal-avatar">
+                   <img v-if="selectedLog.avatar_url" :src="selectedLog.avatar_url" />
+                   <ion-icon v-else :icon="personOutline" />
+                </ion-avatar>
+                <div class="user-text">
+                  <h3>{{ selectedLog.display_name || $t('admin.unknownUser') }}</h3>
+                  <p>{{ selectedLog.email }}</p>
+                </div>
+              </div>
+              
+              <div class="status-hero">
+                <h1 class="product-name-hero">{{ selectedLog.product_name || $t('admin.unknownProduct') }}</h1>
+                <div class="status-badge-hero">
+                  <ion-icon :icon="getStatusConfig(selectedLog.auto_status).icon" />
+                  <span>{{ selectedLog.auto_status || 'N/A' }}</span>
+                </div>
+                <p class="time-hero">{{ fromNowToTaipei(selectedLog.created_at) }}</p>
+              </div>
+            </div>
 
-          <ion-card v-if="selectedLog">
-            <ion-card-header>
-              <ion-card-title>
-                {{ selectedLog.product_name || $t('admin.unknownProduct') }}
-              </ion-card-title>
-              <p class="log-time">
-                {{ fromNowToTaipei(selectedLog.created_at) }}
-              </p>
-            </ion-card-header>
+            <!-- Info Card -->
+            <ion-card class="info-card">
+              <ion-card-header>
+                <ion-card-subtitle>{{ $t('admin.deviceInfo') }}</ion-card-subtitle>
+              </ion-card-header>
+              <ion-card-content>
+                <div class="info-grid">
+                  <div class="info-item">
+                    <span class="label">{{ $t('admin.source') }}</span>
+                    <span class="value">
+                      <ion-icon :icon="getSourceIcon(selectedLog.source)" />
+                      {{ selectedLog.source }}
+                    </span>
+                  </div>
+                  <div class="info-item">
+                    <span class="label">{{ $t('admin.device') }}</span>
+                    <span class="value">{{ selectedLog.device_model || 'Unknown' }}</span>
+                  </div>
+                  <div class="info-item" v-if="selectedLog.processing_time_ms">
+                    <span class="label">{{ $t('admin.processingTime') }}</span>
+                    <span class="value">{{ selectedLog.processing_time_ms }} ms</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="label">{{ $t('admin.appVersion') }}</span>
+                    <span class="value">v{{ selectedLog.app_version }}</span>
+                  </div>
+                </div>
+              </ion-card-content>
+            </ion-card>
 
-            <ion-card-content>
+            <!-- OCR Text Sections -->
+            <div class="ocr-section">
+              <div class="section-title">
+                <ion-icon :icon="listOutline" />
+                <h3>{{ $t('admin.ocrResults') }}</h3>
+              </div>
 
-              <ion-list lines="none">
+              <div class="ocr-box" v-if="selectedLog.ingredients_text_zh">
+                <label>{{ $t('admin.ocrChinese') }}</label>
+                <div class="text-content">{{ selectedLog.ingredients_text_zh }}</div>
+              </div>
 
-                <ion-item>
-                  <ion-label>{{ $t('admin.status') }}</ion-label>
-                  <ion-badge :color="selectedLog.auto_status === 'Haram' ? 'danger' :
-                               selectedLog.auto_status === 'Syubhah' ? 'warning' :
-                               selectedLog.auto_status === 'Halal' ? 'success' : 'primary'">
-                    {{ selectedLog.auto_status }}
-                  </ion-badge>
+              <div class="ocr-box" v-if="selectedLog.ingredients_text_en">
+                <label>{{ $t('admin.ocrEnglish') }}</label>
+                <div class="text-content">{{ selectedLog.ingredients_text_en }}</div>
+              </div>
+            </div>
+
+            <!-- Highlights -->
+            <div class="highlights-section" v-if="selectedLog.highlight_summary && selectedLog.highlight_summary.length">
+              <div class="section-title">
+                <ion-icon :icon="alertCircleOutline" />
+                <h3>{{ $t('admin.detectedHighlights') }}</h3>
+              </div>
+              <div class="highlights-grid">
+                <ion-chip 
+                  v-for="(h, idx) in selectedLog.highlight_summary" 
+                  :key="idx"
+                  class="status-chip"
+                  :class="['chip-' + extractIonColor(h.color)]"
+                >
+                  {{ h.keyword_zh || h.keyword }}
+                  <template v-if="h.keyword && h.keyword_zh">
+                    ({{ toProperCase(h.keyword) }})
+                  </template>
+                  — {{ colorMeaning(extractIonColor(h.color)) }}
+                </ion-chip>
+              </div>
+            </div>
+
+            <!-- Error Message -->
+            <div class="error-section" v-if="selectedLog.error_message">
+               <ion-item lines="none" color="danger" class="error-item">
+                 <ion-icon slot="start" :icon="alertCircleOutline" />
+                 <ion-label>
+                   <h3>{{ $t('admin.error') }}</h3>
+                   <p>{{ selectedLog.error_message }}</p>
+                 </ion-label>
+               </ion-item>
+            </div>
+
+            <!-- Raw OCR (Expandable) -->
+            <ion-accordion-group class="raw-ocr-accordion">
+              <ion-accordion value="raw">
+                <ion-item slot="header" lines="none">
+                  <ion-label>{{ $t('admin.rawOcrText') }}</ion-label>
                 </ion-item>
-
-                <ion-item>
-                  <ion-label>{{ $t('admin.source') }}</ion-label>
-                  <ion-note slot="end">{{ selectedLog.source }}</ion-note>
-                </ion-item>
-
-                <ion-item>
-                  <ion-label>{{ $t('admin.device') }}</ion-label>
-                  <ion-note slot="end">
-                    {{ selectedLog.device_model }} ({{ selectedLog.platform }})
-                  </ion-note>
-                </ion-item>
-
-                <ion-item v-if="selectedLog.processing_time_ms">
-                  <ion-label>{{ $t('admin.processingTime') }}</ion-label>
-                  <ion-note slot="end">{{ selectedLog.processing_time_ms }} ms</ion-note>
-                </ion-item>
-
-                <ion-item v-if="selectedLog.error_message">
-                  <ion-label>{{ $t('admin.error') }}</ion-label>
-                  <ion-note slot="end" color="danger">
-                    {{ selectedLog.error_message }}
-                  </ion-note>
-                </ion-item>
-
-                <ion-item>
-                  <ion-label>{{ $t('admin.appVersion') }}</ion-label>
-                  <ion-note slot="end">{{ selectedLog.app_version }}</ion-note>
-                </ion-item>
-
-              </ion-list>
-
-              <!-- OCR TEXT -->
-              <h1 style="margin-top: 16px;">{{ $t('admin.ocrChinese') }}</h1>
-              <ion-textarea
-                  readonly
-                  :auto-grow="true"
-                  class="copy-area"
-                  :value="selectedLog.ingredients_text_zh || '—'"
-              ></ion-textarea>
-
-
-              <h1>{{ $t('admin.ocrEnglish') }}</h1>
-              <ion-textarea
-                  readonly
-                  :auto-grow="true"
-                  class="copy-area"
-                  :value="selectedLog.ingredients_text_en || '—'"
-              ></ion-textarea>
-
-
-              <!-- HIGHLIGHT SUMMARY (JSON pretty) -->
-              <h1>{{ $t('admin.detectedHighlights') }}</h1>
-              <ion-textarea
-                  readonly
-                  :auto-grow="true"
-                  class="copy-area mono"
-                  :value="JSON.stringify(selectedLog.highlight_summary, null, 2)"
-              ></ion-textarea>
-
-
-              <h1>{{ $t('admin.rawOcrText') }}</h1>
-              <ion-textarea
-                  readonly
-                  :auto-grow="true"
-                  class="copy-area mono"
-                  :value="selectedLog.ocr_raw || '—'"
-              ></ion-textarea>
-
-            </ion-card-content>
-          </ion-card>
-
+                <div slot="content" class="raw-content">
+                  <pre>{{ selectedLog.ocr_raw }}</pre>
+                </div>
+              </ion-accordion>
+            </ion-accordion-group>
+          </div>
         </ion-content>
       </ion-modal>
 
@@ -201,17 +226,31 @@ import {
   IonAvatar,
   IonBadge,
   IonText,
+  IonIcon,
   IonButton, IonModal, IonRefresher, IonInfiniteScroll, IonCard, IonCardContent, IonTextarea, IonNote, IonCardHeader, IonToolbar,IonCardTitle,IonInfiniteScrollContent, IonTitle, IonButtons,
     IonRefresherContent
 } from "@ionic/vue";
 
 import AppHeader from "@/components/AppHeader.vue";
-import { listOutline } from "ionicons/icons";
+import {
+  listOutline,
+  checkmarkCircleOutline,
+  closeCircleOutline,
+  helpCircleOutline,
+  alertCircleOutline,
+  cameraOutline,
+  imageOutline,
+  eyeOutline,
+  personOutline,
+  timeOutline,
+  cubeOutline
+} from "ionicons/icons";
 
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
 import relativeTime from "dayjs/plugin/relativeTime";
+import { extractIonColor, colorMeaning } from "@/utils/ingredientHelpers";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -245,6 +284,41 @@ function handleRefresh(event: any) {
 function fromNowToTaipei(dateString?: string) {
   if (!dateString) return "";
   return dayjs.utc(dateString).tz("Asia/Taipei").fromNow();
+}
+
+/** Status Helper */
+function getStatusConfig(status?: string) {
+  switch (status) {
+    case "Halal":
+      return { color: "success", icon: checkmarkCircleOutline };
+    case "Haram":
+      return { color: "danger", icon: closeCircleOutline };
+    case "Syubhah":
+      return { color: "warning", icon: helpCircleOutline };
+    case "Muslim-friendly":
+      return { color: "primary", icon: checkmarkCircleOutline };
+    default:
+      return { color: "medium", icon: alertCircleOutline };
+  }
+}
+
+/** Source Icon Helper */
+function getSourceIcon(source?: string) {
+  switch (source) {
+    case "camera":
+      return cameraOutline;
+    case "gallery":
+      return imageOutline;
+    case "auto":
+      return eyeOutline;
+    default:
+      return cubeOutline;
+  }
+}
+
+/** Utility for proper case */
+function toProperCase(str: string) {
+  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
 }
 
 /** Fetch logs + user info */
@@ -306,60 +380,338 @@ onMounted(() => fetchLogs(true))
 </script>
 
 <style scoped>
-.log-label h2.log-user {
-  margin: 0 0 4px 0;
-  font-weight: 600;
+.scan-log-item {
+  --padding-start: 16px;
+  --padding-end: 16px;
+  --inner-padding-end: 16px;
+  --min-height: 80px;
 }
 
-.log-product {
-  margin: 4px 0;
-  font-size: 0.9rem;
+.user-avatar {
+  width: 44px;
+  height: 44px;
 }
 
-.log-action {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 4px 0;
-}
-
-.log-time {
-  margin: 0;
-  font-size: 0.85rem;
+.placeholder-icon {
+  font-size: 24px;
   color: var(--ion-color-medium);
 }
 
-.ocr-block {
-  background: var(--ion-color-light);
-  padding: 10px;
-  border-radius: 8px;
-  white-space: pre-wrap;
-  font-size: 14px;
+.product-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 4px;
 }
 
-.json-block {
-  background: #1e1e1e;
-  color: #c4c4c4;
-  padding: 12px;
-  border-radius: 8px;
+.product-name {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0;
+  color: var(--ion-color-dark);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  flex: 1;
+}
+
+.user-row {
+  margin-bottom: 4px;
+}
+
+.user-name {
+  font-size: 0.85rem;
+  color: var(--ion-color-medium);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.metadata {
+  display: flex;
+  gap: 12px;
+  font-size: 0.8rem;
+  color: var(--ion-color-step-600);
+}
+
+.metadata span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.inline-icon {
   font-size: 12px;
-  overflow-x: auto;
+  opacity: 0.7;
 }
 
-.copy-area {
-  background: var(--ion-color-light);
-  border-radius: 8px;
-  padding: 8px;
-  font-size: 14px;
+.status-badge {
+  --padding-start: 6px;
+  --padding-end: 6px;
+  --padding-top: 2px;
+  --padding-bottom: 2px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  /* Muted badges for dark mode */
+  background: transparent;
+  border: 1px solid currentColor;
+  opacity: 0.8;
+}
+
+.status-badge[color="success"] { color: var(--ion-color-success); }
+.status-badge[color="danger"] { color: var(--ion-color-danger); }
+.status-badge[color="warning"] { color: var(--ion-color-warning); }
+.status-badge[color="primary"] { color: var(--ion-color-primary); }
+.status-badge[color="medium"] { color: var(--ion-color-medium); }
+
+/* Modal Styles */
+.modal-content {
+  --background: var(--ion-background-color);
+}
+
+.header-section {
+  padding: 24px;
+  border-radius: 16px;
+  margin-bottom: 20px;
+  text-align: center;
+  color: white;
+  position: relative;
+  overflow: hidden;
+}
+
+.header-section.status-success { background: linear-gradient(135deg, var(--ion-color-success), var(--ion-color-success-shade)); }
+.header-section.status-danger { background: linear-gradient(135deg, var(--ion-color-danger), var(--ion-color-danger-shade)); }
+.header-section.status-warning { background: linear-gradient(135deg, var(--ion-color-warning), var(--ion-color-warning-shade)); }
+.header-section.status-primary { background: linear-gradient(135deg, var(--ion-color-primary), var(--ion-color-primary-shade)); }
+.header-section.status-medium { background: linear-gradient(135deg, var(--ion-color-medium), var(--ion-color-medium-shade)); }
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.modal-avatar {
+  width: 50px;
+  height: 50px;
+  border: 2px solid rgba(255,255,255,0.8);
+}
+
+.user-text h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.user-text p {
+  margin: 0;
+  font-size: 0.85rem;
+  opacity: 0.9;
+}
+
+.status-hero {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  color: white;
+  text-align: center;
+  padding: 10px 0;
+}
+
+.product-name-hero {
+  font-size: 1.5rem;
+  font-weight: 800;
+  margin: 0 0 16px 0;
+  line-height: 1.25;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  max-width: 90%;
+}
+
+.status-badge-hero {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.25);
+  padding: 10px 24px;
+  border-radius: 99px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  margin-bottom: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.status-badge-hero ion-icon {
+  font-size: 28px;
+  margin: 0;
+}
+
+.status-badge-hero span {
+  font-size: 1.3rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+}
+
+.time-hero {
+  font-size: 0.95rem;
+  opacity: 0.85;
+  margin: 0;
+  font-weight: 500;
+}
+
+.info-card {
+  margin: 0 0 20px 0;
+  border-radius: 12px;
+  background: var(--ion-card-background, var(--ion-item-background));
+  border: 1px solid var(--ion-color-step-150);
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.info-item .label {
+  font-size: 0.75rem;
+  color: var(--ion-color-medium);
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.info-item .value {
+  font-size: 0.9rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ocr-section, .highlights-section {
+  margin-bottom: 24px;
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  color: var(--ion-color-dark);
+}
+
+.section-title h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.ocr-box {
+  background: var(--ion-item-background);
+  padding: 16px;
+  border-radius: 12px;
+  margin-bottom: 12px;
+  border: 1px solid var(--ion-color-step-150);
+}
+
+.ocr-box label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--ion-color-carrot);
+  text-transform: uppercase;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.text-content {
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--ion-color-dark);
+}
+
+.highlights-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* Status Chips Soft Style (local version for modal) */
+.status-chip {
+  --background: transparent;
+  --color: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 6px;
+  height: auto;
+  padding: 4px 10px;
+}
+
+.chip-success {
+  background: rgba(var(--ion-color-success-rgb), 0.15) !important;
+  color: var(--ion-color-success) !important;
+  border: 1px solid rgba(var(--ion-color-success-rgb), 0.5);
+}
+
+.chip-primary {
+  background: rgba(var(--ion-color-primary-rgb), 0.15) !important;
+  color: var(--ion-color-primary) !important;
+  border: 1px solid rgba(var(--ion-color-primary-rgb), 0.5);
+}
+
+.chip-warning {
+  background: rgba(var(--ion-color-warning-rgb), 0.18) !important;
+  color: var(--ion-color-warning) !important;
+  border: 1px solid rgba(var(--ion-color-warning-rgb), 0.6);
+}
+
+.chip-danger {
+  background: rgba(var(--ion-color-danger-rgb), 0.15) !important;
+  color: var(--ion-color-danger) !important;
+  border: 1px solid rgba(var(--ion-color-danger-rgb), 0.6);
+}
+
+.chip-medium {
+  background: rgba(127, 140, 141, 0.15) !important;
+  color: var(--ion-color-medium) !important;
+  border: 1px solid rgba(127, 140, 141, 0.4);
+}
+
+.error-item {
+  border-radius: 12px;
+  margin-bottom: 20px;
+}
+
+.raw-ocr-accordion {
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--ion-color-step-150);
+}
+
+.raw-content {
+  padding: 16px;
+  background: var(--ion-color-step-50);
+}
+
+.raw-content pre {
+  margin: 0;
+  font-size: 0.8rem;
   white-space: pre-wrap;
-  --highlight-color-focused: transparent; /* remove blue box on tap */
-}
-
-.copy-area.mono {
   font-family: monospace;
-  font-size: 13px;
 }
-
 </style>
 
 

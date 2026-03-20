@@ -70,10 +70,10 @@
 
           <!-- Skeleton placeholder -->
           <div v-if="loadingCategories" class="category-skeletons" style="display: flex; gap: 10px;">
-            <ion-skeleton-text animated style="width:110px; height:36px; border-radius:10px; margin: 0;"/>
-            <ion-skeleton-text animated style="width:85px; height:36px; border-radius:10px; margin: 0;"/>
-            <ion-skeleton-text animated style="width:120px; height:36px; border-radius:10px; margin: 0;"/>
-            <ion-skeleton-text animated style="width:90px; height:36px; border-radius:10px; margin: 0;"/>
+            <ion-skeleton-text animated style="width:110px; height:36px; border-radius:100px; margin: 0;"/>
+            <ion-skeleton-text animated style="width:85px; height:36px; border-radius:100px; margin: 0;"/>
+            <ion-skeleton-text animated style="width:120px; height:36px; border-radius:100px; margin: 0;"/>
+            <ion-skeleton-text animated style="width:90px; height:36px; border-radius:100px; margin: 0;"/>
           </div>
         </div>
       </ion-toolbar>
@@ -371,6 +371,8 @@ import timezone from 'dayjs/plugin/timezone'
 import {MarkerClusterer, SuperClusterAlgorithm} from "@googlemaps/markerclusterer"
 import {Cluster, Renderer} from "@googlemaps/markerclusterer"
 
+import { Motion } from '@capacitor/motion'
+
 import useSharePlace from '@/composables/useSharePlace'
 import {ActivityLogService} from "@/services/ActivityLogService";
 
@@ -472,6 +474,7 @@ let advancedMarkerLib: typeof google.maps.marker | null = null
 let infoWindow: google.maps.InfoWindow | null = null
 const markerMap = new Map<number, google.maps.marker.AdvancedMarkerElement>()
 const userMarker = ref<google.maps.marker.AdvancedMarkerElement | null>(null)
+const userArrowEl = ref<HTMLElement | null>(null)
 const {sharePlace} = useSharePlace()
 const locationTypes = ref<LocationType[]>([])
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t
@@ -567,6 +570,11 @@ const startWatchingUserLocation = async () => {
             const dot = document.createElement('div')
             dot.className = 'user-location-dot'
 
+            const cone = document.createElement('div')
+            cone.className = 'user-heading-cone'
+            dot.prepend(cone) // 👈 Prepend so it stays behind the dot background
+            userArrowEl.value = cone
+
             userMarker.value =
                 new advancedMarkerLib.AdvancedMarkerElement({
                   position: userLoc,
@@ -574,11 +582,41 @@ const startWatchingUserLocation = async () => {
                   content: dot,
                   title: 'You are here'
                 })
+            
+            // Re-initialize heading tracking once dot exists
+            initHeadingTracking()
           }
         }
     )
   } catch (e) {
     console.warn('[GPS] Failed to start watch', e)
+  }
+}
+
+const initHeadingTracking = async () => {
+  if (!userArrowEl.value) return
+
+  // iOS 13+ permission 
+  if (typeof (DeviceOrientationEvent as any).requestPermission === 'function') {
+    try {
+      const permission = await (DeviceOrientationEvent as any).requestPermission()
+      if (permission !== 'granted') return
+    } catch (e) {
+      console.warn('[Orientation] Permission failed', e)
+      return
+    }
+  }
+
+  try {
+    await Motion.addListener('orientation', (event) => {
+      if (userArrowEl.value) {
+        // alpha is heading (0-360)
+        const heading = (event as any).webkitCompassHeading || event.alpha || 0
+        userArrowEl.value.style.transform = `rotate(${heading}deg)`
+      }
+    })
+  } catch (e) {
+    console.warn('[Orientation] Motion listener failed', e)
   }
 }
 
@@ -1634,6 +1672,7 @@ const goToDetail = async (id: number) => {
 <style>
 :root {
   --explore-top-offset: 0px;
+  --explore-card-height: 140px;
 }
 
 /*********************************************
@@ -1750,6 +1789,48 @@ button.gm-ui-hover-effect > span {
   border: 4px solid white;
   box-shadow: 0 0 0 4px rgba(66, 133, 244, 0.3);
   animation: pulse 1.5s infinite;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.user-heading-cone {
+  position: absolute;
+  bottom: 5px; /* Pinned to the center of the dot */
+  left: 50%;
+  width: 80px;
+  height: 80px;
+  margin-left: -40px; /* Center horizontally */
+  
+  /* Soft gradient beam */
+  background: radial-gradient(
+    circle at 50% 100%, 
+    rgba(var(--ion-color-carrot-rgb), 0.6) 0%, 
+    rgba(var(--ion-color-carrot-rgb), 0.2) 50%, 
+    transparent 80%
+  );
+  
+  /* Wide cone shape */
+  clip-path: polygon(50% 100%, 15% 0%, 85% 0%);
+  
+  transform-origin: 50% 100%;
+  transition: transform 0.2s cubic-bezier(0.1, 0, 0.3, 1);
+  pointer-events: none;
+  z-index: -1;
+  opacity: 0.8;
+}
+
+.user-heading-cone::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -2px;
+  width: 4px;
+  height: 4px;
+  background: white;
+  border-radius: 50%;
+  box-shadow: 0 0 6px white;
+  display: none; /* Keep it clean for now */
 }
 
 @keyframes pulse {
@@ -1795,7 +1876,7 @@ button.gm-ui-hover-effect > span {
   flex: 1;
   margin: 0;
   --background: var(--ion-background-color) !important;
-  --border-radius: 14px;
+  --border-radius: 100px;
   --box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
   font-weight: 500;
   height: 50px;
@@ -1809,11 +1890,11 @@ button.gm-ui-hover-effect > span {
   --icon-color: var(--ion-color-carrot) !important;
   --clear-button-color: var(--ion-color-step-600) !important;
   border: 1px solid rgba(var(--ion-color-dark-rgb), 0.15);
-  border-radius: 14px;
+  border-radius: 100px;
 }
 
 .header-btn {
-  --border-radius: 14px;
+  --border-radius: 50%;
   height: 50px;
   width: 50px;
   margin: 0;
@@ -1852,7 +1933,7 @@ button.gm-ui-hover-effect > span {
   -webkit-backdrop-filter: blur(12px);
   color: var(--cat-color);
   height: 36px;
-  border-radius: 10px;
+  border-radius: 100px;
   padding: 0 14px;
   border: 1px solid rgba(var(--ion-color-dark-rgb), 0.18);
   font-weight: 600;
@@ -1899,11 +1980,11 @@ button.gm-ui-hover-effect > span {
 
 .card-inner {
   display: flex;
-  height: 175px;
+  height: var(--explore-card-height);
 }
 
 .card-image-section {
-  width: 125px;
+  width: 110px;
   height: 100%;
   flex-shrink: 0;
   position: relative;
@@ -1918,17 +1999,17 @@ button.gm-ui-hover-effect > span {
 
 .card-info-section {
   flex: 1;
-  padding: 14px 16px;
+  padding: 10px 12px;
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
-  gap: 8px;
+  gap: 6px;
   min-width: 0;
 }
 
 .info-top .title-text {
   margin: 0 0 4px 0;
-  font-size: 1.1rem;
+  font-size: 1rem;
   font-weight: 850;
   line-height: 1.25;
   color: var(--ion-color-dark);
@@ -1943,7 +2024,7 @@ button.gm-ui-hover-effect > span {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   font-weight: 600;
   color: var(--ion-color-medium);
   opacity: 0.8;
@@ -1959,7 +2040,7 @@ button.gm-ui-hover-effect > span {
 }
 
 .distance {
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   font-weight: 800;
   color: var(--ion-color-medium);
 }
@@ -2155,11 +2236,11 @@ button.gm-ui-hover-effect > span {
 
 .card-inner {
   display: flex;
-  height: 175px; 
+  height: var(--explore-card-height); 
 }
 
 .card-image-section {
-  width: 130px;
+  width: 110px;
   height: 100%;
   flex-shrink: 0;
   position: relative;
@@ -2198,7 +2279,7 @@ button.gm-ui-hover-effect > span {
 
 .card-info-section {
   flex: 1;
-  padding: 12px 18px;
+  padding: 10px 12px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -2207,7 +2288,7 @@ button.gm-ui-hover-effect > span {
 
 .title-text {
   margin: 0 0 4px 0;
-  font-size: 1.05rem;
+  font-size: 1rem;
   font-weight: 700;
   color: var(--ion-color-dark);
   line-height: 1.3;
@@ -2239,7 +2320,7 @@ button.gm-ui-hover-effect > span {
 }
 
 .meta {
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   font-weight: 500;
   color: var(--ion-color-step-600, #666);
   white-space: nowrap;
@@ -2252,7 +2333,7 @@ button.gm-ui-hover-effect > span {
 .meta-dot { opacity: 0.5; }
 
 .distance {
-  font-size: 0.85rem;
+  font-size: 0.75rem;
   font-weight: 800;
   color: var(--ion-color-carrot);
   margin-top: 2px;
@@ -2270,9 +2351,9 @@ button.gm-ui-hover-effect > span {
 }
 
 .detail-btn {
-  --padding-start: 14px;
-  --padding-end: 14px;
-  height: 36px;
+  --padding-start: 12px;
+  --padding-end: 12px;
+  height: 32px;
   font-size: 0.8rem;
   font-weight: 800;
   background: rgba(var(--ion-color-carrot-rgb), 0.15);
@@ -2352,7 +2433,7 @@ button.gm-ui-hover-effect > span {
 ========================= */
 .map-floating-actions {
   position: absolute;
-  bottom: calc(var(--ion-safe-area-bottom, 0px) + 200px); /* Lifted slightly more above the 175px cards */
+  bottom: calc(var(--ion-safe-area-bottom, 0px) + var(--explore-card-height) + 40px);
   right: 20px;
   z-index: 1001;
   pointer-events: auto;
@@ -2360,10 +2441,9 @@ button.gm-ui-hover-effect > span {
 
 .locate-me-btn {
   --color: var(--ion-color-carrot);
-  --border-radius: 14px;
+  --border-radius: 50%;
   width: 48px;
   height: 48px;
-
 }
 
 .list-view-overlay {
@@ -2559,7 +2639,7 @@ button.gm-ui-hover-effect > span {
   --background: rgba(255,255,255,0.08);
   --color: var(--ion-color-carrot);
   border: 1px dashed var(--ion-color-medium);
-  border-radius: 12px;
+  border-radius: 100px;
   font-weight: 700;
   width: auto;
   flex-shrink: 0;

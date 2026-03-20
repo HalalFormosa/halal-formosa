@@ -574,31 +574,67 @@
 
           <!-- ✅ Public profile shown -->
           <template v-if="selectedUser.public_profile">
-            <ion-avatar style="width:60px;height:60px;margin:auto;">
-              <img :src="selectedUser.avatar_url || 'https://placehold.co/60x60?text=?'"  :alt="$t('home.altAvatar')"/>
+            <ion-avatar style="width:64px;height:64px;margin:12px auto 8px; border: 2px solid var(--ion-color-primary-tint);">
+              <img :src="selectedUser.avatar_url || 'https://placehold.co/64x64?text=?'"  :alt="$t('home.altAvatar')"/>
             </ion-avatar>
 
-            <h3 style="margin-top:6px; font-size:1rem;">
+            <div v-if="selectedUser.donor_type && selectedUser.donor_type.toLowerCase().includes('pro')" style="margin-bottom: 8px;">
+              <ion-badge color="warning" style="font-size: 0.7rem; padding: 4px 8px; border-radius: 12px;">
+                <ion-icon :icon="sparkles" style="font-size: 10px; margin-right: 4px;" />
+                {{ $t('home.leaderboard_popover.pro') }}
+              </ion-badge>
+            </div>
+
+            <h3 style="margin: 0; font-size: 1.1rem; font-weight: 700; color: var(--ion-text-color);">
               {{ selectedUser.display_name }}
             </h3>
 
-            <p style="margin:4px 0; font-size:0.85rem; color:var(--ion-color-medium);">
-              {{ $t('profile.level', { level: getLevelFromPoints(selectedUser.points) }) }} ({{ $t('home.pointsCount', { points: selectedUser.points }) }})
+            <p style="margin: 4px 0 12px; font-size: 0.85rem; color: var(--ion-color-medium); font-weight: 600;">
+              {{ $t('profile.level', { level: getLevelFromPoints(selectedUser.points) }) }} • {{ $t('home.pointsCount', { points: selectedUser.points }) }}
             </p>
 
-            <p v-if="selectedUser.bio" style="margin-top:6px; font-size:0.8rem; color:var(--ion-color-dark)">
-              {{ selectedUser.bio }}
+            <!-- Stats Grid -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 12px 0; padding: 8px; background: var(--ion-color-step-50); border-radius: 12px;">
+              <div style="text-align: center;">
+                <div style="font-size: 0.7rem; color: var(--ion-color-medium); text-transform: uppercase; font-weight: 700;">{{ $t('home.productsCount') }}</div>
+                <div style="font-size: 1rem; font-weight: 800; color: var(--ion-color-dark);">{{ selectedUser.product_count || 0 }}</div>
+              </div>
+              <div style="text-align: center; border-left: 1px solid var(--ion-color-step-200);">
+                <div style="font-size: 0.7rem; color: var(--ion-color-medium); text-transform: uppercase; font-weight: 700;">{{ $t('home.locationsCount') }}</div>
+                <div style="font-size: 1rem; font-weight: 800; color: var(--ion-color-dark);">{{ selectedUser.location_count || 0 }}</div>
+              </div>
+            </div>
+
+            <p v-if="selectedUser.bio" style="margin: 8px 0; font-size: 0.85rem; color: var(--ion-color-step-700); font-style: italic; line-height: 1.4;">
+              "{{ selectedUser.bio }}"
             </p>
           </template>
 
-          <!-- ❌ No public profile: only show XP -->
+          <!-- ❌ No public profile: only show XP and basic stats -->
           <template v-else>
-            <p style="margin:4px 0; font-size:0.9rem; font-weight:600;">
+            <ion-avatar style="width:64px;height:64px;margin:12px auto 8px; border: 2px solid var(--ion-color-step-200);">
+               <div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; background: var(--ion-color-step-100); color: var(--ion-color-step-400); font-size: 24px; font-weight: 800;">?</div>
+            </ion-avatar>
+
+            <h3 style="margin: 0; font-size: 1rem; font-weight: 600; color: var(--ion-color-medium);">
               {{ $t('home.anonymous') }}
+            </h3>
+
+            <p style="margin: 4px 0 12px; font-size: 0.85rem; color: var(--ion-color-medium);">
+              {{ $t('profile.level', { level: getLevelFromPoints(selectedUser.points) }) }} • {{ $t('home.pointsCount', { points: selectedUser.points }) }}
             </p>
-            <p style="margin:4px 0; font-size:0.85rem; color:var(--ion-color-medium);">
-              {{ $t('profile.level', { level: getLevelFromPoints(selectedUser.points) }) }} ({{ $t('home.pointsCount', { points: selectedUser.points }) }})
-            </p>
+
+            <!-- Stats for Anonymous (optional, but requested by user) -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 12px 0; padding: 8px; background: var(--ion-color-step-50); border-radius: 12px;">
+              <div style="text-align: center;">
+                <div style="font-size: 0.7rem; color: var(--ion-color-medium); text-transform: uppercase; font-weight: 700;">{{ $t('home.productsCount') }}</div>
+                <div style="font-size: 1rem; font-weight: 800; color: var(--ion-color-dark);">{{ selectedUser.product_count || 0 }}</div>
+              </div>
+              <div style="text-align: center; border-left: 1px solid var(--ion-color-step-200);">
+                <div style="font-size: 0.7rem; color: var(--ion-color-medium); text-transform: uppercase; font-weight: 700;">{{ $t('home.locationsCount') }}</div>
+                <div style="font-size: 1rem; font-weight: 800; color: var(--ion-color-dark);">{{ selectedUser.location_count || 0 }}</div>
+              </div>
+            </div>
           </template>
 
         </div>
