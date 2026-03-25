@@ -260,9 +260,10 @@ ion-chip.status-chip.chip-medium {
 
 
 :root {
-    --card-bg: var(--ion-color-step-50, #ffffff);
-    --card-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-    --card-border: rgba(0, 0, 0, 0.06);
+    --card-bg: #ffffff;
+    --card-inner-bg: #ffffff;
+    --card-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    --card-border: rgba(0, 0, 0, 0.08);
 }
 
 .ion-palette-dark {
@@ -270,19 +271,26 @@ ion-chip.status-chip.chip-medium {
     --tier-gold-bg: linear-gradient(135deg, #1c1c1e 0%, #422006 100%);
     --tier-silver-bg: linear-gradient(135deg, #1c1c1e 0%, #1e293b 100%);
     --tier-bronze-bg: linear-gradient(135deg, #1c1c1e 0%, #431407 100%);
-    --card-bg: linear-gradient(145deg, #242426 0%, #18181a 100%);
-    --card-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-    --card-border: rgba(255, 255, 255, 0.06);
+    --card-bg: #1c1c1d;
+    --card-inner-bg: #1c1c1d;
+    --card-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+    --card-border: rgba(255, 255, 255, 0.08);
 }
 
 ion-card {
     --background: var(--card-bg);
     --color: var(--ion-color-dark);
     box-shadow: var(--card-shadow);
-    border-radius: 16px;
-    margin: 10px 8px 10px 8px;
+    border-radius: 20px;
+    margin: 12px 10px;
     cursor: pointer;
     border: 1px solid var(--card-border);
+    overflow: hidden;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+ion-card:active {
+    transform: scale(0.98);
 }
 
 ion-card ion-list,

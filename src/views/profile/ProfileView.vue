@@ -853,18 +853,6 @@ const goToMasterData = () => router.push('/admin/master-data')
   --accent-gradient: linear-gradient(135deg, #ff9f43, var(--ion-color-carrot));
 }
 
-/* Standard Card Overrides */
-ion-card {
-  margin: 16px;
-  border-radius: 20px;
-  overflow: hidden;
-  transition: transform 0.3s ease;
-}
-
-ion-card:active {
-  transform: scale(0.98);
-}
-
 /* Profile Header Section */
 .profile-header-premium {
   padding: 32px 16px 24px;
@@ -1101,10 +1089,6 @@ ion-item {
   color: var(--ion-color-medium);
 }
 
-/* Light/Dark Mode handling for text */
-.profile-content ion-content {
-  --background: var(--ion-background-color);
-}
 
 @media (prefers-color-scheme: light) {
   .profile-name-main {

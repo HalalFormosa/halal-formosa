@@ -1912,7 +1912,7 @@ function openPartner(partner: any) {
 .insight-card {
   flex: 0 0 280px;
   scroll-snap-align: center;
-  margin: 8px; /* Match the exact 8px margin from the inspector */
+  margin: 12px 10px;
   background: var(--card-bg);
   border-radius: 16px; /* Match the exact 16px radius from the inspector */
   padding: 16px; /* Match the 16px inner padding */
