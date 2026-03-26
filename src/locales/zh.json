@@ -420,7 +420,18 @@
       "accessUntil": "⏳ 存取權限至",
       "manage": "管理訂閱",
       "nativeOnly": "訂閱服務僅在行動裝置應用程式上提供。",
-      "purchaseSuccess": "🎉 您現在已成為 Halal Formosa Pro 訂閱者！"
+      "purchaseSuccess": "🎉 您現在已成為 Halal Formosa Pro 訂閱者！",
+      "benefits": {
+        "title": "專業版功能：",
+        "showMore": "顯示更多",
+        "showLess": "顯示較少",
+        "aiExplanation": "AI 成分解析",
+        "smartFeed": "Smart For You 個人化推薦",
+        "noAds": "無廣告體驗",
+        "unlimitedCollections": "無限制收藏項目",
+        "unlimitedScans": "無限制掃描次數",
+        "prioritySupport": "24/7 優先技術支援"
+      }
     },
     "aboutMe": "關於我",
     "edit": "編輯",

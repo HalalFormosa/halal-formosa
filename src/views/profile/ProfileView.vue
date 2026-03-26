@@ -14,7 +14,7 @@
 
       <!-- ================= LOADING STATE ================= -->
       <template v-if="loadingProfile">
-        <ion-card class="fade-in">
+        <ion-card>
           <div class="profile-header-premium">
             <ion-skeleton-text animated class="skeleton-avatar-premium" />
             <ion-skeleton-text animated style="width: 50%; height: 24px;" class="skeleton-text-center" />
@@ -22,7 +22,7 @@
           </div>
         </ion-card>
 
-        <ion-card class="fade-in">
+        <ion-card>
           <div class="xp-section">
             <ion-skeleton-text animated style="width: 40%; height: 20px; margin-bottom: 12px;" />
             <ion-skeleton-text animated style="width: 100%; height: 12px; border-radius: 6px;" />
@@ -33,7 +33,7 @@
       <!-- ================= ACTUAL CONTENT ================= -->
       <template v-else>
         <!-- Profile Header Card -->
-        <ion-card class="fade-in">
+        <ion-card>
           <div class="profile-header-premium">
             <div class="avatar-container">
               <img v-if="userAvatar" :src="userAvatar" class="avatar-premium" />
@@ -65,33 +65,83 @@
         </ion-card>
 
         <!-- Pro Status / Support Card -->
-        <ion-card v-if="userEmail && isNative" class="fade-in">
-          <ion-item lines="none">
-            <div class="icon-box" slot="start">
-              <ion-icon :icon="bookmarkOutline" color="carrot" />
-            </div>
-            <ion-label>
-              <h3 style="font-weight: 700;">{{ $t('profile.pro.title') }}</h3>
-              <p v-if="isSubscribed" style="color: var(--ion-color-carrot)">{{ $t('profile.pro.active') }}</p>
-              <p v-else>{{ $t('profile.pro.upgrade') }}</p>
-            </ion-label>
-            <ion-button v-if="!isSubscribed" slot="end" fill="solid" color="carrot" shape="round" size="small" @click="openProPaywall">
-              {{ $t('profile.pro.upgrade') }}
-            </ion-button>
-            <ion-button v-else slot="end" fill="outline" color="medium" shape="round" size="small" @click="openManageSubscription">
-              {{ $t('profile.pro.manage') }}
-            </ion-button>
-          </ion-item>
+        <ion-card v-if="userEmail && isNative" :class="{ 'tier-card-gold': !isSubscribed }">
+          <div v-if="!isSubscribed" class="gold-glow"></div>
           
-          <div v-if="isSubscribed" style="padding: 0 16px 16px 64px;">
-            <p style="font-size: 0.8rem; margin: 0; color: var(--ion-color-medium)">
-              {{ renewalMessage }} • {{ $t('profile.pro.accessUntil') }} {{ formattedExpirationDate }}
-            </p>
+          <!-- Subscribed State -->
+          <template v-if="isSubscribed">
+            <ion-item lines="none" :style="{ '--background': 'transparent' }">
+              <div class="icon-box" slot="start">
+                <ion-icon :icon="bookmarkOutline" color="carrot" />
+              </div>
+              <ion-label>
+                <h3 style="font-weight: 700;">{{ $t('profile.pro.title') }}</h3>
+                <p style="color: var(--ion-color-carrot)">{{ $t('profile.pro.active') }}</p>
+              </ion-label>
+              <ion-button slot="end" fill="outline" color="medium" shape="round" size="small" @click="openManageSubscription">
+                {{ $t('profile.pro.manage') }}
+              </ion-button>
+            </ion-item>
+            <div style="padding: 0 16px 16px 64px;">
+              <p style="font-size: 0.8rem; margin: 0; color: var(--ion-color-medium)">
+                {{ renewalMessage }} • {{ $t('profile.pro.accessUntil') }} {{ formattedExpirationDate }}
+              </p>
+            </div>
+          </template>
+
+          <!-- Unsubscribed (Engaging) State -->
+          <div v-else class="pro-upgrade-engaging">
+            <div class="pro-header-engaging">
+              <div class="pro-icon-hero">
+                <ion-icon :icon="bookmarkOutline" />
+              </div>
+              <h2 class="pro-title-engaging">{{ $t('profile.pro.title') }}</h2>
+              <p class="pro-subtitle-engaging">{{ $t('profile.pro.upgrade') }}</p>
+            </div>
+
+            <div class="pro-benefits-grid">
+              <div class="benefit-chip">
+                <ion-icon :icon="checkmarkCircle" />
+                <span>{{ $t('profile.pro.benefits.aiExplanation') }}</span>
+              </div>
+              <div class="benefit-chip">
+                <ion-icon :icon="checkmarkCircle" />
+                <span>{{ $t('profile.pro.benefits.smartFeed') }}</span>
+              </div>
+              <div class="benefit-chip">
+                <ion-icon :icon="checkmarkCircle" />
+                <span>{{ $t('profile.pro.benefits.noAds') }}</span>
+              </div>
+              
+              <template v-if="showBenefits">
+                <div class="benefit-chip fade-in">
+                  <ion-icon :icon="checkmarkCircle" />
+                  <span>{{ $t('profile.pro.benefits.unlimitedCollections') }}</span>
+                </div>
+                <div class="benefit-chip fade-in">
+                  <ion-icon :icon="checkmarkCircle" />
+                  <span>{{ $t('profile.pro.benefits.unlimitedScans') }}</span>
+                </div>
+                <div class="benefit-chip fade-in">
+                  <ion-icon :icon="checkmarkCircle" />
+                  <span>{{ $t('profile.pro.benefits.prioritySupport') }}</span>
+                </div>
+              </template>
+            </div>
+
+            <div class="pro-action-footer">
+              <ion-button expand="block" class="pro-big-buy-button" @click="openProPaywall">
+                {{ $t('profile.pro.upgrade') }}
+              </ion-button>
+              <button class="benefit-toggle-text" @click="showBenefits = !showBenefits">
+                {{ showBenefits ? $t('profile.pro.benefits.showLess') : $t('profile.pro.benefits.showMore') }}
+              </button>
+            </div>
           </div>
         </ion-card>
 
         <!-- XP Card -->
-        <ion-card v-if="userEmail" class="fade-in">
+        <ion-card v-if="userEmail">
           <div class="xp-section">
             <div class="xp-header">
               <div class="level-badge">
@@ -111,7 +161,7 @@
         </ion-card>
 
         <!-- About Me Section -->
-        <ion-card v-if="userEmail" class="fade-in">
+        <ion-card v-if="userEmail">
           <ion-list lines="none">
             <ion-item button @click="goToEditProfile">
               <div class="icon-box" slot="start">
@@ -127,7 +177,7 @@
         </ion-card>
 
         <!-- Admin Section -->
-        <ion-card v-if="isAdmin" class="fade-in">
+        <ion-card v-if="isAdmin">
           <ion-list lines="none">
             <ion-item button @click="goToReviewSubmissions">
               <div class="icon-box" slot="start">
@@ -183,7 +233,7 @@
         </ion-card>
 
         <!-- Main Menu Section -->
-        <ion-card class="fade-in">
+        <ion-card>
           <ion-list lines="none">
             <ion-item button @click="goToSavedItems">
               <div class="icon-box" slot="start">
@@ -216,7 +266,7 @@
         </ion-card>
 
         <!-- Support Section -->
-        <ion-card class="fade-in">
+        <ion-card>
           <div class="xp-section" style="text-align: center; padding-top: 10px;">
             <h3 style="font-weight: 700; margin-bottom: 12px;">{{ $t('profile.support') }}</h3>
             
@@ -250,7 +300,7 @@
         </ion-card>
 
         <!-- Social Media Card -->
-        <ion-card class="fade-in">
+        <ion-card>
           <div class="social-grid-premium">
             <a class="social-item-premium" @click.prevent="logAndOpen('instagram', 'https://www.instagram.com/halalformosa/')">
               <ion-icon :icon="logoInstagram" class="social-icon-btn" style="color: #E1306C" />
@@ -328,7 +378,10 @@ import {
   personCircleOutline,
   settingsOutline,
   bookmarkOutline,
-  logOutOutline
+  logOutOutline,
+  checkmarkCircle,
+  chevronDown,
+  chevronUp
 } from "ionicons/icons";
 
 // ✅ Composables
@@ -389,6 +442,7 @@ const userBio = editBio;
 const userNationality = editNationality;
 const donationProduct = ref<RcProduct | null>(null);
 const paywallOpening = ref(false);
+const showBenefits = ref(false);
 
 // ✅ Points composable
 const {currentPoints, fetchCurrentPoints} = usePoints();
@@ -1076,7 +1130,137 @@ ion-item {
   width: auto;
   margin-right: 10px;
 }
+/* Engaging Pro Upgrade UI */
+.pro-upgrade-engaging {
+  padding: 24px 16px;
+  text-align: center;
+  position: relative;
+  z-index: 1;
+}
 
+.pro-header-engaging {
+  margin-bottom: 20px;
+}
+
+.pro-icon-hero {
+  background: rgba(255, 215, 0, 0.15);
+  width: 64px;
+  height: 64px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 12px;
+  box-shadow: 0 4px 12px rgba(250, 204, 21, 0.2);
+}
+
+.pro-icon-hero ion-icon {
+  font-size: 32px;
+  color: #ca8a04;
+}
+
+.pro-title-engaging {
+  font-size: 1.5rem;
+  font-weight: 800;
+  margin: 0;
+  color: #ca8a04;
+}
+
+.pro-subtitle-engaging {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #92400e;
+  margin: 4px 0 0;
+}
+
+.pro-benefits-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.benefit-chip {
+  background: rgba(255, 215, 0, 0.1);
+  border: 1px solid rgba(250, 204, 21, 0.2);
+  padding: 6px 12px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #78350f;
+}
+
+.benefit-chip ion-icon {
+  color: #ca8a04;
+  font-size: 14px;
+}
+
+.pro-action-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pro-big-buy-button {
+  --background: linear-gradient(135deg, #f59e0b, #d97706);
+  --background-activated: linear-gradient(135deg, #d97706, #b45309);
+  --color: white;
+  --box-shadow: 0 8px 20px rgba(217, 119, 6, 0.4);
+  --border-radius: 16px;
+  height: 54px;
+  font-size: 1.1rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  margin: 0;
+}
+
+.benefit-toggle-text {
+  background: transparent;
+  border: none;
+  color: #92400e;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: underline;
+  opacity: 0.8;
+}
+
+.benefit-toggle-text:active {
+  opacity: 1;
+}
+
+/* Dark Mode Overrides */
+.ion-palette-dark .pro-title-engaging {
+  color: #fde68a;
+}
+
+.ion-palette-dark .pro-subtitle-engaging {
+  color: #fde68a;
+  opacity: 0.9;
+}
+
+.ion-palette-dark .benefit-chip {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: #fef3c7;
+}
+
+.ion-palette-dark .benefit-toggle-text {
+  color: #fde68a;
+}
+
+.gold-glow {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at top right, rgba(255, 215, 0, 0.3), transparent 70%),
+              radial-gradient(circle at bottom left, rgba(255, 100, 0, 0.1), transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+}
 .boba-text-premium {
   color: white;
   font-weight: 800;

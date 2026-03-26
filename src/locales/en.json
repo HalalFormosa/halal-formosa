@@ -420,7 +420,18 @@
       "accessUntil": "⏳ Access until",
       "manage": "Manage Subscription",
       "nativeOnly": "Subscriptions are available on mobile apps only.",
-      "purchaseSuccess": "🎉 You are now a Halal Formosa Pro subscriber!"
+      "purchaseSuccess": "🎉 You are now a Halal Formosa Pro subscriber!",
+      "benefits": {
+        "title": "Pro Benefits:",
+        "showMore": "Show More",
+        "showLess": "Show Less",
+        "aiExplanation": "AI Ingredient Explanation",
+        "smartFeed": "Smart For You Feed",
+        "noAds": "No Ads",
+        "unlimitedCollections": "Unlimited Collection Items",
+        "unlimitedScans": "Unlimited Scans",
+        "prioritySupport": "Priority Support 24/7"
+      }
     },
     "aboutMe": "About Me",
     "edit": "Edit",
