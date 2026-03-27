@@ -474,37 +474,9 @@ onMounted(async () => {
   --padding-end: 4px;
 }
 
-.under-construction-overlay {
-  padding-bottom: 32px;
-}
 
-.construction-card {
-  margin: 16px;
-  padding: 32px 24px;
-  background: var(--ion-color-step-50, #f8f9fa);
-  border-radius: 24px;
-  text-align: center;
-  border: 1px dashed var(--ion-color-carrot);
-}
-
-.construction-icon {
-  font-size: 48px;
-  color: var(--ion-color-carrot);
-  margin-bottom: 16px;
-}
-
-.construction-card h2 {
-  margin: 0 0 12px;
-  font-size: 1.4rem;
-  font-weight: 700;
-  color: var(--ion-text-color);
-}
-
-.construction-card p {
-  margin: 0;
-  font-size: 0.95rem;
-  color: var(--ion-color-medium);
-  line-height: 1.5;
+.cat-chip-skeleton {
+  padding: 8px 0;
 }
 
 .cat-chip-skeleton {

@@ -188,7 +188,7 @@
         </ion-card>
 
         <!-- General Activity Section -->
-        <ion-card>
+        <ion-card v-if="userEmail">
           <ion-list lines="none">
             <ion-list-header style="min-height: 32px; padding-bottom: 4px;">
               <ion-label style="font-size: 0.85rem; color: var(--ion-color-medium); margin-top: 0; text-transform: uppercase;">{{ $t('profile.sections.activity') }}</ion-label>

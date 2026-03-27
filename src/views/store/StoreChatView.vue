@@ -197,38 +197,8 @@ onUnmounted(unsubscribe)
 </script>
 
 <style scoped>
-/* Under Construction */
-.under-construction-overlay {
-  padding: 16px;
-}
 
-.construction-card {
-  padding: 24px;
-  background: var(--ion-color-step-50, #f8f9fa);
-  border-radius: 20px;
-  text-align: center;
-  border: 1px dashed var(--ion-color-carrot);
-}
-
-.construction-icon {
-  font-size: 40px;
-  color: var(--ion-color-carrot);
-  margin-bottom: 12px;
-}
-
-.construction-card h2 {
-  margin: 0 0 8px;
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: var(--ion-text-color);
-}
-
-.construction-card p {
-  margin: 0;
-  font-size: 0.9rem;
-  color: var(--ion-color-medium);
-  line-height: 1.5;
-}
+/* Product context */
 
 /* Product context */
 .product-context {
