@@ -37,6 +37,11 @@ const routes: Array<RouteRecordRaw> = [
                 component: () => import('@/views/trip/TripListView.vue'),
                 meta: { noAds: false }
             },
+            {
+                path: 'store',
+                component: () => import('@/views/store/StoreView.vue'),
+                meta: { noAds: true }
+            },
             { path: 'add', component: () => import('@/views/add-product/AddProductView.vue'), meta: { requiresAuth: true } },
             { path: 'profile', component: () => import('@/views/profile/ProfileView.vue'), meta: { noAds: true } },
         ],
@@ -142,8 +147,71 @@ const routes: Array<RouteRecordRaw> = [
         path: '/admin/users/:id',
         name: 'UserDetail',
         component: () => import('@/views/admin/UserDetailView.vue')
-    }
+    },
 
+    // Store sub-routes (outside tabs)
+    {
+        path: '/store/product/:id',
+        name: 'StoreProductDetail',
+        component: () => import('@/views/store/StoreProductDetailView.vue'),
+        props: true,
+        meta: { noAds: true }
+    },
+    {
+        path: '/store/checkout',
+        name: 'StoreCheckout',
+        component: () => import('@/views/store/StoreCheckoutView.vue'),
+        meta: { requiresAuth: true, noAds: true }
+    },
+    {
+        path: '/store/order-success',
+        name: 'StoreOrderSuccess',
+        component: () => import('@/views/store/StoreOrderSuccessView.vue'),
+        meta: { requiresAuth: true, noAds: true }
+    },
+    {
+        path: '/store/my-orders',
+        name: 'UserOrders',
+        component: () => import('@/views/store/UserOrdersView.vue'),
+        meta: { requiresAuth: true, noAds: true }
+    },
+    {
+        path: '/admin/store/add-product',
+        name: 'AdminAddStoreProduct',
+        component: () => import('@/views/store/AdminAddStoreProductView.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true, noAds: true }
+    },
+    {
+        path: '/admin/store/edit-product/:id',
+        name: 'AdminEditStoreProduct',
+        component: () => import('@/views/store/AdminAddStoreProductView.vue'),
+        props: true,
+        meta: { requiresAuth: true, requiresAdmin: true, noAds: true }
+    },
+    {
+        path: '/admin/store/orders',
+        name: 'AdminStoreOrders',
+        component: () => import('@/views/store/AdminStoreOrdersView.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true, noAds: true }
+    },
+    {
+        path: '/store/chat/:conversationId',
+        name: 'StoreChat',
+        component: () => import('@/views/store/StoreChatView.vue'),
+        meta: { requiresAuth: true, noAds: true }
+    },
+    {
+        path: '/admin/store/chat-inbox',
+        name: 'AdminStoreChatInbox',
+        component: () => import('@/views/store/AdminStoreChatInboxView.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true, noAds: true }
+    },
+    {
+        path: '/store/chat-inbox',
+        name: 'UserStoreChatInbox',
+        component: () => import('@/views/store/UserStoreChatInboxView.vue'),
+        meta: { requiresAuth: true, noAds: true }
+    }
 
 ];
 

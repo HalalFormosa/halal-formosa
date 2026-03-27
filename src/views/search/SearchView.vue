@@ -1325,7 +1325,7 @@ const fetchProducts = async (reset = false) => {
         allLoaded.value = true
       }
 
-      let processedData = data || []
+      const processedData = data || []
       
       // 🏎️ Special Sort for "Recent" mode: Gold/Silver < 7 days old go to the top
       if (sortBy.value === 'recent' && processedData.length > 0) {

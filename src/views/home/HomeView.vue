@@ -388,6 +388,100 @@
         </ion-card-content>
       </ion-card>
 
+      <!-- === Discover Trips === -->
+      <ion-card>
+        <ion-card-header>
+          <div class="card-header-row">
+            <ion-card-title>{{ $t('home.discoverTrips') }}</ion-card-title>
+            <ion-button
+                fill="clear"
+                size="small"
+                color="carrot"
+                @click="viewMoreTrips"
+            >
+              {{ $t('home.viewMore') }}
+            </ion-button>
+          </div>
+        </ion-card-header>
+        <ion-card-content>
+          <div v-if="loadingTrips" class="discover-grid">
+            <ion-card v-for="n in 5" :key="'skeleton-t-' + n" class="discover-item">
+              <ion-skeleton-text animated style="width: 100%; height: 140px; border-radius: 12px;" />
+              <ion-skeleton-text animated style="width: 90%; height: 12px; margin: 6px auto;" />
+              <ion-skeleton-text animated style="width: 40%; height: 12px; margin: 0 auto;" />
+            </ion-card>
+          </div>
+
+          <div v-else class="discover-grid">
+            <ion-card
+                v-for="trip in recentTrips"
+                :key="trip.id"
+                :class="[
+                  'discover-item', 
+                  trip.provider?.partner_tier ? 'tier-card-' + trip.provider.partner_tier.toLowerCase() : ''
+                ]"
+                button
+                @click="openTrip(trip)"
+            >
+              <!-- Tier Badge -->
+              <div v-if="trip.provider?.partner_tier" :class="['tier-badge', trip.provider.partner_tier.toLowerCase()]">
+                <ion-icon :icon="sparkles" />
+                <span>{{ $t('home.partnerTier', { tier: (trip.provider.partner_tier || '').toUpperCase() }) }}</span>
+              </div>
+              <div v-if="['gold', 'silver'].includes(String(trip.provider?.partner_tier || '').toLowerCase())" class="premium-flare"></div>
+
+              <img :src="trip.cover_url || 'https://placehold.co/400x250?text=Trip'" class="discover-img" alt="trip" />
+              <ion-label class="discover-label">
+                <h3 class="discover-name">{{ localized(trip.title_zh, trip.title) }}</h3>
+                <p>{{ trip.duration }} • {{ trip.provider?.name }}</p>
+              </ion-label>
+            </ion-card>
+          </div>
+        </ion-card-content>
+      </ion-card>
+
+      <!-- === Store === -->
+      <ion-card>
+        <ion-card-header>
+          <div class="card-header-row">
+            <ion-card-title>{{ $t('home.marketplace') }}</ion-card-title>
+            <ion-button
+                fill="clear"
+                size="small"
+                color="carrot"
+                @click="viewMoreMarketplace"
+            >
+              {{ $t('home.viewMore') }}
+            </ion-button>
+          </div>
+        </ion-card-header>
+        <ion-card-content>
+          <div v-if="loadingMarketplace" class="discover-grid">
+            <ion-card v-for="n in 5" :key="'skeleton-m-' + n" class="discover-item">
+              <ion-skeleton-text animated style="width: 100%; height: 140px; border-radius: 12px;" />
+              <ion-skeleton-text animated style="width: 80%; height: 12px; margin: 6px auto;" />
+              <ion-skeleton-text animated style="width: 40%; height: 12px; margin: 0 auto;" />
+            </ion-card>
+          </div>
+
+          <div v-else class="discover-grid">
+            <ion-card
+                v-for="p in marketplaceProducts"
+                :key="p.id"
+                class="discover-item"
+                button
+                @click="openMarketplaceProduct(p)"
+            >
+              <img :src="(p.images && p.images[0]) || 'https://placehold.co/200x200?text=Product'" class="discover-img" alt="product" />
+              <ion-label class="discover-label">
+                <h3 class="discover-name">{{ localized(p.name_zh, p.name) }}</h3>
+                <p class="marketplace-price">{{ $t('store.twd') }}{{ p.price?.toLocaleString() }}</p>
+              </ion-label>
+            </ion-card>
+          </div>
+        </ion-card-content>
+      </ion-card>
+
       <!-- === Latest News === -->
       <ion-card>
         <ion-card-header>
@@ -672,7 +766,8 @@ import {
   sparkles,
   closeOutline,
   shieldCheckmarkOutline,
-  locateOutline
+  locateOutline,
+  cartOutline
 } from "ionicons/icons"
 import { useLeaderboard } from "@/composables/useLeaderboard";
 import {getLevelColor} from "@/composables/useLevels";
@@ -681,6 +776,7 @@ import {ActivityLogService} from "@/services/ActivityLogService";
 import { refreshSubscriptionStatus} from "@/composables/useSubscriptionStatus";
 import {Capacitor} from "@capacitor/core";
 import { Geolocation } from '@capacitor/geolocation'
+import { Browser } from '@capacitor/browser'
 import { PrayTime } from 'praytime'
 import DailyMissions from "@/components/DailyMissions.vue"
 import { useDailyMissions } from '@/composables/useDailyMissions'
@@ -710,6 +806,11 @@ const loadingNews = ref(true)
 const recentNews = ref<any[]>([])
 const totalProductCount = ref(0)
 const totalLocationCount = ref(0)
+
+const loadingTrips = ref(true)
+const recentTrips = ref<any[]>([])
+const loadingMarketplace = ref(true)
+const marketplaceProducts = ref<any[]>([])
 
 /* ---------------- Announcement logic ---------------- */
 const announcement = ref<any | null>(null)
@@ -1413,6 +1514,101 @@ async function fetchHomePartners() {
 
 
 
+/* ---------------- Trips & Marketplace ---------------- */
+
+async function fetchTrips() {
+  loadingTrips.value = true
+  const { data, error } = await supabase
+    .from('trips')
+    .select(`
+      id,
+      title,
+      title_zh,
+      duration,
+      cover_url,
+      external_url,
+      created_at,
+      view_count,
+      provider:partners (
+        id,
+        name,
+        partner_tier
+      )
+    `)
+    .eq('is_active', true)
+    .order('created_at', { ascending: false })
+    .limit(5)
+
+  if (!error && data) {
+    recentTrips.value = (data as any[]).map(t => ({
+      ...t,
+      provider: Array.isArray(t.provider) ? t.provider[0] : t.provider
+    }))
+  }
+  loadingTrips.value = false
+}
+
+async function fetchMarketplaceProducts() {
+  loadingMarketplace.value = true
+  const { data, error } = await supabase
+    .from('store_products')
+    .select(`
+      id,
+      name,
+      name_zh,
+      price,
+      images,
+      created_at,
+      sale_count
+    `)
+    .eq('is_active', true)
+    .order('created_at', { ascending: false })
+    .limit(5)
+
+  if (!error && data) {
+    marketplaceProducts.value = data
+  }
+  loadingMarketplace.value = false
+}
+
+function viewMoreTrips() {
+  ActivityLogService.log("home_view_more_trips");
+  router.push('/trip')
+}
+
+function viewMoreMarketplace() {
+  ActivityLogService.log("home_view_more_marketplace");
+  router.push('/store')
+}
+
+async function openTrip(trip: any) {
+  ActivityLogService.log("home_trip_click", {
+    trip_id: trip.id,
+    trip_title: trip.title
+  })
+  
+  await supabase.rpc('increment_trip_view', {
+    p_trip_id: trip.id
+  })
+
+  await Browser.open({
+    url: trip.external_url,
+    windowName: '_self',
+    toolbarColor: '#e67e22',
+    presentationStyle: 'fullscreen',
+  })
+}
+
+function openMarketplaceProduct(p: any) {
+  ActivityLogService.log("home_marketplace_click", { product_id: p.id, product_name: p.name })
+  router.push(`/store/product/${p.id}`)
+}
+
+function localized(zh: string | null | undefined, en: string | null | undefined): string {
+  if (locale.value === 'zh') return zh || en || ''
+  return en || zh || ''
+}
+
 /* ---------------- Lifecycle ---------------- */
 
 async function refreshAllData() {
@@ -1427,6 +1623,8 @@ async function refreshAllData() {
     fetchRecentNews(),
     fetchLeaderboard(),
     fetchHomePartners(),
+    fetchTrips(),
+    fetchMarketplaceProducts(),
   ]
 
   if (isAuthenticated.value) {

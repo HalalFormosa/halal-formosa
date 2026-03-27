@@ -160,10 +160,14 @@
           </div>
         </ion-card>
 
-        <!-- About Me Section -->
-        <ion-card v-if="userEmail">
+        <!-- Account & Preferences Section -->
+        <ion-card>
           <ion-list lines="none">
-            <ion-item button @click="goToEditProfile">
+            <ion-list-header style="min-height: 32px; padding-bottom: 4px;">
+              <ion-label style="font-size: 0.85rem; color: var(--ion-color-medium); margin-top: 0; text-transform: uppercase;">{{ $t('profile.sections.account') }}</ion-label>
+            </ion-list-header>
+
+            <ion-item v-if="userEmail" button @click="goToEditProfile">
               <div class="icon-box" slot="start">
                 <ion-icon :icon="createOutline" />
               </div>
@@ -173,12 +177,46 @@
               </ion-label>
               <ion-icon :icon="settingsOutline" slot="end" size="small" style="opacity: 0.3" />
             </ion-item>
+
+            <ion-item button @click="goToSettings">
+              <div class="icon-box" slot="start">
+                <ion-icon :icon="settingsOutline" />
+              </div>
+              <ion-label>{{ $t('profile.settings') }}</ion-label>
+            </ion-item>
+          </ion-list>
+        </ion-card>
+
+        <!-- General Activity Section -->
+        <ion-card>
+          <ion-list lines="none">
+            <ion-list-header style="min-height: 32px; padding-bottom: 4px;">
+              <ion-label style="font-size: 0.85rem; color: var(--ion-color-medium); margin-top: 0; text-transform: uppercase;">{{ $t('profile.sections.activity') }}</ion-label>
+            </ion-list-header>
+
+            <ion-item v-if="userEmail" button @click="goToSavedItems">
+              <div class="icon-box" slot="start">
+                <ion-icon :icon="bookmarkOutline" />
+              </div>
+              <ion-label>{{ $t('profile.savedItems') }}</ion-label>
+            </ion-item>
+
+            <ion-item v-if="userEmail" button @click="$router.push('/store/my-orders')">
+              <div class="icon-box" slot="start">
+                <ion-icon :icon="bagHandleOutline" />
+              </div>
+              <ion-label>{{ $t('store.myOrders') }}</ion-label>
+            </ion-item>
           </ion-list>
         </ion-card>
 
         <!-- Admin Section -->
         <ion-card v-if="isAdmin">
           <ion-list lines="none">
+            <ion-list-header style="min-height: 32px; padding-bottom: 4px;">
+              <ion-label style="font-size: 0.85rem; color: var(--ion-color-carrot); margin-top: 0; text-transform: uppercase;">{{ $t('profile.admin.sections.content') }}</ion-label>
+            </ion-list-header>
+
             <ion-item button @click="goToReviewSubmissions">
               <div class="icon-box" slot="start">
                 <ion-icon :icon="listOutline" />
@@ -195,6 +233,48 @@
               <ion-badge v-if="pendingLocationsCount > 0" color="danger" slot="end" style="border-radius: 8px;">{{ pendingLocationsCount }}</ion-badge>
             </ion-item>
 
+            <ion-list-header style="min-height: 32px; padding-bottom: 4px; border-top: 1px solid var(--ion-color-step-100); margin-top: 8px; padding-top: 8px;">
+              <ion-label style="font-size: 0.85rem; color: var(--ion-color-carrot); margin-top: 0; text-transform: uppercase;">{{ $t('profile.admin.sections.store') }}</ion-label>
+            </ion-list-header>
+
+            <ion-item button @click="goToStoreOrders">
+              <div class="icon-box" slot="start">
+                <ion-icon :icon="bagHandleOutline" />
+              </div>
+              <ion-label>{{ $t('store.adminOrders') }}</ion-label>
+              <ion-badge v-if="pendingOrdersCount > 0" color="warning" slot="end" style="border-radius: 8px;">{{ pendingOrdersCount }}</ion-badge>
+            </ion-item>
+
+            <ion-item button @click="$router.push('/admin/store/chat-inbox')">
+              <div class="icon-box" slot="start">
+                <ion-icon :icon="chatbubblesOutline" />
+              </div>
+              <ion-label>{{ $t('store.chat.storeMessages') }}</ion-label>
+              <ion-badge v-if="unreadChatsCount > 0" color="danger" slot="end" style="border-radius: 8px;">{{ unreadChatsCount }}</ion-badge>
+            </ion-item>
+
+            <ion-list-header style="min-height: 32px; padding-bottom: 4px; border-top: 1px solid var(--ion-color-step-100); margin-top: 8px; padding-top: 8px;">
+              <ion-label style="font-size: 0.85rem; color: var(--ion-color-carrot); margin-top: 0; text-transform: uppercase;">{{ $t('profile.admin.sections.management') }}</ion-label>
+            </ion-list-header>
+
+            <ion-item button @click="goToUsersList">
+              <div class="icon-box" slot="start">
+                <ion-icon :icon="peopleOutline" />
+              </div>
+              <ion-label>{{ $t('profile.admin.users') }}</ion-label>
+            </ion-item>
+
+            <ion-item button @click="goToMasterData">
+              <div class="icon-box" slot="start">
+                <ion-icon :icon="constructOutline" />
+              </div>
+              <ion-label>{{ $t('profile.admin.masterData') }}</ion-label>
+            </ion-item>
+
+            <ion-list-header style="min-height: 32px; padding-bottom: 4px; border-top: 1px solid var(--ion-color-step-100); margin-top: 8px; padding-top: 8px;">
+              <ion-label style="font-size: 0.85rem; color: var(--ion-color-carrot); margin-top: 0; text-transform: uppercase;">{{ $t('profile.admin.sections.system') }}</ion-label>
+            </ion-list-header>
+
             <ion-item button @click="goToPointsLogs">
               <div class="icon-box" slot="start">
                 <ion-icon :icon="listOutline" />
@@ -209,46 +289,22 @@
               <ion-label>{{ $t('profile.admin.scanLogs') }}</ion-label>
             </ion-item>
 
-            <ion-item button @click="goToUsersList">
-              <div class="icon-box" slot="start">
-                <ion-icon :icon="peopleOutline" />
-              </div>
-              <ion-label>{{ $t('profile.admin.users') }}</ion-label>
-            </ion-item>
-
             <ion-item button @click="goToAnalyticsDashboard">
               <div class="icon-box" slot="start">
                 <ion-icon :icon="listOutline" />
               </div>
               <ion-label>{{ $t('profile.admin.analytics') }}</ion-label>
             </ion-item>
-
-            <ion-item button @click="goToMasterData">
-              <div class="icon-box" slot="start">
-                <ion-icon :icon="constructOutline" />
-              </div>
-              <ion-label>{{ $t('profile.admin.masterData') }}</ion-label>
-            </ion-item>
           </ion-list>
         </ion-card>
 
-        <!-- Main Menu Section -->
+        <!-- Information & About Section -->
         <ion-card>
           <ion-list lines="none">
-            <ion-item button @click="goToSavedItems">
-              <div class="icon-box" slot="start">
-                <ion-icon :icon="bookmarkOutline" />
-              </div>
-              <ion-label>{{ $t('profile.savedItems') }}</ion-label>
-            </ion-item>
-            
-            <ion-item button @click="goToSettings">
-              <div class="icon-box" slot="start">
-                <ion-icon :icon="settingsOutline" />
-              </div>
-              <ion-label>{{ $t('profile.settings') }}</ion-label>
-            </ion-item>
-            
+            <ion-list-header style="min-height: 32px; padding-bottom: 4px;">
+              <ion-label style="font-size: 0.85rem; color: var(--ion-color-medium); margin-top: 0; text-transform: uppercase;">{{ $t('profile.sections.about') }}</ion-label>
+            </ion-list-header>
+
             <ion-item button @click="goToLegal">
               <div class="icon-box" slot="start">
                 <ion-icon :icon="documentTextOutline" />
@@ -355,6 +411,7 @@ import {
   IonItem,
   IonLabel,
   IonList,
+  IonListHeader,
   IonNote,
   IonPage,
   IonProgressBar,
@@ -381,7 +438,9 @@ import {
   logOutOutline,
   checkmarkCircle,
   chevronDown,
-  chevronUp
+  chevronUp,
+  bagHandleOutline,
+  chatbubblesOutline
 } from "ionicons/icons";
 
 // ✅ Composables
@@ -681,6 +740,8 @@ onMounted(async () => {
         if (isAdmin.value) {
           fetchPendingCount();
           fetchPendingLocationsCount();
+          fetchPendingOrdersCount();
+          fetchUnreadChatsCount();
         }
       }
     });
@@ -897,6 +958,28 @@ const goToEditProfile = () => {
 }
 
 const goToMasterData = () => router.push('/admin/master-data')
+const goToStoreOrders = () => router.push('/admin/store/orders')
+const pendingOrdersCount = ref(0)
+
+async function fetchPendingOrdersCount() {
+  if (!isAdmin.value) return
+  const { count } = await supabase
+    .from('store_orders')
+    .select('*', { count: 'exact', head: true })
+    .eq('status', 'pending')
+  pendingOrdersCount.value = count || 0
+}
+
+const unreadChatsCount = ref(0)
+
+async function fetchUnreadChatsCount() {
+  if (!isAdmin.value) return
+  const { data } = await supabase
+    .from('store_chat_conversations')
+    .select('store_unread')
+    .gt('store_unread', 0)
+  unreadChatsCount.value = data?.length || 0
+}
 
 </script>
 

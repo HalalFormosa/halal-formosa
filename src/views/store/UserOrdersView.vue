@@ -1,0 +1,527 @@
+<template>
+  <ion-page>
+    <ion-header>
+      <app-header :title="$t('store.myOrders')" :showBack="true" icon="none" />
+    </ion-header>
+
+    <ion-content :fullscreen="true">
+      <div v-if="isUnderConstruction" class="under-construction-overlay">
+        <div class="construction-card">
+          <ion-icon :icon="constructOutline" class="construction-icon" />
+          <h2>{{ $t('common.underConstruction') || 'Under Construction' }}</h2>
+          <p>Order tracking is being finalized. Stay tuned!</p>
+        </div>
+
+        <!-- Skeleton -->
+        <div class="orders-list">
+          <div v-for="n in 3" :key="n" class="order-card skeleton-card">
+            <div class="order-header">
+              <ion-skeleton-text animated style="width: 40%; height: 16px;" />
+              <ion-skeleton-text animated style="width: 25%; height: 16px;" />
+            </div>
+            <ion-skeleton-text animated style="width: 100%; height: 8px; margin-top: 12px; border-radius: 4px;" />
+          </div>
+        </div>
+      </div>
+
+      <template v-else>
+        <ion-refresher slot="fixed" @ionRefresh="doRefresh($event)">
+          <ion-refresher-content />
+        </ion-refresher>
+
+      <!-- Status filter -->
+      <div class="status-chips">
+        <ion-chip
+          v-for="s in statusFilters"
+          :key="s.value"
+          :class="['modern-category-chip', { 'selected': selectedStatus === s.value }]"
+          @click="selectedStatus = s.value"
+        >
+          <span class="chip-emoji">{{ s.emoji }}</span>
+          {{ s.label }}
+        </ion-chip>
+      </div>
+
+      <!-- Orders -->
+      <div class="orders-list" v-if="!loading && orders.length > 0">
+        <div v-for="order in orders" :key="order.id" class="order-card" @click="toggleExpand(order.id)">
+          <div class="order-header">
+            <div class="order-id-col">
+              <span class="order-id">#{{ order.id.slice(0, 8).toUpperCase() }}</span>
+              <span class="order-date">{{ formatDate(order.created_at) }}</span>
+            </div>
+            <div class="order-status-col">
+              <ion-badge :color="statusColor(order.status)" class="status-badge">
+                {{ statusEmoji(order.status) }} {{ statusLabel(order.status) }}
+              </ion-badge>
+              <span class="order-total">{{ $t('store.twd') }}{{ formatPrice(order.total_amount) }}</span>
+            </div>
+          </div>
+
+          <!-- Status timeline -->
+          <div class="status-timeline">
+            <div v-for="step in timelineSteps" :key="step.key"
+              :class="['timeline-step', { 'active': isStepReached(order.status, step.key), 'current': order.status === step.key }]">
+              <div class="timeline-dot" />
+              <span class="timeline-emoji">{{ step.emoji }}</span>
+              <span class="timeline-text">{{ step.label }}</span>
+            </div>
+            <div class="timeline-line" />
+          </div>
+
+          <!-- Expanded details -->
+          <transition name="slide-down">
+            <div v-if="expandedId === order.id" class="order-details">
+              <!-- Items -->
+              <div class="items-section">
+                <div v-for="item in order.store_order_items" :key="item.id" class="order-item-row">
+                  <div class="item-img-wrap" v-if="item.store_products?.images?.[0]">
+                    <img :src="item.store_products.images[0]" :alt="item.store_products?.name" />
+                  </div>
+                  <div class="item-info">
+                    <span class="item-name">{{ localized(item.store_products?.name_zh, item.store_products?.name) || 'Product' }}</span>
+                    <span class="item-qty-price">×{{ item.quantity }} · {{ $t('store.twd') }}{{ formatPrice(item.unit_price * item.quantity) }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Shipping address -->
+              <div v-if="order.shipping_address" class="detail-row">
+                <ion-icon :icon="locationOutline" />
+                <span>{{ order.shipping_address }}</span>
+              </div>
+
+              <!-- Invoice -->
+              <div v-if="order.ecpay_invoice_no" class="detail-row">
+                <ion-icon :icon="receiptOutline" />
+                <span>{{ $t('store.invoiceNo') }}: {{ order.ecpay_invoice_no }}</span>
+              </div>
+            </div>
+          </transition>
+        </div>
+      </div>
+
+      <!-- Skeleton -->
+      <div v-if="loading" class="orders-list">
+        <div v-for="n in 3" :key="n" class="order-card skeleton-card">
+          <div class="order-header">
+            <ion-skeleton-text animated style="width: 40%; height: 16px;" />
+            <ion-skeleton-text animated style="width: 25%; height: 16px;" />
+          </div>
+          <ion-skeleton-text animated style="width: 100%; height: 8px; margin-top: 12px; border-radius: 4px;" />
+        </div>
+      </div>
+
+      <!-- Empty -->
+      <div v-if="!loading && orders.length === 0" class="empty-state">
+        <ion-icon :icon="bagHandleOutline" class="empty-icon" />
+        <p>{{ $t('store.noOrders') }}</p>
+        <ion-button fill="outline" color="carrot" @click="$router.push('/store')" class="shop-btn">
+          {{ $t('store.backToStore') }}
+        </ion-button>
+      </div>
+      </template>
+    </ion-content>
+  </ion-page>
+</template>
+
+<script setup lang="ts">
+import { ref, computed, onMounted, watch } from 'vue'
+import {
+  IonPage, IonHeader, IonContent, IonChip, IonBadge, IonButton, IonIcon,
+  IonRefresher, IonRefresherContent, IonSkeletonText
+} from '@ionic/vue'
+import { locationOutline, receiptOutline, bagHandleOutline, constructOutline } from 'ionicons/icons'
+import AppHeader from '@/components/AppHeader.vue'
+import { supabase } from '@/plugins/supabaseClient'
+import { useI18n } from 'vue-i18n'
+
+const { t, locale } = useI18n()
+
+const isUnderConstruction = computed(() => import.meta.env.VITE_STORE_UNDER_CONSTRUCTION === 'true')
+const loading = ref(true)
+const orders = ref<any[]>([])
+const expandedId = ref<string | null>(null)
+const selectedStatus = ref('all')
+
+const statusFilters = [
+  { value: 'all', label: t('store.allCategories'), emoji: '📋' },
+  { value: 'pending', label: t('store.orderPending'), emoji: '⏳' },
+  { value: 'paid', label: t('store.orderPaid'), emoji: '💳' },
+  { value: 'shipped', label: t('store.orderShipped'), emoji: '📦' },
+  { value: 'completed', label: t('store.orderCompleted'), emoji: '✅' }
+]
+
+const timelineSteps = [
+  { key: 'pending', emoji: '⏳', label: t('store.orderPending') },
+  { key: 'paid', emoji: '💳', label: t('store.orderPaid') },
+  { key: 'shipped', emoji: '📦', label: t('store.orderShipped') },
+  { key: 'completed', emoji: '✅', label: t('store.orderCompleted') }
+]
+
+const statusOrder = ['pending', 'paid', 'shipped', 'completed']
+
+function isStepReached(currentStatus: string, stepKey: string) {
+  if (currentStatus === 'cancelled') return false
+  return statusOrder.indexOf(stepKey) <= statusOrder.indexOf(currentStatus)
+}
+
+function formatPrice(price: number) { return Number(price).toLocaleString() }
+
+function localized(zh: string | null | undefined, en: string | null | undefined): string {
+  if (locale.value === 'zh') return zh || en || ''
+  return en || zh || ''
+}
+
+function formatDate(d: string) {
+  return new Date(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+}
+
+function statusColor(status: string) {
+  const map: Record<string, string> = { pending: 'warning', paid: 'success', shipped: 'tertiary', completed: 'medium', cancelled: 'danger' }
+  return map[status] || 'medium'
+}
+
+function statusEmoji(status: string) {
+  const map: Record<string, string> = { pending: '⏳', paid: '💳', shipped: '📦', completed: '✅', cancelled: '❌' }
+  return map[status] || '📋'
+}
+
+function statusLabel(status: string) {
+  const map: Record<string, string> = {
+    pending: t('store.orderPending'),
+    paid: t('store.orderPaid'),
+    shipped: t('store.orderShipped'),
+    completed: t('store.orderCompleted'),
+    cancelled: t('store.orderCancelled')
+  }
+  return map[status] || status
+}
+
+function toggleExpand(id: string) {
+  expandedId.value = expandedId.value === id ? null : id
+}
+
+async function fetchOrders() {
+  loading.value = true
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session) { loading.value = false; return }
+
+  let query = supabase
+    .from('store_orders')
+    .select('*, store_order_items(*, store_products(name, name_zh, images))')
+    .eq('user_id', session.user.id)
+    .order('created_at', { ascending: false })
+
+  if (selectedStatus.value !== 'all') {
+    query = query.eq('status', selectedStatus.value)
+  }
+
+  const { data } = await query
+  orders.value = data || []
+  loading.value = false
+}
+
+async function doRefresh(event: any) {
+  await fetchOrders()
+  event.target.complete()
+}
+
+watch(selectedStatus, () => fetchOrders())
+onMounted(fetchOrders)
+</script>
+
+<style scoped>
+/* Under Construction */
+.under-construction-overlay {
+  padding: 8px 16px;
+}
+
+.construction-card {
+  padding: 24px;
+  background: var(--ion-color-step-50, #f8f9fa);
+  border-radius: 20px;
+  text-align: center;
+  border: 1px dashed var(--ion-color-carrot);
+  margin-bottom: 24px;
+}
+
+.construction-icon {
+  font-size: 40px;
+  color: var(--ion-color-carrot);
+  margin-bottom: 12px;
+}
+
+.construction-card h2 {
+  margin: 0 0 8px;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--ion-text-color);
+}
+
+.construction-card p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--ion-color-medium);
+  line-height: 1.5;
+}
+
+.status-chips {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 10px 16px;
+  -webkit-overflow-scrolling: touch;
+}
+.status-chips::-webkit-scrollbar { display: none; }
+
+.modern-category-chip {
+  --background: var(--ion-color-step-50, #f4f5f8);
+  --color: var(--ion-text-color);
+  font-size: 0.78rem;
+  font-weight: 500;
+  border-radius: 20px;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+.modern-category-chip.selected {
+  --background: var(--ion-color-carrot);
+  --color: #fff;
+  font-weight: 600;
+}
+.chip-emoji { margin-right: 4px; }
+
+.orders-list {
+  padding: 0 16px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.order-card {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 14px 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+.order-card:active { transform: scale(0.98); }
+
+.order-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.order-id-col {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.order-id {
+  font-weight: 700;
+  font-size: 0.92rem;
+  font-family: monospace;
+  color: var(--ion-text-color);
+}
+.order-date {
+  font-size: 0.72rem;
+  color: var(--ion-color-medium);
+}
+
+.order-status-col {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+.status-badge {
+  font-size: 0.7rem;
+  border-radius: 10px;
+  padding: 3px 8px;
+  text-transform: capitalize;
+  font-weight: 600;
+}
+.order-total {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--ion-color-carrot);
+}
+
+/* Timeline */
+.status-timeline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 14px 0 4px;
+  position: relative;
+  padding: 0 4px;
+}
+
+.timeline-line {
+  position: absolute;
+  top: 50%;
+  left: 20px;
+  right: 20px;
+  height: 3px;
+  background: var(--ion-color-light-shade, #e0e0e0);
+  border-radius: 2px;
+  z-index: 0;
+  transform: translateY(-50%);
+}
+
+.timeline-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  z-index: 1;
+}
+
+.timeline-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--ion-color-light-shade, #e0e0e0);
+  transition: all 0.3s ease;
+  border: 2px solid var(--ion-background-color);
+}
+
+.timeline-step.active .timeline-dot {
+  background: var(--ion-color-success);
+}
+
+.timeline-step.current .timeline-dot {
+  background: var(--ion-color-carrot);
+  box-shadow: 0 0 0 4px rgba(var(--ion-color-carrot-rgb), 0.2);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 0 4px rgba(var(--ion-color-carrot-rgb), 0.2); }
+  50% { box-shadow: 0 0 0 8px rgba(var(--ion-color-carrot-rgb), 0.1); }
+}
+
+.timeline-emoji {
+  font-size: 14px;
+  line-height: 1;
+}
+
+.timeline-text {
+  font-size: 0.65rem;
+  font-weight: 500;
+  color: var(--ion-color-medium);
+  transition: color 0.3s;
+}
+
+.timeline-step.active .timeline-text {
+  color: var(--ion-color-success);
+  font-weight: 600;
+}
+
+.timeline-step.current .timeline-text {
+  color: var(--ion-color-carrot);
+  font-weight: 700;
+}
+
+/* Expanded */
+.order-details {
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  margin-top: 12px;
+  padding-top: 12px;
+}
+
+.items-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.order-item-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.item-img-wrap {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.item-img-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.item-info {
+  display: flex;
+  flex-direction: column;
+}
+.item-name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ion-text-color);
+}
+.item-qty-price {
+  font-size: 0.75rem;
+  color: var(--ion-color-medium);
+}
+
+.detail-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 0.82rem;
+  color: var(--ion-color-medium);
+  margin-bottom: 6px;
+}
+.detail-row ion-icon {
+  font-size: 16px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+/* Transitions */
+.slide-down-enter-active, .slide-down-leave-active { transition: all 0.25s ease; }
+.slide-down-enter-from, .slide-down-leave-to { opacity: 0; max-height: 0; overflow: hidden; }
+
+/* Empty */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  color: var(--ion-color-medium);
+}
+.empty-icon {
+  font-size: 64px;
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+.shop-btn {
+  margin-top: 16px;
+  --border-radius: 12px;
+  font-weight: 600;
+}
+
+/* Dark mode */
+.ion-palette-dark .order-card {
+  background: var(--ion-color-step-100, #1e1e1e);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+.ion-palette-dark .order-details {
+  border-top-color: rgba(255, 255, 255, 0.08);
+}
+.ion-palette-dark .timeline-line {
+  background: rgba(255, 255, 255, 0.12);
+}
+.ion-palette-dark .timeline-dot {
+  background: rgba(255, 255, 255, 0.15);
+}
+</style>

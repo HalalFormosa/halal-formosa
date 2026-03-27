@@ -2225,7 +2225,6 @@ button.gm-ui-hover-effect > span {
 .ion-palette-dark .modern-location-card {
   background: rgba(28, 28, 30, 0.92); /* Higher opacity for better contrast */
   border: 1px solid rgba(255, 255, 255, 0.15);
-  box-shadow: 0 12px 40px rgba(0,0,0,0.45);
 }
 
 @media (min-width: 768px) {

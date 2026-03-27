@@ -33,6 +33,13 @@
           </div>
           <ion-label>{{ $t('main.trip') }}</ion-label>
         </ion-tab-button>
+
+        <ion-tab-button tab="store" href="/store">
+          <div class="tab-icon-wrapper">
+            <ion-icon :icon="bagHandleOutline" />
+          </div>
+          <ion-label>{{ $t('main.store') }}</ion-label>
+        </ion-tab-button>
       </ion-tab-bar>
     </ion-tabs>
   </ion-page>
@@ -46,7 +53,8 @@ import {
 import {
   compassOutline,
   homeOutline,
-  gridOutline, mapOutline
+  gridOutline, mapOutline,
+  bagHandleOutline
 } from 'ionicons/icons'
 import { supabase } from '@/plugins/supabaseClient'
 import { useDailyMissions } from '@/composables/useDailyMissions'
