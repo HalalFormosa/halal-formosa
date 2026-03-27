@@ -85,6 +85,14 @@
                 </div>
               </div>
 
+              <!-- Pay Now button for pending orders -->
+              <div v-if="order.status === 'pending'" class="pay-now-section">
+                <ion-button expand="block" color="carrot" @click.stop="payNow(order.id)" :disabled="submittingId === order.id">
+                  <ion-spinner v-if="submittingId === order.id" name="crescent" slot="start" />
+                  {{ $t('store.payNow') || 'Pay Now' }}
+                </ion-button>
+              </div>
+
               <!-- Shipping address -->
               <div v-if="order.shipping_address" class="detail-row">
                 <ion-icon :icon="locationOutline" />
@@ -143,6 +151,7 @@ const loading = ref(true)
 const orders = ref<any[]>([])
 const expandedId = ref<string | null>(null)
 const selectedStatus = ref('all')
+const submittingId = ref<string | null>(null)
 
 const statusFilters = [
   { value: 'all', label: t('store.allCategories'), emoji: '📋' },
@@ -200,6 +209,45 @@ function statusLabel(status: string) {
 
 function toggleExpand(id: string) {
   expandedId.value = expandedId.value === id ? null : id
+}
+
+async function payNow(orderId: string) {
+  submittingId.value = orderId
+  try {
+    const { data: payData, error: payErr } = await supabase.functions.invoke('ecpay-payment', {
+      body: { orderId }
+    })
+
+    if (payErr || !payData) {
+      throw new Error(payErr?.message || 'Failed to initiate payment')
+    }
+
+    // Create a hidden form and submit it to ECPay
+    const form = document.createElement('form')
+    form.method = 'POST'
+    form.action = payData.apiUrl
+    form.style.display = 'none'
+
+    Object.entries(payData.params).forEach(([key, value]) => {
+      const input = document.createElement('input')
+      input.type = 'hidden'
+      input.name = key
+      input.value = String(value)
+      form.appendChild(input)
+    })
+
+    document.body.appendChild(form)
+    
+    // Small delay to ensure form is ready
+    setTimeout(() => {
+      form.submit()
+      setTimeout(() => document.body.removeChild(form), 1000)
+    }, 50)
+  } catch (err: any) {
+    console.error('❌ Payment failed:', err)
+  } finally {
+    submittingId.value = null
+  }
 }
 
 async function fetchOrders() {
@@ -397,6 +445,17 @@ onMounted(fetchOrders)
   border-top: 1px solid rgba(0, 0, 0, 0.06);
   margin-top: 12px;
   padding-top: 12px;
+}
+
+.pay-now-section {
+  margin-bottom: 16px;
+}
+
+.pay-now-section ion-button {
+  --border-radius: 12px;
+  font-weight: 700;
+  height: 44px;
+  margin: 0;
 }
 
 .items-section {

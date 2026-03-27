@@ -178,12 +178,41 @@ async function placeOrder() {
       throw new Error(itemsErr.message)
     }
 
-    // Clear cart and navigate to success
-    clearCart()
-    router.replace({
-      path: '/store/order-success',
-      query: { orderId: order.id }
+    // 💰 Initiate ECPay payment
+    console.log('💰 Initiating ECPay payment for order:', order.id)
+    const { data: payData, error: payErr } = await supabase.functions.invoke('ecpay-payment', {
+      body: { orderId: order.id }
     })
+
+    if (payErr || !payData) {
+      throw new Error(payErr?.message || 'Failed to initiate payment')
+    }
+
+    // Clear cart before redirecting
+    clearCart()
+
+    // Create a hidden form and submit it to ECPay
+    const form = document.createElement('form')
+    form.method = 'POST'
+    form.action = payData.apiUrl
+    form.style.display = 'none'
+
+    Object.entries(payData.params).forEach(([key, value]) => {
+      const input = document.createElement('input')
+      input.type = 'hidden'
+      input.name = key
+      input.value = String(value)
+      form.appendChild(input)
+    })
+
+    document.body.appendChild(form)
+    
+    // Small delay to ensure form is ready
+    setTimeout(() => {
+      form.submit()
+      setTimeout(() => document.body.removeChild(form), 1000)
+    }, 50)
+
   } catch (err: any) {
     const toast = await toastController.create({
       message: `❌ ${err.message || 'Something went wrong'}`,
