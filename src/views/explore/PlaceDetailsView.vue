@@ -42,7 +42,7 @@
         >
           <SwiperSlide>
             <img
-                :src="place?.image || 'https://placehold.co/200x100'"
+                :src="place?.image || 'https://placehold.co/100x100'"
                 alt="Place image"
                 style="width: 100%; height: 100%; object-fit: cover; cursor: pointer;"
                 @click="openImageModal"
