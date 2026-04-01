@@ -335,6 +335,7 @@
     "clear": "Clear",
     "showingPlace": "Showing 1 place",
     "results": "Results",
+    "showingResults": "Showing {count} from {total} locations",
     "details": {
       "title": "Place Details"
     },

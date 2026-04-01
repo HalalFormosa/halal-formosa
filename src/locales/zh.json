@@ -334,6 +334,7 @@
     "clear": "清除",
     "showingPlace": "顯示 1 個地點",
     "results": "搜尋結果",
+    "showingResults": "正在顯示 {total} 個地點中的 {count} 個",
     "details": {
       "title": "地點詳情"
     },

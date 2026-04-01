@@ -324,6 +324,7 @@
     "clear": "Padam",
     "showingPlace": "Memaparkan 1 tempat",
     "results": "Keputusan",
+    "showingResults": "Memaparkan {count} daripada {total} lokasi",
     "details": {
       "title": "Butiran Tempat"
     },

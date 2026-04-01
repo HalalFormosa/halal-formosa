@@ -1,6 +1,6 @@
 <template>
   <ion-page>
-    <ion-header class="explore-header" :class="{ 'is-native': isNative && !isDonor }">
+    <ion-header class="explore-header" :class="{ 'is-native': isNative && !isDonor, 'solid-bg': viewMode === 'list' }">
       <!-- Native AdMob banner -->
       <div v-if="isNative && !isDonor" id="ad-space-explore" style="height:65px;"></div>
 
@@ -143,8 +143,6 @@
                 </ion-list>
               </ion-popover>
             </div>
-
-            <h3>{{ $t('explore.results') }} ({{ displayedLocations.length }})</h3>
           </div>
           
           <div class="vertical-cards-stack">
@@ -335,6 +333,13 @@
         </div>
       </div>
     </div>
+    <ion-footer v-if="viewMode === 'list'" style="position: absolute; bottom: 0; left: 0; right: 0; width: 100%; z-index: 1001; background: var(--ion-background-color); border-top: 1px solid rgba(var(--ion-color-dark-rgb), 0.05);">
+      <div class="footer-count">
+        <small>
+          {{ $t('explore.showingResults', {count: displayedLocations.length, total: locations.length}) }}
+        </small>
+      </div>
+    </ion-footer>
   </ion-page>
 </template>
 
@@ -346,7 +351,7 @@ import {
   IonPage, IonContent, IonToolbar, IonSearchbar, IonIcon, IonFab, IonFabButton,
   IonCard, IonThumbnail, IonButton, onIonViewDidEnter, IonLabel, IonChip, IonHeader,
   IonSkeletonText, onIonViewWillEnter, IonFabList, onIonViewWillLeave, IonModal,
-  IonPopover, IonList, IonItem
+  IonPopover, IonList, IonItem, IonFooter
 } from '@ionic/vue'
 import {
   navigateCircleOutline,
@@ -1855,6 +1860,12 @@ button.gm-ui-hover-effect > span {
   pointer-events: none;
   background: transparent !important;
   box-shadow: none !important;
+  transition: background 0.2s ease, border-bottom 0.2s ease;
+}
+
+.explore-header.solid-bg {
+  background: var(--ion-background-color) !important;
+  pointer-events: auto;
 }
 
 .header-search-toolbar {
@@ -1973,9 +1984,8 @@ button.gm-ui-hover-effect > span {
   position: relative;
 }
 
-.active-card {
-  border: 1.5px solid var(--ion-color-carrot);
-  box-shadow: 0 0 0 2px var(--ion-color-carrot), 0 8px 25px rgba(234, 113, 10, 0.15);
+.modern-location-card.active-card {
+  border: 3px solid var(--ion-color-carrot) !important;
 }
 
 .card-inner {
@@ -2432,7 +2442,7 @@ button.gm-ui-hover-effect > span {
 }
 
 .list-container {
-  max-width: 800px;
+  max-width: 1200px;
   margin: 0 auto;
   padding: 0 16px 100px;
 }
@@ -2469,9 +2479,21 @@ button.gm-ui-hover-effect > span {
 }
 
 .vertical-cards-stack {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 1fr;
   gap: 16px;
+}
+
+@media (min-width: 768px) {
+  .vertical-cards-stack {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .vertical-cards-stack {
+    grid-template-columns: repeat(3, 1fr);
+  }
 }
 
 .list-mode-card {
@@ -2633,6 +2655,13 @@ button.gm-ui-hover-effect > span {
   flex-shrink: 0;
 }
 
+.footer-count {
+  text-align: center;
+  padding: 3px 0;
+  font-size: 14px;
+  color: var(--ion-color-medium);
+  background: transparent;
+}
 
 
 </style>

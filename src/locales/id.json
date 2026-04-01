@@ -324,6 +324,7 @@
     "clear": "Hapus",
     "showingPlace": "Menampilkan 1 tempat",
     "results": "Hasil",
+    "showingResults": "Menampilkan {count} dari {total} lokasi",
     "details": {
       "title": "Detail Tempat"
     },
