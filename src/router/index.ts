@@ -158,6 +158,13 @@ const routes: Array<RouteRecordRaw> = [
         meta: { noAds: true }
     },
     {
+        path: '/store/merchant/:id',
+        name: 'MerchantStore',
+        component: () => import('@/views/store/MerchantStoreView.vue'),
+        props: true,
+        meta: { noAds: true }
+    },
+    {
         path: '/store/checkout',
         name: 'StoreCheckout',
         component: () => import('@/views/store/StoreCheckoutView.vue'),
@@ -210,6 +217,18 @@ const routes: Array<RouteRecordRaw> = [
         path: '/store/chat-inbox',
         name: 'UserStoreChatInbox',
         component: () => import('@/views/store/UserStoreChatInboxView.vue'),
+        meta: { requiresAuth: true, noAds: true }
+    },
+    {
+        path: '/merchant/store/settings',
+        name: 'MerchantStoreSettings',
+        component: () => import('@/views/store/MerchantStoreSettingsView.vue'),
+        meta: { requiresAuth: true, noAds: true }
+    },
+    {
+        path: '/merchant/store/products',
+        name: 'MerchantProductList',
+        component: () => import('@/views/store/MerchantProductListView.vue'),
         meta: { requiresAuth: true, noAds: true }
     }
 

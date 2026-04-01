@@ -38,11 +38,12 @@
           @click="openChat(conv.id)"
         >
           <div class="conv-avatar">
-            <ion-icon :icon="personCircleOutline" />
+            <img v-if="conv.merchant_stores?.logo_url" :src="conv.merchant_stores.logo_url" class="store-logo-img" />
+            <ion-icon v-else :icon="personCircleOutline" />
           </div>
           <div class="conv-body">
             <div class="conv-top">
-              <span class="conv-name">{{ $t('store.title') }}</span>
+              <span class="conv-name">{{ conv.merchant_stores?.name || $t('store.title') }}</span>
               <span class="conv-time">{{ formatTime(conv.last_message_at) }}</span>
             </div>
             <div class="conv-bottom">
@@ -130,7 +131,8 @@ async function fetchConversations() {
     .from('store_chat_conversations')
     .select(`
       *,
-      store_products(name, name_zh)
+      store_products(name, name_zh),
+      merchant_stores(name, logo_url)
     `)
     .eq('buyer_id', session.user.id)
     .order('last_message_at', { ascending: false })
@@ -182,6 +184,13 @@ onMounted(fetchConversations)
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  overflow: hidden;
+}
+
+.store-logo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .conv-avatar ion-icon {

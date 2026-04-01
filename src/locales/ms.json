@@ -809,6 +809,7 @@
     "quantity": "Kuantiti",
     "promoBanner": "Promosi",
     "featuredProducts": "Produk Pilihan",
+    "products": "Produk",
     "noProducts": "Tiada produk dijumpai.",
     "loadingMore": "Memuatkan lagi produk...",
     "showingResults": "Memaparkan {count} daripada {total} produk",

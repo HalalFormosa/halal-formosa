@@ -323,7 +323,7 @@
                   <div class="info-actions">
                     <div class="action-row">
                       <ion-button fill="clear" size="small" color="carrot" @click.stop="goToDetail(place.id)" class="detail-btn">
-                        DETAILS
+                        {{ $t('common.details') }}
                       </ion-button>
                     </div>
                   </div>
@@ -1672,7 +1672,7 @@ const goToDetail = async (id: number) => {
 <style>
 :root {
   --explore-top-offset: 0px;
-  --explore-card-height: 140px;
+  --explore-card-height: 160px;
 }
 
 /*********************************************
@@ -2058,14 +2058,6 @@ button.gm-ui-hover-effect > span {
    PARTNER TIERS (EXPLORE)
 ========================= */
 /* Partner Tiers (Explore) */
-.modern-location-card {
-  --tier-bg: var(--ion-background-color, #ffffff);
-  --tier-border: rgba(var(--ion-color-dark-rgb), 0.05);
-  background: var(--tier-bg) !important;
-  border-color: var(--tier-border) !important;
-  overflow: hidden;
-}
-
 .modern-location-card.tier-gold {
   --tier-bg: var(--tier-gold-bg);
   --tier-border: #facc15;
@@ -2188,25 +2180,7 @@ button.gm-ui-hover-effect > span {
   flex: 0 0 85vw;
   max-width: 380px;
   margin: 0;
-  background: rgba(var(--ion-card-background-rgb, 255, 255, 255), 0.7); /* Glass base */
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border-radius: 20px;
-  overflow: hidden;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.1);
-  border: 1px solid rgba(255, 255, 255, 0.3); /* Glass border */
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  cursor: pointer;
-  position: relative;
-  scroll-snap-align: center;
-  scroll-snap-stop: always;
-}
-
-.modern-location-card {
-  flex: 0 0 85vw;
-  max-width: 380px;
-  margin: 0;
-  /* Light Mode Base - higher opacity for text readability */
+  /* Light Mode Base */
   background: rgba(255, 255, 255, 0.85); 
   backdrop-filter: blur(25px) saturate(200%);
   -webkit-backdrop-filter: blur(25px) saturate(200%);
@@ -2223,7 +2197,7 @@ button.gm-ui-hover-effect > span {
 
 /* Dark Mode Base Case */
 .ion-palette-dark .modern-location-card {
-  background: rgba(28, 28, 30, 0.92); /* Higher opacity for better contrast */
+  background: rgba(28, 28, 30, 0.92);
   border: 1px solid rgba(255, 255, 255, 0.15);
 }
 
@@ -2278,7 +2252,7 @@ button.gm-ui-hover-effect > span {
 
 .card-info-section {
   flex: 1;
-  padding: 10px 12px;
+  padding: 12px 14px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;

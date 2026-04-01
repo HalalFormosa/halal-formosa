@@ -5,7 +5,7 @@
     </ion-header>
 
     <ion-content :fullscreen="true">
-      <div v-if="isUnderConstruction" class="under-construction-overlay">
+      <div v-if="isUnderConstruction" slot="fixed" class="under-construction-overlay">
         <div class="construction-card">
           <ion-icon :icon="constructOutline" class="construction-icon" />
           <h2>{{ $t('common.underConstruction') || 'Under Construction' }}</h2>
@@ -13,7 +13,8 @@
         </div>
       </div>
 
-      <div v-else class="checkout-wrapper">
+      <div class="checkout-wrapper" style="position: relative; min-height: 100%;">
+
         <!-- Order Summary -->
         <div class="section-card">
           <h3 class="section-title">{{ $t('store.orderSummary') }}</h3>
@@ -303,10 +304,7 @@ async function placeOrder() {
   height: 50px;
 }
 
-/* Under Construction */
-.under-construction-overlay {
-  padding: 16px;
-}
+
 
 
 /* Dark mode */

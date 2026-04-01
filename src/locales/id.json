@@ -17,7 +17,8 @@
     "add": "Tambah",
     "previous": "Sebelumnya",
     "next": "Berikutnya",
-    "clear": "Hapus"
+    "clear": "Hapus",
+    "details": "Detail"
   },
   "dailyMissions": {
     "title": "Misi Harian",
@@ -91,6 +92,7 @@
     "latestNews": "Berita Terbaru",
     "totalProducts": "Total Produk",
     "totalLocations": "Total Lokasi",
+    "partnerTier": "MITRA {tier}",
     "statuses": {
       "halal": "Halal",
       "muslimFriendly": "Ramah Muslim",
@@ -101,9 +103,6 @@
     "prayerNotification": "Shalat {label} dalam {time}",
     "currentLocation": "Lokasi Saat Ini",
     "prayerTimes": "Waktu Shalat",
-    "qibla": "Kiblat",
-    "partnerTier": "MITRA {tier}",
-    "altProduct": "produk",
     "altLocation": "lokasi",
     "altNews": "berita",
     "altAvatar": "Avatar",
@@ -810,6 +809,7 @@
     "quantity": "Jumlah",
     "promoBanner": "Promo",
     "featuredProducts": "Produk Unggulan",
+    "products": "Produk",
     "noProducts": "Produk tidak ditemukan.",
     "loadingMore": "Memuat produk lainnya...",
     "showingResults": "Menampilkan {count} dari {total} produk",

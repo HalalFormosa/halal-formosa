@@ -31,166 +31,147 @@
     </ion-header>
 
     <ion-content :fullscreen="true">
-      <div v-if="isUnderConstruction" class="under-construction-overlay">
+      <div v-if="isUnderConstruction" slot="fixed" class="under-construction-overlay">
         <div class="construction-card">
           <ion-icon :icon="constructOutline" class="construction-icon" />
           <h2>{{ $t('common.underConstruction') || 'Under Construction' }}</h2>
           <p>We're brewing something amazing! The Halal Formosa store will be available soon.</p>
         </div>
-
-        <!-- Skeletons to maintain layout feel -->
-        <div class="promo-section">
-          <div class="promo-scroll">
-            <div v-for="n in 2" :key="n" class="promo-card skeleton-card">
-              <ion-skeleton-text animated style="width: 100%; height: 140px; border-radius: 16px;" />
-            </div>
-          </div>
-        </div>
-
-        <div class="category-scroll">
-          <div v-for="n in 5" :key="n" class="cat-chip-skeleton">
-            <ion-skeleton-text animated style="width: 80px; height: 32px; border-radius: 20px;" />
-          </div>
-        </div>
-
-        <div class="store-grid">
-          <div v-for="n in 6" :key="n" class="store-product-card skeleton-card">
-            <ion-skeleton-text animated class="product-image-skeleton" />
-            <div class="product-info">
-              <ion-skeleton-text animated style="width: 40%; height: 12px;" />
-              <ion-skeleton-text animated style="width: 80%; height: 16px; margin-top: 6px;" />
-              <ion-skeleton-text animated style="width: 50%; height: 14px; margin-top: 6px;" />
-            </div>
-          </div>
-        </div>
       </div>
 
-      <template v-else>
-        <ion-refresher slot="fixed" @ionRefresh="doRefresh($event)">
-          <ion-refresher-content />
-        </ion-refresher>
+      <div class="store-view-wrapper" style="position: relative; min-height: 100%;">
+        <div class="store-container">
+          <ion-refresher slot="fixed" @ionRefresh="doRefresh($event)">
+            <ion-refresher-content />
+          </ion-refresher>
 
-        <!-- Promo Banners -->
-        <div v-if="promoBanners.length > 0" class="promo-section">
-          <div class="promo-scroll">
-            <div v-for="banner in promoBanners" :key="banner.id" class="promo-card" @click="handleBannerClick(banner)">
-              <img :src="banner.image_url" :alt="banner.title" class="promo-image" />
-              <div class="promo-overlay">
-                <h3>{{ localized(banner.title_zh, banner.title) }}</h3>
-                <p v-if="banner.subtitle">{{ banner.subtitle }}</p>
+          <!-- Promo Banners -->
+          <div v-if="promoBanners.length > 0" class="promo-section">
+            <div ref="promoScroll" class="promo-scroll">
+              <div v-for="banner in promoBanners" :key="banner.id" class="promo-card" @click="handleBannerClick(banner)">
+                <img :src="banner.image_url" :alt="banner.title" class="promo-image" />
+                <div class="promo-overlay">
+                  <h3>{{ localized(banner.title_zh, banner.title) }}</h3>
+                  <p v-if="banner.subtitle">{{ banner.subtitle }}</p>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <!-- Category chips -->
-        <div class="category-scroll">
-          <button
-            v-for="cat in allCategories"
-            :key="cat.id ?? 'all'"
-            :class="['cat-chip', { 'cat-chip-active': selectedCategory === cat.id }]"
-            @click="selectedCategory = selectedCategory === cat.id ? null : cat.id"
-          >
-            <span v-if="cat.emoji" class="chip-emoji">{{ cat.emoji }}</span>
-            {{ localized(cat.name_zh, cat.name) }}
-          </button>
-        </div>
+          <!-- Category chips -->
+          <div class="category-scroll">
+            <button
+              v-for="cat in allCategories"
+              :key="cat.id ?? 'all'"
+              :class="['cat-chip', { 'cat-chip-active': selectedCategory === cat.id }]"
+              @click="selectedCategory = selectedCategory === cat.id ? null : cat.id"
+            >
+              <span v-if="cat.emoji" class="chip-emoji">{{ cat.emoji }}</span>
+              {{ localized(cat.name_zh, cat.name) }}
+            </button>
+          </div>
 
-        <!-- Sort & Filter Row -->
-        <div class="filter-row" v-if="products.length > 0 || !loading">
-          <!-- Sort Left -->
-          <ion-button id="store-sort-trigger" fill="clear" size="small" class="modern-sort-button">
-            {{ currentSortLabel }}
-            <ion-icon :icon="chevronDownOutline" slot="end" size="small" />
-          </ion-button>
+          <!-- Sort & Filter Row -->
+          <div class="filter-row" v-if="products.length > 0 || !loading">
+            <!-- Sort Left -->
+            <ion-button id="store-sort-trigger" fill="clear" size="small" class="modern-sort-button">
+              {{ currentSortLabel }}
+              <ion-icon :icon="chevronDownOutline" slot="end" size="small" />
+            </ion-button>
 
-          <ion-popover trigger="store-sort-trigger" size="auto" dismiss-on-select class="width-190">
-            <ion-content>
-              <ion-list lines="none">
-                <ion-item v-for="s in sortOptions" :key="s.value" button @click="sortBy = s.value"
-                  :class="{ 'active-sort': sortBy === s.value }">
-                  <ion-label>{{ s.label }}</ion-label>
-                  <ion-icon v-if="sortBy === s.value" :icon="checkmarkOutline" slot="end" color="carrot" />
-                </ion-item>
-              </ion-list>
-            </ion-content>
-          </ion-popover>
+            <ion-popover trigger="store-sort-trigger" size="auto" dismiss-on-select class="width-190">
+              <ion-content>
+                <ion-list lines="none">
+                  <ion-item v-for="s in sortOptions" :key="s.value" button @click="sortBy = s.value"
+                    :class="{ 'active-sort': sortBy === s.value }">
+                    <ion-label>{{ s.label }}</ion-label>
+                    <ion-icon v-if="sortBy === s.value" :icon="checkmarkOutline" slot="end" color="carrot" />
+                  </ion-item>
+                </ion-list>
+              </ion-content>
+            </ion-popover>
 
-          <!-- Filter Right -->
-          <ion-button fill="clear" size="small" class="modern-filter-button">
-            <ion-icon :icon="filterOutline" slot="start" />
-            Filter
-          </ion-button>
-        </div>
+            <!-- Filter Right -->
+            <ion-button fill="clear" size="small" class="modern-filter-button" @click="openFilter">
+              <ion-icon :icon="filterOutline" slot="start" />
+              {{ $t('common.filter') || 'Filter' }}
+              <ion-badge v-if="minPrice || maxPrice || stockOnly" color="carrot" class="filter-count-badge">·</ion-badge>
+            </ion-button>
+          </div>
 
-        <!-- Product Grid -->
-        <div class="store-grid" v-if="!loading && products.length > 0">
-          <div
-            v-for="product in products"
-            :key="product.id"
-            class="store-product-card"
-            @click="$router.push(`/store/product/${product.id}`)"
-          >
-            <div class="product-image-wrapper">
-              <img
-                v-if="product.images && product.images.length > 0"
-                :src="product.images[0]"
-                :alt="product.name"
-                class="product-image"
-                loading="lazy"
-              />
-              <div v-else class="product-image-placeholder">
-                <ion-icon :icon="imageOutline" />
+          <!-- Product Grid -->
+          <div class="store-grid" v-if="!loading && products.length > 0">
+            <div
+              v-for="product in products"
+              :key="product.id"
+              class="store-product-card"
+              @click="navigateToProduct(product.id)"
+            >
+              <div class="product-image-wrapper">
+                <img
+                  v-if="product.images && product.images.length > 0"
+                  :src="product.images[0]"
+                  :alt="product.name"
+                  class="product-image"
+                  loading="lazy"
+                />
+                <div v-else class="product-image-placeholder">
+                  <ion-icon :icon="imageOutline" />
+                </div>
+                <ion-chip v-if="product.is_featured" color="carrot" class="featured-chip">⭐</ion-chip>
+                <ion-chip v-if="product.stock_quantity <= 0" color="danger" class="stock-chip">
+                  {{ $t('store.outOfStock') }}
+                </ion-chip>
               </div>
-              <ion-chip v-if="product.is_featured" color="carrot" class="featured-chip">⭐</ion-chip>
-              <ion-chip v-if="product.stock_quantity <= 0" color="danger" class="stock-chip">
-                {{ $t('store.outOfStock') }}
-              </ion-chip>
-            </div>
 
-            <div class="product-info">
-              <p class="product-category">{{ getCategoryName(product.category_id) }}</p>
-              <h4 class="product-name">{{ localized(product.name_zh, product.name) }}</h4>
-              <div class="product-price-row">
-                <span class="product-price">{{ $t('store.twd') }}{{ formatPrice(product.price) }}</span>
-                <span class="product-sold" v-if="product.sale_count > 0">
-                  {{ $t('store.sold', { count: product.sale_count }) }}
-                </span>
+              <div class="product-info">
+                <p class="product-category">{{ getCategoryName(product.category_id) }}</p>
+                <h4 class="product-name">{{ localized(product.name_zh, product.name) }}</h4>
+                <div v-if="product.merchant_stores" class="product-store-info" @click.stop="navigateToMerchant(product.store_id)">
+                  <ion-icon :icon="storefrontOutline" class="store-icon" size="small" />
+                  <span class="store-name-text">{{ product.merchant_stores.name }}</span>
+                </div>
+                <div class="product-price-row">
+                  <span class="product-price">{{ $t('store.twd') }}{{ formatPrice(product.price) }}</span>
+                  <span class="product-sold" v-if="product.sale_count > 0">
+                    {{ $t('store.sold', { count: product.sale_count }) }}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <!-- Skeleton loader -->
-        <div class="store-grid" v-if="loading">
-          <div v-for="n in 6" :key="n" class="store-product-card skeleton-card">
-            <ion-skeleton-text animated class="product-image-skeleton" />
-            <div class="product-info">
-              <ion-skeleton-text animated style="width: 40%; height: 12px;" />
-              <ion-skeleton-text animated style="width: 80%; height: 16px; margin-top: 6px;" />
-              <ion-skeleton-text animated style="width: 50%; height: 14px; margin-top: 6px;" />
+          <!-- Skeleton loader -->
+          <div class="store-grid" v-if="loading">
+            <div v-for="n in 6" :key="n" class="store-product-card skeleton-card">
+              <ion-skeleton-text animated class="product-image-skeleton" />
+              <div class="product-info">
+                <ion-skeleton-text animated style="width: 40%; height: 12px;" />
+                <ion-skeleton-text animated style="width: 80%; height: 16px; margin-top: 6px;" />
+                <ion-skeleton-text animated style="width: 50%; height: 14px; margin-top: 6px;" />
+              </div>
             </div>
           </div>
+
+          <!-- Empty state -->
+          <div v-if="!loading && products.length === 0" class="empty-state">
+            <ion-icon :icon="bagHandleOutline" class="empty-icon" />
+            <p>{{ $t('store.noProducts') }}</p>
+          </div>
+
+          <!-- Infinite scroll -->
+          <ion-infinite-scroll @ionInfinite="loadMore($event)" :disabled="noMore">
+            <ion-infinite-scroll-content :loading-text="$t('store.loadingMore')" />
+          </ion-infinite-scroll>
+
+          <!-- Admin FAB -->
+          <ion-fab v-if="isAdmin" vertical="bottom" horizontal="end" slot="fixed">
+            <ion-fab-button color="carrot" @click="navigateToAdminAdd">
+              <ion-icon :icon="addOutline" />
+            </ion-fab-button>
+          </ion-fab>
         </div>
-
-        <!-- Empty state -->
-        <div v-if="!loading && products.length === 0" class="empty-state">
-          <ion-icon :icon="bagHandleOutline" class="empty-icon" />
-          <p>{{ $t('store.noProducts') }}</p>
-        </div>
-
-        <!-- Infinite scroll -->
-        <ion-infinite-scroll @ionInfinite="loadMore($event)" :disabled="noMore">
-          <ion-infinite-scroll-content :loading-text="$t('store.loadingMore')" />
-        </ion-infinite-scroll>
-
-        <!-- Admin FAB -->
-        <ion-fab v-if="isAdmin" vertical="bottom" horizontal="end" slot="fixed">
-          <ion-fab-button color="carrot" @click="$router.push('/admin/store/add-product')">
-            <ion-icon :icon="addOutline" />
-          </ion-fab-button>
-        </ion-fab>
-      </template>
+      </div>
     </ion-content>
 
     <!-- Footer result count -->
@@ -251,23 +232,60 @@
         </div>
       </ion-content>
     </ion-modal>
+
+    <!-- Advanced Filter Modal -->
+    <ion-modal :is-open="filterOpen" @didDismiss="filterOpen = false" :initial-breakpoint="0.4" :breakpoints="[0, 0.4, 0.6]">
+      <ion-header>
+        <ion-toolbar>
+          <ion-title>{{ $t('common.filter') || 'Filter' }}</ion-title>
+          <ion-buttons slot="end">
+            <ion-button @click="resetFilters" color="medium">{{ $t('common.reset') || 'Reset' }}</ion-button>
+            <ion-button @click="filterOpen = false">
+              <ion-icon :icon="closeOutline" />
+            </ion-button>
+          </ion-buttons>
+        </ion-toolbar>
+      </ion-header>
+      <ion-content class="ion-padding">
+        <ion-list lines="none">
+          <ion-item>
+            <ion-label position="stacked">{{ $t('store.priceRange') || 'Price Range (TWD)' }}</ion-label>
+            <div class="price-input-row">
+              <ion-input type="number" v-model="tempMinPrice" placeholder="Min" class="price-input" />
+              <span class="price-separator">-</span>
+              <ion-input type="number" v-model="tempMaxPrice" placeholder="Max" class="price-input" />
+            </div>
+          </ion-item>
+
+          <ion-item class="stock-toggle-item">
+            <ion-label>{{ $t('store.inStockOnly') || 'In Stock Only' }}</ion-label>
+            <ion-toggle v-model="tempStockOnly" color="carrot" />
+          </ion-item>
+        </ion-list>
+
+        <ion-button expand="block" color="carrot" class="apply-filter-button" @click="applyFilters">
+          {{ $t('common.apply') || 'Apply' }}
+        </ion-button>
+      </ion-content>
+    </ion-modal>
   </ion-page>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch, onBeforeUnmount, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import {
   IonPage, IonHeader, IonContent, IonToolbar, IonButtons, IonButton, IonIcon,
   IonSearchbar, IonChip, IonSkeletonText, IonInfiniteScroll, IonInfiniteScrollContent,
   IonFab, IonFabButton, IonRefresher, IonRefresherContent, IonFooter, IonTitle,
-  IonPopover, IonList, IonItem, IonLabel, IonModal, IonThumbnail, IonBadge
+  IonPopover, IonList, IonItem, IonLabel, IonModal, IonThumbnail, IonBadge,
+  IonInput, IonToggle
 } from '@ionic/vue'
 import {
-  bagHandleOutline, cartOutline, chatbubblesOutline, filterOutline, checkmarkOutline,
-  addOutline, imageOutline, closeOutline, removeCircleOutline, addCircleOutline, chevronDownOutline,
-  constructOutline
+  bagHandleOutline, chatbubblesOutline, cartOutline, constructOutline,
+  chevronDownOutline, checkmarkOutline, filterOutline, imageOutline,
+  closeOutline, storefrontOutline, addOutline, removeCircleOutline, addCircleOutline
 } from 'ionicons/icons'
 import AppHeader from '@/components/AppHeader.vue'
 import { supabase } from '@/plugins/supabaseClient'
@@ -280,6 +298,8 @@ const { items: cartItems, cartCount, cartTotal, updateQty } = useStoreCart()
 
 // State
 const isUnderConstruction = computed(() => import.meta.env.VITE_STORE_UNDER_CONSTRUCTION === 'true')
+const promoScroll = ref<HTMLElement | null>(null)
+let autoScrollInterval: any = null
 const loading = ref(true)
 const products = ref<any[]>([])
 const categories = ref<any[]>([])
@@ -292,6 +312,15 @@ const totalCount = ref(0)
 const unreadChatCount = ref(0) // Used for chat badge
 const noMore = ref(false)
 const PAGE_SIZE = 20
+
+// Advanced Filters
+const minPrice = ref<number | null>(null)
+const maxPrice = ref<number | null>(null)
+const stockOnly = ref(false)
+const filterOpen = ref(false)
+const tempMinPrice = ref<number | null>(null)
+const tempMaxPrice = ref<number | null>(null)
+const tempStockOnly = ref(false)
 
 const sortOptions = computed(() => [
   { value: 'popular', label: t('store.sortRelevance') },
@@ -329,6 +358,7 @@ function openCart() {
 }
 
 function openChats() {
+  if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
   if (isAdmin.value) {
     router.push('/admin/store/chat-inbox')
   } else {
@@ -337,16 +367,53 @@ function openChats() {
 }
 
 function goCheckout() {
+  if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
   cartOpen.value = false
   router.push('/store/checkout')
 }
 
 function handleBannerClick(banner: any) {
+  if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
   if (banner.link_type === 'product' && banner.link_value) {
     router.push(`/store/product/${banner.link_value}`)
   } else if (banner.link_type === 'category' && banner.link_value) {
     selectedCategory.value = Number(banner.link_value)
   }
+}
+
+function navigateToProduct(id: string) {
+  if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
+  router.push(`/store/product/${id}`)
+}
+
+function navigateToMerchant(id: string) {
+  if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
+  router.push(`/store/merchant/${id}`)
+}
+
+function navigateToAdminAdd() {
+  if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
+  router.push('/admin/store/add-product')
+}
+
+function openFilter() {
+  tempMinPrice.value = minPrice.value
+  tempMaxPrice.value = maxPrice.value
+  tempStockOnly.value = stockOnly.value
+  filterOpen.value = true
+}
+
+function applyFilters() {
+  minPrice.value = tempMinPrice.value
+  maxPrice.value = tempMaxPrice.value
+  stockOnly.value = tempStockOnly.value
+  filterOpen.value = false
+}
+
+function resetFilters() {
+  tempMinPrice.value = null
+  tempMaxPrice.value = null
+  tempStockOnly.value = false
 }
 
 async function fetchCategories() {
@@ -379,7 +446,7 @@ async function fetchBanners() {
 function buildQuery(from: number, to: number) {
   let query = supabase
     .from('store_products')
-    .select('*', { count: 'exact' })
+    .select('*, merchant_stores(name)', { count: 'exact' })
     .eq('is_active', true)
 
   if (selectedCategory.value) {
@@ -389,6 +456,16 @@ function buildQuery(from: number, to: number) {
   if (searchQuery.value.trim()) {
     const q = `%${searchQuery.value.trim()}%`
     query = query.or(`name.ilike.${q},name_zh.ilike.${q},tags.cs.{${searchQuery.value.trim()}}`)
+  }
+
+  if (minPrice.value !== null) {
+    query = query.gte('price', minPrice.value)
+  }
+  if (maxPrice.value !== null) {
+    query = query.lte('price', maxPrice.value)
+  }
+  if (stockOnly.value) {
+    query = query.gt('stock_quantity', 0)
   }
 
   // Sort
@@ -451,17 +528,53 @@ async function loadMore(event: any) {
 }
 
 async function doRefresh(event: any) {
+  stopAutoScroll()
   await Promise.all([fetchProducts(), fetchCategories(), fetchBanners()])
+  startAutoScroll()
   event.target.complete()
 }
 
+function startAutoScroll() {
+  if (autoScrollInterval) stopAutoScroll()
+  if (promoBanners.value.length <= 1) return
+
+  autoScrollInterval = setInterval(() => {
+    if (!promoScroll.value) return
+    const el = promoScroll.value
+    const maxScroll = el.scrollWidth - el.clientWidth
+    
+    // If we're at or very near the end, loop back to start
+    if (el.scrollLeft >= maxScroll - 5) {
+      el.scrollTo({ left: 0, behavior: 'smooth' })
+    } else {
+      // Find the card width + gap. Each card is min 280px + 12px gap. 
+      // Using clientWidth of first child for accuracy.
+      const firstChild = el.children[0] as HTMLElement
+      const step = firstChild ? (firstChild.offsetWidth + 12) : 300
+      el.scrollTo({ left: el.scrollLeft + step, behavior: 'smooth' })
+    }
+  }, 5000)
+}
+
+function stopAutoScroll() {
+  if (autoScrollInterval) {
+    clearInterval(autoScrollInterval)
+    autoScrollInterval = null
+  }
+}
+
 // Watch filters
-watch([searchQuery, selectedCategory, sortBy], () => {
+watch([searchQuery, selectedCategory, sortBy, minPrice, maxPrice, stockOnly], () => {
   fetchProducts()
 })
 
 onMounted(async () => {
   await Promise.all([fetchCategories(), fetchBanners(), fetchProducts()])
+  startAutoScroll()
+})
+
+onBeforeUnmount(() => {
+  stopAutoScroll()
 })
 </script>
 
@@ -547,6 +660,7 @@ onMounted(async () => {
   overflow-x: auto;
   padding: 0 16px;
   scroll-snap-type: x mandatory;
+  scroll-padding: 0 16px;
   -webkit-overflow-scrolling: touch;
 }
 
@@ -651,14 +765,67 @@ onMounted(async () => {
   font-weight: 500;
   text-transform: none;
   --color: var(--ion-text-color);
+  position: relative;
+}
+
+.filter-count-badge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  min-width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  padding: 0;
+  margin: 0;
+}
+
+.price-input-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+  width: 100%;
+}
+
+.price-input {
+  --background: var(--ion-color-step-50, #f4f5f8);
+  --padding-start: 12px;
+  --border-radius: 8px;
+  border: 1px solid var(--ion-color-step-100, #e0e0e0);
+  border-radius: 8px;
+  text-align: center;
+}
+
+.price-separator {
+  color: var(--ion-color-medium);
+  font-weight: bold;
+}
+
+.stock-toggle-item {
+  margin-top: 16px;
+  --padding-start: 0;
+}
+
+.apply-filter-button {
+  margin-top: 24px;
+  --border-radius: 12px;
+  font-weight: 600;
 }
 
 /* Product Grid */
 .store-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 16px;
   padding: 8px 16px 24px;
+}
+
+@media (min-width: 768px) {
+  .store-grid {
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 24px;
+    padding: 16px 24px 40px;
+  }
 }
 
 .store-product-card {
@@ -725,11 +892,29 @@ onMounted(async () => {
 }
 
 .product-category {
-  font-size: 0.7rem;
+  font-size: 0.65rem;
   color: var(--ion-color-medium);
-  margin: 0;
+  margin-bottom: 2px;
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+
+.product-store-info {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.store-icon {
+  font-size: 0.72rem;
+  color: var(--ion-color-carrot);
+}
+
+.store-name-text {
+  font-size: 0.72rem;
+  color: var(--ion-color-step-600, #666);
   font-weight: 500;
 }
 
@@ -870,5 +1055,47 @@ onMounted(async () => {
 
 .ion-palette-dark .product-image-wrapper {
   background: var(--ion-color-step-150, #2a2a2a);
+}
+
+/* Responsive Container */
+.store-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* Responsive Searchbar */
+@media (min-width: 768px) {
+  .actions-toolbar {
+    --padding-start: 24px;
+    --padding-end: 24px;
+  }
+  
+  .modern-searchbar {
+    max-width: 600px;
+    margin: 0 auto;
+  }
+  
+  .promo-section {
+    padding: 24px 0 12px;
+  }
+  
+  .promo-card {
+    min-width: 350px;
+    max-width: 450px;
+  }
+  
+  .promo-image {
+    height: 200px;
+  }
+  
+  .category-scroll {
+    padding: 16px 24px;
+    justify-content: center;
+  }
+  
+  .filter-row {
+    padding: 8px 24px 16px;
+  }
 }
 </style>

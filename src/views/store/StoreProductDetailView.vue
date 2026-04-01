@@ -5,14 +5,19 @@
     </ion-header>
 
     <ion-content :fullscreen="true">
-      <div v-if="isUnderConstruction" class="under-construction-overlay">
+      <div v-if="isUnderConstruction" slot="fixed" class="under-construction-overlay">
         <div class="construction-card">
           <ion-icon :icon="constructOutline" class="construction-icon" />
           <h2>{{ $t('common.underConstruction') || 'Under Construction' }}</h2>
           <p>This product is currently being prepared. Check back soon!</p>
         </div>
+      </div>
 
-        <div class="detail-skeleton">
+      <div class="product-detail-wrapper" style="position: relative; min-height: 100%; background: var(--ion-background-color);">
+        <div class="product-container">
+
+        <!-- Skeleton while loading -->
+        <div v-if="loading" class="detail-skeleton">
           <ion-skeleton-text animated class="image-skeleton" />
           <div style="padding: 16px;">
             <ion-skeleton-text animated style="width: 40%; height: 14px;" />
@@ -21,93 +26,109 @@
             <ion-skeleton-text animated style="width: 100%; height: 60px; margin-top: 16px;" />
           </div>
         </div>
-      </div>
 
-      <!-- Skeleton while loading -->
-      <div v-else-if="loading" class="detail-skeleton">
-        <ion-skeleton-text animated class="image-skeleton" />
-        <div style="padding: 16px;">
-          <ion-skeleton-text animated style="width: 40%; height: 14px;" />
-          <ion-skeleton-text animated style="width: 80%; height: 22px; margin-top: 8px;" />
-          <ion-skeleton-text animated style="width: 30%; height: 28px; margin-top: 12px;" />
-          <ion-skeleton-text animated style="width: 100%; height: 60px; margin-top: 16px;" />
-        </div>
-      </div>
-
-      <div v-if="!loading && product" class="detail-page">
-        <!-- Image gallery -->
-        <div class="gallery-scroll">
-          <div v-for="(img, i) in product.images" :key="i" class="gallery-item">
-            <img :src="img" :alt="`${product.name} ${Number(i) + 1}`" class="gallery-image" />
-          </div>
-          <div v-if="!product.images?.length" class="gallery-item gallery-placeholder">
-            <ion-icon :icon="imageOutline" />
-          </div>
-        </div>
-
-        <div class="detail-body">
-          <!-- Category badge -->
-          <ion-chip v-if="categoryName" size="small" class="category-badge">
-            {{ categoryName }}
-          </ion-chip>
-
-          <h1 class="detail-name">{{ localized(product.name_zh, product.name) }}</h1>
-          <p v-if="product.name_zh && product.name" class="detail-name-sub">{{ product.name }}</p>
-
-          <div class="price-section">
-            <span class="detail-price">{{ $t('store.twd') }}{{ formatPrice(product.price) }}</span>
-            <div class="meta-badges">
-              <span v-if="product.sale_count > 0" class="meta-badge">
-                {{ $t('store.sold', { count: product.sale_count }) }}
-              </span>
-              <span class="meta-badge">
-                {{ $t('store.views', { count: product.view_count || 0 }) }}
-              </span>
+        <!-- Product Content -->
+        <div v-if="!loading && product" class="detail-page">
+          <!-- Image gallery -->
+          <div class="gallery-scroll">
+            <div v-for="(img, i) in product.images" :key="i" class="gallery-item">
+              <img :src="img" :alt="`${product.name} ${Number(i) + 1}`" class="gallery-image" />
+            </div>
+            <div v-if="!product.images?.length" class="gallery-item gallery-placeholder">
+              <ion-icon :icon="imageOutline" />
             </div>
           </div>
 
-          <!-- Stock -->
-          <div class="stock-row" :class="{ 'out-of-stock': product.stock_quantity <= 0 }">
-            <ion-icon :icon="product.stock_quantity > 0 ? checkmarkCircleOutline : closeCircleOutline" />
-            <span>{{ product.stock_quantity > 0
-              ? $t('store.inStock', { count: product.stock_quantity })
-              : $t('store.outOfStock')
-            }}</span>
-          </div>
+          <div class="detail-body">
+            <!-- Category badge -->
+            <ion-chip v-if="categoryName" size="small" class="category-badge">
+              {{ categoryName }}
+            </ion-chip>
 
-          <!-- Description -->
-          <div v-if="product.description || product.description_zh" class="description-section">
-            <h3>{{ $t('store.description') }}</h3>
-            <p>{{ localized(product.description_zh, product.description) }}</p>
-          </div>
+            <h1 class="detail-name">{{ localized(product.name_zh, product.name) }}</h1>
+            <p v-if="product.name_zh && product.name" class="detail-name-sub">{{ product.name }}</p>
 
-          <!-- Quantity -->
-          <div class="quantity-section" v-if="product.stock_quantity > 0">
-            <h3>{{ $t('store.quantity') }}</h3>
-            <div class="quantity-controls">
-              <ion-button fill="outline" size="small" @click="qty = Math.max(1, qty - 1)" :disabled="qty <= 1">
-                <ion-icon :icon="removeOutline" />
-              </ion-button>
-              <span class="qty-display">{{ qty }}</span>
-              <ion-button fill="outline" size="small" @click="qty++" :disabled="qty >= product.stock_quantity">
-                <ion-icon :icon="addOutline" />
-              </ion-button>
+            <div class="price-section">
+              <span class="detail-price">{{ $t('store.twd') }}{{ formatPrice(product.price) }}</span>
+              <div class="meta-badges">
+                <span v-if="product.sale_count > 0" class="meta-badge">
+                  {{ $t('store.sold', { count: product.sale_count }) }}
+                </span>
+                <span class="meta-badge">
+                  {{ $t('store.views', { count: product.view_count || 0 }) }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Stock -->
+            <div class="stock-row" :class="{ 'out-of-stock': product.stock_quantity <= 0 }">
+              <ion-icon :icon="product.stock_quantity > 0 ? checkmarkCircleOutline : closeCircleOutline" />
+              <span>{{ product.stock_quantity > 0
+                ? $t('store.inStock', { count: product.stock_quantity })
+                : $t('store.outOfStock')
+              }}</span>
+            </div>
+
+            <!-- Description -->
+            <div v-if="product.description || product.description_zh" class="description-section">
+              <h3>{{ $t('store.description') }}</h3>
+              <p>{{ localized(product.description_zh, product.description) }}</p>
+            </div>
+
+            <!-- Store Info -->
+            <div v-if="product.merchant_stores" class="store-info-section">
+              <div class="store-header">
+                <ion-avatar class="store-avatar">
+                  <img :src="product.merchant_stores.logo_url || '/favicon-32x32.png'" />
+                </ion-avatar>
+                <div class="store-text">
+                  <h3 class="store-name">{{ product.merchant_stores.name }}</h3>
+                  <p class="store-tagline">{{ $t('store.verifiedSeller') || 'Verified Store' }}</p>
+                </div>
+                <ion-button fill="outline" size="small" class="visit-store-btn" @click="navigateToMerchant(product.store_id)">
+                  {{ $t('store.visitShop') || 'Visit Shop' }}
+                </ion-button>
+              </div>
+            </div>
+
+            <!-- Quantity -->
+            <div v-if="product.stock_quantity > 0" class="quantity-section">
+              <h3>{{ $t('store.quantity') }}</h3>
+              <div class="quantity-controls">
+                <ion-button fill="outline" size="small" @click="qty = Math.max(1, qty - 1)" :disabled="qty <= 1">
+                  <ion-icon :icon="removeOutline" />
+                </ion-button>
+                <span class="qty-display">{{ qty }}</span>
+                <ion-button fill="outline" size="small" @click="qty++" :disabled="qty >= product.stock_quantity">
+                  <ion-icon :icon="addOutline" />
+                </ion-button>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- Not found -->
-      <div v-if="!loading && !product" class="empty-state">
-        <ion-icon :icon="bagHandleOutline" class="empty-icon" />
-        <p>{{ $t('store.noProducts') }}</p>
+        <!-- Not found -->
+        <div v-if="!loading && !product" class="empty-state">
+          <ion-icon :icon="bagHandleOutline" class="empty-icon" />
+          <p>{{ $t('store.noProducts') }}</p>
+        </div>
       </div>
-    </ion-content>
+    </div>
+  </ion-content>
 
     <!-- Action bar -->
     <ion-footer v-if="product && !isUnderConstruction">
       <ion-toolbar class="action-toolbar">
-        <div class="action-buttons">
+        <!-- Owner Actions -->
+        <div v-if="isOwner" class="action-buttons">
+          <ion-button fill="solid" color="primary" class="action-btn" @click="navigateToEdit">
+            <ion-icon :icon="createOutline" slot="start" />
+            {{ $t('common.edit') }}
+          </ion-button>
+        </div>
+        
+        <!-- Customer Actions -->
+        <div v-else class="action-buttons">
           <ion-button fill="clear" color="medium" class="chat-btn" @click="handleChat">
             <ion-icon :icon="chatbubbleOutline" />
           </ion-button>
@@ -145,11 +166,12 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   IonPage, IonHeader, IonContent, IonFooter, IonToolbar, IonButton, IonIcon,
-  IonChip, IonSkeletonText, toastController
+  IonChip, IonSkeletonText, toastController, IonAvatar
 } from '@ionic/vue'
 import {
   imageOutline, cartOutline, bagHandleOutline, removeOutline, addOutline,
-  checkmarkCircleOutline, closeCircleOutline, chatbubbleOutline, constructOutline
+  checkmarkCircleOutline, closeCircleOutline, chatbubbleOutline, constructOutline,
+  storefrontOutline, createOutline
 } from 'ionicons/icons'
 import AppHeader from '@/components/AppHeader.vue'
 import { supabase } from '@/plugins/supabaseClient'
@@ -168,6 +190,12 @@ const product = ref<any>(null)
 const categoryName = ref('')
 const loading = ref(true)
 const qty = ref(1)
+const currentUserId = ref<string | null>(null)
+
+const isOwner = computed(() => {
+  if (!product.value || !currentUserId.value) return false
+  return product.value.user_id === currentUserId.value
+})
 
 function formatPrice(price: number) {
   return Number(price).toLocaleString()
@@ -184,9 +212,9 @@ async function fetchProduct() {
 
   const { data, error } = await supabase
     .from('store_products')
-    .select('*, store_product_categories(name, name_zh)')
+    .select('*, store_product_categories(name, name_zh), merchant_stores(name, logo_url)')
     .eq('id', id)
-    .single()
+    .maybeSingle()
 
   if (!error && data) {
     product.value = data
@@ -196,6 +224,11 @@ async function fetchProduct() {
     supabase.rpc('increment_store_product_view', { p_product_id: id })
   }
   loading.value = false
+}
+
+async function fetchUser() {
+  const { data } = await supabase.auth.getUser()
+  currentUserId.value = data?.user?.id || null
 }
 
 async function handleAddToCart() {
@@ -221,20 +254,40 @@ function handleBuyNow() {
   router.push('/store/checkout')
 }
 
+function navigateToEdit() {
+  if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
+  router.push('/merchant/store/products')
+}
+
+function navigateToMerchant(id: string) {
+  if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
+  router.push(`/store/merchant/${id}`)
+}
+
 async function handleChat() {
   if (!product.value) return
+  if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
   const convId = await getOrCreateConversation(product.value.user_id, product.value.id)
   if (convId) {
     router.push(`/store/chat/${convId}`)
   }
 }
 
-onMounted(fetchProduct)
+onMounted(() => {
+  fetchProduct()
+  fetchUser()
+})
 </script>
 
 <style scoped>
+.product-detail-wrapper {
+  background: var(--ion-background-color);
+  -webkit-tap-highlight-color: transparent;
+}
+
 .detail-skeleton {
   padding: 0;
+  background: var(--ion-background-color);
 }
 
 .image-skeleton {
@@ -448,6 +501,48 @@ onMounted(fetchProduct)
   opacity: 0.5;
 }
 
+.store-info-section {
+  margin: 24px 0;
+  padding: 16px;
+  background: var(--ion-color-step-100, #f8f9fa);
+  border-radius: 16px;
+  border: 1px solid var(--ion-color-step-200, rgba(0,0,0,0.05));
+}
+
+.store-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.store-avatar {
+  width: 44px;
+  height: 44px;
+}
+
+.store-text {
+  flex: 1;
+}
+
+.store-name {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0;
+  color: var(--ion-text-color);
+}
+
+.store-tagline {
+  font-size: 0.75rem;
+  color: var(--ion-color-medium);
+  margin: 2px 0 0;
+}
+
+.visit-store-btn {
+  --border-radius: 8px;
+  font-size: 0.75rem;
+  height: 32px;
+}
+
 
 /* Dark mode */
 .ion-palette-dark .gallery-placeholder {
@@ -462,5 +557,64 @@ onMounted(fetchProduct)
 .ion-palette-dark .meta-badge {
   background: var(--ion-color-step-150, #2a2a2a);
   color: var(--ion-color-step-700, #cccccc);
+}
+
+.ion-palette-dark .store-info-section {
+  background: var(--ion-color-step-150, #1e1e1e);
+  border: 1px solid var(--ion-color-step-250, rgba(255,255,255,0.1));
+}
+
+/* Responsive Layout */
+.product-container {
+  max-width: 1000px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+@media (min-width: 768px) {
+  .detail-page {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+    padding: 32px 24px;
+    align-items: start;
+  }
+  
+  .gallery-scroll {
+    flex-direction: column;
+    gap: 16px;
+    overflow: visible;
+  }
+  
+  .gallery-item {
+    min-width: 100%;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  }
+  
+  .gallery-image {
+    height: auto;
+    aspect-ratio: 1;
+  }
+  
+  .detail-body {
+    padding: 0;
+  }
+  
+  .detail-name {
+    font-size: 2rem;
+  }
+  
+  .detail-price {
+    font-size: 2.2rem;
+  }
+  
+  /* Make the action toolbar more like a side section or fixed bar */
+  .action-toolbar {
+    max-width: 1000px;
+    margin: 0 auto;
+    border-radius: 16px 16px 0 0;
+  }
 }
 </style>

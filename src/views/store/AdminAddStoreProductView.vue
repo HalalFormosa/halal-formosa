@@ -9,7 +9,7 @@
     </ion-header>
 
     <ion-content :fullscreen="true">
-      <div v-if="isUnderConstruction" class="under-construction-overlay">
+      <div v-if="isUnderConstruction" slot="fixed" class="under-construction-overlay">
         <div class="construction-card">
           <ion-icon :icon="constructOutline" class="construction-icon" />
           <h2>{{ $t('common.underConstruction') || 'Under Construction' }}</h2>
@@ -17,7 +17,8 @@
         </div>
       </div>
 
-      <div v-else class="form-wrapper">
+      <div class="form-wrapper" style="position: relative; min-height: 100%;">
+
         <!-- Product Name -->
         <div class="form-card">
           <ion-item class="form-item">
@@ -136,6 +137,7 @@ const isEdit = computed(() => !!route.params.id)
 const categories = ref<any[]>([])
 const submitting = ref(false)
 const tagsInput = ref('')
+const storeId = ref<string | null>(null)
 
 function localized(zh: string | null | undefined, en: string | null | undefined): string {
   if (locale.value === 'zh') return zh || en || ''
@@ -184,6 +186,42 @@ async function fetchProduct() {
     form.is_featured = data.is_featured || false
     form.is_active = data.is_active ?? true
     tagsInput.value = (data.tags || []).join(', ')
+    if (data.store_id) storeId.value = data.store_id
+  }
+}
+
+async function ensureStoreExists() {
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session) return
+
+  const { data: store, error } = await supabase
+    .from('merchant_stores')
+    .select('id')
+    .eq('user_id', session.user.id)
+    .single()
+
+  if (store) {
+    storeId.value = store.id
+  } else {
+    // Create a default store for the merchant if none exists
+    const { data: profile } = await supabase
+      .from('user_profiles')
+      .select('display_name')
+      .eq('id', session.user.id)
+      .single()
+
+    const { data: newStore, error: createError } = await supabase
+      .from('merchant_stores')
+      .insert({
+        user_id: session.user.id,
+        name: profile?.display_name || 'My Shop'
+      })
+      .select('id')
+      .single()
+
+    if (!createError && newStore) {
+      storeId.value = newStore.id
+    }
   }
 }
 
@@ -243,6 +281,7 @@ async function saveProduct() {
 
     const payload = {
       user_id: session.user.id,
+      store_id: storeId.value,
       name: form.name.trim(),
       name_zh: form.name_zh.trim() || null,
       category_id: form.category_id,
@@ -292,6 +331,7 @@ async function saveProduct() {
 
 onMounted(async () => {
   await fetchCategories()
+  await ensureStoreExists()
   await fetchProduct()
 })
 </script>

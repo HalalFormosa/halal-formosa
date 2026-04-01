@@ -1,31 +1,27 @@
 <template>
   <ion-page>
     <ion-header>
-      <app-header :title="$t('store.myOrders')" :showBack="true" icon="none" />
+      <app-header :title="$t('store.myOrders')" :showBack="true" icon="none">
+        <template #end>
+          <ion-button @click="toggleDarkPalette(!isDark)" class="theme-toggle-btn">
+            <ion-icon :icon="isDark ? sunnyOutline : moonOutline" slot="icon-only" />
+          </ion-button>
+        </template>
+      </app-header>
     </ion-header>
 
     <ion-content :fullscreen="true">
-      <div v-if="isUnderConstruction" class="under-construction-overlay">
+      <div v-if="isUnderConstruction" slot="fixed" class="under-construction-overlay">
         <div class="construction-card">
           <ion-icon :icon="constructOutline" class="construction-icon" />
           <h2>{{ $t('common.underConstruction') || 'Under Construction' }}</h2>
           <p>Order tracking is being finalized. Stay tuned!</p>
         </div>
-
-        <!-- Skeleton -->
-        <div class="orders-list">
-          <div v-for="n in 3" :key="n" class="order-card skeleton-card">
-            <div class="order-header">
-              <ion-skeleton-text animated style="width: 40%; height: 16px;" />
-              <ion-skeleton-text animated style="width: 25%; height: 16px;" />
-            </div>
-            <ion-skeleton-text animated style="width: 100%; height: 8px; margin-top: 12px; border-radius: 4px;" />
-          </div>
-        </div>
       </div>
 
-      <template v-else>
-        <ion-refresher slot="fixed" @ionRefresh="doRefresh($event)">
+      <div class="user-orders-wrapper" style="position: relative; min-height: 100%; background: var(--ion-background-color);">
+
+        <ion-refresher v-if="!isUnderConstruction" slot="fixed" @ionRefresh="doRefresh($event)">
           <ion-refresher-content />
         </ion-refresher>
 
@@ -37,7 +33,7 @@
           :class="['modern-category-chip', { 'selected': selectedStatus === s.value }]"
           @click="selectedStatus = s.value"
         >
-          <span class="chip-emoji">{{ s.emoji }}</span>
+          <ion-icon :icon="s.icon" class="chip-status-icon" />
           {{ s.label }}
         </ion-chip>
       </div>
@@ -52,7 +48,8 @@
             </div>
             <div class="order-status-col">
               <ion-badge :color="statusColor(order.status)" class="status-badge">
-                {{ statusEmoji(order.status) }} {{ statusLabel(order.status) }}
+                <ion-icon :icon="statusIcon(order.status)" class="badge-icon" />
+                {{ statusLabel(order.status) }}
               </ion-badge>
               <span class="order-total">{{ $t('store.twd') }}{{ formatPrice(order.total_amount) }}</span>
             </div>
@@ -63,7 +60,7 @@
             <div v-for="step in timelineSteps" :key="step.key"
               :class="['timeline-step', { 'active': isStepReached(order.status, step.key), 'current': order.status === step.key }]">
               <div class="timeline-dot" />
-              <span class="timeline-emoji">{{ step.emoji }}</span>
+              <ion-icon :icon="step.icon" class="timeline-icon" />
               <span class="timeline-text">{{ step.label }}</span>
             </div>
             <div class="timeline-line" />
@@ -74,12 +71,16 @@
             <div v-if="expandedId === order.id" class="order-details">
               <!-- Items -->
               <div class="items-section">
-                <div v-for="item in order.store_order_items" :key="item.id" class="order-item-row">
+                <div v-for="item in order.store_order_items" :key="item.id" class="order-item-row clickable" @click.stop="navigateToProduct(item.product_id)">
                   <div class="item-img-wrap" v-if="item.store_products?.images?.[0]">
                     <img :src="item.store_products.images[0]" :alt="item.store_products?.name" />
                   </div>
                   <div class="item-info">
                     <span class="item-name">{{ localized(item.store_products?.name_zh, item.store_products?.name) || 'Product' }}</span>
+                    <span class="item-store" v-if="item.store_products?.merchant_stores">
+                      <ion-icon :icon="storefrontOutline" class="store-icon" />
+                      {{ localized(item.store_products.merchant_stores.name_zh, item.store_products.merchant_stores.name) }}
+                    </span>
                     <span class="item-qty-price">×{{ item.quantity }} · {{ $t('store.twd') }}{{ formatPrice(item.unit_price * item.quantity) }}</span>
                   </div>
                 </div>
@@ -128,7 +129,7 @@
           {{ $t('store.backToStore') }}
         </ion-button>
       </div>
-      </template>
+      </div>
     </ion-content>
   </ion-page>
 </template>
@@ -137,14 +138,22 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import {
   IonPage, IonHeader, IonContent, IonChip, IonBadge, IonButton, IonIcon,
-  IonRefresher, IonRefresherContent, IonSkeletonText
+  IonRefresher, IonRefresherContent, IonSkeletonText, IonSpinner
 } from '@ionic/vue'
-import { locationOutline, receiptOutline, bagHandleOutline, constructOutline } from 'ionicons/icons'
+import {
+  locationOutline, receiptOutline, bagHandleOutline, constructOutline,
+  timeOutline, cardOutline, cubeOutline, checkmarkCircleOutline, closeOutline,
+  storefrontOutline, moonOutline, sunnyOutline
+} from 'ionicons/icons'
 import AppHeader from '@/components/AppHeader.vue'
 import { supabase } from '@/plugins/supabaseClient'
 import { useI18n } from 'vue-i18n'
+import { useTheme } from '@/composables/useTheme'
+import { useRouter } from 'vue-router'
 
 const { t, locale } = useI18n()
+const router = useRouter()
+const { isDark, toggleDarkPalette } = useTheme()
 
 const isUnderConstruction = computed(() => import.meta.env.VITE_STORE_UNDER_CONSTRUCTION === 'true')
 const loading = ref(true)
@@ -153,19 +162,19 @@ const expandedId = ref<string | null>(null)
 const selectedStatus = ref('all')
 const submittingId = ref<string | null>(null)
 
-const statusFilters = [
-  { value: 'all', label: t('store.allCategories'), emoji: '📋' },
-  { value: 'pending', label: t('store.orderPending'), emoji: '⏳' },
-  { value: 'paid', label: t('store.orderPaid'), emoji: '💳' },
-  { value: 'shipped', label: t('store.orderShipped'), emoji: '📦' },
-  { value: 'completed', label: t('store.orderCompleted'), emoji: '✅' }
-]
+const statusFilters = computed(() => [
+  { value: 'all', label: t('store.allCategories'), icon: receiptOutline },
+  { value: 'pending', label: t('store.orderPending'), icon: timeOutline },
+  { value: 'paid', label: t('store.orderPaid'), icon: cardOutline },
+  { value: 'shipped', label: t('store.orderShipped'), icon: cubeOutline },
+  { value: 'completed', label: t('store.orderCompleted'), icon: checkmarkCircleOutline }
+])
 
 const timelineSteps = [
-  { key: 'pending', emoji: '⏳', label: t('store.orderPending') },
-  { key: 'paid', emoji: '💳', label: t('store.orderPaid') },
-  { key: 'shipped', emoji: '📦', label: t('store.orderShipped') },
-  { key: 'completed', emoji: '✅', label: t('store.orderCompleted') }
+  { key: 'pending', icon: timeOutline, label: t('store.orderPending') },
+  { key: 'paid', icon: cardOutline, label: t('store.orderPaid') },
+  { key: 'shipped', icon: cubeOutline, label: t('store.orderShipped') },
+  { key: 'completed', icon: checkmarkCircleOutline, label: t('store.orderCompleted') }
 ]
 
 const statusOrder = ['pending', 'paid', 'shipped', 'completed']
@@ -191,9 +200,9 @@ function statusColor(status: string) {
   return map[status] || 'medium'
 }
 
-function statusEmoji(status: string) {
-  const map: Record<string, string> = { pending: '⏳', paid: '💳', shipped: '📦', completed: '✅', cancelled: '❌' }
-  return map[status] || '📋'
+function statusIcon(status: string) {
+  const map: Record<string, any> = { pending: timeOutline, paid: cardOutline, shipped: cubeOutline, completed: checkmarkCircleOutline, cancelled: closeOutline }
+  return map[status] || receiptOutline
 }
 
 function statusLabel(status: string) {
@@ -209,6 +218,11 @@ function statusLabel(status: string) {
 
 function toggleExpand(id: string) {
   expandedId.value = expandedId.value === id ? null : id
+}
+
+function navigateToProduct(id: string) {
+  if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
+  router.push(`/store/product/${id}`)
 }
 
 async function payNow(orderId: string) {
@@ -257,7 +271,7 @@ async function fetchOrders() {
 
   let query = supabase
     .from('store_orders')
-    .select('*, store_order_items(*, store_products(name, name_zh, images))')
+    .select('*, store_order_items(*, store_products(id, name, name_zh, images, merchant_stores(name, name_zh)))')
     .eq('user_id', session.user.id)
     .order('created_at', { ascending: false })
 
@@ -280,6 +294,12 @@ onMounted(fetchOrders)
 </script>
 
 <style scoped>
+
+/* List & Wrapper */
+.user-orders-wrapper {
+  background: var(--ion-background-color);
+  -webkit-tap-highlight-color: transparent;
+}
 
 .status-chips {
   display: flex;
@@ -304,7 +324,7 @@ onMounted(fetchOrders)
   --color: #fff;
   font-weight: 600;
 }
-.chip-emoji { margin-right: 4px; }
+.chip-status-icon { margin-right: 4px; font-size: 16px; }
 
 .orders-list {
   padding: 0 16px 24px;
@@ -314,14 +334,17 @@ onMounted(fetchOrders)
 }
 
 .order-card {
-  background: #ffffff;
+  background: var(--card-bg);
   border-radius: 16px;
   padding: 14px 16px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  box-shadow: var(--card-shadow);
+  border: 1px solid var(--card-border);
   cursor: pointer;
-  transition: transform 0.15s;
+  transition: transform 0.15s, background-color 0.1s;
 }
-.order-card:active { transform: scale(0.98); }
+.order-card:active {
+  transform: scale(0.98);
+}
 
 .order-header {
   display: flex;
@@ -357,7 +380,12 @@ onMounted(fetchOrders)
   padding: 3px 8px;
   text-transform: capitalize;
   font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
+.badge-icon { font-size: 14px; }
+.timeline-icon { font-size: 18px; margin: 4px 0; }
 .order-total {
   font-size: 1rem;
   font-weight: 700;
@@ -442,7 +470,7 @@ onMounted(fetchOrders)
 
 /* Expanded */
 .order-details {
-  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  border-top: 1px solid var(--card-border);
   margin-top: 12px;
   padding-top: 12px;
 }
@@ -536,18 +564,36 @@ onMounted(fetchOrders)
   font-weight: 600;
 }
 
-/* Dark mode */
+.item-store {
+  font-size: 0.72rem;
+  color: var(--ion-color-carrot);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  margin: 1px 0;
+}
+
+.store-icon {
+  font-size: 12px;
+}
+
+.order-item-row.clickable:active {
+  background: rgba(var(--ion-text-color-rgb), 0.08);
+  border-radius: 8px;
+}
+
+.theme-toggle-btn {
+  --color: var(--ion-color-carrot);
+  font-size: 20px;
+}
+
+.skeleton-card {
+  opacity: 0.6;
+}
+
+/* Dark mode overrides handled by variables.css but specific ones here */
 .ion-palette-dark .order-card {
-  background: var(--ion-color-step-100, #1e1e1e);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-}
-.ion-palette-dark .order-details {
-  border-top-color: rgba(255, 255, 255, 0.08);
-}
-.ion-palette-dark .timeline-line {
-  background: rgba(255, 255, 255, 0.12);
-}
-.ion-palette-dark .timeline-dot {
-  background: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 </style>

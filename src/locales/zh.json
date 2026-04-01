@@ -17,7 +17,11 @@
     "add": "添加",
     "previous": "上一頁",
     "next": "下一頁",
-    "clear": "清除"
+    "clear": "清除",
+    "filter": "篩選",
+    "reset": "重置",
+    "apply": "應用",
+    "details": "詳情"
   },
   "dailyMissions": {
     "title": "每日任務",
@@ -73,6 +77,7 @@
   "home": {
     "title": "Halal Formosa",
     "scan": "掃描成分",
+    "home": "首頁",
     "scanDesc": "立即分析成分以獲得清真狀態",
     "scanBarcode": "掃描條碼",
     "scanBarcodeDesc": "透過產品條碼快速查詢",
@@ -92,6 +97,7 @@
     "latestNews": "最新消息",
     "totalProducts": "產品總數",
     "totalLocations": "地點總數",
+    "partnerTier": "{tier} 合作夥伴",
     "statuses": {
       "halal": "清真",
       "muslimFriendly": "穆斯林友善",
@@ -102,9 +108,6 @@
     "prayerNotification": "{label} 禮拜時間在 {time}",
     "currentLocation": "目前位置",
     "prayerTimes": "禮拜時間",
-    "qibla": "朝拜方向",
-    "partnerTier": "{tier} 合作夥伴",
-    "altProduct": "產品",
     "altLocation": "地點",
     "altNews": "新聞",
     "altAvatar": "頭像",
@@ -415,7 +418,7 @@
     "admin": {
       "sections": {
         "content": "內容審核",
-        "store": "商店管理",
+        "store": "平台商店管理",
         "management": "管理",
         "system": "系統與紀錄"
       },
@@ -857,6 +860,7 @@
     "quantity": "數量",
     "promoBanner": "促銷活動",
     "featuredProducts": "精選商品",
+    "products": "商品",
     "noProducts": "找不到商品。",
     "loadingMore": "正在載入更多商品...",
     "showingResults": "正在顯示 {total} 件商品中的 {count} 件",
@@ -877,6 +881,7 @@
     "invoiceNo": "發票號碼",
     "orderId": "訂單編號",
     "backToStore": "返回商店",
+    "backToShop": "返回商店",
     "adminAddProduct": "新增商店商品",
     "adminEditProduct": "編輯商店商品",
     "productName": "商品名稱",
@@ -904,19 +909,48 @@
       "nameRequired": "商品名稱為必填。",
       "priceRequired": "價格為必填。",
       "categoryRequired": "分類為必填。",
-      "loginRequired": "您必須登入。"
+      "loginRequired": "您必須登入。",
+      "noStoreFound": "找不到商店。",
+      "contactAdmin": "請聯繫管理員以設置您的商店。",
+      "deleteConfirm": "您確定要刪除此商品嗎？",
+      "deleteSuccess": "商品刪除成功。"
     },
+    "verifiedSeller": "認證賣家",
+    "verifiedStore": "認證商店",
+    "visitShop": "參觀商店",
     "chat": {
       "title": "與商店聊天",
       "customerChat": "顧客聊天",
       "storeMessages": "商店訊息",
       "typeMessage": "輸入訊息...",
+      "online": "在線",
       "noMessages": "還沒有訊息，打個招呼吧！👋",
       "noConversations": "目前沒有對話。",
       "aboutProduct": "正在討論此商品",
       "today": "今天",
       "yesterday": "昨天"
     },
-    "payNow": "立即付款"
+    "payNow": "立即支付",
+    "priceRange": "價格範圍 (NT$)",
+    "inStockOnly": "僅顯示有貨",
+    "inStockShort": "件",
+    "inactive": "停用",
+    "sellerCenter": {
+      "title": "賣家中心",
+      "manageStore": "管理商店資訊",
+      "manageProducts": "管理商品",
+      "manageOrders": "管理訂單",
+      "manageMessages": "商店訊息"
+    },
+    "settings": {
+      "title": "商店設定",
+      "noBanner": "無橫幅",
+      "bannerHint": "建議比例：3:1",
+      "storeName": "商店名稱",
+      "storeNameZh": "商店名稱 (中文)",
+      "storeDescription": "商店描述",
+      "storeDescriptionZh": "商店描述 (中文)",
+      "saveProfile": "儲存資料"
+    }
   }
 }

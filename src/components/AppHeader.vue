@@ -44,7 +44,7 @@
 
     <!-- Profile button (optional) -->
     <ion-buttons slot="end" v-if="showProfile">
-      <ion-button @click="$router.push('/profile')" class="profile-button">
+      <ion-button @click="navigateToProfile" class="profile-button">
         <template v-if="isAuthenticated && profilePic">
           <div class="profile-img-wrapper">
             <img :src="profilePic" alt="Profile" class="toolbar-profile-img" />
@@ -61,6 +61,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { IonToolbar, IonButton, IonTitle, IonButtons, IonIcon, IonBackButton, IonPopover, IonList, IonContent, isPlatform } from '@ionic/vue'
+import { useRouter } from 'vue-router'
 import {arrowBackOutline, ellipsisVerticalOutline, personCircle} from 'ionicons/icons'
 import { supabase } from '@/plugins/supabaseClient'
 
@@ -82,6 +83,12 @@ withDefaults(defineProps<{
 const isAuthenticated = ref(false)
 const profilePic = ref<string | null>(null)
 const isIos = ref(isPlatform('ios'))
+const router = useRouter()
+
+function navigateToProfile() {
+  if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
+  router.push('/profile')
+}
 
 async function checkSession() {
   const { data: { session } } = await supabase.auth.getSession()

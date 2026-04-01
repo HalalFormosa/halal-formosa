@@ -17,7 +17,11 @@
     "add": "Add",
     "previous": "Previous",
     "next": "Next",
-    "clear": "Clear"
+    "clear": "Clear",
+    "filter": "Filter",
+    "reset": "Reset",
+    "apply": "Apply",
+    "details": "Details"
   },
   "dailyMissions": {
     "title": "Daily Missions",
@@ -92,6 +96,7 @@
     "latestNews": "Latest News",
     "totalProducts": "Total Products",
     "totalLocations": "Total Locations",
+    "partnerTier": "{tier} PARTNER",
     "statuses": {
       "halal": "Halal",
       "muslimFriendly": "Muslim-friendly",
@@ -103,7 +108,6 @@
     "currentLocation": "Current Location",
     "prayerTimes": "Prayer Times",
     "qibla": "Qibla",
-    "partnerTier": "{tier} PARTNER",
     "altProduct": "product",
     "altLocation": "location",
     "altNews": "news",
@@ -415,7 +419,7 @@
     "admin": {
       "sections": {
         "content": "Content Review",
-        "store": "Store Admin",
+        "store": "Platform Store Admin",
         "management": "Management",
         "system": "System & Logs"
       },
@@ -857,6 +861,7 @@
     "quantity": "Quantity",
     "promoBanner": "Promotions",
     "featuredProducts": "Featured Products",
+    "products": "Products",
     "noProducts": "No products found.",
     "loadingMore": "Loading more products...",
     "showingResults": "Showing {count} of {total} products",
@@ -904,19 +909,48 @@
       "nameRequired": "Product name is required.",
       "priceRequired": "Price is required.",
       "categoryRequired": "Category is required.",
-      "loginRequired": "You must be logged in."
+      "loginRequired": "You must be logged in.",
+      "noStoreFound": "No store found.",
+      "contactAdmin": "Please contact an admin to set up your store.",
+      "deleteConfirm": "Are you sure you want to delete this product?",
+      "deleteSuccess": "Product deleted successfully."
     },
+    "verifiedSeller": "Verified Seller",
+    "verifiedStore": "Verified Store",
+    "visitShop": "Visit Shop",
     "chat": {
       "title": "Chat with Store",
       "customerChat": "Customer Chat",
       "storeMessages": "Store Messages",
       "typeMessage": "Type a message...",
+      "online": "online",
       "noMessages": "No messages yet. Say hi! 👋",
       "noConversations": "No conversations yet.",
       "aboutProduct": "Chatting about this product",
       "today": "Today",
       "yesterday": "Yesterday"
     },
-    "payNow": "Pay Now"
+    "payNow": "Pay Now",
+    "priceRange": "Price Range (TWD)",
+    "inStockOnly": "In Stock Only",
+    "inStockShort": "pcs",
+    "inactive": "Inactive",
+    "sellerCenter": {
+      "title": "Seller Center",
+      "manageStore": "Manage Store Profile",
+      "manageProducts": "Manage Products",
+      "manageOrders": "Manage Orders",
+      "manageMessages": "Store Messages"
+    },
+    "settings": {
+      "title": "Store Settings",
+      "noBanner": "No Banner",
+      "bannerHint": "Recommended ratio: 3:1",
+      "storeName": "Store Name",
+      "storeNameZh": "Store Name (Chinese)",
+      "storeDescription": "Store Description",
+      "storeDescriptionZh": "Store Description (Chinese)",
+      "saveProfile": "Save Profile"
+    }
   }
 }

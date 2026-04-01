@@ -210,6 +210,46 @@
           </ion-list>
         </ion-card>
 
+        <!-- Seller Center Section (For Merchants) -->
+        <ion-card v-if="merchantStore">
+          <ion-list lines="none">
+            <ion-list-header style="min-height: 32px; padding-bottom: 4px;">
+              <ion-label style="font-size: 0.85rem; color: var(--ion-color-primary); margin-top: 0; text-transform: uppercase;">{{ $t('store.sellerCenter.title') }}</ion-label>
+            </ion-list-header>
+
+            <ion-item button @click="$router.push('/merchant/store/settings')">
+              <div class="icon-box" slot="start" style="background: rgba(var(--ion-color-primary-rgb), 0.1);">
+                <ion-icon :icon="settingsOutline" color="primary" />
+              </div>
+              <ion-label>
+                <h3>{{ $t('store.sellerCenter.manageStore') }}</h3>
+                <p>{{ merchantStore.name_en || merchantStore.name_zh }}</p>
+              </ion-label>
+            </ion-item>
+
+            <ion-item button @click="$router.push('/merchant/store/products')">
+              <div class="icon-box" slot="start" style="background: rgba(var(--ion-color-primary-rgb), 0.1);">
+                <ion-icon :icon="bagHandleOutline" color="primary" />
+              </div>
+              <ion-label>{{ $t('store.sellerCenter.manageProducts') }}</ion-label>
+            </ion-item>
+
+            <ion-item button @click="$router.push('/admin/store/orders')">
+              <div class="icon-box" slot="start" style="background: rgba(var(--ion-color-primary-rgb), 0.1);">
+                <ion-icon :icon="listOutline" color="primary" />
+              </div>
+              <ion-label>{{ $t('store.sellerCenter.manageOrders') }}</ion-label>
+            </ion-item>
+
+            <ion-item button @click="$router.push('/admin/store/chat-inbox')">
+              <div class="icon-box" slot="start" style="background: rgba(var(--ion-color-secondary-rgb), 0.1);">
+                <ion-icon :icon="chatbubblesOutline" color="secondary" />
+              </div>
+              <ion-label>{{ $t('store.sellerCenter.manageMessages') }}</ion-label>
+            </ion-item>
+          </ion-list>
+        </ion-card>
+
         <!-- Admin Section -->
         <ion-card v-if="isAdmin">
           <ion-list lines="none">
@@ -490,6 +530,7 @@ const userEmail = ref("");
 const userDisplayName = ref("");
 const userAvatar = ref("");
 const pendingCount = ref(0);
+const merchantStore = ref<any | null>(null);
 
 const loadingProfile = ref(true)     // avatar, name, email
 const loadingAdmin = ref(false)      // admin-only data
@@ -602,6 +643,20 @@ async function fetchPendingCount() {
   }
 }
 
+async function fetchMerchantStore(ownerId: string) {
+  const { data, error } = await supabase
+    .from("merchant_stores")
+    .select("*")
+    .eq("user_id", ownerId)
+    .maybeSingle();
+
+  if (!error && data) {
+    merchantStore.value = data;
+  } else {
+    merchantStore.value = null;
+  }
+}
+
 async function fetchPendingLocationsCount() {
   if (!isAdmin.value) return
 
@@ -647,7 +702,8 @@ async function refreshAllData(userId: string) {
     // Authorized profile and points fetch in parallel
     await Promise.all([
       loadUserProfile(userId),
-      fetchCurrentPoints(userId)
+      fetchCurrentPoints(userId),
+      fetchMerchantStore(userId)
     ]);
 
     // Check for profile completion
@@ -725,6 +781,7 @@ onMounted(async () => {
         userDisplayName.value = "";
         userAvatar.value = "";
         currentPoints.value = null;
+        merchantStore.value = null;
         return;
       }
 

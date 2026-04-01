@@ -16,6 +16,7 @@ export interface ChatConversation {
   id: string
   buyer_id: string
   store_user_id: string
+  store_id: string | null
   product_id: string | null
   last_message: string | null
   last_message_at: string
@@ -24,6 +25,7 @@ export interface ChatConversation {
   created_at: string
   // Joined
   store_products?: { name: string; name_zh: string | null; images: string[] | null } | null
+  merchant_stores?: { name: string; logo_url: string | null } | null
 }
 
 export function useStoreChat() {
@@ -58,12 +60,20 @@ export function useStoreChat() {
     const { data: existing } = await query.limit(1).single()
     if (existing) return existing.id
 
+    // Get the merchant store ID for this user
+    const { data: storeInfo } = await supabase
+      .from('merchant_stores')
+      .select('id')
+      .eq('user_id', storeUserId)
+      .single()
+
     // Create new
     const { data: created, error } = await supabase
       .from('store_chat_conversations')
       .insert({
         buyer_id: buyerId,
         store_user_id: storeUserId,
+        store_id: storeInfo?.id || null,
         product_id: productId || null
       })
       .select('id')
@@ -97,10 +107,10 @@ export function useStoreChat() {
    */
   async function sendMessage(conversationId: string, text: string, imageUrl?: string) {
     const { data: { session } } = await supabase.auth.getSession()
-    if (!session || !text.trim()) return
+    if (!session || !text.trim()) return { success: false, error: 'No session' }
 
     sending.value = true
-    const { error } = await supabase
+    const { error: insertError } = await supabase
       .from('store_chat_messages')
       .insert({
         conversation_id: conversationId,
@@ -109,31 +119,43 @@ export function useStoreChat() {
         image_url: imageUrl || null
       })
 
-    if (!error) {
-      // Update conversation last_message and unread counts
-      // Determine which side to increment
-      const { data: conv } = await supabase
-        .from('store_chat_conversations')
-        .select('buyer_id, store_user_id, buyer_unread, store_unread')
-        .eq('id', conversationId)
-        .single()
+    if (insertError) {
+      console.error('[Chat] Failed to insert message:', insertError)
+      sending.value = false
+      return { success: false, error: insertError.message }
+    }
 
-      if (conv) {
-        const isBuyer = session.user.id === conv.buyer_id
-        await supabase
-          .from('store_chat_conversations')
-          .update({
-            last_message: text.trim().substring(0, 100),
-            last_message_at: new Date().toISOString(),
-            ...(isBuyer
-              ? { store_unread: (conv.store_unread || 0) + 1 }
-              : { buyer_unread: (conv.buyer_unread || 0) + 1 }
-            )
-          })
-          .eq('id', conversationId)
+    // Update conversation last_message and unread counts
+    const { data: conv, error: fetchError } = await supabase
+      .from('store_chat_conversations')
+      .select('buyer_id, store_user_id, buyer_unread, store_unread')
+      .eq('id', conversationId)
+      .single()
+
+    if (fetchError) {
+      console.error('[Chat] Failed to fetch conversation for update:', fetchError)
+      // We don't return false here because the message was actually sent
+    } else if (conv) {
+      const isBuyer = session.user.id === conv.buyer_id
+      const { error: updateError } = await supabase
+        .from('store_chat_conversations')
+        .update({
+          last_message: text.trim().substring(0, 100),
+          last_message_at: new Date().toISOString(),
+          ...(isBuyer
+            ? { store_unread: (conv.store_unread || 0) + 1 }
+            : { buyer_unread: (conv.buyer_unread || 0) + 1 }
+          )
+        })
+        .eq('id', conversationId)
+
+      if (updateError) {
+        console.error('[Chat] Failed to update conversation info:', updateError)
       }
     }
+
     sending.value = false
+    return { success: true }
   }
 
   /**

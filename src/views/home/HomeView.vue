@@ -441,7 +441,14 @@
       </ion-card>
 
       <!-- === Store === -->
-      <ion-card>
+      <ion-card style="position: relative;">
+        <div v-if="isUnderConstruction" class="under-construction-overlay">
+          <div class="construction-card">
+            <ion-icon :icon="constructOutline" class="construction-icon" />
+            <h2>{{ $t('common.underConstruction') || 'Under Construction' }}</h2>
+            <p>Halal Formosa Store is coming soon.</p>
+          </div>
+        </div>
         <ion-card-header>
           <div class="card-header-row">
             <ion-card-title>{{ $t('home.marketplace') }}</ion-card-title>
@@ -647,10 +654,6 @@
           </ion-list>
 
 
-          <ion-skeleton-text
-              v-else
-              animated
-              style="width:100%;height:120px;border-radius:8px;"
           />
         </ion-card-content>
       </ion-card>
@@ -767,7 +770,8 @@ import {
   closeOutline,
   shieldCheckmarkOutline,
   locateOutline,
-  cartOutline
+  cartOutline,
+  constructOutline
 } from "ionicons/icons"
 import { useLeaderboard } from "@/composables/useLeaderboard";
 import {getLevelColor} from "@/composables/useLevels";
@@ -798,6 +802,8 @@ const doughnutRef = ref<any>(null)
 const locationChartRef = ref<any>(null)
 const RECENT_DISCOVER_LIMIT = 15
 const loadingStats = ref(true)
+
+const isUnderConstruction = computed(() => import.meta.env.VITE_STORE_UNDER_CONSTRUCTION === 'true')
 const loadingProducts = ref(true)
 const loadingLocations = ref(true)
 const recentProducts = ref<any[]>([])

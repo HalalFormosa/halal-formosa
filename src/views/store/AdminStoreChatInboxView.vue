@@ -38,11 +38,12 @@
           @click="openChat(conv.id)"
         >
           <div class="conv-avatar">
-            <ion-icon :icon="personCircleOutline" />
+            <img v-if="conv.buyer_profile?.avatar_url" :src="conv.buyer_profile.avatar_url" class="buyer-avatar-img" />
+            <ion-icon v-else :icon="personCircleOutline" />
           </div>
           <div class="conv-body">
             <div class="conv-top">
-              <span class="conv-name">{{ conv.buyer_email || 'Customer' }}</span>
+              <span class="conv-name">{{ conv.buyer_profile?.display_name || conv.buyer_profile?.email || $t('store.chat.customer') }}</span>
               <span class="conv-time">{{ formatTime(conv.last_message_at) }}</span>
             </div>
             <div class="conv-bottom">
@@ -143,17 +144,17 @@ async function fetchConversations() {
   if (buyerIds.length > 0) {
     const { data: profs } = await supabase
       .from('user_profiles')
-      .select('id, email')
+      .select('id, email, display_name, avatar_url')
       .in('id', buyerIds)
     profiles = profs || []
   }
 
-  // Flatten buyer email
+  // Flatten buyer info
   conversations.value = convs.map((c: any) => {
     const p = profiles.find((prof: any) => prof.id === c.buyer_id)
     return {
       ...c,
-      buyer_email: p?.email || null
+      buyer_profile: p || null
     }
   })
 
@@ -203,6 +204,13 @@ onMounted(fetchConversations)
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  overflow: hidden;
+}
+
+.buyer-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .conv-avatar ion-icon {

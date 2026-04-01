@@ -5,27 +5,17 @@
     </ion-header>
 
     <ion-content :fullscreen="true">
-      <div v-if="isUnderConstruction" class="under-construction-overlay">
+      <div v-if="isUnderConstruction" slot="fixed" class="under-construction-overlay">
         <div class="construction-card">
           <ion-icon :icon="constructOutline" class="construction-icon" />
           <h2>{{ $t('common.underConstruction') || 'Under Construction' }}</h2>
           <p>Admin order management is undergoing a scheduled update.</p>
         </div>
-
-        <!-- Skeleton -->
-        <div class="orders-list">
-          <div v-for="n in 4" :key="n" class="order-card skeleton-card">
-            <div class="order-header">
-              <ion-skeleton-text animated style="width: 40%; height: 16px;" />
-              <ion-skeleton-text animated style="width: 25%; height: 16px;" />
-            </div>
-            <ion-skeleton-text animated style="width: 60%; height: 14px; margin-top: 8px;" />
-          </div>
-        </div>
       </div>
 
-      <template v-else>
-        <ion-refresher slot="fixed" @ionRefresh="doRefresh($event)">
+      <div class="admin-orders-wrapper" style="position: relative; min-height: 100%;">
+
+        <ion-refresher v-if="!isUnderConstruction" slot="fixed" @ionRefresh="doRefresh($event)">
           <ion-refresher-content />
         </ion-refresher>
 
@@ -37,7 +27,7 @@
           :class="['modern-category-chip', { 'selected': selectedStatus === s.value }]"
           @click="selectedStatus = s.value"
         >
-          <span class="chip-emoji">{{ s.emoji }}</span>
+          <ion-icon :icon="s.icon" class="chip-status-icon" />
           {{ s.label }}
           <ion-badge v-if="s.count > 0" :color="s.badgeColor" class="chip-badge">{{ s.count }}</ion-badge>
         </ion-chip>
@@ -54,7 +44,8 @@
             </div>
             <div class="order-status-col">
               <ion-badge :color="statusColor(order.status)" class="status-badge">
-                {{ statusEmoji(order.status) }} {{ order.status }}
+                <ion-icon :icon="statusIcon(order.status)" class="badge-icon" />
+                {{ order.status }}
               </ion-badge>
               <span class="order-total">{{ $t('store.twd') }}{{ formatPrice(order.total_amount) }}</span>
             </div>
@@ -103,7 +94,8 @@
                   @click.stop="updateOrderStatus(order.id, action.status)"
                   :disabled="updating"
                 >
-                  {{ action.emoji }} {{ action.label }}
+                  <ion-icon :icon="action.icon" slot="start" />
+                  {{ action.label }}
                 </ion-button>
               </div>
             </div>
@@ -127,7 +119,7 @@
         <ion-icon :icon="receiptOutline" class="empty-icon" />
         <p>{{ $t('store.noOrders') }}</p>
       </div>
-      </template>
+      </div>
     </ion-content>
   </ion-page>
 </template>
@@ -139,7 +131,8 @@ import {
   IonRefresher, IonRefresherContent, IonSkeletonText, toastController
 } from '@ionic/vue'
 import {
-  personOutline, callOutline, locationOutline, chatbubbleOutline, receiptOutline, constructOutline
+  personOutline, callOutline, locationOutline, chatbubbleOutline, receiptOutline, constructOutline,
+  timeOutline, cardOutline, cubeOutline, checkmarkCircleOutline, closeOutline
 } from 'ionicons/icons'
 import AppHeader from '@/components/AppHeader.vue'
 import { supabase } from '@/plugins/supabaseClient'
@@ -156,12 +149,12 @@ const selectedStatus = ref('all')
 const statusCounts = ref<Record<string, number>>({ pending: 0, paid: 0, shipped: 0, completed: 0, cancelled: 0 })
 
 const statusFilters = computed(() => [
-  { value: 'all', label: t('store.allCategories'), emoji: '📋', count: 0, badgeColor: 'medium' },
-  { value: 'pending', label: 'Pending', emoji: '⏳', count: statusCounts.value.pending, badgeColor: 'warning' },
-  { value: 'paid', label: 'Paid', emoji: '💳', count: statusCounts.value.paid, badgeColor: 'success' },
-  { value: 'shipped', label: 'Shipped', emoji: '📦', count: statusCounts.value.shipped, badgeColor: 'tertiary' },
-  { value: 'completed', label: 'Done', emoji: '✅', count: statusCounts.value.completed, badgeColor: 'medium' },
-  { value: 'cancelled', label: 'Cancel', emoji: '❌', count: statusCounts.value.cancelled, badgeColor: 'danger' }
+  { value: 'all', label: t('store.allCategories'), icon: receiptOutline, count: 0, badgeColor: 'medium' },
+  { value: 'pending', label: 'Pending', icon: timeOutline, count: statusCounts.value.pending, badgeColor: 'warning' },
+  { value: 'paid', label: 'Paid', icon: cardOutline, count: statusCounts.value.paid, badgeColor: 'success' },
+  { value: 'shipped', label: 'Shipped', icon: cubeOutline, count: statusCounts.value.shipped, badgeColor: 'tertiary' },
+  { value: 'completed', label: 'Done', icon: checkmarkCircleOutline, count: statusCounts.value.completed, badgeColor: 'medium' },
+  { value: 'cancelled', label: 'Cancel', icon: closeOutline, count: statusCounts.value.cancelled, badgeColor: 'danger' }
 ])
 
 function formatPrice(price: number) { return Number(price).toLocaleString() }
@@ -180,23 +173,23 @@ function statusColor(status: string) {
   return map[status] || 'medium'
 }
 
-function statusEmoji(status: string) {
-  const map: Record<string, string> = { pending: '⏳', paid: '💳', shipped: '📦', completed: '✅', cancelled: '❌' }
-  return map[status] || '📋'
+function statusIcon(status: string) {
+  const map: Record<string, any> = { pending: timeOutline, paid: cardOutline, shipped: cubeOutline, completed: checkmarkCircleOutline, cancelled: closeOutline }
+  return map[status] || receiptOutline
 }
 
 function getActions(status: string) {
-  const actions: Record<string, Array<{ status: string; label: string; emoji: string; color: string }>> = {
+  const actions: Record<string, Array<{ status: string; label: string; icon: any; color: string }>> = {
     pending: [
-      { status: 'paid', label: 'Mark Paid', emoji: '💳', color: 'success' },
-      { status: 'cancelled', label: 'Cancel', emoji: '❌', color: 'danger' }
+      { status: 'paid', label: 'Mark Paid', icon: cardOutline, color: 'success' },
+      { status: 'cancelled', label: 'Cancel', icon: closeOutline, color: 'danger' }
     ],
     paid: [
-      { status: 'shipped', label: 'Mark Shipped', emoji: '📦', color: 'tertiary' },
-      { status: 'cancelled', label: 'Cancel', emoji: '❌', color: 'danger' }
+      { status: 'shipped', label: 'Mark Shipped', icon: cubeOutline, color: 'tertiary' },
+      { status: 'cancelled', label: 'Cancel', icon: closeOutline, color: 'danger' }
     ],
     shipped: [
-      { status: 'completed', label: 'Mark Done', emoji: '✅', color: 'success' }
+      { status: 'completed', label: 'Mark Done', icon: checkmarkCircleOutline, color: 'success' }
     ]
   }
   return actions[status] || []
@@ -314,10 +307,7 @@ onMounted(async () => {
   min-width: 18px;
 }
 
-/* Under Construction */
-.under-construction-overlay {
-  padding: 8px 16px;
-}
+
 
 /* Orders list */
 
@@ -377,7 +367,12 @@ onMounted(async () => {
   padding: 3px 8px;
   text-transform: capitalize;
   font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
+.badge-icon { font-size: 14px; }
+.chip-status-icon { margin-right: 4px; font-size: 16px; }
 
 .order-total {
   font-size: 1rem;
