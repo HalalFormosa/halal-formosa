@@ -346,7 +346,7 @@
 
 <script setup lang="ts">
 
-/* ---------------- Imports ---------------- */
+/* ---------------- Imports  ---------------- */
 import {
   IonPage, IonContent, IonToolbar, IonSearchbar, IonIcon, IonFab, IonFabButton,
   IonCard, IonThumbnail, IonButton, onIonViewDidEnter, IonLabel, IonChip, IonHeader,
