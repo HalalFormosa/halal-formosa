@@ -197,9 +197,9 @@
             </ion-card>
           </div>
 
-          <div v-else class="discover-grid compact-grid">
+          <transition-group v-else name="partner-list" tag="div" class="discover-grid compact-grid">
             <ion-card
-                v-for="partner in displayedPartners"
+                v-for="partner in halalPartners"
                 :key="partner.id"
                 :class="[
   'discover-item',
@@ -234,7 +234,7 @@
               <div v-if="['gold', 'silver'].includes(String(partner.partner_tier || '').toLowerCase())" class="premium-flare"></div>
             </ion-card>
 
-          </div>
+          </transition-group>
         </ion-card-content>
 
       </ion-card>
@@ -945,6 +945,8 @@ const locationChartData = ref<ChartData<'doughnut'>>({
 })
 
 const halalPartners = ref<any[]>([])
+const halalPartnersFull = ref<any[]>([])
+const rotationTimer = ref<any>(null)
 const loadingPartners = ref(true)
 
 type PrayerTimes = {
@@ -1007,12 +1009,7 @@ const TIER_PRIORITY: Record<string, number> = {
   bronze: 1
 }
 
-const displayedPartners = computed(() => {
-  return [...halalPartners.value].sort((a, b) => {
-    return (TIER_PRIORITY[b.partner_tier] || 0)
-        - (TIER_PRIORITY[a.partner_tier] || 0)
-  })
-})
+// Removed displayedPartners computed property to allow direct control over rotation order via halalPartners.value
 
 async function getUserLocation(): Promise<{
   lat: number
@@ -1487,6 +1484,7 @@ async function fetchLocationCategoryStats() {
 async function fetchHomePartners() {
   loadingPartners.value = true
 
+  // 1. Fetch more partners (up to 100) to ensure we can rotate fairly
   const { data, error } = await supabase
       .from('partners')
       .select(`
@@ -1496,45 +1494,88 @@ async function fetchHomePartners() {
     partner_tier
   `)
       .eq('is_active', true)
-      .order('partner_tier', { ascending: false }) // tiers still float up
-      .limit(6)
+      .limit(100)
 
-  if (error) {
-    console.error('[Home Partners]', error)
+  if (error || !data) {
+    console.error('[Home Partners] fetch error:', error)
     loadingPartners.value = false
     return
   }
 
-  // 1. Map weights for tiers
+  // 2. Define Tier Weights
   const tierWeights: Record<string, number> = {
     'gold': 3,
     'silver': 2,
     'bronze': 1
   }
 
-  // 2. Perform tiered randomization
-  const processed = (data ?? []).map(b => ({
+  // 3. Map to stable format
+  halalPartnersFull.value = data.map(b => ({
     id: b.id,
     name: b.name,
     partner_tier: b.partner_tier,
     logo:
         b.logo_url ||
         `https://placehold.co/300x300?text=${encodeURIComponent(b.name)}`,
-    _weight: tierWeights[(b.partner_tier || '').toLowerCase()] || 0,
-    _random: Math.random() // Used for stable-ish randomization during this session
+    _weight: tierWeights[(b.partner_tier || '').toLowerCase()] || 0
   }))
 
-  // 3. Sort by tier weight (desc) then by random value
-  processed.sort((a, b) => {
-    if (b._weight !== a._weight) {
-      return b._weight - a._weight
-    }
-    return b._random - a._random
+  loadingPartners.value = false
+  
+  // 4. Start the first rotation
+  updatePartnerRotation()
+}
+
+/**
+ * Performs a fair (Round-Robin) shift of the partners list
+ * and schedules the next rotation based on the top partner's tier.
+ */
+function updatePartnerRotation() {
+  if (rotationTimer.value) clearTimeout(rotationTimer.value)
+  if (halalPartnersFull.value.length === 0) return
+
+  // --- "Universal Adil" (Fair) Rotation Logic ---
+  // We rotate the ENTIRE list together, so every partner eventually 
+  // reaches the front of the line.
+  const rotationIndexStr = localStorage.getItem('partner_rotation_index') || '0'
+  const rotationIndex = parseInt(rotationIndexStr, 10)
+
+  // 1. Create a stable, tiered base list
+  const tierWeights: Record<string, number> = { 'gold': 3, 'silver': 2, 'bronze': 1 }
+  const sortedFull = [...halalPartnersFull.value].sort((a, b) => {
+    // Sort by tier weight (desc), then by name (asc) for stability
+    if (b._weight !== a._weight) return b._weight - a._weight
+    return a.name.localeCompare(b.name)
   })
 
-  // 4. Assign results (capped at 6)
-  halalPartners.value = processed.slice(0, 6)
-  loadingPartners.value = false
+  // 2. Rotate the entire list based on the global index
+  const length = sortedFull.length
+  const shift = rotationIndex % length
+  const rotatedFull = sortedFull.slice(shift).concat(sortedFull.slice(0, shift))
+
+  // 3. Take the first 6 for the Home grid
+  const finalSelection = rotatedFull.slice(0, 6)
+  halalPartners.value = finalSelection
+
+  // Increment rotation index for the next turn
+  localStorage.setItem('partner_rotation_index', (rotationIndex + 1).toString())
+
+  // --- Tiered Autoplay Logic ---
+  // The delay before the next turn depends on the current featured partner (#1 spot)
+  const featuredTier = (finalSelection[0]?.partner_tier || '').toLowerCase()
+  
+  let nextRotationDelay = 3500 // Default for Normal/Bronze
+  if (featuredTier === 'gold') {
+    nextRotationDelay = 10000 // 10s for Gold
+  } else if (featuredTier === 'silver') {
+    nextRotationDelay = 7000  // 7s for Silver
+  } else if (featuredTier === 'bronze') {
+    nextRotationDelay = 5000  // 5s for Bronze
+  }
+
+  rotationTimer.value = setTimeout(() => {
+    updatePartnerRotation()
+  }, nextRotationDelay)
 }
 
 
@@ -1683,6 +1724,10 @@ onBeforeUnmount(() => {
   if (timeInterval) {
     clearInterval(timeInterval)
     timeInterval = null
+  }
+  if (rotationTimer.value) {
+    clearTimeout(rotationTimer.value)
+    rotationTimer.value = null
   }
 })
 
@@ -2228,4 +2273,15 @@ function openPartner(partner: any) {
 /* Dark mode handled by global variables */
 
 
+/* --- Partner List Transition --- */
+.partner-list-move {
+  transition: transform 0.8s ease;
+}
+.partner-list-enter-active, .partner-list-leave-active {
+  transition: all 0.5s ease;
+}
+.partner-list-enter-from, .partner-list-leave-to {
+  opacity: 0;
+  transform: translateY(10px);
+}
 </style>

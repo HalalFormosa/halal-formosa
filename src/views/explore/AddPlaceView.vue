@@ -968,6 +968,12 @@ const normalizeOpeningHours = () => {
 
 const submitPlace = async () => {
   if (submitting.value) return
+
+  // ✅ Auto-add any pending tag in input box before saving
+  if (tagInput.value.trim()) {
+    addTag()
+  }
+
   if (!form.value.image && !pendingFile.value) {
     toast.value = { open: true, message: 'Please select an image.', color: 'warning' }
     return

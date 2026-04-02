@@ -17,11 +17,13 @@
     "add": "Add",
     "previous": "Previous",
     "next": "Next",
+    "submit": "Submit",
     "clear": "Clear",
     "filter": "Filter",
     "reset": "Reset",
     "apply": "Apply",
-    "details": "Details"
+    "details": "Details",
+    "reapply": "Re-apply"
   },
   "dailyMissions": {
     "title": "Daily Missions",
@@ -462,7 +464,7 @@
     "settings": "Settings",
     "legal": "Legal",
     "credits": "Credits & Contributor",
-    "support": "Support Halal Formosa ❤\uFE0F",
+    "support": "Support Halal Formosa ❤️",
     "supportDescription": "If you like this app, consider supporting its development",
     "bobaMe": "Give me a Boba!",
     "supportThank": "Thank you for your support! 🙏",
@@ -493,6 +495,12 @@
       "consentContent2": "My Bio may be visible publicly if I enable \"Show my name on leaderboard\" in Settings.",
       "save": "Save",
       "completeToContinue": "Complete Profile to Continue"
+    },
+    "merchant": {
+      "startSelling": "Start Selling",
+      "storeSubtitle": "in Halal Formosa Store",
+      "pendingStatus": "Application Under Review",
+      "pendingDesc": "We're verifying your store details. Expect a call soon!"
     }
   },
   "credits": {
@@ -834,6 +842,20 @@
         "active": "Active",
         "inactive": "Inactive"
       }
+    },
+    "merchant": {
+      "title": "Merchant Applications",
+      "approve": "Approve",
+      "reject": "Reject",
+      "noPending": "No pending applications at this time.",
+      "confirmApprove": "Are you sure you want to approve this application? This will create the merchant's store automatically.",
+      "rejectionReasonTitle": "Reason for Rejection",
+      "rejectionReasonPlaceholder": "Explain why the application is being rejected...",
+      "status": {
+        "pending": "Pending Verification",
+        "approved": "Approved",
+        "rejected": "Rejected"
+      }
     }
   },
   "update": {
@@ -961,6 +983,46 @@
       "storeDescription": "Store Description",
       "storeDescriptionZh": "Store Description (Chinese)",
       "saveProfile": "Save Profile"
+    }
+  },
+  "merchant": {
+    "register": {
+      "title": "Become a Partner",
+      "subtitle": "Join the Halal Formosa community as a merchant",
+      "steps": {
+        "storeInfo": "Store Information",
+        "address": "Location",
+        "description": "About Your Store",
+        "contact": "Phone Verification",
+        "business": "Business UBN",
+        "review": "Final Review"
+      },
+      "placeholders": {
+        "storeNameEn": "Store Name (English)",
+        "storeNameZh": "商店名稱 (中文)",
+        "address": "Store Address / City",
+        "description": "Describe your products and services...",
+        "phone": "Contact Phone Number",
+        "ubn": "Unified Business Number (8-digits)"
+      },
+      "hints": {
+        "address": "📍 Providing just the city is OK for now.",
+        "description": "💡 Please mention what you sell (e.g. Fried Chicken, Indonesian Grocery) to help us with Halal verification.",
+        "phone": "📞 Our team will give you a quick call to verify your identity. No sensitive ID documents required!",
+        "ubn": "Do you have a Unified Business Number (UBN)?",
+        "phone_warning": "Must be a valid number for our team to verify your identity.",
+        "contact_note": "After submission, our team will reach you via Call, WhatsApp, or LINE for final identity verification. Halal business should be Easy and Trusted!",
+        "human_verify": "Human Verification",
+        "review": "Please review your information before submitting.",
+        "review_note": "By submitting, you agree that Halal Formosa will contact you via phone for identity verification."
+      },
+      "success": "Application submitted successfully! Our team will contact you soon.",
+      "rejectedStatus": "Application Rejected",
+      "rejectedDesc": "Unfortunately, your merchant application was not approved at this time.",
+      "rejectionReason": "Reason for Rejection",
+      "rejectedBanner": "Update Your Application",
+      "rejectedBannerDesc": "Your previous application was not approved. Please review the reason below and update your information before resubmitting.",
+      "rejectedProfileDesc": "Your application was not approved. Click below to view feedback and revise."
     }
   }
 }

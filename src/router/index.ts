@@ -148,6 +148,12 @@ const routes: Array<RouteRecordRaw> = [
         name: 'UserDetail',
         component: () => import('@/views/admin/UserDetailView.vue')
     },
+    {
+        path: '/admin/merchant/applications',
+        name: 'AdminMerchantApplications',
+        component: () => import('@/views/admin/MerchantApplicationsView.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true, noAds: true }
+    },
 
     // Store sub-routes (outside tabs)
     {
@@ -235,6 +241,12 @@ const routes: Array<RouteRecordRaw> = [
         path: '/merchant/store/products',
         name: 'MerchantProductList',
         component: () => import('@/views/store/MerchantProductListView.vue'),
+        meta: { requiresAuth: true, noAds: true }
+    },
+    {
+        path: '/merchant/register',
+        name: 'MerchantRegistration',
+        component: () => import('@/views/store/MerchantRegistrationView.vue'),
         meta: { requiresAuth: true, noAds: true }
     }
 

@@ -17,11 +17,13 @@
     "add": "添加",
     "previous": "上一頁",
     "next": "下一頁",
+    "submit": "提交",
     "clear": "清除",
     "filter": "篩選",
     "reset": "重置",
     "apply": "應用",
-    "details": "詳情"
+    "details": "詳情",
+    "reapply": "重新申請"
   },
   "dailyMissions": {
     "title": "每日任務",
@@ -492,6 +494,12 @@
       "consentContent2": "如果在設定中開啟「在排行榜上顯示我的名稱」，我的簡介可能會被公開。",
       "save": "儲存",
       "completeToContinue": "完成個人資料以繼續"
+    },
+    "merchant": {
+      "startSelling": "開始經營",
+      "storeSubtitle": "在 Halal Formosa 商店",
+      "pendingStatus": "申請審核中",
+      "pendingDesc": "我們正在驗證您的商店詳細資訊。請留意我們的來電！"
     }
   },
   "credits": {
@@ -833,6 +841,20 @@
         "active": "啟用",
         "inactive": "停用"
       }
+    },
+    "merchant": {
+      "title": "申請管理",
+      "approve": "核准",
+      "reject": "駁回",
+      "noPending": "目前沒有待處理的申請。",
+      "confirmApprove": "您確定要核准此申請嗎？這將自動為該商家同步創建商店資訊。",
+      "rejectionReasonTitle": "駁回原因",
+      "rejectionReasonPlaceholder": "請說明駁回原因...",
+      "status": {
+        "pending": "等待驗證中",
+        "approved": "已核准",
+        "rejected": "已駁回"
+      }
     }
   },
   "update": {
@@ -961,6 +983,46 @@
       "storeDescription": "商店描述",
       "storeDescriptionZh": "商店描述 (中文)",
       "saveProfile": "儲存資料"
+    }
+  },
+  "merchant": {
+    "register": {
+      "title": "成為合作夥伴",
+      "subtitle": "加入 Halal Formosa 社群，開啟您的清真商機",
+      "steps": {
+        "storeInfo": "商店資訊",
+        "address": "商店位置",
+        "description": "關於您的商店",
+        "contact": "電話驗證",
+        "business": "統一編號 (UBN)",
+        "review": "最終確認"
+      },
+      "placeholders": {
+        "storeNameEn": "商店名稱 (英文)",
+        "storeNameZh": "商店名稱 (中文)",
+        "address": "商店地址 / 城市",
+        "description": "描述您的產品和服務...",
+        "phone": "聯繫電話號碼",
+        "ubn": "統一編號 (8位數字)"
+      },
+      "hints": {
+        "address": "📍 目前僅提供城市名稱即可。",
+        "description": "💡 請提及您所販售的內容（例如：炸雞、印尼雜貨），以協助我們進行清真驗證。",
+        "phone": "📞 我們的團隊將撥打電話給您，以驗證您的身份。無需上傳敏感證件！",
+        "ubn": "您是否有統一編號 (UBN)？",
+        "phone_warning": "必須提供有效的電話號碼，以便我們的團隊進行身分驗證。",
+        "contact_note": "提交後，我們的團隊將透過電話、WhatsApp 或 LINE 與您聯繫進行最終身分驗證。經營清真商機應該是簡單且值得信賴的！",
+        "human_verify": "人工驗證",
+        "review": "請在提交前檢查您的資訊。",
+        "review_note": "提交即代表您同意 Halal Formosa 透過電話與您聯繫以進行身分驗證。"
+      },
+      "success": "申請已成功提交！我們的團隊將很快與您聯繫。",
+      "rejectedStatus": "申請未通過",
+      "rejectedDesc": "很抱歉，您的商家申請目前未能通過核准。",
+      "rejectionReason": "未通過原因",
+      "rejectedBanner": "更新您的申請資訊",
+      "rejectedBannerDesc": "您之前的申請未獲核准。請參考下方的未通過原因，並在重新提交前更新您的資訊。",
+      "rejectedProfileDesc": "您的申請未獲核准。請點擊下方查看原因並進行修正。"
     }
   }
 }

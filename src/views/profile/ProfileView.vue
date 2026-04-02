@@ -1,7 +1,7 @@
 <template>
   <ion-page>
     <ion-header class="ion-no-border">
-      <app-header :title="$t('profile.title')" :icon="personCircleOutline" />
+      <app-header :title="$t('profile.title')" :icon="icons.personCircleOutline" />
     </ion-header>
 
     <ion-content class="ion-padding">
@@ -37,7 +37,7 @@
           <div class="profile-header-premium">
             <div class="avatar-container">
               <img v-if="userAvatar" :src="userAvatar" class="avatar-premium" />
-              <ion-icon v-else :icon="personCircleOutline" class="avatar-premium" style="font-size: 120px; color: var(--ion-color-step-600)" />
+              <ion-icon v-else :icon="icons.personCircleOutline" class="avatar-premium" style="font-size: 120px; color: var(--ion-color-step-600)" />
             </div>
 
             <div class="profile-info text-center" v-if="userEmail">
@@ -46,7 +46,7 @@
               
               <div class="badge-row">
                 <ion-badge v-if="isSubscribed" class="badge-pro">
-                  <ion-icon :icon="bookmarkOutline" style="margin-right: 4px" />
+                  <ion-icon :icon="icons.bookmarkOutline" style="margin-right: 4px" />
                   {{ $t('profile.proMember') }}
                 </ion-badge>
                 <ion-badge v-else :color="donorBadge.color" style="border-radius: 12px; padding: 6px 12px;">
@@ -72,7 +72,7 @@
           <template v-if="isSubscribed">
             <ion-item lines="none" :style="{ '--background': 'transparent' }">
               <div class="icon-box" slot="start">
-                <ion-icon :icon="bookmarkOutline" color="carrot" />
+                <ion-icon :icon="icons.bookmarkOutline" color="carrot" />
               </div>
               <ion-label>
                 <h3 style="font-weight: 700;">{{ $t('profile.pro.title') }}</h3>
@@ -93,7 +93,7 @@
           <div v-else class="pro-upgrade-engaging">
             <div class="pro-header-engaging">
               <div class="pro-icon-hero">
-                <ion-icon :icon="bookmarkOutline" />
+                <ion-icon :icon="icons.bookmarkOutline" />
               </div>
               <h2 class="pro-title-engaging">{{ $t('profile.pro.title') }}</h2>
               <p class="pro-subtitle-engaging">{{ $t('profile.pro.upgrade') }}</p>
@@ -101,29 +101,29 @@
 
             <div class="pro-benefits-grid">
               <div class="benefit-chip">
-                <ion-icon :icon="checkmarkCircle" />
+                <ion-icon :icon="icons.checkmarkCircle" />
                 <span>{{ $t('profile.pro.benefits.aiExplanation') }}</span>
               </div>
               <div class="benefit-chip">
-                <ion-icon :icon="checkmarkCircle" />
+                <ion-icon :icon="icons.checkmarkCircle" />
                 <span>{{ $t('profile.pro.benefits.smartFeed') }}</span>
               </div>
               <div class="benefit-chip">
-                <ion-icon :icon="checkmarkCircle" />
+                <ion-icon :icon="icons.checkmarkCircle" />
                 <span>{{ $t('profile.pro.benefits.noAds') }}</span>
               </div>
               
               <template v-if="showBenefits">
                 <div class="benefit-chip fade-in">
-                  <ion-icon :icon="checkmarkCircle" />
+                  <ion-icon :icon="icons.checkmarkCircle" />
                   <span>{{ $t('profile.pro.benefits.unlimitedCollections') }}</span>
                 </div>
                 <div class="benefit-chip fade-in">
-                  <ion-icon :icon="checkmarkCircle" />
+                  <ion-icon :icon="icons.checkmarkCircle" />
                   <span>{{ $t('profile.pro.benefits.unlimitedScans') }}</span>
                 </div>
                 <div class="benefit-chip fade-in">
-                  <ion-icon :icon="checkmarkCircle" />
+                  <ion-icon :icon="icons.checkmarkCircle" />
                   <span>{{ $t('profile.pro.benefits.prioritySupport') }}</span>
                 </div>
               </template>
@@ -169,18 +169,18 @@
 
             <ion-item v-if="userEmail" button @click="goToEditProfile">
               <div class="icon-box" slot="start">
-                <ion-icon :icon="createOutline" />
+                <ion-icon :icon="icons.createOutline" />
               </div>
               <ion-label>
                 <h3>{{ $t('profile.aboutMe') }}</h3>
                 <p>{{ userBio || $t('profile.noBio') }}</p>
               </ion-label>
-              <ion-icon :icon="settingsOutline" slot="end" size="small" style="opacity: 0.3" />
+              <ion-icon :icon="icons.settingsOutline" slot="end" size="small" style="opacity: 0.3" />
             </ion-item>
 
             <ion-item button @click="goToSettings">
               <div class="icon-box" slot="start">
-                <ion-icon :icon="settingsOutline" />
+                <ion-icon :icon="icons.settingsOutline" />
               </div>
               <ion-label>{{ $t('profile.settings') }}</ion-label>
             </ion-item>
@@ -196,16 +196,65 @@
 
             <ion-item v-if="userEmail" button @click="goToSavedItems">
               <div class="icon-box" slot="start">
-                <ion-icon :icon="bookmarkOutline" />
+                <ion-icon :icon="icons.bookmarkOutline" />
               </div>
               <ion-label>{{ $t('profile.savedItems') }}</ion-label>
             </ion-item>
 
             <ion-item v-if="userEmail" button @click="$router.push('/store/my-orders')">
               <div class="icon-box" slot="start">
-                <ion-icon :icon="bagHandleOutline" />
+                <ion-icon :icon="icons.bagHandleOutline" />
               </div>
               <ion-label>{{ $t('store.myOrders') }}</ion-label>
+            </ion-item>
+          </ion-list>
+        </ion-card>
+
+        <!-- Become a Merchant Section -->
+        <ion-card v-if="userEmail && !merchantStore">
+          <div v-if="merchantApplication?.status === 'pending'" class="xp-section vendor-onboarding pending">
+            <div class="pending-status-box">
+              <div class="icon-pulse">
+                <ion-icon :icon="icons.timeOutline" color="carrot" />
+              </div>
+              <div class="status-text">
+                <h3>{{ $t('profile.merchant.pendingStatus') }}</h3>
+                <p>{{ $t('profile.merchant.pendingDesc') }}</p>
+              </div>
+            </div>
+          </div>
+          
+          <div v-else-if="merchantApplication?.status === 'rejected'" class="xp-section vendor-onboarding rejected">
+            <div class="pending-status-box">
+              <div class="icon-pulse-red">
+                <ion-icon :icon="icons.closeCircleOutline" color="danger" />
+              </div>
+              <div class="status-text">
+                <h3 style="color: var(--ion-color-danger)">{{ $t('merchant.register.rejectedStatus') }}</h3>
+                <p>{{ $t('merchant.register.rejectedProfileDesc') }}</p>
+                
+                <ion-button 
+                  fill="clear" 
+                  size="small" 
+                  color="carrot" 
+                  @click="goToMerchantRegistration"
+                  style="--padding-start: 0; font-weight: 700; margin-top: 8px;"
+                >
+                  {{ $t('common.reapply') }}
+                </ion-button>
+              </div>
+            </div>
+          </div>
+          
+          <ion-list v-else lines="none" class="vendor-list">
+            <ion-item button @click="$router.push('/merchant/register')" class="vendor-onboarding-item">
+              <div class="icon-box-vendor" slot="start">
+                <ion-icon :icon="icons.storefrontOutline" color="carrot" />
+              </div>
+              <ion-label>
+                <h3 class="vendor-title-label">{{ $t('profile.merchant.startSelling') }}</h3>
+                <p class="vendor-subtitle-label">{{ $t('profile.merchant.storeSubtitle') }}</p>
+              </ion-label>
             </ion-item>
           </ion-list>
         </ion-card>
@@ -219,7 +268,7 @@
 
             <ion-item button @click="$router.push('/merchant/store/settings')">
               <div class="icon-box" slot="start" style="background: rgba(var(--ion-color-primary-rgb), 0.1);">
-                <ion-icon :icon="settingsOutline" color="primary" />
+                <ion-icon :icon="icons.settingsOutline" color="primary" />
               </div>
               <ion-label>
                 <h3>{{ $t('store.sellerCenter.manageStore') }}</h3>
@@ -229,21 +278,21 @@
 
             <ion-item button @click="$router.push('/merchant/store/products')">
               <div class="icon-box" slot="start" style="background: rgba(var(--ion-color-primary-rgb), 0.1);">
-                <ion-icon :icon="bagHandleOutline" color="primary" />
+                <ion-icon :icon="icons.bagHandleOutline" color="primary" />
               </div>
               <ion-label>{{ $t('store.sellerCenter.manageProducts') }}</ion-label>
             </ion-item>
 
             <ion-item button @click="$router.push('/admin/store/orders')">
               <div class="icon-box" slot="start" style="background: rgba(var(--ion-color-primary-rgb), 0.1);">
-                <ion-icon :icon="listOutline" color="primary" />
+                <ion-icon :icon="icons.listOutline" color="primary" />
               </div>
               <ion-label>{{ $t('store.sellerCenter.manageOrders') }}</ion-label>
             </ion-item>
 
             <ion-item button @click="$router.push('/admin/store/chat-inbox')">
               <div class="icon-box" slot="start" style="background: rgba(var(--ion-color-secondary-rgb), 0.1);">
-                <ion-icon :icon="chatbubblesOutline" color="secondary" />
+                <ion-icon :icon="icons.chatbubblesOutline" color="secondary" />
               </div>
               <ion-label>{{ $t('store.sellerCenter.manageMessages') }}</ion-label>
             </ion-item>
@@ -259,7 +308,7 @@
 
             <ion-item button @click="goToReviewSubmissions">
               <div class="icon-box" slot="start">
-                <ion-icon :icon="listOutline" />
+                <ion-icon :icon="icons.listOutline" />
               </div>
               <ion-label>{{ $t('profile.review') }}</ion-label>
               <ion-badge v-if="pendingCount > 0" color="danger" slot="end" style="border-radius: 8px;">{{ pendingCount }}</ion-badge>
@@ -267,7 +316,7 @@
 
             <ion-item button @click="goToReviewLocations">
               <div class="icon-box" slot="start">
-                <ion-icon :icon="listOutline" />
+                <ion-icon :icon="icons.listOutline" />
               </div>
               <ion-label>{{ $t('profile.admin.locationsReview') }}</ion-label>
               <ion-badge v-if="pendingLocationsCount > 0" color="danger" slot="end" style="border-radius: 8px;">{{ pendingLocationsCount }}</ion-badge>
@@ -279,7 +328,7 @@
 
             <ion-item button @click="goToStoreOrders">
               <div class="icon-box" slot="start">
-                <ion-icon :icon="bagHandleOutline" />
+                <ion-icon :icon="icons.bagHandleOutline" />
               </div>
               <ion-label>{{ $t('store.adminOrders') }}</ion-label>
               <ion-badge v-if="pendingOrdersCount > 0" color="warning" slot="end" style="border-radius: 8px;">{{ pendingOrdersCount }}</ion-badge>
@@ -287,7 +336,7 @@
 
             <ion-item button @click="$router.push('/admin/store/chat-inbox')">
               <div class="icon-box" slot="start">
-                <ion-icon :icon="chatbubblesOutline" />
+                <ion-icon :icon="icons.chatbubblesOutline" />
               </div>
               <ion-label>{{ $t('store.chat.storeMessages') }}</ion-label>
               <ion-badge v-if="unreadChatsCount > 0" color="danger" slot="end" style="border-radius: 8px;">{{ unreadChatsCount }}</ion-badge>
@@ -299,14 +348,22 @@
 
             <ion-item button @click="goToUsersList">
               <div class="icon-box" slot="start">
-                <ion-icon :icon="peopleOutline" />
+                <ion-icon :icon="icons.peopleOutline" />
               </div>
               <ion-label>{{ $t('profile.admin.users') }}</ion-label>
             </ion-item>
 
+            <ion-item button @click="goToMerchantApplications">
+              <div class="icon-box" slot="start">
+                <ion-icon :icon="icons.storefrontOutline" />
+              </div>
+              <ion-label>{{ $t('admin.merchant.title') }}</ion-label>
+              <ion-badge v-if="pendingMerchantAppsCount > 0" color="danger" slot="end" style="border-radius: 8px;">{{ pendingMerchantAppsCount }}</ion-badge>
+            </ion-item>
+
             <ion-item button @click="goToMasterData">
               <div class="icon-box" slot="start">
-                <ion-icon :icon="constructOutline" />
+                <ion-icon :icon="icons.constructOutline" />
               </div>
               <ion-label>{{ $t('profile.admin.masterData') }}</ion-label>
             </ion-item>
@@ -317,21 +374,21 @@
 
             <ion-item button @click="goToPointsLogs">
               <div class="icon-box" slot="start">
-                <ion-icon :icon="listOutline" />
+                <ion-icon :icon="icons.listOutline" />
               </div>
               <ion-label>{{ $t('profile.admin.pointsLogs') }}</ion-label>
             </ion-item>
 
             <ion-item button @click="goToScanLogs">
               <div class="icon-box" slot="start">
-                <ion-icon :icon="listOutline" />
+                <ion-icon :icon="icons.listOutline" />
               </div>
               <ion-label>{{ $t('profile.admin.scanLogs') }}</ion-label>
             </ion-item>
 
             <ion-item button @click="goToAnalyticsDashboard">
               <div class="icon-box" slot="start">
-                <ion-icon :icon="listOutline" />
+                <ion-icon :icon="icons.listOutline" />
               </div>
               <ion-label>{{ $t('profile.admin.analytics') }}</ion-label>
             </ion-item>
@@ -347,14 +404,14 @@
 
             <ion-item button @click="goToLegal">
               <div class="icon-box" slot="start">
-                <ion-icon :icon="documentTextOutline" />
+                <ion-icon :icon="icons.documentTextOutline" />
               </div>
               <ion-label>{{ $t('profile.legal') }}</ion-label>
             </ion-item>
 
             <ion-item button @click="goToCredits">
               <div class="icon-box" slot="start">
-                <ion-icon :icon="peopleOutline" />
+                <ion-icon :icon="icons.peopleOutline" />
               </div>
               <ion-label>{{ $t('profile.credits') }}</ion-label>
             </ion-item>
@@ -399,7 +456,7 @@
         <ion-card>
           <div class="social-grid-premium">
             <a class="social-item-premium" @click.prevent="logAndOpen('instagram', 'https://www.instagram.com/halalformosa/')">
-              <ion-icon :icon="logoInstagram" class="social-icon-btn" style="color: #E1306C" />
+              <ion-icon :icon="icons.logoInstagram" class="social-icon-btn" style="color: #E1306C" />
               <span class="social-label-premium">Instagram</span>
             </a>
             
@@ -409,7 +466,7 @@
             </a>
             
             <a class="social-item-premium" @click.prevent="logAndOpen('web', 'https://halalformosa.com')">
-              <ion-icon :icon="globeOutline" class="social-icon-btn" style="color: var(--ion-color-carrot)" />
+              <ion-icon :icon="icons.globeOutline" class="social-icon-btn" style="color: var(--ion-color-carrot)" />
               <span class="social-label-premium">Website</span>
             </a>
           </div>
@@ -422,7 +479,7 @@
           </p>
           
           <button v-if="userEmail" class="logout-button" @click.prevent="handleLogout">
-            <ion-icon :icon="logOutOutline" />
+            <ion-icon :icon="icons.logOutOutline" />
             <span>{{ $t('profile.logout') }}</span>
           </button>
         </div>
@@ -480,7 +537,10 @@ import {
   chevronDown,
   chevronUp,
   bagHandleOutline,
-  chatbubblesOutline
+  chatbubblesOutline,
+  storefrontOutline,
+  timeOutline,
+  closeCircleOutline
 } from "ionicons/icons";
 
 // ✅ Composables
@@ -506,12 +566,34 @@ import {RevenueCatUI, PAYWALL_RESULT} from '@revenuecat/purchases-capacitor-ui';
 import {refreshSubscriptionStatus} from "@/composables/useSubscriptionStatus";
 import {toastController} from "@ionic/vue";
 import { ActivityLogService } from '@/services/ActivityLogService'
+import { MerchantService, MerchantApplication } from '@/services/MerchantService'
 import { useI18n } from 'vue-i18n'
 import { useNotifier } from "@/composables/useNotifier";
 
 const { t } = useI18n()
 const { notifyEvent } = useNotifier();
 const pendingLocationsCount = ref(0)
+
+// Icons for use in template
+const icons = {
+  closeCircleOutline, 
+  timeOutline, 
+  storefrontOutline,
+  settingsOutline,
+  bagHandleOutline,
+  listOutline,
+  chatbubblesOutline,
+  peopleOutline,
+  constructOutline,
+  documentTextOutline,
+  personCircleOutline,
+  bookmarkOutline,
+  globeOutline,
+  logOutOutline,
+  checkmarkCircle,
+  logoInstagram,
+  createOutline
+}
 
 interface RcProduct {
   identifier: string;
@@ -530,7 +612,9 @@ const userEmail = ref("");
 const userDisplayName = ref("");
 const userAvatar = ref("");
 const pendingCount = ref(0);
+const pendingMerchantAppsCount = ref(0);
 const merchantStore = ref<any | null>(null);
+const merchantApplication = ref<MerchantApplication | null>(null);
 
 const loadingProfile = ref(true)     // avatar, name, email
 const loadingAdmin = ref(false)      // admin-only data
@@ -661,11 +745,16 @@ async function fetchPendingLocationsCount() {
   if (!isAdmin.value) return
 
   const { count } = await supabase
-      .from('locations')
-      .select('*', { count: 'exact', head: true })
-      .eq('approved', false)
+    .from('locations')
+    .select('*', { count: 'exact', head: true })
+    .eq('approved', false)
 
   pendingLocationsCount.value = count || 0
+}
+
+async function fetchPendingMerchantAppsCount() {
+  if (!isAdmin.value) return
+  pendingMerchantAppsCount.value = await MerchantService.getPendingApplicationsCount()
 }
 
 const renewalMessage = computed(() => {
@@ -703,7 +792,10 @@ async function refreshAllData(userId: string) {
     await Promise.all([
       loadUserProfile(userId),
       fetchCurrentPoints(userId),
-      fetchMerchantStore(userId)
+      fetchMerchantStore(userId),
+      (async () => {
+        merchantApplication.value = await MerchantService.getUserApplication()
+      })()
     ]);
 
     // Check for profile completion
@@ -1005,6 +1097,7 @@ const goToLegal = () => router.push("/legal");
 const goToCredits = () => router.push("/credits");
 const goToPointsLogs = () => router.push("/admin/points-logs");
 const goToUsersList = () => router.push("/admin/users");
+const goToMerchantApplications = () => router.push("/admin/merchant/applications");
 
 const goToAnalyticsDashboard = () => router.push("/admin/analytics");
 const goToScanLogs = () => router.push("/admin/scan-logs");
@@ -1016,6 +1109,7 @@ const goToEditProfile = () => {
 
 const goToMasterData = () => router.push('/admin/master-data')
 const goToStoreOrders = () => router.push('/admin/store/orders')
+const goToMerchantRegistration = () => router.push('/merchant/register')
 const pendingOrdersCount = ref(0)
 
 async function fetchPendingOrdersCount() {
@@ -1501,5 +1595,115 @@ ion-toolbar {
 
 ion-header {
   background: transparent;
+}
+
+/* Vendor Onboarding & Consistency Improvements */
+.vendor-onboarding.pending {
+  padding: 16px;
+  background: linear-gradient(135deg, rgba(var(--ion-color-carrot-rgb), 0.05) 0%, rgba(var(--ion-color-secondary-rgb), 0.05) 100%);
+}
+
+.vendor-onboarding-item {
+  --padding-start: 16px;
+  --padding-end: 16px;
+  --padding-top: 12px;
+  --padding-bottom: 12px;
+  --background: transparent;
+  margin: 0;
+}
+
+.icon-box-vendor {
+  background: rgba(var(--ion-color-carrot-rgb), 0.1);
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 16px;
+  transition: all 0.2s ease;
+}
+
+.icon-box-vendor ion-icon {
+  font-size: 24px;
+}
+
+.vendor-title-label {
+  font-weight: 800;
+  font-size: 1.1rem;
+  margin-bottom: 2px;
+  color: var(--ion-color-carrot);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.vendor-subtitle-label {
+  font-size: 0.8rem;
+  color: var(--ion-color-medium);
+  margin: 0;
+}
+
+.pending-status-box {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.icon-pulse {
+  background: rgba(var(--ion-color-carrot-rgb), 0.1);
+  padding: 12px;
+  border-radius: 12px;
+  animation: pulse 2s infinite ease-in-out;
+}
+
+.icon-pulse ion-icon {
+  font-size: 24px;
+}
+
+.icon-pulse-red {
+  background: rgba(var(--ion-color-danger-rgb), 0.1);
+  padding: 12px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rejection-reason-box {
+  margin-top: 12px;
+  padding: 12px;
+  background: rgba(var(--ion-color-danger-rgb), 0.05);
+  border-left: 3px solid var(--ion-color-danger);
+  border-radius: 12px;
+  text-align: left;
+}
+
+.rejection-reason-box strong {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--ion-color-danger);
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.rejection-reason-box p {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--ion-color-dark);
+  line-height: 1.4;
+}
+
+.status-text h3 {
+  font-weight: 700;
+  margin: 0 0 2px;
+  font-size: 1rem;
+}
+
+.status-text p {
+  font-size: 0.8rem;
+  color: var(--ion-color-medium);
+  margin: 0;
+  line-height: 1.2;
 }
 </style>

@@ -37,6 +37,8 @@
           
         </div>
 
+
+
         <!-- Category bar row -->
         <div class="category-bar-row">
           <div v-show="!loadingCategories" class="category-bar">
@@ -45,7 +47,7 @@
                 v-if="activeTag"
                 class="modern-category-chip active"
                 style="--cat-color: var(--ion-color-tertiary); --cat-bg: var(--ion-color-tertiary);"
-                @click="activeTag = null"
+                @click="activeTag = null; focusedPlaceId = null"
             >
               <ion-icon :icon="pricetagOutline" class="category-icon" />
               <ion-label style="text-transform: capitalize">{{ activeTag }}</ion-label>
@@ -86,6 +88,24 @@
             <ion-skeleton-text animated style="width:85px; height:36px; border-radius:100px; margin: 0;"/>
             <ion-skeleton-text animated style="width:120px; height:36px; border-radius:100px; margin: 0;"/>
             <ion-skeleton-text animated style="width:90px; height:36px; border-radius:100px; margin: 0;"/>
+          </div>
+        </div>
+
+        <!-- Campus row (new) -->
+        <div v-if="campusPartners.length > 0" class="campus-bar-row">
+          <div class="category-bar">
+            <!-- Campus Filter Buttons -->
+            <ion-chip
+                v-for="campus in campusPartners"
+                :key="campus.id"
+                class="modern-category-chip campus-chip"
+                :class="{ active: activeTag === campus.slug }"
+                style="--cat-color: var(--ion-color-tertiary); --cat-bg: var(--ion-color-tertiary);"
+                @click="activeTag = (activeTag === campus.slug ? null : campus.slug); focusedPlaceId = null"
+            >
+              <ion-icon :icon="school" class="category-icon" />
+              <ion-label>{{ campus.slug.toUpperCase() }} Muslim-friendly</ion-label>
+            </ion-chip>
           </div>
         </div>
       </ion-toolbar>
@@ -219,6 +239,18 @@
                     </div>
                     <div v-if="userLocation && (place as any).distance !== undefined" class="distance">
                       <ion-icon :icon="locationOutline" style="font-size: 0.85rem; vertical-align: middle; margin-top: -2px;" /> {{ formatKm((place as any).distance) }} km
+                    </div>
+
+                    <!-- Tags section -->
+                    <div v-if="place.tags && place.tags.length > 0" class="card-tags-row">
+                      <span 
+                        v-for="t in place.tags.slice(0, 3)" 
+                        :key="t" 
+                        class="card-tag"
+                        :class="{ highlight: t.toLowerCase() === activeTag?.toLowerCase() }"
+                      >
+                        #{{ t }}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -372,7 +404,7 @@ import {
   layersOutline, listOutline, gridOutline, mapOutline, sparkles, shieldCheckmarkOutline, checkmarkCircle,
   trendingUpOutline, flameOutline, timeOutline, locationOutline, filterOutline,
   eyeOutline, shareSocialOutline, navigateOutline, closeCircleOutline,
-  calendarOutline, pricetagOutline
+  calendarOutline, pricetagOutline, school
 } from 'ionicons/icons'
 import {ref, computed, nextTick, onMounted, onUnmounted, watch} from 'vue'
 import type {ComponentPublicInstance, VNodeRef} from 'vue'
@@ -482,6 +514,7 @@ const isNative = ref(Capacitor.isNativePlatform())
 const loading = ref(true)
 const loadingCategories = ref(true)
 const loadingPlaces = ref(true)
+const campusPartners = ref<{ id: string; name: string; slug: string }[]>([])
 const sortBy = ref<'nearest' | 'recent' | 'popular' | 'trending'>('nearest')
 const trendingPlaceIds = ref<number[]>([])
 
@@ -653,6 +686,18 @@ const fetchLocationTypes = async () => {
   if (!error && data) locationTypes.value = data
 
   loadingCategories.value = false
+}
+
+const fetchCampusPartners = async () => {
+  const { data, error } = await supabase
+    .from('partners')
+    .select('id, name, slug')
+    .eq('partner_type', 'campus')
+    .eq('is_active', true)
+    
+  if (!error && data) {
+    campusPartners.value = data
+  }
 }
 
 const addressMarker = ref<google.maps.marker.AdvancedMarkerElement | null>(null)
@@ -1352,8 +1397,10 @@ const initMarkers = (places: Place[] = locations.value) => {
     markerArray.push(marker)
   })
 
-  // ✅ only cluster when no filter
-  if (activeCategoryIds.value.length === 0) {
+  // ✅ only cluster when no filter (category, tag, or search)
+  const isFiltered = activeCategoryIds.value.length > 0 || !!activeTag.value || !!searchQuery.value.trim()
+
+  if (!isFiltered) {
     clusterer = new MarkerClusterer({
       map: mapInstance!,
       markers: markerArray,
@@ -1363,6 +1410,20 @@ const initMarkers = (places: Place[] = locations.value) => {
   } else {
     // just put markers on map directly
     markerArray.forEach(m => (m.map = mapInstance!))
+
+    // ✅ fit bounds if filtered
+    if (markerArray.length > 0) {
+      const bounds = new google.maps.LatLngBounds()
+      markerArray.forEach(m => {
+        if (m.position) bounds.extend(m.position)
+      })
+      mapInstance!.fitBounds(bounds)
+
+      // if only 1-2 points, zoom out a bit so it's not super close
+      google.maps.event.addListenerOnce(mapInstance!, 'idle', () => {
+        if (mapInstance!.getZoom()! > 17) mapInstance!.setZoom(17)
+      })
+    }
   }
 }
 
@@ -1626,6 +1687,7 @@ onMounted(async () => {
   await initMap()
   await loadRole()
   fetchLocationTypes()
+  fetchCampusPartners()
   await fetchLocations()
   await fetchTrendingPlaces()
   await refreshViewCounts()
@@ -1674,6 +1736,7 @@ onIonViewWillEnter(async () => {
   }
 
   await fetchLocations()
+  await fetchCampusPartners()
   await nextTick()
 
   if (mapInstance) {
@@ -1985,11 +2048,19 @@ button.gm-ui-hover-effect > span {
   flex-shrink: 0;
 }
 
+.campus-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 16px 12px;
+  pointer-events: auto;
+}
+
 .category-bar-row {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px 16px;
+  padding: 8px 16px 8px;
   pointer-events: auto;
 }
 
@@ -2517,6 +2588,42 @@ button.gm-ui-hover-effect > span {
   margin: 0 auto;
   padding: 0 16px 100px;
 }
+
+/* Card Tags */
+.card-tags-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.card-tag {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--ion-color-step-600);
+  background: rgba(var(--ion-color-dark-rgb), 0.05);
+  padding: 2px 8px;
+  border-radius: 6px;
+  text-transform: lowercase;
+  border: 1px solid rgba(var(--ion-color-dark-rgb), 0.08);
+}
+
+.card-tag.highlight {
+  background: rgba(var(--ion-color-carrot-rgb), 0.12);
+  color: var(--ion-color-carrot);
+  border-color: rgba(var(--ion-color-carrot-rgb), 0.2);
+}
+
+.ion-palette-dark .card-tag {
+  background: rgba(255, 255, 255, 0.08);
+  color: #9ca3af;
+}
+
+.ion-palette-dark .card-tag.highlight {
+  background: rgba(var(--ion-color-carrot-rgb), 0.2);
+  color: var(--ion-color-carrot);
+}
+
 
 .list-header {
   margin-bottom: 20px;

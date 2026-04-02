@@ -43,6 +43,7 @@
                   :src="body.logo"
                   :alt="body.name"
                   class="hero-logo clickable"
+                  @error="(e) => (e.target as any).src = `https://placehold.co/200x200?text=${encodeURIComponent(body.name)}`"
               />
             </div>
 
@@ -149,26 +150,29 @@
               <ion-skeleton-text animated style="width:80%;height:14px;margin-top:8px;" />
             </template>
 
-            <!-- Products -->
-            <div v-else class="discover-grid">
-              <ion-card
-                  v-for="p in certifiedProducts"
-                  :key="p.id"
-                  class="discover-item"
-                  button
-                  @click="openCertifiedProduct(p)"
-              >
-                <img
-                    :src="p.photo_front_url || 'https://placehold.co/200x200'"
-                    class="discover-img"
-                />
-                <ion-label class="discover-label">
-                  <p class="discover-name">{{ p.name }}</p>
-                  <ion-chip color="success" style="font-size:12px;">
-                    {{ p.status }}
-                  </ion-chip>
-                </ion-label>
-              </ion-card>
+            <!-- Products (Horizontal Scroll) -->
+            <div v-else class="discover-scroll">
+              <div class="discover-track">
+                <ion-card
+                    v-for="p in certifiedProducts"
+                    :key="p.id"
+                    class="discover-item discover-item--scroll"
+                    button
+                    @click="openCertifiedProduct(p)"
+                >
+                  <img
+                      :src="p.photo_front_url || 'https://placehold.co/200x200'"
+                      class="discover-img"
+                      @error="(e) => (e.target as any).src = `https://placehold.co/200x200?text=${encodeURIComponent(p.name)}`"
+                  />
+                  <ion-label class="discover-label">
+                    <p class="discover-name" style="text-align: center;">{{ p.name }}</p>
+                    <ion-chip color="success" style="font-size:10px; height: 20px; margin-top: 4px;">
+                      {{ p.status }}
+                    </ion-chip>
+                  </ion-label>
+                </ion-card>
+              </div>
             </div>
           </ion-card-content>
         </ion-card>
@@ -190,33 +194,36 @@
               <ion-skeleton-text animated style="width:80%;height:14px;margin-top:8px;" />
             </template>
 
-            <!-- Locations -->
-            <div v-else class="discover-grid">
-              <ion-card
-                  v-for="loc in certifiedLocations"
-                  :key="loc.id"
-                  class="discover-item"
-                  button
-                  @click="openCertifiedLocation(loc)"
-              >
-                <img
-                    :src="loc.image || 'https://placehold.co/200x200'"
-                    class="discover-img"
-                />
-                <ion-label class="discover-label">
-                  <p class="discover-name">{{ loc.name }}</p>
-                  <p style="font-size:12px;color:var(--ion-color-medium)">
-                    {{ loc.location_types?.name }}
-                  </p>
-                </ion-label>
-              </ion-card>
+            <!-- Locations (Horizontal Scroll) -->
+            <div v-else class="discover-scroll">
+              <div class="discover-track">
+                <ion-card
+                    v-for="loc in certifiedLocations"
+                    :key="loc.id"
+                    class="discover-item discover-item--scroll"
+                    button
+                    @click="openCertifiedLocation(loc)"
+                >
+                  <img
+                      :src="loc.image || 'https://placehold.co/200x200'"
+                      class="discover-img"
+                      @error="(e) => (e.target as any).src = `https://placehold.co/200x200?text=${encodeURIComponent(loc.name)}`"
+                  />
+                  <ion-label class="discover-label">
+                    <p class="discover-name" style="text-align: center;">{{ loc.name }}</p>
+                    <p style="font-size:12px;color:var(--ion-color-medium)">
+                      {{ loc.location_types?.name }}
+                    </p>
+                  </ion-label>
+                </ion-card>
+              </div>
             </div>
           </ion-card-content>
         </ion-card>
 
         <!-- Nearby Locations (Tag-based matching to Partner Slug) -->
         <ion-card
-            v-if="loadingNearby || nearbyLocations.length"
+            v-if="(body.partner_type === 'campus') && (loadingNearby || nearbyLocations.length)"
         >
           <ion-card-header>
             <div class="card-header-row">
@@ -270,6 +277,7 @@
                       :src="loc.image || 'https://placehold.co/200x200'"
                       :alt="$t('home.altLocation')"
                       class="discover-img"
+                      @error="(e) => (e.target as any).src = `https://placehold.co/200x200?text=${encodeURIComponent(loc.name)}`"
                   />
                   <ion-label class="discover-label">
                     <div class="name-row">
@@ -309,32 +317,35 @@
               <ion-skeleton-text animated style="width:80%;height:14px;margin-top:8px;" />
             </template>
 
-            <!-- Trips -->
-            <div v-else class="discover-grid">
-              <ion-card
-                  v-for="trip in partnerTrips"
-                  :key="trip.id"
-                  class="discover-item"
-                  button
-                  @click="openTrip(trip)"
-              >
-                <img
-                    :src="trip.cover_url || 'https://placehold.co/200x200'"
-                    class="discover-img"
-                />
+            <!-- Trips (Horizontal Scroll) -->
+            <div v-else class="discover-scroll">
+              <div class="discover-track">
+                <ion-card
+                    v-for="trip in partnerTrips"
+                    :key="trip.id"
+                    class="discover-item discover-item--scroll"
+                    button
+                    @click="openTrip(trip)"
+                >
+                  <img
+                      :src="trip.cover_url || 'https://placehold.co/200x200'"
+                      class="discover-img"
+                      @error="(e) => (e.target as any).src = `https://placehold.co/200x200?text=${encodeURIComponent($i18n.locale === 'zh-tw' ? (trip.title_zh || trip.title) : trip.title)}`"
+                  />
 
-                <ion-label class="discover-label">
-                  <p class="discover-name">
-                    {{ $i18n.locale === 'zh-tw'
-                      ? (trip.title_zh || trip.title)
-                      : trip.title }}
-                  </p>
+                  <ion-label class="discover-label">
+                    <p class="discover-name" style="text-align: center;">
+                      {{ $i18n.locale === 'zh-tw'
+                        ? (trip.title_zh || trip.title)
+                        : trip.title }}
+                    </p>
 
-                  <p style="font-size:12px;color:var(--ion-color-medium)">
-                    🕒 {{ trip.duration }}
-                  </p>
-                </ion-label>
-              </ion-card>
+                    <p style="font-size:12px;color:var(--ion-color-medium); margin-top: 4px;">
+                      🕒 {{ trip.duration }}
+                    </p>
+                  </ion-label>
+                </ion-card>
+              </div>
             </div>
 
           </ion-card-content>
@@ -404,6 +415,7 @@
               <img
                   :src="body.logo"
                   :alt="body.name"
+                  @error="(e) => (e.target as any).src = `https://placehold.co/400x400?text=${encodeURIComponent(body.name)}`"
               />
             </div>
           </SwiperSlide>
@@ -506,6 +518,7 @@ type Partner = {
   logo: string
   verified: boolean
   partner_tier?: 'gold' | 'silver' | 'bronze' | null
+  partner_type?: 'campus' | 'halal_body' | 'vendor' | 'merchant' | 'organization' | null
   scopes: string[]
   about: string
   programs: string[]
@@ -523,6 +536,7 @@ const body = ref<Partner>({
   logo: '',
   verified: false,
   partner_tier: null,
+  partner_type: null,
   scopes: [],
   about: '',
   programs: [],
@@ -545,6 +559,7 @@ async function fetchPartner(id: string) {
     logo_url,
     verified,
     partner_tier,
+    partner_type,
     about,
     address,
     phone,
@@ -582,6 +597,7 @@ async function fetchPartner(id: string) {
     logo: data.logo_url,
     verified: data.verified,
     partner_tier: data.partner_tier,
+    partner_type: data.partner_type,
     about: data.about ?? '',
     address: data.address ?? '',
     phone: data.phone ?? '',
@@ -859,7 +875,9 @@ onMounted(async () => {
     fetchPartnerTrips()
   }
   
-  fetchNearbyLocations()
+  if (body.value.partner_type === 'campus') {
+    fetchNearbyLocations()
+  }
 })
 
 
