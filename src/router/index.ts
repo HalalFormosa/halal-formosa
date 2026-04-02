@@ -177,6 +177,12 @@ const routes: Array<RouteRecordRaw> = [
         meta: { requiresAuth: true, noAds: true }
     },
     {
+        path: '/store/payment-result/:orderId?',
+        name: 'PaymentResult',
+        component: () => import('@/views/store/PaymentResultView.vue'),
+        meta: { noAds: true }
+    },
+    {
         path: '/store/my-orders',
         name: 'UserOrders',
         component: () => import('@/views/store/UserOrdersView.vue'),

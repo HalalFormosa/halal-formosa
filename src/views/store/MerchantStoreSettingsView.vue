@@ -74,6 +74,22 @@
           </ion-item>
         </ion-list>
 
+        <!-- Delivery Options -->
+        <div class="delivery-section">
+          <h3 class="section-title">🚚 {{ $t('store.settings.deliveryOptions') || 'Delivery Options' }}</h3>
+          <p class="section-subtitle">{{ $t('store.settings.deliveryHint') || 'Select which delivery methods are available for your customers' }}</p>
+          <ion-list lines="none">
+            <ion-item v-for="method in deliveryMethods" :key="method.key" class="delivery-item">
+              <ion-icon :icon="method.icon" slot="start" color="primary" />
+              <ion-label>
+                <h3>{{ method.label }}</h3>
+                <p>{{ method.labelZh }}</p>
+              </ion-label>
+              <ion-toggle slot="end" :checked="isDeliveryEnabled(method.key)" @ionChange="toggleDelivery(method.key, $event)" />
+            </ion-item>
+          </ion-list>
+        </div>
+
         <div class="ion-padding-top">
           <ion-button expand="block" @click="saveSettings" :disabled="saving" class="save-btn">
             <ion-spinner v-if="saving" name="crescent" slot="start" />
@@ -93,10 +109,38 @@ import {
   IonTextarea, IonToggle, IonButton, IonAvatar, toastController
 } from '@ionic/vue'
 import {
-  alertCircleOutline, imageOutline, cameraOutline
+  alertCircleOutline, imageOutline, cameraOutline,
+  homeOutline, storefrontOutline, cartOutline, businessOutline, bagHandleOutline, peopleOutline
 } from 'ionicons/icons'
 import { supabase } from '@/plugins/supabaseClient'
 import { useI18n } from 'vue-i18n'
+
+const deliveryMethods = [
+  { key: 'home_delivery', label: 'Home Delivery (Courier)', labelZh: '宅配到府', icon: homeOutline },
+  { key: '7eleven', label: '7-Eleven Pickup', labelZh: '7-ELEVEN 取貨', icon: storefrontOutline },
+  { key: 'family_mart', label: 'FamilyMart Pickup', labelZh: '全家取貨', icon: cartOutline },
+  { key: 'hi_life', label: 'Hi-Life Pickup', labelZh: '萊爾富取貨', icon: businessOutline },
+  { key: 'ok_mart', label: 'OK Mart Pickup', labelZh: 'OK超商取貨', icon: bagHandleOutline },
+  { key: 'cod_meetup', label: 'Meet in Person', labelZh: '面交自取', icon: peopleOutline },
+]
+
+function isDeliveryEnabled(key: string): boolean {
+  const opts = store.value?.delivery_options || []
+  return Array.isArray(opts) && opts.includes(key)
+}
+
+function toggleDelivery(key: string, event: any) {
+  if (!store.value) return
+  const opts: string[] = Array.isArray(store.value.delivery_options) ? [...store.value.delivery_options] : []
+  const checked = event.detail.checked
+  if (checked && !opts.includes(key)) {
+    opts.push(key)
+  } else if (!checked) {
+    const idx = opts.indexOf(key)
+    if (idx >= 0) opts.splice(idx, 1)
+  }
+  store.value.delivery_options = opts
+}
 
 const { t } = useI18n()
 const user = ref<any>(null)
@@ -178,6 +222,7 @@ async function saveSettings() {
       logo_url: store.value.logo_url,
       banner_url: store.value.banner_url,
       is_active: store.value.is_active,
+      delivery_options: store.value.delivery_options || ['home_delivery'],
       updated_at: new Date().toISOString()
     })
     .eq('id', store.value.id)
@@ -327,5 +372,52 @@ onMounted(fetchStore)
 .ion-palette-dark .settings-avatar {
   background: var(--ion-color-step-100);
   border-color: var(--ion-background-color);
+}
+
+/* Delivery Options Section */
+.delivery-section {
+  margin-top: 24px;
+}
+
+.section-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin: 0 0 4px;
+}
+
+.section-subtitle {
+  font-size: 0.82rem;
+  color: var(--ion-color-medium);
+  margin: 0 0 12px;
+}
+
+.delivery-item {
+  --background: var(--ion-color-step-100, #f8f9fa);
+  --border-radius: 14px;
+  margin-bottom: 10px;
+  --padding-start: 14px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+
+.delivery-item ion-icon {
+  font-size: 22px;
+  margin-right: 8px;
+}
+
+.delivery-item h3 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.delivery-item p {
+  font-size: 0.8rem;
+  color: var(--ion-color-medium);
+  margin: 2px 0 0;
+}
+
+.ion-palette-dark .delivery-item {
+  --background: var(--ion-color-step-150, #1e1e1e);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
 </style>

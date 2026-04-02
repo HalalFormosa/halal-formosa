@@ -94,6 +94,30 @@
                 </ion-button>
               </div>
 
+              <!-- Delivery method -->
+              <div v-if="order.delivery_method" class="detail-row">
+                <ion-icon :icon="cubeOutline" />
+                <span>{{ deliveryLabel(order.delivery_method) }}</span>
+              </div>
+
+              <!-- COD location -->
+              <div v-if="order.cod_location" class="detail-row">
+                <ion-icon :icon="locationOutline" />
+                <span>📍 {{ order.cod_location }}</span>
+              </div>
+
+              <!-- COD date -->
+              <div v-if="order.cod_date" class="detail-row">
+                <ion-icon :icon="calendarOutline" />
+                <span>📅 {{ formatCodDate(order.cod_date) }}</span>
+              </div>
+
+              <!-- CVS store info -->
+              <div v-if="order.cvs_store_info" class="detail-row">
+                <ion-icon :icon="storefrontOutline" />
+                <span>🏪 {{ order.cvs_store_info }}</span>
+              </div>
+
               <!-- Shipping address -->
               <div v-if="order.shipping_address" class="detail-row">
                 <ion-icon :icon="locationOutline" />
@@ -135,7 +159,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import {
   IonPage, IonHeader, IonContent, IonChip, IonBadge, IonButton, IonIcon,
   IonRefresher, IonRefresherContent, IonSkeletonText, IonSpinner
@@ -143,24 +167,26 @@ import {
 import {
   locationOutline, receiptOutline, bagHandleOutline, constructOutline,
   timeOutline, cardOutline, cubeOutline, checkmarkCircleOutline, closeOutline,
-  storefrontOutline, moonOutline, sunnyOutline
+  storefrontOutline, moonOutline, sunnyOutline, calendarOutline
 } from 'ionicons/icons'
 import AppHeader from '@/components/AppHeader.vue'
 import { supabase } from '@/plugins/supabaseClient'
 import { useI18n } from 'vue-i18n'
 import { useTheme } from '@/composables/useTheme'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
+import { useEcpayPayment } from '@/composables/useEcpayPayment'
 
 const { t, locale } = useI18n()
 const router = useRouter()
+const route = useRoute()
 const { isDark, toggleDarkPalette } = useTheme()
+const { initiatePayment, submittingOrderId: submittingId } = useEcpayPayment()
 
 const isUnderConstruction = computed(() => import.meta.env.VITE_STORE_UNDER_CONSTRUCTION === 'true')
 const loading = ref(true)
 const orders = ref<any[]>([])
 const expandedId = ref<string | null>(null)
 const selectedStatus = ref('all')
-const submittingId = ref<string | null>(null)
 
 const statusFilters = computed(() => [
   { value: 'all', label: t('store.allCategories'), icon: receiptOutline },
@@ -225,42 +251,34 @@ function navigateToProduct(id: string) {
   router.push(`/store/product/${id}`)
 }
 
-async function payNow(orderId: string) {
-  submittingId.value = orderId
+const DELIVERY_LABELS: Record<string, string> = {
+  home_delivery: '🚚 Home Delivery / 宅配到府',
+  '7eleven': '🏪 7-Eleven Pickup / 7-ELEVEN 取貨',
+  family_mart: '🏪 FamilyMart Pickup / 全家取貨',
+  hi_life: '🏪 Hi-Life Pickup / 萊爾富取貨',
+  ok_mart: '🏪 OK Mart Pickup / OK超商取貨',
+  cod_meetup: '🤝 Meet in Person / 面交自取',
+}
+
+function deliveryLabel(method: string): string {
+  return DELIVERY_LABELS[method] || method
+}
+
+function formatCodDate(dateStr: string): string {
   try {
-    const { data: payData, error: payErr } = await supabase.functions.invoke('ecpay-payment', {
-      body: { orderId }
+    const d = new Date(dateStr)
+    return d.toLocaleString(locale.value === 'zh-TW' ? 'zh-TW' : 'en-US', {
+      year: 'numeric', month: 'short', day: 'numeric',
+      hour: '2-digit', minute: '2-digit'
     })
+  } catch { return dateStr }
+}
 
-    if (payErr || !payData) {
-      throw new Error(payErr?.message || 'Failed to initiate payment')
-    }
-
-    // Create a hidden form and submit it to ECPay
-    const form = document.createElement('form')
-    form.method = 'POST'
-    form.action = payData.apiUrl
-    form.style.display = 'none'
-
-    Object.entries(payData.params).forEach(([key, value]) => {
-      const input = document.createElement('input')
-      input.type = 'hidden'
-      input.name = key
-      input.value = String(value)
-      form.appendChild(input)
-    })
-
-    document.body.appendChild(form)
-    
-    // Small delay to ensure form is ready
-    setTimeout(() => {
-      form.submit()
-      setTimeout(() => document.body.removeChild(form), 1000)
-    }, 50)
+async function payNow(orderId: string) {
+  try {
+    await initiatePayment(orderId)
   } catch (err: any) {
     console.error('❌ Payment failed:', err)
-  } finally {
-    submittingId.value = null
   }
 }
 
@@ -289,8 +307,30 @@ async function doRefresh(event: any) {
   event.target.complete()
 }
 
+// Poll for payment status if returning from ECPay
+let stopPolling: (() => void) | null = null
+
 watch(selectedStatus, () => fetchOrders())
-onMounted(fetchOrders)
+
+onMounted(async () => {
+  await fetchOrders()
+
+  // Check for pending orders that might be transitioning to paid
+  const pendingOrders = orders.value.filter(o => o.status === 'pending' && o.merchant_trade_no)
+  if (pendingOrders.length > 0) {
+    // If we have pending orders with trade numbers, poll the most recent one
+    const { pollPaymentStatus } = useEcpayPayment()
+    const latestPending = pendingOrders[0] // Already sorted by created_at DESC
+    stopPolling = pollPaymentStatus(latestPending.id, () => {
+      // Refresh orders when payment is confirmed
+      fetchOrders()
+    })
+  }
+})
+
+onUnmounted(() => {
+  if (stopPolling) stopPolling()
+})
 </script>
 
 <style scoped>

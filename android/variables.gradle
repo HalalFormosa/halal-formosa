@@ -15,4 +15,10 @@ ext {
     androidxEspressoCoreVersion = '3.7.0'
     cordovaAndroidVersion = '14.0.1'
     ndkVersion = '27.0.12077973'
+    
+    // Override CameraX versions to >= 1.4.0 to fix 16KB page size alignment issue
+    androidxCameraCamera2Version = '1.4.1'
+    androidxCameraCoreVersion = '1.4.1'
+    androidxCameraLifecycleVersion = '1.4.1'
+    androidxCameraViewVersion = '1.4.1'
 }
