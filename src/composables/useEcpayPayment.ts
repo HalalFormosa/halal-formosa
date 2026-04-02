@@ -25,7 +25,10 @@ export function useEcpayPayment() {
 
     try {
       const { data: payData, error: payErr } = await supabase.functions.invoke('ecpay-payment', {
-        body: { orderId },
+        body: { 
+          orderId,
+          clientOrigin: window.location.origin
+        },
       })
 
       if (payErr || !payData) {

@@ -214,6 +214,83 @@
           </ion-card-content>
         </ion-card>
 
+        <!-- Nearby Locations (Tag-based matching to Partner Slug) -->
+        <ion-card
+            v-if="loadingNearby || nearbyLocations.length"
+        >
+          <ion-card-header>
+            <div class="card-header-row">
+              <ion-card-title>Nearby Locations</ion-card-title>
+              <ion-button
+                  fill="clear"
+                  size="small"
+                  color="carrot"
+                  @click="viewAllNearbyLocations"
+              >
+                {{ $t('home.viewMore') }}
+              </ion-button>
+            </div>
+          </ion-card-header>
+
+          <ion-card-content>
+            <!-- Skeleton -->
+            <template v-if="loadingNearby">
+              <ion-skeleton-text animated style="width:100%;height:140px;border-radius:12px;" />
+              <ion-skeleton-text animated style="width:80%;height:14px;margin-top:8px;" />
+            </template>
+
+            <!-- Locations -->
+            <!-- Locations (Horizontal Scroll) -->
+            <div v-else class="discover-scroll">
+              <div class="discover-track">
+                <ion-card
+                    v-for="loc in nearbyLocations"
+                    :key="loc.id"
+                    :class="[
+                      'discover-item', 
+                      'discover-item--scroll',
+                      loc.partner?.partner_tier ? 'tier-card-' + loc.partner.partner_tier.toLowerCase() : ''
+                    ]"
+                    button
+                    @click="openNearbyLocation(loc)"
+                >
+                  <!-- Tier Badge -->
+                  <ion-badge
+                      v-if="loc.partner?.partner_tier"
+                      :class="['tier-badge', loc.partner.partner_tier.toLowerCase()]"
+                  >
+                    <ion-icon :icon="sparkles" />
+                    <span>{{ $t('home.partnerTier', { tier: (loc.partner.partner_tier || '').toUpperCase() }) }}</span>
+                  </ion-badge>
+
+                  <!-- Premium Flare -->
+                  <div v-if="['gold', 'silver'].includes(String(loc.partner?.partner_tier || '').toLowerCase())" class="premium-flare"></div>
+
+                  <img
+                      :src="loc.image || 'https://placehold.co/200x200'"
+                      :alt="$t('home.altLocation')"
+                      class="discover-img"
+                  />
+                  <ion-label class="discover-label">
+                    <div class="name-row">
+                      <h3 class="discover-name">{{ loc.name }}</h3>
+                      <div v-if="loc.partner?.partner_tier" class="home-partner-verified">
+                        <ion-icon :icon="shieldCheckmarkOutline" />
+                      </div>
+                    </div>
+                    <!-- Distance label -->
+                    <p v-if="loc.distance" class="distance-label">
+                      <ion-icon :icon="locationOutline" />
+                      {{ loc.distance }} km from {{ body.slug === 'ntu' ? 'NTU' : body.name }}
+                    </p>
+                    <p class="added-label">{{ $t('home.added') }} {{ fromNowToTaipei(loc.created_at) }}</p>
+                  </ion-label>
+                </ion-card>
+              </div>
+            </div>
+          </ion-card-content>
+        </ion-card>
+
         <!-- Trips (Gold Partner only) -->
         <ion-card
             v-if="body.partner_tier === 'gold' && (loadingTrips || partnerTrips.length)"
@@ -354,7 +431,8 @@ import {
   IonHeader,
     IonSkeletonText,
     IonLabel,
-    IonButton
+    IonButton,
+    IonIcon
 } from '@ionic/vue'
 import AppHeader from '@/components/AppHeader.vue'
 import { supabase } from '@/plugins/supabaseClient'
@@ -365,6 +443,40 @@ import 'swiper/css/zoom'
 import {Browser} from "@capacitor/browser";
 import {ActivityLogService} from "@/services/ActivityLogService";
 import router from "@/router";
+import { sparkles, shieldCheckmarkOutline, locationOutline } from 'ionicons/icons'
+import dayjs from 'dayjs'
+import relativeTime from 'dayjs/plugin/relativeTime'
+import utc from 'dayjs/plugin/utc'
+import timezone from 'dayjs/plugin/timezone'
+
+dayjs.extend(relativeTime)
+dayjs.extend(utc)
+dayjs.extend(timezone)
+
+const fromNowToTaipei = (date: string | undefined) => {
+  if (!date) return ''
+  return dayjs(date).tz('Asia/Taipei').fromNow()
+}
+
+/**
+ * Haversine formula to calculate straight-line distance in km
+ */
+function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
+  const R = 6371; // Radius of Earth in km
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = 
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return (R * c).toFixed(1);
+}
+
+const PARTNER_COORDS: Record<string, { lat: number; lng: number }> = {
+  'ntu': { lat: 25.01737, lng: 121.5398 } // NTU Main Campus center
+}
+
 
 const route = useRoute()
 const id = route.params.id as string
@@ -390,6 +502,7 @@ function closeLogoPreview() {
 type Partner = {
   id: string
   name: string
+  slug: string
   logo: string
   verified: boolean
   partner_tier?: 'gold' | 'silver' | 'bronze' | null
@@ -406,6 +519,7 @@ type Partner = {
 const body = ref<Partner>({
   id: '',
   name: '',
+  slug: '',
   logo: '',
   verified: false,
   partner_tier: null,
@@ -464,6 +578,7 @@ async function fetchPartner(id: string) {
   body.value = {
     id: data.id,
     name: data.name,
+    slug: data.slug,
     logo: data.logo_url,
     verified: data.verified,
     partner_tier: data.partner_tier,
@@ -550,6 +665,58 @@ async function fetchCertifiedLocations() {
   }
 
   loadingLocations.value = false
+}
+
+const nearbyLocations = ref<any[]>([])
+const loadingNearby = ref(false)
+
+async function fetchNearbyLocations() {
+  if (!body.value.slug) return
+
+  loadingNearby.value = true
+
+  const { data, error } = await supabase
+      .from('locations')
+      .select(`
+        id,
+        name,
+        image,
+        address,
+        location_types ( name ),
+        created_at,
+        partner:partners(partner_tier),
+        lat,
+        lng
+      `)
+      .contains('tags', [body.value.slug])
+      .eq('approved', true)
+
+  if (!error && data) {
+    const partnerPos = PARTNER_COORDS[body.value.slug]
+    
+    const mapped = data.map(loc => {
+      const d = (partnerPos && loc.lat && loc.lng) 
+        ? Number(haversineDistance(partnerPos.lat, partnerPos.lng, loc.lat, loc.lng))
+        : null
+        
+      return {
+        ...loc,
+        distance: d !== null ? d.toFixed(1) : null,
+        _dist: d
+      }
+    })
+
+    // Sort by distance (asc)
+    mapped.sort((a, b) => {
+      if (a._dist === null) return 1
+      if (b._dist === null) return -1
+      return a._dist - b._dist
+    })
+
+    nearbyLocations.value = mapped
+  }
+
+  loadingNearby.value = false
 }
 
 const partnerTrips = ref<any[]>([])
@@ -646,6 +813,29 @@ function openCertifiedLocation(loc: any) {
   router.push(`/place/${loc.id}`)
 }
 
+function openNearbyLocation(loc: any) {
+  ActivityLogService.log('partner_nearby_location_click', {
+    partner_id: body.value.id,
+    partner_name: body.value.name,
+    partner_tier: body.value.partner_tier,
+    location_id: loc.id,
+    location_name: loc.name
+  })
+
+  router.push(`/place/${loc.id}`)
+}
+
+function viewAllNearbyLocations() {
+  ActivityLogService.log('partner_nearby_view_more_click', {
+    partner_id: body.value.id,
+    partner_name: body.value.name,
+    partner_slug: body.value.slug
+  })
+  
+  // Hard navigation to break out of any locked Ionic tab contexts
+  window.location.href = `/explore?tag=${body.value.slug}`
+}
+
 
 /* ---------------- Lifecycle ---------------- */
 onMounted(async () => {
@@ -668,6 +858,8 @@ onMounted(async () => {
     fetchCertifiedLocations()
     fetchPartnerTrips()
   }
+  
+  fetchNearbyLocations()
 })
 
 
@@ -909,5 +1101,203 @@ onMounted(async () => {
   z-index: 1;
 }
 
+/* ===============================
+   Discover Grid & Item Styles
+   =============================== */
+.card-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+}
 
+.discover-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  padding: 4px 0;
+}
+
+/* Horizontal Scroll Styles */
+.discover-scroll {
+  display: flex;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  margin: 0 -8px; /* Slight bleed */
+  padding: 8px;
+}
+
+.discover-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.discover-track {
+  display: flex;
+  gap: 14px;
+}
+
+.discover-item {
+  margin: 0;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+  position: relative;
+  transition: transform 0.2s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.discover-item--scroll {
+  flex: 0 0 240px; /* Fixed width for scrolling cards */
+  scroll-snap-align: center;
+}
+
+
+.discover-item:active {
+  transform: scale(0.97);
+}
+
+.discover-img {
+  width: 100%;
+  height: 130px;
+  object-fit: cover;
+  border-radius: 0;
+}
+
+.discover-label {
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.name-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+}
+
+.discover-name {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--ion-color-dark);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
+}
+
+.discover-label p {
+  margin: 2px 0 0;
+  font-size: 0.75rem;
+  color: var(--ion-color-medium);
+}
+
+.distance-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  color: var(--ion-color-primary) !important;
+  font-weight: 600;
+  margin-top: 6px !important;
+  width: 100%;
+}
+
+.distance-label ion-icon {
+  font-size: 14px;
+}
+
+.added-label {
+  opacity: 0.8;
+  font-size: 0.7rem !important;
+  display: block;
+  width: 100%;
+  text-align: center;
+}
+
+.home-partner-verified {
+  color: var(--ion-color-primary);
+  font-size: 16px;
+  flex-shrink: 0;
+  display: flex;
+}
+
+/* Tier Badges */
+.tier-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 2;
+  padding: 4px 8px;
+  border-radius: 8px;
+  font-size: 0.65rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+  text-transform: uppercase;
+}
+
+.tier-badge.gold {
+  background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);
+  color: #fff;
+}
+
+.tier-badge.silver {
+  background: linear-gradient(135deg, #64748b 0%, #94a3b8 100%);
+  color: #fff;
+}
+
+.tier-badge.bronze {
+  background: linear-gradient(135deg, #92400e 0%, #b45309 100%);
+  color: #fff;
+}
+
+/* Tier Cards Glow & Border */
+.tier-card-gold { border: 1.5px solid #fbbf24; }
+.tier-card-silver { border: 1.5px solid #94a3b8; }
+
+/* Premium Flare */
+.premium-flare {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.premium-flare::after {
+  content: '';
+  position: absolute;
+  top: -100%;
+  left: -100%;
+  width: 300%;
+  height: 300%;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0) 45%,
+    rgba(255, 255, 255, 0.4) 50%,
+    rgba(255, 255, 255, 0) 55%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  animation: flare-slide 4s infinite linear;
+}
+
+@keyframes flare-slide {
+  0% { transform: translate(-10%, -10%); }
+  100% { transform: translate(10%, 10%); }
+}
 </style>

@@ -239,6 +239,35 @@
             />
           </ion-item>
 
+          <p style="margin-top:20px; font-weight:600;">Tags & Categories</p>
+
+          <ion-item>
+            <ion-input
+                v-model="tagInput"
+                label="Add Tag"
+                label-placement="stacked"
+                placeholder="Type and press Enter (e.g. ntu, prayer-room)"
+                @ionInput="handleTagInput"
+                @keyup.enter="addTag"
+            />
+            <ion-button slot="end" fill="clear" @click="addTag" style="margin-top: 14px;">
+              Add
+            </ion-button>
+          </ion-item>
+
+          <div v-if="form.tags.length > 0" class="tag-chips">
+            <ion-chip
+                v-for="tag in form.tags"
+                :key="tag"
+                color="primary"
+                outline
+                class="tag-chip"
+            >
+              <ion-label>{{ tag }}</ion-label>
+              <ion-icon :icon="closeCircle" @click="removeTag(tag)" />
+            </ion-chip>
+          </div>
+
           <p style="margin-top:20px; font-weight:600;">Opening Hours</p>
 
           <ion-list class="opening-hours-list">
@@ -341,14 +370,15 @@ import {
   IonCheckbox,
   IonList,
   IonText,
-    IonTextarea
+    IonTextarea,
+    IonChip
 } from '@ionic/vue'
 import {ref, onMounted, onBeforeUnmount, computed} from 'vue'
 import {useRouter} from 'vue-router'
 import {supabase} from '@/plugins/supabaseClient'
 import mapsLoader from '@/plugins/googleMapsLoader'
 import {Camera, CameraResultType, CameraSource} from '@capacitor/camera'
-import {cameraOutline, cloudUploadOutline} from 'ionicons/icons'
+import {cameraOutline, cloudUploadOutline, closeCircle} from 'ionicons/icons'
 import {Capacitor} from '@capacitor/core'
 import {Geolocation} from '@capacitor/geolocation'
 import {usePoints} from "@/composables/usePoints";
@@ -437,6 +467,7 @@ const form = ref<{
   line_id: string | null,
   price_range: string | null,
   opening_hours: any,
+  tags: string[],
 }>({
   name: '',
   type_id: null,
@@ -449,6 +480,7 @@ const form = ref<{
   instagram: '',
   line_id: '',
   price_range: '',
+  tags: [],
 
   opening_hours: {
     mon: {active: false, open: "09:00", close: "18:00"},
@@ -460,6 +492,33 @@ const form = ref<{
     sun: {active: false, open: "09:00", close: "18:00"},
   },
 })
+
+const tagInput = ref('')
+
+const handleTagInput = (e: any) => {
+  const val = e.target.value
+  if (val.endsWith(',')) {
+    const tag = val.slice(0, -1).trim()
+    if (tag && !form.value.tags.includes(tag)) {
+      form.value.tags.push(tag)
+    }
+    tagInput.value = ''
+  }
+}
+
+const addTag = (e?: any) => {
+  if (e) e.preventDefault()
+  const val = tagInput.value.trim().replace(/,/g, '')
+  if (val && !form.value.tags.includes(val)) {
+    form.value.tags.push(val)
+  }
+  tagInput.value = ''
+}
+
+const removeTag = (tag: string) => {
+  form.value.tags = form.value.tags.filter(t => t !== tag)
+}
+
 
 
 const submitting = ref(false)
@@ -956,6 +1015,8 @@ const submitPlace = async () => {
 
       updated_by: user.id,
       updated_at: new Date().toISOString(),
+      
+      tags: form.value.tags,
     }
 
     if (isEditing.value) {
@@ -1050,7 +1111,7 @@ const centerOnUserOnce = async () => {
       // Get position
       const pos = await Geolocation.getCurrentPosition({
         enableHighAccuracy: true,
-        timeout: 5000,
+        timeout: 10000,
       })
       const {latitude, longitude} = pos.coords
       form.value.lat = latitude
@@ -1079,7 +1140,11 @@ const centerOnUserOnce = async () => {
           console.warn('Web geolocation failed or denied', err)
           resolve()
         },
-        {enableHighAccuracy: true, timeout: 5000}
+        {
+          enableHighAccuracy: false, // Low accuracy is standard and faster for web
+          timeout: 15000,           // 15 seconds is more reliable for triangulation
+          maximumAge: 60000         // Use a cached position up to 1 min old
+        }
     )
   })
 }
@@ -1105,7 +1170,8 @@ onMounted(async () => {
     instagram,
     line_id,
     price_range,
-    opening_hours
+    opening_hours,
+    tags
   `)
         .eq('id', route.params.id)
         .maybeSingle()
@@ -1125,6 +1191,7 @@ onMounted(async () => {
         price_range: data.price_range || '',
 
         opening_hours: data.opening_hours || form.value.opening_hours,
+        tags: data.tags || [],
       }
 
       imagePreview.value = data.image || null
@@ -1305,6 +1372,30 @@ onBeforeUnmount(() => {
   margin-left: auto;
   color: var(--ion-color-medium);
   font-size: 14px;
+}
+
+/* Tags */
+.tag-chips {
+  padding: 8px 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tag-chip {
+  margin: 0;
+  height: 32px;
+  --color: var(--ion-color-primary);
+}
+
+.tag-chip ion-icon {
+  font-size: 18px;
+  cursor: pointer;
+  margin-inline-start: 4px;
+}
+
+.tag-chip ion-icon:hover {
+  color: var(--ion-color-danger);
 }
 
 </style>

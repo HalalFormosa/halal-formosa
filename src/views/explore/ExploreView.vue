@@ -40,6 +40,18 @@
         <!-- Category bar row -->
         <div class="category-bar-row">
           <div v-show="!loadingCategories" class="category-bar">
+            
+            <ion-chip
+                v-if="activeTag"
+                class="modern-category-chip active"
+                style="--cat-color: var(--ion-color-tertiary); --cat-bg: var(--ion-color-tertiary);"
+                @click="activeTag = null"
+            >
+              <ion-icon :icon="pricetagOutline" class="category-icon" />
+              <ion-label style="text-transform: capitalize">{{ activeTag }}</ion-label>
+              <ion-icon :icon="closeCircleOutline" style="margin-left: 4px; font-size: 16px;" />
+            </ion-chip>
+
             <ion-chip
                 v-for="cat in categories"
                 :key="cat.id"
@@ -360,7 +372,7 @@ import {
   layersOutline, listOutline, gridOutline, mapOutline, sparkles, shieldCheckmarkOutline, checkmarkCircle,
   trendingUpOutline, flameOutline, timeOutline, locationOutline, filterOutline,
   eyeOutline, shareSocialOutline, navigateOutline, closeCircleOutline,
-  calendarOutline
+  calendarOutline, pricetagOutline
 } from 'ionicons/icons'
 import {ref, computed, nextTick, onMounted, onUnmounted, watch} from 'vue'
 import type {ComponentPublicInstance, VNodeRef} from 'vue'
@@ -394,6 +406,7 @@ const ionIconMap: Record<string, any> = {
 
 /* ---------------- State ---------------- */
 const viewMode = ref<'map' | 'list'>('map')
+const activeTag = ref<string | null>(null)
 
 /* ---------------- Types ---------------- */
 type LatLng = { lat: number; lng: number }
@@ -417,6 +430,7 @@ type Place = {
   view_count?: number
   partner_tier?: 'Gold' | 'Silver' | 'Bronze'
   created_at?: string
+  tags?: string[]
 }
 
 
@@ -432,6 +446,7 @@ type LocationRow = {
   view_count?: number
   partner_tier?: 'Gold' | 'Silver' | 'Bronze'
   created_at: string
+  tags?: string[]
 }
 
 // Local type for ion-content (no external import needed)
@@ -1179,6 +1194,7 @@ const fetchLocations = async () => {
     address,
     view_count,
     created_at,
+    tags,
     location_types(name),
     partner:partners(partner_tier)
   `)
@@ -1199,7 +1215,8 @@ const fetchLocations = async () => {
       type: loc.location_types?.name ?? '',
       view_count: loc.view_count ?? 0,
       partner_tier: Array.isArray(loc.partner) ? loc.partner[0]?.partner_tier : loc.partner?.partner_tier,
-      created_at: loc.created_at
+      created_at: loc.created_at,
+      tags: loc.tags || []
     }))
   }
 
@@ -1492,8 +1509,36 @@ const onSearchInput = (event: CustomEvent) => {
 }
 
 /* ---------------- Derived ---------------- */
+const remoteSearchIds = ref<number[] | null>(null)
+let remoteSearchTimeout: ReturnType<typeof setTimeout> | null = null
+
+watch(searchQuery, (q) => {
+  if (remoteSearchTimeout) clearTimeout(remoteSearchTimeout)
+  if (!q || q.length < 2) {
+    remoteSearchIds.value = null
+    return
+  }
+  
+  remoteSearchTimeout = setTimeout(async () => {
+    const { data } = await supabase
+      .from('locations')
+      .select('id')
+      .textSearch('search_vector', q, { type: 'websearch' })
+      
+    if (data) {
+      remoteSearchIds.value = data.map(d => d.id)
+    }
+  }, 500) // 500ms debounce
+})
+
 const sortedLocations = computed(() => {
   let base = [...locations.value]
+
+  // ✅ filter by strict tag
+  if (activeTag.value) {
+    const qTag = activeTag.value.toLowerCase()
+    base = base.filter(l => l.tags && l.tags.some(t => t.toLowerCase() === qTag))
+  }
 
   // ✅ filter by category
   if (activeCategoryIds.value.length > 0) {
@@ -1506,10 +1551,20 @@ const sortedLocations = computed(() => {
   const q = searchQuery.value.toLowerCase().trim()
 
   if (q) {
-    base = base.filter(l =>
+    if (remoteSearchIds.value !== null) {
+      base = base.filter(l => 
+        remoteSearchIds.value!.includes(l.id) ||
         l.name.toLowerCase().includes(q) ||
-        (l.address && l.address.toLowerCase().includes(q))
-    )
+        (l.address && l.address.toLowerCase().includes(q)) ||
+        (l.tags && l.tags.some(t => t.toLowerCase().includes(q)))
+      )
+    } else {
+      base = base.filter(l =>
+          l.name.toLowerCase().includes(q) ||
+          (l.address && l.address.toLowerCase().includes(q)) ||
+          (l.tags && l.tags.some(t => t.toLowerCase().includes(q)))
+      )
+    }
   }
 
 
@@ -1581,7 +1636,29 @@ onMounted(async () => {
   if (viewMode.value === 'map') {
     initCardObserver()
   }
+
+  processUrlParams()
 })
+
+const processUrlParams = () => {
+  const focusId = Number(router.currentRoute.value.query.focus)
+  if (focusId) {
+    const p = locations.value.find(l => l.id === focusId)
+    if (p) selectPlace(p)
+
+    const query = { ...router.currentRoute.value.query }
+    delete query.focus
+    router.replace({ query })
+  }
+
+  const tagParam = router.currentRoute.value.query.tag as string
+  if (tagParam) {
+    activeTag.value = tagParam
+    const query = { ...router.currentRoute.value.query }
+    delete query.tag
+    router.replace({ query })
+  }
+}
 
 onUnmounted(() => {
   if (cardObserver) cardObserver.disconnect()
@@ -1603,13 +1680,7 @@ onIonViewWillEnter(async () => {
     google.maps.event.trigger(mapInstance, 'resize')
   }
 
-  const focusId = Number(router.currentRoute.value.query.focus)
-  if (focusId) {
-    const p = locations.value.find(l => l.id === focusId)
-    if (p) selectPlace(p)
-
-    router.replace({query: {}}) // 👈 clear focus param
-  }
+  processUrlParams()
 })
 
 

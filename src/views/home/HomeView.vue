@@ -1505,15 +1505,35 @@ async function fetchHomePartners() {
     return
   }
 
-  halalPartners.value = (data ?? []).map(b => ({
+  // 1. Map weights for tiers
+  const tierWeights: Record<string, number> = {
+    'gold': 3,
+    'silver': 2,
+    'bronze': 1
+  }
+
+  // 2. Perform tiered randomization
+  const processed = (data ?? []).map(b => ({
     id: b.id,
     name: b.name,
     partner_tier: b.partner_tier,
     logo:
         b.logo_url ||
-        `https://placehold.co/300x300?text=${encodeURIComponent(b.name)}`
+        `https://placehold.co/300x300?text=${encodeURIComponent(b.name)}`,
+    _weight: tierWeights[(b.partner_tier || '').toLowerCase()] || 0,
+    _random: Math.random() // Used for stable-ish randomization during this session
   }))
 
+  // 3. Sort by tier weight (desc) then by random value
+  processed.sort((a, b) => {
+    if (b._weight !== a._weight) {
+      return b._weight - a._weight
+    }
+    return b._random - a._random
+  })
+
+  // 4. Assign results (capped at 6)
+  halalPartners.value = processed.slice(0, 6)
   loadingPartners.value = false
 }
 
