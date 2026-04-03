@@ -55,6 +55,7 @@ const enMerchant = {
     register: {
       title: "Become a Partner",
       subtitle: "Join the Halal Formosa community as a merchant",
+      sectionTitle: "Merchant Store",
       steps: {
         storeInfo: "Store Information",
         address: "Location",
@@ -113,6 +114,7 @@ const zhMerchant = {
     register: {
       title: "成為合作夥伴",
       subtitle: "加入 Halal Formosa 社群，開啟您的清真商機",
+      sectionTitle: "商家店鋪",
       steps: {
         storeInfo: "商店資訊",
         address: "商店位置",

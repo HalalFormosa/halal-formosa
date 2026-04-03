@@ -1022,7 +1022,8 @@
       "rejectionReason": "未通過原因",
       "rejectedBanner": "更新您的申請資訊",
       "rejectedBannerDesc": "您之前的申請未獲核准。請參考下方的未通過原因，並在重新提交前更新您的資訊。",
-      "rejectedProfileDesc": "您的申請未獲核准。請點擊下方查看原因並進行修正。"
+      "rejectedProfileDesc": "您的申請未獲核准。請點擊下方查看原因並進行修正。",
+      "sectionTitle": "商家店鋪"
     }
   }
 }

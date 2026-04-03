@@ -1022,7 +1022,8 @@
       "rejectionReason": "Reason for Rejection",
       "rejectedBanner": "Update Your Application",
       "rejectedBannerDesc": "Your previous application was not approved. Please review the reason below and update your information before resubmitting.",
-      "rejectedProfileDesc": "Your application was not approved. Click below to view feedback and revise."
+      "rejectedProfileDesc": "Your application was not approved. Click below to view feedback and revise.",
+      "sectionTitle": "Merchant Store"
     }
   }
 }

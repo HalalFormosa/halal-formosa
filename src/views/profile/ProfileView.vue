@@ -212,6 +212,12 @@
 
         <!-- Become a Merchant Section -->
         <ion-card v-if="userEmail && !merchantStore">
+          <ion-list lines="none" style="padding-bottom: 0;">
+            <ion-list-header style="min-height: 32px; padding-bottom: 4px;">
+              <ion-label style="font-size: 0.85rem; color: var(--ion-color-medium); margin-top: 0; text-transform: uppercase;">{{ $t('merchant.register.sectionTitle') }}</ion-label>
+            </ion-list-header>
+          </ion-list>
+
           <div v-if="merchantApplication?.status === 'pending'" class="xp-section vendor-onboarding pending">
             <div class="pending-status-box">
               <div class="icon-pulse">

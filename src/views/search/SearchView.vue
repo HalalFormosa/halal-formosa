@@ -1736,7 +1736,7 @@ ion-searchbar.rounded {
 }
 
 .floating-status-pill.bottom-left {
-  bottom: 12px;
+  bottom: 28px;
   left: 8px;
 }
 

@@ -494,7 +494,6 @@ async function submitApplication() {
   border: 1px solid rgba(var(--ion-color-danger-rgb), 0.2);
   border-radius: 18px;
   padding: 16px;
-  margin-bottom: 24px;
   display: flex;
   align-items: center;
   gap: 16px;
@@ -542,7 +541,7 @@ async function submitApplication() {
 }
 
 .step-content {
-  padding: 10px 0;
+  padding: 5px 0;
 }
 
 .step-header {
