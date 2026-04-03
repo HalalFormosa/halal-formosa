@@ -344,6 +344,13 @@
     "viewMap": "Map",
     "viewBoth": "Both",
     "viewList": "List",
+    "specialPromo": "Special Promo",
+    "campusFilter": "{name} Muslim-friendly Campus",
+    "campusRadiusTitle": "{name} Muslim-friendly Campus",
+    "walkingRadius": "3 km (~40 min walk)",
+    "userLocationTitle": "You are here",
+    "searchWait": "Please wait...",
+    "searchMap": "Searching address on map...",
     "types": {
       "Restaurant": "Restaurant",
       "Halal Restaurant": "Halal Restaurant",

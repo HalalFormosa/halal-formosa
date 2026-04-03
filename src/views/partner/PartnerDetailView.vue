@@ -444,7 +444,8 @@ import {
     IonSkeletonText,
     IonLabel,
     IonButton,
-    IonIcon
+    IonIcon,
+    useIonRouter
 } from '@ionic/vue'
 import AppHeader from '@/components/AppHeader.vue'
 import { supabase } from '@/plugins/supabaseClient'
@@ -491,6 +492,7 @@ const PARTNER_COORDS: Record<string, { lat: number; lng: number }> = {
 
 
 const route = useRoute()
+const ionRouter = useIonRouter()
 const id = route.params.id as string
 
 const loading = ref(true)
@@ -848,8 +850,8 @@ function viewAllNearbyLocations() {
     partner_slug: body.value.slug
   })
   
-  // Hard navigation to break out of any locked Ionic tab contexts
-  window.location.href = `/explore?tag=${body.value.slug}`
+  // Use ionRouter to navigate 'back' to the explore tab, ensuring the current view is dismissed
+  ionRouter.navigate(`/explore?tag=${body.value.slug}`, 'back', 'replace');
 }
 
 

@@ -44,7 +44,7 @@
           <div v-show="!loadingCategories" class="category-bar">
             
             <ion-chip
-                v-if="activeTag"
+                v-if="activeTag && !isCampusTagSelected"
                 class="modern-category-chip active"
                 style="--cat-color: var(--ion-color-tertiary); --cat-bg: var(--ion-color-tertiary);"
                 @click="activeTag = null; focusedPlaceId = null"
@@ -74,9 +74,9 @@
           </div>
 
           <ion-chip
-              v-if="activeCategoryIds.length"
+              v-if="activeCategoryIds.length || activeTag"
               class="clear-chip floating-clear"
-              @click="activeCategoryIds = []"
+              @click="activeCategoryIds = []; activeTag = null; focusedPlaceId = null"
           >
             <ion-icon :icon="closeCircleOutline" style="margin-right: 4px; font-size: 16px;" />
             {{ $t('common.clear') }}
@@ -95,17 +95,22 @@
         <div v-if="campusPartners.length > 0" class="campus-bar-row">
           <div class="category-bar">
             <!-- Campus Filter Buttons -->
-            <ion-chip
+            <div
                 v-for="campus in campusPartners"
                 :key="campus.id"
-                class="modern-category-chip campus-chip"
-                :class="{ active: activeTag === campus.slug }"
-                style="--cat-color: var(--ion-color-tertiary); --cat-bg: var(--ion-color-tertiary);"
-                @click="activeTag = (activeTag === campus.slug ? null : campus.slug); focusedPlaceId = null"
+                class="campus-filter-wrapper"
             >
-              <ion-icon :icon="school" class="category-icon" />
-              <ion-label>{{ campus.slug.toUpperCase() }} Muslim-friendly</ion-label>
-            </ion-chip>
+              <div class="special-promo-tag">{{ $t('explore.specialPromo') }}</div>
+              <ion-chip
+                  class="modern-category-chip campus-chip"
+                  :class="{ active: activeTag === campus.slug }"
+                  style="--cat-color: var(--ion-color-tertiary); --cat-bg: var(--ion-color-tertiary);"
+                  @click="activeTag = (activeTag === campus.slug ? null : campus.slug); focusedPlaceId = null"
+              >
+                <ion-icon :icon="school" class="category-icon" />
+                <ion-label>{{ $t('explore.campusFilter', { name: campus.slug.toUpperCase() }) }}</ion-label>
+              </ion-chip>
+            </div>
           </div>
         </div>
       </ion-toolbar>
@@ -397,6 +402,7 @@ import {
   IonSkeletonText, onIonViewWillEnter, IonFabList, onIonViewWillLeave, IonModal,
   IonPopover, IonList, IonItem, IonFooter
 } from '@ionic/vue'
+import { useI18n } from 'vue-i18n'
 import {
   navigateCircleOutline,
   addOutline,
@@ -439,6 +445,12 @@ const ionIconMap: Record<string, any> = {
 /* ---------------- State ---------------- */
 const viewMode = ref<'map' | 'list'>('map')
 const activeTag = ref<string | null>(null)
+const campusCircle = ref<google.maps.Circle | null>(null)
+const campusLabel = ref<google.maps.marker.AdvancedMarkerElement | null>(null)
+let campusOverlays: (google.maps.Circle | any)[] = []
+const CAMPUS_COORDS: Record<string, { lat: number; lng: number }> = {
+  'ntu': { lat: 25.01737, lng: 121.5398 }
+}
 
 /* ---------------- Types ---------------- */
 type LatLng = { lat: number; lng: number }
@@ -497,6 +509,7 @@ const PLACEHOLDER = 'https://placehold.co/200x100'
 
 /* ---------------- State ---------------- */
 const router = useRouter()
+const { t } = useI18n()
 
 const isLoggedIn = ref(false)
 const isContributor = ref(false)
@@ -633,7 +646,7 @@ const startWatchingUserLocation = async () => {
                   position: userLoc,
                   map: mapInstance,
                   content: dot,
-                  title: 'You are here'
+                  title: t('explore.userLocationTitle')
                 })
             
             // Re-initialize heading tracking once dot exists
@@ -771,8 +784,8 @@ import {toastController} from '@ionic/vue'
 const showAddressToast = async () => {
   const toast = await toastController.create({
     message: isGeocoding.value
-        ? 'Please wait…'
-        : 'Searching address on map…',
+        ? t('explore.searchWait')
+        : t('explore.searchMap'),
     duration: 1000,
     position: 'top'
   })
@@ -845,6 +858,11 @@ const geocodeAddress = async (query: string) => {
   focusedPlaceId.value = null
 }
 
+
+const isCampusTagSelected = computed(() => {
+  if (!activeTag.value) return false
+  return campusPartners.value.some(c => c.slug === activeTag.value)
+})
 
 const categoryIconMap = computed<Record<string, any>>(() => {
   const map: Record<string, any> = {}
@@ -1352,6 +1370,84 @@ const initMap = async () => {
   loading.value = false
 }
 
+/**
+ * Atomic cleanup for all campus-specific map overlays to prevent "zombie" elements
+ */
+function clearCampusOverlays() {
+  campusOverlays.forEach(obj => {
+    try {
+      if (obj.setMap) obj.setMap(null)
+      else if (obj.map !== undefined) obj.map = null
+    } catch (e) {
+      console.warn('[Map Cleanup] Failed to clear overlay', e)
+    }
+  })
+  campusOverlays = []
+  
+  if (campusCircle.value) {
+    campusCircle.value.setMap(null)
+    campusCircle.value = null
+  }
+  if (campusLabel.value) {
+    campusLabel.value.map = null
+    campusLabel.value = null
+  }
+}
+
+/**
+ * Draws or removes a radius circle for campus partners
+ */
+function updateCampusCircle() {
+  if (!mapInstance) return
+
+  // 1. Force clear EVERYTHING before drawing anything new
+  clearCampusOverlays()
+
+  // 2. Draw ONLY if the ntu tag is active
+  if (activeTag.value === 'ntu') {
+    const coords = CAMPUS_COORDS['ntu']
+    
+    const circle = new google.maps.Circle({
+      strokeColor: '#FF0000',
+      strokeOpacity: 0.25,
+      strokeWeight: 2,
+      fillColor: '#FF0000',
+      fillOpacity: 0.05,
+      map: mapInstance,
+      center: coords,
+      radius: 3000, 
+      clickable: false
+    })
+    
+    campusCircle.value = circle
+    campusOverlays.push(circle)
+
+    if (advancedMarkerLib) {
+      const labelDiv = document.createElement('div')
+      labelDiv.className = 'campus-radius-label'
+      labelDiv.innerHTML = `
+        <div class="walk-label-content">
+          <div class="campus-title-small">${t('explore.campusRadiusTitle', { name: 'NTU' })}</div>
+          <div class="walk-info-row">
+            <span class="walk-icon">🚶</span>
+            <span class="walk-text">${t('explore.walkingRadius')}</span>
+          </div>
+        </div>
+      `
+
+      const label = new advancedMarkerLib.AdvancedMarkerElement({
+        position: coords,
+        content: labelDiv,
+        map: mapInstance,
+        zIndex: 5
+      })
+      
+      campusLabel.value = label
+      campusOverlays.push(label)
+    }
+  }
+}
+
 
 const initMarkers = (places: Place[] = locations.value) => {
   if (!mapInstance || !advancedMarkerLib) return
@@ -1397,33 +1493,27 @@ const initMarkers = (places: Place[] = locations.value) => {
     markerArray.push(marker)
   })
 
-  // ✅ only cluster when no filter (category, tag, or search)
+  // ✅ Always use clustering
+  clusterer = new MarkerClusterer({
+    map: mapInstance!,
+    markers: markerArray,
+    renderer: carrotRippleClusterRenderer,
+    algorithm: new SuperClusterAlgorithm({radius: 80})
+  })
+
+  // ✅ fit bounds if filtered
   const isFiltered = activeCategoryIds.value.length > 0 || !!activeTag.value || !!searchQuery.value.trim()
-
-  if (!isFiltered) {
-    clusterer = new MarkerClusterer({
-      map: mapInstance!,
-      markers: markerArray,
-      renderer: carrotRippleClusterRenderer,
-      algorithm: new SuperClusterAlgorithm({radius: 80})
+  if (isFiltered && markerArray.length > 0) {
+    const bounds = new google.maps.LatLngBounds()
+    markerArray.forEach(m => {
+      if (m.position) bounds.extend(m.position)
     })
-  } else {
-    // just put markers on map directly
-    markerArray.forEach(m => (m.map = mapInstance!))
+    mapInstance!.fitBounds(bounds)
 
-    // ✅ fit bounds if filtered
-    if (markerArray.length > 0) {
-      const bounds = new google.maps.LatLngBounds()
-      markerArray.forEach(m => {
-        if (m.position) bounds.extend(m.position)
-      })
-      mapInstance!.fitBounds(bounds)
-
-      // if only 1-2 points, zoom out a bit so it's not super close
-      google.maps.event.addListenerOnce(mapInstance!, 'idle', () => {
-        if (mapInstance!.getZoom()! > 17) mapInstance!.setZoom(17)
-      })
-    }
+    // if only 1-2 points, zoom out a bit so it's not super close
+    google.maps.event.addListenerOnce(mapInstance!, 'idle', () => {
+      if (mapInstance!.getZoom()! > 17) mapInstance!.setZoom(17)
+    })
   }
 }
 
@@ -1666,6 +1756,10 @@ watch(sortedLocations, (filtered) => {
   initMarkers(filtered)
 })
 
+watch(activeTag, () => {
+  updateCampusCircle()
+})
+
 watch(displayedLocations, () => {
   if (viewMode.value === 'map') {
     initCardObserver()
@@ -1724,6 +1818,7 @@ const processUrlParams = () => {
 
 onUnmounted(() => {
   if (cardObserver) cardObserver.disconnect()
+  clearCampusOverlays()
 })
 
 let firstEnter = true
@@ -1753,6 +1848,8 @@ onIonViewDidEnter(async () => {
 
 onIonViewWillLeave(() => {
   isPageActive.value = false
+  clearCampusOverlays()
+
   if (locationWatchId) {
     Geolocation.clearWatch({ id: locationWatchId })
     locationWatchId = null
@@ -2050,10 +2147,35 @@ button.gm-ui-hover-effect > span {
 
 .campus-bar-row {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   gap: 12px;
-  padding: 0 16px 12px;
+  padding: 0px 16px 12px; /* Increased top padding for tags */
   pointer-events: auto;
+}
+
+.campus-filter-wrapper {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 14px; /* Space for the tag */
+}
+
+.special-promo-tag {
+  position: absolute;
+  top: 0;
+  font-size: 0.55rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  background: linear-gradient(135deg, #facc15 0%, #ca8a04 100%);
+  color: #422006;
+  padding: 1px 6px;
+  border-radius: 4px;
+  box-shadow: 0 2px 6px rgba(250, 204, 21, 0.4);
+  z-index: 10;
+  white-space: nowrap;
+  transform: translateY(8px);
 }
 
 .category-bar-row {
@@ -2842,6 +2964,65 @@ button.gm-ui-hover-effect > span {
 }
 
 
+</style>
+
+<style>
+/*********************************************
+ * CAMPUS RADIUS LABEL
+ *********************************************/
+.campus-radius-label {
+  pointer-events: none;
+  transform: translateY(-40px); /* Lift it above the center pin */
+}
+
+.walk-label-content {
+  background: rgba(255, 255, 255, 0.9);
+  padding: 8px 14px;
+  border-radius: 18px;
+  border: 2px solid #ef4444; /* red-500 equivalent */
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  white-space: nowrap;
+}
+
+.campus-title-small {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--ion-color-dark);
+  opacity: 0.8;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.walk-info-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ion-palette-dark .walk-label-content {
+  background: rgba(28, 28, 30, 0.9);
+  border-color: #f87171; /* red-400 */
+  color: #fff;
+}
+
+.walk-icon {
+  font-size: 1.1rem;
+}
+
+.walk-text {
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: #ef4444;
+  letter-spacing: 0.02em;
+}
+
+.ion-palette-dark .walk-text {
+  color: #f87171;
+}
 </style>
 
 <style>

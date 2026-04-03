@@ -343,6 +343,13 @@
     "viewMap": "地圖",
     "viewBoth": "兩者",
     "viewList": "列表",
+    "specialPromo": "特別優惠",
+    "campusFilter": "{name} 穆斯林友善校園",
+    "campusRadiusTitle": "{name} 穆斯林友善校園",
+    "walkingRadius": "3 公里 (約步行 40 分鐘)",
+    "userLocationTitle": "你在這裡",
+    "searchWait": "請稍候...",
+    "searchMap": "正在地圖上搜尋地址...",
     "types": {
       "Restaurant": "餐廳",
       "Halal Restaurant": "清真餐廳",
