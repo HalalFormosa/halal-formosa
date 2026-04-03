@@ -8,6 +8,7 @@
     "views": "瀏覽次數",
     "ok": "OK",
     "cancel": "取消",
+    "confirm": "確認",
     "close": "關閉",
     "yes": "是",
     "no": "否",
@@ -23,7 +24,41 @@
     "reset": "重置",
     "apply": "應用",
     "details": "詳情",
-    "reapply": "重新申請"
+    "reapply": "重新申請",
+    "save": "儲存",
+    "saving": "儲存中...",
+    "success": "成功！",
+    "error": "發生錯誤。",
+    "notProvided": "未提供"
+  },
+  "master": {
+    "active": "啟用",
+    "inactive": "停用",
+    "product_categories": "產品類別",
+    "ingredient_highlights": "成分亮點",
+    "location_types": "地點類型",
+    "stores": "商店",
+    "category_rules": "類別規則",
+    "published": "已發佈",
+    "publishSuccess": "地點已成功發佈！",
+    "hideSuccess": "地點已隱藏，公眾將無法查看。",
+    "fields": {
+      "name": "名稱",
+      "keyword": "關鍵字",
+      "keyword_en": "關鍵字 (英文)",
+      "keyword_zh": "關鍵字 (中文)",
+      "color": "顏色",
+      "status": "狀態",
+      "emoji": "表情符號",
+      "website": "網站",
+      "logo_url": "標誌 URL",
+      "sort_order": "排序",
+      "is_active": "啟用",
+      "category": "類別",
+      "store_name": "商店名稱",
+      "active": "啟用",
+      "inactive": "停用"
+    }
   },
   "dailyMissions": {
     "title": "每日任務",
@@ -401,6 +436,8 @@
     "darkMode": "深色模式",
     "publicProfile": "公開個人資料",
     "publicProfileNote": "開啟後，您的名稱將顯示在排行榜以及您新增的內容（產品、地點、新聞等）中。",
+    "showLastSeen": "顯示上次在線時間",
+    "showLastSeenNote": "允許他人在聊天中查看您上次活動的時間。",
     "language": "語言 (實驗功能)"
   },
   "profile": {
@@ -835,46 +872,46 @@
     "flag": "國旗",
     "locationImage": "地點圖片",
     "pts": "積分",
-    "master": {
-      "product_categories": "產品類別",
-      "ingredient_highlights": "成分亮點",
-      "location_types": "地點類型",
-      "stores": "商店",
-      "category_rules": "類別規則",
-      "published": "已發佈",
-      "publishSuccess": "地點已成功發佈！",
-      "hideSuccess": "地點已隱藏，公眾將無法查看。",
-      "fields": {
-        "name": "名稱",
-        "keyword": "關鍵字",
-        "keyword_en": "關鍵字 (英文)",
-        "keyword_zh": "關鍵字 (中文)",
-        "color": "顏色",
-        "status": "狀態",
-        "emoji": "表情符號",
-        "website": "網站",
-        "logo_url": "標誌 URL",
-        "sort_order": "排序",
-        "is_active": "啟用",
-        "category": "類別",
-        "store_name": "商店名稱",
-        "active": "啟用",
-        "inactive": "停用"
-      }
-    },
     "merchant": {
-      "title": "申請管理",
+      "title": "商家申請管理",
+      "noPending": "目前沒有待處理的申請。",
       "approve": "核准",
       "reject": "駁回",
-      "noPending": "目前沒有待處理的申請。",
-      "confirmApprove": "您確定要核准此申請嗎？這將自動為該商家同步創建商店資訊。",
-      "rejectionReasonTitle": "駁回原因",
-      "rejectionReasonPlaceholder": "請說明駁回原因...",
       "status": {
         "pending": "等待驗證中",
         "approved": "已核准",
         "rejected": "已駁回"
+      },
+      "confirmApprove": "確認核准",
+      "confirmApproveMsg": "您確定要核准此申請嗎？這將自動為該商家建立店鋪。",
+      "confirmReject": "駁回申請",
+      "confirmRejectMsg": "請提供駁回原因。",
+      "reasonPlaceholder": "例如：統編或電話號碼無效",
+      "reasonRequired": "駁回必須提供原因",
+      "approveSuccess": "申請已核准！店鋪已建立。",
+      "approveFailed": "核准失敗",
+      "rejectSuccess": "申請已駁回",
+      "rejectFailed": "駁回失敗",
+      "fields": {
+        "phone": "聯絡電話",
+        "ubn": "統一編號",
+        "address": "地址",
+        "description": "說明"
       }
+    }
+  },
+  "merchantApplications": {
+    "title": "申請管理",
+    "approve": "核准",
+    "reject": "駁回",
+    "noPending": "目前沒有待處理的申請。",
+    "confirmApprove": "您確定要核准此申請嗎？這將自動為該商家同步創建商店資訊。",
+    "rejectionReasonTitle": "駁回原因",
+    "rejectionReasonPlaceholder": "請說明駁回原因...",
+    "status": {
+      "pending": "等待驗證中",
+      "approved": "已核准",
+      "rejected": "已駁回"
     }
   },
   "update": {
@@ -942,6 +979,12 @@
     "saveFailed": "儲存商品失敗。",
     "adminOrders": "商店訂單",
     "noOrders": "找不到訂單。",
+    "deleteConfirm": "您確定要刪除此產品嗎？",
+    "deleteSuccess": "產品已成功刪除。",
+    "inStockShort": "件",
+    "admin": {
+      "products": "產品管理"
+    },
     "myOrders": "我的訂單",
     "orderPending": "待處理",
     "orderPaid": "已付款",
@@ -954,9 +997,7 @@
       "categoryRequired": "分類為必填。",
       "loginRequired": "您必須登入。",
       "noStoreFound": "找不到商店。",
-      "contactAdmin": "請聯繫管理員以設置您的商店。",
-      "deleteConfirm": "您確定要刪除此商品嗎？",
-      "deleteSuccess": "商品刪除成功。"
+      "contactAdmin": "請聯繫管理員以設置您的商店。"
     },
     "verifiedSeller": "認證賣家",
     "verifiedStore": "認證商店",
@@ -967,6 +1008,8 @@
       "storeMessages": "商店訊息",
       "typeMessage": "輸入訊息...",
       "online": "在線",
+      "offline": "離線",
+      "activePrefix": "上次在線",
       "noMessages": "還沒有訊息，打個招呼吧！👋",
       "noConversations": "目前沒有對話。",
       "aboutProduct": "正在討論此商品",
@@ -985,7 +1028,6 @@
     "deliveryMethod": "配送方式",
     "priceRange": "價格範圍 (NT$)",
     "inStockOnly": "僅顯示有貨",
-    "inStockShort": "件",
     "inactive": "停用",
     "sellerCenter": {
       "title": "賣家中心",
@@ -996,13 +1038,31 @@
     },
     "settings": {
       "title": "商店設定",
+      "basicInfo": "基本資訊",
+      "logistics": "物流與配送",
+      "deliveryHint": "管理商品配送至顧客的方式",
       "noBanner": "無橫幅",
       "bannerHint": "建議比例：3:1",
       "storeName": "商店名稱",
       "storeNameZh": "商店名稱 (中文)",
       "storeDescription": "商店描述",
       "storeDescriptionZh": "商店描述 (中文)",
-      "saveProfile": "儲存資料"
+      "storeNamePlaceholder": "請輸入商店英文名稱",
+      "storeNameZhPlaceholder": "請輸入商店中文名稱",
+      "storeDescriptionPlaceholder": "請向顧客介紹您的商店...",
+      "storeDescriptionZhPlaceholder": "請向顧客介紹您的商店...",
+      "saveProfile": "儲存資料",
+        "deliveryMethods": {
+          "home_delivery": "宅配到府",
+          "home_delivery_desc": "直接配送至顧客地址",
+          "7eleven": "7-Eleven",
+          "family_mart": "FamilyMart",
+          "hi_life": "Hi-Life",
+          "ok_mart": "OK Mart",
+          "cvs_pickup": "超商取貨",
+          "cod_meetup": "自取",
+          "in_person": "面交自取 / 貨到付款"
+        }
     }
   },
   "merchant": {
@@ -1043,7 +1103,11 @@
       "rejectedBanner": "更新您的申請資訊",
       "rejectedBannerDesc": "您之前的申請未獲核准。請參考下方的未通過原因，並在重新提交前更新您的資訊。",
       "rejectedProfileDesc": "您的申請未獲核准。請點擊下方查看原因並進行修正。",
-      "sectionTitle": "商家店鋪"
+      "sectionTitle": "商家店鋪",
+      "successTitle": "申請已提交！",
+      "successSubtitle": "感謝您加入 Halal Formosa。",
+      "successText": "我們的審核團隊將審核您的申請，並透過電話、WhatsApp 或 LINE 與您聯繫進行最終身份驗證。讓清真生意更簡單、更值得信賴！",
+      "backToProfile": "返回個人資料"
     }
   }
 }

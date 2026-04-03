@@ -37,19 +37,19 @@
               <ion-card-content>
                 <div class="info-grid">
                   <div class="info-item">
-                    <label>Contact Phone</label>
+                    <label>{{ $t('admin.merchant.fields.phone') }}</label>
                     <p>{{ app.contact_phone }}</p>
                   </div>
                   <div class="info-item" v-if="app.unified_business_number">
-                    <label>UBN</label>
+                    <label>{{ $t('admin.merchant.fields.ubn') }}</label>
                     <p>{{ app.unified_business_number }}</p>
                   </div>
                   <div class="info-item full-width">
-                    <label>Address</label>
-                    <p>{{ app.store_address || 'Not provided' }}</p>
+                    <label>{{ $t('admin.merchant.fields.address') }}</label>
+                    <p>{{ app.store_address || $t('common.notProvided') }}</p>
                   </div>
                   <div class="info-item full-width">
-                    <label>Description</label>
+                    <label>{{ $t('admin.merchant.fields.description') }}</label>
                     <p class="description">{{ app.store_description }}</p>
                   </div>
                 </div>
@@ -92,6 +92,9 @@ import AppHeader from '@/components/AppHeader.vue'
 import { MerchantService, type MerchantApplication } from '@/services/MerchantService'
 import { ActivityLogService } from '@/services/ActivityLogService'
 
+import { useI18n } from 'vue-i18n'
+const { t } = useI18n()
+
 const loading = ref(true)
 const applications = ref<MerchantApplication[]>([])
 
@@ -100,7 +103,7 @@ async function fetchApplications() {
   try {
     applications.value = await MerchantService.getPendingApplications()
   } catch (error) {
-    showToast('Error loading applications', 'danger')
+    showToast(t('common.error'), 'danger')
   } finally {
     loading.value = false
   }
@@ -108,19 +111,19 @@ async function fetchApplications() {
 
 async function handleApprove(app: MerchantApplication) {
   const alert = await alertController.create({
-    header: 'Confirm Approval',
-    message: `Are you sure you want to approve "${app.store_name}"? This will create their store automatically.`,
+    header: t('admin.merchant.confirmApprove'),
+    message: t('admin.merchant.confirmApproveMsg', { name: app.store_name }),
     buttons: [
-      { text: 'Cancel', role: 'cancel' },
+      { text: t('common.cancel'), role: 'cancel' },
       { 
-        text: 'Approve', 
+        text: t('admin.merchant.approve'), 
         handler: async () => {
           try {
             await MerchantService.updateApplicationStatus(app.id!, 'approved')
-            showToast('Application approved! Store created.', 'success')
+            showToast(t('admin.merchant.approveSuccess'), 'success')
             fetchApplications()
           } catch (error) {
-            showToast('Approval failed', 'danger')
+            showToast(t('admin.merchant.approveFailed'), 'danger')
           }
         }
       }
@@ -131,30 +134,30 @@ async function handleApprove(app: MerchantApplication) {
 
 async function handleReject(app: MerchantApplication) {
   const alert = await alertController.create({
-    header: 'Reject Application',
-    message: 'Please provide a reason for rejection.',
+    header: t('admin.merchant.confirmReject'),
+    message: t('admin.merchant.confirmRejectMsg'),
     inputs: [
       {
         name: 'reason',
         type: 'textarea',
-        placeholder: 'e.g. Invalid UBN or Phone number'
+        placeholder: t('admin.merchant.reasonPlaceholder')
       }
     ],
     buttons: [
-      { text: 'Cancel', role: 'cancel' },
+      { text: t('common.cancel'), role: 'cancel' },
       { 
-        text: 'Reject', 
+        text: t('admin.merchant.reject'), 
         handler: async (data) => {
           if (!data.reason) {
-            showToast('Reason is required for rejection', 'warning')
+            showToast(t('admin.merchant.reasonRequired'), 'warning')
             return false
           }
           try {
             await MerchantService.updateApplicationStatus(app.id!, 'rejected', data.reason)
-            showToast('Application rejected', 'medium')
+            showToast(t('admin.merchant.rejectSuccess'), 'medium')
             fetchApplications()
           } catch (error) {
-            showToast('Rejection failed', 'danger')
+            showToast(t('admin.merchant.rejectFailed'), 'danger')
           }
         }
       }

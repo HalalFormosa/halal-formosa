@@ -1,100 +1,130 @@
 <template>
   <ion-page>
-    <ion-header>
-      <ion-toolbar>
+    <ion-header class="ion-no-border">
+      <ion-toolbar class="premium-toolbar">
         <ion-buttons slot="start">
           <ion-back-button default-href="/profile" />
         </ion-buttons>
-        <ion-title>{{ $t('store.settings.title') || 'Store Settings' }}</ion-title>
+        <ion-title class="premium-title">{{ $t('store.settings.title') }}</ion-title>
+        <ion-buttons slot="end">
+          <ion-button v-if="store" @click="saveSettings" :disabled="saving" class="save-header-btn">
+            <ion-spinner v-if="saving" name="crescent" />
+            <span v-else>{{ $t('common.save') }}</span>
+          </ion-button>
+        </ion-buttons>
       </ion-toolbar>
     </ion-header>
 
-    <ion-content>
-      <div v-if="loading" class="ion-padding ion-text-center">
-        <ion-spinner />
+    <ion-content :fullscreen="true">
+      <div v-if="loading" class="loading-overlay">
+        <ion-spinner name="dots" color="carrot" />
       </div>
 
-      <div v-else-if="!store" class="ion-padding ion-text-center">
-        <ion-icon :icon="alertCircleOutline" size="large" color="warning" />
-        <h3>{{ $t('store.errors.noStoreFound') || 'No store found.' }}</h3>
-        <p>{{ $t('store.errors.contactAdmin') || 'Please contact an admin to set up your store.' }}</p>
+      <div v-else-if="!store" class="error-state ion-padding">
+        <div class="error-card">
+          <ion-icon :icon="alertCircleOutline" class="error-icon" />
+          <h3>{{ $t('store.errors.noStoreFound') }}</h3>
+          <p>{{ $t('store.errors.contactAdmin') }}</p>
+        </div>
       </div>
 
-      <div v-else class="settings-container ion-padding">
-        <!-- Banner Upload -->
-        <div class="banner-upload-section">
-          <div class="banner-preview" :style="store.banner_url ? { backgroundImage: `url(${store.banner_url})` } : {}">
-            <div v-if="!store.banner_url" class="banner-placeholder">
+      <div v-else class="settings-wrapper">
+        <!-- Identity Section: Banner & Logo -->
+        <section class="identity-card material-card">
+          <div class="banner-box" :style="store.banner_url ? { backgroundImage: `url(${store.banner_url})` } : {}">
+            <div v-if="!store.banner_url" class="banner-empty">
               <ion-icon :icon="imageOutline" />
-              <span>{{ $t('store.settings.noBanner') || 'No Banner' }}</span>
             </div>
-            <ion-button fill="clear" class="upload-btn" @click="triggerBannerUpload">
+            <div class="banner-glass-overlay"></div>
+            <ion-button fill="clear" class="btn-circular banner-edit" @click="triggerBannerUpload">
               <ion-icon :icon="cameraOutline" />
             </ion-button>
           </div>
+          
+          <div class="logo-box-wrapper">
+            <div class="logo-box">
+              <img :src="store.logo_url || '/favicon-32x32.png'" class="store-logo-img" />
+              <ion-button fill="clear" class="btn-circular logo-edit" @click="triggerLogoUpload">
+                <ion-icon :icon="cameraOutline" />
+              </ion-button>
+            </div>
+          </div>
+          
+          <div class="identity-info ion-text-center">
+            <h2 class="store-name-display">{{ store.name_zh || store.name || $t('merchant.register.sectionTitle') }}</h2>
+            <div class="status-toggle-wrapper">
+              <span class="status-label" :class="{ 'is-active': store.is_active }">
+                {{ store.is_active ? $t('master.active') : $t('master.inactive') }}
+              </span>
+              <ion-toggle v-model="store.is_active" color="carrot" />
+            </div>
+          </div>
+
           <input type="file" ref="bannerInput" style="display: none" accept="image/*" @change="handleBannerFile" />
-          <p class="upload-hint">{{ $t('store.settings.bannerHint') || 'Recommended ratio: 3:1' }}</p>
-        </div>
-
-        <!-- Logo Upload -->
-        <div class="logo-upload-section">
-          <ion-avatar class="settings-avatar">
-            <img :src="store.logo_url || '/favicon-32x32.png'" />
-            <ion-button fill="clear" class="avatar-upload-btn" @click="triggerLogoUpload">
-              <ion-icon :icon="cameraOutline" />
-            </ion-button>
-          </ion-avatar>
           <input type="file" ref="logoInput" style="display: none" accept="image/*" @change="handleLogoFile" />
-        </div>
+        </section>
 
-        <ion-list lines="none">
-          <ion-item class="custom-item">
-            <ion-label position="stacked" color="primary">{{ $t('store.settings.storeName') }} (EN)</ion-label>
-            <ion-input v-model="store.name" placeholder="English name" />
-          </ion-item>
+        <!-- Details Section -->
+        <section class="settings-group">
+          <h3 class="group-title">{{ $t('store.settings.basicInfo') }}</h3>
+          
+          <!-- English Details -->
+          <div class="settings-item card-item">
+            <div class="field-group">
+              <label>{{ $t('store.settings.storeName') }} (EN)</label>
+              <ion-input v-model="store.name" :placeholder="$t('store.settings.storeNamePlaceholder')" class="premium-input" />
+            </div>
+            <div class="field-group" style="border-top: 1px solid rgba(0,0,0,0.05);">
+              <label>{{ $t('store.settings.storeDescription') }} (EN)</label>
+              <ion-textarea v-model="store.description" :rows="3" :placeholder="$t('store.settings.storeDescriptionPlaceholder')" class="premium-textarea" />
+            </div>
+          </div>
 
-          <ion-item class="custom-item">
-            <ion-label position="stacked" color="primary">{{ $t('store.settings.storeNameZh') }} (ZH)</ion-label>
-            <ion-input v-model="store.name_zh" placeholder="中文名稱" />
-          </ion-item>
+          <!-- Chinese Details -->
+          <div class="settings-item card-item">
+            <div class="field-group">
+              <label>{{ $t('store.settings.storeNameZh') }} (ZH)</label>
+              <ion-input v-model="store.name_zh" :placeholder="$t('store.settings.storeNameZhPlaceholder')" class="premium-input" />
+            </div>
+            <div class="field-group" style="border-top: 1px solid rgba(0,0,0,0.05);">
+              <label>{{ $t('store.settings.storeDescriptionZh') }} (ZH)</label>
+              <ion-textarea v-model="store.description_zh" :rows="3" :placeholder="$t('store.settings.storeDescriptionZhPlaceholder')" class="premium-textarea" />
+            </div>
+          </div>
+        </section>
 
-          <ion-item class="custom-item">
-            <ion-label position="stacked" color="primary">{{ $t('store.settings.storeDescription') }} (EN)</ion-label>
-            <ion-textarea v-model="store.description" :rows="3" placeholder="English description" />
-          </ion-item>
+        <!-- Delivery Section -->
+        <section class="settings-group">
+          <div class="group-header">
+            <h3 class="group-title">🚚 {{ $t('store.settings.logistics') }}</h3>
+            <p class="group-subtitle">{{ $t('store.settings.deliveryHint') }}</p>
+          </div>
 
-          <ion-item class="custom-item">
-            <ion-label position="stacked" color="primary">{{ $t('store.settings.storeDescriptionZh') }} (ZH)</ion-label>
-            <ion-textarea v-model="store.description_zh" :rows="3" placeholder="中文描述" />
-          </ion-item>
-
-          <ion-item class="custom-item">
-            <ion-label color="medium">{{ $t('store.isActive') }}</ion-label>
-            <ion-toggle slot="end" v-model="store.is_active" />
-          </ion-item>
-        </ion-list>
-
-        <!-- Delivery Options -->
-        <div class="delivery-section">
-          <h3 class="section-title">🚚 {{ $t('store.settings.deliveryOptions') || 'Delivery Options' }}</h3>
-          <p class="section-subtitle">{{ $t('store.settings.deliveryHint') || 'Select which delivery methods are available for your customers' }}</p>
-          <ion-list lines="none">
-            <ion-item v-for="method in deliveryMethods" :key="method.key" class="delivery-item">
-              <ion-icon :icon="method.icon" slot="start" color="primary" />
-              <ion-label>
-                <h3>{{ method.label }}</h3>
-                <p>{{ method.labelZh }}</p>
-              </ion-label>
-              <ion-toggle slot="end" :checked="isDeliveryEnabled(method.key)" @ionChange="toggleDelivery(method.key, $event)" />
-            </ion-item>
-          </ion-list>
-        </div>
-
-        <div class="ion-padding-top">
-          <ion-button expand="block" @click="saveSettings" :disabled="saving" class="save-btn">
-            <ion-spinner v-if="saving" name="crescent" slot="start" />
-            {{ $t('store.settings.saveProfile') }}
-          </ion-button>
+          <div class="card-item delivery-list">
+            <div v-for="method in deliveryMethods" :key="method.key" class="delivery-row">
+              <div class="deliv-info">
+                <div class="deliv-icon">
+                  <ion-icon :icon="method.icon" />
+                </div>
+                <div class="deliv-text">
+                  <h4>{{ $t('store.settings.deliveryMethods.' + method.key) }}</h4>
+                  <p>{{ $t('store.settings.deliveryMethods.' + (method.key === '7eleven' || method.key === 'family_mart' || method.key === 'hi_life' || method.key === 'ok_mart' ? 'cvs_pickup' : (method.key === 'cod_meetup' ? 'in_person' : method.key + '_desc'))) }}</p>
+                </div>
+              </div>
+              <ion-toggle 
+                :checked="isDeliveryEnabled(method.key)" 
+                @ionChange="toggleDelivery(method.key, $event)"
+                color="carrot" 
+              />
+            </div>
+          </div>
+        </section>
+        
+        <div class="footer-action ion-padding">
+           <ion-button expand="block" shape="round" color="carrot" @click="saveSettings" :disabled="saving" class="big-save-btn">
+             <ion-spinner v-if="saving" name="crescent" slot="start" />
+             {{ saving ? $t('common.saving') : $t('store.settings.saveProfile') }}
+           </ion-button>
         </div>
       </div>
     </ion-content>
@@ -105,7 +135,7 @@
 import { ref, onMounted } from 'vue'
 import {
   IonPage, IonHeader, IonToolbar, IonButtons, IonBackButton, IonTitle,
-  IonContent, IonSpinner, IonIcon, IonList, IonItem, IonLabel, IonInput,
+  IonContent, IonSpinner, IonIcon, IonItem, IonLabel, IonInput,
   IonTextarea, IonToggle, IonButton, IonAvatar, toastController
 } from '@ionic/vue'
 import {
@@ -116,13 +146,46 @@ import { supabase } from '@/plugins/supabaseClient'
 import { useI18n } from 'vue-i18n'
 
 const deliveryMethods = [
-  { key: 'home_delivery', label: 'Home Delivery (Courier)', labelZh: '宅配到府', icon: homeOutline },
-  { key: '7eleven', label: '7-Eleven Pickup', labelZh: '7-ELEVEN 取貨', icon: storefrontOutline },
-  { key: 'family_mart', label: 'FamilyMart Pickup', labelZh: '全家取貨', icon: cartOutline },
-  { key: 'hi_life', label: 'Hi-Life Pickup', labelZh: '萊爾富取貨', icon: businessOutline },
-  { key: 'ok_mart', label: 'OK Mart Pickup', labelZh: 'OK超商取貨', icon: bagHandleOutline },
-  { key: 'cod_meetup', label: 'Meet in Person', labelZh: '面交自取', icon: peopleOutline },
+  { key: 'home_delivery', icon: homeOutline },
+  { key: '7eleven', icon: storefrontOutline },
+  { key: 'family_mart', icon: cartOutline },
+  { key: 'hi_life', icon: businessOutline },
+  { key: 'ok_mart', icon: bagHandleOutline },
+  { key: 'cod_meetup', icon: peopleOutline },
 ]
+
+const { t } = useI18n()
+const user = ref<any>(null)
+const store = ref<any>(null)
+const loading = ref(true)
+const saving = ref(false)
+
+const bannerInput = ref<HTMLInputElement | null>(null)
+const logoInput = ref<HTMLInputElement | null>(null)
+
+async function fetchStore() {
+  const { data: authData } = await supabase.auth.getUser()
+  user.value = authData.user
+  if (!user.value) return
+  
+  loading.value = true
+  try {
+    const { data } = await supabase
+      .from('merchant_stores')
+      .select('*')
+      .eq('user_id', user.value.id)
+      .maybeSingle()
+    
+    if (data) {
+      store.value = data
+      // Ensure defaults
+      if (!store.value.delivery_options) store.value.delivery_options = ['home_delivery']
+    }
+  } catch (err) {
+    console.error('Fetch error:', err)
+  }
+  loading.value = false
+}
 
 function isDeliveryEnabled(key: string): boolean {
   const opts = store.value?.delivery_options || []
@@ -140,32 +203,6 @@ function toggleDelivery(key: string, event: any) {
     if (idx >= 0) opts.splice(idx, 1)
   }
   store.value.delivery_options = opts
-}
-
-const { t } = useI18n()
-const user = ref<any>(null)
-
-const store = ref<any>(null)
-const loading = ref(true)
-const saving = ref(false)
-
-const bannerInput = ref<HTMLInputElement | null>(null)
-const logoInput = ref<HTMLInputElement | null>(null)
-
-async function fetchStore() {
-  const { data: authData } = await supabase.auth.getUser()
-  user.value = authData.user
-  if (!user.value) return
-  
-  loading.value = true
-  const { data } = await supabase
-    .from('merchant_stores')
-    .select('*')
-    .eq('user_id', user.value.id)
-    .maybeSingle()
-  
-  if (data) store.value = data
-  loading.value = false
 }
 
 function triggerBannerUpload() { bannerInput.value?.click() }
@@ -222,7 +259,7 @@ async function saveSettings() {
       logo_url: store.value.logo_url,
       banner_url: store.value.banner_url,
       is_active: store.value.is_active,
-      delivery_options: store.value.delivery_options || ['home_delivery'],
+      delivery_options: store.value.delivery_options,
       updated_at: new Date().toISOString()
     })
     .eq('id', store.value.id)
@@ -230,7 +267,7 @@ async function saveSettings() {
   if (error) {
     showToast(error.message, 'danger')
   } else {
-    showToast(t('store.saveSuccess') || 'Settings saved!', 'success')
+    showToast(t('common.success'), 'success')
   }
   saving.value = false
 }
@@ -239,7 +276,8 @@ async function showToast(message: string, color: string) {
   const toast = await toastController.create({
     message,
     duration: 2000,
-    color
+    color,
+    position: 'bottom'
   })
   await toast.present()
 }
@@ -248,176 +286,315 @@ onMounted(fetchStore)
 </script>
 
 <style scoped>
-.settings-container {
+/* (Styles are the same, omitting for brevity in thought, but I'll include them in the write_to_file) */
+.settings-wrapper {
   max-width: 600px;
   margin: 0 auto;
+  padding-bottom: 40px;
 }
 
-.banner-upload-section {
+.premium-toolbar {
+  --background: var(--ion-background-color);
+  --color: var(--ion-text-color);
+}
+
+.premium-title {
+  font-weight: 800;
+  font-size: 1.1rem;
+}
+
+.save-header-btn {
+  --color: var(--ion-color-carrot);
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+/* Material Card Style */
+.material-card {
+  background: var(--ion-card-background, #fff);
+  border-radius: 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
   margin-bottom: 24px;
+  overflow: hidden;
 }
 
-.banner-preview {
-  height: 150px;
+/* Identity Card */
+.identity-card {
+  margin: 16px;
+  position: relative;
+}
+
+.banner-box {
+  height: 160px;
   width: 100%;
   background-color: var(--ion-color-step-100);
   background-size: cover;
   background-position: center;
-  border-radius: 12px;
   position: relative;
-  overflow: hidden;
+}
+
+.banner-empty {
+  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
+  color: var(--ion-color-step-300);
 }
 
-.banner-placeholder {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  color: var(--ion-color-medium);
-  gap: 8px;
+.banner-empty ion-icon {
+  font-size: 48px;
 }
 
-.banner-placeholder ion-icon {
-  font-size: 32px;
-}
-
-.upload-btn {
+.banner-glass-overlay {
   position: absolute;
-  top: 10px;
-  right: 10px;
-  --background: rgba(0, 0, 0, 0.5);
+  inset: 0;
+  background: linear-gradient(to bottom, transparent 60%, rgba(0,0,0,0.2));
+}
+
+.banner-edit {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  --background: rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(8px);
   --color: white;
-  --border-radius: 50%;
-  width: 36px;
-  height: 36px;
-  margin: 0;
 }
 
-.upload-hint {
-  font-size: 0.8rem;
-  color: var(--ion-color-medium);
-  margin-top: 6px;
-  text-align: center;
-}
-
-.logo-upload-section {
+.logo-box-wrapper {
   display: flex;
   justify-content: center;
   margin-top: -50px;
+  margin-bottom: 12px;
+  position: relative;
+  z-index: 2;
+}
+
+.logo-box {
+  width: 100px;
+  height: 100px;
+  border-radius: 24px;
+  background: #fff;
+  border: 4px solid var(--ion-card-background, #fff);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.store-logo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 20px;
+}
+
+.logo-edit {
+  position: absolute;
+  bottom: -6px;
+  right: -6px;
+  --background: var(--ion-color-carrot);
+  --color: white;
+  width: 32px;
+  height: 32px;
+  --padding-start: 0;
+  --padding-end: 0;
+}
+
+.btn-circular {
+  --border-radius: 50%;
+  margin: 0;
+  --box-shadow: none;
+}
+
+.identity-info {
+  padding: 0 16px 20px;
+}
+
+.store-name-display {
+  margin: 0 0 8px;
+  font-weight: 800;
+  font-size: 1.4rem;
+  color: var(--ion-text-color);
+}
+
+.status-toggle-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.status-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--ion-color-medium);
+}
+
+.status-label.is-active {
+  color: var(--ion-color-success);
+}
+
+/* Settings Group */
+.settings-group {
+  padding: 0 16px;
   margin-bottom: 24px;
 }
 
-.settings-avatar {
-  width: 100px;
-  height: 100px;
-  border: 4px solid var(--ion-background-color);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-  position: relative;
-  background: white;
-}
-
-.avatar-upload-btn {
-  position: absolute;
-  bottom: 0;
-  right: 0;
-  --background: var(--ion-color-primary);
-  --color: white;
-  --border-radius: 50%;
-  width: 32px;
-  height: 32px;
-  margin: 0;
-}
-
-.custom-item {
-  --background: var(--ion-color-step-100, #f8f9fa);
-  --border-radius: 16px;
-  margin-bottom: 16px;
-  --padding-start: 16px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-}
-
-.custom-item ion-label {
-  font-weight: 600;
-  margin-bottom: 8px;
-}
-
-.custom-item ion-input,
-.custom-item ion-textarea {
-  --padding-top: 12px;
-  --padding-bottom: 12px;
-  font-size: 1rem;
-}
-
-.save-btn {
-  --border-radius: 16px;
-  height: 56px;
+.group-title {
+  font-size: 0.9rem;
   font-weight: 700;
-  font-size: 1.1rem;
-  margin-top: 24px;
-  --box-shadow: 0 8px 16px rgba(var(--ion-color-primary-rgb), 0.3);
-}
-
-/* Dark mode refinements */
-.ion-palette-dark .settings-container {
-  background: transparent;
-}
-
-.ion-palette-dark .custom-item {
-  --background: var(--ion-color-step-150, #1e1e1e);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
-}
-
-.ion-palette-dark .settings-avatar {
-  background: var(--ion-color-step-100);
-  border-color: var(--ion-background-color);
-}
-
-/* Delivery Options Section */
-.delivery-section {
-  margin-top: 24px;
-}
-
-.section-title {
-  font-size: 1.1rem;
-  font-weight: 700;
-  margin: 0 0 4px;
-}
-
-.section-subtitle {
-  font-size: 0.82rem;
   color: var(--ion-color-medium);
-  margin: 0 0 12px;
+  text-transform: uppercase;
+  margin: 0 0 12px 8px;
+  letter-spacing: 0.8px;
 }
 
-.delivery-item {
-  --background: var(--ion-color-step-100, #f8f9fa);
-  --border-radius: 14px;
-  margin-bottom: 10px;
-  --padding-start: 14px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+.group-header {
+  margin-bottom: 12px;
+  padding-left: 8px;
 }
 
-.delivery-item ion-icon {
-  font-size: 22px;
-  margin-right: 8px;
-}
-
-.delivery-item h3 {
-  font-size: 0.95rem;
-  font-weight: 600;
-  margin: 0;
-}
-
-.delivery-item p {
+.group-subtitle {
   font-size: 0.8rem;
   color: var(--ion-color-medium);
-  margin: 2px 0 0;
+  margin: 4px 0 0;
 }
 
-.ion-palette-dark .delivery-item {
-  --background: var(--ion-color-step-150, #1e1e1e);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+.card-item {
+  background: var(--ion-card-background, #fff);
+  border-radius: 18px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+
+.field-group {
+  padding: 16px;
+}
+
+.field-group label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--ion-color-carrot);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+}
+
+.premium-input {
+  --padding-start: 0;
+  --padding-end: 0;
+  --padding-top: 4px;
+  --padding-bottom: 4px;
+  font-size: 1rem;
+  font-weight: 600;
+  --placeholder-color: var(--ion-color-step-400);
+}
+
+.premium-textarea {
+  --padding-start: 0;
+  --padding-end: 0;
+  --padding-top: 4px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  --placeholder-color: var(--ion-color-step-400);
+}
+
+/* Delivery Row */
+.delivery-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+}
+
+.delivery-row:not(:last-child) {
+  border-bottom: 1px solid rgba(0,0,0,0.03);
+}
+
+.deliv-info {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.deliv-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: rgba(var(--ion-color-carrot-rgb), 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ion-color-carrot);
+  font-size: 20px;
+}
+
+.deliv-text h4 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.deliv-text p {
+  margin: 2px 0 0;
+  font-size: 0.75rem;
+  color: var(--ion-color-medium);
+}
+
+.footer-action {
+  margin-top: 12px;
+}
+
+.big-save-btn {
+  height: 56px;
+  font-weight: 800;
+  font-size: 1.1rem;
+  --box-shadow: 0 8px 24px rgba(var(--ion-color-carrot-rgb), 0.35);
+}
+
+/* Loading state */
+.loading-overlay {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Error state */
+.error-card {
+  background: var(--ion-card-background);
+  padding: 40px 20px;
+  border-radius: 20px;
+  text-align: center;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+}
+
+.error-icon {
+  font-size: 64px;
+  color: var(--ion-color-warning);
+  margin-bottom: 16px;
+}
+
+/* Dark Palette refinements */
+.ion-palette-dark .card-item,
+.ion-palette-dark .material-card {
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.ion-palette-dark .logo-box {
+  background: var(--ion-color-step-100);
+}
+
+.ion-palette-dark .field-group {
+  border-top-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+.ion-palette-dark .delivery-row {
+  border-bottom-color: rgba(255, 255, 255, 0.05);
 }
 </style>

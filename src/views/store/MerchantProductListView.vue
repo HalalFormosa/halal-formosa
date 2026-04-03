@@ -5,7 +5,7 @@
         <ion-buttons slot="start">
           <ion-back-button default-href="/profile" />
         </ion-buttons>
-        <ion-title>{{ $t('store.admin.products') || 'Manage Products' }}</ion-title>
+        <ion-title>{{ $t('store.admin.products') }}</ion-title>
         <ion-buttons slot="end">
           <ion-button @click="$router.push('/admin/store/add-product')">
             <ion-icon :icon="addOutline" />
@@ -35,13 +35,13 @@
             </ion-thumbnail>
             <ion-label>
               <h2 class="product-name">{{ localized(product.name_zh, product.name) }}</h2>
-              <p class="product-price">{{ $t('store.twd') }}{{ product.price }} • {{ product.stock_quantity }} {{ $t('store.inStockShort') || 'pcs' }}</p>
+              <p class="product-price">{{ $t('store.twd') }}{{ product.price }} • {{ product.stock_quantity }} {{ $t('store.inStockShort') }}</p>
               <div class="product-tags">
                 <ion-badge v-if="product.is_featured" color="warning" class="featured-badge">
                   {{ $t('store.isFeatured') }}
                 </ion-badge>
                 <ion-badge v-if="!product.is_active" color="medium">
-                  {{ $t('store.inactive') || 'Inactive' }}
+                  {{ $t('master.inactive') }}
                 </ion-badge>
               </div>
             </ion-label>
@@ -130,12 +130,12 @@ async function toggleFeatured(product: any) {
 
 async function confirmDelete(product: any) {
   const alert = await alertController.create({
-    header: t('common.confirm') || 'Confirm',
-    message: t('store.deleteConfirm') || 'Are you sure you want to delete this product?',
+    header: t('common.confirm'),
+    message: t('store.deleteConfirm'),
     buttons: [
-      { text: t('common.cancel') || 'Cancel', role: 'cancel' },
+      { text: t('common.cancel'), role: 'cancel' },
       {
-        text: t('common.delete') || 'Delete',
+        text: t('common.delete'),
         role: 'destructive',
         handler: () => deleteProduct(product)
       }
@@ -153,7 +153,7 @@ async function deleteProduct(product: any) {
   if (!error) {
     products.value = products.value.filter(p => p.id !== product.id)
     const toast = await toastController.create({
-      message: t('store.deleteSuccess') || 'Product deleted',
+      message: t('store.deleteSuccess'),
       duration: 2000,
       color: 'success'
     })

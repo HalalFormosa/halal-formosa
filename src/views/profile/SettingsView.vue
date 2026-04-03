@@ -42,6 +42,19 @@
             </ion-note>
           </div>
         </ion-item>
+        <ion-item lines="full" style="--border-radius: 12px;">
+          <div style="width: 100%; padding: 8px 0;">
+            <ion-toggle
+                :checked="showLastSeen"
+                @ionChange="(e) => setShowLastSeen(e.detail.checked)"
+            >
+              {{ $t('settings.showLastSeen') }}
+            </ion-toggle>
+            <ion-note style="display: block; margin-top: 8px; font-size: 0.85rem;">
+              {{ $t('settings.showLastSeenNote') }}
+            </ion-note>
+          </div>
+        </ion-item>
       </ion-list>
 
       <!-- 🌐 Language -->
@@ -85,6 +98,8 @@ import {
   currentUser,
   isPublicProfile,
   setPublicProfile,
+  showLastSeen,
+  setShowLastSeen
 } from '@/composables/userProfile'
 import { useTheme } from '@/composables/useTheme'
 

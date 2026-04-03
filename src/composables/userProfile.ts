@@ -11,6 +11,7 @@ export const isContributor = computed(() => userRole.value === "contributor");
 // Leaderboard privacy
 export const currentUser = ref<any | null>(null);
 export const isPublicProfile = ref<boolean | null>(null);
+export const showLastSeen = ref<boolean>(true);
 
 /* ---------------- Profile fields ---------------- */
 export const donorType = ref("Free");
@@ -44,6 +45,7 @@ type UserProfileRow = {
     nationality: string | null;
     gender: string | null;
     bio: string | null;
+    show_last_seen: boolean;
     user_roles: {
         role: string;
     } | null;
@@ -62,6 +64,23 @@ export async function setPublicProfile(value: boolean) {
     await supabase
         .from("user_profiles")
         .update({ public_profile: value })
+        .eq("id", currentUser.value.id)
+}
+
+export async function setShowLastSeen(value: boolean) {
+    if (!currentUser.value?.id) return
+    showLastSeen.value = value
+    await supabase
+        .from("user_profiles")
+        .update({ show_last_seen: value })
+        .eq("id", currentUser.value.id)
+}
+
+export async function updateLastSeen() {
+    if (!currentUser.value?.id) return
+    await supabase
+        .from("user_profiles")
+        .update({ last_seen_at: new Date().toISOString() })
         .eq("id", currentUser.value.id)
 }
 
@@ -120,6 +139,7 @@ export async function loadUserProfile(userId: string) {
           nationality,
           gender,
           bio,
+          show_last_seen,
           user_roles (
             role
           )
@@ -138,6 +158,7 @@ export async function loadUserProfile(userId: string) {
         editNationality.value = data.nationality;
         editGender.value = data.gender;
         editBio.value = data.bio;
+        showLastSeen.value = data.show_last_seen ?? true;
     } else {
         console.warn("⚠️ No profile found, resetting defaults");
 
@@ -163,7 +184,8 @@ export async function updateUserProfile(userId: string) {
             date_of_birth: editDOB.value,
             nationality: editNationality.value,
             gender: editGender.value,
-            bio: editBio.value
+            bio: editBio.value,
+            show_last_seen: showLastSeen.value
         })
         .eq("id", userId);
 

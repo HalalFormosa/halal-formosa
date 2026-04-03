@@ -148,6 +148,35 @@ const expandedId = ref<string | null>(null)
 const selectedStatus = ref('all')
 const statusCounts = ref<Record<string, number>>({ pending: 0, paid: 0, shipped: 0, completed: 0, cancelled: 0 })
 
+// Filter logic
+const merchantStoreId = ref<string | null>(null)
+const isGlobalAdmin = ref(false)
+
+async function resolvePermissions() {
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session) return
+
+  // Check if role is admin
+  const { data: roleData } = await supabase
+    .from('user_roles')
+    .select('role')
+    .eq('user_id', session.user.id)
+    .maybeSingle()
+  
+  isGlobalAdmin.value = roleData?.role === 'admin'
+
+  // If not admin, or even if admin but we want store-specific view
+  const { data: storeData } = await supabase
+    .from('merchant_stores')
+    .select('id')
+    .eq('user_id', session.user.id)
+    .maybeSingle()
+  
+  if (storeData) {
+    merchantStoreId.value = storeData.id
+  }
+}
+
 const statusFilters = computed(() => [
   { value: 'all', label: t('store.allCategories'), icon: receiptOutline, count: 0, badgeColor: 'medium' },
   { value: 'pending', label: 'Pending', icon: timeOutline, count: statusCounts.value.pending, badgeColor: 'warning' },
@@ -202,10 +231,20 @@ function toggleExpand(id: string) {
 async function fetchCounts() {
   const statuses = ['pending', 'paid', 'shipped', 'completed', 'cancelled']
   for (const s of statuses) {
-    const { count } = await supabase
+    let query = supabase
       .from('store_orders')
       .select('*', { count: 'exact', head: true })
       .eq('status', s)
+    
+    if (!isGlobalAdmin.value && merchantStoreId.value) {
+      query = query.eq('store_id', merchantStoreId.value)
+    } else if (!isGlobalAdmin.value && !merchantStoreId.value) {
+      // Not an admin and no store? Should see nothing
+      statusCounts.value[s] = 0
+      continue
+    }
+
+    const { count } = await query
     statusCounts.value[s] = count || 0
   }
 }
@@ -217,6 +256,14 @@ async function fetchOrders() {
     .select('*, store_order_items(*, store_products(name, name_zh, images))')
     .order('created_at', { ascending: false })
     .limit(100)
+
+  if (!isGlobalAdmin.value && merchantStoreId.value) {
+    query = query.eq('store_id', merchantStoreId.value)
+  } else if (!isGlobalAdmin.value && !merchantStoreId.value) {
+    orders.value = []
+    loading.value = false
+    return
+  }
 
   if (selectedStatus.value !== 'all') {
     query = query.eq('status', selectedStatus.value)
@@ -266,6 +313,7 @@ async function doRefresh(event: any) {
 watch(selectedStatus, () => fetchOrders())
 
 onMounted(async () => {
+  await resolvePermissions()
   await Promise.all([fetchOrders(), fetchCounts()])
 })
 </script>

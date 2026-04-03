@@ -289,18 +289,20 @@
               <ion-label>{{ $t('store.sellerCenter.manageProducts') }}</ion-label>
             </ion-item>
 
-            <ion-item button @click="$router.push('/admin/store/orders')">
+            <ion-item button @click="$router.push('/merchant/store/orders')">
               <div class="icon-box" slot="start" style="background: rgba(var(--ion-color-primary-rgb), 0.1);">
                 <ion-icon :icon="icons.listOutline" color="primary" />
               </div>
               <ion-label>{{ $t('store.sellerCenter.manageOrders') }}</ion-label>
+              <ion-badge v-if="pendingOrdersCount > 0" color="warning" slot="end" style="border-radius: 8px;">{{ pendingOrdersCount }}</ion-badge>
             </ion-item>
 
-            <ion-item button @click="$router.push('/admin/store/chat-inbox')">
+            <ion-item button @click="$router.push('/merchant/store/chat-inbox')">
               <div class="icon-box" slot="start" style="background: rgba(var(--ion-color-secondary-rgb), 0.1);">
                 <ion-icon :icon="icons.chatbubblesOutline" color="secondary" />
               </div>
               <ion-label>{{ $t('store.sellerCenter.manageMessages') }}</ion-label>
+              <ion-badge v-if="unreadChatsCount > 0" color="danger" slot="end" style="border-radius: 8px;">{{ unreadChatsCount }}</ion-badge>
             </ion-item>
           </ion-list>
         </ion-card>
@@ -895,9 +897,10 @@ onMounted(async () => {
         if (isAdmin.value) {
           fetchPendingCount();
           fetchPendingLocationsCount();
-          fetchPendingOrdersCount();
-          fetchUnreadChatsCount();
         }
+        
+        fetchPendingOrdersCount();
+        fetchUnreadChatsCount();
       }
     });
 
@@ -1117,24 +1120,41 @@ const goToMasterData = () => router.push('/admin/master-data')
 const goToStoreOrders = () => router.push('/admin/store/orders')
 const goToMerchantRegistration = () => router.push('/merchant/register')
 const pendingOrdersCount = ref(0)
+const unreadChatsCount = ref(0)
 
 async function fetchPendingOrdersCount() {
-  if (!isAdmin.value) return
-  const { count } = await supabase
+  const isGlobalAdmin = isAdmin.value
+  let query = supabase
     .from('store_orders')
     .select('*', { count: 'exact', head: true })
     .eq('status', 'pending')
+  
+  if (!isGlobalAdmin && merchantStore.value) {
+    query = query.eq('store_id', merchantStore.value.id)
+  } else if (!isGlobalAdmin && !merchantStore.value) {
+    pendingOrdersCount.value = 0
+    return
+  }
+
+  const { count } = await query
   pendingOrdersCount.value = count || 0
 }
 
-const unreadChatsCount = ref(0)
-
 async function fetchUnreadChatsCount() {
-  if (!isAdmin.value) return
-  const { data } = await supabase
+  const isGlobalAdmin = isAdmin.value
+  let query = supabase
     .from('store_chat_conversations')
     .select('store_unread')
     .gt('store_unread', 0)
+  
+  if (!isGlobalAdmin && merchantStore.value) {
+    query = query.eq('store_id', merchantStore.value.id)
+  } else if (!isGlobalAdmin && !merchantStore.value) {
+    unreadChatsCount.value = 0
+    return
+  }
+
+  const { data } = await query
   unreadChatsCount.value = data?.length || 0
 }
 

@@ -8,6 +8,7 @@
     "views": "Views",
     "ok": "OK",
     "cancel": "Cancel",
+    "confirm": "Confirm",
     "close": "Close",
     "yes": "Yes",
     "no": "No",
@@ -23,7 +24,41 @@
     "reset": "Reset",
     "apply": "Apply",
     "details": "Details",
-    "reapply": "Re-apply"
+    "reapply": "Re-apply",
+    "save": "Save",
+    "saving": "Saving...",
+    "success": "Success!",
+    "error": "Error occurred.",
+    "notProvided": "Not provided"
+  },
+  "master": {
+    "active": "Active",
+    "inactive": "Inactive",
+    "product_categories": "Product Categories",
+    "ingredient_highlights": "Ingredient Highlights",
+    "location_types": "Location Types",
+    "stores": "Stores",
+    "category_rules": "Category Rules",
+    "published": "Published",
+    "publishSuccess": "Location published successfully!",
+    "hideSuccess": "Location hidden from public view.",
+    "fields": {
+      "name": "Name",
+      "keyword": "Keyword",
+      "keyword_en": "Keyword (EN)",
+      "keyword_zh": "Keyword (ZH)",
+      "color": "Color",
+      "status": "Status",
+      "emoji": "Emoji",
+      "website": "Website",
+      "logo_url": "Logo URL",
+      "sort_order": "Sort Order",
+      "is_active": "Active",
+      "category": "Category",
+      "store_name": "Store Name",
+      "active": "Active",
+      "inactive": "Inactive"
+    }
   },
   "dailyMissions": {
     "title": "Daily Missions",
@@ -402,6 +437,8 @@
     "darkMode": "Dark Mode",
     "publicProfile": "Public Profile",
     "publicProfileNote": "Your name will be shown on the leaderboard and on content you contributed (products, locations, news, etc.).",
+    "showLastSeen": "Show Last Active Status",
+    "showLastSeenNote": "Allow others to see when you were last active in chat.",
     "language": "Language (Experimental)"
   },
   "profile": {
@@ -731,10 +768,10 @@
     "monthly": "Monthly",
     "masterData": "Master Data",
     "productCategories": "Product Categories",
-    "ingredientHighlights": "Ingredient Highlights",
-    "locationTypes": "Location Types",
+    "ingredient_highlights": "Ingredient Highlights",
+    "location_types": "Location Types",
     "stores": "Stores",
-    "categoryRules": "Category Rules",
+    "category_rules": "Category Rules",
     "verifiedPartner": "Verified Official Partner",
     "loadingMoreLogs": "Loading more logs...",
     "product": "Product",
@@ -836,34 +873,35 @@
     "flag": "Flag",
     "locationImage": "Location Image",
     "pts": "pts",
-    "master": {
-      "product_categories": "Product Categories",
-      "ingredient_highlights": "Ingredient Highlights",
-      "location_types": "Location Types",
-      "stores": "Stores",
-      "category_rules": "Category Rules",
-      "published": "Published",
-      "publishSuccess": "Location published successfully!",
-      "hideSuccess": "Location hidden from public view.",
-      "fields": {
-        "name": "Name",
-        "keyword": "Keyword",
-        "keyword_en": "Keyword (EN)",
-        "keyword_zh": "Keyword (ZH)",
-        "color": "Color",
-        "status": "Status",
-        "emoji": "Emoji",
-        "website": "Website",
-        "logo_url": "Logo URL",
-        "sort_order": "Sort Order",
-        "is_active": "Active",
-        "category": "Category",
-        "store_name": "Store Name",
-        "active": "Active",
-        "inactive": "Inactive"
-      }
-    },
     "merchant": {
+      "title": "Merchant Applications",
+      "noPending": "No pending applications at this time.",
+      "approve": "Approve",
+      "reject": "Reject",
+      "status": {
+        "pending": "Pending Verification",
+        "approved": "Approved",
+        "rejected": "Rejected"
+      },
+      "confirmApprove": "Confirm Approval",
+      "confirmApproveMsg": "Are you sure you want to approve this application? This will create the merchant's store automatically.",
+      "confirmReject": "Reject Application",
+      "confirmRejectMsg": "Please provide a reason for rejection.",
+      "reasonPlaceholder": "e.g. Invalid UBN or Phone number",
+      "reasonRequired": "Reason is required for rejection",
+      "approveSuccess": "Application approved! Store created.",
+      "approveFailed": "Approval failed",
+      "rejectSuccess": "Application rejected",
+      "rejectFailed": "Rejection failed",
+      "fields": {
+        "phone": "Contact Phone",
+        "ubn": "UBN",
+        "address": "Address",
+        "description": "Description"
+      }
+    }
+  },
+  "merchantApplications": {
       "title": "Merchant Applications",
       "approve": "Approve",
       "reject": "Reject",
@@ -875,7 +913,6 @@
         "pending": "Pending Verification",
         "approved": "Approved",
         "rejected": "Rejected"
-      }
     }
   },
   "update": {
@@ -942,6 +979,9 @@
     "saveFailed": "Failed to save product.",
     "adminOrders": "Store Orders",
     "noOrders": "No orders found.",
+    "admin": {
+      "products": "Manage Products"
+    },
     "myOrders": "My Orders",
     "orderPending": "Pending",
     "orderPaid": "Paid",
@@ -954,9 +994,7 @@
       "categoryRequired": "Category is required.",
       "loginRequired": "You must be logged in.",
       "noStoreFound": "No store found.",
-      "contactAdmin": "Please contact an admin to set up your store.",
-      "deleteConfirm": "Are you sure you want to delete this product?",
-      "deleteSuccess": "Product deleted successfully."
+      "contactAdmin": "Please contact an admin to set up your store."
     },
     "verifiedSeller": "Verified Seller",
     "verifiedStore": "Verified Store",
@@ -967,6 +1005,8 @@
       "storeMessages": "Store Messages",
       "typeMessage": "Type a message...",
       "online": "online",
+      "offline": "offline",
+      "activePrefix": "Active",
       "noMessages": "No messages yet. Say hi! 👋",
       "noConversations": "No conversations yet.",
       "aboutProduct": "Chatting about this product",
@@ -985,7 +1025,6 @@
     "deliveryMethod": "Delivery Method",
     "priceRange": "Price Range (TWD)",
     "inStockOnly": "In Stock Only",
-    "inStockShort": "pcs",
     "inactive": "Inactive",
     "sellerCenter": {
       "title": "Seller Center",
@@ -996,13 +1035,31 @@
     },
     "settings": {
       "title": "Store Settings",
+      "basicInfo": "Basic Information",
+      "logistics": "Logistics & Delivery",
+      "deliveryHint": "Manage how your items reach customers",
       "noBanner": "No Banner",
       "bannerHint": "Recommended ratio: 3:1",
       "storeName": "Store Name",
       "storeNameZh": "Store Name (Chinese)",
       "storeDescription": "Store Description",
       "storeDescriptionZh": "Store Description (Chinese)",
-      "saveProfile": "Save Profile"
+      "storeNamePlaceholder": "Enter store name in English",
+      "storeNameZhPlaceholder": "請輸入中文名稱",
+      "storeDescriptionPlaceholder": "Tell customers about your store...",
+      "storeDescriptionZhPlaceholder": "向顧客介紹您的店鋪...",
+      "saveProfile": "Save Profile",
+        "deliveryMethods": {
+          "home_delivery": "Home Delivery",
+          "home_delivery_desc": "Direct to customer's address",
+          "7eleven": "7-Eleven",
+          "family_mart": "FamilyMart",
+          "hi_life": "Hi-Life",
+          "ok_mart": "OK Mart",
+          "cvs_pickup": "Convenience Store Pickup",
+          "cod_meetup": "In Person",
+          "in_person": "Meet in person/Cash on delivery"
+        }
     }
   },
   "merchant": {
@@ -1043,7 +1100,11 @@
       "rejectedBanner": "Update Your Application",
       "rejectedBannerDesc": "Your previous application was not approved. Please review the reason below and update your information before resubmitting.",
       "rejectedProfileDesc": "Your application was not approved. Click below to view feedback and revise.",
-      "sectionTitle": "Merchant Store"
+      "sectionTitle": "Merchant Store",
+      "successTitle": "Application Submitted!",
+      "successSubtitle": "Thank you for joining Halal Formosa.",
+      "successText": "Our verification team will review your application and contact you via Phone, WhatsApp, or LINE for final identity verification. Halal business should be Easy and Trusted!",
+      "backToProfile": "Back to Profile"
     }
   }
 }

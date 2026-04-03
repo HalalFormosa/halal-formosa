@@ -94,6 +94,7 @@ import {
   rewardNextXp,
   rewardProgress
 } from "@/composables/useRewardOverlay";
+import { updateLastSeen, currentUser } from '@/composables/userProfile';
 const { initTheme } = useTheme();
 const { isUpdateRequired, storeUrl, currentVersion, minVersion } = useAppUpdate();
 
@@ -185,5 +186,20 @@ onMounted(async () => {
   await askGeolocationPermission();
   await checkAppUpdate();
   await checkAndAskForReview();
+
+  // ✅ Track Activity
+  if (currentUser.value?.id) await updateLastSeen();
+  
+  // Update last seen when app becomes active again
+  CapApp.addListener('appStateChange', ({ isActive }) => {
+    if (isActive && currentUser.value?.id) {
+      updateLastSeen();
+    }
+  });
+
+  // Periodically update if the user is active (every 5 mins)
+  setInterval(() => {
+    if (currentUser.value?.id) updateLastSeen();
+  }, 1000 * 60 * 5);
 });
 </script>

@@ -299,11 +299,23 @@ async function placeOrder() {
       return
     }
 
+    // Get store_id from first item (assume single store checkout for simplicity)
+    const productIds = cartItems.value.map(i => i.productId)
+    const { data: firstProd } = await supabase
+      .from('store_products')
+      .select('store_id')
+      .in('id', productIds)
+      .limit(1)
+      .single()
+
+    const storeId = firstProd?.store_id || null
+
     // Create order
     const { data: order, error: orderErr } = await supabase
       .from('store_orders')
       .insert({
         user_id: session.user.id,
+        store_id: storeId,
         total_amount: cartTotal.value,
         buyer_name: buyerName.value.trim(),
         buyer_email: buyerEmail.value.trim(),

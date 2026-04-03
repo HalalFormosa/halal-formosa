@@ -20,11 +20,11 @@
         <ion-buttons slot="end">
           <ion-button @click="openChats" class="header-action-button" :disabled="isUnderConstruction">
             <ion-icon :icon="chatbubblesOutline" />
-            <ion-badge v-if="unreadChatCount > 0" color="danger" class="cart-badge">{{ unreadChatCount }}</ion-badge>
+            <ion-badge v-if="totalUnreadCount > 0" color="danger" class="header-badge">{{ totalUnreadCount }}</ion-badge>
           </ion-button>
           <ion-button @click="openCart" class="header-action-button cart-button" :disabled="isUnderConstruction">
             <ion-icon :icon="cartOutline" />
-            <ion-badge v-if="cartCount > 0" color="danger" class="cart-badge">{{ cartCount }}</ion-badge>
+            <ion-badge v-if="cartCount > 0" color="danger" class="header-badge">{{ cartCount }}</ion-badge>
           </ion-button>
         </ion-buttons>
       </ion-toolbar>
@@ -291,11 +291,13 @@ import AppHeader from '@/components/AppHeader.vue'
 import { supabase } from '@/plugins/supabaseClient'
 import { isAdmin } from '@/composables/userProfile'
 import { useStoreCart } from '@/composables/useStoreCart'
+import { useStoreChat } from '@/composables/useStoreChat'
 import { ActivityLogService } from '@/services/ActivityLogService'
 
 const { t, locale } = useI18n()
 const router = useRouter()
 const { items: cartItems, cartCount, cartTotal, updateQty } = useStoreCart()
+const { totalUnreadCount, initGlobalUnreadSubscription } = useStoreChat()
 
 // State
 const isUnderConstruction = computed(() => import.meta.env.VITE_STORE_UNDER_CONSTRUCTION === 'true')
@@ -310,7 +312,6 @@ const selectedCategory = ref<number | null>(null)
 const sortBy = ref('popular')
 const cartOpen = ref(false)
 const totalCount = ref(0)
-const unreadChatCount = ref(0) // Used for chat badge
 const noMore = ref(false)
 const PAGE_SIZE = 20
 
@@ -589,6 +590,7 @@ watch([sortBy, minPrice, maxPrice, stockOnly], () => {
 
 onMounted(async () => {
   ActivityLogService.log('store_page_open')
+  initGlobalUnreadSubscription()
   await Promise.all([fetchCategories(), fetchBanners(), fetchProducts()])
   startAutoScroll()
 })
@@ -634,16 +636,22 @@ onBeforeUnmount(() => {
   position: relative;
 }
 
-.cart-badge {
+.header-badge {
   position: absolute;
-  top: 2px;
-  right: 0;
+  top: -2px;
+  right: -2px;
   font-size: 10px;
   min-width: 18px;
   height: 18px;
-  border-radius: 9px;
+  border-radius: 10px;
   padding: 0 4px;
   font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--ion-background-color);
+  box-shadow: 0 2px 4px rgba(255, 0, 0, 0.2);
+  z-index: 10;
 }
 
 /* Search */

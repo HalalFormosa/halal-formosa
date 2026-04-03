@@ -28,6 +28,9 @@ export interface ChatConversation {
   merchant_stores?: { name: string; logo_url: string | null } | null
 }
 
+const totalUnreadCount = ref(0)
+let totalUnreadChannel: RealtimeChannel | null = null
+
 export function useStoreChat() {
   const messages = ref<ChatMessage[]>([])
   const loading = ref(false)
@@ -179,6 +182,8 @@ export function useStoreChat() {
           // Avoid duplicates
           if (!messages.value.find(m => m.id === newMsg.id)) {
             messages.value.push(newMsg)
+            // If we are actively viewing this, mark as read
+            markAsRead(conversationId)
           }
         }
       )
@@ -193,26 +198,35 @@ export function useStoreChat() {
     if (!session) return
 
     // Mark messages as read
-    await supabase
+    const { error: msgError } = await supabase
       .from('store_chat_messages')
       .update({ is_read: true })
       .eq('conversation_id', conversationId)
       .neq('sender_id', session.user.id)
       .eq('is_read', false)
 
+    if (msgError) console.error('[Chat] Failed to mark messages as read:', msgError)
+
     // Reset unread counter
-    const { data: conv } = await supabase
+    const { data: conv, error: convFetchError } = await supabase
       .from('store_chat_conversations')
-      .select('buyer_id')
+      .select('buyer_id, store_user_id')
       .eq('id', conversationId)
       .single()
 
+    if (convFetchError) {
+      console.error('[Chat] Failed to fetch conversation for unread reset:', convFetchError)
+      return
+    }
+
     if (conv) {
       const isBuyer = session.user.id === conv.buyer_id
-      await supabase
+      const { error: resetError } = await supabase
         .from('store_chat_conversations')
         .update(isBuyer ? { buyer_unread: 0 } : { store_unread: 0 })
         .eq('id', conversationId)
+      
+      if (resetError) console.error('[Chat] Failed to reset unread count:', resetError)
     }
   }
 
@@ -223,8 +237,71 @@ export function useStoreChat() {
     }
   }
 
+  /**
+   * Fetch total unread count for the current user
+   */
+  async function fetchTotalUnread() {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) {
+      totalUnreadCount.value = 0
+      return
+    }
+
+    const { data, error } = await supabase
+      .from('store_chat_conversations')
+      .select('buyer_unread, store_unread, buyer_id')
+      .or(`buyer_id.eq.${session.user.id},store_user_id.eq.${session.user.id}`)
+
+    if (error) {
+      console.error('[Chat] Failed to fetch total unread:', error)
+      return
+    }
+
+    totalUnreadCount.value = (data || []).reduce((sum, conv) => {
+      const isBuyer = conv.buyer_id === session.user.id
+      return sum + (isBuyer ? (conv.buyer_unread || 0) : (conv.store_unread || 0))
+    }, 0)
+  }
+
+  /**
+   * Initialize a global subscription to unread count updates
+   */
+  async function initGlobalUnreadSubscription() {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) return
+
+    if (totalUnreadChannel) return // already subscribed
+
+    await fetchTotalUnread()
+
+    totalUnreadChannel = supabase
+      .channel('global-unread-counts')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'store_chat_conversations',
+          filter: `buyer_id=eq.${session.user.id}`
+        },
+        () => fetchTotalUnread()
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'store_chat_conversations',
+          filter: `store_user_id=eq.${session.user.id}`
+        },
+        () => fetchTotalUnread()
+      )
+      .subscribe()
+  }
+
   return {
     messages,
+    totalUnreadCount,
     loading,
     sending,
     getOrCreateConversation,
@@ -232,6 +309,8 @@ export function useStoreChat() {
     sendMessage,
     subscribeToMessages,
     markAsRead,
-    unsubscribe
+    unsubscribe,
+    fetchTotalUnread,
+    initGlobalUnreadSubscription
   }
 }

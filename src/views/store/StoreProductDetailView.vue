@@ -1,7 +1,34 @@
 <template>
   <ion-page>
     <ion-header>
-      <app-header :title="product?.name || $t('store.title')" :showBack="true" icon="none" />
+      <app-header :title="product?.name || $t('store.title')" :showBack="true" icon="none">
+        <template #actions>
+          <ion-item button @click="handleChat" :disabled="isUnderConstruction">
+            <ion-icon :icon="chatbubbleOutline" slot="start" />
+            <ion-label>{{ $t('store.chat.customerChat') || 'Chat' }}</ion-label>
+            <ion-badge v-if="totalUnreadCount > 0" color="danger" slot="end">{{ totalUnreadCount }}</ion-badge>
+          </ion-item>
+          <ion-item button @click="openCart" :disabled="isUnderConstruction">
+            <ion-icon :icon="cartOutline" slot="start" />
+            <ion-label>{{ $t('store.cart') || 'Cart' }}</ion-label>
+            <ion-badge v-if="cartCount > 0" color="danger" slot="end">{{ cartCount }}</ion-badge>
+          </ion-item>
+        </template>
+      </app-header>
+      
+      <!-- Actions toolbar for sub-pages (optional, but let's add the premium cart button to the top right instead) -->
+      <ion-toolbar class="sub-actions-toolbar" v-if="!loading">
+        <ion-buttons slot="end">
+          <ion-button @click="handleChat" class="header-action-button" :disabled="isUnderConstruction">
+            <ion-icon :icon="chatbubbleOutline" />
+            <ion-badge v-if="totalUnreadCount > 0" color="danger" class="header-badge">{{ totalUnreadCount }}</ion-badge>
+          </ion-button>
+          <ion-button @click="openCart" class="header-action-button cart-button" :disabled="isUnderConstruction">
+            <ion-icon :icon="cartOutline" />
+            <ion-badge v-if="cartCount > 0" color="danger" class="header-badge">{{ cartCount }}</ion-badge>
+          </ion-button>
+        </ion-buttons>
+      </ion-toolbar>
     </ion-header>
 
     <ion-content :fullscreen="true">
@@ -158,6 +185,56 @@
         </div>
       </ion-toolbar>
     </ion-footer>
+
+    <!-- Cart Modal -->
+    <ion-modal :is-open="cartOpen" @didDismiss="cartOpen = false" :initial-breakpoint="0.5" :breakpoints="[0, 0.5, 0.85]">
+      <ion-header>
+        <ion-toolbar>
+          <ion-title>{{ $t('store.cart') }} ({{ cartCount }})</ion-title>
+          <ion-buttons slot="end">
+            <ion-button @click="cartOpen = false">
+              <ion-icon :icon="closeOutline" />
+            </ion-button>
+          </ion-buttons>
+        </ion-toolbar>
+      </ion-header>
+      <ion-content class="cart-content">
+        <div v-if="cartItems.length === 0" class="empty-state">
+          <ion-icon :icon="cartOutline" class="empty-icon" />
+          <p>{{ $t('store.cartEmpty') }}</p>
+        </div>
+        <ion-list v-else>
+          <ion-item v-for="item in cartItems" :key="item.productId" class="cart-item">
+            <ion-thumbnail slot="start">
+              <img :src="item.image || '/favicon-32x32.png'" :alt="item.name" />
+            </ion-thumbnail>
+            <ion-label>
+              <h3>{{ item.name }}</h3>
+              <p>{{ $t('store.twd') }}{{ formatPrice(item.price) }} × {{ item.quantity }}</p>
+            </ion-label>
+            <ion-buttons slot="end">
+              <ion-button @click="updateQtyInCart(item.productId, item.quantity - 1)" fill="clear" size="small">
+                <ion-icon :icon="removeCircleOutline" />
+              </ion-button>
+              <span class="qty-label">{{ item.quantity }}</span>
+              <ion-button @click="updateQtyInCart(item.productId, item.quantity + 1)" fill="clear" size="small">
+                <ion-icon :icon="addCircleOutline" />
+              </ion-button>
+            </ion-buttons>
+          </ion-item>
+        </ion-list>
+
+        <div v-if="cartItems.length > 0" class="cart-footer-section">
+          <div class="cart-total-row">
+            <span>{{ $t('store.cartTotal') }}</span>
+            <span class="cart-total-price">{{ $t('store.twd') }}{{ formatPrice(cartTotal) }}</span>
+          </div>
+          <ion-button expand="block" color="carrot" class="checkout-button" @click="goCheckout">
+            {{ $t('store.checkout') }}
+          </ion-button>
+        </div>
+      </ion-content>
+    </ion-modal>
   </ion-page>
 </template>
 
@@ -166,12 +243,13 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   IonPage, IonHeader, IonContent, IonFooter, IonToolbar, IonButton, IonIcon,
-  IonChip, IonSkeletonText, toastController, IonAvatar
+  IonChip, IonSkeletonText, toastController, IonAvatar, IonModal, IonTitle,
+  IonList, IonItem, IonLabel, IonButtons, IonThumbnail
 } from '@ionic/vue'
 import {
   imageOutline, cartOutline, bagHandleOutline, removeOutline, addOutline,
   checkmarkCircleOutline, closeCircleOutline, chatbubbleOutline, constructOutline,
-  storefrontOutline, createOutline
+  storefrontOutline, createOutline, closeOutline, removeCircleOutline, addCircleOutline
 } from 'ionicons/icons'
 import AppHeader from '@/components/AppHeader.vue'
 import { supabase } from '@/plugins/supabaseClient'
@@ -183,14 +261,15 @@ import { useI18n } from 'vue-i18n'
 const { t, locale } = useI18n()
 const route = useRoute()
 const router = useRouter()
-const { addItem } = useStoreCart()
-const { getOrCreateConversation } = useStoreChat()
+const { addItem, items: cartItems, cartCount, cartTotal } = useStoreCart()
+const { getOrCreateConversation, totalUnreadCount, initGlobalUnreadSubscription } = useStoreChat()
 
 const isUnderConstruction = computed(() => import.meta.env.VITE_STORE_UNDER_CONSTRUCTION === 'true')
 const product = ref<any>(null)
 const categoryName = ref('')
 const loading = ref(true)
 const qty = ref(1)
+const cartOpen = ref(false)
 const currentUserId = ref<string | null>(null)
 
 const isOwner = computed(() => {
@@ -284,10 +363,57 @@ async function handleChat() {
 onMounted(() => {
   fetchProduct()
   fetchUser()
+  initGlobalUnreadSubscription()
 })
+
+function openCart() {
+  cartOpen.value = true
+}
+
+function goCheckout() {
+  cartOpen.value = false
+  router.push('/store/checkout')
+}
+
+function updateQtyInCart(productId: string, newQty: number) {
+  const { updateQty } = useStoreCart()
+  updateQty(productId, newQty)
+}
 </script>
 
 <style scoped>
+.sub-actions-toolbar {
+  --background: var(--ion-background-color);
+  --border-width: 0;
+  --min-height: 44px;
+}
+
+.header-action-button {
+  --color: var(--ion-text-color);
+}
+
+.cart-button {
+  position: relative;
+}
+
+.header-badge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  font-size: 10px;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 10px;
+  padding: 0 4px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--ion-background-color);
+  box-shadow: 0 2px 4px rgba(255, 0, 0, 0.2);
+  z-index: 10;
+}
+
 .product-detail-wrapper {
   background: var(--ion-background-color);
   -webkit-tap-highlight-color: transparent;
@@ -347,6 +473,52 @@ onMounted(() => {
 /* Detail body */
 .detail-body {
   padding: 20px 20px 8px;
+}
+
+.cart-content {
+  --background: var(--ion-background-color);
+}
+
+.cart-item {
+  --padding-start: 8px;
+}
+
+.cart-item ion-thumbnail {
+  --size: 56px;
+  --border-radius: 12px;
+}
+
+.qty-label {
+  font-weight: 600;
+  min-width: 24px;
+  text-align: center;
+  font-size: 0.95rem;
+}
+
+.cart-footer-section {
+  padding: 16px;
+}
+
+.cart-total-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0 16px;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.cart-total-price {
+  color: var(--ion-color-carrot);
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.checkout-button {
+  --border-radius: 14px;
+  font-weight: 600;
+  font-size: 1rem;
+  height: 50px;
 }
 
 .category-badge {

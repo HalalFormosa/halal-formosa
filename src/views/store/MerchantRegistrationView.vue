@@ -13,7 +13,29 @@
     </ion-header>
 
     <ion-content class="ion-padding">
-      <div class="registration-container">
+      <div v-if="isSubmitted" class="success-screen fade-in">
+        <div class="success-circle">
+          <ion-icon :icon="checkmarkCircleOutline" color="carrot" />
+        </div>
+        <h1 class="success-title">{{ $t('merchant.register.successTitle') }}</h1>
+        <p class="success-subtitle">{{ $t('merchant.register.successSubtitle') }}</p>
+        
+        <div class="success-card ion-padding">
+          <p class="success-text">{{ $t('merchant.register.successText') }}</p>
+        </div>
+
+        <ion-button 
+          expand="block" 
+          color="carrot" 
+          mode="md"
+          class="back-btn" 
+          @click="router.replace('/profile')"
+        >
+          {{ $t('merchant.register.backToProfile') }}
+        </ion-button>
+      </div>
+
+      <div v-else class="registration-container">
         <!-- Rejection Banner (Sticky at top of all steps if rejected) -->
         <div v-if="merchantApplication?.status === 'rejected' && merchantApplication.rejection_reason" class="rejected-banner fade-in">
           <ion-icon :icon="alertCircleOutline" color="danger" class="banner-alert-icon" />
@@ -253,7 +275,7 @@
       </div>
     </ion-content>
 
-    <ion-footer class="ion-no-border ion-padding">
+    <ion-footer v-if="!isSubmitted" class="ion-no-border ion-padding">
       <div class="footer-buttons">
         <ion-button 
           v-if="currentStep > 1" 
@@ -311,7 +333,8 @@ import {
   chatbubbleEllipsesOutline,
   checkmarkCircleOutline,
   businessOutline,
-  alertCircleOutline
+  alertCircleOutline,
+  checkmarkCircle
 } from 'ionicons/icons'
 import { MerchantService } from '@/services/MerchantService'
 import { ActivityLogService } from '@/services/ActivityLogService'
@@ -379,6 +402,7 @@ onIonViewWillEnter(async () => {
 const currentStep = ref(1)
 const totalSteps = 6
 const submitting = ref(false)
+const isSubmitted = ref(false)
 const hasUbn = ref<boolean | null>(null)
 const merchantApplication = ref<any>(null)
 
@@ -477,7 +501,8 @@ async function submitApplication() {
     })
     await toast.present()
     
-    router.replace('/profile')
+    isSubmitted.value = true
+    ActivityLogService.log('merchant_registration_success')
   } catch (error: any) {
     const toast = await toastController.create({
       message: error.message || 'Error submitting application.',
@@ -493,6 +518,67 @@ async function submitApplication() {
 </script>
 
 <style scoped>
+.success-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 40px 20px;
+  min-height: 80%;
+}
+
+.success-circle {
+  width: 100px;
+  height: 100px;
+  background: rgba(var(--ion-color-carrot-rgb), 0.1);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 24px;
+}
+
+.success-circle ion-icon {
+  font-size: 64px;
+}
+
+.success-title {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--ion-color-dark);
+  margin-bottom: 8px;
+}
+
+.success-subtitle {
+  font-size: 18px;
+  color: var(--ion-color-medium);
+  margin-bottom: 32px;
+}
+
+.success-card {
+  background: rgba(var(--ion-color-light-rgb), 0.4);
+  border-radius: 24px;
+  border: 1px solid var(--ion-color-light-shade);
+  margin-bottom: 40px;
+}
+
+.success-text {
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--ion-color-step-600);
+  margin: 0;
+}
+
+.back-btn {
+  width: 100%;
+  max-width: 300px;
+  height: 56px;
+  --border-radius: 18px;
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
 .rejected-banner {
   background: rgba(var(--ion-color-danger-rgb), 0.08);
   border: 1px solid rgba(var(--ion-color-danger-rgb), 0.2);

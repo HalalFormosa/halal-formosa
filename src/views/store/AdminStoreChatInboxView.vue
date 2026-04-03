@@ -40,6 +40,8 @@
           <div class="conv-avatar">
             <img v-if="conv.buyer_profile?.avatar_url" :src="conv.buyer_profile.avatar_url" class="buyer-avatar-img" />
             <ion-icon v-else :icon="personCircleOutline" />
+            <!-- Unread badge on avatar -->
+            <div v-if="conv.store_unread > 0" class="unread-dot-modern"></div>
           </div>
           <div class="conv-body">
             <div class="conv-top">
@@ -47,10 +49,8 @@
               <span class="conv-time">{{ formatTime(conv.last_message_at) }}</span>
             </div>
             <div class="conv-bottom">
-              <p class="conv-preview">{{ conv.last_message || $t('store.chat.noMessages') }}</p>
-              <ion-badge v-if="conv.store_unread > 0" color="danger" class="unread-badge">
-                {{ conv.store_unread }}
-              </ion-badge>
+              <p :class="['conv-preview', { 'unread': conv.store_unread > 0 }]">{{ conv.last_message || $t('store.chat.noMessages') }}</p>
+              <span v-if="conv.store_unread > 0" class="unread-count-label">{{ conv.store_unread }}</span>
             </div>
             <div v-if="conv.store_products" class="conv-product-tag">
               📦 {{ localized(conv.store_products.name_zh, conv.store_products.name) }}
@@ -85,12 +85,15 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   IonPage, IonHeader, IonContent, IonBadge, IonIcon,
-  IonRefresher, IonRefresherContent, IonSkeletonText
+  IonRefresher, IonRefresherContent, IonSkeletonText,
+  onIonViewWillEnter
 } from '@ionic/vue'
 import { personCircleOutline, chatbubblesOutline, constructOutline } from 'ionicons/icons'
 import AppHeader from '@/components/AppHeader.vue'
 import { supabase } from '@/plugins/supabaseClient'
+import type { RealtimeChannel } from '@supabase/supabase-js'
 import { useI18n } from 'vue-i18n'
+import { onUnmounted } from 'vue'
 
 const { t, locale } = useI18n()
 const router = useRouter()
@@ -98,6 +101,34 @@ const router = useRouter()
 const isUnderConstruction = computed(() => import.meta.env.VITE_STORE_UNDER_CONSTRUCTION === 'true')
 const loading = ref(true)
 const conversations = ref<any[]>([])
+
+const merchantStoreId = ref<string | null>(null)
+const isGlobalAdmin = ref(false)
+
+async function resolvePermissions() {
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session) return
+
+  // Check if role is admin
+  const { data: roleData } = await supabase
+    .from('user_roles')
+    .select('role')
+    .eq('user_id', session.user.id)
+    .maybeSingle()
+  
+  isGlobalAdmin.value = roleData?.role === 'admin'
+
+  // If not admin, or even if admin but we want store-specific view
+  const { data: storeData } = await supabase
+    .from('merchant_stores')
+    .select('id')
+    .eq('user_id', session.user.id)
+    .maybeSingle()
+  
+  if (storeData) {
+    merchantStoreId.value = storeData.id
+  }
+}
 
 function localized(zh: string | null | undefined, en: string | null | undefined): string {
   if (locale.value === 'zh') return zh || en || ''
@@ -117,8 +148,8 @@ function formatTime(d: string) {
   return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
 }
 
-async function fetchConversations() {
-  loading.value = true
+async function fetchConversations(silent = false) {
+  if (!silent) loading.value = true
 
   const { data: { session } } = await supabase.auth.getSession()
   if (!session) {
@@ -126,14 +157,23 @@ async function fetchConversations() {
     return
   }
 
-  const { data } = await supabase
+  let query = supabase
     .from('store_chat_conversations')
     .select(`
       *,
       store_products(name, name_zh)
     `)
-    .eq('store_user_id', session.user.id)
     .order('last_message_at', { ascending: false })
+
+  if (!isGlobalAdmin.value && merchantStoreId.value) {
+    query = query.eq('store_id', merchantStoreId.value)
+  } else if (!isGlobalAdmin.value && !merchantStoreId.value) {
+    conversations.value = []
+    loading.value = false
+    return
+  }
+
+  const { data } = await query
 
   const convs = data || []
   
@@ -170,7 +210,39 @@ async function doRefresh(event: any) {
   event.target.complete()
 }
 
-onMounted(fetchConversations)
+let convChannel: RealtimeChannel | null = null
+
+function subscribeToConversations() {
+  if (convChannel) supabase.removeChannel(convChannel)
+
+  convChannel = supabase
+    .channel('admin-chat-inbox')
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'store_chat_conversations',
+        filter: merchantStoreId.value ? `store_id=eq.${merchantStoreId.value}` : undefined
+      },
+      () => {
+        fetchConversations()
+      }
+    )
+    .subscribe()
+}
+
+onIonViewWillEnter(async () => {
+  await resolvePermissions()
+  await fetchConversations(conversations.value.length > 0) // Silent if we have data
+  subscribeToConversations()
+})
+
+onUnmounted(() => {
+  if (convChannel) {
+    supabase.removeChannel(convChannel)
+  }
+})
 </script>
 
 <style scoped>
@@ -195,6 +267,38 @@ onMounted(fetchConversations)
 
 .conv-card:active { transform: scale(0.98); }
 
+.unread-dot-modern {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 12px;
+  height: 12px;
+  background-color: var(--ion-color-danger);
+  border-radius: 50%;
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 4px rgba(0,0,0,0.2);
+  z-index: 2;
+}
+
+.conv-preview.unread {
+  color: var(--ion-text-color);
+  font-weight: 600;
+}
+
+.unread-count-label {
+  background: var(--ion-color-danger);
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+}
+
 .conv-avatar {
   width: 44px;
   height: 44px;
@@ -204,13 +308,15 @@ onMounted(fetchConversations)
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  overflow: hidden;
+  overflow: visible;
+  position: relative;
 }
 
 .buyer-avatar-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  border-radius: 50%;
 }
 
 .conv-avatar ion-icon {
@@ -257,16 +363,6 @@ onMounted(fetchConversations)
   overflow: hidden;
   text-overflow: ellipsis;
   flex: 1;
-}
-
-.unread-badge {
-  font-size: 10px;
-  min-width: 20px;
-  height: 20px;
-  border-radius: 10px;
-  padding: 0 5px;
-  font-weight: 700;
-  flex-shrink: 0;
 }
 
 .conv-product-tag {

@@ -12,7 +12,7 @@
           <div v-else class="header-avatar-skeleton"></div>
           <div class="header-text">
             <h2 class="header-name">{{ otherUser?.display_name || otherUser?.name || headerTitle }}</h2>
-            <p v-if="otherUser" class="header-status">{{ $t('store.chat.online').charAt(0).toUpperCase() + $t('store.chat.online').slice(1) }}</p>
+            <p v-if="otherUser && formatLastSeen(otherUser)" class="header-status">{{ formatLastSeen(otherUser) }}</p>
           </div>
         </div>
         <ion-buttons slot="end">
@@ -38,7 +38,7 @@
 
       <template v-else>
         <!-- Product context card -->
-      <div v-if="productContext" class="product-context">
+      <div v-if="productContext" class="product-context" @click="goToProductDetail" style="cursor: pointer;">
         <img v-if="productContext.images?.[0]" :src="productContext.images[0]" class="ctx-image" />
         <div class="ctx-info">
           <span class="ctx-name">{{ localized(productContext.name_zh, productContext.name) }}</span>
@@ -122,6 +122,7 @@ import AppHeader from '@/components/AppHeader.vue'
 import { supabase } from '@/plugins/supabaseClient'
 import { useStoreChat } from '@/composables/useStoreChat'
 import { useI18n } from 'vue-i18n'
+import dayjs from 'dayjs'
 
 const { t, locale } = useI18n()
 const route = useRoute()
@@ -156,7 +157,7 @@ async function init() {
   // Fetch conversation details for header
   const { data: conv } = await supabase
     .from('store_chat_conversations')
-    .select('*, store_products(name, name_zh, images)')
+    .select('*, store_products(id, name, name_zh, images)')
     .eq('id', conversationId.value)
     .maybeSingle()
 
@@ -177,12 +178,25 @@ async function init() {
         .select('*')
         .eq('user_id', conv.store_user_id)
         .maybeSingle()
-      if (store) otherUser.value = store
+      
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('last_seen_at, show_last_seen')
+        .eq('id', conv.store_user_id)
+        .maybeSingle()
+
+      if (store) {
+        otherUser.value = {
+          ...store,
+          last_seen_at: profile?.last_seen_at,
+          show_last_seen: profile?.show_last_seen
+        }
+      }
     } else {
       // Merchant sees the Buyer's profile
       const { data: profile } = await supabase
         .from('user_profiles')
-        .select('*')
+        .select('*, last_seen_at, show_last_seen')
         .eq('id', conv.buyer_id)
         .maybeSingle()
       if (profile) otherUser.value = profile
@@ -222,6 +236,17 @@ function formatTime(d: string) {
   return new Date(d).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
 }
 
+function formatLastSeen(user: any) {
+  if (!user || !user.show_last_seen || !user.last_seen_at) return ''
+
+  const lastSeen = dayjs(user.last_seen_at)
+  const now = dayjs()
+  const diffMins = now.diff(lastSeen, 'minute')
+
+  if (diffMins < 5) return t('store.chat.online')
+  return t('store.chat.activePrefix') + ' ' + lastSeen.fromNow()
+}
+
 function openImage(url: string) {
   window.open(url, '_blank')
 }
@@ -231,6 +256,12 @@ function handleHeaderClick() {
   // If it's a store (it has a name but maybe no display_name)
   if (otherUser.value.id && (otherUser.value.name || otherUser.value.logo_url)) {
     router.push(`/store/merchant/${otherUser.value.id}`)
+  }
+}
+
+function goToProductDetail() {
+  if (productContext.value?.id) {
+    router.push(`/store/product/${productContext.value.id}`)
   }
 }
 
@@ -334,6 +365,15 @@ onUnmounted(unsubscribe)
   background: var(--ion-background-color);
   border-bottom: 1px solid var(--ion-color-step-150, rgba(0, 0, 0, 0.05));
   box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+  transition: background 0.15s, opacity 0.1s;
+}
+
+.product-context:hover {
+  background: var(--ion-color-light);
+}
+
+.product-context:active {
+  opacity: 0.7;
 }
 
 .ctx-image {

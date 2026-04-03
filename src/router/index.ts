@@ -244,6 +244,18 @@ const routes: Array<RouteRecordRaw> = [
         meta: { requiresAuth: true, noAds: true }
     },
     {
+        path: '/merchant/store/orders',
+        name: 'MerchantStoreOrders',
+        component: () => import('@/views/store/AdminStoreOrdersView.vue'),
+        meta: { requiresAuth: true, noAds: true }
+    },
+    {
+        path: '/merchant/store/chat-inbox',
+        name: 'MerchantStoreChatInbox',
+        component: () => import('@/views/store/AdminStoreChatInboxView.vue'),
+        meta: { requiresAuth: true, noAds: true }
+    },
+    {
         path: '/merchant/register',
         name: 'MerchantRegistration',
         component: () => import('@/views/store/MerchantRegistrationView.vue'),
