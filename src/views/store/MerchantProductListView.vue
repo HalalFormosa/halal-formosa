@@ -7,7 +7,7 @@
         </ion-buttons>
         <ion-title>{{ $t('store.admin.products') }}</ion-title>
         <ion-buttons slot="end">
-          <ion-button @click="$router.push('/admin/store/add-product')">
+          <ion-button @click="$router.push('/merchant/store/product/add')">
             <ion-icon :icon="addOutline" />
           </ion-button>
         </ion-buttons>
@@ -22,7 +22,7 @@
       <div v-else-if="products.length === 0" class="empty-state">
         <ion-icon :icon="bagHandleOutline" class="empty-icon" />
         <h3>{{ $t('store.noProducts') }}</h3>
-        <ion-button @click="$router.push('/admin/store/add-product')">
+        <ion-button @click="$router.push('/merchant/store/product/add')">
           {{ $t('store.adminAddProduct') }}
         </ion-button>
       </div>
@@ -49,7 +49,7 @@
                 <ion-button @click="toggleFeatured(product)">
                     <ion-icon :icon="product.is_featured ? star : starOutline" :color="product.is_featured ? 'warning' : 'medium'" />
                 </ion-button>
-                <ion-button @click="$router.push(`/admin/store/edit-product/${product.id}`)">
+                <ion-button @click="$router.push(`/merchant/store/product/edit/${product.id}`)">
                     <ion-icon :icon="createOutline" color="primary" />
                 </ion-button>
             </ion-buttons>

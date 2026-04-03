@@ -42,6 +42,8 @@
     "published": "已發佈",
     "publishSuccess": "地點已成功發佈！",
     "hideSuccess": "地點已隱藏，公眾將無法查看。",
+    "basicInfo": "基本資訊",
+    "advanced": "進階設定",
     "fields": {
       "name": "名稱",
       "keyword": "關鍵字",
@@ -1108,6 +1110,16 @@
       "successSubtitle": "感謝您加入 Halal Formosa。",
       "successText": "我們的審核團隊將審核您的申請，並透過電話、WhatsApp 或 LINE 與您聯繫進行最終身份驗證。讓清真生意更簡單、更值得信賴！",
       "backToProfile": "返回個人資料"
+    },
+    "products": {
+      "pricingBreakdown": "價格明細",
+      "processingFee": "平台服務費 (10%)",
+      "payoutAmount": "預計收入",
+      "payoutHint": "此金額為扣除服務費後的預計收入。",
+      "halalProof": "清真驗證證明",
+      "halalProofHint": "食品與消耗品類別必須提供。最多 5 張圖片/文件。",
+      "halalProofPlaceholder": "上傳清真證書、成分標籤或店面照片",
+      "halalProofError": "食品類別必須提供清真驗證證明。"
     }
   }
 }

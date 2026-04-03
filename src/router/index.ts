@@ -195,17 +195,17 @@ const routes: Array<RouteRecordRaw> = [
         meta: { requiresAuth: true, noAds: true }
     },
     {
-        path: '/admin/store/add-product',
-        name: 'AdminAddStoreProduct',
-        component: () => import('@/views/store/AdminAddStoreProductView.vue'),
-        meta: { requiresAuth: true, requiresAdmin: true, noAds: true }
+        path: '/merchant/store/product/add',
+        name: 'MerchantAddProduct',
+        component: () => import('@/views/store/MerchantAddProductView.vue'),
+        meta: { requiresAuth: true, noAds: true }
     },
     {
-        path: '/admin/store/edit-product/:id',
-        name: 'AdminEditStoreProduct',
-        component: () => import('@/views/store/AdminAddStoreProductView.vue'),
+        path: '/merchant/store/product/edit/:id',
+        name: 'MerchantEditProduct',
+        component: () => import('@/views/store/MerchantAddProductView.vue'),
         props: true,
-        meta: { requiresAuth: true, requiresAdmin: true, noAds: true }
+        meta: { requiresAuth: true, noAds: true }
     },
     {
         path: '/admin/store/orders',

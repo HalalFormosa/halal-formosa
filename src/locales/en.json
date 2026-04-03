@@ -42,6 +42,8 @@
     "published": "Published",
     "publishSuccess": "Location published successfully!",
     "hideSuccess": "Location hidden from public view.",
+    "basicInfo": "Basic Information",
+    "advanced": "Advanced Settings",
     "fields": {
       "name": "Name",
       "keyword": "Keyword",
@@ -1105,6 +1107,16 @@
       "successSubtitle": "Thank you for joining Halal Formosa.",
       "successText": "Our verification team will review your application and contact you via Phone, WhatsApp, or LINE for final identity verification. Halal business should be Easy and Trusted!",
       "backToProfile": "Back to Profile"
+    },
+    "products": {
+      "pricingBreakdown": "Pricing Breakdown",
+      "processingFee": "Processing Fee (10%)",
+      "payoutAmount": "You will receive",
+      "payoutHint": "This amount is an estimate after processing fees.",
+      "halalProof": "Halal Proof Verification",
+      "halalProofHint": "Mandatory for food & consumable items. Max 5 images/documents.",
+      "halalProofPlaceholder": "Upload Halal cert, ingredient label, or shop photo",
+      "halalProofError": "Halal proof is required for food categories."
     }
   }
 }
