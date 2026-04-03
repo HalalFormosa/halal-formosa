@@ -90,6 +90,7 @@ import {
 import { checkmarkCircleOutline } from 'ionicons/icons'
 import AppHeader from '@/components/AppHeader.vue'
 import { MerchantService, type MerchantApplication } from '@/services/MerchantService'
+import { ActivityLogService } from '@/services/ActivityLogService'
 
 const loading = ref(true)
 const applications = ref<MerchantApplication[]>([])
@@ -172,7 +173,10 @@ async function showToast(message: string, color: string) {
   await toast.present()
 }
 
-onMounted(fetchApplications)
+onMounted(() => {
+  fetchApplications()
+  ActivityLogService.log('merchant_admin_view_applications')
+})
 </script>
 
 <style scoped>

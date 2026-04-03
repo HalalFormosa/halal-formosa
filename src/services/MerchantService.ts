@@ -1,4 +1,5 @@
 import { supabase } from '@/plugins/supabaseClient'
+import { ActivityLogService } from '@/services/ActivityLogService'
 
 export interface MerchantApplication {
   id?: string
@@ -44,6 +45,8 @@ export class MerchantService {
       console.error('[MerchantService] Submit/Upsert error:', error)
       throw error
     }
+
+    ActivityLogService.log('merchant_application_submit', { application_id: data.id, store_name: data.store_name })
 
     return data
   }
@@ -128,6 +131,11 @@ export class MerchantService {
       console.error('[MerchantService] Update status error:', error)
       throw error
     }
+
+    ActivityLogService.log(
+      status === 'approved' ? 'merchant_application_approve' : 'merchant_application_reject',
+      { application_id: data.id, store_name: data.store_name, reason: rejectionReason }
+    )
 
     return data
   }

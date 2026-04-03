@@ -763,28 +763,29 @@ async function loadForYouReason() {
 
 /* ---------------- Filters ---------------- */
 
-watch([activeStores, activeCategories, activeStatuses, searchQuery, sortBy], () => {
-  savedScrollTop.value = null; // reset scroll restore
-
-  if (activeStores.value.length > 0) {
-    ActivityLogService.log("search_filter_store", {
-      store_ids: activeStores.value.map(s => s.id),
-      store_names: activeStores.value.map(s => s.name),
-    });
-  }
-
-  if (activeCategories.value.length > 0) {
-    ActivityLogService.log("search_filter_category", {
-      category_ids: activeCategories.value.map(c => c.id),
-      category_names: activeCategories.value.map(c => c.name),
-    });
-  }
-
+watch([activeStatuses], () => {
   if (activeStatuses.value.length > 0) {
     ActivityLogService.log("search_filter_status", {
       statuses: activeStatuses.value,
     });
   }
+})
+
+watch(activeStores, (newStores, oldStores) => {
+  if (newStores.length > oldStores.length) {
+    const added = newStores.find(s => !oldStores.some(os => os.id === s.id))
+    if (added) {
+      ActivityLogService.log("search_filter_store", {
+        store_id: added.id,
+        store_ids: newStores.map(s => s.id),
+        store_names: newStores.map(s => s.name),
+      })
+    }
+  }
+})
+
+watch([activeStores, activeCategories, activeStatuses, searchQuery, sortBy], () => {
+  savedScrollTop.value = null; // reset scroll restore
 
 
   allLoaded.value = false
@@ -917,7 +918,11 @@ function toggleCategory(cat: { id: number; name: string }) {
     activeCategories.value = activeCategories.value.filter(c => c.id !== cat.id)
   } else {
     activeCategories.value = [...activeCategories.value, cat]
-
+    ActivityLogService.log("search_filter_category", {
+      category_id: cat.id,
+      category_ids: activeCategories.value.map(c => c.id),
+      category_names: activeCategories.value.map(c => c.name),
+    })
   }
 }
 
@@ -1381,6 +1386,7 @@ const fetchTotalCount = async () => {
   const {count, error} = await supabase
       .from('products')
       .select('barcode', {count: 'exact', head: true})
+      .eq('is_archived', false)
   if (error) {
     errorMsg.value = error.message
   } else {

@@ -78,6 +78,7 @@ async function fetchProduct() {
       .from('products')
       .select('*')
       .eq('barcode', props.barcode)
+      .eq('is_archived', false)
       .single();
 
   if (error) {

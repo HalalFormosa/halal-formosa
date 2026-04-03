@@ -2,11 +2,57 @@
   <ion-page>
     <ion-header>
       <app-header
-          :title="$t('review.title')"
+          :title="$t('admin.reviewProductsTitle')"
           :icon="listOutline"
           :showBack="true"
           backRoute="/search"
       />
+
+      <ion-toolbar class="actions-toolbar">
+        <div class="header-main-actions">
+          <ion-button fill="clear" class="classic-action-btn sort-btn-wrapper" id="sort-trigger">
+            <ion-icon :icon="sortIcon" />
+            <span class="btn-label">{{ sortLabel }}</span>
+          </ion-button>
+
+          <ion-popover trigger="sort-trigger" trigger-action="click" :dismiss-on-select="true" class="width-190">
+            <ion-list lines="none">
+              <ion-item button @click="sortBy = 'recent'">
+                <ion-icon :icon="timeOutline" slot="start" />
+                <ion-label>{{ $t('admin.sortRecent') }}</ion-label>
+                <ion-icon v-if="sortBy === 'recent'" :icon="checkmarkCircle" slot="end" color="success" style="font-size: 14px;" />
+              </ion-item>
+              
+              <ion-item button @click="sortBy = 'alpha'">
+                <ion-icon :icon="listOutline" slot="start" />
+                <ion-label>{{ $t('admin.sortAlpha') }}</ion-label>
+                <ion-icon v-if="sortBy === 'alpha'" :icon="checkmarkCircle" slot="end" color="success" style="font-size: 14px;" />
+              </ion-item>
+            </ion-list>
+          </ion-popover>
+
+          <ion-segment v-model="viewMode" mode="ios" style="width: 140px;">
+            <ion-segment-button value="pending">
+              <ion-label>Review</ion-label>
+            </ion-segment-button>
+            <ion-segment-button value="archived">
+              <ion-label>Archive</ion-label>
+            </ion-segment-button>
+          </ion-segment>
+        </div>
+      </ion-toolbar>
+
+      <ion-toolbar class="search-row-toolbar">
+        <div class="search-container">
+          <ion-searchbar
+              v-model="searchQuery"
+              :placeholder="$t('admin.searchProductsPlaceholder')"
+              :debounce="500"
+              class="compact-searchbar"
+              :animated="true"
+          />
+        </div>
+      </ion-toolbar>
     </ion-header>
 
     <ion-content class="ion-padding">
@@ -30,9 +76,9 @@
       </div>
 
       <!-- Product list -->
-      <ion-list v-else-if="pendingProducts.length">
+      <ion-list v-else-if="filteredProducts.length">
         <ion-item
-            v-for="product in pendingProducts"
+            v-for="product in filteredProducts"
             :key="product.id"
             button
             detail
@@ -49,9 +95,12 @@
       </ion-list>
 
       <!-- No pending products -->
-      <ion-text v-else color="medium">
-        {{ $t('review.noPending') }}
-      </ion-text>
+      <div v-else class="ion-text-center ion-padding" style="margin-top: 40px;">
+        <ion-icon :icon="listOutline" style="font-size: 64px; opacity: 0.2;" />
+        <p style="opacity: 0.5; margin-top: 16px;">
+          {{ viewMode === 'pending' ? $t('admin.noPendingProducts') : $t('admin.noArchivedProducts') }}
+        </p>
+      </div>
 
       <!-- ✅ Product Detail Modal -->
       <ion-modal :is-open="showModal" @didDismiss="closeModal" class="review-modal">
@@ -210,8 +259,16 @@
               </div>
             </ion-item-group>
 
-            <div class="ion-padding-top ion-margin-top" style="border-top: 1px solid var(--ion-color-step-150)">
-              <ion-button expand="block" color="danger" fill="outline" @click="rejectProduct(selectedProduct)">
+            <div class="ion-padding-top ion-margin-top" style="border-top: 1px solid var(--ion-color-step-150); display: flex; gap: 8px;">
+              <ion-button v-if="!selectedProduct.is_archived" @click="archiveProduct(selectedProduct.id)" color="warning" style="flex: 1;">
+                <ion-icon slot="start" :icon="trashOutline" />
+                {{ $t('admin.archive') }}
+              </ion-button>
+              <ion-button v-else @click="restoreProduct(selectedProduct.id)" color="success" style="flex: 1;">
+                <ion-icon slot="start" :icon="swapVerticalOutline" />
+                {{ $t('admin.restore') }}
+              </ion-button>
+              <ion-button @click="rejectProduct(selectedProduct)" color="danger" fill="outline" style="flex: 1;">
                 <ion-icon slot="start" :icon="trashOutline" />
                 {{ $t('review.reject') }}
               </ion-button>
@@ -265,24 +322,11 @@
 
 <script setup lang="ts">
 import {
-  IonPage,
-  IonHeader,
-  IonContent,
-  IonList,
-  IonItem,
-  IonThumbnail,
-  IonLabel,
-  IonButton,
-  IonText,
-  IonModal,
-  IonToolbar,
-  IonTitle,
-  IonButtons,
-  IonInput,
-  IonSelect,
-  IonSelectOption,
-  IonTextarea,
-    IonChip, IonSkeletonText
+  IonPage, IonHeader, IonContent, IonList, IonItem,
+  IonThumbnail, IonLabel, IonButton, IonText, IonModal,
+  IonToolbar, IonTitle, IonButtons, IonInput, IonSelect,
+  IonSelectOption, IonTextarea, IonChip, IonSkeletonText,
+  IonSearchbar, IonSegment, IonSegmentButton, IonPopover, IonIcon, IonAvatar, IonBadge
 } from '@ionic/vue'
 
 import { ref, onMounted, computed, reactive, onUnmounted } from 'vue'
@@ -293,7 +337,10 @@ import {
   listOutline,
   trashOutline,
   cameraOutline,
-  cloudUploadOutline
+  cloudUploadOutline,
+  timeOutline,
+  checkmarkCircle,
+  swapVerticalOutline
 } from 'ionicons/icons'
 import AppHeader from '@/components/AppHeader.vue'
 import StoreLogoBar from '@/components/StoreLogoBar.vue'
@@ -305,6 +352,10 @@ import 'swiper/css/zoom'
 
 import { Camera, CameraDirection, CameraResultType, CameraSource } from '@capacitor/camera'
 import { useImageResizer } from "@/composables/useImageResizer";
+
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const categories = ref<{ id:number; name:string }[]>([])
 const modules = [Pagination, Zoom]
@@ -438,8 +489,51 @@ function closeImageModal() {
   showImageModal.value = false
 }
 
+const searchQuery = ref('')
+const viewMode = ref<'pending' | 'archived'>('pending')
+const sortBy = ref<'recent' | 'alpha'>('recent')
+
+const sortIcon = computed(() => {
+  return sortBy.value === 'recent' ? timeOutline : listOutline
+})
+
+const sortLabel = computed(() => {
+  return sortBy.value === 'recent' ? t('admin.sortRecent') : t('admin.sortAlpha')
+})
+
+const filteredProducts = computed(() => {
+  let result = [...pendingProducts.value]
+
+  // Filter by view mode
+  if (viewMode.value === 'pending') {
+    result = result.filter(p => !p.is_archived)
+  } else {
+    result = result.filter(p => p.is_archived)
+  }
+
+  // Filter by search query
+  if (searchQuery.value.trim()) {
+    const q = searchQuery.value.toLowerCase()
+    result = result.filter(p => 
+      p.name?.toLowerCase().includes(q) || 
+      p.barcode?.toLowerCase().includes(q) ||
+      p.description?.toLowerCase().includes(q)
+    )
+  }
+
+  // Sort
+  if (sortBy.value === 'alpha') {
+    result.sort((a, b) => (a.name || '').localeCompare(b.name || ''))
+  } else {
+    result.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+  }
+
+  return result
+})
+
 async function loadPendingProducts() {
   loadingProducts.value = true
+  // Fetch both pending (approved: false) and archived products
   const { data: products, error: prodError } = await supabase
       .from('products')
       .select('*')
@@ -696,6 +790,34 @@ async function rejectProduct(product: any) {
   }
 }
 
+async function archiveProduct(id: string) {
+  if (!confirm(t('admin.confirmArchive'))) return
+
+  const { error } = await supabase
+      .from('products')
+      .update({ is_archived: true })
+      .eq('id', id)
+
+  if (!error) {
+    loadPendingProducts()
+    closeModal()
+  }
+}
+
+async function restoreProduct(id: string) {
+  if (!confirm(t('admin.confirmRestore'))) return
+
+  const { error } = await supabase
+      .from('products')
+      .update({ is_archived: false })
+      .eq('id', id)
+
+  if (!error) {
+    loadPendingProducts()
+    closeModal()
+  }
+}
+
 onMounted( async () => {
   const { data, error } = await supabase
       .from('ingredient_highlights')
@@ -712,6 +834,154 @@ onMounted( async () => {
   await fetchStores()
 })
 </script>
+
+<style scoped>
+/* Consolidated Search Header Styles */
+.actions-toolbar,
+.search-row-toolbar {
+  --background: var(--ion-background-color);
+  --border-width: 0;
+}
+
+.header-main-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 16px;
+  width: 100%;
+}
+
+.classic-action-btn {
+  height: 50px;
+  margin: 0;
+  --color: var(--ion-color-dark);
+  position: relative;
+  font-weight: 700;
+  text-transform: none;
+}
+
+.classic-action-btn ion-icon {
+  font-size: 22px;
+}
+
+.sort-btn-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.btn-label {
+  margin-left: 4px;
+  font-size: 13px;
+}
+
+.search-container {
+  padding: 0 16px 12px;
+}
+
+.compact-searchbar {
+  --border-radius: 100px;
+  --background: var(--ion-background-color);
+  --color: var(--ion-color-dark);
+  --placeholder-color: var(--ion-color-step-600);
+  --icon-color: var(--ion-color-carrot);
+  --clear-button-color: var(--ion-color-step-600);
+  border: 1px solid rgba(var(--ion-color-dark-rgb), 0.1);
+  border-radius: 100px;
+  padding: 0;
+  width: 100%;
+}
+
+.width-190 {
+  --width: 190px;
+}
+
+/* Modal and form styles */
+.review-image-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.img-preview-container {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.img-controls {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  background: var(--ion-color-step-100);
+  border-radius: 0 0 8px 8px;
+  border: 1px solid var(--ion-color-step-150);
+  border-top: none;
+}
+
+.img-preview-box {
+  position: relative;
+  aspect-ratio: 4/3;
+  background: var(--ion-color-step-100);
+  border-radius: 8px 8px 0 0;
+  overflow: hidden;
+  border: 1px solid var(--ion-color-step-150);
+}
+
+.img-preview-box img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.img-label {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(0,0,0,0.5);
+  color: white;
+  font-size: 10px;
+  padding: 4px;
+  text-align: center;
+}
+
+.fullscreen-swiper {
+  width: 100%;
+  height: 100%;
+  background: black;
+}
+
+.fullscreen-swiper img {
+  width: 100%;
+  height: auto;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.form-container {
+  border-radius: 12px;
+  background: var(--ion-card-background, var(--ion-item-background));
+  padding-bottom: 24px;
+}
+
+.uploader-info {
+  --background: var(--ion-color-step-50);
+  border-radius: 12px;
+}
+
+ion-header {
+  border-bottom: none !important;
+  box-shadow: none !important;
+}
+
+.actions-toolbar ion-button,
+.actions-toolbar ion-icon {
+  color: var(--ion-color-dark);
+}
+</style>
 
 <style>
 .preview-swiper {

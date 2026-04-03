@@ -291,6 +291,7 @@ import AppHeader from '@/components/AppHeader.vue'
 import { supabase } from '@/plugins/supabaseClient'
 import { isAdmin } from '@/composables/userProfile'
 import { useStoreCart } from '@/composables/useStoreCart'
+import { ActivityLogService } from '@/services/ActivityLogService'
 
 const { t, locale } = useI18n()
 const router = useRouter()
@@ -355,6 +356,7 @@ function formatPrice(price: number) {
 
 function openCart() {
   cartOpen.value = true
+  ActivityLogService.log('store_cart_open')
 }
 
 function openChats() {
@@ -369,11 +371,13 @@ function openChats() {
 function goCheckout() {
   if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
   cartOpen.value = false
+  ActivityLogService.log('store_checkout_click')
   router.push('/store/checkout')
 }
 
 function handleBannerClick(banner: any) {
   if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
+  ActivityLogService.log('store_banner_click', { banner_id: banner.id, title: banner.title })
   if (banner.link_type === 'product' && banner.link_value) {
     router.push(`/store/product/${banner.link_value}`)
   } else if (banner.link_type === 'category' && banner.link_value) {
@@ -383,6 +387,7 @@ function handleBannerClick(banner: any) {
 
 function navigateToProduct(id: string) {
   if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
+  ActivityLogService.log('store_product_click', { product_id: id })
   router.push(`/store/product/${id}`)
 }
 
@@ -564,11 +569,26 @@ function stopAutoScroll() {
 }
 
 // Watch filters
-watch([searchQuery, selectedCategory, sortBy, minPrice, maxPrice, stockOnly], () => {
+watch(searchQuery, (newVal) => {
+  if (newVal.trim()) {
+    ActivityLogService.log('store_search', { query: newVal })
+  }
+  fetchProducts()
+})
+
+watch(selectedCategory, (newVal) => {
+  if (newVal) {
+    ActivityLogService.log('store_filter_category', { category_id: newVal })
+  }
+  fetchProducts()
+})
+
+watch([sortBy, minPrice, maxPrice, stockOnly], () => {
   fetchProducts()
 })
 
 onMounted(async () => {
+  ActivityLogService.log('store_page_open')
   await Promise.all([fetchCategories(), fetchBanners(), fetchProducts()])
   startAutoScroll()
 })

@@ -143,146 +143,146 @@
             </div>
 
 
-          <!-- 📝 Description -->
-          <template v-if="place.description">
+            <!-- 📝 Description -->
+            <template v-if="place.description">
+              <ion-item lines="none">
+                <ion-icon :icon="documentTextOutline" slot="start" color="carrot"/>
+
+                <ion-label>
+                  <p class="text-sm text-gray-500">Description</p>
+                  <p style="white-space: pre-line;">
+                    {{ place.description }}
+                  </p>
+                </ion-label>
+              </ion-item>
+            </template>
+
+
+            <!-- 📍 Address -->
             <ion-item lines="none">
-              <ion-icon :icon="documentTextOutline" slot="start" color="carrot"/>
+              <ion-icon :icon="navigateOutline" slot="start" color="carrot"/>
 
               <ion-label>
-                <p class="text-sm text-gray-500">Description</p>
-                <p style="white-space: pre-line;">
-                  {{ place.description }}
-                </p>
+                <p class="text-sm text-gray-500">Address</p>
+                <p>{{ place.address || 'No address available' }}</p>
               </ion-label>
+
+              <ion-button
+                  fill="clear"
+                  size="small"
+                  color="carrot"
+                  @click="logOpenMaps"
+                  :href="`https://www.google.com/maps/search/?api=1&query=${place.lat},${place.lng}`"
+                  target="_blank"
+              >
+                Open
+              </ion-button>
             </ion-item>
-          </template>
 
 
-          <!-- 📍 Address -->
-          <ion-item lines="none">
-            <ion-icon :icon="navigateOutline" slot="start" color="carrot"/>
+            <!-- 🗺️ Mini Map -->
+            <div class="rounded-xl overflow-hidden ion-margin-vertical shadow-md">
+              <iframe
+                  :src="`https://maps.google.com/maps?q=${place.lat},${place.lng}&z=16&output=embed`"
+                  width="100%"
+                  height="200"
+                  style="border:0;"
+                  loading="lazy"
+                  referrerpolicy="no-referrer-when-downgrade"
+              ></iframe>
+            </div>
 
-            <ion-label>
-              <p class="text-sm text-gray-500">Address</p>
-              <p>{{ place.address || 'No address available' }}</p>
-            </ion-label>
+            <!-- ⭐ Additional Details -->
+            <div class="ion-margin-vertical">
+              <!-- 🕒 Opening Hours -->
+              <template v-if="place.opening_hours">
+                <h3 class="font-bold text-lg ion-margin-top">Opening Hours</h3>
 
-            <ion-button
-                fill="clear"
-                size="small"
-                color="carrot"
-                @click="logOpenMaps"
-                :href="`https://www.google.com/maps/search/?api=1&query=${place.lat},${place.lng}`"
-                target="_blank"
-            >
-              Open
-            </ion-button>
-          </ion-item>
+                <ion-list>
+                  <ion-item v-for="(value, day) in formattedOpeningHours" :key="day">
+                    <ion-label class="capitalize">{{ day }}</ion-label>
+                    <ion-label slot="end" class="ion-text-right">
+            <span v-if="value.active">
+              {{ value.open }} – {{ value.close }}
+            </span>
+                      <span v-else class="text-gray-400">Closed</span>
+                    </ion-label>
+                  </ion-item>
+                </ion-list>
+              </template>
+
+              <!-- 📞 Contact Info -->
+              <template v-if="place.phone || place.instagram || place.line_id">
+                <h3 class="font-bold text-lg ion-margin-top">Additional Details</h3>
+
+                <ion-item lines="none" v-if="place.phone">
+                  <ion-icon :icon="callOutline" slot="start" color="carrot"/>
+                  <ion-label>
+                    <p class="text-sm text-gray-500">Phone</p>
+                    <p>{{ place.phone }}</p>
+                  </ion-label>
+
+                  <ion-button
+                      fill="clear"
+                      color="carrot"
+                      @click="logCall"
+                      :href="`tel:${place.phone}`"
+                  >
+                    Call
+                  </ion-button>
+                </ion-item>
 
 
-          <!-- 🗺️ Mini Map -->
-          <div class="rounded-xl overflow-hidden ion-margin-vertical shadow-md">
-            <iframe
-                :src="`https://maps.google.com/maps?q=${place.lat},${place.lng}&z=16&output=embed`"
-                width="100%"
-                height="200"
-                style="border:0;"
-                loading="lazy"
-                referrerpolicy="no-referrer-when-downgrade"
-            ></iframe>
-          </div>
+                <ion-item lines="none" v-if="place.instagram">
+                  <ion-icon :icon="logoInstagram" slot="start" color="carrot"/>
+                  <ion-label>
+                    <p class="text-sm text-gray-500">Instagram</p>
+                    <p>@{{ place.instagram.replace('@', '') }}</p>
+                  </ion-label>
+                  <ion-button
+                      fill="clear"
+                      size="small"
+                      @click="logInstagram"
+                      :href="`https://instagram.com/${place.instagram.replace('@','')}`"
+                      target="_blank">
+                    Open
+                  </ion-button>
+                </ion-item>
 
-          <!-- ⭐ Additional Details -->
-          <div class="ion-margin-vertical">
-            <!-- 🕒 Opening Hours -->
-            <template v-if="place.opening_hours">
-              <h3 class="font-bold text-lg ion-margin-top">Opening Hours</h3>
+                <ion-item lines="none" v-if="place.line_id">
+                  <ion-icon :icon="chatboxEllipsesOutline" slot="start" color="carrot"/>
+                  <ion-label>
+                    <p class="text-sm text-gray-500">LINE ID</p>
+                    <p>{{ place.line_id }}</p>
+                  </ion-label>
 
-              <ion-list>
-                <ion-item v-for="(value, day) in formattedOpeningHours" :key="day">
-                  <ion-label class="capitalize">{{ day }}</ion-label>
-                  <ion-label slot="end" class="ion-text-right">
-          <span v-if="value.active">
-            {{ value.open }} – {{ value.close }}
-          </span>
-                    <span v-else class="text-gray-400">Closed</span>
+                  <ion-button
+                      fill="clear"
+                      size="small"
+                      @click="logLine"
+                      :href="`line://ti/p/~${place.line_id}`">
+                    Open
+                  </ion-button>
+
+                </ion-item>
+
+              </template>
+
+              <!-- 💰 Price Range -->
+              <template v-if="place.price_range">
+                <ion-item lines="none">
+                  <ion-icon :icon="cashOutline" slot="start" color="carrot"/>
+                  <ion-label>
+                    <p class="text-sm text-gray-500">Estimated Price</p>
+                    <p>{{ place.price_range }}</p>
                   </ion-label>
                 </ion-item>
-              </ion-list>
-            </template>
+              </template>
 
-            <!-- 📞 Contact Info -->
-            <template v-if="place.phone || place.instagram || place.line_id">
-              <h3 class="font-bold text-lg ion-margin-top">Additional Details</h3>
-
-              <ion-item lines="none" v-if="place.phone">
-                <ion-icon :icon="callOutline" slot="start" color="carrot"/>
-                <ion-label>
-                  <p class="text-sm text-gray-500">Phone</p>
-                  <p>{{ place.phone }}</p>
-                </ion-label>
-
-                <ion-button
-                    fill="clear"
-                    color="carrot"
-                    @click="logCall"
-                    :href="`tel:${place.phone}`"
-                >
-                  Call
-                </ion-button>
-              </ion-item>
-
-
-              <ion-item lines="none" v-if="place.instagram">
-                <ion-icon :icon="logoInstagram" slot="start" color="carrot"/>
-                <ion-label>
-                  <p class="text-sm text-gray-500">Instagram</p>
-                  <p>@{{ place.instagram.replace('@', '') }}</p>
-                </ion-label>
-                <ion-button
-                    fill="clear"
-                    size="small"
-                    @click="logInstagram"
-                    :href="`https://instagram.com/${place.instagram.replace('@','')}`"
-                    target="_blank">
-                  Open
-                </ion-button>
-              </ion-item>
-
-              <ion-item lines="none" v-if="place.line_id">
-                <ion-icon :icon="chatboxEllipsesOutline" slot="start" color="carrot"/>
-                <ion-label>
-                  <p class="text-sm text-gray-500">LINE ID</p>
-                  <p>{{ place.line_id }}</p>
-                </ion-label>
-
-                <ion-button
-                    fill="clear"
-                    size="small"
-                    @click="logLine"
-                    :href="`line://ti/p/~${place.line_id}`">
-                  Open
-                </ion-button>
-
-              </ion-item>
-
-            </template>
-
-            <!-- 💰 Price Range -->
-            <template v-if="place.price_range">
-              <ion-item lines="none">
-                <ion-icon :icon="cashOutline" slot="start" color="carrot"/>
-                <ion-label>
-                  <p class="text-sm text-gray-500">Estimated Price</p>
-                  <p>{{ place.price_range }}</p>
-                </ion-label>
-              </ion-item>
-            </template>
-
-          </div>
-          </div>
+            </div>
           </div>
         </div>
+      </div>
 
       <!-- Skeleton while loading -->
       <div v-else>
@@ -405,6 +405,7 @@ type PlaceDetail = {
     public_profile: boolean;
   } | null;
   partner_tier?: 'Gold' | 'Silver' | 'Bronze' | null;
+  approved?: boolean;
 }
 
 type LocationCertification = {
@@ -500,6 +501,7 @@ const loadPlace = async () => {
     price_range,
     opening_hours,
     created_at,
+    approved,
     location_types(name),
     partner:partners(partner_tier)
   `)
@@ -531,6 +533,7 @@ const loadPlace = async () => {
       price_range: data.price_range,
       opening_hours: data.opening_hours,
       created_at: data.created_at,
+      approved: data.approved,
       author: null,
       location_types: locationType ?? null,
       partner_tier: Array.isArray(data.partner) ? data.partner[0]?.partner_tier : (data.partner as any)?.partner_tier
@@ -715,7 +718,6 @@ const logLine = () => {
     line_id: place.value.line_id
   });
 };
-
 </script>
 
 

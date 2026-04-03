@@ -149,13 +149,19 @@ function resolveEntity(activity: string, rawDetail: any): EntityResult {
                 entity_type: 'category',
                 entity_id: detail.category_id
                     ? String(detail.category_id)
-                    : null
+                    : (detail.category_ids && detail.category_ids.length > 0)
+                        ? String(detail.category_ids[detail.category_ids.length - 1])
+                        : null
             }
 
         case 'search_filter_store':
             return {
                 entity_type: 'store',
-                entity_id: detail.store_id ?? null
+                entity_id: detail.store_id
+                    ? String(detail.store_id)
+                    : (detail.store_ids && detail.store_ids.length > 0)
+                        ? String(detail.store_ids[detail.store_ids.length - 1])
+                        : null
             }
 
         // Optional: keep status as non-entity
@@ -171,7 +177,9 @@ function resolveEntity(activity: string, rawDetail: any): EntityResult {
                 entity_type: 'category',
                 entity_id: detail.category_id
                     ? String(detail.category_id)
-                    : null
+                    : (detail.category_ids && detail.category_ids.length > 0)
+                        ? String(detail.category_ids[detail.category_ids.length - 1])
+                        : null
             }
 
         // 🟢 USER-to-USER interactions
@@ -206,11 +214,44 @@ function resolveEntity(activity: string, rawDetail: any): EntityResult {
                 entity_id: detail.product ?? null
             }
 
-// 🟢 SOCIAL
+        // 🟢 SOCIAL
         case 'social_link_click':
             return {
                 entity_type: 'external_link',
                 entity_id: detail.platform ?? null
+            }
+
+        // 🟢 STORE / MERCHANT
+        case 'store_product_click':
+        case 'store_product_detail_open':
+        case 'store_add_to_cart':
+        case 'store_buy_now':
+        case 'store_chat_open':
+            return {
+                entity_type: 'store_product',
+                entity_id: detail.product_id ? String(detail.product_id) : null
+            }
+
+        case 'store_merchant_click':
+        case 'store_visit_merchant':
+            return {
+                entity_type: 'merchant_store',
+                entity_id: detail.store_id ? String(detail.store_id) : null
+            }
+
+        case 'store_checkout_submit':
+        case 'store_order_success':
+            return {
+                entity_type: 'store_order',
+                entity_id: detail.order_id ? String(detail.order_id) : null
+            }
+
+        case 'merchant_application_submit':
+        case 'merchant_application_approve':
+        case 'merchant_application_reject':
+            return {
+                entity_type: 'merchant_application',
+                entity_id: detail.application_id ? String(detail.application_id) : null
             }
 
 
@@ -343,6 +384,35 @@ function resolveActivityGroup(activity: string): string | null {
         -------------------------- */
         case 'social_link_click':
             return 'social'
+
+        /* -------------------------
+           STORE / MERCHANT
+        -------------------------- */
+        case 'store_page_open':
+        case 'store_search':
+        case 'store_filter_category':
+        case 'store_product_click':
+        case 'store_banner_click':
+        case 'store_cart_open':
+        case 'store_checkout_click':
+        case 'store_product_detail_open':
+        case 'store_add_to_cart':
+        case 'store_buy_now':
+        case 'store_visit_merchant':
+        case 'store_chat_open':
+        case 'store_checkout_page_open':
+        case 'store_order_submit':
+        case 'store_order_success':
+        case 'store_payment_failed':
+            return 'store'
+
+        case 'merchant_application_submit':
+        case 'merchant_application_approve':
+        case 'merchant_application_reject':
+        case 'merchant_admin_view_applications':
+        case 'merchant_registration_page_open':
+        case 'merchant_registration_step_view':
+            return 'merchant'
 
         /* -------------------------
            FALLBACK

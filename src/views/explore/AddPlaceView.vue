@@ -342,6 +342,23 @@
           :duration="2200"
           @didDismiss="toast.open = false"
       />
+
+      <!-- Admin Controls -->
+      <ion-list v-if="myRole === 'admin' && isEditing" class="ion-margin-top">
+        <ion-list-header>
+          <ion-label color="carrot">ADMIN CONTROLS</ion-label>
+        </ion-list-header>
+        <ion-item>
+          <ion-icon :icon="checkmarkCircleOutline" slot="start" color="success" />
+          <ion-label>{{ $t('admin.master.published') }}</ion-label>
+          <ion-toggle
+              slot="end"
+              :checked="form.approved"
+              @ionChange="form.approved = $event.detail.checked"
+          />
+        </ion-item>
+      </ion-list>
+
     </ion-content>
   </ion-page>
 </template>
@@ -371,14 +388,16 @@ import {
   IonList,
   IonText,
     IonTextarea,
-    IonChip
+    IonChip,
+    IonToggle,
+    IonListHeader
 } from '@ionic/vue'
 import {ref, onMounted, onBeforeUnmount, computed} from 'vue'
 import {useRouter} from 'vue-router'
 import {supabase} from '@/plugins/supabaseClient'
 import mapsLoader from '@/plugins/googleMapsLoader'
 import {Camera, CameraResultType, CameraSource} from '@capacitor/camera'
-import {cameraOutline, cloudUploadOutline, closeCircle} from 'ionicons/icons'
+import {cameraOutline, cloudUploadOutline, closeCircle, checkmarkCircleOutline} from 'ionicons/icons'
 import {Capacitor} from '@capacitor/core'
 import {Geolocation} from '@capacitor/geolocation'
 import {usePoints} from "@/composables/usePoints";
@@ -468,6 +487,7 @@ const form = ref<{
   price_range: string | null,
   opening_hours: any,
   tags: string[],
+  approved: boolean,
 }>({
   name: '',
   type_id: null,
@@ -481,6 +501,7 @@ const form = ref<{
   line_id: '',
   price_range: '',
   tags: [],
+  approved: false,
 
   opening_hours: {
     mon: {active: false, open: "09:00", close: "18:00"},
@@ -984,7 +1005,7 @@ const submitPlace = async () => {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('You must be logged in.')
 
-    // ✅ Decide approval mode (same logic as AddProduct)
+    // ✅ Decide auto-approval (for new places)
     const autoApprove = isPrivileged(myRole.value)
 
     // delete old image if editing + new image selected
@@ -1011,28 +1032,31 @@ const submitPlace = async () => {
       line_id: form.value.line_id || null,
       price_range: form.value.price_range || null,
       opening_hours: normalizeOpeningHours(),
-
-      created_by: user.id,
-
-      // ✅ approval fields
-      approved: autoApprove,
-      approved_by: autoApprove ? user.id : null,
-      approved_at: autoApprove ? new Date().toISOString() : null,
-
       updated_by: user.id,
       updated_at: new Date().toISOString(),
-      
       tags: form.value.tags,
     }
 
-    if (isEditing.value) {
-      // If you want: keep existing approved state unless admin/contributor
-      if (!autoApprove) {
-        delete payload.approved
-        delete payload.approved_by
-        delete payload.approved_at
+    // ✅ Approval Logic
+    if (myRole.value === 'admin') {
+      // Admins manually control the toggle
+      payload.approved = form.value.approved
+      if (form.value.approved) {
+        payload.approved_by = user.id
+        payload.approved_at = new Date().toISOString()
+      } else {
+        payload.approved_by = null
+        payload.approved_at = null
       }
+    } else if (!isEditing.value) {
+      // New places for non-admins use auto-approve logic
+      payload.approved = autoApprove
+      payload.approved_by = autoApprove ? user.id : null
+      payload.approved_at = autoApprove ? new Date().toISOString() : null
+      payload.created_by = user.id
+    }
 
+    if (isEditing.value) {
       const { error } = await supabase
           .from('locations')
           .update(payload)
@@ -1041,56 +1065,58 @@ const submitPlace = async () => {
       if (error) throw error
 
       toast.value = { open: true, message: 'Place updated!', color: 'success' }
+      
+      await ActivityLogService.log("edit_place_success", {
+        id: route.params.id,
+        name: form.value.name,
+        approved: payload.approved
+      })
+
       setTimeout(() => router.replace(`/place/${route.params.id}`), 500)
-      return
-    }
-
-    // CREATE
-    const { data: newPlace, error } = await supabase
-        .from('locations')
-        .insert([payload])
-        .select('id')
-        .single()
-
-    if (error) throw error
-
-    // ✅ Toast differs
-    toast.value = {
-      open: true,
-      message: autoApprove ? '✅ Place published!' : '✅ Place submitted and awaiting approval.',
-      color: 'success',
-    }
-
-    // ✅ Only publish notification if approved
-    if (autoApprove) {
-      const selectedType = locationTypes.value.find(t => t.id === form.value.type_id)
-      const placeTypeName = selectedType?.name || 'Halal Place'
-
-      await notifyEvent(
-          'new_place',
-          `🕌 New ${placeTypeName} Added!`,
-          `${form.value.name} (${placeTypeName})\nLat: ${form.value.lat}, Lng: ${form.value.lng}`,
-          form.value.image ?? undefined,
-          { id: newPlace.id, lat: form.value.lat, lng: form.value.lng, isNative: true }
-      )
     } else {
-      // Optional: send admin-only “review needed” notification
-      // await notifyEvent('review_place', '🕵️ Place Pending Review', `${form.value.name} needs approval`, form.value.image ?? undefined, { id: newPlace.id })
+      // CREATE
+      payload.created_by = user.id
+      const { data: newPlace, error } = await supabase
+          .from('locations')
+          .insert([payload])
+          .select('id')
+          .single()
+
+      if (error) throw error
+
+      toast.value = {
+        open: true,
+        message: payload.approved ? '✅ Place published!' : '✅ Place submitted and awaiting approval.',
+        color: 'success',
+      }
+
+      // ✅ Notification if approved
+      if (payload.approved) {
+        const selectedType = locationTypes.value.find(t => t.id === form.value.type_id)
+        const placeTypeName = selectedType?.name || 'Halal Place'
+
+        await notifyEvent(
+            'new_place',
+            `🕌 New ${placeTypeName} Added!`,
+            `${form.value.name} (${placeTypeName})\nLat: ${form.value.lat}, Lng: ${form.value.lng}`,
+            form.value.image ?? undefined,
+            { id: newPlace.id, lat: form.value.lat, lng: form.value.lng, isNative: true }
+        )
+      }
+
+      await awardAndCelebrate('add_place', 10000)
+
+      await ActivityLogService.log("add_place_success", {
+        name: form.value.name,
+        address: form.value.address,
+        lat: form.value.lat,
+        lng: form.value.lng
+      })
+
+      setTimeout(() => {
+        router.replace(payload.approved ? `/explore?focus=${newPlace.id}` : `/explore`)
+      }, 500)
     }
-
-    // ✅ Points: you can decide if users get points on submit or only on publish
-    await awardAndCelebrate('add_place', 10000)
-
-    await ActivityLogService.log("add_place_success", {
-      name: form.value.name,
-      address: form.value.address,
-      lat: form.value.lat,
-      lng: form.value.lng
-    })
-
-    setTimeout(() => {
-      router.replace(autoApprove ? `/explore?focus=${newPlace.id}` : `/explore`)
-    }, 500)
 
     // cleanup
     if (imagePreview.value) URL.revokeObjectURL(imagePreview.value)
@@ -1177,7 +1203,8 @@ onMounted(async () => {
     line_id,
     price_range,
     opening_hours,
-    tags
+    tags,
+    approved
   `)
         .eq('id', route.params.id)
         .maybeSingle()
@@ -1198,6 +1225,7 @@ onMounted(async () => {
 
         opening_hours: data.opening_hours || form.value.opening_hours,
         tags: data.tags || [],
+        approved: data.approved || false,
       }
 
       imagePreview.value = data.image || null

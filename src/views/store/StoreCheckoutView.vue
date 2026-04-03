@@ -142,6 +142,7 @@ import AppHeader from '@/components/AppHeader.vue'
 import { supabase } from '@/plugins/supabaseClient'
 import { useStoreCart } from '@/composables/useStoreCart'
 import { useEcpayPayment } from '@/composables/useEcpayPayment'
+import { ActivityLogService } from '@/services/ActivityLogService'
 import { useI18n } from 'vue-i18n'
 import {
   homeOutline, storefrontOutline, cartOutline, businessOutline, bagHandleOutline, peopleOutline
@@ -202,6 +203,7 @@ onMounted(async () => {
     buyerName.value = session.user.user_metadata?.full_name || session.user.user_metadata?.name || ''
   }
   await fetchDeliveryOptions()
+  ActivityLogService.log('store_checkout_page_open')
 })
 
 async function fetchDeliveryOptions() {
@@ -320,6 +322,8 @@ async function placeOrder() {
     if (orderErr || !order) {
       throw new Error(orderErr?.message || 'Order creation failed')
     }
+
+    ActivityLogService.log('store_order_submit', { order_id: order.id, total: cartTotal.value })
 
     // Create order items
     const orderItems = cartItems.value.map(item => ({

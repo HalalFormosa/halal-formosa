@@ -47,6 +47,7 @@ import { useRoute } from 'vue-router'
 import { IonPage, IonHeader, IonContent, IonButton, IonIcon } from '@ionic/vue'
 import { checkmarkCircle, constructOutline } from 'ionicons/icons'
 import AppHeader from '@/components/AppHeader.vue'
+import { ActivityLogService } from '@/services/ActivityLogService'
 
 const route = useRoute()
 const isUnderConstruction = computed(() => import.meta.env.VITE_STORE_UNDER_CONSTRUCTION === 'true')
@@ -56,6 +57,9 @@ const invoiceNo = ref('')
 onMounted(() => {
   orderId.value = (route.query.orderId as string) || ''
   invoiceNo.value = (route.query.invoiceNo as string) || ''
+  if (orderId.value) {
+    ActivityLogService.log('store_order_success', { order_id: orderId.value })
+  }
 })
 </script>
 

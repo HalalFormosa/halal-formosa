@@ -761,6 +761,7 @@ async function fetchRelatedProducts() {
       .from("products")
       .select("barcode, name, status, photo_front_url, product_category_id, created_at, partner:partners(partner_tier)")
       .eq("approved", true)
+      .eq("is_archived", false)
       .eq("product_category_id", item.value.product_category_id)
       .neq("barcode", item.value.barcode)
       .order("created_at", { ascending: false })

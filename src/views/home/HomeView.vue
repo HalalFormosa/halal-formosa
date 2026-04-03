@@ -1373,6 +1373,7 @@ async function fetchRecentLocations() {
         partner:partners(partner_tier)
       `)
       .eq('approved', true)
+      .eq('is_archived', false)
       .order('created_at', { ascending: false })
       .limit(100)
 
@@ -1414,7 +1415,7 @@ async function fetchRecentLocations() {
 
 async function fetchStats() {
   loadingStats.value = true
-  const { data: products } = await supabase.from('products').select('status')
+  const { data: products } = await supabase.from('products').select('status').eq('is_archived', false)
   if (products) {
     totalProductCount.value = products.length
     const statusCount = { Halal:0,'Muslim-friendly':0,Syubhah:0,Haram:0 }
@@ -1451,6 +1452,7 @@ async function fetchLocationCategoryStats() {
     location_types ( name )
   `)
       .eq('approved', true)
+      .eq('is_archived', false)
 
   if (!error && data) {
     totalLocationCount.value = data.length

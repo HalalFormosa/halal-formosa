@@ -1262,6 +1262,7 @@ const fetchLocations = async () => {
     partner:partners(partner_tier)
   `)
       .eq('approved', true)
+      .eq('is_archived', false)
 
 
   if (!error && data) {
@@ -1327,6 +1328,7 @@ const toggleCategory = (cat: LocationType) => {
   }
 
   ActivityLogService.log("explore_filter_category", {
+    category_id: cat.id,
     category_ids: activeCategoryIds.value,
     category_name: cat.name
   })

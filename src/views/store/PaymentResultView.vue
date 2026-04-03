@@ -99,6 +99,7 @@ import {
 import AppHeader from '@/components/AppHeader.vue'
 import { supabase } from '@/plugins/supabaseClient'
 import { useEcpayPayment } from '@/composables/useEcpayPayment'
+import { ActivityLogService } from '@/services/ActivityLogService'
 import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
@@ -153,6 +154,7 @@ async function checkPaymentStatus() {
         if (data.status === 'paid') {
           paymentStatus.value = 'paid'
           checking.value = false
+          ActivityLogService.log('store_order_success', { order_id: orderId.value, status: 'paid' })
           return true
         }
       }
@@ -172,6 +174,7 @@ async function checkPaymentStatus() {
       clearInterval(interval)
       paymentStatus.value = 'failed'
       checking.value = false
+      ActivityLogService.log('store_payment_failed', { order_id: orderId.value, reason: 'timeout' })
       return
     }
     const isPaid = await check()

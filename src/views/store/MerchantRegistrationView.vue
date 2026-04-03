@@ -314,6 +314,7 @@ import {
   alertCircleOutline
 } from 'ionicons/icons'
 import { MerchantService } from '@/services/MerchantService'
+import { ActivityLogService } from '@/services/ActivityLogService'
 import router from '@/router'
 import { supabase } from '@/plugins/supabaseClient'
 import { useI18n } from 'vue-i18n'
@@ -372,6 +373,7 @@ onIonViewWillEnter(async () => {
       }
     }
   }
+  ActivityLogService.log('merchant_registration_page_open')
 })
 
 const currentStep = ref(1)
@@ -415,12 +417,14 @@ const isStepValid = computed(() => {
 function nextStep() {
   if (currentStep.value < totalSteps) {
     currentStep.value++
+    ActivityLogService.log('merchant_registration_step_view', { step: currentStep.value })
   }
 }
 
 function prevStep() {
   if (currentStep.value > 1) {
     currentStep.value--
+    ActivityLogService.log('merchant_registration_step_view', { step: currentStep.value })
   }
 }
 

@@ -708,6 +708,7 @@ async function fetchNearbyLocations() {
       `)
       .contains('tags', [body.value.slug])
       .eq('approved', true)
+      .eq('is_archived', false)
 
   if (!error && data) {
     const partnerPos = PARTNER_COORDS[body.value.slug]

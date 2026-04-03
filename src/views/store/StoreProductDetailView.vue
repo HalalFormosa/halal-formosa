@@ -177,6 +177,7 @@ import AppHeader from '@/components/AppHeader.vue'
 import { supabase } from '@/plugins/supabaseClient'
 import { useStoreCart } from '@/composables/useStoreCart'
 import { useStoreChat } from '@/composables/useStoreChat'
+import { ActivityLogService } from '@/services/ActivityLogService'
 import { useI18n } from 'vue-i18n'
 
 const { t, locale } = useI18n()
@@ -222,6 +223,9 @@ async function fetchProduct() {
 
     // Increment view count
     supabase.rpc('increment_store_product_view', { p_product_id: id })
+    
+    // Log detail view
+    ActivityLogService.log('store_product_detail_open', { product_id: id, name: data.name })
   }
   loading.value = false
 }
@@ -247,9 +251,11 @@ async function handleAddToCart() {
     color: 'success'
   })
   toast.present()
+  ActivityLogService.log('store_add_to_cart', { product_id: product.value.id, qty: qty.value })
 }
 
 function handleBuyNow() {
+  ActivityLogService.log('store_buy_now', { product_id: product.value.id, qty: qty.value })
   handleAddToCart()
   router.push('/store/checkout')
 }
@@ -261,12 +267,14 @@ function navigateToEdit() {
 
 function navigateToMerchant(id: string) {
   if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
+  ActivityLogService.log('store_visit_merchant', { store_id: id })
   router.push(`/store/merchant/${id}`)
 }
 
 async function handleChat() {
   if (!product.value) return
   if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
+  ActivityLogService.log('store_chat_open', { product_id: product.value.id, merchant_id: product.value.user_id })
   const convId = await getOrCreateConversation(product.value.user_id, product.value.id)
   if (convId) {
     router.push(`/store/chat/${convId}`)
