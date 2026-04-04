@@ -904,17 +904,17 @@
     }
   },
   "merchantApplications": {
-      "title": "Merchant Applications",
-      "approve": "Approve",
-      "reject": "Reject",
-      "noPending": "No pending applications at this time.",
-      "confirmApprove": "Are you sure you want to approve this application? This will create the merchant's store automatically.",
-      "rejectionReasonTitle": "Reason for Rejection",
-      "rejectionReasonPlaceholder": "Explain why the application is being rejected...",
-      "status": {
-        "pending": "Pending Verification",
-        "approved": "Approved",
-        "rejected": "Rejected"
+    "title": "Merchant Applications",
+    "approve": "Approve",
+    "reject": "Reject",
+    "noPending": "No pending applications at this time.",
+    "confirmApprove": "Are you sure you want to approve this application? This will create the merchant's store automatically.",
+    "rejectionReasonTitle": "Reason for Rejection",
+    "rejectionReasonPlaceholder": "Explain why the application is being rejected...",
+    "status": {
+      "pending": "Pending Verification",
+      "approved": "Approved",
+      "rejected": "Rejected"
     }
   },
   "update": {
@@ -1051,17 +1051,17 @@
       "storeDescriptionPlaceholder": "Tell customers about your store...",
       "storeDescriptionZhPlaceholder": "向顧客介紹您的店鋪...",
       "saveProfile": "Save Profile",
-        "deliveryMethods": {
-          "home_delivery": "Home Delivery",
-          "home_delivery_desc": "Direct to customer's address",
-          "7eleven": "7-Eleven",
-          "family_mart": "FamilyMart",
-          "hi_life": "Hi-Life",
-          "ok_mart": "OK Mart",
-          "cvs_pickup": "Convenience Store Pickup",
-          "cod_meetup": "In Person",
-          "in_person": "Meet in person/Cash on delivery"
-        }
+      "deliveryMethods": {
+        "home_delivery": "Home Delivery",
+        "home_delivery_desc": "Direct to customer's address",
+        "7eleven": "7-Eleven",
+        "family_mart": "FamilyMart",
+        "hi_life": "Hi-Life",
+        "ok_mart": "OK Mart",
+        "cvs_pickup": "Convenience Store Pickup",
+        "cod_meetup": "In Person",
+        "in_person": "Meet in person/Cash on delivery"
+      }
     }
   },
   "merchant": {

@@ -16,7 +16,7 @@
           <!-- Sort Button (Left Side) -->
           <ion-button fill="clear" class="classic-action-btn sort-btn-wrapper" id="sort-trigger-trip">
             <ion-icon :icon="sortIcon" />
-            <span class="btn-label" v-if="!showSearchbar">{{ sortLabel }}</span>
+            <span class="btn-label">{{ sortLabel }}</span>
           </ion-button>
 
           <ion-popover trigger="sort-trigger-trip" trigger-action="click" :dismiss-on-select="true" class="width-190">
@@ -35,19 +35,7 @@
             </ion-list>
           </ion-popover>
 
-          <!-- Inline Search Input -->
-          <transition name="expand">
-            <div v-if="showSearchbar" class="inline-searchbar-container">
-              <ion-searchbar
-                  v-model="searchQuery"
-                  :placeholder="$t('trip.searchPlaceholder')"
-                  :debounce="500"
-                  @ionInput="handleSearchInput"
-                  class="compact-searchbar"
-                  :animated="true"
-              ></ion-searchbar>
-            </div>
-          </transition>
+
 
           <div class="right-actions-group">
             <!-- Search Toggle Button -->
@@ -68,6 +56,21 @@
           </div>
         </div>
       </ion-toolbar>
+
+      <transition name="fade-down">
+        <ion-toolbar v-if="showSearchbar" class="search-row-toolbar">
+          <div class="search-container">
+            <ion-searchbar
+                v-model="searchQuery"
+                :placeholder="$t('trip.searchPlaceholder')"
+                :debounce="500"
+                @ionInput="handleSearchInput"
+                class="compact-searchbar"
+                :animated="true"
+            ></ion-searchbar>
+          </div>
+        </ion-toolbar>
+      </transition>
 
       <!-- Collapsible Filters -->
       <transition name="collapse">
@@ -934,32 +937,41 @@ ion-header :deep(app-header ion-toolbar) {
   border: 2px solid var(--ion-background-color);
 }
 
-.compact-searchbar {
-  --border-radius: 12px;
-  --background: var(--ion-background-color);
-  padding: 0;
-  width: 100%;
+
+
+.search-container {
+  padding: 0 16px 12px;
 }
 
-.inline-searchbar-container {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  overflow: hidden;
+.search-row-toolbar {
+  --min-height: auto;
 }
 
-/* Animation for searchbar expansion */
-.expand-enter-active,
-.expand-leave-active {
-  transition: all 0.3s ease-out;
-  max-width: 500px;
+/* Animation for searchbar row */
+.fade-down-enter-active,
+.fade-down-leave-active {
+  transition: all 0.25s ease-out;
+  transform-origin: top;
 }
 
-.expand-enter-from,
-.expand-leave-to {
-  max-width: 0;
+.fade-down-enter-from,
+.fade-down-leave-to {
   opacity: 0;
+  transform: translateY(-10px);
+}
+
+.actions-toolbar,
+.search-row-toolbar,
+.filter-toolbar {
+  --background: var(--ion-background-color);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  --border-width: 0;
+}
+
+.collapse-enter-active,
+.collapse-leave-active {
+  transition: max-height 0.3s ease, opacity 0.3s ease;
 }
 
 .collapse-enter-active,

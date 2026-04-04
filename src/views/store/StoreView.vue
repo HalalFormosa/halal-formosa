@@ -11,7 +11,7 @@
           :placeholder="$t('store.searchPlaceholder')"
           :debounce="400"
           show-clear-button="focus"
-          class="modern-searchbar"
+          class="compact-searchbar"
         />
         <div v-else class="search-skeleton-placeholder" style="padding: 0 8px;">
           <ion-skeleton-text animated style="width: 100%; height: 38px; border-radius: 12px; margin: 0;" />
@@ -58,16 +58,16 @@
             </div>
           </div>
 
-          <!-- Category chips -->
+          <!-- Category pills (Background Image Style) -->
           <div class="category-scroll">
             <button
               v-for="cat in allCategories"
               :key="cat.id ?? 'all'"
-              :class="['cat-chip', { 'cat-chip-active': selectedCategory === cat.id }]"
+              :class="['premium-cat-pill', { 'pill-active': selectedCategory === cat.id }]"
+              :style="{ backgroundImage: `url(${cat.image_url})` }"
               @click="selectedCategory = selectedCategory === cat.id ? null : cat.id"
             >
-              <span v-if="cat.emoji" class="chip-emoji">{{ cat.emoji }}</span>
-              {{ localized(cat.name_zh, cat.name) }}
+              <span class="pill-text">{{ localized(cat.name_zh, cat.name) }}</span>
             </button>
           </div>
 
@@ -338,7 +338,15 @@ const currentSortLabel = computed(() => {
 })
 
 const allCategories = computed(() => {
-  return [{ id: null, name: t('store.allCategories'), name_zh: null, emoji: '🏷️' }, ...categories.value]
+  return [
+    { 
+      id: null, 
+      name: t('store.allCategories'), 
+      name_zh: null, 
+      image_url: 'https://images.unsplash.com/photo-1604719312566-8912e9227c6a?auto=format&fit=crop&w=150&q=80' 
+    }, 
+    ...categories.value
+  ]
 })
 
 function getCategoryName(catId: number | null) {
@@ -654,28 +662,7 @@ onBeforeUnmount(() => {
   z-index: 10;
 }
 
-/* Search */
-.modern-searchbar {
-  --border-radius: 12px;
-  --background: var(--ion-color-step-50, #f4f5f8);
-  --box-shadow: none;
-  --padding-start: 0;
-  --padding-end: 0;
-  --color: var(--ion-text-color);
-  --placeholder-color: var(--ion-color-step-400, #999);
-  --icon-color: var(--ion-color-step-600, #666);
-  --clear-button-color: var(--ion-color-step-600, #666);
-  font-size: 0.9rem;
-  border-radius: 12px;
-  transition: all 0.2s ease;
-}
 
-.ion-palette-dark .modern-searchbar {
-  --background: var(--ion-color-step-100, #1e1e1e) !important;
-  border-color: var(--ion-color-step-200, #333) !important;
-  --placeholder-color: var(--ion-color-step-500, #888);
-  --icon-color: var(--ion-color-step-400, #bbb);
-}
 
 /* Promo Banners */
 .promo-section {
@@ -737,46 +724,76 @@ onBeforeUnmount(() => {
   opacity: 0.9;
 }
 
-/* Category chips */
+/* Category pills */
 .category-scroll {
   display: flex;
-  gap: 6px;
+  gap: 12px;
   overflow-x: auto;
-  padding: 10px 16px;
+  padding: 16px;
   -webkit-overflow-scrolling: touch;
+  background: transparent;
 }
 
 .category-scroll::-webkit-scrollbar {
   display: none;
 }
 
-.cat-chip {
+.premium-cat-pill {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 8px 16px;
-  border-radius: 20px;
-  border: 1.5px solid var(--ion-color-step-200, #e0e0e0);
-  background: transparent;
-  color: var(--ion-text-color);
-  font-size: 0.82rem;
-  font-weight: 500;
-  font-family: inherit;
+  justify-content: center;
+  padding: 0 24px;
+  height: 54px;
+  min-width: 100px;
+  border-radius: 27px;
+  border: 2px solid transparent;
+  background-size: cover;
+  background-position: center;
+  position: relative;
+  overflow: hidden;
+  color: #ffffff;
   flex-shrink: 0;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
   -webkit-tap-highlight-color: transparent;
 }
 
-.cat-chip-active {
-  background: var(--ion-color-carrot) !important;
-  color: #fff !important;
-  border-color: var(--ion-color-carrot) !important;
-  font-weight: 600;
+.premium-cat-pill::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.45);
+  transition: background 0.3s ease;
+  z-index: 1;
 }
 
-.chip-emoji {
-  margin-right: 4px;
+.premium-cat-pill:active {
+  transform: scale(0.95);
+}
+
+.pill-text {
+  position: relative;
+  z-index: 2;
+  font-size: 0.95rem;
+  font-weight: 700;
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.pill-active {
+  border-color: var(--ion-color-carrot) !important;
+  box-shadow: 0 8px 25px rgba(255, 126, 0, 0.35);
+  transform: translateY(-2px) scale(1.02);
+}
+
+.pill-active::before {
+  background: rgba(var(--ion-color-carrot-rgb), 0.3);
+}
+
+.ion-palette-dark .premium-cat-pill {
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
 }
 
 /* Filter Row */
@@ -1099,7 +1116,7 @@ onBeforeUnmount(() => {
     --padding-end: 24px;
   }
   
-  .modern-searchbar {
+  .compact-searchbar {
     max-width: 600px;
     margin: 0 auto;
   }

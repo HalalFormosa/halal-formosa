@@ -1976,18 +1976,7 @@ ion-searchbar.rounded {
   padding: 0 16px 12px;
 }
 
-.compact-searchbar {
-  --border-radius: 100px;
-  --background: var(--ion-background-color);
-  --color: var(--ion-color-dark);
-  --placeholder-color: var(--ion-color-step-600);
-  --icon-color: var(--ion-color-carrot);
-  --clear-button-color: var(--ion-color-step-600);
-  border: 1px solid rgba(var(--ion-color-dark-rgb), 0.1);
-  border-radius: 100px;
-  padding: 0;
-  width: 100%;
-}
+
 
 .search-row-toolbar {
   --min-height: auto;

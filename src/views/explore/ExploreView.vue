@@ -8,7 +8,7 @@
         <!-- Search & Add Row -->
         <div class="search-row">
           <ion-searchbar
-              class="search-explore"
+              class="compact-searchbar"
               :debounce="1000"
               v-model="searchQuery"
               @ionInput="onSearchInput"
@@ -2114,27 +2114,6 @@ button.gm-ui-hover-effect > span {
   gap: 12px;
   padding: 8px 16px 0;
   pointer-events: auto;
-}
-
-.search-explore {
-  flex: 1;
-  margin: 0;
-  --background: var(--ion-background-color) !important;
-  --border-radius: 100px;
-  --box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
-  font-weight: 500;
-  height: 50px;
-  --padding-start: 12px;
-  --padding-end: 12px;
-  background: var(--ion-background-color) !important;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  --color: var(--ion-color-dark) !important;
-  --placeholder-color: var(--ion-color-step-600) !important;
-  --icon-color: var(--ion-color-carrot) !important;
-  --clear-button-color: var(--ion-color-step-600) !important;
-  border: 1px solid rgba(var(--ion-color-dark-rgb), 0.15);
-  border-radius: 100px;
 }
 
 .header-btn {
