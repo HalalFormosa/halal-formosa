@@ -344,7 +344,7 @@
       />
 
       <!-- Admin Controls -->
-      <ion-list v-if="myRole === 'admin' && isEditing" class="ion-margin-top">
+      <ion-list v-if="myRole === 'admin'" class="ion-margin-top">
         <ion-list-header>
           <ion-label color="carrot">ADMIN CONTROLS</ion-label>
         </ion-list-header>
@@ -461,6 +461,11 @@ const loadRole = async () => {
 
   myRole.value = !error ? ((data?.role ?? 'user') as Role) : 'user'
   checkedRole.value = true
+
+  // ✅ Default to approved if admin adding new place
+  if (myRole.value === 'admin' && !isEditing.value) {
+    form.value.approved = true
+  }
 }
 
 // Fetch from Supabase
