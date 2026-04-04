@@ -652,9 +652,6 @@
               </div>
             </ion-item>
           </ion-list>
-
-
-          />
         </ion-card-content>
       </ion-card>
     </ion-content>
