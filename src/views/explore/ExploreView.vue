@@ -281,16 +281,22 @@
 
     <!-- 6. Bottom Results Slider (Map Only) -->
     <div 
-      v-if="viewMode === 'map' && (displayedLocations.length > 0 || loadingPlaces)"
+      v-if="viewMode === 'map' && (displayedLocations.length > 0 || !locationAttemptFinished || loadingPlaces)"
       class="floating-results-bar"
     >
+      <!-- Locating Status Badge (Floating above cards) -->
+      <div v-if="!locationAttemptFinished" class="locating-status-badge">
+        <div class="pulse-dot"></div>
+        <span>{{ $t('explore.locating') }}</span>
+      </div>
+
       <div 
         ref="contentRef" 
         class="horizontal-scroll-wrapper"
       >
         <div class="cards-track">
-          <!-- Skeleton list while loading -->
-          <template v-if="loadingPlaces">
+          <!-- Skeleton list while locating OR loading data -->
+          <template v-if="!locationAttemptFinished || loadingPlaces">
             <div v-for="n in 3" :key="'skeleton-map-' + n" class="modern-location-card">
               <div class="card-inner">
                 <div class="card-image-section">
@@ -429,6 +435,7 @@ import {Cluster, Renderer} from "@googlemaps/markerclusterer"
 import { Motion } from '@capacitor/motion'
 
 import useSharePlace from '@/composables/useSharePlace'
+import { useLocation } from '@/composables/useLocation'
 import {ActivityLogService} from "@/services/ActivityLogService";
 
 import {isDonor} from "@/composables/useSubscriptionStatus";
@@ -513,7 +520,14 @@ const { t } = useI18n()
 
 const isLoggedIn = ref(false)
 const isContributor = ref(false)
-const userLocation = ref<LatLng | null>(null)
+
+// Use shared location logic
+const { 
+  userLocation, 
+  locationAttemptFinished, 
+  hasAutoCentered,
+  startWatching 
+} = useLocation()
 
 const locations = ref<Place[]>([])
 const selectedPlace = ref<Place | null>(null)
@@ -528,7 +542,7 @@ const loading = ref(true)
 const loadingCategories = ref(true)
 const loadingPlaces = ref(true)
 const campusPartners = ref<{ id: string; name: string; slug: string }[]>([])
-const sortBy = ref<'nearest' | 'recent' | 'popular' | 'trending'>('nearest')
+const sortBy = ref<'nearest' | 'recent' | 'popular' | 'trending'>('recent')
 const trendingPlaceIds = ref<number[]>([])
 
 let cardObserver: IntersectionObserver | null = null
@@ -545,8 +559,6 @@ const {sharePlace} = useSharePlace()
 const locationTypes = ref<LocationType[]>([])
 const pendingInfoWindowPlaceId = ref<number | null>(null)
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t
-
-let hasCenteredInitially = false
 const hasAutoSelected = ref(false)
 let clusterer: MarkerClusterer | null = null
 let locationWatchId: string | null = null
@@ -564,102 +576,69 @@ const distanceInMeters = (a: LatLng, b: LatLng) => {
   return Math.sqrt(x * x + y * y) * R
 }
 
-const startWatchingUserLocation = async () => {
-  try {
-    if (Capacitor.isNativePlatform()) {
-      const perm = await Geolocation.checkPermissions()
-      if (perm.location !== 'granted') {
-        const req = await Geolocation.requestPermissions()
-        if (req.location !== 'granted') return
-      }
+// Sorting logic: if GPS succeeded, default to 'nearest'
+watch(locationAttemptFinished, (finished) => {
+  if (finished && userLocation.value) {
+    sortBy.value = 'nearest'
+  } else if (finished) {
+    sortBy.value = 'recent'
+  }
+}, { immediate: true })
+
+// Center map & Update User Marker (Blue Dot) Reactively
+watch([userLocation, () => mapInstance], ([newLoc, newMap]) => {
+  if (!newLoc || !newMap || !advancedMarkerLib) return
+
+  const userLoc = { lat: newLoc.lat, lng: newLoc.lng }
+
+  // 1. 🔥 CENTER MAP ON FIRST FIX
+  if (!hasAutoCentered.value) {
+    newMap.panTo(userLoc)
+    newMap.setZoom(15)
+    hasAutoCentered.value = true
+  }
+
+  // 2. 🟦 UPDATE OR CREATE MARKER
+  if (userMarker.value) {
+    // Smoothly interpolate position (lerp)
+    const prevPos = userMarker.value.position
+    if (!prevPos) return
+
+    const prevLat = prevPos instanceof google.maps.LatLng ? prevPos.lat() : (prevPos as any).lat
+    const prevLng = prevPos instanceof google.maps.LatLng ? prevPos.lng() : (prevPos as any).lng
+    
+    const prev: LatLng = lastStableLoc ?? { lat: prevLat, lng: prevLng }
+    const d = distanceInMeters(prev, userLoc)
+    if (d < 2) return // Ignore tiny jitters
+
+    const t = d > 30 ? 0.7 : d > 10 ? 0.45 : 0.3
+    const next: LatLng = {
+      lat: lerp(prev.lat, userLoc.lat, t),
+      lng: lerp(prev.lng, userLoc.lng, t),
     }
 
-    locationWatchId = await Geolocation.watchPosition(
-        {
-          enableHighAccuracy: true,
-          maximumAge: 5000, 
-          timeout: 30000 
-        },
-        (pos, err) => {
-          if (err || !pos) {
-            console.warn('[GPS] watch error', err)
-            return
-          }
+    userMarker.value.position = next
+    lastStableLoc = next
+  } else {
+    // Create new dot (AdvancedMarkerElement)
+    const dot = document.createElement('div')
+    dot.className = 'user-location-dot'
 
-          const userLoc = {
-            lat: pos.coords.latitude,
-            lng: pos.coords.longitude
-          }
+    const cone = document.createElement('div')
+    cone.className = 'user-heading-cone'
+    dot.prepend(cone)
+    userArrowEl.value = cone
 
-          userLocation.value = userLoc
-
-          // 🔥 CENTER MAP ON FIRST GPS FIX
-          if (!hasCenteredInitially && mapInstance) {
-            setTimeout(() => {
-              mapInstance?.panTo(userLoc)
-              mapInstance?.setZoom(15)
-            }, 800)
-            hasCenteredInitially = true
-          }
-
-
-          // 🟦 Update dot
-          if (userMarker.value) {
-            const prevPos = userMarker.value.position
-            if (!prevPos) return
-
-            const prevLat =
-                prevPos instanceof google.maps.LatLng
-                    ? prevPos.lat()
-                    : prevPos.lat
-
-            const prevLng =
-                prevPos instanceof google.maps.LatLng
-                    ? prevPos.lng()
-                    : prevPos.lng
-
-            const prev: LatLng = lastStableLoc ?? { lat: prevLat, lng: prevLng }
-
-            const d = distanceInMeters(prev, userLoc)
-            if (d < 5) return
-
-            const t = d > 30 ? 0.7 : d > 10 ? 0.45 : 0.3
-
-            const next: LatLng = {
-              lat: lerp(prev.lat, userLoc.lat, t),
-              lng: lerp(prev.lng, userLoc.lng, t),
-            }
-
-            userMarker.value.position = next
-            lastStableLoc = next
-
-
-          } else if (advancedMarkerLib && mapInstance) {
-            const dot = document.createElement('div')
-            dot.className = 'user-location-dot'
-
-            const cone = document.createElement('div')
-            cone.className = 'user-heading-cone'
-            dot.prepend(cone) // 👈 Prepend so it stays behind the dot background
-            userArrowEl.value = cone
-
-            userMarker.value =
-                new advancedMarkerLib.AdvancedMarkerElement({
-                  position: userLoc,
-                  map: mapInstance,
-                  content: dot,
-                  title: t('explore.userLocationTitle')
-                })
-            
-            // Re-initialize heading tracking once dot exists
-            initHeadingTracking()
-          }
-        }
-    )
-  } catch (e) {
-    console.warn('[GPS] Failed to start watch', e)
+    userMarker.value = new advancedMarkerLib.AdvancedMarkerElement({
+      position: userLoc,
+      map: newMap,
+      content: dot,
+      title: t('explore.userLocationTitle')
+    })
+    
+    initHeadingTracking()
   }
-}
+}, { immediate: true })
 
 const initHeadingTracking = async () => {
   if (!userArrowEl.value) return
@@ -1347,16 +1326,39 @@ const initMap = async () => {
     mapsLoader.importLibrary('maps'),
     mapsLoader.importLibrary('marker')
   ])
-
   advancedMarkerLib = marker
 
+  // Check for pre-existing fix to provide an "instant" map center
+  const initialCenter = userLocation.value ? { lat: userLocation.value.lat, lng: userLocation.value.lng } : DEFAULT_CENTER
+  const initialZoom = userLocation.value ? 15 : 14
+
   mapInstance = new Map(el, {
-    center: DEFAULT_CENTER,
-    zoom: 14,
+    center: initialCenter,
+    zoom: initialZoom,
     disableDefaultUI: true,
     mapId: MAP_ID,
     clickableIcons: false
   })
+
+  // 🟦 IMMEDIATELY create user marker if loc is ready
+  if (userLocation.value) {
+    const dot = document.createElement('div')
+    dot.className = 'user-location-dot'
+    const cone = document.createElement('div')
+    cone.className = 'user-heading-cone'
+    dot.prepend(cone)
+    userArrowEl.value = cone
+
+    userMarker.value = new marker.AdvancedMarkerElement({
+      position: initialCenter,
+      map: mapInstance,
+      content: dot,
+      title: t('explore.userLocationTitle')
+    })
+    
+    hasAutoCentered.value = true
+    initHeadingTracking()
+  }
 
   infoWindow = new google.maps.InfoWindow()
   
@@ -1638,10 +1640,17 @@ const selectPlace = (place: Place) => {
 }
 
 const initCardObserver = () => {
-  if (!contentRef.value) return
+  if (!contentRef.value) {
+    // Retry once if Ref is not defined yet (Vue rendering race)
+    nextTick(() => {
+      if (contentRef.value) initCardObserver()
+    })
+    return
+  }
   
-  // ✅ Check if root has changed (e.g. viewMode toggled)
   const currentRoot = (contentRef.value as HTMLElement)
+  
+  // ✅ Proper cleanup if root changes or if we want a fresh start
   if (cardObserver && (cardObserver as any).root !== currentRoot) {
     cardObserver.disconnect()
     cardObserver = null
@@ -1649,16 +1658,18 @@ const initCardObserver = () => {
 
   if (!cardObserver) {
     cardObserver = new IntersectionObserver((entries) => {
-      if (isProgrammaticScroll) return
-      
       entries.forEach(entry => {
-        if (entry.isIntersecting && entry.intersectionRatio >= 0.5) {
+        if (entry.isIntersecting && entry.intersectionRatio >= 0.4) {
+          // Skip map panning if triggered by programmatic scroll (e.g. marker click)
+          // but allow UI highlight (selectedPlace) to update
           const id = Number(entry.target.getAttribute('data-id'))
           const p = locations.value.find(l => l.id === id)
           
           if (p && selectedPlace.value?.id !== p.id) {
             selectedPlace.value = p
             
+            if (isProgrammaticScroll) return
+
             // Throttle map pans
             requestAnimationFrame(() => {
               if (mapInstance && selectedPlace.value?.id === p.id) {
@@ -1672,17 +1683,16 @@ const initCardObserver = () => {
                    infoWindow.open(mapInstance, m)
                    setTimeout(applyInfoWindowDarkClass, 50)
                  } else {
-                   // 🔥 Marker recycled or off-screen? Set pending for initMarkers
                    pendingInfoWindowPlaceId.value = p.id
                  }
               }
             })
           }
         }
-      })
+      });
     }, {
       root: currentRoot,
-      threshold: 0.5
+      threshold: [0.4] // 40% visibility is enough to trigger highlight
     })
   }
 
@@ -1840,7 +1850,7 @@ watch(displayedIdsSet, () => {
 
 watch(viewMode, (mode) => {
   if (mode === 'map') {
-    initCardObserver()
+    nextTick(() => initCardObserver())
   } else if (cardObserver) {
     cardObserver.disconnect()
   }
@@ -1858,11 +1868,11 @@ onMounted(async () => {
   await fetchTrendingPlaces()
   await refreshViewCounts()
 
-  // 🔥 START GPS WATCH HERE
-  await startWatchingUserLocation()
+  // 🔥 START GPS WATCH HERE (Shared)
+  await startWatching()
   
   if (viewMode.value === 'map') {
-    initCardObserver()
+    nextTick(() => initCardObserver())
   }
 
   processUrlParams()
@@ -1924,13 +1934,6 @@ onIonViewDidEnter(async () => {
 onIonViewWillLeave(() => {
   isPageActive.value = false
   clearCampusOverlays()
-
-  if (locationWatchId) {
-    Geolocation.clearWatch({ id: locationWatchId })
-    locationWatchId = null
-  }
-
-  hasCenteredInitially = false
   lastStableLoc = null   // 🔥 REQUIRED
 })
 
@@ -2757,6 +2760,66 @@ button.gm-ui-hover-effect > span {
   --border-radius: 50%;
   width: 48px;
   height: 48px;
+}
+
+/* Locating Status Badge */
+.locating-status-badge {
+  position: absolute;
+  bottom: calc(var(--explore-card-height) + 12px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(255, 255, 255, 0.9);
+  padding: 8px 16px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #c2410c; /* dark orange */
+  box-shadow: 0 4px 15px rgba(0,0,0,0.12);
+  z-index: 2000;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  pointer-events: none;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.ion-palette-dark .locating-status-badge {
+  background: rgba(28, 28, 30, 0.85);
+  color: #fdba74; /* light orange */
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+}
+
+.pulse-dot {
+  width: 8px;
+  height: 8px;
+  background: var(--ion-color-carrot);
+  border-radius: 50%;
+  position: relative;
+}
+
+.pulse-dot::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 8px;
+  height: 8px;
+  background: var(--ion-color-carrot);
+  border-radius: 50%;
+  animation: pulse-ring 1.5s cubic-bezier(0.455, 0.03, 0.515, 0.955) infinite;
+}
+
+@keyframes pulse-ring {
+  0% { transform: scale(0.7); opacity: 0.8; }
+  80%, 100% { transform: scale(2.5); opacity: 0; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translate(-50%, 10px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
 }
 
 .list-view-overlay {

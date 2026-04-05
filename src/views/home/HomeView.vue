@@ -781,6 +781,9 @@ import { Browser } from '@capacitor/browser'
 import { PrayTime } from 'praytime'
 import DailyMissions from "@/components/DailyMissions.vue"
 import { useDailyMissions } from '@/composables/useDailyMissions'
+import { useLocation, type LatLng } from '@/composables/useLocation'
+
+const { userLocation: sharedLocation, startWatching } = useLocation()
 
 let timeInterval: number | null = null
 
@@ -859,11 +862,7 @@ function handleBannerClick() {
 }
 
 
-const userLocation = ref<{
-  lat: number
-  lng: number
-  city?: string
-} | null>(null)
+const userLocation = computed(() => sharedLocation.value)
 
 
 const { leaderboard, loading: loadingLeaderboard, fetchLeaderboard } = useLeaderboard();
@@ -872,6 +871,7 @@ const isAuthenticated = ref(false)
 const isDark = ref(document.documentElement.classList.contains('ion-palette-dark'))
 
 onMounted(() => {
+  startWatching()
   fetchLatestAnnouncement()
   const observer = new MutationObserver(() => {
     isDark.value = document.documentElement.classList.contains('ion-palette-dark')
@@ -927,6 +927,12 @@ watch([() => locale.value, isDark], () => {
     if (doughnutRef.value?.chart) doughnutRef.value.chart.update();
     if (locationChartRef.value?.chart) locationChartRef.value.chart.update();
   })
+})
+
+watch(sharedLocation, (newLoc) => {
+  if (newLoc) {
+    fetchPrayerTimes()
+  }
 })
 
 /* ---------------- Location Categories Chart ---------------- */
@@ -1008,101 +1014,12 @@ const TIER_PRIORITY: Record<string, number> = {
 
 // Removed displayedPartners computed property to allow direct control over rotation order via halalPartners.value
 
-async function getUserLocation(): Promise<{
-  lat: number
-  lng: number
-  city?: string
-}> {
-  // 1️⃣ Cached first
-  const cached = localStorage.getItem('hf_user_location')
-  if (cached) {
-    const parsed = JSON.parse(cached) as {
-      lat: number
-      lng: number
-      city?: string
-    }
-
-    userLocation.value = parsed
-    return parsed
-  }
-
-  try {
-    let lat: number
-    let lng: number
-
-    if (Capacitor.isNativePlatform()) {
-      // 📱 Native app
-      const permission = await Geolocation.requestPermissions()
-
-      if (permission.location !== 'granted') {
-        throw new Error('Location permission denied')
-      }
-
-      const position = await Geolocation.getCurrentPosition({
-        enableHighAccuracy: true
-      })
-
-      lat = position.coords.latitude
-      lng = position.coords.longitude
-
-    } else {
-      // 🌐 Web browser fallback
-      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(resolve, reject)
-      })
-
-      lat = position.coords.latitude
-      lng = position.coords.longitude
-    }
-
-    let city = t('home.currentLocation')
-
-    try {
-      const res = await fetch(
-          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`,
-          {
-            headers: {
-              'Accept': 'application/json',
-              'User-Agent': 'HalalFormosaApp/1.0'
-            }
-          }
-      )
-
-      console.log('Reverse status:', res.status)
-
-      const data = await res.json()
-
-      city =
-          data.address?.city ||
-          data.address?.town ||
-          data.address?.municipality ||
-          data.address?.state ||
-          t('home.currentLocation')
-
-    } catch (e) {
-      console.warn('[Reverse Geocode Failed]', e)
-    }
-
-    userLocation.value = { lat, lng, city }
-
-
-    localStorage.setItem(
-        'hf_user_location',
-        JSON.stringify(userLocation.value)
-    )
-
-    return userLocation.value
-
-  } catch {
-    console.warn('[GPS] Using fallback Taipei')
-
-    userLocation.value = {
-      lat: 25.0330,
-      lng: 121.5654,
-      city: t('home.taipei')
-    }
-
-    return userLocation.value
+async function getUserLocation(): Promise<LatLng> {
+  // Use shared location if available, otherwise return Taipei fallback
+  return sharedLocation.value || {
+    lat: 25.0330,
+    lng: 121.5654,
+    city: t('home.taipei')
   }
 }
 
