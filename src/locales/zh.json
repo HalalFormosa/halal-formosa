@@ -169,7 +169,9 @@
       "asr": "晡禮",
       "maghrib": "昏禮",
       "isha": "宵禮"
-    }
+    },
+    "qibla": "Qibla",
+    "altProduct": "product"
   },
   "scanIngredients": {
     "title": "掃描成分",
@@ -375,7 +377,10 @@
     "results": "搜尋結果",
     "showingResults": "正在顯示 {total} 個地點中的 {count} 個",
     "details": {
-      "title": "地點詳情"
+      "title": "地點詳情",
+      "noticeTitle": "處理與狀態說明",
+      "readDescriptionNotice": "請查看此地點下方的特定處理細節。",
+      "handlingDetails": "處理細節"
     },
     "viewMap": "地圖",
     "viewBoth": "兩者",
@@ -902,7 +907,10 @@
         "address": "地址",
         "description": "說明"
       }
-    }
+    },
+    "ingredient_highlights": "Ingredient Highlights",
+    "location_types": "Location Types",
+    "category_rules": "Category Rules"
   },
   "merchantApplications": {
     "title": "申請管理",
@@ -1056,17 +1064,17 @@
       "storeDescriptionPlaceholder": "請向顧客介紹您的商店...",
       "storeDescriptionZhPlaceholder": "請向顧客介紹您的商店...",
       "saveProfile": "儲存資料",
-        "deliveryMethods": {
-          "home_delivery": "宅配到府",
-          "home_delivery_desc": "直接配送至顧客地址",
-          "7eleven": "7-Eleven",
-          "family_mart": "FamilyMart",
-          "hi_life": "Hi-Life",
-          "ok_mart": "OK Mart",
-          "cvs_pickup": "超商取貨",
-          "cod_meetup": "自取",
-          "in_person": "面交自取 / 貨到付款"
-        }
+      "deliveryMethods": {
+        "home_delivery": "宅配到府",
+        "home_delivery_desc": "直接配送至顧客地址",
+        "7eleven": "7-Eleven",
+        "family_mart": "FamilyMart",
+        "hi_life": "Hi-Life",
+        "ok_mart": "OK Mart",
+        "cvs_pickup": "超商取貨",
+        "cod_meetup": "自取",
+        "in_person": "面交自取 / 貨到付款"
+      }
     }
   },
   "merchant": {

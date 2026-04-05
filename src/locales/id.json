@@ -18,7 +18,18 @@
     "previous": "Sebelumnya",
     "next": "Berikutnya",
     "clear": "Hapus",
-    "details": "Detail"
+    "details": "Detail",
+    "confirm": "Konfirmasi",
+    "submit": "Kirim",
+    "filter": "Filter",
+    "reset": "Reset",
+    "apply": "Terapkan",
+    "reapply": "Terapkan Ulang",
+    "save": "Simpan",
+    "saving": "Menyimpan...",
+    "success": "Berhasil!",
+    "error": "Terjadi kesalahan.",
+    "notProvided": "Tidak tersedia"
   },
   "dailyMissions": {
     "title": "Misi Harian",
@@ -120,6 +131,14 @@
       "asr": "Ashar",
       "maghrib": "Maghrib",
       "isha": "Isya"
+    },
+    "locationsCount": "Lokasi",
+    "qibla": "Kiblat",
+    "altProduct": "produk",
+    "leaderboard_popover": {
+      "pro": "Pro",
+      "productUploads": "Product Uploads: {count}",
+      "locationUploads": "Location Uploads: {count}"
     }
   },
   "scanIngredients": {
@@ -326,7 +345,10 @@
     "results": "Hasil",
     "showingResults": "Menampilkan {count} dari {total} lokasi",
     "details": {
-      "title": "Detail Tempat"
+      "title": "Detail Tempat",
+      "noticeTitle": "Detail Penanganan & Status",
+      "readDescriptionNotice": "Mohon tinjau detail penanganan khusus di bawah ini untuk lokasi ini.",
+      "handlingDetails": "Detail Penanganan"
     },
     "viewMap": "Peta",
     "viewBoth": "Keduanya",
@@ -347,7 +369,16 @@
       "Prayer Room": "Musholla",
       "Attraction": "Objek Wisata",
       "Others": "Lainnya"
-    }
+    },
+    "specialPromo": "Gold Partner",
+    "campusFilter": "{name} Muslim-friendly Campus",
+    "campusRadiusTitle": "{name} Muslim-friendly Campus",
+    "walkingRadius": "3 km (~40 min walk)",
+    "userLocationTitle": "You are here",
+    "locating": "Mencari lokasi Anda...",
+    "gettingFix": "Mendapatkan posisi...",
+    "searchWait": "Harap tunggu...",
+    "searchMap": "Mencari alamat di peta..."
   },
   "trip": {
     "title": "Wisata Ramah Muslim",
@@ -363,12 +394,12 @@
     "sortViews": "Banyak Dilihat",
     "sortRecentShort": "Baru",
     "sortViewsShort": "Populer",
-    "cityTaipei": "Taipei City",
-    "cityNewTaipei": "New Taipei City",
-    "cityYilan": "Yilan County",
-    "cityChiayi": "Chiayi City",
-    "cityTaichung": "Taichung City",
-    "cityKaohsiung": "Kaohsiung City"
+    "cityTaipei": "Kota Taipei",
+    "cityNewTaipei": "Kota New Taipei",
+    "cityYilan": "Kabupaten Yilan",
+    "cityChiayi": "Kota Chiayi",
+    "cityTaichung": "Kota Taichung",
+    "cityKaohsiung": "Kota Kaohsiung"
   },
   "news": {
     "title": "Berita Halal & Islam",
@@ -382,7 +413,9 @@
     "darkMode": "Mode Gelap",
     "publicProfile": "Profil Publik",
     "publicProfileNote": "Nama Anda akan ditampilkan di papan peringkat dan pada konten yang Anda kontribusikan (produk, lokasi, berita, dll.).",
-    "language": "Bahasa (Eksperimental)"
+    "language": "Bahasa (Eksperimental)",
+    "showLastSeen": "Tampilkan Status Terakhir Aktif",
+    "showLastSeenNote": "Izinkan orang lain melihat kapan Anda terakhir aktif di chat."
   },
   "profile": {
     "sections": {
@@ -429,7 +462,18 @@
       "accessUntil": "⏳ Akses hingga",
       "manage": "Kelola Langganan",
       "nativeOnly": "Berlangganan hanya tersedia di aplikasi seluler.",
-      "purchaseSuccess": "🎉 Anda sekarang adalah pelanggan Halal Formosa Pro!"
+      "purchaseSuccess": "🎉 Anda sekarang adalah pelanggan Halal Formosa Pro!",
+      "benefits": {
+        "title": "Keuntungan Pro:",
+        "showMore": "Lihat Lainnya",
+        "showLess": "Lihat Ringkas",
+        "aiExplanation": "Penjelasan Bahan dengan AI",
+        "smartFeed": "Feed 'Untuk Anda' yang Cerdas",
+        "noAds": "Tanpa Iklan",
+        "unlimitedCollections": "Koleksi Tanpa Batas",
+        "unlimitedScans": "Scan Tanpa Batas",
+        "prioritySupport": "Dukungan Prioritas 24/7"
+      }
     },
     "aboutMe": "Tentang Saya",
     "edit": "Ubah",
@@ -471,6 +515,12 @@
       "consentContent2": "Bio saya mungkin terlihat publik jika saya mengaktifkan \"Tampilkan nama saya di papan peringkat\".",
       "save": "Simpan",
       "completeToContinue": "Lengkapi Profil untuk Melanjutkan"
+    },
+    "merchant": {
+      "startSelling": "Mulai Berjualan",
+      "storeSubtitle": "in Halal Formosa Store",
+      "pendingStatus": "Application Under Review",
+      "pendingDesc": "We're verifying your store details. Expect a call soon!"
     }
   },
   "credits": {
@@ -788,6 +838,70 @@
         "active": "Aktif",
         "inactive": "Tidak Aktif"
       }
+    },
+    "ingredient_highlights": "Sorotan Bahan",
+    "location_types": "Jenis Lokasi",
+    "category_rules": "Aturan Kategori",
+    "product": "Produk",
+    "ocrResults": "Hasil OCR",
+    "deviceInfo": "Info Perangkat",
+    "reviewProductsTitle": "Review Produk",
+    "searchProductsPlaceholder": "Cari produk (misal: Teh)",
+    "noPendingProducts": "Tidak ada produk tertunda 🎉",
+    "noArchivedProducts": "Tidak ada produk diarsipkan",
+    "lastActive": "Terakhir aktif {time}",
+    "activities_desc": {
+      "home_page_open": "Membuka halaman Beranda",
+      "home_scan_ingredient": "Membuka scanner bahan dari Beranda",
+      "home_viewmore_products": "Melihat lebih banyak produk di Beranda",
+      "home_open_locations": "Membuka lokasi dari Beranda",
+      "home_leaderboard_profile": "Melihat profil papan peringkat: {user}",
+      "explore_page_open": "Membuka halaman Jelajah",
+      "explore_center_user": "Memusatkan peta ke lokasi saat ini",
+      "explore_filter_category": "Memfilter kategori: {category}",
+      "explore_marker_click": "Mengetuk penanda peta: {name}",
+      "explore_place_card_click": "Membuka kartu tempat: {name}",
+      "explore_place_detail_open": "Membuka detail tempat: {name}",
+      "explore_place_detail_view": "Melihat detail tempat: {name}",
+      "explore_detail_open_image": "Melihat gambar tempat: {name}",
+      "search_page_open": "Membuka halaman Cari",
+      "search_product_click": "Membuka produk: {name}",
+      "search_sort_change": "Mengurutkan produk berdasarkan {sort}",
+      "search_filter_status": "Memfilter produk berdasarkan {status}",
+      "search_filter_category": "Memfilter produk berdasarkan {category}",
+      "product_details_open": "Melihat produk: {name}",
+      "scan_ingredients_start": "Memulai scan bahan ({source})",
+      "scan_ingredients_success": "Hasil scan: {product} • {status}",
+      "scan_ingredients_error": "Scan gagal: {error}",
+      "profile_page_open": "Membuka halaman Profil",
+      "social_link_click": "Mengetuk tautan sosial ({platform})"
+    },
+    "merchant": {
+      "title": "Aplikasi Merchant",
+      "noPending": "Tidak ada aplikasi tertunda saat ini.",
+      "approve": "Setujui",
+      "reject": "Tolak",
+      "status": {
+        "pending": "Menunggu Verifikasi",
+        "approved": "Disetujui",
+        "rejected": "Ditolak"
+      },
+      "confirmApprove": "Konfirmasi Persetujuan",
+      "confirmApproveMsg": "Apakah Anda yakin ingin menyetujui aplikasi ini? Ini akan membuat toko merchant secara otomatis.",
+      "confirmReject": "Tolak Aplikasi",
+      "confirmRejectMsg": "Harap berikan alasan penolakan.",
+      "reasonPlaceholder": "misal: UBN atau Nomor Telepon tidak valid",
+      "reasonRequired": "Alasan wajib diisi untuk penolakan",
+      "approveSuccess": "Aplikasi disetujui! Toko berhasil dibuat.",
+      "approveFailed": "Persetujuan gagal",
+      "rejectSuccess": "Aplikasi ditolak",
+      "rejectFailed": "Penolakan gagal",
+      "fields": {
+        "phone": "Telepon Kontak",
+        "ubn": "UBN",
+        "address": "Alamat",
+        "description": "Deskripsi"
+      }
     }
   },
   "update": {
@@ -864,7 +978,9 @@
       "nameRequired": "Nama produk wajib diisi.",
       "priceRequired": "Harga wajib diisi.",
       "categoryRequired": "Kategori wajib diisi.",
-      "loginRequired": "Anda harus masuk."
+      "loginRequired": "Anda harus masuk.",
+      "noStoreFound": "Toko tidak ditemukan.",
+      "contactAdmin": "Harap hubungi admin untuk menyiapkan toko Anda."
     },
     "chat": {
       "title": "Chat dengan Toko",
@@ -875,7 +991,164 @@
       "noConversations": "Belum ada percakapan.",
       "aboutProduct": "Membahas produk ini",
       "today": "Hari Ini",
-      "yesterday": "Kemarin"
+      "yesterday": "Kemarin",
+      "online": "online",
+      "offline": "offline",
+      "activePrefix": "Aktif"
+    },
+    "admin": {
+      "products": "Kelola Produk"
+    },
+    "verifiedSeller": "Penjual Terverifikasi",
+    "verifiedStore": "Toko Terverifikasi",
+    "visitShop": "Kunjungi Toko",
+    "payNow": "Bayar Sekarang",
+    "verifyingPayment": "Memverifikasi Pembayaran...",
+    "verifyingPaymentDesc": "Harap tunggu sementara kami mengonfirmasi pembayaran Anda dengan ECPay",
+    "paymentSuccess": "Pembayaran Berhasil!",
+    "paymentSuccessDesc": "Pembayaran Anda telah dikonfirmasi. Terima kasih atas pembelian Anda!",
+    "paymentFailed": "Pembayaran Tidak Dikonfirmasi",
+    "paymentFailedDesc": "Kami tidak dapat mengonfirmasi pembayaran Anda. Mungkin masih diproses, atau pembayaran dibatalkan.",
+    "tryAgain": "Coba Lagi",
+    "status": "Status",
+    "deliveryMethod": "Metode Pengiriman",
+    "priceRange": "Rentang Harga (NTD)",
+    "inStockOnly": "Hanya Stok Tersedia",
+    "inactive": "Tidak Aktif",
+    "sellerCenter": {
+      "title": "Seller Center",
+      "manageStore": "Kelola Profil Toko",
+      "manageProducts": "Kelola Produk",
+      "manageOrders": "Kelola Pesanan",
+      "manageMessages": "Pesan Toko"
+    },
+    "settings": {
+      "title": "Pengaturan Toko",
+      "basicInfo": "Informasi Dasar",
+      "logistics": "Logistik & Pengiriman",
+      "deliveryHint": "Kelola cara barang Anda sampai ke pelanggan",
+      "noBanner": "Tanpa Banner",
+      "bannerHint": "Rasio yang direkomendasikan: 3:1",
+      "storeName": "Nama Toko",
+      "storeNameZh": "Nama Toko (Mandarin)",
+      "storeDescription": "Deskripsi Toko",
+      "storeDescriptionZh": "Deskripsi Toko (Mandarin)",
+      "storeNamePlaceholder": "Masukkan nama toko dalam bahasa Inggris",
+      "storeNameZhPlaceholder": "Harap masukkan nama Mandarin",
+      "storeDescriptionPlaceholder": "Ceritakan tentang toko Anda kepada pelanggan...",
+      "storeDescriptionZhPlaceholder": "Berikan pengenalan toko Anda...",
+      "saveProfile": "Simpan Profil",
+      "deliveryMethods": {
+        "home_delivery": "Pengiriman ke Rumah",
+        "home_delivery_desc": "Langsung ke alamat pelanggan",
+        "7eleven": "7-Eleven",
+        "family_mart": "FamilyMart",
+        "hi_life": "Hi-Life",
+        "ok_mart": "OK Mart",
+        "cvs_pickup": "Ambil di Minimarket",
+        "cod_meetup": "Ketemuan Langsung",
+        "in_person": "Ketemuan langsung/Bayar di tempat"
+      }
+    }
+  },
+  "master": {
+    "active": "Aktif",
+    "inactive": "Tidak Aktif",
+    "product_categories": "Kategori Produk",
+    "ingredient_highlights": "Sorotan Bahan",
+    "location_types": "Jenis Lokasi",
+    "stores": "Toko",
+    "category_rules": "Aturan Kategori",
+    "published": "Diterbitkan",
+    "publishSuccess": "Lokasi berhasil diterbitkan!",
+    "hideSuccess": "Lokasi disembunyikan dari pandangan publik.",
+    "basicInfo": "Informasi Dasar",
+    "advanced": "Pengaturan Lanjutan",
+    "fields": {
+      "name": "Nama",
+      "keyword": "Kata Kunci",
+      "keyword_en": "Kata Kunci (EN)",
+      "keyword_zh": "Kata Kunci (ZH)",
+      "color": "Warna",
+      "status": "Status",
+      "emoji": "Emoji",
+      "website": "Situs Web",
+      "logo_url": "URL Logo",
+      "sort_order": "Urutan Sortir",
+      "is_active": "Aktif",
+      "category": "Kategori",
+      "store_name": "Nama Toko",
+      "active": "Aktif",
+      "inactive": "Tidak Aktif"
+    }
+  },
+  "merchantApplications": {
+    "title": "Aplikasi Merchant",
+    "approve": "Setujui",
+    "reject": "Tolak",
+    "noPending": "Tidak ada aplikasi tertunda saat ini.",
+    "confirmApprove": "Apakah Anda yakin ingin menyetujui aplikasi ini? Ini akan membuat toko merchant secara otomatis.",
+    "rejectionReasonTitle": "Alasan Penolakan",
+    "rejectionReasonPlaceholder": "Jelaskan mengapa aplikasi ditolak...",
+    "status": {
+      "pending": "Menunggu Verifikasi",
+      "approved": "Disetujui",
+      "rejected": "Ditolak"
+    }
+  },
+  "merchant": {
+    "register": {
+      "title": "Menjadi Mitra",
+      "subtitle": "Bergabung dengan komunitas Halal Formosa sebagai merchant",
+      "steps": {
+        "storeInfo": "Informasi Toko",
+        "address": "Lokasi",
+        "description": "Tentang Toko Anda",
+        "contact": "Verifikasi Telepon",
+        "business": "UBN Bisnis",
+        "review": "Tinjauan Akhir"
+      },
+      "placeholders": {
+        "storeNameEn": "Nama Toko (Inggris)",
+        "storeNameZh": "Nama Toko (Mandarin)",
+        "address": "Alamat Toko / Kota",
+        "description": "Jelaskan produk dan layanan Anda...",
+        "phone": "Nomor Telepon Kontak",
+        "ubn": "Nomor Bisnis Terpadu (UBN 8-digit)"
+      },
+      "hints": {
+        "address": "📍 Menyertakan kotanya saja sudah cukup untuk saat ini.",
+        "description": "💡 Harap sebutkan apa yang Anda jual (misal: Ayam Goreng, Toko Kelontong Indonesia) untuk membantu kami dengan verifikasi Halal.",
+        "phone": "📞 Tim kami akan menelepon Anda sebentar untuk memverifikasi identitas Anda. Tidak diperlukan dokumen ID sensitif!",
+        "ubn": "Apakah Anda memiliki Nomor Bisnis Terpadu (UBN)?",
+        "phone_warning": "Harus nomor yang valid agar tim kami dapat memverifikasi identitas Anda.",
+        "contact_note": "Setelah pengiriman, tim kami akan menghubungi Anda melalui Telepon, WhatsApp, atau LINE untuk verifikasi identitas akhir. Bisnis Halal harus Mudah dan Terpercaya!",
+        "human_verify": "Verifikasi Manusia",
+        "review": "Harap tinjau informasi Anda sebelum mengirimkan.",
+        "review_note": "Dengan mengirimkan, Anda setuju bahwa Halal Formosa akan menghubungi Anda melalui telepon untuk verifikasi identitas."
+      },
+      "success": "Aplikasi berhasil dikirim! Tim kami akan segera menghubungi Anda.",
+      "rejectedStatus": "Aplikasi Ditolak",
+      "rejectedDesc": "Sayangnya, aplikasi merchant Anda belum disetujui saat ini.",
+      "rejectionReason": "Alasan Penolakan",
+      "rejectedBanner": "Perbarui Aplikasi Anda",
+      "rejectedBannerDesc": "Aplikasi Anda sebelumnya tidak disetujui. Harap tinjau alasan di bawah dan perbarui informasi Anda sebelum mengirimkan ulang.",
+      "rejectedProfileDesc": "Aplikasi Anda tidak disetujui. Klik di bawah untuk melihat masukan dan revisi.",
+      "sectionTitle": "Toko Merchant",
+      "successTitle": "Aplikasi Dikirim!",
+      "successSubtitle": "Terima kasih telah bergabung dengan Halal Formosa.",
+      "successText": "Tim verifikasi kami akan meninjau aplikasi Anda dan menghubungi Anda melalui Telepon, WhatsApp, atau LINE untuk verifikasi identitas akhir. Bisnis Halal harus Mudah dan Terpercaya!",
+      "backToProfile": "Kembali ke Profil"
+    },
+    "products": {
+      "pricingBreakdown": "Rincian Harga",
+      "processingFee": "Biaya Pemrosesan (10%)",
+      "payoutAmount": "Anda akan menerima",
+      "payoutHint": "Jumlah ini adalah perkiraan setelah biaya pemrosesan.",
+      "halalProof": "Verifikasi Bukti Halal",
+      "halalProofHint": "Wajib untuk kategori makanan & konsumsi. Maksimal 5 gambar/dokumen.",
+      "halalProofPlaceholder": "Unggah sertifikat Halal, label bahan, atau foto toko",
+      "halalProofError": "Bukti Halal wajib dilampirkan untuk kategori makanan."
     }
   }
 }

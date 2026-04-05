@@ -16,7 +16,20 @@
     "update": "Kemas Kini",
     "add": "Tambah",
     "previous": "Sebelumnya",
-    "next": "Seterusnya"
+    "next": "Seterusnya",
+    "confirm": "Sahkan",
+    "submit": "Hantar",
+    "clear": "Padam",
+    "filter": "Penapis",
+    "reset": "Set Semula",
+    "apply": "Gunakan",
+    "details": "Butiran",
+    "reapply": "Gunakan Semula",
+    "save": "Simpan",
+    "saving": "Menyimpan...",
+    "success": "Berjaya!",
+    "error": "Ralat berlaku.",
+    "notProvided": "Tidak disediakan"
   },
   "dailyMissions": {
     "title": "Misi Harian",
@@ -120,6 +133,12 @@
       "asr": "Asar",
       "maghrib": "Maghrib",
       "isha": "Isyak"
+    },
+    "locationsCount": "Lokasi",
+    "leaderboard_popover": {
+      "pro": "Pro",
+      "productUploads": "Muat Naik Produk: {count}",
+      "locationUploads": "Muat Naik Lokasi: {count}"
     }
   },
   "scanIngredients": {
@@ -326,7 +345,10 @@
     "results": "Keputusan",
     "showingResults": "Memaparkan {count} daripada {total} lokasi",
     "details": {
-      "title": "Butiran Tempat"
+      "title": "Butiran Tempat",
+      "noticeTitle": "Butiran Pengendalian & Status",
+      "readDescriptionNotice": "Sila semak butiran pengendalian khusus di bawah untuk lokasi ini.",
+      "handlingDetails": "Butiran Pengendalian"
     },
     "viewMap": "Peta",
     "viewBoth": "Kedua-duanya",
@@ -347,7 +369,16 @@
       "Prayer Room": "Surau",
       "Attraction": "Tempat Menarik",
       "Others": "Lain-lain"
-    }
+    },
+    "specialPromo": "Gold Partner",
+    "campusFilter": "{name} Muslim-friendly Campus",
+    "campusRadiusTitle": "{name} Muslim-friendly Campus",
+    "walkingRadius": "3 km (~40 min berjalan kaki)",
+    "userLocationTitle": "Anda di sini",
+    "locating": "Mencari lokasi anda...",
+    "gettingFix": "Mendapatkan kedudukan...",
+    "searchWait": "Sila tunggu...",
+    "searchMap": "Mencari alamat di peta..."
   },
   "trip": {
     "title": "Trip Mesra Muslim",
@@ -382,7 +413,9 @@
     "darkMode": "Mod Gelap",
     "publicProfile": "Profil Awam",
     "publicProfileNote": "Nama anda akan dipaparkan di papan pendahulu dan pada kandungan yang anda sumbangkan (produk, lokasi, berita, dll.).",
-    "language": "Bahasa (Eksperimen)"
+    "language": "Bahasa (Eksperimen)",
+    "showLastSeen": "Papar Status Terakhir Aktif",
+    "showLastSeenNote": "Benarkan orang lain melihat bila anda kali terakhir aktif dalam sembang."
   },
   "profile": {
     "sections": {
@@ -429,7 +462,18 @@
       "accessUntil": "⏳ Akses sehingga",
       "manage": "Urus Langganan",
       "nativeOnly": "Langganan hanya tersedia di aplikasi mudah alih.",
-      "purchaseSuccess": "🎉 Anda kini pelanggan Halal Formosa Pro!"
+      "purchaseSuccess": "🎉 Anda kini pelanggan Halal Formosa Pro!",
+      "benefits": {
+        "title": "Kelebihan Pro:",
+        "showMore": "Lihat Lagi",
+        "showLess": "Lihat Kurang",
+        "aiExplanation": "Penerangan Ramuan AI",
+        "smartFeed": "Suapan 'Untuk Anda' Pintar",
+        "noAds": "Tiada Iklan",
+        "unlimitedCollections": "Item Koleksi Tanpa Had",
+        "unlimitedScans": "Imbasan Tanpa Had",
+        "prioritySupport": "Sokongan Utama 24/7"
+      }
     },
     "aboutMe": "Tentang Saya",
     "edit": "Edit",
@@ -471,6 +515,12 @@
       "consentContent2": "Bio saya mungkin kelihatan secara terbuka jika saya mendayakan \"Papar nama saya di papan pendahulu\".",
       "save": "Simpan",
       "completeToContinue": "Lengkapkan Profil untuk Teruskan"
+    },
+    "merchant": {
+      "startSelling": "Mula Menjual",
+      "storeSubtitle": "di Kedai Halal Formosa",
+      "pendingStatus": "Permohonan Sedang Disemak",
+      "pendingDesc": "Kami sedang mengesahkan butiran kedai anda. Tunggu panggilan tidak lama lagi!"
     }
   },
   "credits": {
@@ -685,7 +735,7 @@
     "appVersion": "Versi Aplikasi",
     "detectedHighlights": "Sorotan Terpilih",
     "reviewLocation": "Semak Lokasi",
-    "name": "Name",
+    "name": "Nama",
     "address": "Alamat",
     "description": "Penerangan",
     "type": "Jenis",
@@ -788,6 +838,70 @@
         "active": "Aktif",
         "inactive": "Tidak Aktif"
       }
+    },
+    "ingredient_highlights": "Sorotan Ramuan",
+    "location_types": "Jenis Lokasi",
+    "category_rules": "Peraturan Kategori",
+    "product": "Produk",
+    "ocrResults": "Keputusan OCR",
+    "deviceInfo": "Maklumat Peranti",
+    "reviewProductsTitle": "Semakan Produk",
+    "searchProductsPlaceholder": "Cari produk (cth. Teh)",
+    "noPendingProducts": "Tiada produk tertunda 🎉",
+    "noArchivedProducts": "Tiada produk diarkibkan",
+    "lastActive": "Terakhir aktif {time}",
+    "activities_desc": {
+      "home_page_open": "Membuka laman Utama",
+      "home_scan_ingredient": "Membuka pengimbas bahan dari Laman Utama",
+      "home_viewmore_products": "Melihat lagi produk di Laman Utama",
+      "home_open_locations": "Membuka lokasi dari Laman Utama",
+      "home_leaderboard_profile": "Melihat profil papan pendahulu: {user}",
+      "explore_page_open": "Membuka laman Teroka",
+      "explore_center_user": "Memusatkan peta ke lokasi semasa",
+      "explore_filter_category": "Menapis kategori: {category}",
+      "explore_marker_click": "Mengetuk penanda peta: {name}",
+      "explore_place_card_click": "Membuka kad tempat: {name}",
+      "explore_place_detail_open": "Membuka butiran tempat: {name}",
+      "explore_place_detail_view": "Melihat butiran tempat: {name}",
+      "explore_detail_open_image": "Melihat imej tempat: {name}",
+      "search_page_open": "Membuka laman Carian",
+      "search_product_click": "Membuka produk: {name}",
+      "search_sort_change": "Mengisih produk mengikut {sort}",
+      "search_filter_status": "Menapis produk mengikut {status}",
+      "search_filter_category": "Menapis produk mengikut {category}",
+      "product_details_open": "Melihat produk: {name}",
+      "scan_ingredients_start": "Memulakan imbasan bahan ({source})",
+      "scan_ingredients_success": "Keputusan imbasan: {product} • {status}",
+      "scan_ingredients_error": "Imbasan gagal: {error}",
+      "profile_page_open": "Membuka laman Profil",
+      "social_link_click": "Mengetuk pautan sosial ({platform})"
+    },
+    "merchant": {
+      "title": "Aplikasi Merchant",
+      "noPending": "Tiada aplikasi tertunda buat masa ini.",
+      "approve": "Sahkan",
+      "reject": "Tolak",
+      "status": {
+        "pending": "Menunggu Pengesahan",
+        "approved": "Disahkan",
+        "rejected": "Ditolak"
+      },
+      "confirmApprove": "Sahkan Kelulusan",
+      "confirmApproveMsg": "Adakah anda pasti mahu meluluskan aplikasi ini? Ini akan mencipta kedai merchant secara automatik.",
+      "confirmReject": "Tolak Aplikasi",
+      "confirmRejectMsg": "Sila berikan alasan untuk penolakan.",
+      "reasonPlaceholder": "cth. UBN atau Nombor Telefon tidak sah",
+      "reasonRequired": "Alasan diperlukan untuk penolakan",
+      "approveSuccess": "Aplikasi diluluskan! Kedai berjaya dicipta.",
+      "approveFailed": "Kelulusan gagal",
+      "rejectSuccess": "Aplikasi ditolak",
+      "rejectFailed": "Penolakan gagal",
+      "fields": {
+        "phone": "Telefon Hubungan",
+        "ubn": "UBN",
+        "address": "Alamat",
+        "description": "Penerangan"
+      }
     }
   },
   "update": {
@@ -864,7 +978,9 @@
       "nameRequired": "Nama produk diperlukan.",
       "priceRequired": "Harga diperlukan.",
       "categoryRequired": "Kategori diperlukan.",
-      "loginRequired": "Anda mesti log masuk."
+      "loginRequired": "Anda mesti log masuk.",
+      "noStoreFound": "Tiada kedai dijumpai.",
+      "contactAdmin": "Sila hubungi admin untuk menyediakan kedai anda."
     },
     "chat": {
       "title": "Sembang dengan Kedai",
@@ -875,7 +991,164 @@
       "noConversations": "Tiada perbualan lagi.",
       "aboutProduct": "Berbincang tentang produk ini",
       "today": "Hari Ini",
-      "yesterday": "Semalam"
+      "yesterday": "Semalam",
+      "online": "online",
+      "offline": "offline",
+      "activePrefix": "Aktif"
+    },
+    "admin": {
+      "products": "Urus Produk"
+    },
+    "verifiedSeller": "Penjual Disahkan",
+    "verifiedStore": "Kedai Disahkan",
+    "visitShop": "Lawat Kedai",
+    "payNow": "Bayar Sekarang",
+    "verifyingPayment": "Mengesahkan Pembayaran...",
+    "verifyingPaymentDesc": "Sila tunggu sementara kami mengesahkan pembayaran anda dengan ECPay",
+    "paymentSuccess": "Pembayaran Berjaya!",
+    "paymentSuccessDesc": "Pembayaran anda telah disahkan. Terima kasih atas pembelian anda!",
+    "paymentFailed": "Pembayaran Tidak Disahkan",
+    "paymentFailedDesc": "Kami tidak dapat mengesahkan pembayaran anda. Ia mungkin masih diproses, atau pembayaran telah dibatalkan.",
+    "tryAgain": "Cuba Lagi",
+    "status": "Status",
+    "deliveryMethod": "Kaedah Penghantaran",
+    "priceRange": "Julat Harga (NTD)",
+    "inStockOnly": "Stok Sedia Ada Sahaja",
+    "inactive": "Tidak Aktif",
+    "sellerCenter": {
+      "title": "Pusat Penjual",
+      "manageStore": "Urus Profil Kedai",
+      "manageProducts": "Urus Produk",
+      "manageOrders": "Urus Pesanan",
+      "manageMessages": "Mesej Kedai"
+    },
+    "settings": {
+      "title": "Tetapan Kedai",
+      "basicInfo": "Maklumat Asas",
+      "logistics": "Logistik & Penghantaran",
+      "deliveryHint": "Urus cara barangan anda sampai kepada pelanggan",
+      "noBanner": "Tiada Banner",
+      "bannerHint": "Nisbah disyorkan: 3:1",
+      "storeName": "Nama Kedai",
+      "storeNameZh": "Nama Kedai (Cina)",
+      "storeDescription": "Penerangan Kedai",
+      "storeDescriptionZh": "Penerangan Kedai (Cina)",
+      "storeNamePlaceholder": "Masukkan nama kedai dalam bahasa Inggeris",
+      "storeNameZhPlaceholder": "Sila masukkan nama Cina",
+      "storeDescriptionPlaceholder": "Beritahu pelanggan tentang kedai anda...",
+      "storeDescriptionZhPlaceholder": "向顧客介紹您的店鋪...",
+      "saveProfile": "Simpan Profil",
+      "deliveryMethods": {
+        "home_delivery": "Penghantaran ke Rumah",
+        "home_delivery_desc": "Terus ke alamat pelanggan",
+        "7eleven": "7-Eleven",
+        "family_mart": "FamilyMart",
+        "hi_life": "Hi-Life",
+        "ok_mart": "OK Mart",
+        "cvs_pickup": "Ambil di Kedai Serbaneka",
+        "cod_meetup": "Berjumpa Secara Peribadi",
+        "in_person": "Berjumpa secara peribadi/Tunai semasa penghantaran"
+      }
+    }
+  },
+  "master": {
+    "active": "Aktif",
+    "inactive": "Tidak Aktif",
+    "product_categories": "Kategori Produk",
+    "ingredient_highlights": "Sorotan Ramuan",
+    "location_types": "Jenis Lokasi",
+    "stores": "Kedai",
+    "category_rules": "Peraturan Kategori",
+    "published": "Diterbitkan",
+    "publishSuccess": "Lokasi berjaya diterbitkan!",
+    "hideSuccess": "Lokasi disembunyikan daripada paparan awam.",
+    "basicInfo": "Maklumat Asas",
+    "advanced": "Tetapan Lanjutan",
+    "fields": {
+      "name": "Nama",
+      "keyword": "Kata Kunci",
+      "keyword_en": "Kata Kunci (EN)",
+      "keyword_zh": "Kata Kunci (ZH)",
+      "color": "Warna",
+      "status": "Status",
+      "emoji": "Emoji",
+      "website": "Laman Web",
+      "logo_url": "URL Logo",
+      "sort_order": "Tertib Isihan",
+      "is_active": "Aktif",
+      "category": "Kategori",
+      "store_name": "Nama Kedai",
+      "active": "Aktif",
+      "inactive": "Tidak Aktif"
+    }
+  },
+  "merchantApplications": {
+    "title": "Aplikasi Merchant",
+    "approve": "Sahkan",
+    "reject": "Tolak",
+    "noPending": "Tiada aplikasi tertunda buat masa ini.",
+    "confirmApprove": "Adakah anda pasti mahu meluluskan aplikasi ini? Ini akan mencipta kedai merchant secara automatik.",
+    "rejectionReasonTitle": "Alasan Penolakan",
+    "rejectionReasonPlaceholder": "Terangkan mengapa permohonan itu ditolak...",
+    "status": {
+      "pending": "Menunggu Pengesahan",
+      "approved": "Disahkan",
+      "rejected": "Ditolak"
+    }
+  },
+  "merchant": {
+    "register": {
+      "title": "Menjadi Rakan Kongsi",
+      "subtitle": "Sertai komuniti Halal Formosa sebagai merchant",
+      "steps": {
+        "storeInfo": "Maklumat Kedai",
+        "address": "Lokasi",
+        "description": "Mengenai Kedai Anda",
+        "contact": "Pengesahan Telefon",
+        "business": "UBN Perniagaan",
+        "review": "Semakan Akhir"
+      },
+      "placeholders": {
+        "storeNameEn": "Nama Kedai (Inggeris)",
+        "storeNameZh": "Nama Kedai (Cina)",
+        "address": "Alamat Kedai / Bandar",
+        "description": "Terangkan produk dan perkhidmatan anda...",
+        "phone": "Nombor Telefon Hubungan",
+        "ubn": "Nombor Perniagaan Bersepadu (UBN 8-digit)"
+      },
+      "hints": {
+        "address": "📍 Menyediakan bandar sahaja sudah memadai buat masa ini.",
+        "description": "💡 Sila nyatakan apa yang anda jual (cth. Ayam Goreng, Barangan Runcit Indonesia) untuk membantu kami dengan pengesahan Halal.",
+        "phone": "📞 Pasukan kami akan membuat panggilan pantas kepada anda untuk mengesahkan identiti anda. Tiada dokumen ID sensitif diperlukan!",
+        "ubn": "Adakah anda mempunyai Nombor Perniagaan Bersepadu (UBN)?",
+        "phone_warning": "Mestilah nombor yang sah untuk pasukan kami mengesahkan identiti anda.",
+        "contact_note": "Selepas penyerahan, pasukan kami akan menghubungi anda melalui Panggilan, WhatsApp, atau LINE untuk pengesahan identiti terakhir. Perniagaan halal mestilah Mudah dan Dipercayai!",
+        "human_verify": "Pengesahan Manusia",
+        "review": "Sila semak maklumat anda sebelum menghantar.",
+        "review_note": "Dengan menghantar, anda bersetuju bahawa Halal Formosa akan menghubungi anda melalui telefon untuk pengesahan identiti."
+      },
+      "success": "Permohonan berjaya dihantar! Pasukan kami akan menghubungi anda tidak lama lagi.",
+      "rejectedStatus": "Permohonan Ditolak",
+      "rejectedDesc": "Malangnya, permohonan merchant anda tidak diluluskan buat masa ini.",
+      "rejectionReason": "Alasan Penolakan",
+      "rejectedBanner": "Kemas Kini Permohonan Anda",
+      "rejectedBannerDesc": "Permohonan anda sebelum ini tidak diluluskan. Sila semak alasan di bawah dan kemas kini maklumat anda sebelum menyerah semula.",
+      "rejectedProfileDesc": "Permohonan anda tidak diluluskan. Klik di bawah untuk melihat maklum balas dan semakan.",
+      "sectionTitle": "Kedai Merchant",
+      "successTitle": "Permohonan Dihantar!",
+      "successSubtitle": "Terima kasih kerana menyertai Halal Formosa.",
+      "successText": "Pasukan pengesahan kami akan menyemak permohonan anda dan menghubungi anda melalui Telefon, WhatsApp, atau LINE untuk pengesahan identiti terakhir. Perniagaan halal mestilah Mudah dan Dipercayai!",
+      "backToProfile": "Kembali ke Profil"
+    },
+    "products": {
+      "pricingBreakdown": "Pecahan Harga",
+      "processingFee": "Yuran Pemprosesan (10%)",
+      "payoutAmount": "Anda akan menerima",
+      "payoutHint": "Jumlah ini adalah anggaran selepas yuran pemprosesan.",
+      "halalProof": "Pengesahan Bukti Halal",
+      "halalProofHint": "Wajib untuk item makanan & barang guna habis. Maksimum 5 imej/dokumen.",
+      "halalProofPlaceholder": "Muat naik sijil Halal, label ramuan, atau foto kedai",
+      "halalProofError": "Bukti halal diperlukan untuk kategori makanan."
     }
   }
 }

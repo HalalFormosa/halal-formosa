@@ -79,6 +79,23 @@
               </div>
             </div>
 
+            <!-- 📢 Important Notice (Read Description) -->
+            <div
+                v-if="place.description"
+                class="description-notice-banner"
+                :class="{ 'is-muslim-friendly': isMuslimFriendly }"
+                @click="scrollToDescription"
+            >
+              <div class="notice-icon-wrapper">
+                <ion-icon :icon="isMuslimFriendly ? alertCircle : informationCircle" />
+              </div>
+              <div class="notice-text-content">
+                <div class="notice-title">{{ $t('explore.details.noticeTitle') }}</div>
+                <div class="notice-message">{{ $t('explore.details.readDescriptionNotice') }}</div>
+              </div>
+              <ion-icon :icon="chevronDown" class="notice-arrow" />
+            </div>
+
             <p v-if="place?.author?.public_profile" class="attribution-text">
               {{ $t('home.addedBy', { author: place.author.display_name }) }} - {{ fromNowToTaipei(place.created_at) }}
             </p>
@@ -145,13 +162,15 @@
 
             <!-- 📝 Description -->
             <template v-if="place.description">
-              <ion-item lines="none">
+              <ion-item lines="none" id="place-description-section">
                 <ion-icon :icon="documentTextOutline" slot="start" color="carrot"/>
 
                 <ion-label>
-                  <p class="text-sm text-gray-500">Description</p>
+                  <p class="text-sm text-gray-500">
+                    {{ isMuslimFriendly ? $t('explore.details.handlingDetails') : $t('search.details.description') }}
+                  </p>
                   <p style="white-space: pre-line;">
-                    {{ place.description }}
+                   {{ place.description }}
                   </p>
                 </ion-label>
               </ion-item>
@@ -350,6 +369,7 @@ import 'swiper/css/pagination'
 import 'swiper/css/zoom'
 import AppHeader from '@/components/AppHeader.vue'
 import {
+  alertCircle, informationCircle, chevronDown,
   alertCircleOutline, callOutline, cashOutline, chatboxEllipsesOutline,
   createOutline, documentTextOutline, logoInstagram,
   mapOutline,
@@ -718,6 +738,19 @@ const logLine = () => {
     line_id: place.value.line_id
   });
 };
+
+const isMuslimFriendly = computed(() => {
+  if (!place.value?.type) return false
+  return place.value.type.toLowerCase().includes('muslim-friendly')
+})
+
+const scrollToDescription = () => {
+  if (!place.value?.description) return
+  const el = document.getElementById('place-description-section')
+  if (el) {
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }
+}
 </script>
 
 
@@ -779,6 +812,77 @@ const logLine = () => {
   font-weight: 800;
   font-size: 1.6rem;
   line-height: 1.2;
+}
+
+/* DESCRIPTION NOTICE BANNER */
+.description-notice-banner {
+  background: rgba(234, 88, 12, 0.08); /* carrot light */
+  border: 1px solid rgba(234, 88, 12, 0.2);
+  border-radius: 12px;
+  padding: 12px;
+  margin: 16px 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.description-notice-banner:active {
+  transform: scale(0.98);
+  background: rgba(234, 88, 12, 0.15);
+}
+
+.description-notice-banner.is-muslim-friendly {
+  background: rgba(245, 158, 11, 0.1); /* warning light */
+  border-color: rgba(245, 158, 11, 0.4);
+}
+
+.description-notice-banner.is-muslim-friendly .notice-icon-wrapper {
+  background: #f59e0b;
+  color: #fff;
+}
+
+.description-notice-banner.is-muslim-friendly .notice-title {
+  color: #d97706;
+}
+
+.notice-icon-wrapper {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--ion-color-carrot);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.notice-text-content {
+  flex: 1;
+}
+
+.notice-title {
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--ion-color-carrot);
+  margin-bottom: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.notice-message {
+  font-size: 12px;
+  color: var(--ion-color-step-800);
+  line-height: 1.4;
+}
+
+.notice-arrow {
+  font-size: 20px;
+  color: var(--ion-color-medium);
+  opacity: 0.5;
 }
 
 .attribution-text {

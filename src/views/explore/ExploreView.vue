@@ -482,6 +482,7 @@ type Place = {
   partner_tier?: 'Gold' | 'Silver' | 'Bronze'
   created_at?: string
   tags?: string[]
+  description?: string | null
 }
 
 
@@ -498,6 +499,7 @@ type LocationRow = {
   partner_tier?: 'Gold' | 'Silver' | 'Bronze'
   created_at: string
   tags?: string[]
+  description?: string | null
 }
 
 // Local type for ion-content (no external import needed)
@@ -1076,6 +1078,25 @@ const buildInfoHtml = (p: Place) => {
         </div>
       ` : ''}
 
+      ${p.description ? `
+        <div
+          style="
+            font-size: 13px;
+            color: #4b5563;
+            margin-top: 8px;
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            border-top: 1px solid rgba(0,0,0,0.05);
+            padding-top: 6px;
+          "
+        >
+          ${p.description}
+        </div>
+      ` : ''}
+
       <div
         style="
           display: flex;
@@ -1227,6 +1248,7 @@ const fetchLocations = async () => {
     view_count,
     created_at,
     tags,
+    description,
     location_types(name),
     partner:partners(partner_tier)
   `)
@@ -1249,7 +1271,8 @@ const fetchLocations = async () => {
       view_count: loc.view_count ?? 0,
       partner_tier: Array.isArray(loc.partner) ? loc.partner[0]?.partner_tier : loc.partner?.partner_tier,
       created_at: loc.created_at,
-      tags: loc.tags || []
+      tags: loc.tags || [],
+      description: loc.description
     }))
   }
 

@@ -376,7 +376,10 @@
     "results": "Results",
     "showingResults": "Showing {count} from {total} locations",
     "details": {
-      "title": "Place Details"
+      "title": "Place Details",
+      "noticeTitle": "Handling & Status Details",
+      "readDescriptionNotice": "Please review the specific handling details below for this location.",
+      "handlingDetails": "Handling Details"
     },
     "viewMap": "Map",
     "viewBoth": "Both",
