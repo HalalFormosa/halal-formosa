@@ -543,9 +543,11 @@ const userMarker = ref<google.maps.marker.AdvancedMarkerElement | null>(null)
 const userArrowEl = ref<HTMLElement | null>(null)
 const {sharePlace} = useSharePlace()
 const locationTypes = ref<LocationType[]>([])
+const pendingInfoWindowPlaceId = ref<number | null>(null)
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t
 
 let hasCenteredInitially = false
+const hasAutoSelected = ref(false)
 let clusterer: MarkerClusterer | null = null
 let locationWatchId: string | null = null
 let lastStableLoc: LatLng | null = null
@@ -575,8 +577,8 @@ const startWatchingUserLocation = async () => {
     locationWatchId = await Geolocation.watchPosition(
         {
           enableHighAccuracy: true,
-          maximumAge: 1000,   // reuse recent GPS
-          timeout: 10000
+          maximumAge: 5000, 
+          timeout: 30000 
         },
         (pos, err) => {
           if (err || !pos) {
@@ -591,7 +593,7 @@ const startWatchingUserLocation = async () => {
 
           userLocation.value = userLoc
 
-          // 🔥 CENTER MAP ON FIRST GPS FIX ONLY
+          // 🔥 CENTER MAP ON FIRST GPS FIX
           if (!hasCenteredInitially && mapInstance) {
             setTimeout(() => {
               mapInstance?.panTo(userLoc)
@@ -990,21 +992,9 @@ const carrotRippleClusterRenderer: Renderer = {
     div.style.height = "40px"
     div.style.fontSize = "14px"
     div.style.fontWeight = "bold"
-    div.style.boxShadow = "0 0 0 8px rgba(255, 87, 34, 0.5)" // soft ripple glow
+    div.style.boxShadow = "0 3px 6px rgba(0,0,0,0.2)"
     div.style.transition = "transform 0.3s ease"
     div.textContent = String(count)
-
-    // Animate ripple
-    div.animate(
-        [
-          {boxShadow: "0 0 0 0 rgba(255, 87, 34, 0.4)"},
-          {boxShadow: "0 0 0 12px rgba(255, 87, 34, 0)"}
-        ],
-        {
-          duration: 1500,
-          iterations: Infinity
-        }
-    )
 
     return new google.maps.marker.AdvancedMarkerElement({
       position,
@@ -1189,7 +1179,7 @@ const applyInfoWindowDarkClass = () => {
 const asEl = (node: unknown): HTMLElement | null => {
   if (!node) return null
   const maybeCmp = node as { $el?: Element }
-  return ((maybeCmp && '$el' in maybeCmp && maybeCmp.$el) ? maybeCmp.$el : (node as Element)) as HTMLElement
+  return ((maybeCmp && '$el' in maybeCmp && (maybeCmp.$el as unknown)) ? maybeCmp.$el : (node as Element)) as HTMLElement
 }
 
 const scrollCardIntoView = async (id: number) => {
@@ -1369,6 +1359,16 @@ const initMap = async () => {
   })
 
   infoWindow = new google.maps.InfoWindow()
+  
+  // ✅ Debounced idle listener (150ms) to prevent spamming updates
+  let idleTimeout: any = null;
+  mapInstance.addListener('idle', () => {
+    if (idleTimeout) clearTimeout(idleTimeout);
+    idleTimeout = setTimeout(() => {
+      initMarkers(sortedLocations.value);
+    }, 150);
+  });
+
   loading.value = false
 }
 
@@ -1451,73 +1451,111 @@ function updateCampusCircle() {
 }
 
 
-const initMarkers = (places: Place[] = locations.value) => {
+const markerCache = new Map<number, google.maps.marker.AdvancedMarkerElement>()
+
+const initMarkers = (places: Place[] = sortedLocations.value) => {
   if (!mapInstance || !advancedMarkerLib) return
 
-  // clear old markers
-  markerMap.forEach(m => m.map = null)
-  markerMap.clear()
+  // 1. Get Viewport Bounds with Buffer
+  const bounds = mapInstance.getBounds();
+  let visiblePlaces = places;
+  
+  if (bounds) {
+    const ne = bounds.getNorthEast();
+    const sw = bounds.getSouthWest();
+    const latDiff = Math.abs(ne.lat() - sw.lat());
+    const lngDiff = Math.abs(ne.lng() - sw.lng());
+    const buffer = 0.25; // 25% buffer
 
-  // clear previous cluster
-  if (clusterer) {
-    clusterer.clearMarkers()
-    clusterer.setMap(null)
-    clusterer = null
+    const extendedBounds = new google.maps.LatLngBounds(
+      { lat: sw.lat() - latDiff * buffer, lng: sw.lng() - lngDiff * buffer },
+      { lat: ne.lat() + latDiff * buffer, lng: ne.lng() + lngDiff * buffer }
+    );
+
+    visiblePlaces = places.filter(p => extendedBounds.contains(p.position));
   }
 
-  const markerArray: google.maps.marker.AdvancedMarkerElement[] = []
+  // 2. Marker Recycling Logic
+  const newMarkerArray: google.maps.marker.AdvancedMarkerElement[] = []
+  const visibleIds = new Set(visiblePlaces.map(p => p.id));
 
-  places.forEach((loc) => {
-    const iconHTML = createPinElement(loc)
+  // Remove markers no longer in viewport from the map (but keep in cache)
+  markerMap.forEach((marker, id) => {
+    if (!visibleIds.has(id)) {
+      marker.map = null;
+      markerMap.delete(id);
+    }
+  });
 
-    const marker = new advancedMarkerLib!.AdvancedMarkerElement({
-      position: loc.position,
-      content: iconHTML,
-      title: `${loc.type}: ${loc.name}`
-    })
+  visiblePlaces.forEach((loc) => {
+    let marker = markerCache.get(loc.id);
 
-    marker.addListener('click', () => {
-      ActivityLogService.log("explore_marker_click", {
-        id: loc.id,
-        name: loc.name,
-        type: loc.type,
-        lat: loc.position.lat,
-        lng: loc.position.lng
+    if (!marker) {
+      // Create only if not in cache
+      const iconHTML = createPinElement(loc);
+      marker = new advancedMarkerLib!.AdvancedMarkerElement({
+        position: loc.position,
+        content: iconHTML,
+        title: `${loc.type}: ${loc.name}`
       });
 
-      if (searchQuery.value && !loc.name.toLowerCase().includes(searchQuery.value.toLowerCase())) {
-        searchQuery.value = ''
-      }
-      selectPlace(loc)
-    })
+      marker.addListener('click', () => {
+        ActivityLogService.log("explore_marker_click", {
+          id: loc.id,
+          name: loc.name,
+          type: loc.type,
+          lat: loc.position.lat,
+          lng: loc.position.lng
+        });
+        if (searchQuery.value && !loc.name.toLowerCase().includes(searchQuery.value.toLowerCase())) {
+          searchQuery.value = '';
+        }
+        selectPlace(loc);
+      });
 
-    markerMap.set(loc.id, marker)
-    markerArray.push(marker)
-  })
+      markerCache.set(loc.id, marker);
+    }
 
-  // ✅ Always use clustering
-  clusterer = new MarkerClusterer({
-    map: mapInstance!,
-    markers: markerArray,
-    renderer: carrotRippleClusterRenderer,
-    algorithm: new SuperClusterAlgorithm({radius: 80})
-  })
+    markerMap.set(loc.id, marker);
+    newMarkerArray.push(marker);
 
-  // ✅ fit bounds if filtered
+    // ✅ CHECK FOR PENDING INFO WINDOW (Reliability fix)
+    if (loc.id === pendingInfoWindowPlaceId.value && infoWindow) {
+      infoWindow.setContent(buildInfoHtml(loc));
+      infoWindow.open(mapInstance, marker);
+      setTimeout(applyInfoWindowDarkClass, 50);
+      pendingInfoWindowPlaceId.value = null;
+    }
+  });
+
+  // 3. Update Clusterer (Reuse instance if possible)
+  if (!clusterer) {
+    clusterer = new MarkerClusterer({
+      map: mapInstance,
+      markers: newMarkerArray,
+      renderer: carrotRippleClusterRenderer,
+      algorithm: new SuperClusterAlgorithm({ radius: 80 })
+    });
+  } else {
+    clusterer.clearMarkers();
+    clusterer.addMarkers(newMarkerArray);
+  }
+
+  // 4. Fit bounds ONLY IF specifically filtered by user (tag/category/search)
   const isFiltered = activeCategoryIds.value.length > 0 || !!activeTag.value || !!searchQuery.value.trim()
-  if (isFiltered && markerArray.length > 0) {
-    const bounds = new google.maps.LatLngBounds()
-    markerArray.forEach(m => {
-      if (m.position) bounds.extend(m.position)
-    })
-    mapInstance!.fitBounds(bounds)
+  if (isFiltered && visiblePlaces.length > 0 && !hasCenteredInitiallyVisible) {
+    const fitBounds = new google.maps.LatLngBounds()
+    visiblePlaces.forEach(p => fitBounds.extend(p.position))
+    mapInstance.fitBounds(fitBounds)
 
-    // if only 1-2 points, zoom out a bit so it's not super close
-    google.maps.event.addListenerOnce(mapInstance!, 'idle', () => {
+    google.maps.event.addListenerOnce(mapInstance, 'idle', () => {
       if (mapInstance!.getZoom()! > 17) mapInstance!.setZoom(17)
-    })
+    });
+    hasCenteredInitiallyVisible = true;
   }
 }
+
+let hasCenteredInitiallyVisible = false;
 
 // Final centerOnUser trigger or modal resize logic
 // viewMode was removed, so we only need resize logic if general state change occurs, 
@@ -1592,46 +1630,63 @@ const selectPlace = (place: Place) => {
         })
       }
     }, 50)
+  } else if (infoWindow) {
+    // 🔥 Marker not in DOM yet (off-screen)? 
+    // Set pending and let initMarkers pick it up after the pan
+    pendingInfoWindowPlaceId.value = place.id
   }
 }
 
 const initCardObserver = () => {
   if (!contentRef.value) return
-  if (cardObserver) cardObserver.disconnect()
+  
+  // ✅ Check if root has changed (e.g. viewMode toggled)
+  const currentRoot = (contentRef.value as HTMLElement)
+  if (cardObserver && (cardObserver as any).root !== currentRoot) {
+    cardObserver.disconnect()
+    cardObserver = null
+  }
 
-  cardObserver = new IntersectionObserver((entries) => {
-    if (isProgrammaticScroll) return
-    
-    entries.forEach(entry => {
-      if (entry.isIntersecting && entry.intersectionRatio >= 0.6) {
-        const id = Number(entry.target.getAttribute('data-id'))
-        const p = locations.value.find(l => l.id === id)
-        if (p && selectedPlace.value?.id !== p.id) {
-          // Sync selective metadata but don't recursive scroll
-          selectedPlace.value = p
-          if (mapInstance) {
-             const currentZoom = mapInstance.getZoom() || 14
-             const latOffset = 100 * 360 / (256 * Math.pow(2, currentZoom))
-             mapInstance.panTo({
-               lat: p.position.lat + latOffset,
-               lng: p.position.lng
-             })
-             const m = markerMap.get(p.id)
-             if (m && infoWindow) {
-               infoWindow.setContent(buildInfoHtml(p))
-               infoWindow.open(mapInstance, m)
-               setTimeout(applyInfoWindowDarkClass, 50)
-             }
+  if (!cardObserver) {
+    cardObserver = new IntersectionObserver((entries) => {
+      if (isProgrammaticScroll) return
+      
+      entries.forEach(entry => {
+        if (entry.isIntersecting && entry.intersectionRatio >= 0.5) {
+          const id = Number(entry.target.getAttribute('data-id'))
+          const p = locations.value.find(l => l.id === id)
+          
+          if (p && selectedPlace.value?.id !== p.id) {
+            selectedPlace.value = p
+            
+            // Throttle map pans
+            requestAnimationFrame(() => {
+              if (mapInstance && selectedPlace.value?.id === p.id) {
+                 const currentZoom = mapInstance.getZoom() || 14
+                 const latOffset = 100 * 360 / (256 * Math.pow(2, currentZoom))
+                 mapInstance.panTo({ lat: p.position.lat + latOffset, lng: p.position.lng });
+                 
+                 const m = markerMap.get(p.id)
+                 if (m && infoWindow) {
+                   infoWindow.setContent(buildInfoHtml(p))
+                   infoWindow.open(mapInstance, m)
+                   setTimeout(applyInfoWindowDarkClass, 50)
+                 } else {
+                   // 🔥 Marker recycled or off-screen? Set pending for initMarkers
+                   pendingInfoWindowPlaceId.value = p.id
+                 }
+              }
+            })
           }
         }
-      }
+      })
+    }, {
+      root: currentRoot,
+      threshold: 0.5
     })
-  }, {
-    root: contentRef.value,
-    threshold: 0.6
-  })
+  }
 
-  // Observe all current cards
+  // ✅ Re-observe cards
   nextTick(() => {
     const cards = (contentRef.value as HTMLElement)?.querySelectorAll('.modern-location-card')
     cards?.forEach(c => cardObserver?.observe(c))
@@ -1728,14 +1783,7 @@ const sortedLocations = computed(() => {
   });
 
   if (sortBy.value === 'nearest') {
-    const PROMOTION_RADIUS_KM = 30;
-    mapped.sort((a, b) => {
-      const aGold = a.partner_tier?.toLowerCase() === 'gold' && a.distance <= PROMOTION_RADIUS_KM;
-      const bGold = b.partner_tier?.toLowerCase() === 'gold' && b.distance <= PROMOTION_RADIUS_KM;
-      if (aGold && !bGold) return -1;
-      if (!aGold && bGold) return 1;
-      return a.distance - b.distance;
-    });
+    mapped.sort((a, b) => a.distance - b.distance);
   } else if (sortBy.value === 'recent') {
     mapped.sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
   } else if (sortBy.value === 'popular') {
@@ -1754,19 +1802,41 @@ const sortedLocations = computed(() => {
   return mapped;
 })
 
-watch(sortedLocations, (filtered) => {
-  initMarkers(filtered)
+// ✅ Watch for actual changes in the FILTERED set of locations
+const filteredIdsHash = computed(() => {
+  return sortedLocations.value.map(l => l.id).join(',');
+});
+
+watch(filteredIdsHash, () => {
+  hasCenteredInitiallyVisible = false; // allow re-fitting if filter changes
+  initMarkers(sortedLocations.value)
 })
+
+// ✅ CONSOLIDATED AUTO-SELECT WATCHER
+watch([() => sortedLocations.value.length, userLocation, loading], ([count, loc, isLoading]) => {
+  if (count > 0 && loc && !isLoading && !hasAutoSelected.value && !selectedPlace.value) {
+    // Select the first item once everything (Map, GPS, Data) is ready
+    selectPlace(sortedLocations.value[0]);
+    hasAutoSelected.value = true;
+  }
+}, { immediate: true });
 
 watch(activeTag, () => {
   updateCampusCircle()
 })
 
-watch(displayedLocations, () => {
+// ✅ Only re-init observer if IDs change (ignoring simple re-ordering)
+const displayedIdsSet = computed(() => {
+  const ids = displayedLocations.value.map(l => l.id);
+  ids.sort((a, b) => a - b);
+  return ids.join(',');
+});
+
+watch(displayedIdsSet, () => {
   if (viewMode.value === 'map') {
     initCardObserver()
   }
-}, { deep: true })
+})
 
 watch(viewMode, (mode) => {
   if (mode === 'map') {
@@ -1827,6 +1897,9 @@ let firstEnter = true
 
 onIonViewWillEnter(async () => {
   isPageActive.value = true
+  hasAutoSelected.value = false; // allow re-highlighting when returning
+  hasCenteredInitiallyVisible = false;
+  
   if (firstEnter) {
     firstEnter = false
     return
@@ -2025,11 +2098,21 @@ button.gm-ui-hover-effect > span {
   background: var(--ion-color-carrot);
   border-radius: 50%;
   border: 4px solid white;
-  box-shadow: 0 0 0 4px rgba(66, 133, 244, 0.3);
-  animation: pulse 1.5s infinite;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  border: 4px solid white;
+  z-index: 10;
+  will-change: transform;
+}
+
+.user-location-dot::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  background: var(--ion-color-carrot);
+  border-radius: 50%;
+  z-index: -1;
+  opacity: 0.4;
+  animation: pulse-gpu 2s infinite ease-out;
+  will-change: transform, opacity;
 }
 
 .user-heading-cone {
@@ -2071,12 +2154,14 @@ button.gm-ui-hover-effect > span {
   display: none; /* Keep it clean for now */
 }
 
-@keyframes pulse {
+@keyframes pulse-gpu {
   0% {
-    box-shadow: 0 0 0 0 rgba(216, 98, 13, 0.4);
+    transform: scale(1);
+    opacity: 0.6;
   }
   100% {
-    box-shadow: 0 0 0 10px rgba(66, 133, 244, 0);
+    transform: scale(2.5);
+    opacity: 0;
   }
 }
 
@@ -2682,7 +2767,7 @@ button.gm-ui-hover-effect > span {
   bottom: 0;
   z-index: 800;
   background: var(--ion-background-color);
-  padding-top: 140px; /* Below search/filters */
+  padding-top: 210px; /* Increased to accommodate double-row header (search + chips) */
   overflow-y: auto;
 }
 
