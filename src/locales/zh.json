@@ -143,6 +143,12 @@
       "syubhah": "疑似",
       "haram": "非清真"
     },
+    "latestContents": "最新內容",
+    "followUs": "關注我們",
+    "mediaPartnerContent": "媒體合作夥伴內容",
+    "mediaPartnerDesc": "來自我們認證媒體合作夥伴的真實清真體驗",
+    "mediaPartner": "媒體合作夥伴",
+    "noReels": "找不到最新內容。",
     "leaderboard": "排行榜",
     "prayerNotification": "{label} 禮拜時間在 {time}",
     "currentLocation": "目前位置",

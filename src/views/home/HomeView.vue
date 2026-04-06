@@ -489,6 +489,9 @@
         </ion-card-content>
       </ion-card>
 
+      <!-- === Community Buzz (Instagram & TikTok) === -->
+      <CommunityReels :reels="instagramReels" :loading="loadingReels" mode="home" />
+
       <!-- === Latest News === -->
       <ion-card>
         <ion-card-header>
@@ -785,7 +788,31 @@ import { useLocation, type LatLng } from '@/composables/useLocation'
 
 const { userLocation: sharedLocation, startWatching } = useLocation()
 
+/* ---------------- Instagram Reels ---------------- */
+const instagramReels = ref<any[]>([])
+const loadingReels = ref(true)
+
+const fetchInstagramReels = async () => {
+  loadingReels.value = true
+  try {
+    const { data, error } = await supabase
+      .from('instagram_posts')
+      .select('*')
+      .order('timestamp', { ascending: false })
+      .limit(10)
+
+    if (error) throw error
+    instagramReels.value = data || []
+  } catch (err) {
+    console.error('Error fetching instagram reels:', err)
+  } finally {
+    loadingReels.value = false
+  }
+}
+
 let timeInterval: number | null = null
+
+import CommunityReels from "@/components/CommunityReels.vue"
 
 const selectedUser = ref<any | null>(null)
 const popoverEvent = ref<Event | null>(null)
@@ -1604,6 +1631,7 @@ async function refreshAllData() {
     fetchRecentProducts(),
     fetchRecentLocations(),
     fetchRecentNews(),
+    fetchInstagramReels(),
     fetchLeaderboard(),
     fetchHomePartners(),
     fetchTrips(),

@@ -79,6 +79,13 @@
               </div>
             </div>
 
+            <!-- 🏷️ Location Tags -->
+            <div v-if="place.tags?.length" class="hashtag-row">
+              <span v-for="tag in place.tags" :key="tag" class="location-hashtag">
+                #{{ tag }}
+              </span>
+            </div>
+
             <!-- 📢 Important Notice (Read Description) -->
             <div
                 v-if="place.description"
@@ -426,6 +433,7 @@ type PlaceDetail = {
   } | null;
   partner_tier?: 'Gold' | 'Silver' | 'Bronze' | null;
   approved?: boolean;
+  tags?: string[] | null;
 }
 
 type LocationCertification = {
@@ -522,6 +530,7 @@ const loadPlace = async () => {
     opening_hours,
     created_at,
     approved,
+    tags,
     location_types(name),
     partner:partners(partner_tier)
   `)
@@ -556,6 +565,7 @@ const loadPlace = async () => {
       approved: data.approved,
       author: null,
       location_types: locationType ?? null,
+      tags: data.tags ?? [],
       partner_tier: Array.isArray(data.partner) ? data.partner[0]?.partner_tier : (data.partner as any)?.partner_tier
     }
 
@@ -941,6 +951,27 @@ const scrollToDescription = () => {
   font-weight: 700;
   font-size: 10px;
   letter-spacing: 0.5px;
+}
+
+.hashtag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.location-hashtag {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ion-color-carrot);
+  opacity: 0.8;
+  transition: opacity 0.2s ease;
+  cursor: pointer;
+}
+
+.location-hashtag:hover {
+  opacity: 1;
+  text-decoration: underline;
 }
 
 .tier-gold .official-verified-tag {
