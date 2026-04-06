@@ -53,10 +53,11 @@
           <!-- Video Thumbnail -->
           <div class="reel-thumbnail-container">
             <img 
-              :src="reel.thumbnail_url" 
+              :src="reel.thumbnail_url || reel.media_url" 
               class="discover-img reel-img" 
               loading="lazy"
               alt="Reel thumbnail"
+              @error="handleImageError"
             />
             <div class="reel-overlay">
               <ion-icon :icon="playCircleOutline" class="play-icon" />
@@ -110,6 +111,22 @@ const props = defineProps<{
   loading?: boolean
   mode?: 'place' | 'home'
 }>()
+
+const emit = defineEmits(['refresh-needed'])
+
+const handleImageError = (event: Event) => {
+  const target = event.target as HTMLImageElement
+  if (target) {
+    // 1. Instantly swap to branded fallback
+    target.src = '/logo-raw/logo.png'
+    target.style.objectFit = 'contain'
+    target.style.padding = '20px'
+    target.style.background = 'var(--ion-color-step-50)'
+    
+    // 2. Notify parent to trigger a background database refresh
+    emit('refresh-needed')
+  }
+}
 
 const openReel = (reel: Reel) => {
   ActivityLogService.log(

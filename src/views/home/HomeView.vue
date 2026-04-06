@@ -490,7 +490,12 @@
       </ion-card>
 
       <!-- === Community Buzz (Instagram & TikTok) === -->
-      <CommunityReels :reels="instagramReels" :loading="loadingReels" mode="home" />
+      <CommunityReels 
+        :reels="instagramReels" 
+        :loading="loadingReels" 
+        mode="home" 
+        @refresh-needed="handleInstagramRefreshNeeded"
+      />
 
       <!-- === Latest News === -->
       <ion-card>
@@ -807,6 +812,39 @@ const fetchInstagramReels = async () => {
     console.error('Error fetching instagram reels:', err)
   } finally {
     loadingReels.value = false
+  }
+}
+
+// 🔄 Auto-Refresh Logic for Instagram
+const isRefreshingInstagram = ref(false)
+const lastRefreshTime = ref(0)
+const REFRESH_THROTTLE = 1000 * 60 * 30 // 30 minutes throttle
+
+async function handleInstagramRefreshNeeded() {
+  const now = Date.now()
+  
+  // 🏎️ Throttle: Don't refresh more than once every 30 mins
+  if (isRefreshingInstagram.value || (now - lastRefreshTime.value < REFRESH_THROTTLE)) {
+    return
+  }
+
+  isRefreshingInstagram.value = true
+  console.log('[Home] Instagram links expired. Triggering background refresh...')
+
+  try {
+    // 🌐 Call the Edge Function to refresh database links from Meta
+    const { error } = await supabase.functions.invoke('fetch-instagram')
+    
+    if (!error) {
+      lastRefreshTime.value = Date.now()
+      // 📥 Re-fetch the database data to get the new URLs
+      await fetchInstagramReels()
+      console.log('[Home] Instagram refresh complete.')
+    }
+  } catch (err) {
+    console.error('[Home] Failed to refresh Instagram links:', err)
+  } finally {
+    isRefreshingInstagram.value = false
   }
 }
 
