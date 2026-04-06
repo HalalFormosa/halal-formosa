@@ -2853,7 +2853,7 @@ button.gm-ui-hover-effect > span {
   bottom: 0;
   z-index: 800;
   background: var(--ion-background-color);
-  padding-top: 210px; /* Increased to accommodate double-row header (search + chips) */
+  padding-top: 190px; /* Increased to accommodate double-row header (search + chips) */
   overflow-y: auto;
 }
 

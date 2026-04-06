@@ -250,6 +250,7 @@
     "officialPartner": "MITRA RESMI",
     "filtersLabel": "Filter",
     "filters": {
+      "title": "Filter",
       "stores": "Toko",
       "categories": "Kategori",
       "statuses": "Status"
@@ -751,8 +752,6 @@
     "daily": "Harian",
     "weekly": "Mingguan",
     "monthly": "Bulanan",
-    "locationReports": "Laporan Lokasi",
-    "productReports": "Laporan Produk",
     "noReports": "Tidak ada laporan ditemukan",
     "reportDetail": "Detail Laporan",
     "reporter": "Pelapor",
@@ -767,8 +766,6 @@
     },
     "masterData": "Data Master",
     "productCategories": "Kategori Produk",
-    "ingredientHighlights": "Sorotan Bahan",
-    "locationTypes": "Jenis Lokasi",
     "stores": "Toko",
     "categoryRules": "Aturan Kategori",
     "verifiedPartner": "Mitra Resmi Terverifikasi",

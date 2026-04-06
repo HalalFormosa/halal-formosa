@@ -281,6 +281,7 @@
     "officialPartner": "OFFICIAL PARTNER",
     "filtersLabel": "Filters",
     "filters": {
+      "title": "Filters",
       "stores": "Stores",
       "categories": "Categories",
       "statuses": "Statuses"

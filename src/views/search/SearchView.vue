@@ -86,7 +86,9 @@
             <!-- 🌪️ Filter Toggle -->
             <ion-button fill="clear" @click="toggleFilters" class="classic-action-btn">
               <ion-icon :icon="funnelOutline" />
-              <div v-if="hasActiveFilters" class="badge-dot"></div>
+              <div v-if="activeFiltersCount > 0" class="badge-dot">
+                <span class="badge-count">{{ activeFiltersCount }}</span>
+              </div>
             </ion-button>
           </div>
         </div>
@@ -106,110 +108,70 @@
           </div>
         </ion-toolbar>
       </transition>
-      <!-- Filter Section (Still inside header, below search if open) -->
+      <!-- Filter Section (Desktop: Toolbar expansion) -->
       <transition name="collapse">
-        <ion-toolbar v-show="showFilters" class="filter-toolbar">
+        <ion-toolbar v-show="showFilters && !isSmallScreen" class="filter-toolbar">
           <div class="filter-section">
-            <!-- Stores -->
-            <div class="filter-group">
-              <div class="filter-title">
-                <ion-icon :icon="storefrontOutline"/>
-                {{ $t('search.filters.stores') }}
-              </div>
-              <div class="store-scroll">
-                <template v-if="loadingStores">
-                  <ion-skeleton-text
-                      v-for="n in 10"
-                      :key="'store-skeleton-' + n"
-                      animated
-                      class="skeleton-store"
-                  />
-                </template>
-                <template v-else>
-                  <StoreLogoBar
-                      :stores="stores"
-                      mode="filter"
-                      v-model:activeStores="activeStores"
-                  />
-                </template>
-              </div>
-            </div>
-
-            <!-- Categories -->
-            <div class="filter-group">
-              <div class="filter-title">
-                <ion-icon :icon="pricetagsOutline"/>
-                {{ $t('search.filters.categories') }}
-              </div>
-              <div class="category-bar">
-                <template v-if="loadingCategories">
-                  <ion-skeleton-text
-                      v-for="n in 4"
-                      :key="'cat-skeleton-' + n"
-                      animated
-                      style="width: 100px; height: 28px; border-radius: 100px; margin-right: 8px;"
-                  />
-                </template>
-                <template v-else>
-                  <ion-chip
-                      v-for="cat in categories"
-                      :key="cat.id"
-                      class="modern-category-chip"
-                      :class="{ active: activeCategories.some(c => c.id === cat.id) }"
-                      :style="{ 
-                        '--cat-color': 'var(--ion-color-carrot)',
-                        '--cat-contrast': 'var(--ion-color-carrot-contrast)',
-                        '--cat-bg': activeCategories.some(c => c.id === cat.id) ? 'var(--ion-color-carrot)' : 'transparent'
-                      }"
-                      @click="toggleCategory(cat)"
-                  >
-                    <span class="category-emoji">{{ categoryIcons[cat.name] || '📦' }}</span>
-                    <ion-label>{{ $te('search.categoriesList.' + cat.name) ? $t('search.categoriesList.' + cat.name) : cat.name }}</ion-label>
-                  </ion-chip>
-                </template>
-              </div>
-            </div>
-
-            <!-- Status Filter -->
-            <div class="filter-group">
-              <div class="filter-title">
-                <ion-icon :icon="shieldCheckmarkOutline"/>
-                {{ $t('search.filters.statuses') }}
-              </div>
-              <div class="category-bar">
-                <ion-chip
-                    v-for="status in statuses"
-                    :key="status.key"
-                    class="modern-category-chip"
-                    :class="{ active: activeStatuses.includes(status.key) }"
-                    :style="{ 
-                      '--cat-color': `var(--ion-color-${STATUS_COLOR_MAP[status.key]})`,
-                      '--cat-contrast': `var(--ion-color-${STATUS_COLOR_MAP[status.key]}-contrast)`,
-                      '--cat-bg': activeStatuses.includes(status.key) ? `var(--ion-color-${STATUS_COLOR_MAP[status.key]})` : 'transparent'
-                    }"
-                    @click="toggleStatus(status.key)"
-                >
-                  <span class="category-emoji">{{ status.emoji }}</span>
-                  <ion-label>
-                    {{ $t(`search.status.${status.key}`) }}
-                  </ion-label>
-                </ion-chip>
-              </div>
-            </div>
-
-            <!-- 🔥 Clear Filters -->
-            <div class="filter-clear-row">
-              <ion-chip
-                  v-if="hasActiveFilters"
-                  class="clear-chip"
-                  @click="clearAllFilters"
-              >
-                {{ $t('search.clear') }}
-              </ion-chip>
-            </div>
+            <FilterContent
+                :loadingStores="loadingStores"
+                :stores="stores"
+                v-model:activeStores="activeStores"
+                :loadingCategories="loadingCategories"
+                :categories="categories"
+                :activeCategories="activeCategories"
+                @toggleCategory="toggleCategory"
+                :statuses="statuses"
+                :activeStatuses="activeStatuses"
+                @toggleStatus="toggleStatus"
+                :hasActiveFilters="hasActiveFilters"
+                @clearAllFilters="clearAllFilters"
+                :categoryIcons="categoryIcons"
+                :STATUS_COLOR_MAP="STATUS_COLOR_MAP"
+            />
           </div>
         </ion-toolbar>
       </transition>
+
+      <!-- Filter Section (Mobile: Bottom Sheet Modal) -->
+      <ion-modal
+          :is-open="isFilterModalOpen"
+          @didDismiss="isFilterModalOpen = false"
+          :initial-breakpoint="0.7"
+          :breakpoints="[0, 0.7, 0.9]"
+          handle-behavior="cycle"
+          class="filter-modal"
+      >
+        <ion-header>
+          <ion-toolbar>
+            <ion-title>{{ $t('search.filters.title') }}</ion-title>
+            <ion-buttons slot="end">
+              <ion-button @click="isFilterModalOpen = false" color="carrot" style="font-weight: 700;">
+                {{ $t('common.ok') }}
+              </ion-button>
+            </ion-buttons>
+          </ion-toolbar>
+        </ion-header>
+        <ion-content class="ion-padding filter-modal-content">
+          <FilterContent
+              :loadingStores="loadingStores"
+              :stores="stores"
+              v-model:activeStores="activeStores"
+              :loadingCategories="loadingCategories"
+              :categories="categories"
+              :activeCategories="activeCategories"
+              @toggleCategory="toggleCategory"
+              :statuses="statuses"
+              :activeStatuses="activeStatuses"
+              @toggleStatus="toggleStatus"
+              :hasActiveFilters="hasActiveFilters"
+              @clearAllFilters="clearAllFilters"
+              :categoryIcons="categoryIcons"
+              :STATUS_COLOR_MAP="STATUS_COLOR_MAP"
+          />
+          
+          <div class="modal-footer-gap"></div>
+        </ion-content>
+      </ion-modal>
 
     </ion-header>
     <ion-content ref="contentRef">
@@ -504,9 +466,9 @@ import {
   IonInfiniteScroll, IonInfiniteScrollContent, IonRefresher, IonRefresherContent,
   IonSkeletonText, IonThumbnail, IonCard, IonCardContent,
   onIonViewDidEnter, IonLabel, IonFab, IonFabButton, onIonViewWillEnter, IonList, IonItem,
-  toastController
+  toastController, IonTitle, IonButtons
 } from '@ionic/vue'
-import { ref, onMounted, nextTick, watch, computed } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick, watch, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter, useRoute } from 'vue-router'
 import {supabase} from '@/plugins/supabaseClient'
@@ -538,6 +500,8 @@ import timezone from 'dayjs/plugin/timezone'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import AppHeader from '@/components/AppHeader.vue'
+import FilterContent from '@/components/FilterContent.vue'
+
 
 import StoreLogoBar from "@/components/StoreLogoBar.vue";
 import {ActivityLogService} from "@/services/ActivityLogService";
@@ -638,6 +602,25 @@ const activeStores = ref<{ id: string; name: string }[]>([])
 const loadingStores = ref(true)
 const showFilters = ref(false)
 const showSearchbar = ref(false)
+const isFilterModalOpen = ref(false)
+const isSmallScreen = ref(window.innerWidth < 768)
+
+function updateScreenSize() {
+  isSmallScreen.value = window.innerWidth < 768
+  if (!isSmallScreen.value) {
+    isFilterModalOpen.value = false
+  } else {
+    showFilters.value = false
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('resize', updateScreenSize)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', updateScreenSize)
+})
 
 
 const statuses = [
@@ -661,8 +644,16 @@ function toggleViewMode() {
   Haptics.impact({ style: ImpactStyle.Light })
 }
 
+const activeFiltersCount = computed(() => {
+  return activeStores.value.length + activeCategories.value.length + activeStatuses.value.length
+})
+
 function toggleFilters() {
-  showFilters.value = !showFilters.value
+  if (isSmallScreen.value) {
+    isFilterModalOpen.value = !isFilterModalOpen.value
+  } else {
+    showFilters.value = !showFilters.value
+  }
 }
 
 type HTMLIonContentElement = HTMLElement & {
@@ -1963,13 +1954,23 @@ ion-searchbar.rounded {
 
 .badge-dot {
   position: absolute;
-  top: 10px;
-  right: 8px;
-  width: 8px;
-  height: 8px;
+  top: 6px;
+  right: 4px;
+  min-width: 18px;
+  height: 18px;
   background: var(--ion-color-carrot);
-  border-radius: 50%;
+  border-radius: 10px;
   border: 2px solid var(--ion-background-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+}
+
+.badge-count {
+  color: #000;
+  font-size: 10px;
+  font-weight: 800;
 }
 
 .search-container {
@@ -2052,33 +2053,12 @@ ion-header {
   margin: 4px 0 0;
 }
 
-/* =========================
-   MODERN CATEGORY CHIPS
-========================= */
-.category-bar {
-  display: flex;
-  gap: 12px;
-  overflow-x: auto;
-  padding: 0 16px 8px;
+.filter-modal-content {
+  --background: var(--ion-background-color);
 }
 
-ion-chip.modern-category-chip {
-  --cat-color: var(--ion-color-dark);
-  --cat-bg: var(--ion-background-color);
-  background: var(--cat-bg);
-  color: var(--cat-color);
-  height: 38px;
-  border-radius: 100px !important;
-  --border-radius: 100px !important;
-  padding: 0 16px;
-  border: 1.5px solid var(--cat-color);
-  font-weight: 700;
-  font-size: 0.82rem;
-  transition: all 0.2s ease;
-  margin: 0;
-  flex-shrink: 0;
-  width: auto;
-  overflow: hidden;
+.modal-footer-gap {
+  height: 40px;
 }
 
 .ion-palette-dark .modern-category-chip {

@@ -49,9 +49,9 @@
             </ion-button>
 
             <!-- Filter Toggle -->
-            <ion-button fill="clear" @click="showFilters = !showFilters" class="classic-action-btn">
+            <ion-button fill="clear" @click="toggleFilters" class="classic-action-btn">
               <ion-icon :icon="funnelOutline" />
-              <div v-if="hasActiveFilters" class="badge-dot"></div>
+              <div v-if="activeFiltersCount > 0" class="badge-count">{{ activeFiltersCount }}</div>
             </ion-button>
           </div>
         </div>
@@ -72,76 +72,56 @@
         </ion-toolbar>
       </transition>
 
-      <!-- Collapsible Filters -->
+      <!-- Desktop Filters (Toggleable Toolbar) -->
       <transition name="collapse">
-        <ion-toolbar v-show="showFilters" class="filter-toolbar">
+        <ion-toolbar v-if="!isSmallScreen && showFilters" class="filter-toolbar">
           <div class="filter-section">
-
-            <!-- Categories -->
-            <div class="filter-group">
-              <div class="filter-title">
-                <ion-icon :icon="mapOutline" />
-                {{ $t('trip.categories') }}
-              </div>
-              <div class="category-bar">
-                <ion-chip
-                    v-for="cat in categories"
-                    :key="cat.id"
-                    class="modern-category-chip"
-                    :class="{ active: activeCategoryIds.includes(cat.id) }"
-                    :style="{ 
-                      '--cat-color': 'var(--ion-color-carrot)',
-                      '--cat-contrast': 'var(--ion-color-carrot-contrast)',
-                      '--cat-bg': activeCategoryIds.includes(cat.id) ? 'var(--ion-color-carrot)' : 'transparent'
-                    }"
-                    @click="toggleCategory(cat.id)"
-                >
-                  <span class="category-emoji">{{ cat.emoji }}</span>
-                  <ion-label>{{ $t(cat.name) }}</ion-label>
-                </ion-chip>
-              </div>
-            </div>
-
-            <!-- Cities -->
-            <div class="filter-group">
-              <div class="filter-title">
-                <ion-icon :icon="locationOutline" />
-                {{ $t('trip.cities') }}
-              </div>
-              <div class="category-bar">
-                <ion-chip
-                    v-for="city in cities"
-                    :key="city.slug"
-                    class="modern-category-chip"
-                    :class="{ active: activeCityIds.includes(city.slug) }"
-                    :style="{ 
-                      '--cat-color': 'var(--ion-color-carrot)',
-                      '--cat-contrast': 'var(--ion-color-carrot-contrast)',
-                      '--cat-bg': activeCityIds.includes(city.slug) ? 'var(--ion-color-carrot)' : 'transparent'
-                    }"
-                    @click="toggleCity(city.slug)"
-                >
-                  <span class="category-emoji">{{ city.emoji }}</span>
-                  <ion-label>
-                    {{ $i18n.locale === 'zh-tw' ? city.name_zh : city.name }}
-                  </ion-label>
-                </ion-chip>
-              </div>
-            </div>
-
-            <!-- Clear Filters -->
-            <div class="filter-clear-row" v-if="hasActiveFilters">
-              <ion-chip
-                  class="clear-chip"
-                  @click="clearFilters"
-              >
-                {{ $t('common.clearFilters') }}
-              </ion-chip>
-            </div>
-
+            <TripFilterContent
+                :categories="categories"
+                :activeCategoryIds="activeCategoryIds"
+                :cities="cities"
+                :activeCityIds="activeCityIds"
+                :hasActiveFilters="hasActiveFilters"
+                @toggleCategory="toggleCategory"
+                @toggleCity="toggleCity"
+                @clearFilters="clearFilters"
+            />
           </div>
         </ion-toolbar>
       </transition>
+
+      <!-- Mobile Filters (Modal Bottom Sheet) -->
+      <ion-modal
+          :is-open="isFilterModalOpen"
+          @didDismiss="isFilterModalOpen = false"
+          :initial-breakpoint="0.7"
+          :breakpoints="[0, 0.7, 0.9]"
+          handle-behavior="cycle"
+          class="filter-modal"
+      >
+        <ion-header>
+          <ion-toolbar>
+            <ion-title>{{ $t('search.filters.title') }}</ion-title>
+            <ion-buttons slot="end">
+              <ion-button @click="isFilterModalOpen = false" color="carrot" style="font-weight: 700;">
+                {{ $t('common.ok') }}
+              </ion-button>
+            </ion-buttons>
+          </ion-toolbar>
+        </ion-header>
+        <ion-content class="ion-padding filter-modal-content">
+          <TripFilterContent
+              :categories="categories"
+              :activeCategoryIds="activeCategoryIds"
+              :cities="cities"
+              :activeCityIds="activeCityIds"
+              :hasActiveFilters="hasActiveFilters"
+              @toggleCategory="toggleCategory"
+              @toggleCity="toggleCity"
+              @clearFilters="clearFilters"
+          />
+        </ion-content>
+      </ion-modal>
 
     </ion-header>
 
@@ -265,20 +245,21 @@
 
 
 <script setup lang="ts">
-import {ref, computed, onMounted, watch} from 'vue'
+import {ref, computed, onMounted, onUnmounted, watch} from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
   IonPage, IonContent, IonSearchbar, IonToolbar,
   IonButton, IonIcon, IonText,
   IonCard, IonCardContent, IonChip, IonSkeletonText, IonLabel, IonHeader, IonBadge, IonSelect,IonSelectOption,
-  IonPopover, IonList, IonItem
+  IonPopover, IonList, IonItem, IonModal, IonTitle, IonButtons
 } from '@ionic/vue'
 
 import {
   funnelOutline, chevronUpOutline, chevronDownOutline, mapOutline, compassOutline, locationOutline,
-  searchOutline, closeCircle, timeOutline, checkmarkCircle, sparkles, shieldCheckmarkOutline, eyeOutline, flameOutline, calendarOutline
+  searchOutline, closeCircle, timeOutline, checkmarkCircle, sparkles, shieldCheckmarkOutline, eyeOutline, flameOutline, calendarOutline, closeOutline
 } from 'ionicons/icons'
 import AppHeader from '@/components/AppHeader.vue'
+import TripFilterContent from '@/components/TripFilterContent.vue'
 import { ActivityLogService } from '@/services/ActivityLogService'
 import { supabase } from '@/plugins/supabaseClient'
 import { Browser } from '@capacitor/browser'
@@ -296,8 +277,15 @@ const loading = ref(true)
 const searchQuery = ref('')
 const showSearchbar = ref(false)
 const showFilters = ref(false)
+const isFilterModalOpen = ref(false)
 const activeCategoryIds = ref<number[]>([])
 const sortBy = ref<'recent' | 'views'>('recent')
+
+const isSmallScreen = ref(window.innerWidth < 768)
+
+const handleResize = () => {
+  isSmallScreen.value = window.innerWidth < 768
+}
 
 const { t } = useI18n()
 
@@ -317,6 +305,10 @@ const hasActiveFilters = computed(() => {
       activeCityIds.value.length > 0 ||
       searchQuery.value.length > 0
   )
+})
+
+const activeFiltersCount = computed(() => {
+  return activeCategoryIds.value.length + activeCityIds.value.length
 })
 
 /* Categories using i18n keys */
@@ -471,6 +463,14 @@ const filteredTrips = computed(() => {
 })
 
 
+function toggleFilters() {
+  if (isSmallScreen.value) {
+    isFilterModalOpen.value = !isFilterModalOpen.value
+  } else {
+    showFilters.value = !showFilters.value
+  }
+}
+
 function clearFilters() {
   ActivityLogService.log("trip_filter_clear", {
     categories: activeCategoryIds.value,
@@ -568,6 +568,11 @@ onMounted(() => {
 
   fetchTrips()
   fetchCities()
+  window.addEventListener('resize', handleResize)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize)
 })
 
 
@@ -1029,6 +1034,25 @@ ion-header :deep(app-header ion-toolbar) {
   font-weight: 500;
   font-size: 13px;
   padding: 0 10px;
+}
+
+/* Badge Count for Filters */
+.badge-count {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background: var(--ion-color-carrot);
+  color: white;
+  font-size: 10px;
+  min-width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-weight: bold;
+  border: 1.5px solid var(--ion-background-color);
+  pointer-events: none;
 }
 
 </style>

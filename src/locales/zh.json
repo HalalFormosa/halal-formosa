@@ -282,6 +282,7 @@
     "officialPartner": "官方夥伴",
     "filtersLabel": "篩選",
     "filters": {
+      "title": "篩選",
       "stores": "商店",
       "categories": "類別",
       "statuses": "狀態"
@@ -782,14 +783,15 @@
     "daily": "每日",
     "weekly": "每週",
     "monthly": "每月",
-    "locationReports": "地點回報",
-    "productReports": "產品回報",
-    "noReports": "找不到回報",
-    "reportDetail": "回報詳情",
-    "reporter": "回報者",
     "reason": "原因",
     "productName": "產品",
     "locationName": "地點",
+    "locationReports": {
+      "title": "地點回報管理"
+    },
+    "productReports": {
+      "title": "產品回報管理"
+    },
     "reportStatus": {
       "pending": "等待中",
       "reviewing": "審核中",
@@ -929,15 +931,6 @@
         "address": "地址",
         "description": "說明"
       }
-    },
-    "ingredient_highlights": "Ingredient Highlights",
-    "location_types": "Location Types",
-    "category_rules": "Category Rules",
-    "locationReports": {
-      "title": "地點回報管理"
-    },
-    "productReports": {
-      "title": "產品回報管理"
     },
     "report": {
       "status": "回報狀態",
