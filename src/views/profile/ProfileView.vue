@@ -330,6 +330,22 @@
               <ion-badge v-if="pendingLocationsCount > 0" color="danger" slot="end" style="border-radius: 8px;">{{ pendingLocationsCount }}</ion-badge>
             </ion-item>
 
+            <ion-item button @click="goToProductReports">
+              <div class="icon-box" slot="start">
+                <ion-icon :icon="icons.listOutline" />
+              </div>
+              <ion-label>{{ $t('profile.admin.productReports') }}</ion-label>
+              <ion-badge v-if="pendingProductReportsCount > 0" color="danger" slot="end" style="border-radius: 8px;">{{ pendingProductReportsCount }}</ion-badge>
+            </ion-item>
+
+            <ion-item button @click="goToLocationReports">
+              <div class="icon-box" slot="start">
+                <ion-icon :icon="icons.listOutline" />
+              </div>
+              <ion-label>{{ $t('profile.admin.locationReports') }}</ion-label>
+              <ion-badge v-if="pendingLocationReportsCount > 0" color="danger" slot="end" style="border-radius: 8px;">{{ pendingLocationReportsCount }}</ion-badge>
+            </ion-item>
+
             <ion-list-header style="min-height: 32px; padding-bottom: 4px; border-top: 1px solid var(--ion-color-step-100); margin-top: 8px; padding-top: 8px;">
               <ion-label style="font-size: 0.85rem; color: var(--ion-color-carrot); margin-top: 0; text-transform: uppercase;">{{ $t('profile.admin.sections.store') }}</ion-label>
             </ion-list-header>
@@ -580,7 +596,7 @@ import { useNotifier } from "@/composables/useNotifier";
 
 const { t } = useI18n()
 const { notifyEvent } = useNotifier();
-const pendingLocationsCount = ref(0)
+// const pendingLocationsCount = ref(0)
 
 // Icons for use in template
 const icons = {
@@ -620,6 +636,9 @@ const userEmail = ref("");
 const userDisplayName = ref("");
 const userAvatar = ref("");
 const pendingCount = ref(0);
+const pendingLocationsCount = ref(0);
+const pendingLocationReportsCount = ref(0);
+const pendingProductReportsCount = ref(0);
 const pendingMerchantAppsCount = ref(0);
 const merchantStore = ref<any | null>(null);
 const merchantApplication = ref<MerchantApplication | null>(null);
@@ -765,6 +784,24 @@ async function fetchPendingMerchantAppsCount() {
   pendingMerchantAppsCount.value = await MerchantService.getPendingApplicationsCount()
 }
 
+async function fetchPendingLocationReportsCount() {
+  if (!isAdmin.value) return
+  const { count } = await supabase
+    .from('location_reports')
+    .select('*', { count: 'exact', head: true })
+    .eq('status', 'pending')
+  pendingLocationReportsCount.value = count || 0
+}
+
+async function fetchPendingProductReportsCount() {
+  if (!isAdmin.value) return
+  const { count } = await supabase
+    .from('product_reports')
+    .select('*', { count: 'exact', head: true })
+    .eq('status', 'pending')
+  pendingProductReportsCount.value = count || 0
+}
+
 const renewalMessage = computed(() => {
   if (!entitlement.value) return ''
 
@@ -803,6 +840,17 @@ async function refreshAllData(userId: string) {
       fetchMerchantStore(userId),
       (async () => {
         merchantApplication.value = await MerchantService.getUserApplication()
+      })(),
+      (async () => {
+        if (isAdmin.value) {
+          await Promise.all([
+            fetchPendingCount(),
+            fetchPendingLocationsCount(),
+            fetchPendingMerchantAppsCount(),
+            fetchPendingLocationReportsCount(),
+            fetchPendingProductReportsCount()
+          ])
+        }
       })()
     ]);
 
@@ -897,6 +945,8 @@ onMounted(async () => {
         if (isAdmin.value) {
           fetchPendingCount();
           fetchPendingLocationsCount();
+          fetchPendingLocationReportsCount();
+          fetchPendingProductReportsCount();
         }
         
         fetchPendingOrdersCount();
@@ -1107,6 +1157,8 @@ const goToCredits = () => router.push("/credits");
 const goToPointsLogs = () => router.push("/admin/points-logs");
 const goToUsersList = () => router.push("/admin/users");
 const goToMerchantApplications = () => router.push("/admin/merchant/applications");
+const goToLocationReports = () => router.push('/admin/location-reports')
+const goToProductReports = () => router.push('/admin/product-reports')
 
 const goToAnalyticsDashboard = () => router.push("/admin/analytics");
 const goToScanLogs = () => router.push("/admin/scan-logs");
@@ -1162,7 +1214,8 @@ async function fetchUnreadChatsCount() {
 
 
 <style scoped>
-:host {
+/* Gradients used across component */
+.profile-header-premium, .xp-section {
   --primary-gradient: linear-gradient(135deg, var(--ion-color-carrot-tint), var(--ion-color-carrot));
   --accent-gradient: linear-gradient(135deg, #ff9f43, var(--ion-color-carrot));
 }
@@ -1266,7 +1319,7 @@ async function fetchUnreadChatsCount() {
 
 .xp-next {
   font-size: 0.7rem;
-  color: var(--ion-color-step-600);
+  color: var(--ion-color-step-500);
   display: block;
   font-weight: 600;
   text-transform: uppercase;
@@ -1275,11 +1328,16 @@ async function fetchUnreadChatsCount() {
 
 .progress-container {
   height: 12px;
-  background: rgba(255, 255, 255, 0.15); /* Brighter in dark mode */
+  background: rgba(0, 0, 0, 0.06);
   border-radius: 6px;
   overflow: hidden;
   position: relative;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+}
+
+.ion-palette-dark .progress-container {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.08);
 }
 
 .progress-bar-fill {

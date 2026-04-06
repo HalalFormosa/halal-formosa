@@ -483,6 +483,8 @@
       "analytics": "數據分析儀表板",
       "masterData": "主數據管理",
       "locationsReview": "地點審核",
+      "locationReports": "地點回報",
+      "productReports": "產品回報",
       "users": "用戶"
     },
     "pro": {
@@ -774,6 +776,20 @@
     "daily": "每日",
     "weekly": "每週",
     "monthly": "每月",
+    "locationReports": "地點回報",
+    "productReports": "產品回報",
+    "noReports": "找不到回報",
+    "reportDetail": "回報詳情",
+    "reporter": "回報者",
+    "reason": "原因",
+    "productName": "產品",
+    "locationName": "地點",
+    "reportStatus": {
+      "pending": "等待中",
+      "reviewing": "審核中",
+      "resolved": "已解決",
+      "rejected": "已拒絕"
+    },
     "masterData": "主數據",
     "productCategories": "產品類別",
     "ingredientHighlights": "成分亮點",
@@ -910,7 +926,27 @@
     },
     "ingredient_highlights": "Ingredient Highlights",
     "location_types": "Location Types",
-    "category_rules": "Category Rules"
+    "category_rules": "Category Rules",
+    "locationReports": {
+      "title": "地點回報管理"
+    },
+    "productReports": {
+      "title": "產品回報管理"
+    },
+    "report": {
+      "status": "回報狀態",
+      "noReports": "尚無回報。",
+      "reporter": "回報者",
+      "date": "日期",
+      "description": "描述",
+      "updateStatus": "更新狀態",
+      "statuses": {
+        "pending": "待處理",
+        "reviewing": "審核中",
+        "resolved": "已解決",
+        "rejected": "已拒絕"
+      }
+    }
   },
   "merchantApplications": {
     "title": "申請管理",

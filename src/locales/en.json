@@ -482,6 +482,8 @@
       "analytics": "Analytics Dashboard",
       "masterData": "Master Data",
       "locationsReview": "Locations Review",
+      "locationReports": "Location Reports",
+      "productReports": "Product Reports",
       "users": "Users"
     },
     "pro": {
@@ -773,6 +775,20 @@
     "daily": "Daily",
     "weekly": "Weekly",
     "monthly": "Monthly",
+    "locationReports": "Location Reports",
+    "productReports": "Product Reports",
+    "noReports": "No reports found",
+    "reportDetail": "Report Detail",
+    "reporter": "Reporter",
+    "reason": "Reason",
+    "productName": "Product",
+    "locationName": "Location",
+    "reportStatus": {
+      "pending": "Pending",
+      "reviewing": "Reviewing",
+      "resolved": "Resolved",
+      "rejected": "Rejected"
+    },
     "masterData": "Master Data",
     "productCategories": "Product Categories",
     "ingredient_highlights": "Ingredient Highlights",
@@ -905,6 +921,26 @@
         "ubn": "UBN",
         "address": "Address",
         "description": "Description"
+      }
+    },
+    "locationReports": {
+      "title": "Location Reports Management"
+    },
+    "productReports": {
+      "title": "Product Reports Management"
+    },
+    "report": {
+      "status": "Report Status",
+      "noReports": "No reports.",
+      "reporter": "Reporter",
+      "date": "Date",
+      "description": "Description",
+      "updateStatus": "Update Status",
+      "statuses": {
+        "pending": "Pending",
+        "reviewing": "Reviewing",
+        "resolved": "Resolved",
+        "rejected": "Rejected"
       }
     }
   },

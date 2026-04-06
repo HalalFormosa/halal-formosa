@@ -451,6 +451,8 @@
       "analytics": "Dashboard Analitik",
       "masterData": "Data Master",
       "locationsReview": "Tinjau Lokasi",
+      "locationReports": "Laporan Lokasi",
+      "productReports": "Laporan Produk",
       "users": "Pengguna"
     },
     "pro": {
@@ -743,6 +745,20 @@
     "daily": "Harian",
     "weekly": "Mingguan",
     "monthly": "Bulanan",
+    "locationReports": "Laporan Lokasi",
+    "productReports": "Laporan Produk",
+    "noReports": "Tidak ada laporan ditemukan",
+    "reportDetail": "Detail Laporan",
+    "reporter": "Pelapor",
+    "reason": "Alasan",
+    "productName": "Produk",
+    "locationName": "Lokasi",
+    "reportStatus": {
+      "pending": "Menunggu",
+      "reviewing": "Ditinjau",
+      "resolved": "Selesai",
+      "rejected": "Ditolak"
+    },
     "masterData": "Data Master",
     "productCategories": "Kategori Produk",
     "ingredientHighlights": "Sorotan Bahan",
@@ -901,6 +917,26 @@
         "ubn": "UBN",
         "address": "Alamat",
         "description": "Deskripsi"
+      }
+    },
+    "locationReports": {
+      "title": "Manajemen Laporan Lokasi"
+    },
+    "productReports": {
+      "title": "Manajemen Laporan Produk"
+    },
+    "report": {
+      "status": "Status Laporan",
+      "noReports": "Tidak ada laporan.",
+      "reporter": "Pelapor",
+      "date": "Tanggal",
+      "description": "Deskripsi",
+      "updateStatus": "Perbarui Status",
+      "statuses": {
+        "pending": "Menunggu",
+        "reviewing": "Ditinjau",
+        "resolved": "Selesai",
+        "rejected": "Ditolak"
       }
     }
   },
