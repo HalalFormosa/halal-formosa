@@ -35,13 +35,13 @@ defineEmits<{
 </script>
 
 <template>
-  <div class="filter-section-inner">
+  <div class="filter-modal-inner">
     <!-- Categories -->
-    <div class="filter-group">
-      <div class="filter-title">
+    <div class="filter-section">
+      <h3 class="filter-section-title">
         <ion-icon :icon="mapOutline" />
         {{ $t('trip.categories') }}
-      </div>
+      </h3>
       <div class="category-bar">
         <ion-chip
             v-for="cat in categories"
@@ -62,11 +62,11 @@ defineEmits<{
     </div>
 
     <!-- Cities -->
-    <div class="filter-group">
-      <div class="filter-title">
+    <div class="filter-section">
+      <h3 class="filter-section-title">
         <ion-icon :icon="locationOutline" />
         {{ $t('trip.cities') }}
-      </div>
+      </h3>
       <div class="category-bar">
         <ion-chip
             v-for="city in cities"
@@ -87,42 +87,32 @@ defineEmits<{
         </ion-chip>
       </div>
     </div>
-
-    <!-- Clear Filters -->
-    <div class="filter-clear-row" v-if="hasActiveFilters">
-      <ion-chip
-          class="clear-chip"
-          @click="$emit('clearFilters')"
-      >
-        {{ $t('common.clearFilters') }}
-      </ion-chip>
-    </div>
   </div>
 </template>
 
 <style scoped>
-.filter-section-inner {
+.filter-modal-inner {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-.filter-group {
-  margin-bottom: 8px;
+.filter-section {
+  margin-bottom: 16px;
 }
 
-.filter-title {
+.filter-section-title {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 14px;
+  font-size: 0.92rem;
   font-weight: 700;
-  color: var(--ion-color-dark);
+  color: var(--ion-text-color);
   padding: 0 16px;
-  margin-bottom: 8px;
+  margin-bottom: 12px;
 }
 
-.filter-title ion-icon {
+.filter-section-title ion-icon {
   font-size: 16px;
   color: var(--ion-color-carrot);
 }
@@ -132,51 +122,38 @@ defineEmits<{
   gap: 12px;
   overflow-x: auto;
   padding: 0 16px 8px;
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE/Edge */
+  scrollbar-width: none;
 }
 
 .category-bar::-webkit-scrollbar {
-  display: none; /* Chrome/Safari/Opera */
+  display: none;
 }
 
 ion-chip.modern-category-chip {
   --cat-color: var(--ion-color-dark);
   --cat-bg: var(--ion-background-color);
-  background: var(--cat-bg);
+  background: var(--cat-bg) !important;
   color: var(--cat-color);
   height: 38px;
   border-radius: 100px !important;
   --border-radius: 100px !important;
   padding: 0 16px;
-  border: 1.5px solid var(--cat-color);
+  border: 1px solid rgba(var(--ion-color-dark-rgb), 0.12);
   font-weight: 700;
   font-size: 0.82rem;
   transition: all 0.2s ease;
   margin: 0;
   flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
 }
 
 .modern-category-chip.active {
   background: var(--cat-color) !important;
-  color: var(--cat-contrast, #ffffff);
+  color: var(--cat-contrast, #ffffff) !important;
   border-color: var(--cat-color) !important;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   transform: translateY(-1px);
 }
 
 .category-emoji { margin-right: 6px; font-size: 1.1rem; }
-
-.filter-clear-row {
-  display: flex;
-  justify-content: flex-start;
-  padding: 4px 16px;
-}
-
-.clear-chip {
-  --background: var(--ion-color-light);
-  --color: var(--ion-color-medium);
-  font-weight: 700;
-  font-size: 0.75rem;
-}
 </style>

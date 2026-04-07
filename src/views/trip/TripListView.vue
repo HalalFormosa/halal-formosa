@@ -94,17 +94,20 @@
       <ion-modal
           :is-open="isFilterModalOpen"
           @didDismiss="isFilterModalOpen = false"
-          :initial-breakpoint="0.7"
-          :breakpoints="[0, 0.7, 0.9]"
+          :initial-breakpoint="0.5"
+          :breakpoints="[0, 0.5, 0.8, 1]"
           handle-behavior="cycle"
           class="filter-modal"
       >
-        <ion-header>
+        <ion-header class="ion-no-border">
           <ion-toolbar>
-            <ion-title>{{ $t('search.filters.title') }}</ion-title>
+            <ion-title>{{ $t('common.filter') || 'Filter' }}</ion-title>
             <ion-buttons slot="end">
-              <ion-button @click="isFilterModalOpen = false" color="carrot" style="font-weight: 700;">
-                {{ $t('common.ok') }}
+              <ion-button v-if="hasActiveFilters" @click="clearFilters" color="carrot" class="modal-reset-btn">
+                {{ $t('common.reset') || 'RESET' }}
+              </ion-button>
+              <ion-button @click="isFilterModalOpen = false">
+                <ion-icon :icon="closeOutline" />
               </ion-button>
             </ion-buttons>
           </ion-toolbar>

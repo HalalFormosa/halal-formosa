@@ -378,7 +378,10 @@
   },
   "explore": {
     "title": "探索",
-    "placeholder": "搜尋地點 (例如：清真寺)",
+    "placeholder": "搜尋地點 (如: 清真寺)",
+    "activeFilters": "目前篩選",
+    "categories": "類別",
+    "campusPartners": "校園夥伴",
     "clear": "清除",
     "showingPlace": "顯示 1 個地點",
     "results": "搜尋結果",
@@ -691,6 +694,7 @@
   "partner": {
     "title": "我們的合作夥伴",
     "searchPlaceholder": "搜尋合作夥伴",
+    "activeFilters": "目前篩選",
     "categories": "類別",
     "actions": {
       "clearFilters": "清除篩選"
@@ -1073,8 +1077,9 @@
     "tryAgain": "再試一次",
     "status": "狀態",
     "deliveryMethod": "配送方式",
-    "priceRange": "價格範圍 (NT$)",
+    "priceRange": "價格範圍 (TWD)",
     "inStockOnly": "僅顯示有貨",
+    "hideOutOfStock": "僅顯示當前可購買的商品",
     "inactive": "停用",
     "sellerCenter": {
       "title": "賣家中心",

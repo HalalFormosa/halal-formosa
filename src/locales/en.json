@@ -378,6 +378,9 @@
   "explore": {
     "title": "Explore",
     "placeholder": "Search places (e.g. Mosque)",
+    "activeFilters": "Active Filters",
+    "categories": "Categories",
+    "campusPartners": "Campus Partners",
     "clear": "Clear",
     "showingPlace": "Showing 1 place",
     "results": "Results",
@@ -689,7 +692,8 @@
   },
   "partner": {
     "title": "Our Partner",
-    "searchPlaceholder": "Search partner",
+    "searchPlaceholder": "搜尋地點 (例如：清真寺)",
+    "activeFilters": "目前篩選",
     "categories": "Categories",
     "actions": {
       "clearFilters": "Clear filters"
@@ -1073,6 +1077,7 @@
     "deliveryMethod": "Delivery Method",
     "priceRange": "Price Range (TWD)",
     "inStockOnly": "In Stock Only",
+    "hideOutOfStock": "Show only products currently available",
     "inactive": "Inactive",
     "sellerCenter": {
       "title": "Seller Center",

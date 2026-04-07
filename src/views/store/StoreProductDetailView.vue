@@ -1,37 +1,27 @@
 <template>
   <ion-page>
-    <ion-header>
-      <app-header :title="product?.name || $t('store.title')" :showBack="true" icon="none">
+    <ion-header class="ion-no-border immersive-header" :class="{ 'is-scrolled': isScrolled }">
+      <app-header 
+          :title="product?.name || $t('store.title')" 
+          :showBack="true" 
+          icon="none"
+          :transparent="!isScrolled"
+          :contrast="!isScrolled"
+      >
         <template #actions>
-          <ion-item button @click="handleChat" :disabled="isUnderConstruction">
+          <ion-button @click="handleChat" :disabled="isUnderConstruction" fill="clear">
             <ion-icon :icon="chatbubbleOutline" slot="start" />
-            <ion-label>{{ $t('store.chat.customerChat') || 'Chat' }}</ion-label>
-            <ion-badge v-if="totalUnreadCount > 0" color="danger" slot="end">{{ totalUnreadCount }}</ion-badge>
-          </ion-item>
-          <ion-item button @click="openCart" :disabled="isUnderConstruction">
-            <ion-icon :icon="cartOutline" slot="start" />
-            <ion-label>{{ $t('store.cart') || 'Cart' }}</ion-label>
-            <ion-badge v-if="cartCount > 0" color="danger" slot="end">{{ cartCount }}</ion-badge>
-          </ion-item>
-        </template>
-      </app-header>
-      
-      <!-- Actions toolbar for sub-pages (optional, but let's add the premium cart button to the top right instead) -->
-      <ion-toolbar class="sub-actions-toolbar" v-if="!loading">
-        <ion-buttons slot="end">
-          <ion-button @click="handleChat" class="header-action-button" :disabled="isUnderConstruction">
-            <ion-icon :icon="chatbubbleOutline" />
             <ion-badge v-if="totalUnreadCount > 0" color="danger" class="header-badge">{{ totalUnreadCount }}</ion-badge>
           </ion-button>
-          <ion-button @click="openCart" class="header-action-button cart-button" :disabled="isUnderConstruction">
-            <ion-icon :icon="cartOutline" />
+          <ion-button @click="openCart" :disabled="isUnderConstruction" fill="clear">
+            <ion-icon :icon="cartOutline" slot="start" />
             <ion-badge v-if="cartCount > 0" color="danger" class="header-badge">{{ cartCount }}</ion-badge>
           </ion-button>
-        </ion-buttons>
-      </ion-toolbar>
+        </template>
+      </app-header>
     </ion-header>
 
-    <ion-content :fullscreen="true">
+    <ion-content :fullscreen="true" :scroll-events="true" @ionScroll="handleScroll">
       <div v-if="isUnderConstruction" slot="fixed" class="under-construction-overlay">
         <div class="construction-card">
           <ion-icon :icon="constructOutline" class="construction-icon" />
@@ -55,7 +45,7 @@
         </div>
 
         <!-- Product Content -->
-        <div v-if="!loading && product" class="detail-page">
+        <div v-if="!loading && product" class="detail-page-container">
           <!-- Image gallery -->
           <div class="gallery-scroll">
             <div v-for="(img, i) in product.images" :key="i" class="gallery-item">
@@ -271,6 +261,11 @@ const loading = ref(true)
 const qty = ref(1)
 const cartOpen = ref(false)
 const currentUserId = ref<string | null>(null)
+const isScrolled = ref(false)
+
+const handleScroll = (ev: any) => {
+  isScrolled.value = ev.detail.scrollTop > 50
+}
 
 const isOwner = computed(() => {
   if (!product.value || !currentUserId.value) return false
@@ -382,14 +377,19 @@ function updateQtyInCart(productId: string, newQty: number) {
 </script>
 
 <style scoped>
-.sub-actions-toolbar {
-  --background: var(--ion-background-color);
-  --border-width: 0;
-  --min-height: 44px;
+.immersive-header {
+  --background: transparent;
+  transition: background 0.3s ease-in-out;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
 }
 
-.header-action-button {
-  --color: var(--ion-text-color);
+.immersive-header.is-scrolled {
+  --background: var(--ion-background-color);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
 .cart-button {
@@ -398,19 +398,19 @@ function updateQtyInCart(productId: string, newQty: number) {
 
 .header-badge {
   position: absolute;
-  top: -2px;
-  right: -2px;
-  font-size: 10px;
-  min-width: 18px;
-  height: 18px;
-  border-radius: 10px;
-  padding: 0 4px;
-  font-weight: 700;
+  top: 8px;
+  right: 2px;
+  font-size: 9px;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  padding: 0;
+  font-weight: 800;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 2px solid var(--ion-background-color);
-  box-shadow: 0 2px 4px rgba(255, 0, 0, 0.2);
+  border: 1.5px solid white;
+  box-shadow: 0 2px 4px rgba(255, 0, 0, 0.3);
   z-index: 10;
 }
 
@@ -426,11 +426,11 @@ function updateQtyInCart(productId: string, newQty: number) {
 
 .image-skeleton {
   width: 100%;
-  height: 320px;
+  height: 420px;
   border-radius: 0;
 }
 
-.detail-page {
+.detail-page-container {
   padding-bottom: 24px;
 }
 
@@ -454,14 +454,14 @@ function updateQtyInCart(productId: string, newQty: number) {
 
 .gallery-image {
   width: 100%;
-  height: 320px;
+  height: 420px;
   object-fit: cover;
   display: block;
 }
 
 .gallery-placeholder {
   width: 100%;
-  height: 320px;
+  height: 420px;
   display: flex;
   align-items: center;
   justify-content: center;

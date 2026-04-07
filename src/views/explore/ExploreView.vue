@@ -6,113 +6,120 @@
 
       <ion-toolbar class="header-search-toolbar">
         <!-- Search & Add Row -->
-        <div class="search-row">
-          <ion-searchbar
-              class="compact-searchbar"
-              :debounce="1000"
-              v-model="searchQuery"
-              @ionInput="onSearchInput"
-              @ionSearch="onSearchCommit"
-              @keyup.enter.capture="onSearchCommit"
-              :placeholder="$t('explore.placeholder')"
-              :disabled="isGeocoding"
-          />
-
-          <ion-button
-              @click="viewMode = viewMode === 'map' ? 'list' : 'map'"
-              class="header-btn"
-              color="carrot"
-          >
-            <ion-icon :icon="viewMode === 'map' ? listOutline : mapOutline"/>
-          </ion-button>
-
-          <ion-button
-              v-if="isLoggedIn"
-              @click="goToAddPlace"
-              class="header-btn"
-              color="carrot"
-          >
-            <ion-icon :icon="addOutline"/>
-          </ion-button>
-          
-        </div>
-
-
-
-        <!-- Category bar row -->
-        <div class="category-bar-row">
-          <div v-show="!loadingCategories" class="category-bar">
-            
-            <ion-chip
-                v-if="activeTag && !isCampusTagSelected"
-                class="modern-category-chip active"
-                style="--cat-color: var(--ion-color-tertiary); --cat-bg: var(--ion-color-tertiary);"
-                @click="activeTag = null; focusedPlaceId = null"
-            >
-              <ion-icon :icon="pricetagOutline" class="category-icon" />
-              <ion-label style="text-transform: capitalize">{{ activeTag }}</ion-label>
-              <ion-icon :icon="closeCircleOutline" style="margin-left: 4px; font-size: 16px;" />
-            </ion-chip>
-
-            <ion-chip
-                v-for="cat in categories"
-                :key="cat.id"
-                class="modern-category-chip"
-                :class="{ active: activeCategoryIds.includes(cat.id) }"
-                :style="{ 
-                  '--cat-color': cat.color || 'var(--ion-color-carrot)',
-                  '--cat-bg': activeCategoryIds.includes(cat.id) ? (cat.color || 'var(--ion-color-carrot)') : 'transparent'
-                }"
-                @click="toggleCategory(cat)"
-            >
-              <span v-if="typeof categoryIconMap[cat.name] === 'string' && categoryIconMap[cat.name].length === 2" class="category-emoji">
-                {{ categoryIconMap[cat.name] }}
-              </span>
-              <ion-icon v-else-if="categoryIconMap[cat.name]" :icon="categoryIconMap[cat.name]" class="category-icon" />
-              <ion-label>{{ cat.name }}</ion-label>
-            </ion-chip>
+        <div class="search-row-container">
+          <div class="search-bar-wrapper">
+            <ion-searchbar
+                class="compact-searchbar"
+                :debounce="1000"
+                v-model="searchQuery"
+                @ionInput="onSearchInput"
+                @ionSearch="onSearchCommit"
+                @keyup.enter.capture="onSearchCommit"
+                :placeholder="$t('explore.placeholder')"
+                :disabled="isGeocoding"
+            />
           </div>
 
-          <ion-chip
-              v-if="activeCategoryIds.length || activeTag"
-              class="clear-chip floating-clear"
-              @click="activeCategoryIds = []; activeTag = null; focusedPlaceId = null"
-          >
-            <ion-icon :icon="closeCircleOutline" style="margin-right: 4px; font-size: 16px;" />
-            {{ $t('common.clear') }}
-          </ion-chip>
+          <div class="header-actions">
+            <!-- Filter Button (Mobile only) -->
+            <ion-button
+                v-if="isSmallScreen"
+                @click="isFilterModalOpen = true"
+                class="header-btn filter-toggle-btn"
+                color="carrot"
+            >
+              <ion-icon :icon="funnelOutline"/>
+              <div v-if="activeFiltersCount > 0" class="badge-count">{{ activeFiltersCount }}</div>
+            </ion-button>
 
-          <!-- Skeleton placeholder -->
-          <div v-if="loadingCategories" class="category-skeletons" style="display: flex; gap: 10px;">
-            <ion-skeleton-text animated style="width:110px; height:36px; border-radius:100px; margin: 0;"/>
-            <ion-skeleton-text animated style="width:85px; height:36px; border-radius:100px; margin: 0;"/>
-            <ion-skeleton-text animated style="width:120px; height:36px; border-radius:100px; margin: 0;"/>
-            <ion-skeleton-text animated style="width:90px; height:36px; border-radius:100px; margin: 0;"/>
+            <ion-button
+                @click="viewMode = viewMode === 'map' ? 'list' : 'map'"
+                class="header-btn"
+                color="carrot"
+            >
+              <ion-icon :icon="viewMode === 'map' ? listOutline : mapOutline"/>
+            </ion-button>
+
           </div>
         </div>
 
-        <!-- Campus row (new) -->
-        <div v-if="campusPartners.length > 0" class="campus-bar-row">
-          <div class="category-bar">
-            <!-- Campus Filter Buttons -->
-            <div
-                v-for="campus in campusPartners"
-                :key="campus.id"
-                class="campus-filter-wrapper"
-            >
-              <div class="special-promo-tag">{{ $t('explore.specialPromo') }}</div>
+        <!-- Desktop Filters (Inline) -->
+        <template v-if="!isSmallScreen">
+          <!-- Category bar row -->
+          <div class="category-bar-row">
+            <div v-show="!loadingCategories" class="category-bar">
+              
               <ion-chip
-                  class="modern-category-chip campus-chip"
-                  :class="{ active: activeTag === campus.slug }"
+                  v-if="activeTag && !isCampusTagSelected"
+                  class="modern-category-chip active"
                   style="--cat-color: var(--ion-color-tertiary); --cat-bg: var(--ion-color-tertiary);"
-                  @click="activeTag = (activeTag === campus.slug ? null : campus.slug); focusedPlaceId = null"
+                  @click="activeTag = null; focusedPlaceId = null"
               >
-                <ion-icon :icon="school" class="category-icon" />
-                <ion-label>{{ $t('explore.campusFilter', { name: campus.slug.toUpperCase() }) }}</ion-label>
+                <ion-icon :icon="pricetagOutline" class="category-icon" />
+                <ion-label style="text-transform: capitalize">{{ activeTag }}</ion-label>
+                <ion-icon :icon="closeCircleOutline" style="margin-left: 4px; font-size: 16px;" />
+              </ion-chip>
+
+              <ion-chip
+                  v-for="cat in categories"
+                  :key="cat.id"
+                  class="modern-category-chip"
+                  :class="{ active: activeCategoryIds.includes(cat.id) }"
+                  :style="{ 
+                    '--cat-color': cat.color || 'var(--ion-color-carrot)',
+                    '--cat-bg': activeCategoryIds.includes(cat.id) ? (cat.color || 'var(--ion-color-carrot)') : 'transparent'
+                  }"
+                  @click="toggleCategory(cat)"
+              >
+                <span v-if="typeof categoryIconMap[cat.name] === 'string' && categoryIconMap[cat.name].length === 2" class="category-emoji">
+                  {{ categoryIconMap[cat.name] }}
+                </span>
+                <ion-icon v-else-if="categoryIconMap[cat.name]" :icon="categoryIconMap[cat.name]" class="category-icon" />
+                <ion-label>{{ cat.name }}</ion-label>
               </ion-chip>
             </div>
+
+            <ion-chip
+                v-if="activeCategoryIds.length || activeTag"
+                class="clear-chip floating-clear"
+                @click="activeCategoryIds = []; activeTag = null; focusedPlaceId = null"
+            >
+              <ion-icon :icon="closeCircleOutline" style="margin-right: 4px; font-size: 16px;" />
+              {{ $t('common.clear') }}
+            </ion-chip>
+
+            <!-- Skeleton placeholder -->
+            <div v-if="loadingCategories" class="category-skeletons" style="display: flex; gap: 10px;">
+              <ion-skeleton-text animated style="width:110px; height:36px; border-radius:100px; margin: 0;"/>
+              <ion-skeleton-text animated style="width:85px; height:36px; border-radius:100px; margin: 0;"/>
+              <ion-skeleton-text animated style="width:120px; height:36px; border-radius:100px; margin: 0;"/>
+              <ion-skeleton-text animated style="width:90px; height:36px; border-radius:100px; margin: 0;"/>
+            </div>
           </div>
-        </div>
+
+          <!-- Campus row (new) -->
+          <div v-if="campusPartners.length > 0" class="campus-bar-row">
+            <div class="category-bar">
+              <!-- Campus Filter Buttons -->
+              <div
+                  v-for="campus in campusPartners"
+                  :key="campus.id"
+                  class="campus-filter-wrapper"
+              >
+                <div class="special-promo-tag">{{ $t('explore.specialPromo') }}</div>
+                <ion-chip
+                    class="modern-category-chip campus-chip"
+                    :class="{ active: activeTag === campus.slug }"
+                    style="--cat-color: var(--ion-color-tertiary); --cat-bg: var(--ion-color-tertiary);"
+                    @click="activeTag = (activeTag === campus.slug ? null : campus.slug); focusedPlaceId = null"
+                >
+                  <ion-icon :icon="school" class="category-icon" />
+                  <ion-label>{{ $t('explore.campusFilter', { name: campus.slug.toUpperCase() }) }}</ion-label>
+                </ion-chip>
+              </div>
+            </div>
+          </div>
+        </template>
       </ion-toolbar>
     </ion-header>
 
@@ -246,10 +253,10 @@
                       <ion-icon :icon="locationOutline" style="font-size: 0.85rem; vertical-align: middle; margin-top: -2px;" /> {{ formatKm((place as any).distance) }} km
                     </div>
 
-                    <!-- Tags section -->
-                    <div v-if="place.tags && place.tags.length > 0" class="card-tags-row">
+                    <!-- Tags section (Horizontal Scroll) -->
+                    <div v-if="place.tags && place.tags.length > 0" class="card-tags-row horizontal-scroll">
                       <span 
-                        v-for="t in place.tags.slice(0, 3)" 
+                        v-for="t in place.tags" 
                         :key="t" 
                         class="card-tag"
                         :class="{ highlight: t.toLowerCase() === activeTag?.toLowerCase() }"
@@ -272,9 +279,13 @@
       </div>
     </transition>
 
-    <!-- 5. Floating UI (Locate Me) -->
-    <div v-if="viewMode === 'map'" class="map-floating-actions">
-      <ion-button class="locate-me-btn" color="carrot" @click="centerOnUser">
+    <!-- 5. Floating UI (Locate Me & Add) -->
+    <div class="map-floating-actions" :class="{ 'list-mode': viewMode === 'list' }">
+      <ion-button v-if="isLoggedIn" class="floating-action-btn add-place-btn" color="carrot" @click="goToAddPlace">
+        <ion-icon :icon="addOutline" />
+      </ion-button>
+      
+      <ion-button v-if="viewMode === 'map'" class="floating-action-btn locate-me-btn" color="carrot" @click="centerOnUser">
         <ion-icon :icon="navigateCircleOutline" />
       </ion-button>
     </div>
@@ -371,6 +382,7 @@
                     <div v-if="userLocation && (place as any).distance !== undefined" class="distance">
                       <ion-icon :icon="locationOutline" style="font-size: 0.85rem; vertical-align: middle; margin-top: -2px;" /> {{ formatKm((place as any).distance) }} km
                     </div>
+
                   </div>
 
                   <div class="info-actions">
@@ -395,18 +407,71 @@
         </small>
       </div>
     </ion-footer>
+
+    <!-- Mobile Filters (Modal Bottom Sheet) -->
+    <ion-modal
+        :is-open="isFilterModalOpen"
+        @didDismiss="isFilterModalOpen = false"
+        :initial-breakpoint="0.5"
+        :breakpoints="[0, 0.5, 0.8, 1]"
+        handle-behavior="cycle"
+        class="filter-modal"
+    >
+      <ion-header class="ion-no-border">
+        <ion-toolbar>
+          <ion-title>{{ $t('common.filter') || 'Filter' }}</ion-title>
+          <ion-buttons slot="end">
+            <ion-button v-if="activeFiltersCount > 0" @click="() => { activeCategoryIds = []; activeTag = null; focusedPlaceId = null; }" color="carrot" class="modal-reset-btn">
+              {{ $t('common.reset') || 'RESET' }}
+            </ion-button>
+            <ion-button @click="isFilterModalOpen = false">
+              <ion-icon :icon="closeOutline" />
+            </ion-button>
+          </ion-buttons>
+        </ion-toolbar>
+      </ion-header>
+      <ion-content class="ion-padding filter-modal-content">
+        <ExploreFilterContent
+            :categories="categories"
+            :activeCategoryIds="activeCategoryIds"
+            :campusPartners="campusPartners"
+            :activeTag="activeTag"
+            :loadingCategories="loadingCategories"
+            :categoryIconMap="categoryIconMap"
+            @toggleCategory="toggleCategory"
+            @toggleTag="(slug) => { activeTag = (activeTag === slug ? null : slug); focusedPlaceId = null; }"
+            @clearFilters="() => { activeCategoryIds = []; activeTag = null; focusedPlaceId = null; }"
+        />
+      </ion-content>
+    </ion-modal>
+
+    <!-- Tag Overflow Popover -->
+    <ion-popover
+      :is-open="isTagsPopoverOpen"
+      :event="popoverEvent"
+      @didDismiss="isTagsPopoverOpen = false"
+      class="tags-popover"
+    >
+      <ion-content>
+        <ion-list lines="none">
+          <ion-item v-for="tag in currentPopoverTags" :key="tag" class="popover-tag-item">
+            <ion-icon :icon="pricetagOutline" slot="start" color="carrot" />
+            <ion-label>#{{ tag }}</ion-label>
+          </ion-item>
+        </ion-list>
+      </ion-content>
+    </ion-popover>
   </ion-page>
 </template>
 
 
 <script setup lang="ts">
 
-/* ---------------- Imports  ---------------- */
 import {
   IonPage, IonContent, IonToolbar, IonSearchbar, IonIcon, IonFab, IonFabButton,
-  IonCard, IonThumbnail, IonButton, onIonViewDidEnter, IonLabel, IonChip, IonHeader,
-  IonSkeletonText, onIonViewWillEnter, IonFabList, onIonViewWillLeave, IonModal,
-  IonPopover, IonList, IonItem, IonFooter
+  IonPopover, IonList, IonItem, IonFooter, IonModal, IonTitle, IonButtons, 
+  IonHeader, IonLabel, IonChip, IonSkeletonText, IonCard, IonThumbnail, IonFabList,
+  onIonViewWillEnter, onIonViewDidEnter, onIonViewWillLeave, IonButton
 } from '@ionic/vue'
 import { useI18n } from 'vue-i18n'
 import {
@@ -416,11 +481,12 @@ import {
   layersOutline, listOutline, gridOutline, mapOutline, sparkles, shieldCheckmarkOutline, checkmarkCircle,
   trendingUpOutline, flameOutline, timeOutline, locationOutline, filterOutline,
   eyeOutline, shareSocialOutline, navigateOutline, closeCircleOutline,
-  calendarOutline, pricetagOutline, school
+  calendarOutline, pricetagOutline, school, funnelOutline, closeOutline
 } from 'ionicons/icons'
-import {ref, computed, nextTick, onMounted, onUnmounted, watch} from 'vue'
+import { ref, onMounted, onUnmounted, nextTick, watch, computed } from 'vue'
 import type {ComponentPublicInstance, VNodeRef} from 'vue'
 import {useRouter} from 'vue-router'
+import ExploreFilterContent from '@/components/ExploreFilterContent.vue'
 import mapsLoader from '@/plugins/googleMapsLoader'
 import {Capacitor} from '@capacitor/core'
 import {Geolocation} from '@capacitor/geolocation'
@@ -546,6 +612,27 @@ const loadingPlaces = ref(true)
 const campusPartners = ref<{ id: string; name: string; slug: string }[]>([])
 const sortBy = ref<'nearest' | 'recent' | 'popular' | 'trending'>('recent')
 const trendingPlaceIds = ref<number[]>([])
+const isFilterModalOpen = ref(false)
+const isSmallScreen = ref(window.innerWidth < 768)
+
+const handleResize = () => {
+  isSmallScreen.value = window.innerWidth < 768
+}
+
+const activeFiltersCount = computed(() => {
+  return activeCategoryIds.value.length + (activeTag.value ? 1 : 0)
+})
+
+// Tag Overflow Popover
+const isTagsPopoverOpen = ref(false)
+const currentPopoverTags = ref<string[]>([])
+const popoverEvent = ref<Event | null>(null)
+
+const openTagsPopover = (ev: Event, tags: string[]) => {
+  popoverEvent.value = ev
+  currentPopoverTags.value = tags
+  isTagsPopoverOpen.value = true
+}
 
 let cardObserver: IntersectionObserver | null = null
 let isProgrammaticScroll = false
@@ -1384,7 +1471,12 @@ const initMap = async () => {
   }
 
   infoWindow = new google.maps.InfoWindow()
+
+  window.addEventListener('resize', handleResize)
   
+  onUnmounted(() => {
+    window.removeEventListener('resize', handleResize)
+  })
   // ✅ Debounced idle listener (150ms) to prevent spamming updates
   let idleTimeout: any = null;
   mapInstance.addListener('idle', () => {
@@ -1921,7 +2013,37 @@ const processUrlParams = () => {
   }
 }
 
+onMounted(async () => {
+  isPageActive.value = true
+  fetchLocationTypes()
+  fetchLocations()
+  fetchCampusPartners()
+  fetchTrendingPlaces()
+
+  isLoggedIn.value = (await supabase.auth.getSession()).data.session !== null
+  
+  if (isLoggedIn.value) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('is_contributor')
+      .single()
+    if (profile) isContributor.value = profile.is_contributor
+  }
+
+  await initMap()
+  startWatching()
+  
+  if (viewMode.value === 'map') {
+    nextTick(() => initCardObserver())
+  }
+
+  processUrlParams()
+  
+  window.addEventListener('resize', handleResize)
+})
+
 onUnmounted(() => {
+  window.removeEventListener('resize', handleResize)
   if (cardObserver) cardObserver.disconnect()
   clearCampusOverlays()
 })
@@ -2217,23 +2339,59 @@ button.gm-ui-hover-effect > span {
   --border-width: 0 !important;
   padding-top: var(--ion-safe-area-top, 0);
   background: transparent !important;
+  min-height: 70px;
 }
 
-.search-row {
+.search-row-container {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 8px 16px 0;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 16px 4px;
   pointer-events: auto;
+  width: 100%;
+}
+
+.search-bar-wrapper {
+  flex: 1;
+  min-width: 140px; /* Prevent search from disappearing */
+  display: flex;
+  align-items: center;
+}
+
+.compact-searchbar {
+  --background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  --border-radius: 24px;
+  --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  --padding-start: 12px;
+  --padding-end: 12px;
+  padding: 0;
+  height: 48px;
+}
+
+.ion-palette-dark .compact-searchbar {
+  --background: rgba(45, 45, 45, 0.85);
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
 .header-btn {
   --border-radius: 50%;
-  height: 50px;
-  width: 50px;
+  height: 44px; /* Slightly smaller for better fit */
+  width: 44px;
   margin: 0;
-
-  --color: var(--ion-color-carrot);
+  --padding-start: 0;
+  --padding-end: 0;
+  --color: #fff;
+  --background: var(--ion-color-carrot);
+  --box-shadow: 0 4px 12px rgba(var(--ion-color-carrot-rgb), 0.3);
   flex-shrink: 0;
 }
 
@@ -2689,6 +2847,22 @@ button.gm-ui-hover-effect > span {
   gap: 8px;
 }
 
+.tags-popover {
+  --width: 200px;
+}
+
+.tags-popover ion-content {
+  --padding-top: 8px;
+  --padding-bottom: 8px;
+}
+
+.popover-tag-item {
+  --padding-start: 12px;
+  --min-height: 40px;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
 .detail-btn {
   --padding-start: 12px;
   --padding-end: 12px;
@@ -2776,13 +2950,52 @@ button.gm-ui-hover-effect > span {
   right: 20px;
   z-index: 1001;
   pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: bottom 0.3s ease;
 }
 
-.locate-me-btn {
+.map-floating-actions.list-mode {
+  bottom: calc(var(--ion-safe-area-bottom, 0px) + 20px);
+}
+
+.floating-action-btn {
   --color: var(--ion-color-carrot);
+  --background: var(--ion-background-color);
   --border-radius: 50%;
   width: 48px;
   height: 48px;
+  --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  margin: 0;
+}
+
+.floating-action-btn ion-icon {
+  font-size: 24px;
+}
+
+.filter-toggle-btn {
+  position: relative;
+}
+
+.badge-count {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  background: #ff4d4d; /* More distinct red for the badge */
+  color: white;
+  font-size: 10px;
+  min-width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-weight: 800;
+  border: 2px solid white;
+  z-index: 10;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  pointer-events: none;
 }
 
 /* Locating Status Badge */
@@ -2853,7 +3066,7 @@ button.gm-ui-hover-effect > span {
   bottom: 0;
   z-index: 800;
   background: var(--ion-background-color);
-  padding-top: 190px; /* Increased to accommodate double-row header (search + chips) */
+  padding-top: 80px; /* Increased to accommodate double-row header (search + chips) */
   overflow-y: auto;
 }
 
@@ -2866,31 +3079,51 @@ button.gm-ui-hover-effect > span {
 /* Card Tags */
 .card-tags-row {
   display: flex;
-  flex-wrap: wrap;
   gap: 6px;
-  margin-top: 4px;
+  margin-top: 6px;
+  width: 100%;
+}
+
+.card-tags-row.horizontal-scroll {
+  overflow-x: auto;
+  flex-wrap: nowrap;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+  padding-bottom: 2px; /* Prevent shadow clipping */
+}
+
+.card-tags-row.horizontal-scroll::-webkit-scrollbar {
+  display: none; /* Chrome/Safari */
 }
 
 .card-tag {
   font-size: 0.65rem;
-  font-weight: 700;
-  color: var(--ion-color-step-600);
-  background: rgba(var(--ion-color-dark-rgb), 0.05);
-  padding: 2px 8px;
+  font-weight: 800;
+  color: var(--ion-color-step-850, #1f2937);
+  background: rgba(var(--ion-color-dark-rgb), 0.08); /* Darker gray background */
+  padding: 3px 8px;
   border-radius: 6px;
   text-transform: lowercase;
-  border: 1px solid rgba(var(--ion-color-dark-rgb), 0.08);
+  border: 1.5px solid rgba(var(--ion-color-dark-rgb), 0.1);
+  letter-spacing: 0.01em;
 }
 
 .card-tag.highlight {
   background: rgba(var(--ion-color-carrot-rgb), 0.12);
   color: var(--ion-color-carrot);
-  border-color: rgba(var(--ion-color-carrot-rgb), 0.2);
+  border-color: rgba(var(--ion-color-carrot-rgb), 0.25);
 }
 
 .ion-palette-dark .card-tag {
-  background: rgba(255, 255, 255, 0.08);
-  color: #9ca3af;
+  background: rgba(255, 255, 255, 0.12);
+  color: #d1d5db;
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.card-tag.more-tags {
+  background: var(--ion-color-carrot);
+  color: white;
+  border-color: var(--ion-color-carrot);
 }
 
 .ion-palette-dark .card-tag.highlight {

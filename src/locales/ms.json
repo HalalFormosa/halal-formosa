@@ -346,8 +346,11 @@
   },
   "explore": {
     "title": "Teroka",
-    "placeholder": "Cari tempat (cth. Masjid)",
-    "clear": "Padam",
+    "placeholder": "Cari lokasi (cth. Masjid)",
+    "activeFilters": "Penapis Aktif",
+    "categories": "Kategori",
+    "campusPartners": "Rakan Kampus",
+    "clear": "Kosongkan",
     "showingPlace": "Memaparkan 1 tempat",
     "results": "Keputusan",
     "showingResults": "Memaparkan {count} daripada {total} lokasi",
@@ -999,7 +1002,8 @@
     "status": "Status",
     "deliveryMethod": "Kaedah Penghantaran",
     "priceRange": "Julat Harga (NTD)",
-    "inStockOnly": "Stok Sedia Ada Sahaja",
+    "inStockOnly": "Hanya Stok Tersedia",
+    "hideOutOfStock": "Hanya tunjukkan produk yang sedang tersedia",
     "inactive": "Tidak Aktif",
     "sellerCenter": {
       "title": "Pusat Penjual",

@@ -234,38 +234,61 @@
     </ion-modal>
 
     <!-- Advanced Filter Modal -->
-    <ion-modal :is-open="filterOpen" @didDismiss="filterOpen = false" :initial-breakpoint="0.4" :breakpoints="[0, 0.4, 0.6]">
-      <ion-header>
+    <ion-modal :is-open="filterOpen" @didDismiss="filterOpen = false" :initial-breakpoint="0.45" :breakpoints="[0, 0.45, 0.7]">
+      <ion-header class="ion-no-border">
         <ion-toolbar>
           <ion-title>{{ $t('common.filter') || 'Filter' }}</ion-title>
           <ion-buttons slot="end">
-            <ion-button @click="resetFilters" color="medium">{{ $t('common.reset') || 'Reset' }}</ion-button>
+            <ion-button @click="resetFilters" color="carrot" class="modal-reset-btn">
+              {{ $t('common.reset') || 'RESET' }}
+            </ion-button>
             <ion-button @click="filterOpen = false">
               <ion-icon :icon="closeOutline" />
             </ion-button>
           </ion-buttons>
         </ion-toolbar>
       </ion-header>
-      <ion-content class="ion-padding">
-        <ion-list lines="none">
-          <ion-item>
-            <ion-label position="stacked">{{ $t('store.priceRange') || 'Price Range (TWD)' }}</ion-label>
-            <div class="price-input-row">
-              <ion-input type="number" v-model="tempMinPrice" placeholder="Min" class="price-input" />
-              <span class="price-separator">-</span>
-              <ion-input type="number" v-model="tempMaxPrice" placeholder="Max" class="price-input" />
+      <ion-content class="ion-padding filter-modal-content">
+        <div class="filter-section">
+          <h3 class="filter-section-title">{{ $t('store.priceRange') || 'Price Range (TWD)' }}</h3>
+          <div class="price-input-group">
+            <div class="price-input-container">
+              <span class="price-symbol">$</span>
+              <ion-input 
+                type="number" 
+                v-model="tempMinPrice" 
+                placeholder="Min" 
+                class="premium-price-input" 
+              />
             </div>
-          </ion-item>
+            <div class="price-dash"></div>
+            <div class="price-input-container">
+              <span class="price-symbol">$</span>
+              <ion-input 
+                type="number" 
+                v-model="tempMaxPrice" 
+                placeholder="Max" 
+                class="premium-price-input" 
+              />
+            </div>
+          </div>
+        </div>
 
-          <ion-item class="stock-toggle-item">
-            <ion-label>{{ $t('store.inStockOnly') || 'In Stock Only' }}</ion-label>
-            <ion-toggle v-model="tempStockOnly" color="carrot" />
+        <div class="filter-section">
+          <ion-item lines="none" class="stock-toggle-card">
+            <ion-label>
+              <h3>{{ $t('store.inStockOnly') || 'In Stock Only' }}</h3>
+              <p>{{ $t('store.hideOutOfStock') || 'Show only products currently available' }}</p>
+            </ion-label>
+            <ion-toggle v-model="tempStockOnly" color="carrot" slot="end" />
           </ion-item>
-        </ion-list>
+        </div>
 
-        <ion-button expand="block" color="carrot" class="apply-filter-button" @click="applyFilters">
-          {{ $t('common.apply') || 'Apply' }}
-        </ion-button>
+        <div class="modal-action-row">
+          <ion-button expand="block" color="carrot" class="premium-apply-btn" @click="applyFilters">
+            {{ $t('common.apply') || 'Apply Filters' }}
+          </ion-button>
+        </div>
       </ion-content>
     </ion-modal>
   </ion-page>
@@ -824,37 +847,108 @@ onBeforeUnmount(() => {
   margin: 0;
 }
 
-.price-input-row {
+.filter-modal-content {
+  --background: var(--ion-background-color);
+}
+
+.modal-reset-btn {
+  font-weight: 700;
+  font-size: 0.8rem;
+  letter-spacing: 0.05em;
+}
+
+.filter-section {
+  margin-bottom: 24px;
+}
+
+.filter-section-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--ion-text-color);
+  margin-bottom: 12px;
+}
+
+.price-input-group {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-top: 8px;
+  gap: 16px;
   width: 100%;
 }
 
-.price-input {
-  --background: var(--ion-color-step-50, #f4f5f8);
-  --padding-start: 12px;
-  --border-radius: 8px;
-  border: 1px solid var(--ion-color-step-100, #e0e0e0);
-  border-radius: 8px;
-  text-align: center;
+.price-input-container {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  background: var(--ion-color-step-100, #f8f9fa);
+  border-radius: 12px;
+  padding: 0 12px;
+  height: 50px;
+  border: 1px solid var(--ion-color-step-200, transparent);
+  transition: border-color 0.2s ease;
 }
 
-.price-separator {
+.price-input-container:focus-within {
+  border-color: var(--ion-color-carrot);
+}
+
+.price-symbol {
   color: var(--ion-color-medium);
-  font-weight: bold;
-}
-
-.stock-toggle-item {
-  margin-top: 16px;
-  --padding-start: 0;
-}
-
-.apply-filter-button {
-  margin-top: 24px;
-  --border-radius: 12px;
   font-weight: 600;
+  margin-right: 4px;
+}
+
+.premium-price-input {
+  --padding-start: 4px;
+  --placeholder-color: var(--ion-color-step-400, #999);
+  --placeholder-opacity: 0.6;
+  font-weight: 600;
+  color: var(--ion-text-color);
+}
+
+.price-dash {
+  width: 12px;
+  height: 2px;
+  background: var(--ion-color-step-300, #ccc);
+  flex-shrink: 0;
+}
+
+.stock-toggle-card {
+  --background: var(--ion-color-step-100, #f8f9fa);
+  --padding-start: 16px;
+  --padding-end: 16px;
+  --inner-padding-end: 0;
+  border-radius: 16px;
+  margin: 0;
+  min-height: 80px;
+}
+
+.stock-toggle-card h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.stock-toggle-card p {
+  font-size: 0.82rem;
+  color: var(--ion-color-medium);
+  margin: 4px 0 0;
+}
+
+.modal-action-row {
+  margin-top: 32px;
+}
+
+.premium-apply-btn {
+  --border-radius: 14px;
+  --box-shadow: 0 4px 12px rgba(255, 126, 0, 0.25);
+  font-weight: 700;
+  height: 52px;
+  font-size: 1rem;
+}
+
+.ion-palette-dark .price-input-container,
+.ion-palette-dark .stock-toggle-card {
+  --background: var(--ion-color-step-150, #262626);
 }
 
 /* Product Grid */

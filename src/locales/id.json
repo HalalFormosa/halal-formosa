@@ -1053,6 +1053,7 @@
     "deliveryMethod": "Metode Pengiriman",
     "priceRange": "Rentang Harga (NTD)",
     "inStockOnly": "Hanya Stok Tersedia",
+    "hideOutOfStock": "Hanya tampilkan produk yang saat ini tersedia",
     "inactive": "Tidak Aktif",
     "sellerCenter": {
       "title": "Seller Center",
