@@ -67,7 +67,7 @@ export const SocialMediaService = {
     igPosts.forEach((igPost) => {
       const igTime = dayjs(igPost.timestamp)
       
-      let ttMatch = null
+      let ttMatch: any = null
       ttPosts.forEach((ttPost) => {
         if (usedTTIds.has(ttPost.id)) return
 

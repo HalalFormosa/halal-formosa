@@ -83,8 +83,15 @@
 
 /* Match the actual <ion-app> element */
 .safe-area {
-    padding: var(--safe-area-inset-top) var(--safe-area-inset-right) var(--safe-area-inset-bottom) var(--safe-area-inset-left);
+    padding-right: var(--safe-area-inset-right);
+    padding-bottom: var(--safe-area-inset-bottom);
+    padding-left: var(--safe-area-inset-left);
     box-sizing: border-box;
+}
+
+/* Apply top padding only if no header is present to handle it */
+.safe-area:not(:has(ion-header)) {
+    padding-top: var(--safe-area-inset-top);
 }
 
 .safe-area ion-header {
