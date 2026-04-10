@@ -70,22 +70,36 @@
           
           <!-- Subscribed State -->
           <template v-if="isSubscribed">
-            <ion-item lines="none" :style="{ '--background': 'transparent' }">
-              <div class="icon-box" slot="start">
-                <ion-icon :icon="icons.bookmarkOutline" color="carrot" />
+            <div class="pro-active-banner">
+              <div class="pro-active-header">
+                <div class="pro-active-title-group">
+                  <div class="pro-active-icon">
+                    <ion-icon :icon="icons.bookmarkOutline" />
+                  </div>
+                  <div class="pro-active-title-info">
+                    <h3 class="pro-active-title">{{ $t('profile.pro.title') }}</h3>
+                    <div class="pro-status-chip">
+                      <ion-icon :icon="icons.checkmarkCircle" />
+                      <span>{{ $t('profile.pro.active') }}</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <ion-button fill="outline" class="pro-manage-btn" size="small" @click="openManageSubscription">
+                  {{ $t('profile.pro.manage') }}
+                </ion-button>
               </div>
-              <ion-label>
-                <h3 style="font-weight: 700;">{{ $t('profile.pro.title') }}</h3>
-                <p style="color: var(--ion-color-carrot)">{{ $t('profile.pro.active') }}</p>
-              </ion-label>
-              <ion-button slot="end" fill="outline" color="medium" shape="round" size="small" @click="openManageSubscription">
-                {{ $t('profile.pro.manage') }}
-              </ion-button>
-            </ion-item>
-            <div style="padding: 0 16px 16px 64px;">
-              <p style="font-size: 0.8rem; margin: 0; color: var(--ion-color-medium)">
-                {{ renewalMessage }} • {{ $t('profile.pro.accessUntil') }} {{ formattedExpirationDate }}
-              </p>
+
+              <div class="pro-active-footer">
+                <div class="pro-detail-item">
+                  <ion-icon :icon="willRenew ? icons.refreshOutline : icons.alertCircleOutline" :color="willRenew ? 'success' : 'warning'" />
+                  <span>{{ renewalMessage }}</span>
+                </div>
+                <div class="pro-detail-item">
+                  <ion-icon :icon="icons.timeOutline" />
+                  <span>{{ $t('profile.pro.accessUntil') }} {{ formattedExpirationDate }}</span>
+                </div>
+              </div>
             </div>
           </template>
 
@@ -201,11 +215,14 @@
               <ion-label>{{ $t('profile.savedItems') }}</ion-label>
             </ion-item>
 
-            <ion-item v-if="userEmail" button @click="$router.push('/store/my-orders')">
+            <ion-item v-if="userEmail" button @click="$router.push('/store/my-orders')" :disabled="isStoreUnderConstruction">
               <div class="icon-box" slot="start">
                 <ion-icon :icon="icons.bagHandleOutline" />
               </div>
-              <ion-label>{{ $t('store.myOrders') }}</ion-label>
+              <ion-label>
+                <h3>{{ $t('store.myOrders') }}</h3>
+                <p v-if="isStoreUnderConstruction" class="construction-text-small">{{ $t('common.underConstruction') }}</p>
+              </ion-label>
             </ion-item>
           </ion-list>
         </ion-card>
@@ -218,56 +235,81 @@
             </ion-list-header>
           </ion-list>
 
-          <div v-if="merchantApplication?.status === 'pending'" class="xp-section vendor-onboarding pending">
+          <div v-if="isStoreUnderConstruction" class="xp-section vendor-onboarding construction">
             <div class="pending-status-box">
               <div class="icon-pulse">
-                <ion-icon :icon="icons.timeOutline" color="carrot" />
+                <ion-icon :icon="icons.constructOutline" color="carrot" />
               </div>
               <div class="status-text">
-                <h3>{{ $t('profile.merchant.pendingStatus') }}</h3>
-                <p>{{ $t('profile.merchant.pendingDesc') }}</p>
+                <h3>{{ $t('common.underConstruction') }}</h3>
+                <p>{{ $t('store.underConstructionDesc') || "We're brewing something amazing! The store will be back soon." }}</p>
               </div>
             </div>
           </div>
-          
-          <div v-else-if="merchantApplication?.status === 'rejected'" class="xp-section vendor-onboarding rejected">
-            <div class="pending-status-box">
-              <div class="icon-pulse-red">
-                <ion-icon :icon="icons.closeCircleOutline" color="danger" />
-              </div>
-              <div class="status-text">
-                <h3 style="color: var(--ion-color-danger)">{{ $t('merchant.register.rejectedStatus') }}</h3>
-                <p>{{ $t('merchant.register.rejectedProfileDesc') }}</p>
-                
-                <ion-button 
-                  fill="clear" 
-                  size="small" 
-                  color="carrot" 
-                  @click="goToMerchantRegistration"
-                  style="--padding-start: 0; font-weight: 700; margin-top: 8px;"
-                >
-                  {{ $t('common.reapply') }}
-                </ion-button>
+
+          <template v-else>
+            <div v-if="merchantApplication?.status === 'pending'" class="xp-section vendor-onboarding pending">
+              <div class="pending-status-box">
+                <div class="icon-pulse">
+                  <ion-icon :icon="icons.timeOutline" color="carrot" />
+                </div>
+                <div class="status-text">
+                  <h3>{{ $t('profile.merchant.pendingStatus') }}</h3>
+                  <p>{{ $t('profile.merchant.pendingDesc') }}</p>
+                </div>
               </div>
             </div>
-          </div>
-          
-          <ion-list v-else lines="none" class="vendor-list">
-            <ion-item button @click="$router.push('/merchant/register')" class="vendor-onboarding-item">
-              <div class="icon-box-vendor" slot="start">
-                <ion-icon :icon="icons.storefrontOutline" color="carrot" />
+            
+            <div v-else-if="merchantApplication?.status === 'rejected'" class="xp-section vendor-onboarding rejected">
+              <div class="pending-status-box">
+                <div class="icon-pulse-red">
+                  <ion-icon :icon="icons.closeCircleOutline" color="danger" />
+                </div>
+                <div class="status-text">
+                  <h3 style="color: var(--ion-color-danger)">{{ $t('merchant.register.rejectedStatus') }}</h3>
+                  <p>{{ $t('merchant.register.rejectedProfileDesc') }}</p>
+                  
+                  <ion-button 
+                    fill="clear" 
+                    size="small" 
+                    color="carrot" 
+                    @click="goToMerchantRegistration"
+                    style="--padding-start: 0; font-weight: 700; margin-top: 8px;"
+                  >
+                    {{ $t('common.reapply') }}
+                  </ion-button>
+                </div>
               </div>
-              <ion-label>
-                <h3 class="vendor-title-label">{{ $t('profile.merchant.startSelling') }}</h3>
-                <p class="vendor-subtitle-label">{{ $t('profile.merchant.storeSubtitle') }}</p>
-              </ion-label>
-            </ion-item>
-          </ion-list>
+            </div>
+            
+            <ion-list v-else lines="none" class="vendor-list">
+              <ion-item button @click="$router.push('/merchant/register')" class="vendor-onboarding-item">
+                <div class="icon-box-vendor" slot="start">
+                  <ion-icon :icon="icons.storefrontOutline" color="carrot" />
+                </div>
+                <ion-label>
+                  <h3 class="vendor-title-label">{{ $t('profile.merchant.startSelling') }}</h3>
+                  <p class="vendor-subtitle-label">{{ $t('profile.merchant.storeSubtitle') }}</p>
+                </ion-label>
+              </ion-item>
+            </ion-list>
+          </template>
         </ion-card>
 
-        <!-- Seller Center Section (For Merchants) -->
         <ion-card v-if="merchantStore">
-          <ion-list lines="none">
+          <div v-if="isStoreUnderConstruction" class="xp-section vendor-onboarding construction">
+            <div class="pending-status-box">
+              <div class="icon-pulse">
+                <ion-icon :icon="icons.constructOutline" color="primary" />
+              </div>
+              <div class="status-text">
+                <h3 style="color: var(--ion-color-primary)">{{ $t('common.underConstruction') }}</h3>
+                <p>{{ $t('store.underConstructionDesc') || "We're brewing something amazing! The store will be back soon." }}</p>
+              </div>
+            </div>
+          </div>
+          
+          <ion-list v-else lines="none">
             <ion-list-header style="min-height: 32px; padding-bottom: 4px;">
               <ion-label style="font-size: 0.85rem; color: var(--ion-color-primary); margin-top: 0; text-transform: uppercase;">{{ $t('store.sellerCenter.title') }}</ion-label>
             </ion-list-header>
@@ -564,7 +606,9 @@ import {
   chatbubblesOutline,
   storefrontOutline,
   timeOutline,
-  closeCircleOutline
+  closeCircleOutline,
+  refreshOutline,
+  alertCircleOutline
 } from "ionicons/icons";
 
 // ✅ Composables
@@ -616,7 +660,9 @@ const icons = {
   logOutOutline,
   checkmarkCircle,
   logoInstagram,
-  createOutline
+  createOutline,
+  refreshOutline,
+  alertCircleOutline
 }
 
 interface RcProduct {
@@ -632,6 +678,7 @@ interface RcProduct {
 // @ts-expect-error – injected global
 const appVersion = __APP_VERSION__;
 const isNative = Capacitor.isNativePlatform();
+const isStoreUnderConstruction = computed(() => import.meta.env.VITE_STORE_UNDER_CONSTRUCTION === 'true')
 const userEmail = ref("");
 const userDisplayName = ref("");
 const userAvatar = ref("");
@@ -1523,6 +1570,122 @@ ion-item {
   gap: 12px;
 }
 
+/* Subscribed Pro Banner */
+.pro-active-banner {
+  padding: 24px;
+  background: linear-gradient(135deg, rgba(250, 204, 21, 0.08) 0%, rgba(217, 119, 6, 0.12) 100%);
+  border-radius: 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+.pro-active-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+}
+
+.pro-active-title-group {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.pro-active-icon {
+  width: 48px;
+  height: 48px;
+  background: var(--ion-color-carrot);
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(var(--ion-color-carrot-rgb), 0.3);
+}
+
+.pro-active-icon ion-icon {
+  font-size: 24px;
+  color: white;
+}
+
+.pro-active-title-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pro-active-title {
+  font-size: 1.25rem;
+  font-weight: 800;
+  margin: 0;
+  color: var(--ion-color-carrot-shade);
+}
+
+.pro-status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  background: var(--ion-color-success-tint);
+  color: var(--ion-color-success-shade);
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  width: fit-content;
+}
+
+.pro-manage-btn {
+  --border-radius: 10px;
+  --border-color: var(--ion-color-step-300);
+  --color: var(--ion-color-step-600);
+  margin: 0;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-size: 0.7rem;
+}
+
+.pro-active-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(var(--ion-color-carrot-rgb), 0.1);
+}
+
+.pro-detail-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.85rem;
+  color: var(--ion-color-medium);
+  font-weight: 600;
+}
+
+.pro-detail-item ion-icon {
+  font-size: 18px;
+  min-width: 18px;
+}
+
+.ion-palette-dark .pro-active-banner {
+  background: linear-gradient(135deg, rgba(250, 204, 21, 0.05) 0%, rgba(217, 119, 6, 0.08) 100%);
+}
+
+.ion-palette-dark .pro-active-title {
+  color: white;
+}
+
+.ion-palette-dark .pro-status-chip {
+  background: rgba(var(--ion-color-success-rgb), 0.2);
+  color: var(--ion-color-success-tint);
+}
+
+.ion-palette-dark .pro-manage-btn {
+  --border-color: rgba(255, 255, 255, 0.1);
+  --color: var(--ion-color-step-400);
+}
+
+
 .pro-big-buy-button {
   --background: linear-gradient(135deg, #f59e0b, #d97706);
   --background-activated: linear-gradient(135deg, #d97706, #b45309);
@@ -1789,5 +1952,12 @@ ion-header {
   color: var(--ion-color-medium);
   margin: 0;
   line-height: 1.2;
+}
+
+.construction-text-small {
+  color: var(--ion-color-warning-shade);
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-top: 4px;
 }
 </style>

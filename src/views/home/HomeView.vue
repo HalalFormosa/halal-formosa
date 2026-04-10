@@ -503,9 +503,7 @@
               {{ $t('home.viewMore') }}
             </ion-button>
           </div>
-          <p class="section-subtitle">
-            {{ $t('home.communityBuzzDesc') || "@See what's trending with @halalformosa" }}
-          </p>
+          
         </ion-card-header>
 
         <CommunityReels 
