@@ -29,7 +29,8 @@
     "saving": "Menyimpan...",
     "success": "Berjaya!",
     "error": "Ralat berlaku.",
-    "notProvided": "Tidak disediakan"
+    "notProvided": "Tidak disediakan",
+    "replay": "Main Semula"
   },
   "dailyMissions": {
     "title": "Misi Harian",
@@ -111,10 +112,18 @@
     },
     "latestContents": "Kandungan Terkini",
     "followUs": "Ikuti Kami",
+    "whatsNew": "Apa yang Baharu",
+    "communityBuzz": "Trend Komuniti",
+    "communityBuzzDesc": "Lihat apa yang trending dengan @halal_formosa",
     "mediaPartnerContent": "Kandungan Rakan Media",
     "mediaPartnerDesc": "Pengalaman halal sebenar daripada rakan media kami yang disahkan",
     "mediaPartner": "Rakan media",
     "noReels": "Tiada kandungan terkini ditemui.",
+    "viewFullFeed": "Lihat Semua",
+    "previewLimit": "Pratonton Tamat",
+    "previewLimitDesc": "Tonton video penuh di platform asal",
+    "watchFull": "Tonton Video Penuh",
+    "viewOriginal": "Lihat Asal",
     "leaderboard": "Papan Pendahulu",
     "prayerNotification": "Solat {label} dalam {time}",
     "currentLocation": "Lokasi Semasa",

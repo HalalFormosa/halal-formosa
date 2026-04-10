@@ -2,35 +2,19 @@
   <ion-card class="reels-section">
     <ion-card-header>
       <div class="card-header-row">
-        <div class="header-main">
-          <ion-card-title>{{ $t('home.communityBuzz') || 'Community Buzz' }}</ion-card-title>
-          <p class="section-subtitle">
-            {{ $t('home.communityBuzzDesc') || 'See what\'s trending with @halalformosa' }}
-          </p>
-        </div>
-
-        <!-- Social Follow Buttons -->
-        <div class="social-follow-row">
-          <a 
-            href="https://instagram.com/halalformosa" 
-            target="_blank" 
-            class="social-pill instagram"
-            @click="logSocialFollow('instagram')"
-          >
-            <ion-icon :icon="logoInstagram" />
-            <span>IG</span>
-          </a>
-          <a 
-            href="https://tiktok.com/@halal_formosa" 
-            target="_blank" 
-            class="social-pill tiktok"
-            @click="logSocialFollow('tiktok')"
-          >
-            <ion-icon :icon="logoTiktok" />
-            <span>TikTok</span>
-          </a>
-        </div>
+        <ion-card-title class="section-title">{{ $t('home.whatsNew') || 'What\'s New' }}</ion-card-title>
+        <ion-button 
+          fill="clear" 
+          size="small" 
+          color="carrot" 
+          @click="$router.push('/reels')"
+        >
+          {{ $t('home.viewMore') }}
+        </ion-button>
       </div>
+      <p class="section-subtitle">
+        {{ $t('home.communityBuzzDesc') || 'See what\'s trending with @halalformosa' }}
+      </p>
     </ion-card-header>
 
     <ion-card-content>
@@ -49,18 +33,38 @@
           class="discover-item reel-item"
           button
           @click="openReel(reel)"
+          :id="'reel-' + reel.id"
         >
-          <!-- Video Thumbnail -->
-          <div class="reel-thumbnail-container">
+          <!-- Video Thumbnail / Player -->
+          <div class="reel-thumbnail-container" :data-id="reel.id">
+            <!-- Actual Video (Plays when visible) -->
+            <video
+              v-if="reel.video_url && activeReelId === reel.id"
+              :src="reel.video_url"
+              class="reel-video"
+              autoplay
+              muted
+              loop
+              playsinline
+              referrerpolicy="no-referrer"
+            ></video>
+            
+            <!-- Static Thumbnail (Placeholder) -->
             <img 
+              v-show="activeReelId !== reel.id || !reel.video_url"
               :src="reel.thumbnail_url || reel.media_url" 
               class="discover-img reel-img" 
               loading="lazy"
               alt="Reel thumbnail"
               @error="handleImageError"
             />
+
             <div class="reel-overlay">
-              <ion-icon :icon="playCircleOutline" class="play-icon" />
+              <ion-icon 
+                v-if="activeReelId !== reel.id" 
+                :icon="playCircleOutline" 
+                class="play-icon" 
+              />
               <div class="platform-badge">
                 <ion-icon :icon="reel.platform === 'tiktok' ? logoTiktok : logoInstagram" />
               </div>
@@ -93,8 +97,9 @@
 </template>
 
 <script setup lang="ts">
+import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { IonCard, IonCardHeader, IonCardTitle, IonCardContent, IonIcon, IonSkeletonText, IonAvatar } from '@ionic/vue'
-import { logoInstagram, logoTiktok, playCircleOutline, videocamOutline } from 'ionicons/icons'
+import { logoInstagram, logoTiktok, playCircleOutline, videocamOutline, chevronForward } from 'ionicons/icons'
 import { ActivityLogService } from '@/services/ActivityLogService'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
@@ -110,6 +115,7 @@ interface Reel {
   id: string
   caption: string
   media_url: string
+  video_url?: string
   thumbnail_url?: string
   permalink: string
   username: string
@@ -127,16 +133,57 @@ const props = defineProps<{
 
 const emit = defineEmits(['refresh-needed'])
 
+// 👁️ Viewport Tracking Logic
+const activeReelId = ref<string | null>(null)
+let observer: IntersectionObserver | null = null
+
+const setupObserver = () => {
+  if (observer) observer.disconnect()
+
+  observer = new IntersectionObserver((entries) => {
+    // Find the item with the highest intersection ratio
+    let maxRatio = 0
+    let mostVisibleId = null
+
+    entries.forEach((entry) => {
+      if (entry.isIntersecting && entry.intersectionRatio > maxRatio) {
+        maxRatio = entry.intersectionRatio
+        mostVisibleId = (entry.target as HTMLElement).getAttribute('data-id')
+      }
+    })
+
+    if (mostVisibleId) {
+      activeReelId.value = mostVisibleId
+    }
+  }, {
+    threshold: 0.6 // Card must be 60% visible to trigger autoplay
+  })
+
+  // Observe all thumbnails
+  const containers = document.querySelectorAll('.reel-thumbnail-container')
+  containers.forEach(container => observer?.observe(container))
+}
+
+// Watch for reels data changes to re-observe
+watch(() => props.reels, () => {
+  setTimeout(setupObserver, 500)
+}, { deep: true })
+
+onMounted(() => {
+  setTimeout(setupObserver, 1000)
+})
+
+onUnmounted(() => {
+  if (observer) observer.disconnect()
+})
+
 const handleImageError = (event: Event) => {
   const target = event.target as HTMLImageElement
   if (target) {
-    // 1. Instantly swap to branded fallback
     target.src = '/logo-raw/logo.png'
     target.style.objectFit = 'contain'
     target.style.padding = '20px'
     target.style.background = 'var(--ion-color-step-50)'
-    
-    // 2. Notify parent to trigger a background database refresh
     emit('refresh-needed')
   }
 }
@@ -146,7 +193,7 @@ const openReel = (reel: Reel) => {
       props.mode === 'home'
           ? 'home_media_partner_open'
           : 'explore_reel_open',
-      {
+       {
         reel_id: reel.id,
         platform: reel.platform || 'instagram',
         username: reel.username
@@ -171,58 +218,25 @@ const logSocialFollow = (platform: string) => {
 
 <style scoped>
 .reels-section {
-  margin: 12px 10px;
+  margin: 10px; /* Standard margin for Home sections */
 }
 
 .card-header-row {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
-  gap: 12px;
+  align-items: center;
+}
+
+.section-title {
+  font-weight: 700;
+  font-size: 1.1rem;
 }
 
 .section-subtitle {
-  margin: 2px 0 0;
+  margin: -4px 0 0;
   font-size: 0.75rem;
   color: var(--ion-color-medium);
   font-weight: 500;
-}
-
-.social-follow-row {
-  display: flex;
-  gap: 8px;
-}
-
-.social-pill {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  border-radius: 999px;
-  text-decoration: none;
-  font-size: 0.75rem;
-  font-weight: 700;
-  transition: all 0.2s ease;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-}
-
-.social-pill:active {
-  transform: scale(0.95);
-}
-
-.social-pill span {
-  color: white;
-}
-
-.social-pill.instagram {
-  background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
-  color: white;
-}
-
-.social-pill.tiktok {
-  background: #000000;
-  color: white;
-  border: 1px solid rgba(255,255,255,0.2);
 }
 
 .discover-grid {
@@ -253,13 +267,21 @@ const logSocialFollow = (platform: string) => {
   width: 100%;
   height: 260px;
   overflow: hidden;
+  background: #000; /* Black background for video transition */
 }
 
-.reel-img {
+.reel-img, .reel-video {
   height: 100% !important;
   width: 100%;
   object-fit: cover;
   border-radius: 0 !important;
+}
+
+.reel-video {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
 }
 
 .reel-overlay {
@@ -269,6 +291,7 @@ const logSocialFollow = (platform: string) => {
   display: flex;
   align-items: center;
   justify-content: center;
+  z-index: 2; /* Ensure overlay stays on top of video */
 }
 
 .play-icon {
@@ -280,7 +303,7 @@ const logSocialFollow = (platform: string) => {
 .platform-badge {
   position: absolute;
   top: 10px;
-  right: 10px;
+  left: 10px;
   background: rgba(0,0,0,0.5);
   backdrop-filter: blur(4px);
   width: 28px;
@@ -342,9 +365,15 @@ const logSocialFollow = (platform: string) => {
   -webkit-box-orient: vertical;
 }
 
-.empty-reels {
-  padding: 20px;
+.no-reels {
+  padding: 40px 20px;
   text-align: center;
+  width: 100%;
   color: var(--ion-color-medium);
+}
+
+.no-reels ion-icon {
+  font-size: 48px;
+  margin-bottom: 12px;
 }
 </style>

@@ -273,6 +273,12 @@ const routes: Array<RouteRecordRaw> = [
         name: 'MerchantRegistration',
         component: () => import('@/views/store/MerchantRegistrationView.vue'),
         meta: { requiresAuth: true, noAds: true }
+    },
+    {
+        path: '/reels',
+        name: 'FullReels',
+        component: () => import('@/views/home/FullReelsView.vue'),
+        meta: { noTabs: true, noAds: true }
     }
 
 ];

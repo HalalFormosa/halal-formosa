@@ -491,10 +491,10 @@
 
       <!-- === Community Buzz (Instagram & TikTok) === -->
       <CommunityReels 
-        :reels="instagramReels" 
+        :reels="communityReels" 
         :loading="loadingReels" 
         mode="home" 
-        @refresh-needed="handleInstagramRefreshNeeded"
+        @refresh-needed="handleReelsRefreshNeeded"
       />
 
       <!-- === Latest News === -->
@@ -793,23 +793,39 @@ import { useLocation, type LatLng } from '@/composables/useLocation'
 
 const { userLocation: sharedLocation, startWatching } = useLocation()
 
-/* ---------------- Instagram Reels ---------------- */
-const instagramReels = ref<any[]>([])
+/* ---------------- Community Reels (Instagram & TikTok) ---------------- */
+const communityReels = ref<any[]>([])
 const loadingReels = ref(true)
 
-const fetchInstagramReels = async () => {
+const fetchCommunityReels = async () => {
   loadingReels.value = true
   try {
-    const { data, error } = await supabase
+    // 📸 Fetch Instagram
+    const { data: igData, error: igError } = await supabase
       .from('instagram_posts')
       .select('*')
       .order('timestamp', { ascending: false })
-      .limit(10)
+      .limit(6)
 
-    if (error) throw error
-    instagramReels.value = data || []
+    // 🎵 Fetch TikTok
+    const { data: ttData, error: ttError } = await supabase
+      .from('tiktok_posts')
+      .select('*')
+      .order('timestamp', { ascending: false })
+      .limit(6)
+
+    if (igError) console.error('IG Fetch Error:', igError)
+    if (ttError) console.error('TikTok Fetch Error:', ttError)
+
+    // 🔀 Merge and Sort by timestamp
+    const combined = [
+      ...(igData || []).map(p => ({ ...p, platform: 'instagram' })),
+      ...(ttData || []).map(p => ({ ...p, platform: 'tiktok' }))
+    ].sort((a, b) => dayjs(b.timestamp).valueOf() - dayjs(a.timestamp).valueOf())
+
+    communityReels.value = combined
   } catch (err) {
-    console.error('Error fetching instagram reels:', err)
+    console.error('Error fetching community reels:', err)
   } finally {
     loadingReels.value = false
   }
@@ -820,29 +836,28 @@ const isRefreshingInstagram = ref(false)
 const lastRefreshTime = ref(0)
 const REFRESH_THROTTLE = 1000 * 60 * 30 // 30 minutes throttle
 
-async function handleInstagramRefreshNeeded() {
+async function handleReelsRefreshNeeded() {
   const now = Date.now()
   
-  // 🏎️ Throttle: Don't refresh more than once every 30 mins
   if (isRefreshingInstagram.value || (now - lastRefreshTime.value < REFRESH_THROTTLE)) {
     return
   }
 
   isRefreshingInstagram.value = true
-  console.log('[Home] Instagram links expired. Triggering background refresh...')
+  console.log('[Home] Social media links expired. Triggering background refresh...')
 
   try {
-    // 🌐 Call the Edge Function to refresh database links from Meta
-    const { error } = await supabase.functions.invoke('fetch-instagram')
+    // 🌐 Refresh both in parallel
+    await Promise.allSettled([
+      supabase.functions.invoke('fetch-instagram'),
+      supabase.functions.invoke('fetch-tiktok')
+    ])
     
-    if (!error) {
-      lastRefreshTime.value = Date.now()
-      // 📥 Re-fetch the database data to get the new URLs
-      await fetchInstagramReels()
-      console.log('[Home] Instagram refresh complete.')
-    }
+    lastRefreshTime.value = Date.now()
+    await fetchCommunityReels()
+    console.log('[Home] Social media refresh complete.')
   } catch (err) {
-    console.error('[Home] Failed to refresh Instagram links:', err)
+    console.error('[Home] Failed to refresh social media links:', err)
   } finally {
     isRefreshingInstagram.value = false
   }
@@ -1669,7 +1684,7 @@ async function refreshAllData() {
     fetchRecentProducts(),
     fetchRecentLocations(),
     fetchRecentNews(),
-    fetchInstagramReels(),
+    fetchCommunityReels(),
     fetchLeaderboard(),
     fetchHomePartners(),
     fetchTrips(),

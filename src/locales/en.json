@@ -29,7 +29,8 @@
     "saving": "Saving...",
     "success": "Success!",
     "error": "Error occurred.",
-    "notProvided": "Not provided"
+    "notProvided": "Not provided",
+    "replay": "Replay"
   },
   "master": {
     "active": "Active",
@@ -144,10 +145,16 @@
     },
     "latestContents": "Latest Contents",
     "followUs": "Follow Us",
-    "communityBuzz": "What's New",
+    "whatsNew": "What's New",
+    "communityBuzz": "Community Buzz",
     "communityBuzzDesc": "See what's trending with @halalformosa",
     "mediaPartner": "Media partner",
     "noReels": "No recent content found.",
+    "viewFullFeed": "View Full Feed",
+    "previewLimit": "Preview Finished",
+    "previewLimitDesc": "Watch the full video on the original platform",
+    "watchFull": "Watch Full Video",
+    "viewOriginal": "View Original",
     "leaderboard": "Leaderboard",
     "prayerNotification": "{label} Prayer in {time}",
     "currentLocation": "Current Location",
