@@ -254,6 +254,26 @@ function resolveEntity(activity: string, rawDetail: any): EntityResult {
                 entity_id: detail.application_id ? String(detail.application_id) : null
             }
 
+        // 🟢 REELS
+        case 'reels_item_view':
+        case 'reels_preview_limit_reached':
+        case 'reels_view_original_click':
+        case 'reels_restart_preview':
+        case 'explore_reel_open':
+        case 'home_media_partner_open':
+        case 'reels_audio_toggle':
+            return {
+                entity_type: 'reel',
+                entity_id: detail.reel_id ? String(detail.reel_id) : null
+            }
+
+        case 'reels_page_open':
+        case 'reels_section_view_more':
+            return {
+                entity_type: null,
+                entity_id: null
+            }
+
 
         // ❌ Everything else
         default:
@@ -413,6 +433,20 @@ function resolveActivityGroup(activity: string): string | null {
         case 'merchant_registration_page_open':
         case 'merchant_registration_step_view':
             return 'merchant'
+
+        /* -------------------------
+           SOCIAL REELS
+        -------------------------- */
+        case 'reels_page_open':
+        case 'reels_section_view_more':
+        case 'reels_item_view':
+        case 'reels_preview_limit_reached':
+        case 'reels_view_original_click':
+        case 'reels_restart_preview':
+        case 'explore_reel_open':
+        case 'home_media_partner_open':
+        case 'reels_audio_toggle':
+            return 'social_reels'
 
         /* -------------------------
            FALLBACK

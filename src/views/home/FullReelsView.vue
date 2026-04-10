@@ -114,7 +114,7 @@
                   <div 
                     v-if="reel.platform !== 'tiktok' && !isLimited[reel.id]" 
                     class="audio-toggle-overlay"
-                    @click.stop="isMuted = !isMuted"
+                    @click.stop="toggleAudio"
                   >
                     <div class="audio-toggle-btn-small">
                       <ion-icon :icon="isMuted ? volumeMuteOutline : volumeHighOutline" />
@@ -245,7 +245,10 @@ const setupIntersectionObserver = () => {
           // Setup timer (for both video and image reels)
           if (playbackTimer) clearTimeout(playbackTimer)
           
-          if (!isLimited[id]) {
+            if (!isLimited[id]) {
+            // Log view
+            ActivityLogService.log('reels_item_view', { reel_id: id, platform: reel.platform })
+
             playbackTimer = setTimeout(() => {
               if (activeId.value === id && !isLimited[id]) {
                 triggerLimit(id, reel.platform)
@@ -305,6 +308,8 @@ const restartPreview = (id: string) => {
     video.play()
     isPlaying[id] = true
   }
+
+  ActivityLogService.log('reels_restart_preview', { reel_id: id })
 }
 
 const togglePlay = (id: string) => {
@@ -325,6 +330,11 @@ const togglePlay = (id: string) => {
   }
 }
 
+const toggleAudio = () => {
+  isMuted.value = !isMuted.value
+  ActivityLogService.log('reels_audio_toggle', { is_muted: isMuted.value })
+}
+
 const openExternal = (reel: any) => {
   ActivityLogService.log('reels_view_original_click', {
     reel_id: reel.id,
@@ -337,6 +347,7 @@ const fromNow = (ts: string) => dayjs(ts).fromNow()
 
 onMounted(() => {
   fetchData()
+  ActivityLogService.log('reels_page_open')
 })
 
 onUnmounted(() => {

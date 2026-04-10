@@ -7,7 +7,7 @@
           fill="clear" 
           size="small" 
           color="carrot" 
-          @click="$router.push('/reels')"
+          @click="handleViewMore"
         >
           {{ $t('home.viewMore') }}
         </ion-button>
@@ -98,6 +98,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { IonCard, IonCardHeader, IonCardTitle, IonCardContent, IonIcon, IonSkeletonText, IonAvatar } from '@ionic/vue'
 import { logoInstagram, logoTiktok, playCircleOutline, videocamOutline, chevronForward } from 'ionicons/icons'
 import { ActivityLogService } from '@/services/ActivityLogService'
@@ -131,6 +132,7 @@ const props = defineProps<{
   mode?: 'place' | 'home'
 }>()
 
+const router = useRouter()
 const emit = defineEmits(['refresh-needed'])
 
 // 👁️ Viewport Tracking Logic
@@ -201,6 +203,11 @@ const openReel = (reel: Reel) => {
   )
 
   window.open(reel.permalink, '_blank')
+}
+
+const handleViewMore = () => {
+  ActivityLogService.log('reels_section_view_more')
+  router.push('/reels')
 }
 
 const fromNow = (timestamp: string) => {
