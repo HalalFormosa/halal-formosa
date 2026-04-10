@@ -73,7 +73,10 @@
               <ion-avatar class="creator-avatar">
                 <img src="/logo-raw/logo.png" alt="Halal Formosa" />
               </ion-avatar>
-              <span class="creator-name">@{{ reel.username }}</span>
+              <div class="creator-meta">
+                <span class="creator-name">@{{ reel.username }}</span>
+                <span v-if="reel.timestamp" class="post-time">{{ fromNow(reel.timestamp) }}</span>
+              </div>
             </div>
             <p class="reel-caption">{{ reel.caption }}</p>
           </div>
@@ -93,6 +96,15 @@
 import { IonCard, IonCardHeader, IonCardTitle, IonCardContent, IonIcon, IonSkeletonText, IonAvatar } from '@ionic/vue'
 import { logoInstagram, logoTiktok, playCircleOutline, videocamOutline } from 'ionicons/icons'
 import { ActivityLogService } from '@/services/ActivityLogService'
+import dayjs from 'dayjs'
+import relativeTime from 'dayjs/plugin/relativeTime'
+import utc from 'dayjs/plugin/utc'
+import timezone from 'dayjs/plugin/timezone'
+
+// Configure dayjs
+dayjs.extend(utc)
+dayjs.extend(timezone)
+dayjs.extend(relativeTime)
 
 interface Reel {
   id: string
@@ -102,6 +114,7 @@ interface Reel {
   permalink: string
   username: string
   media_type: string
+  timestamp: string
   platform?: 'instagram' | 'tiktok'
   creator_avatar?: string
 }
@@ -141,6 +154,11 @@ const openReel = (reel: Reel) => {
   )
 
   window.open(reel.permalink, '_blank')
+}
+
+const fromNow = (timestamp: string) => {
+  if (!timestamp) return ''
+  return dayjs(timestamp).fromNow()
 }
 
 const logSocialFollow = (platform: string) => {
@@ -282,20 +300,34 @@ const logSocialFollow = (platform: string) => {
 
 .creator-info {
   display: flex;
-  align-items: center;
-  gap: 6px;
+  align-items: flex-start;
+  gap: 8px;
   margin-bottom: 6px;
 }
 
+.creator-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
+}
+
 .creator-avatar {
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--ion-color-step-150);
 }
 
 .creator-name {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   color: var(--ion-text-color);
+}
+
+.post-time {
+  font-size: 10px;
+  color: var(--ion-color-medium);
+  font-weight: 500;
 }
 
 .reel-caption {

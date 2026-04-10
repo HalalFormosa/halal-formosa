@@ -175,6 +175,47 @@
               </div>
             </div>
 
+            <!-- Produced By (Campus Partner) -->
+            <div
+                v-if="item?.partner?.partner_type === 'campus' && item?.partner?.partner_tier === 'gold'"
+                class="ion-margin-top"
+            >
+              <p class="section-title">
+                <strong><small>{{ $t('search.details.producedBy') }}</small></strong>
+              </p>
+
+              <div
+                  class="gold-cert-card"
+                  role="button"
+                  tabindex="0"
+                  @click="goToPartner(item.partner.id)"
+              >
+                <!-- Glow layer -->
+                <div class="gold-glow"></div>
+
+                <!-- Content -->
+                <div class="gold-cert-content">
+                  <div class="gold-cert-left">
+                    <img
+                        v-if="item.partner.logo_url"
+                        :src="item.partner.logo_url"
+                        alt="logo"
+                        class="gold-cert-logo"
+                    />
+
+                    <div class="gold-cert-text">
+                      <div class="gold-cert-name">
+                        {{ item.partner.name }}
+                      </div>
+                      <div class="premium-verified-tag">
+                        {{ $t('home.partnerTier', { tier: (item.partner.partner_tier || '').toUpperCase() }) }} • {{ $t('partner.verifiedLabelShort') || 'Verified' }}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <!-- Certified By (Gold Partner) -->
             <div
                 v-if="!loadingCertifications && certifications.length"
@@ -210,8 +251,7 @@
                           {{ c.partner.name }}
                         </div>
                         <div class="premium-verified-tag">
-                          <ion-icon :icon="sparkles" />
-                          {{ $t('search.details.verifiedGoldPartner') }}
+                          {{ $t('home.partnerTier', { tier: (c.partner.partner_tier || '').toUpperCase() }) }} • {{ $t('partner.verifiedLabelShort') || 'Verified' }}
                         </div>
                       </div>
                   </div>
@@ -565,7 +605,7 @@ async function fetchProductCertifications(productId: string) {
       .from('product_certifications')
       .select(`
       certified_at,
-      partners (
+      partners:partner_id (
         id,
         name,
         logo_url,
@@ -578,11 +618,14 @@ async function fetchProductCertifications(productId: string) {
 
   if (!error && data) {
     certifications.value = (data as any[])
-        .filter(c => c.partner && c.partner.partner_tier === 'gold')
-        .map(c => ({
-          certified_at: c.certified_at,
-          partner: c.partner // This is now treated as a single object
-        })) as ProductCertification[]
+        .map(c => {
+          const body = Array.isArray(c.partners) ? c.partners[0] : c.partners
+          return {
+            certified_at: c.certified_at,
+            partner: body
+          }
+        })
+        .filter(c => c.partner && (c.partner.partner_tier || '').toLowerCase() === 'gold') as ProductCertification[]
   }
 
   loadingCertifications.value = false
@@ -1053,7 +1096,7 @@ onMounted(async () => {
             store_id,
             stores ( id, name, logo_url )
           ),
-          partner:partners(partner_tier)
+          partner:partners(id, name, partner_tier, partner_type, logo_url, verified)
         `)
           .eq('barcode', barcode)
           .maybeSingle(),
@@ -1071,10 +1114,12 @@ onMounted(async () => {
     if (prodRes.error) {
       console.error('Product load error:', prodRes.error)
     } else if (prodRes.data) {
+      const partnerBody = Array.isArray(prodRes.data.partner) ? prodRes.data.partner[0] : prodRes.data.partner
       const product: Product = {
         ...prodRes.data,
         author: null,
-        partner_tier: Array.isArray(prodRes.data.partner) ? prodRes.data.partner[0]?.partner_tier : (prodRes.data.partner as any)?.partner_tier,
+        partner: partnerBody,
+        partner_tier: partnerBody?.partner_tier,
         stores: prodRes.data.product_stores?.map((ps: any) => ({
           id: ps.stores.id as string,
           name: ps.stores.name,
@@ -1460,6 +1505,85 @@ ion-skeleton-text {
   overflow: hidden;
   margin: 4px 0;
   color: var(--ion-color-dark); /* default: theme-based */
+}
+
+/* === GOLD CERTIFICATION BADGE === */
+.gold-cert-card {
+  position: relative;
+  background: linear-gradient(135deg, #fef9c3 0%, #fef3c7 100%);
+  border: 1px solid #facc15;
+  border-radius: 16px;
+  padding: 12px;
+  margin-top: 12px;
+  box-shadow: 0 4px 12px rgba(250, 204, 21, 0.15);
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  cursor: pointer;
+}
+
+.gold-cert-card:active {
+  transform: scale(0.98);
+}
+
+.gold-cert-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+  z-index: 2;
+}
+
+.gold-cert-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.gold-cert-logo {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  background: white;
+  padding: 4px;
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+}
+
+.gold-cert-name {
+  font-weight: 700;
+  font-size: 1rem;
+  color: #854d0e;
+}
+
+.premium-verified-tag {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #a16207;
+  margin-top: 2px;
+}
+
+/* Dark mode overrides */
+.ion-palette-dark .gold-cert-card {
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.1) 0%, rgba(245, 158, 11, 0.05) 100%);
+  border-color: rgba(250, 204, 21, 0.4);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3), 0 0 10px rgba(250, 204, 21, 0.1);
+}
+
+.ion-palette-dark .gold-cert-name {
+  color: #fbbf24;
+}
+
+.ion-palette-dark .premium-verified-tag {
+  color: #fcd34d;
+  opacity: 0.9;
+}
+
+.ion-palette-dark .gold-cert-logo {
+  background: white; /* Keep logo readable */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
 }
 
 /* Tier-specific product name colors in related list */

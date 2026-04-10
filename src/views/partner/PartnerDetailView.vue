@@ -221,6 +221,52 @@
           </ion-card-content>
         </ion-card>
 
+        <!-- Produced Products (Campus only) -->
+        <ion-card
+            v-if="(body.partner_type === 'campus') && (loadingProducedProducts || producedProducts.length)"
+        >
+          <ion-card-header>
+            <ion-card-title>{{ $t('partner.producedProducts') }}</ion-card-title>
+          </ion-card-header>
+
+          <ion-card-content>
+            <!-- Skeleton -->
+            <template v-if="loadingProducedProducts">
+              <ion-skeleton-text animated style="width:100%;height:140px;border-radius:12px;" />
+              <ion-skeleton-text animated style="width:80%;height:14px;margin-top:8px;" />
+            </template>
+
+            <!-- Products (Horizontal Scroll) -->
+            <div v-else class="discover-scroll">
+              <div class="discover-track">
+                <ion-card
+                    v-for="p in producedProducts"
+                    :key="p.id"
+                    class="discover-item discover-item--scroll"
+                    button
+                    @click="openProducedProduct(p)"
+                >
+                  <img
+                      :src="p.photo_front_url || 'https://placehold.co/200x200'"
+                      class="discover-img"
+                      @error="(e) => (e.target as any).src = `https://placehold.co/200x200?text=${encodeURIComponent(p.name)}`"
+                  />
+                  <ion-label class="discover-label">
+                    <p class="discover-name" style="text-align: center;">{{ p.name }}</p>
+                    <ion-chip
+                        v-if="p.status"
+                        :color="p.status === 'Halal' ? 'success' : 'primary'"
+                        style="font-size:10px; height: 20px; margin-top: 4px;"
+                    >
+                      {{ p.status }}
+                    </ion-chip>
+                  </ion-label>
+                </ion-card>
+              </div>
+            </div>
+          </ion-card-content>
+        </ion-card>
+
         <!-- Nearby Locations (Tag-based matching to Partner Slug) -->
         <ion-card
             v-if="(body.partner_type === 'campus') && (loadingNearby || nearbyLocations.length)"
@@ -650,6 +696,31 @@ async function fetchCertifiedProducts() {
   loadingProducts.value = false
 }
 
+const producedProducts = ref<any[]>([])
+const loadingProducedProducts = ref(false)
+
+async function fetchProducedProducts() {
+  loadingProducedProducts.value = true
+
+  const { data, error } = await supabase
+      .from('products')
+      .select(`
+        id,
+        barcode,
+        name,
+        status,
+        photo_front_url
+      `)
+      .eq('partner_id', body.value.id)
+      .limit(20)
+
+  if (!error && data) {
+    producedProducts.value = data
+  }
+
+  loadingProducedProducts.value = false
+}
+
 const certifiedLocations = ref<any[]>([])
 const loadingLocations = ref(false)
 
@@ -820,6 +891,19 @@ function openCertifiedProduct(p: any) {
   router.push(`/item/${p.barcode}`)
 }
 
+function openProducedProduct(p: any) {
+  ActivityLogService.log('partner_produced_product_click', {
+    partner_id: body.value.id,
+    partner_name: body.value.name,
+    partner_tier: body.value.partner_tier,
+    product_id: p.id,
+    product_barcode: p.barcode,
+    product_name: p.name
+  })
+
+  router.push(`/item/${p.barcode}`)
+}
+
 function openCertifiedLocation(loc: any) {
   ActivityLogService.log('partner_certified_location_click', {
     partner_id: body.value.id,
@@ -880,6 +964,7 @@ onMounted(async () => {
   
   if (body.value.partner_type === 'campus') {
     fetchNearbyLocations()
+    fetchProducedProducts()
   }
 })
 

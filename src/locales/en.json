@@ -144,8 +144,8 @@
     },
     "latestContents": "Latest Contents",
     "followUs": "Follow Us",
-    "communityBuzz": "Community Buzz",
-    "communityBuzzDesc": "See what's new in halalformosa media",
+    "communityBuzz": "What's New",
+    "communityBuzzDesc": "See what's trending with @halalformosa",
     "mediaPartner": "Media partner",
     "noReels": "No recent content found.",
     "leaderboard": "Leaderboard",
@@ -338,6 +338,7 @@
       "availableAt": "Available at",
       "save": "Save",
       "certifiedBy": "Certified by",
+      "producedBy": "Produced By",
       "verifiedGoldPartner": "Verified Gold Partner",
       "saveToFolder": "Save to Folder",
       "newCollectionPlaceholder": "New collection name...",
@@ -703,6 +704,7 @@
     "programs": "Programs",
     "contact": "Contact",
     "verifiedLabel": "Verified Partner",
+    "verifiedLabelShort": "Verified",
     "noPartnerFound": "No partner found",
     "fields": {
       "address": "Address",
@@ -710,7 +712,8 @@
       "email": "Email",
       "website": "Website"
     },
-    "goldPartner": "GOLD PARTNER"
+    "goldPartner": "GOLD PARTNER",
+    "producedProducts": "Produced Products"
   },
   "points": {
     "title": "Review Points Logs"

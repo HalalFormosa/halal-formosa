@@ -88,7 +88,7 @@
 
             <!-- 📢 Important Notice (Read Description) -->
             <div
-                v-if="place.description"
+                v-if="place.description && isMuslimFriendly"
                 class="description-notice-banner"
                 :class="{ 'is-muslim-friendly': isMuslimFriendly }"
                 @click="scrollToDescription"

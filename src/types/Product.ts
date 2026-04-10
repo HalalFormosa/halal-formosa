@@ -34,6 +34,9 @@ export interface Product {
         id: string;
         name: string;
         partner_tier: string | null;
+        partner_type: string | null;
+        logo_url: string | null;
+        verified: boolean;
     } | null;
 
     partner_id?: string | null;

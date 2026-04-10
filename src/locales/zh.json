@@ -145,6 +145,8 @@
     },
     "latestContents": "最新內容",
     "followUs": "關注我們",
+    "communityBuzz": "最新動態",
+    "communityBuzzDesc": "查看 @halalformosa 的最新趨勢",
     "mediaPartnerContent": "媒體合作夥伴內容",
     "mediaPartnerDesc": "來自我們認證媒體合作夥伴的真實清真體驗",
     "mediaPartner": "媒體合作夥伴",
@@ -339,6 +341,7 @@
       "availableAt": "販售地點",
       "save": "儲存",
       "certifiedBy": "認證單位",
+      "producedBy": "生產單位",
       "verifiedGoldPartner": "認證黃金合作夥伴",
       "saveToFolder": "儲存至資料夾",
       "newCollectionPlaceholder": "輸入新收藏集名稱...",
@@ -704,6 +707,7 @@
     "programs": "計畫",
     "contact": "聯繫方式",
     "verifiedLabel": "認證合作夥伴",
+    "verifiedLabelShort": "認證",
     "noPartnerFound": "未找到合作夥伴",
     "fields": {
       "address": "地址",
@@ -711,7 +715,8 @@
       "email": "電子郵件",
       "website": "網站"
     },
-    "goldPartner": "黃金合作夥伴"
+    "goldPartner": "黃金合作夥伴",
+    "producedProducts": "生產產品"
   },
   "points": {
     "title": "審核積分紀錄"
