@@ -160,6 +160,7 @@ import { supabase } from '@/plugins/supabaseClient';
 import { Capacitor } from '@capacitor/core';
 import { useI18n } from 'vue-i18n'
 import {moonOutline, sunnyOutline} from "ionicons/icons";
+import { ActivityLogService } from '@/services/ActivityLogService'
 
 type Theme = 'dark' | 'light'
 
@@ -197,12 +198,16 @@ async function login() {
 
   if (error) {
     errorMsg.value = error.message
+    ActivityLogService.log('auth_login_failed', { error_message: error.message, method: 'email' })
+  } else {
+    ActivityLogService.log('auth_login_success', { method: 'email' })
   }
 }
 
 function setLanguage(lang: 'en' | 'id' | 'ms' | 'zh') {
   locale.value = lang
   localStorage.setItem('lang', lang)
+  ActivityLogService.log('settings_language_change', { language: lang })
 }
 
 // 1️⃣ Determine initial theme synchronously
@@ -223,7 +228,9 @@ function applyTheme(t: Theme) {
 }
 
 function toggleTheme() {
-  applyTheme(theme.value === 'dark' ? 'light' : 'dark')
+  const newTheme = theme.value === 'dark' ? 'light' : 'dark'
+  applyTheme(newTheme)
+  ActivityLogService.log('settings_theme_toggle', { theme: newTheme })
 }
 
 async function loginWithGoogle() {
@@ -251,6 +258,11 @@ async function loginWithGoogle() {
 
   if (error) {
     errorMsg.value = error.message;
+    ActivityLogService.log('auth_login_failed', { error_message: error.message, method: 'google' })
+  } else {
+    // Note: Google success is usually handled via redirect, 
+    // but we can log the attempt start here.
+    ActivityLogService.log('auth_login_success', { method: 'google' })
   }
 }
 

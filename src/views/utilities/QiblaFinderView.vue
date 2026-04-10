@@ -51,6 +51,7 @@ import {
 import AppHeader from '@/components/AppHeader.vue'
 import CompassDial from '@/components/CompassDial.vue'
 import { useQiblaCompass } from '@/composables/useQiblaCompass'
+import { ActivityLogService } from '@/services/ActivityLogService'
 
 /* ---------------- Qibla Logic ---------------- */
 const {
@@ -81,6 +82,7 @@ const bearingLabel = computed(() => {
 })
 /* ---------------- Lifecycle ---------------- */
 onIonViewWillEnter(() => {
+  ActivityLogService.log('utility_qibla_open')
   // Set loading to true IMMEDIATELY so the user sees the spinner
   loading.value = true;
 

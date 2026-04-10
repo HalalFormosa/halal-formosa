@@ -143,6 +143,14 @@ function resolveEntity(activity: string, rawDetail: any): EntityResult {
             }
 
 
+        // 🟢 SEARCH interactions
+        case 'search_no_results':
+             return {
+                entity_type: 'search_query',
+                entity_id: detail.query ? String(detail.query) : null
+            }
+
+
         // 🟢 SEARCH FILTER interactions
         case 'search_filter_category':
             return {
@@ -272,6 +280,45 @@ function resolveEntity(activity: string, rawDetail: any): EntityResult {
             return {
                 entity_type: null,
                 entity_id: null
+            }
+
+        // 🟢 AUTH interactions
+        case 'auth_login_success':
+        case 'auth_login_failed':
+        case 'auth_signup_success':
+        case 'auth_signup_failed':
+            return {
+                entity_type: 'auth_method',
+                entity_id: detail.method ?? 'email'
+            }
+
+        // 🟢 SETTINGS
+        case 'settings_language_change':
+            return {
+                entity_type: 'language',
+                entity_id: detail.language ?? null
+            }
+
+        case 'settings_theme_toggle':
+            return {
+                entity_type: 'theme',
+                entity_id: detail.theme ?? null
+            }
+
+        // 🟢 UTILITIES
+        case 'utility_qibla_open':
+            return {
+                entity_type: null,
+                entity_id: null
+            }
+
+        // 🟢 CONTRIBUTIONS
+        case 'add_product_start':
+        case 'add_product_ocr_start':
+        case 'add_product_submit_success':
+            return {
+                entity_type: 'product',
+                entity_id: detail.barcode ? String(detail.barcode) : null
             }
 
 
@@ -447,6 +494,42 @@ function resolveActivityGroup(activity: string): string | null {
         case 'home_media_partner_open':
         case 'reels_audio_toggle':
             return 'social_reels'
+
+        /* -------------------------
+           AUTH
+        -------------------------- */
+        case 'auth_login_success':
+        case 'auth_login_failed':
+        case 'auth_signup_success':
+        case 'auth_signup_failed':
+            return 'auth'
+
+        /* -------------------------
+           SETTINGS
+        -------------------------- */
+        case 'settings_language_change':
+        case 'settings_theme_toggle':
+            return 'settings'
+
+        /* -------------------------
+           UTILITIES
+        -------------------------- */
+        case 'utility_qibla_open':
+            return 'utilities'
+
+        /* -------------------------
+           CONTRIBUTIONS
+        -------------------------- */
+        case 'add_product_start':
+        case 'add_product_ocr_start':
+        case 'add_product_submit_success':
+            return 'contributions'
+
+        /* -------------------------
+           SEARCH NO RESULTS
+        -------------------------- */
+        case 'search_no_results':
+            return 'search'
 
         /* -------------------------
            FALLBACK

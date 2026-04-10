@@ -596,6 +596,7 @@ onMounted(async () => {
   await fetchHighlightsWithCache(true)
   await fetchCategoryRules()
   await fetchCategories()
+  ActivityLogService.log('add_product_start')
 })
 
 interface ProductForm {
@@ -836,6 +837,7 @@ async function scanIngredientsWithCamera() {
   const blob = await fetch(image.webPath!).then(r => r.blob())
   const file = new File([blob], `ingredients-${Date.now()}.jpg`, { type: 'image/jpeg' })
   originalFile.value = file
+  ActivityLogService.log('add_product_ocr_start', { method: 'camera' })
   openCropper(file)
 }
 
@@ -847,6 +849,7 @@ function scanIngredientsFromGallery() {
     const target = e.target as HTMLInputElement
     if (target.files && target.files[0]) {
       originalFile.value = target.files[0]
+      ActivityLogService.log('add_product_ocr_start', { method: 'gallery' })
       openCropper(target.files[0])
     }
   }

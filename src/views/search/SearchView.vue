@@ -1170,6 +1170,17 @@ const fetchProducts = async (reset = false) => {
             ? processedData
             : [...results.value, ...processedData]
 
+        if (reset && results.value.length === 0) {
+          ActivityLogService.log("search_no_results", {
+            query: q,
+            filters: {
+              stores: activeStores.value.map(s => s.id),
+              categories: activeCategories.value.map(c => c.id),
+              statuses: activeStatuses.value
+            }
+          })
+        }
+
         currentPage.value++
       }
 
@@ -1362,6 +1373,17 @@ const fetchProducts = async (reset = false) => {
         results.value = reset
             ? mapped
             : [...results.value, ...mapped]
+      }
+
+      if (reset && results.value.length === 0 && hasActiveFilters.value) {
+        ActivityLogService.log("search_no_results", {
+          query: searchQuery.value,
+          filters: {
+            stores: activeStores.value.map(s => s.id),
+            categories: activeCategories.value.map(c => c.id),
+            statuses: activeStatuses.value
+          }
+        })
       }
 
       currentPage.value++

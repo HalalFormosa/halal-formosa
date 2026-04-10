@@ -82,6 +82,7 @@ export default defineComponent({
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from '@/plugins/supabaseClient' // adjust path if needed
+import { ActivityLogService } from '@/services/ActivityLogService'
 
 const email = ref('')
 const password = ref('')
@@ -102,13 +103,16 @@ async function signup() {
     if (error) {
       errorMsg.value = error.message
       console.error('Signup error:', error)
+      ActivityLogService.log('auth_signup_failed', { error_message: error.message })
     } else {
       // Success, redirect or notify user
+      ActivityLogService.log('auth_signup_success')
       router.push('/login')
     }
   } catch (err: any) {
     errorMsg.value = err.message || 'Unexpected error'
     console.error('Unexpected signup error:', err)
+    ActivityLogService.log('auth_signup_failed', { error_message: err.message || 'Unexpected' })
   } finally {
     loading.value = false
   }
