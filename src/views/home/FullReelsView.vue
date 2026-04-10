@@ -72,7 +72,30 @@
                 <h3>{{ $t('home.previewLimit') || 'Preview Finished' }}</h3>
                 <p>{{ $t('home.previewLimitDesc') || 'Watch the full video on the original platform' }}</p>
                 
+                <template v-if="reel.isMultiPlatform">
+                  <div class="multi-limit-stack">
+                    <ion-button 
+                      expand="block" 
+                      shape="round" 
+                      class="redirect-btn multi-ig"
+                      @click="openUrl(reel.permalink_ig, 'instagram', reel.id)"
+                    >
+                      <ion-icon :icon="logoInstagram" slot="start" />
+                      Watch on Instagram
+                    </ion-button>
+                    <ion-button 
+                      expand="block" 
+                      shape="round" 
+                      class="redirect-btn multi-tt"
+                      @click="openUrl(reel.permalink_tt, 'tiktok', reel.id)"
+                    >
+                      <ion-icon :icon="logoTiktok" slot="start" />
+                      Watch on TikTok
+                    </ion-button>
+                  </div>
+                </template>
                 <ion-button 
+                  v-else
                   expand="block" 
                   shape="round" 
                   color="light" 
@@ -140,7 +163,7 @@
                   <ion-button 
                     fill="solid" 
                     class="external-link-btn-premium multi-btn ig"
-                    @click="window.open(reel.permalink_ig, '_blank')"
+                    @click="openUrl(reel.permalink_ig, 'instagram', reel.id)"
                   >
                     <ion-icon :icon="logoInstagram" slot="start" />
                     Instagram
@@ -148,7 +171,7 @@
                   <ion-button 
                     fill="solid" 
                     class="external-link-btn-premium multi-btn tt"
-                    @click="window.open(reel.permalink_tt, '_blank')"
+                    @click="openUrl(reel.permalink_tt, 'tiktok', reel.id)"
                   >
                     <ion-icon :icon="logoTiktok" slot="start" />
                     TikTok
@@ -361,12 +384,19 @@ const toggleAudio = () => {
   ActivityLogService.log('reels_audio_toggle', { is_muted: isMuted.value })
 }
 
+const openUrl = (url?: string, platform?: string, reelId?: string) => {
+  if (!url) return
+  if (platform && reelId) {
+    ActivityLogService.log('reels_view_original_click', {
+      reel_id: reelId,
+      platform: platform
+    })
+  }
+  window.open(url, '_blank')
+}
+
 const openExternal = (reel: any) => {
-  ActivityLogService.log('reels_view_original_click', {
-    reel_id: reel.id,
-    platform: reel.platform
-  })
-  window.open(reel.permalink, '_blank')
+  openUrl(reel.permalink, reel.platform, reel.id)
 }
 
 const fromNow = (ts: string) => dayjs(ts).fromNow()
@@ -569,7 +599,7 @@ onUnmounted(() => {
 
 .platform-chip.tiktok {
   background: #000;
-  border: 1px solid rgba(255,255,255,0.3);
+  
 }
 
 .caption-container {
@@ -594,7 +624,7 @@ onUnmounted(() => {
   --border-radius: 12px;
   --color: white;
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(255,255,255,0.3);
+ 
   font-weight: 700;
   height: 44px;
   text-transform: none;
@@ -620,7 +650,7 @@ onUnmounted(() => {
 
 .multi-btn.tt {
   --background: #000;
-  border: 1px solid rgba(255,255,255,0.3);
+  
 }
 
 /* Limit Overlay */
@@ -645,6 +675,23 @@ onUnmounted(() => {
   font-size: 60px;
   margin-bottom: 20px;
   color: var(--ion-color-primary);
+}
+
+.redirect-btn.multi-ig {
+  --background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888) !important;
+  --color: white !important;
+}
+
+.redirect-btn.multi-tt {
+  --background: #000 !important;
+  --color: white !important;
+}
+
+.multi-limit-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
 }
 
 .limit-box h3 {
