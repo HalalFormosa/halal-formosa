@@ -221,8 +221,8 @@ const fetchData = async () => {
   loading.value = true
   try {
     const [{ data: igData }, { data: ttData }] = await Promise.all([
-      supabase.from('instagram_posts').select('*').order('timestamp', { ascending: false }).limit(20),
-      supabase.from('tiktok_posts').select('*').order('timestamp', { ascending: false }).limit(20)
+      supabase.from('instagram_posts').select('*').order('timestamp', { ascending: false }).limit(25),
+      supabase.from('tiktok_posts').select('*').order('timestamp', { ascending: false }).limit(25)
     ])
 
     // 🔀 Merge and Sort by deduplicating

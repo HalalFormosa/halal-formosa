@@ -18,53 +18,44 @@ export interface SocialPost {
 
 export const SocialMediaService = {
   /**
-   * Normalizes caption text for fuzzy matching by:
-   * 1. Converting to lowercase
-   * 2. Removing hashtags
-   * 3. Removing extra whitespace/newlines
+   * Normalizes caption text for consistent comparison.
    */
   normalizeCaption(text: string | null | undefined): string {
     if (!text) return ''
     return text
       .toLowerCase()
-      .replace(/#\w+/g, '') // Remove hashtags
-      .replace(/[^\p{L}\p{N}\s]/gu, '') // Remove punctuation and emojis
-      .replace(/\s+/g, ' ') // Collapse whitespace
+      .replace(/[^\p{L}\p{N}\s]/gu, '') // Remove symbols/emojis
+      .replace(/\s+/g, ' ')
       .trim()
   },
 
   /**
-   * Extracts meaningful tokens from a caption for similarity checking.
-   * Filters out common footer words to avoid false positives.
+   * Checks if two captions are "similar enough" without being translated.
+   * Uses a combination of start-of-string matching and word overlap.
    */
-  getTokens(text: string): Set<string> {
-    if (!text) return new Set()
-    const footers = ['download', 'application', 'halal', 'formosa', 'taiwan', 'muslim', 'friendly', 'restaurants', 'mosques', 'products', 'follow', '⸻']
+  isSimilarCaption(c1: string, c2: string): boolean {
+    const n1 = this.normalizeCaption(c1)
+    const n2 = this.normalizeCaption(c2)
     
-    return new Set(
-      text.toLowerCase()
-        .split(/[\s\n\r]+/)
-        .map(w => w.replace(/[.,!?;:()"'<>]/g, ''))
-        .filter(w => w.length > 2)
-        .filter(w => !footers.includes(w))
-    )
+    // 1. Exact normalized match
+    if (n1 === n2) return true
+    
+    // 2. Substantial start match (covers slight edits at the end)
+    if (n1.length > 50 && n2.length > 50) {
+      if (n1.substring(0, 45) === n2.substring(0, 45)) return true
+    }
+
+    // 3. Substring match (one is contained in the other)
+    if (n1.length > 20 && n2.length > 20) {
+      if (n1.includes(n2) || n2.includes(n1)) return true
+    }
+
+    return false
   },
 
   /**
-   * Calculates Jaccard similarity between two captions based on tokens.
-   */
-  calculateSimilarity(text1: string, text2: string): number {
-    const s1 = this.getTokens(text1)
-    const s2 = this.getTokens(text2)
-    if (s1.size === 0 || s2.size === 0) return 0
-    
-    const intersection = new Set([...s1].filter(x => s2.has(x)))
-    const union = new Set([...s1, ...s2])
-    return intersection.size / union.size
-  },
-
-  /**
-   * Merges Instagram and TikTok posts, combining duplicates based on similarity and time proximity.
+   * Merges Instagram and TikTok posts.
+   * Clusters posts based on caption similarity and 24-hour time proximity.
    */
   mergeSocialPosts(igData: any[] | null, ttData: any[] | null): SocialPost[] {
     const results: SocialPost[] = []
@@ -72,53 +63,36 @@ export const SocialMediaService = {
     const ttPosts = ttData || []
     const igPosts = igData || []
 
-    // 1. Process Instagram posts and look for matches in TikTok
+    // 1. Match IG to TikTok
     igPosts.forEach((igPost) => {
       const igTime = dayjs(igPost.timestamp)
-      const igNorm = this.normalizeCaption(igPost.caption)
       
-      let bestMatch = null
-      let highestScore = 0
-
+      let ttMatch = null
       ttPosts.forEach((ttPost) => {
         if (usedTTIds.has(ttPost.id)) return
 
         const ttTime = dayjs(ttPost.timestamp)
         const hourDiff = Math.abs(igTime.diff(ttTime, 'hour'))
 
-        // Only consider matches within 24 hours
-        if (hourDiff <= 24) {
-          const ttNorm = this.normalizeCaption(ttPost.caption)
-          
-          // 1. Check for substring/exact match (very high confidence)
-          const isHighConfidence = igNorm.length > 20 && (igNorm === ttNorm || igNorm.includes(ttNorm) || ttNorm.includes(igNorm))
-          
-          // 2. Check for token similarity (useful for translations/edits)
-          const similarityScore = this.calculateSimilarity(igPost.caption, ttPost.caption)
-          
-          if (isHighConfidence || similarityScore > 0.3) {
-            // Priority: High confidence > similarity score
-            const currentScore = isHighConfidence ? 1.0 : similarityScore
-            
-            if (currentScore > highestScore) {
-              highestScore = currentScore
-              bestMatch = ttPost
-            }
+        // Only match within a reasonable window (now 7 days to catch delayed cross-posts)
+        if (hourDiff <= 168) {
+          if (this.isSimilarCaption(igPost.caption, ttPost.caption)) {
+            ttMatch = ttPost
           }
         }
       })
 
-      if (bestMatch) {
-         usedTTIds.add(bestMatch.id)
-         results.push({
-           ...igPost,
-           platform: 'instagram',
-           isMultiPlatform: true,
-           permalink_ig: igPost.permalink,
-           permalink_tt: bestMatch.permalink,
-           video_url: igPost.video_url || bestMatch.video_url,
-           thumbnail_url: igPost.thumbnail_url || bestMatch.thumbnail_url || igPost.media_url
-         })
+      if (ttMatch) {
+        usedTTIds.add(ttMatch.id)
+        results.push({
+          ...igPost,
+          platform: 'instagram',
+          isMultiPlatform: true,
+          permalink_ig: igPost.permalink,
+          permalink_tt: ttMatch.permalink,
+          video_url: igPost.video_url || ttMatch.video_url,
+          thumbnail_url: igPost.thumbnail_url || ttMatch.thumbnail_url || igPost.media_url
+        })
       } else {
         results.push({
           ...igPost,
