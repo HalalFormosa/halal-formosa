@@ -823,14 +823,14 @@ const fetchCommunityReels = async () => {
       .from('instagram_posts')
       .select('*')
       .order('timestamp', { ascending: false })
-      .limit(6)
+      .limit(10)
 
     // 🎵 Fetch TikTok
     const { data: ttData, error: ttError } = await supabase
       .from('tiktok_posts')
       .select('*')
       .order('timestamp', { ascending: false })
-      .limit(6)
+      .limit(10)
 
     if (igError) console.error('IG Fetch Error:', igError)
     if (ttError) console.error('TikTok Fetch Error:', ttError)
