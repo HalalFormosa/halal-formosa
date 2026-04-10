@@ -48,8 +48,12 @@
                 :icon="playCircleOutline" 
                 class="play-icon" 
               />
-              <div class="platform-badge">
-                <ion-icon :icon="reel.platform === 'tiktok' ? logoTiktok : logoInstagram" />
+              <div class="platform-badge" :class="{ 'multi': reel.isMultiPlatform }">
+                <template v-if="reel.isMultiPlatform">
+                  <ion-icon :icon="logoInstagram" class="multi-icon" />
+                  <ion-icon :icon="logoTiktok" class="multi-icon" />
+                </template>
+                <ion-icon v-else :icon="reel.platform === 'tiktok' ? logoTiktok : logoInstagram" />
               </div>
             </div>
           </div>
@@ -81,7 +85,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { IonCard, IonCardHeader, IonCardTitle, IonCardContent, IonIcon, IonSkeletonText, IonAvatar } from '@ionic/vue'
+import { IonCard, IonCardHeader, IonCardTitle, IonCardContent, IonIcon, IonSkeletonText, IonAvatar, actionSheetController } from '@ionic/vue'
 import { logoInstagram, logoTiktok, playCircleOutline, videocamOutline, chevronForward } from 'ionicons/icons'
 import { ActivityLogService } from '@/services/ActivityLogService'
 import dayjs from 'dayjs'
@@ -106,6 +110,9 @@ interface Reel {
   timestamp: string
   platform?: 'instagram' | 'tiktok'
   creator_avatar?: string
+  isMultiPlatform?: boolean
+  permalink_ig?: string
+  permalink_tt?: string
 }
 
 const props = defineProps<{
@@ -172,7 +179,38 @@ const handleImageError = (event: Event) => {
   }
 }
 
-const openReel = (reel: Reel) => {
+const openReel = async (reel: Reel) => {
+  if (reel.isMultiPlatform) {
+    const actionSheet = await actionSheetController.create({
+      header: 'Watch on Original Platform',
+      cssClass: 'reels-action-sheet',
+      buttons: [
+        {
+          text: 'Instagram',
+          icon: logoInstagram,
+          handler: () => {
+            ActivityLogService.log('explore_reel_open_choice', { reel_id: reel.id, platform: 'instagram' })
+            window.open(reel.permalink_ig, '_blank')
+          }
+        },
+        {
+          text: 'TikTok',
+          icon: logoTiktok,
+          handler: () => {
+            ActivityLogService.log('explore_reel_open_choice', { reel_id: reel.id, platform: 'tiktok' })
+            window.open(reel.permalink_tt, '_blank')
+          }
+        },
+        {
+          text: 'Cancel',
+          role: 'cancel'
+        }
+      ]
+    });
+    await actionSheet.present();
+    return;
+  }
+
   ActivityLogService.log(
       props.mode === 'home'
           ? 'home_media_partner_open'
@@ -303,6 +341,17 @@ const logSocialFollow = (platform: string) => {
   justify-content: center;
   color: white;
   font-size: 14px;
+}
+
+.platform-badge.multi {
+  width: auto;
+  border-radius: 14px;
+  padding: 0 6px;
+  gap: 4px;
+}
+
+.multi-icon {
+  font-size: 12px;
 }
 
 .reel-label {

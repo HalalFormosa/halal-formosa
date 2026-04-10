@@ -5,7 +5,7 @@
       <ion-toolbar class="transparent-toolbar">
         <ion-buttons slot="start">
           <div class="back-button-container">
-            <ion-back-button default-href="/home" color="light" :icon="chevronBack" text=""></ion-back-button>
+            <ion-back-button default-href="/home" :icon="chevronBack" text=""></ion-back-button>
           </div>
         </ion-buttons>
         <ion-title class="header-title">{{ $t('home.whatsNew') || "What's New" }}</ion-title>
@@ -106,7 +106,15 @@
                   <p class="post-time">{{ fromNow(reel.timestamp) }}</p>
                 </div>
                 <div class="platform-container">
-                  <div class="platform-chip" :class="reel.platform">
+                  <div v-if="reel.isMultiPlatform" class="multi-platform-chips">
+                    <div class="platform-chip instagram small">
+                       <ion-icon :icon="logoInstagram" />
+                    </div>
+                    <div class="platform-chip tiktok small">
+                       <ion-icon :icon="logoTiktok" />
+                    </div>
+                  </div>
+                  <div v-else class="platform-chip" :class="reel.platform">
                      <ion-icon :icon="reel.platform === 'tiktok' ? logoTiktok : logoInstagram" />
                   </div>
                   
@@ -128,7 +136,26 @@
               </div>
               
               <div class="action-row">
+                <template v-if="reel.isMultiPlatform">
+                  <ion-button 
+                    fill="solid" 
+                    class="external-link-btn-premium multi-btn ig"
+                    @click="window.open(reel.permalink_ig, '_blank')"
+                  >
+                    <ion-icon :icon="logoInstagram" slot="start" />
+                    Instagram
+                  </ion-button>
+                  <ion-button 
+                    fill="solid" 
+                    class="external-link-btn-premium multi-btn tt"
+                    @click="window.open(reel.permalink_tt, '_blank')"
+                  >
+                    <ion-icon :icon="logoTiktok" slot="start" />
+                    TikTok
+                  </ion-button>
+                </template>
                 <ion-button 
+                  v-else
                   fill="solid" 
                   class="external-link-btn-premium"
                   @click="openExternal(reel)"
@@ -170,6 +197,7 @@ import { supabase } from '@/plugins/supabaseClient'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import { ActivityLogService } from '@/services/ActivityLogService'
+import { SocialMediaService } from '@/services/SocialMediaService'
 
 dayjs.extend(relativeTime)
 
@@ -197,10 +225,8 @@ const fetchData = async () => {
       supabase.from('tiktok_posts').select('*').order('timestamp', { ascending: false }).limit(20)
     ])
 
-    const combined = [
-      ...(igData || []).map(p => ({ ...p, platform: 'instagram' })),
-      ...(ttData || []).map(p => ({ ...p, platform: 'tiktok' }))
-    ].sort((a, b) => dayjs(b.timestamp).valueOf() - dayjs(a.timestamp).valueOf())
+    // 🔀 Merge and Sort by deduplicating
+    const combined = SocialMediaService.mergeSocialPosts(igData, ttData)
 
     combinedReels.value = combined
     
@@ -362,6 +388,7 @@ onUnmounted(() => {
   left: 0;
   right: 0;
   z-index: 100;
+  padding-top: var(--safe-area-inset-top);
   background: linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, transparent 100%);
 }
 
@@ -385,10 +412,19 @@ onUnmounted(() => {
   box-shadow: 0 4px 12px rgba(0,0,0,0.3);
 }
 
-/* Ensure back button icon is dark on the white background */
+/* Dark mode override for back button */
+.ion-palette-dark .back-button-container {
+  background: rgba(28, 28, 29, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
 .back-button-container ion-back-button {
   --color: #000;
   margin-right: -2px; /* Visual center adjustment */
+}
+
+.ion-palette-dark .back-button-container ion-back-button {
+  --color: #fff;
 }
 
 .header-title {
@@ -463,7 +499,7 @@ onUnmounted(() => {
   bottom: 0;
   left: 0;
   right: 0;
-  padding: 24px 20px 40px;
+  padding: 24px 20px calc(24px + var(--safe-area-inset-bottom));
   background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.4) 50%, transparent 100%);
   z-index: 10;
   color: white;
@@ -499,8 +535,15 @@ onUnmounted(() => {
 .platform-container {
   position: relative;
   margin-left: auto;
-  width: 32px;
+  min-width: 32px;
   height: 32px;
+}
+
+.multi-platform-chips {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  height: 100%;
 }
 
 .platform-chip {
@@ -512,6 +555,12 @@ onUnmounted(() => {
   justify-content: center;
   font-size: 18px;
   box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+}
+
+.platform-chip.small {
+  width: 24px;
+  height: 24px;
+  font-size: 14px;
 }
 
 .platform-chip.instagram {
@@ -552,6 +601,26 @@ onUnmounted(() => {
   font-size: 0.95rem;
   margin-top: 10px;
   box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+}
+
+.action-row {
+  display: flex;
+  gap: 10px;
+}
+
+.multi-btn {
+  flex: 1;
+  margin-top: 10px !important;
+}
+
+.multi-btn.ig {
+  --background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
+  border: none;
+}
+
+.multi-btn.tt {
+  --background: #000;
+  border: 1px solid rgba(255,255,255,0.3);
 }
 
 /* Limit Overlay */

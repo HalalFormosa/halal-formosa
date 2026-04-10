@@ -799,6 +799,7 @@ import { useLeaderboard } from "@/composables/useLeaderboard";
 import {getLevelColor} from "@/composables/useLevels";
 import {getLevelFromPoints} from "@/utils/xp";
 import {ActivityLogService} from "@/services/ActivityLogService";
+import {SocialMediaService} from "@/services/SocialMediaService";
 import { refreshSubscriptionStatus} from "@/composables/useSubscriptionStatus";
 import {Capacitor} from "@capacitor/core";
 import { Geolocation } from '@capacitor/geolocation'
@@ -834,13 +835,8 @@ const fetchCommunityReels = async () => {
     if (igError) console.error('IG Fetch Error:', igError)
     if (ttError) console.error('TikTok Fetch Error:', ttError)
 
-    // 🔀 Merge and Sort by timestamp
-    const combined = [
-      ...(igData || []).map(p => ({ ...p, platform: 'instagram' })),
-      ...(ttData || []).map(p => ({ ...p, platform: 'tiktok' }))
-    ].sort((a, b) => dayjs(b.timestamp).valueOf() - dayjs(a.timestamp).valueOf())
-
-    communityReels.value = combined
+    // 🔀 Merge and Sort by deduplicating
+    communityReels.value = SocialMediaService.mergeSocialPosts(igData, ttData)
   } catch (err) {
     console.error('Error fetching community reels:', err)
   } finally {
