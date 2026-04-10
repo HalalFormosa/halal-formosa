@@ -1,5 +1,5 @@
 <template>
-  <ion-page>
+  <ion-page class="safe-area">
     <ion-header>
       <app-header :title="$t('home.title')" :showProfile="true" />
     </ion-header>
@@ -490,12 +490,31 @@
       </ion-card>
 
       <!-- === Community Buzz (Instagram & TikTok) === -->
-      <CommunityReels 
-        :reels="communityReels" 
-        :loading="loadingReels" 
-        mode="home" 
-        @refresh-needed="handleReelsRefreshNeeded"
-      />
+      <ion-card class="reels-section">
+        <ion-card-header>
+          <div class="card-header-row">
+            <ion-card-title class="section-title">{{ $t('home.whatsNew') || "What's New" }}</ion-card-title>
+            <ion-button 
+              fill="clear" 
+              size="small" 
+              color="carrot" 
+              @click="handleViewMoreReels"
+            >
+              {{ $t('home.viewMore') }}
+            </ion-button>
+          </div>
+          <p class="section-subtitle">
+            {{ $t('home.communityBuzzDesc') || "@See what's trending with @halalformosa" }}
+          </p>
+        </ion-card-header>
+
+        <CommunityReels 
+          :reels="communityReels" 
+          :loading="loadingReels" 
+          mode="home" 
+          @refresh-needed="handleReelsRefreshNeeded"
+        />
+      </ion-card>
 
       <!-- === Latest News === -->
       <ion-card>
@@ -1777,6 +1796,11 @@ function openNews(news: any) {
 
 
 
+function handleViewMoreReels() {
+  ActivityLogService.log("reels_section_view_more");
+  router.push('/reels');
+}
+
 async function openProduct(p: any) {
   ActivityLogService.log("home_product_click", {
     barcode: p.barcode,
@@ -2280,5 +2304,27 @@ function openPartner(partner: any) {
 .partner-list-enter-from, .partner-list-leave-to {
   opacity: 0;
   transform: translateY(10px);
+}
+
+/* === Community Reels / What's New === */
+.reels-section {
+  margin: 10px;
+}
+
+.card-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.section-title {
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.section-subtitle {
+  margin: -4px 0 0;
+  font-size: 0.75rem;
+  color: var(--ion-color-medium);
 }
 </style>

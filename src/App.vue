@@ -1,7 +1,11 @@
 <template>
   <ion-app>
-    <SmartAppBanner />
-    <ion-router-outlet />
+    <div class="app-main-wrapper">
+      <SmartAppBanner />
+      <div class="app-content-wrapper">
+        <ion-router-outlet />
+      </div>
+    </div>
 
     <!-- 🎁 Global Reward Popup -->
     <div v-if="rewardOpen" class="reward-overlay">
@@ -203,3 +207,25 @@ onMounted(async () => {
   }, 1000 * 60 * 5);
 });
 </script>
+
+<style>
+.app-main-wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  position: relative;
+}
+
+.app-content-wrapper {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Ensure Ionic components inside the wrapper behave correctly */
+ion-router-outlet {
+  position: absolute !important;
+  inset: 0 !important;
+}
+</style>

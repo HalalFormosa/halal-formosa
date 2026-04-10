@@ -1,23 +1,6 @@
 <template>
-  <ion-card class="reels-section">
-    <ion-card-header>
-      <div class="card-header-row">
-        <ion-card-title class="section-title">{{ $t('home.whatsNew') || 'What\'s New' }}</ion-card-title>
-        <ion-button 
-          fill="clear" 
-          size="small" 
-          color="carrot" 
-          @click="handleViewMore"
-        >
-          {{ $t('home.viewMore') }}
-        </ion-button>
-      </div>
-      <p class="section-subtitle">
-        {{ $t('home.communityBuzzDesc') || 'See what\'s trending with @halalformosa' }}
-      </p>
-    </ion-card-header>
-
-    <ion-card-content>
+  <!-- Reels Grid Section -->
+  <ion-card-content class="reels-content-wrapper">
       <!-- Loading Skeletons -->
       <div v-if="loading" class="discover-grid">
         <ion-card v-for="n in 4" :key="n" class="discover-item reel-skeleton">
@@ -93,7 +76,6 @@
         </div>
       </div>
     </ion-card-content>
-  </ion-card>
 </template>
 
 <script setup lang="ts">

@@ -14,18 +14,20 @@ export function useTheme() {
         if (Capacitor.isNativePlatform()) {
             try {
                 if (enabled) {
-                    await StatusBar.setStyle({ style: Style.Light }) // White text/icons
-                    await StatusBar.setBackgroundColor({ color: '#1c1c1d' }) // Dark gray to match iOS dark bar
-                    await NavigationBar.setNavigationBarColor({
-                        color: '#1c1c1d',
-                        darkButtons: false, // White icons
-                    })
-                } else {
+                    // 🌓 High Contrast: Dark Theme App -> Light System Bar
                     await StatusBar.setStyle({ style: Style.Dark }) // Dark text/icons
                     await StatusBar.setBackgroundColor({ color: '#ffffff' }) // White background
                     await NavigationBar.setNavigationBarColor({
                         color: '#ffffff',
                         darkButtons: true, // Dark icons
+                    })
+                } else {
+                    // 🌓 High Contrast: Light Theme App -> Dark System Bar
+                    await StatusBar.setStyle({ style: Style.Light }) // White text/icons
+                    await StatusBar.setBackgroundColor({ color: '#1c1c1d' }) // Dark gray
+                    await NavigationBar.setNavigationBarColor({
+                        color: '#1c1c1d',
+                        darkButtons: false, // White icons
                     })
                 }
             } catch (e) {
