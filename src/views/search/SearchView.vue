@@ -2,7 +2,7 @@
   <ion-page>
     <ion-header>
       <!-- Native (mobile) AdMob banner -->
-      <div v-if="isNative && !isDonor" id="ad-space-search" style="height:65px;"></div>
+      <div v-if="isNative && !isDonor" id="ad-space-search" :style="{ height: '65px', paddingTop: 'var(--ion-safe-area-top, 0)' }"></div>
 
       <app-header
           :title="

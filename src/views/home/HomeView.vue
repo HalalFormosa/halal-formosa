@@ -1,5 +1,5 @@
 <template>
-  <ion-page class="safe-area">
+  <ion-page>
     <ion-header>
       <app-header :title="$t('home.title')" :showProfile="true" />
     </ion-header>

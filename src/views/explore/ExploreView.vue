@@ -2337,7 +2337,7 @@ button.gm-ui-hover-effect > span {
 .header-search-toolbar {
   --background: transparent !important;
   --border-width: 0 !important;
-  padding-top: var(--ion-safe-area-top, 0);
+  
   background: transparent !important;
   min-height: 70px;
 }

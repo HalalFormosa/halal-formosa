@@ -30,7 +30,7 @@
 
 
     <!-- If this page should show ads, include this slot and set meta.adSpaceId above -->
-    <div v-if="isNative && showAds" id="ad-space-item-details" style="height:60px;"></div>
+    <div v-if="isNative && showAds" id="ad-space-item-details" :style="{ height: '60px', paddingTop: 'var(--ion-safe-area-top, 0)' }"></div>
 
     <ion-content :scroll-events="true" @ionScroll="handleScroll" fullscreen>
 

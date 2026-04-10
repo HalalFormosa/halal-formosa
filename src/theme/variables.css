@@ -61,6 +61,13 @@
     --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
     --safe-area-inset-left: env(safe-area-inset-left, 0px);
 
+    /* Map to Ionic internal variables for consistent fallback on old devices */
+    --ion-safe-area-top: var(--safe-area-inset-top);
+    --ion-safe-area-right: var(--safe-area-inset-right);
+    --ion-safe-area-bottom: var(--safe-area-inset-bottom);
+    --ion-safe-area-left: var(--safe-area-inset-left);
+
+
     /* Tier Colors */
     --tier-gold-bg: linear-gradient(135deg, #fffbeb 0%, #fef3c7 60%, #fde68a 100%);
     --tier-silver-bg: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 60%, #e2e8f0 100%);

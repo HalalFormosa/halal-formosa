@@ -2,7 +2,7 @@
   <ion-page>
     <ion-header>
       <!-- ✅ This must be inside <template>, not in <script> -->
-      <div v-if="isNative && !isDonor" id="ad-space-news-detail" style="height: 65px;"></div>
+      <div v-if="isNative && !isDonor" id="ad-space-news-detail" :style="{ height: '65px', paddingTop: 'var(--ion-safe-area-top, 0)' }"></div>
       <app-header title="" show-back back-route="/news" icon="none" />
     </ion-header>
 
