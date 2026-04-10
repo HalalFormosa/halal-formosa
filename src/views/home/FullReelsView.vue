@@ -45,7 +45,7 @@
               <!-- Main Media -->
               <video
                 v-if="reel.video_url && reel.platform !== 'tiktok'"
-                :ref="el => videoRefs[reel.id] = el"
+                :ref="(el: any) => videoRefs[reel.id] = el"
                 :src="reel.video_url"
                 class="main-media video"
                 loop
