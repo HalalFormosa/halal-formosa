@@ -178,6 +178,18 @@ onIonViewWillEnter(() => {
             <ion-input :value="product.barcode" readonly />
           </ion-item>
 
+          <!-- Product Images Display -->
+          <div v-if="product.photo_front_url || product.photo_back_url" class="product-images-row">
+            <div v-if="product.photo_front_url" class="product-image-container">
+              <small class="image-label">Front</small>
+              <img :src="product.photo_front_url" class="product-image-thumb" />
+            </div>
+            <div v-if="product.photo_back_url" class="product-image-container">
+              <small class="image-label">Back</small>
+              <img :src="product.photo_back_url" class="product-image-thumb" />
+            </div>
+          </div>
+
           <ion-item lines="none" class="ion-margin-top">
             <ion-label>Evidence Image (Optional)</ion-label>
             <ion-buttons slot="end">
@@ -252,6 +264,36 @@ onIonViewWillEnter(() => {
 .image-preview {
   max-width: 100%;
   object-fit: contain;
+}
+
+.product-images-row {
+  display: flex;
+  gap: 12px;
+  margin: 16px 0;
+  padding: 0 16px;
+}
+
+.product-image-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.product-image-thumb {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--ion-color-light);
+}
+
+.image-label {
+  color: var(--ion-color-medium);
+  text-transform: uppercase;
+  font-size: 10px;
+  font-weight: 700;
+  margin-bottom: 4px;
 }
 
 .clear-image-btn {

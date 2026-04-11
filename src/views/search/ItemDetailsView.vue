@@ -24,6 +24,11 @@
             <ion-icon :icon="shareSocialOutline" slot="start" />
             <ion-label>{{ $t('search.details.share') }}</ion-label>
           </ion-item>
+
+          <ion-item button @click="reportItem" lines="none">
+            <ion-icon :icon="alertCircleOutline" slot="start" />
+            <ion-label>{{ $t('search.details.report') }}</ion-label>
+          </ion-item>
         </template>
       </app-header>
     </ion-header>
@@ -911,6 +916,16 @@ async function editItem() {
 
 async function reportItem() {
   if (item.value) {
+    if (!userId.value) {
+      // If not logged in, we need to dismiss the popover first then redirect
+      await popoverController.dismiss();
+      router.push({
+        path: '/login',
+        query: { redirect: route.fullPath }
+      });
+      return;
+    }
+
     ActivityLogService.log("product_report_click", {
       barcode: item.value.barcode,
       product_name: item.value.name
