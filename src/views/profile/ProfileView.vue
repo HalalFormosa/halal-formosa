@@ -41,7 +41,7 @@
             </div>
 
             <div class="profile-info text-center" v-if="userEmail">
-              <h2 class="profile-name-main">{{ userDisplayName || 'User' }}</h2>
+              <h2 class="profile-name-main">{{ userDisplayName || $t('profile.defaultName') }}</h2>
               <p class="profile-email-sub">{{ userEmail }}</p>
               
               <div class="badge-row">
@@ -159,12 +159,12 @@
           <div class="xp-section">
             <div class="xp-header">
               <div class="level-badge">
-                <span class="level-label">LEVEL</span>
+                <span class="level-label">{{ $t('profile.xp.levelLabel') }}</span>
                 <span class="level-num">{{ level }}</span>
               </div>
               <div class="xp-total">
                 <span class="xp-val">{{ currentPoints || 0 }} XP</span>
-                <span class="xp-next">{{ nextLevelXp }} XP TO NEXT LEVEL</span>
+                <span class="xp-next">{{ nextLevelXp }} {{ $t('profile.xp.toNextLevel') }}</span>
               </div>
             </div>
             
@@ -242,7 +242,7 @@
               </div>
               <div class="status-text">
                 <h3>{{ $t('common.underConstruction') }}</h3>
-                <p>{{ $t('store.underConstructionDesc') || "We're brewing something amazing! The store will be back soon." }}</p>
+                <p>{{ $t('store.underConstructionDesc') }}</p>
               </div>
             </div>
           </div>
@@ -304,7 +304,7 @@
               </div>
               <div class="status-text">
                 <h3 style="color: var(--ion-color-primary)">{{ $t('common.underConstruction') }}</h3>
-                <p>{{ $t('store.underConstructionDesc') || "We're brewing something amazing! The store will be back soon." }}</p>
+                <p>{{ $t('store.underConstructionDesc') }}</p>
               </div>
             </div>
           </div>
@@ -523,17 +523,17 @@
           <div class="social-grid-premium">
             <a class="social-item-premium" @click.prevent="logAndOpen('instagram', 'https://www.instagram.com/halalformosa/')">
               <ion-icon :icon="icons.logoInstagram" class="social-icon-btn" style="color: #E1306C" />
-              <span class="social-label-premium">Instagram</span>
+              <span class="social-label-premium">{{ $t('profile.social.instagram') }}</span>
             </a>
             
             <a class="social-item-premium" @click.prevent="logAndOpen('line', 'https://line.me/R/ti/p/@975schpu')">
               <img src="/social-logo/line-logo.png" alt="LINE" class="social-img-premium" />
-              <span class="social-label-premium">LINE</span>
+              <span class="social-label-premium">{{ $t('profile.social.line') }}</span>
             </a>
             
             <a class="social-item-premium" @click.prevent="logAndOpen('web', 'https://halalformosa.com')">
               <ion-icon :icon="icons.globeOutline" class="social-icon-btn" style="color: var(--ion-color-carrot)" />
-              <span class="social-label-premium">Website</span>
+              <span class="social-label-premium">{{ $t('profile.social.website') }}</span>
             </a>
           </div>
         </ion-card>

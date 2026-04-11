@@ -575,7 +575,17 @@
       "storeSubtitle": "在 Halal Formosa 商店",
       "pendingStatus": "申請審核中",
       "pendingDesc": "我們正在驗證您的商店詳細資訊。請留意我們的來電！"
-    }
+    },
+    "xp": {
+      "levelLabel": "等級",
+      "toNextLevel": "經驗值才可升級"
+    },
+    "social": {
+      "instagram": "Instagram",
+      "line": "LINE",
+      "website": "網站"
+    },
+    "defaultName": "用戶"
   },
   "credits": {
     "title": "致謝與貢獻者",
@@ -983,6 +993,7 @@
     "button": "立即更新"
   },
   "store": {
+    "underConstructionDesc": "我們正在籌備精彩內容！商店很快就會回來。",
     "title": "Halal Formosa 商店",
     "searchPlaceholder": "搜尋商品...",
     "categories": "分類",

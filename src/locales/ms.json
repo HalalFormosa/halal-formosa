@@ -540,7 +540,17 @@
       "storeSubtitle": "di Kedai Halal Formosa",
       "pendingStatus": "Permohonan Sedang Disemak",
       "pendingDesc": "Kami sedang mengesahkan butiran kedai anda. Tunggu panggilan tidak lama lagi!"
-    }
+    },
+    "xp": {
+      "levelLabel": "TAHAP",
+      "toNextLevel": "XP UNTUK TAHAP SETERUSNYA"
+    },
+    "social": {
+      "instagram": "Instagram",
+      "line": "LINE",
+      "website": "Laman Web"
+    },
+    "defaultName": "Pengguna"
   },
   "credits": {
     "title": "Kredit & Penyumbang",
@@ -908,6 +918,7 @@
     "button": "Kemas Kini Sekarang"
   },
   "store": {
+    "underConstructionDesc": "Kami sedang menyediakan sesuatu yang menakjubkan! Kedai akan kembali tidak lama lagi.",
     "title": "Kedai Halal Formosa",
     "searchPlaceholder": "Cari produk...",
     "categories": "Kategori",

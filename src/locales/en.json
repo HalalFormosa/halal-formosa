@@ -572,7 +572,17 @@
       "storeSubtitle": "in Halal Formosa Store",
       "pendingStatus": "Application Under Review",
       "pendingDesc": "We're verifying your store details. Expect a call soon!"
-    }
+    },
+    "xp": {
+      "levelLabel": "LEVEL",
+      "toNextLevel": "XP TO NEXT LEVEL"
+    },
+    "social": {
+      "instagram": "Instagram",
+      "line": "LINE",
+      "website": "Website"
+    },
+    "defaultName": "User"
   },
   "credits": {
     "title": "Credits & Contributor",
@@ -983,6 +993,7 @@
     "button": "Update Now"
   },
   "store": {
+    "underConstructionDesc": "We're brewing something amazing! The store will be back soon.",
     "title": "Halal Formosa Store",
     "searchPlaceholder": "Search products...",
     "categories": "Categories",

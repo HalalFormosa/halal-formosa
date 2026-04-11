@@ -536,10 +536,20 @@
     },
     "merchant": {
       "startSelling": "Mulai Berjualan",
-      "storeSubtitle": "in Halal Formosa Store",
-      "pendingStatus": "Application Under Review",
-      "pendingDesc": "We're verifying your store details. Expect a call soon!"
-    }
+      "storeSubtitle": "di Toko Halal Formosa",
+      "pendingStatus": "Aplikasi Sedang Ditinjau",
+      "pendingDesc": "Kami sedang memverifikasi detail toko Anda. Tunggu panggilan segera!"
+    },
+    "xp": {
+      "levelLabel": "LEVEL",
+      "toNextLevel": "XP UNTUK LEVEL BERIKUTNYA"
+    },
+    "social": {
+      "instagram": "Instagram",
+      "line": "LINE",
+      "website": "Situs Web"
+    },
+    "defaultName": "Pengguna"
   },
   "credits": {
     "title": "Kredit & Kontributor",
@@ -958,6 +968,7 @@
     "button": "Perbarui Sekarang"
   },
   "store": {
+    "underConstructionDesc": "Kami sedang menyiapkan sesuatu yang luar biasa! Toko akan segera kembali.",
     "title": "Toko Halal Formosa",
     "searchPlaceholder": "Cari produk...",
     "categories": "Kategori",
