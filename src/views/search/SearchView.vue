@@ -395,7 +395,11 @@
                 <!-- GRID MODE -->
                 <div
                     v-else
-                    :class="['grid-product-card', getStatusClass(product.status)]"
+                    :class="[
+                      'grid-product-card', 
+                      getStatusClass(product.status),
+                      product.partner_tier ? 'tier-card-' + product.partner_tier.toLowerCase() : ''
+                    ]"
                     @click="openDetails(product)"
                 >
                   <div class="grid-card-image">
@@ -404,12 +408,21 @@
                         :src="product.photo_front_url || 'https://via.placeholder.com/150x150.webp?text=No+Photo'"
                         :alt="product.name"
                     />
+                    <!-- Floating Tier Badge (Top Left) -->
+                    <div v-if="product.partner_tier" :class="['grid-tier-badge', product.partner_tier.toLowerCase()]">
+                      <ion-icon :icon="sparkles" />
+                      <span>{{ $t('home.partnerTier', { tier: (product.partner_tier || '').toUpperCase() }) }}</span>
+                    </div>
+
                     <!-- Small Status Label -->
                     <div :class="['grid-status-label', product.status.toLowerCase().replace(' ', '-')]">
                       <ion-icon :icon="getStatusIcon(product.status)" />
                       <span>{{ $t('search.status.' + product.status) }}</span>
                     </div>
                   </div>
+
+                  <!-- Premium Flare for Gold/Silver -->
+                  <div v-if="['gold', 'silver'].includes(String(product.partner_tier || '').toLowerCase())" class="premium-flare"></div>
                 </div>
               </template>
             </div>
@@ -1676,7 +1689,7 @@ ion-searchbar.rounded {
   transition: transform 0.2s ease, box-shadow 0.3s ease;
   cursor: pointer;
   position: relative;
-  height: 140px; /* Fixed height for clean grid rows */
+  height: 160px; /* Fixed height for clean grid rows */
 }
 
 /* Mobile: restore bottom margin if grid is 1 column */
@@ -1692,12 +1705,12 @@ ion-searchbar.rounded {
 
 .card-inner {
   display: flex;
-  height: 140px; /* Slightly taller for better product display */
+  height: 160px; /* Slightly taller for better product display */
 }
 
 /* Image Section */
 .card-image-section {
-  width: 140px;
+  width: 145px;
   height: 100%;
   flex-shrink: 0;
   position: relative;
@@ -1757,7 +1770,7 @@ ion-searchbar.rounded {
 }
 
 .floating-status-pill.bottom-left {
-  bottom: 28px;
+  bottom: 8px;
   left: 8px;
 }
 
@@ -1840,6 +1853,7 @@ ion-searchbar.rounded {
   align-items: flex-start;
   gap: 4px;
   width: 100%;
+  padding-bottom: 2px;
 }
 
 .vibrant-status-tag {
@@ -2139,6 +2153,11 @@ ion-header {
   border: 1px solid rgba(var(--ion-color-dark-rgb), 0.05);
   position: relative;
   transition: transform 0.2s ease;
+  z-index: 1;
+}
+
+.grid-product-card[class*="tier-card-"] {
+  border: 2px solid transparent !important; /* Base for tiered items */
 }
 
 .grid-product-card:active {
@@ -2157,9 +2176,46 @@ ion-header {
   object-fit: cover;
 }
 
-.grid-status-label {
+.grid-tier-badge {
   position: absolute;
   top: 8px;
+  left: 8px;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255,255,255,0.3);
+  z-index: 2;
+  font-size: 0.65rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.grid-tier-badge.gold {
+  background: linear-gradient(135deg, #facc15 0%, #ca8a04 100%);
+  color: #422006;
+}
+
+.grid-tier-badge.silver {
+  background: linear-gradient(135deg, #cbd5e1 0%, #64748b 100%);
+  color: #0f172a;
+}
+
+.grid-tier-badge.bronze {
+  background: linear-gradient(135deg, #d97706 0%, #78350f 100%);
+  color: #fff;
+}
+
+.grid-status-label {
+  position: absolute;
+  bottom: 8px;
   right: 8px;
   height: 24px;
   padding: 0 8px;
