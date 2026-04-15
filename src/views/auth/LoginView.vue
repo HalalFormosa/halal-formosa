@@ -92,6 +92,7 @@
               class="primary-btn"
               :disabled="loading"
           >
+            <ion-icon :icon="logInOutline" slot="start" v-if="!loading"></ion-icon>
             {{ loading ? $t('auth.loggingIn') : $t('auth.login') }}
           </ion-button>
 
@@ -109,6 +110,7 @@
               color="carrot"
               @click="loginWithGoogle"
           >
+            <ion-icon :icon="logoGoogle" slot="start"></ion-icon>
             {{ $t('auth.continueWithGoogle') }}
           </ion-button>
 
@@ -159,7 +161,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { supabase } from '@/plugins/supabaseClient';
 import { Capacitor } from '@capacitor/core';
 import { useI18n } from 'vue-i18n'
-import {moonOutline, sunnyOutline} from "ionicons/icons";
+import {logoGoogle, logInOutline, moonOutline, sunnyOutline} from "ionicons/icons";
 import { ActivityLogService } from '@/services/ActivityLogService'
 
 type Theme = 'dark' | 'light'
