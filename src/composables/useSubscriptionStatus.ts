@@ -44,7 +44,7 @@ export async function refreshSubscriptionStatus(options?: {
                 throw error
             }
 
-            console.log("✅ [Sub] sync-subscription success", data)
+            console.log("✅ [Sub] sync-subscription success")
             return data   // ✅ ADD THIS
 
         } else {

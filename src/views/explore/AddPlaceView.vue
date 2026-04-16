@@ -15,7 +15,7 @@
       <!-- Not logged in -->
       <ion-card v-if="checkedRole && !myRole">
         <ion-card-content>
-          Please login to submit a place.
+          {{ $t('addPlace.loginToSubmit') }}
         </ion-card-content>
       </ion-card>
 
@@ -154,8 +154,8 @@
 
             <strong>
               ⚠️ {{ warningLevel === 'high'
-                ? 'Very likely duplicate nearby'
-                : 'Similar place nearby detected'
+                ? $t('addPlace.duplicates.high')
+                : $t('addPlace.duplicates.medium')
               }}
             </strong>
 
@@ -166,7 +166,7 @@
             </ul>
 
             <small style="opacity:0.8;">
-              Verify if this is a different branch, floor, or vendor.
+              {{ $t('addPlace.duplicates.verify') }}
             </small>
 
           </ion-card-content>
@@ -180,40 +180,40 @@
             @click="showMoreOptions = !showMoreOptions"
             style="margin-bottom: 12px;"
         >
-          {{ showMoreOptions ? 'Hide Details' : 'More Details' }}
+          {{ showMoreOptions ? $t('addPlace.hideDetails') : $t('addPlace.moreDetails') }}
         </ion-button>
 
         <div v-if="showMoreOptions">
 
-          <p style="margin-top:20px; font-weight:600;">Description</p>
+          <p style="margin-top:20px; font-weight:600;">{{ $t('admin.description') }}</p>
 
           <ion-item>
             <ion-textarea
                 v-model="form.description"
-                label="Description"
+                :label="$t('admin.description')"
                 label-placement="stacked"
-                placeholder="Describe this place (halal status, specialties, notes, etc.)"
+                :placeholder="$t('addPlace.descriptionPlaceholder')"
                 auto-grow
                 :maxlength="1000"
                 counter
             />
           </ion-item>
 
-          <p style="margin-top:20px; font-weight:600;">Contact Information</p>
+          <p style="margin-top:20px; font-weight:600;">{{ $t('addPlace.contactInfo') }}</p>
 
           <ion-item>
             <ion-input
                 v-model="form.phone"
-                label="Phone / WhatsApp"
+                :label="$t('addPlace.phoneLabel')"
                 label-placement="stacked"
-                placeholder="+886 900 000 000"
+                :placeholder="$t('addPlace.phonePlaceholder')"
             />
           </ion-item>
 
           <ion-item>
             <ion-input
                 v-model="form.instagram"
-                label="Instagram"
+                :label="$t('addPlace.instagramLabel')"
                 label-placement="stacked"
                 placeholder="@username"
             />
@@ -222,36 +222,36 @@
           <ion-item>
             <ion-input
                 v-model="form.line_id"
-                label="LINE ID"
+                :label="$t('addPlace.lineIdLabel')"
                 label-placement="stacked"
                 placeholder="yourlineid"
             />
           </ion-item>
 
-          <p style="margin-top:20px; font-weight:600;">Price Range</p>
+          <p style="margin-top:20px; font-weight:600;">{{ $t('explore.filters.priceRange') }}</p>
 
           <ion-item>
             <ion-input
                 v-model="form.price_range"
-                label="Price Range"
+                :label="$t('explore.filters.priceRange')"
                 label-placement="stacked"
-                placeholder="NTD 100–300"
+                :placeholder="$t('addPlace.pricePlaceholder')"
             />
           </ion-item>
 
-          <p style="margin-top:20px; font-weight:600;">Tags & Categories</p>
+          <p style="margin-top:20px; font-weight:600;">{{ $t('addPlace.tagsAndCategories') }}</p>
 
           <ion-item>
             <ion-input
                 v-model="tagInput"
-                label="Add Tag"
+                :label="$t('addPlace.addTagLabel')"
                 label-placement="stacked"
-                placeholder="Type and press Enter (e.g. ntu, prayer-room)"
+                :placeholder="$t('addPlace.tagPlaceholder')"
                 @ionInput="handleTagInput"
                 @keyup.enter="addTag"
             />
             <ion-button slot="end" fill="clear" @click="addTag" style="margin-top: 14px;">
-              Add
+              {{ $t('common.add') }}
             </ion-button>
           </ion-item>
 
@@ -268,7 +268,7 @@
             </ion-chip>
           </div>
 
-          <p style="margin-top:20px; font-weight:600;">Opening Hours</p>
+          <p style="margin-top:20px; font-weight:600;">{{ $t('addPlace.openingHours') }}</p>
 
           <ion-list class="opening-hours-list">
             <template v-for="(label, key) in dayLabels" :key="key">
@@ -281,14 +281,14 @@
                     @ionChange="openingHoursTouched = true"
                 />
 
-                <ion-label class="day-label">{{ label }}</ion-label>
+                <ion-label class="day-label">{{ $t('addProduct.opening_hours.' + key) }}</ion-label>
 
                 <!-- CLOSED BADGE -->
                 <span
                     v-if="!form.opening_hours[key].active"
                     class="closed-label"
                 >
-        Closed
+        {{ $t('addPlace.closed') }}
       </span>
 
                 <!-- TIME INPUTS -->
@@ -325,7 +325,7 @@
             color="light"
         >
           <ion-card-content style="font-size:14px;">
-            🕵️ Submissions will be reviewed before appearing publicly.
+            {{ $t('addPlace.reviewNotice') }}
           </ion-card-content>
         </ion-card>
 
@@ -346,7 +346,7 @@
       <!-- Admin Controls -->
       <ion-list v-if="myRole === 'admin'" class="ion-margin-top">
         <ion-list-header>
-          <ion-label color="carrot">ADMIN CONTROLS</ion-label>
+          <ion-label color="carrot">{{ $t('admin.controls').toUpperCase() }}</ion-label>
         </ion-list-header>
         <ion-item>
           <ion-icon :icon="checkmarkCircleOutline" slot="start" color="success" />

@@ -400,7 +400,11 @@
       "title": "地點詳情",
       "noticeTitle": "處理與狀態說明",
       "readDescriptionNotice": "請查看此地點下方的特定處理細節。",
-      "handlingDetails": "處理細節"
+      "handlingDetails": "處理細節",
+      "phone": "電話"
+    },
+    "filters": {
+      "priceRange": "價格範圍"
     },
     "viewMap": "地圖",
     "viewBoth": "兩者",
@@ -587,6 +591,17 @@
     },
     "defaultName": "用戶"
   },
+  "appReview": {
+    "title": "喜歡 Halal Formosa 嗎？",
+    "message": "您的反饋將幫助我們改進，並幫助其他穆斯林找到清真產品！",
+    "rateNow": "現在評價",
+    "later": "稍後再說",
+    "never": "不要再顯示",
+    "confirmNeverTitle": "您確定嗎？",
+    "confirmNeverMessage": "您確定不想幫助穆斯林發現 Halal Formosa 並減輕他們的生活負擔嗎？",
+    "confirmNeverConfirm": "是的，不要再問了",
+    "confirmNeverCancel": "等一下，我來幫忙！"
+  },
   "credits": {
     "title": "致謝與貢獻者",
     "founder": "創辦人與主要開發者",
@@ -677,6 +692,32 @@
       "processError": "無法處理圖片。",
       "saved": "地點已儲存！",
       "failed": "儲存失敗。"
+    },
+    "loginToSubmit": "請先登入以提交地點。",
+    "hideDetails": "隱藏詳細資訊",
+    "moreDetails": "更多詳細資訊",
+    "descriptionPlaceholder": "描述此地點（清真狀態、特色、備註等）",
+    "contactInfo": "聯絡資訊",
+    "phoneLabel": "電話 / WhatsApp",
+    "phonePlaceholder": "+886 900 000 000",
+    "instagramLabel": "Instagram",
+    "lineIdLabel": "LINE ID",
+    "pricePlaceholder": "NTD 100–300",
+    "tagsAndCategories": "標籤與類別",
+    "addTagLabel": "新增標籤",
+    "tagPlaceholder": "輸入並按 Enter（例如：ntu、祈禱室）",
+    "openingHours": "營業時間",
+    "closed": "休息",
+    "reviewNotice": "🕵️ 提交內容將在公開前進行審核。",
+    "priceLevels": {
+      "low": "$ (低)",
+      "medium": "$$ (中)",
+      "high": "$$$ (高)"
+    },
+    "duplicates": {
+      "high": "附近極可能有重複地點",
+      "medium": "檢測到附近有相似地點",
+      "verify": "請確認這是否為不同的分店、樓層或攤位。"
     }
   },
   "review": {
@@ -801,6 +842,15 @@
     "error": "錯誤",
     "appVersion": "應用版本",
     "reviewLocation": "審核地點",
+    "controls": "管理員控制",
+    "latitude": "緯度",
+    "longitude": "經度",
+    "review": "審核",
+    "archive": "封存",
+    "confirmDeletePlace": "您確定要永久刪除/拒絕此地點嗎？",
+    "master": {
+      "published": "已發布"
+    },
     "name": "名稱",
     "address": "地址",
     "description": "描述",

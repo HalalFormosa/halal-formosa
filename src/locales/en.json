@@ -397,7 +397,11 @@
       "title": "Place Details",
       "noticeTitle": "Handling & Status Details",
       "readDescriptionNotice": "Please review the specific handling details below for this location.",
-      "handlingDetails": "Handling Details"
+      "handlingDetails": "Handling Details",
+      "phone": "Phone"
+    },
+    "filters": {
+      "priceRange": "Price Range"
     },
     "viewMap": "Map",
     "viewBoth": "Both",
@@ -584,6 +588,17 @@
     },
     "defaultName": "User"
   },
+  "appReview": {
+    "title": "Enjoying Halal Formosa?",
+    "message": "Your feedback helps us improve and helps other Muslims find halal products!",
+    "rateNow": "Rate Now",
+    "later": "Later",
+    "never": "Never show again",
+    "confirmNeverTitle": "Are you sure?",
+    "confirmNeverMessage": "Are you sure you don't want to help Muslims discover Halal Formosa to ease their life?",
+    "confirmNeverConfirm": "Yes, stop asking",
+    "confirmNeverCancel": "Wait, let me help!"
+  },
   "credits": {
     "title": "Credits & Contributor",
     "founder": "Founder & Main Developer",
@@ -674,6 +689,32 @@
       "processError": "Could not process image.",
       "saved": "Place saved!",
       "failed": "Failed to save."
+    },
+    "loginToSubmit": "Please login to submit a place.",
+    "hideDetails": "Hide Details",
+    "moreDetails": "More Details",
+    "descriptionPlaceholder": "Describe this place (halal status, specialties, notes, etc.)",
+    "contactInfo": "Contact Information",
+    "phoneLabel": "Phone / WhatsApp",
+    "phonePlaceholder": "+886 900 000 000",
+    "instagramLabel": "Instagram",
+    "lineIdLabel": "LINE ID",
+    "pricePlaceholder": "NTD 100–300",
+    "tagsAndCategories": "Tags & Categories",
+    "addTagLabel": "Add Tag",
+    "tagPlaceholder": "Type and press Enter (e.g. ntu, prayer-room)",
+    "openingHours": "Opening Hours",
+    "closed": "Closed",
+    "reviewNotice": "🕵️ Submissions will be reviewed before appearing publicly.",
+    "priceLevels": {
+      "low": "$ (Low)",
+      "medium": "$$ (Medium)",
+      "high": "$$$ (High)"
+    },
+    "duplicates": {
+      "high": "Very likely duplicate nearby",
+      "medium": "Similar place nearby detected",
+      "verify": "Verify if this is a different branch, floor, or vendor."
     }
   },
   "review": {
@@ -798,6 +839,15 @@
     "error": "Error",
     "appVersion": "App Version",
     "reviewLocation": "Review Location",
+    "controls": "Admin Controls",
+    "latitude": "Latitude",
+    "longitude": "Longitude",
+    "review": "Review",
+    "archive": "Archive",
+    "confirmDeletePlace": "Are you sure you want to delete/reject this location permanently?",
+    "master": {
+      "published": "Published"
+    },
     "name": "Name",
     "address": "Address",
     "description": "Description",

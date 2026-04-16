@@ -12,6 +12,7 @@ export const isContributor = computed(() => userRole.value === "contributor");
 export const currentUser = ref<any | null>(null);
 export const isPublicProfile = ref<boolean | null>(null);
 export const showLastSeen = ref<boolean>(true);
+export const hasReviewedApp = ref<boolean>(false);
 
 /* ---------------- Profile fields ---------------- */
 export const donorType = ref("Free");
@@ -46,6 +47,7 @@ type UserProfileRow = {
     gender: string | null;
     bio: string | null;
     show_last_seen: boolean;
+    has_reviewed_app: boolean;
     user_roles: {
         role: string;
     } | null;
@@ -81,6 +83,15 @@ export async function updateLastSeen() {
     await supabase
         .from("user_profiles")
         .update({ last_seen_at: new Date().toISOString() })
+        .eq("id", currentUser.value.id)
+}
+
+export async function setHasReviewedApp(value: boolean) {
+    if (!currentUser.value?.id) return
+    hasReviewedApp.value = value
+    await supabase
+        .from("user_profiles")
+        .update({ has_reviewed_app: value })
         .eq("id", currentUser.value.id)
 }
 
@@ -140,6 +151,7 @@ export async function loadUserProfile(userId: string) {
           gender,
           bio,
           show_last_seen,
+          has_reviewed_app,
           user_roles (
             role
           )
@@ -159,6 +171,7 @@ export async function loadUserProfile(userId: string) {
         editGender.value = data.gender;
         editBio.value = data.bio;
         showLastSeen.value = data.show_last_seen ?? true;
+        hasReviewedApp.value = data.has_reviewed_app ?? false;
     } else {
         console.warn("⚠️ No profile found, resetting defaults");
 
@@ -206,5 +219,6 @@ export function resetUserProfileState() {
     editBio.value = null
 
     selectedCountry.value = null
+    hasReviewedApp.value = false
     acknowledged.value = false
 }

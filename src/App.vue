@@ -61,7 +61,7 @@
 </template>
 
 <script setup lang="ts">
-import { IonApp, IonRouterOutlet, IonAlert, IonButton, IonProgressBar, IonAvatar } from '@ionic/vue';
+import { IonApp, IonRouterOutlet, IonAlert, IonButton, IonProgressBar, IonAvatar, alertController } from '@ionic/vue';
 import { onMounted, ref } from 'vue';
 import { Analytics } from "@vercel/analytics/vue";
 import { SpeedInsights } from '@vercel/speed-insights/vue';
@@ -98,8 +98,9 @@ import {
   rewardNextXp,
   rewardProgress
 } from "@/composables/useRewardOverlay";
-import { updateLastSeen, currentUser } from '@/composables/userProfile';
+import { updateLastSeen, currentUser, hasReviewedApp, setHasReviewedApp } from '@/composables/userProfile';
 const { initTheme } = useTheme();
+const { t } = useI18n();
 const { isUpdateRequired, storeUrl, currentVersion, minVersion } = useAppUpdate();
 
 const askedKey = 'askedLocationPermission';
@@ -155,20 +156,77 @@ const checkAppUpdate = async () => {
 };
 
 const checkAndAskForReview = async () => {
-  if (!Capacitor.isNativePlatform() || Capacitor.getPlatform() !== 'android') return;
+  // 📱 Target native platforms (Android now, soon iOS)
+  if (!Capacitor.isNativePlatform()) return;
+  const platform = Capacitor.getPlatform();
+  if (platform !== 'android' && platform !== 'ios') return;
+
+  // 📝 Skip if already reviewed (synced from Supabase)
+  if (hasReviewedApp.value) return;
+
   let count = parseInt(localStorage.getItem(APP_OPEN_KEY) || '0', 10);
   count++;
   localStorage.setItem(APP_OPEN_KEY, count.toString());
 
-  if (count === 5 || count === 15 || count === 30) {
-    try {
-      await AppReview.requestReview();
-      console.log('⭐ In-app review requested');
-    } catch (err) {
-      console.error('❌ Error requesting in-app review:', err);
+  // 🔄 Trigger every 5 opens
+  if (count % 5 === 0) {
+    const alert = await alertController.create({
+      header: t('appReview.title'),
+      message: t('appReview.message'),
+      cssClass: 'app-review-alert',
+      buttons: [
+        {
+          text: t('appReview.never'),
+          role: 'destructive',
+          handler: async () => {
+            const confirmAlert = await alertController.create({
+              header: t('appReview.confirmNeverTitle'),
+              message: t('appReview.confirmNeverMessage'),
+              buttons: [
+                {
+                  text: t('appReview.confirmNeverCancel'),
+                  role: 'cancel'
+                },
+                {
+                  text: t('appReview.confirmNeverConfirm'),
+                  handler: () => {
+                    setHasReviewedApp(true);
+                  }
+                }
+              ]
+            });
+            await confirmAlert.present();
+          }
+        },
+        {
+          text: t('appReview.later'),
+          role: 'cancel',
+          handler: () => {
+            // Reset counter to wait for another 5 opens
+            localStorage.setItem(APP_OPEN_KEY, '0');
+          }
+        },
+        {
+          text: t('appReview.rateNow'),
+          cssClass: 'alert-button-confirm',
+          handler: async () => {
+            // 1. Mark as reviewed in DB immediately to stop asking
+            setHasReviewedApp(true);
 
-      await AppReview.openAppStore();
-    }
+            // 2. Trigger Official Native In-App Review Sheet
+            try {
+              console.log('⭐ Triggering Native Review Sheet...');
+              await AppReview.requestReview();
+            } catch (err) {
+              console.error('❌ Native sheet failed, falling back to Store App:', err);
+              await AppReview.openAppStore();
+            }
+          }
+        }
+      ]
+    });
+
+    await alert.present();
   }
 };
 
@@ -227,5 +285,41 @@ onMounted(async () => {
 ion-router-outlet {
   position: absolute !important;
   inset: 0 !important;
+}
+
+/* ⭐ App Review Alert Styles */
+.alert-button-confirm {
+  font-weight: 700 !important;
+  color: var(--ion-color-carrot) !important;
+}
+
+.app-review-alert .alert-head {
+  padding-bottom: 8px;
+}
+
+.app-review-alert .alert-title {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--ion-color-carrot);
+}
+
+.app-review-alert .alert-message {
+  font-size: 1rem;
+  line-height: 1.5;
+  color: #444444; /* Dark gray for light theme */
+  opacity: 1;
+}
+
+/* 🌓 Dark Mode Refinements */
+.ion-palette-dark .alert-button-confirm {
+  color: var(--ion-color-carrot-tint) !important;
+}
+
+.ion-palette-dark .app-review-alert .alert-title {
+  color: var(--ion-color-carrot-tint);
+}
+
+.ion-palette-dark .app-review-alert .alert-message {
+  color: #dddddd; /* Light gray for dark theme */
 }
 </style>

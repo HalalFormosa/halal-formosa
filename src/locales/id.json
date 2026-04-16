@@ -364,7 +364,11 @@
       "title": "Detail Tempat",
       "noticeTitle": "Detail Penanganan & Status",
       "readDescriptionNotice": "Mohon tinjau detail penanganan khusus di bawah ini untuk lokasi ini.",
-      "handlingDetails": "Detail Penanganan"
+      "handlingDetails": "Detail Penanganan",
+      "phone": "Telepon"
+    },
+    "filters": {
+      "priceRange": "Rentang Harga"
     },
     "viewMap": "Peta",
     "viewBoth": "Keduanya",
@@ -551,6 +555,17 @@
     },
     "defaultName": "Pengguna"
   },
+  "appReview": {
+    "title": "Suka Halal Formosa?",
+    "message": "Umpan balik Anda membantu kami berkembang dan membantu Muslim lainnya menemukan produk halal!",
+    "rateNow": "Beri Nilai Sekarang",
+    "later": "Nanti saja",
+    "never": "Jangan tanya lagi",
+    "confirmNeverTitle": "Apakah Anda yakin?",
+    "confirmNeverMessage": "Apakah Anda yakin tidak ingin membantu Muslim menemukan Halal Formosa untuk memudahkan hidup mereka?",
+    "confirmNeverConfirm": "Ya, jangan tanya lagi",
+    "confirmNeverCancel": "Tunggu, saya ingin membantu!"
+  },
   "credits": {
     "title": "Kredit & Kontributor",
     "founder": "Pendiri & Developer Utama",
@@ -641,6 +656,32 @@
       "processError": "Tidak dapat memproses gambar.",
       "saved": "Tempat disimpan!",
       "failed": "Gagal menyimpan."
+    },
+    "loginToSubmit": "Silakan masuk untuk mengirimkan tempat.",
+    "hideDetails": "Sembunyikan Detail",
+    "moreDetails": "Lebih Banyak Detail",
+    "descriptionPlaceholder": "Deskripsikan tempat ini (status halal, spesialisasi, catatan, dll.)",
+    "contactInfo": "Informasi Kontak",
+    "phoneLabel": "Telepon / WhatsApp",
+    "phonePlaceholder": "+886 900 000 000",
+    "instagramLabel": "Instagram",
+    "lineIdLabel": "LINE ID",
+    "pricePlaceholder": "NTD 100–300",
+    "tagsAndCategories": "Tag & Kategori",
+    "addTagLabel": "Tambah Tag",
+    "tagPlaceholder": "Ketik dan tekan Enter (misalnya ntu, ruang-doa)",
+    "openingHours": "Jam Operasional",
+    "closed": "Tutup",
+    "reviewNotice": "🕵️ Kiriman akan ditinjau sebelum muncul secara publik.",
+    "priceLevels": {
+      "low": "$ (Rendah)",
+      "medium": "$$ (Sedang)",
+      "high": "$$$ (Tinggi)"
+    },
+    "duplicates": {
+      "high": "Sangat mungkin duplikat di sekitar",
+      "medium": "Terdeteksi tempat serupa di sekitar",
+      "verify": "Verifikasi apakah ini cabang, lantai, atau vendor yang berbeda."
     }
   },
   "review": {
@@ -763,6 +804,15 @@
     "appVersion": "Versi Aplikasi",
     "detectedHighlights": "Sorotan yang Terdeteksi",
     "reviewLocation": "Tinjau Lokasi",
+    "controls": "Kontrol Admin",
+    "latitude": "Garis Lintang",
+    "longitude": "Garis Bujur",
+    "review": "Tinjauan",
+    "archive": "Arsip",
+    "confirmDeletePlace": "Apakah Anda yakin ingin menghapus/menolak lokasi ini secara permanen?",
+    "master": {
+      "published": "Diterbitkan"
+    },
     "name": "Nama",
     "address": "Alamat",
     "description": "Deskripsi",

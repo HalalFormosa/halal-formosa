@@ -32,10 +32,10 @@
 
           <ion-segment v-model="viewMode" mode="ios" style="width: 140px;">
             <ion-segment-button value="pending">
-              <ion-label>Review</ion-label>
+              <ion-label>{{ $t('admin.review') }}</ion-label>
             </ion-segment-button>
             <ion-segment-button value="archived">
-              <ion-label>Archive</ion-label>
+              <ion-label>{{ $t('admin.archive') }}</ion-label>
             </ion-segment-button>
           </ion-segment>
         </div>
@@ -100,80 +100,193 @@
         {{ $t('admin.noPendingLocations') }}
       </ion-text>
 
-      <!-- Modal -->
-      <ion-modal :is-open="showModal" @didDismiss="closeModal">
+      <!-- ✅ Location Detail Modal -->
+      <ion-modal :is-open="showModal" @didDismiss="closeModal" class="review-modal">
         <ion-header>
-          <ion-toolbar>
+          <ion-toolbar color="carrot">
+            <ion-buttons slot="start">
+              <ion-button @click="closeModal">
+                <ion-icon :icon="closeOutline" />
+              </ion-button>
+            </ion-buttons>
             <ion-title>{{ $t('admin.reviewLocation') }}</ion-title>
             <ion-buttons slot="end">
-              <ion-button @click="closeModal">{{ $t('admin.close') }}</ion-button>
+              <ion-button @click="approveLocation(selectedLocation)">
+                <ion-icon slot="start" :icon="checkmarkOutline" />
+                {{ $t('review.approve') }}
+              </ion-button>
             </ion-buttons>
           </ion-toolbar>
         </ion-header>
 
         <ion-content class="ion-padding">
-          <ion-list v-if="selectedLocation">
-
-            <ion-item>
-              <ion-label position="stacked">{{ $t('admin.name') }}</ion-label>
-              <ion-input v-model="selectedLocation.name" />
+          <div v-if="selectedLocation" class="form-container">
+            <!-- 👤 Uploader Attribution -->
+            <ion-item lines="none" class="uploader-info ion-margin-bottom">
+              <ion-avatar slot="start">
+                <img :src="selectedLocation.uploader?.avatar_url || 'https://placehold.co/100x100?text=👤'" />
+              </ion-avatar>
+              <ion-label>
+                <p style="font-size: 12px; margin-bottom: 2px;">{{ $t('review.uploadedBy') }}</p>
+                <h3 style="font-weight: 600;">{{ selectedLocation.uploader?.display_name || $t('home.anonymous') }}</h3>
+              </ion-label>
+              <ion-badge slot="end" color="medium">{{ selectedLocation.uploader?.donor_type || $t('profile.donors.Free') }}</ion-badge>
             </ion-item>
 
-            <ion-item>
-              <ion-label position="stacked">{{ $t('admin.address') }}</ion-label>
-              <ion-input v-model="selectedLocation.address" />
-            </ion-item>
+            <ion-item-group>
+              <!-- Name -->
+              <ion-item>
+                <ion-input
+                    v-model="selectedLocation.name"
+                    label-placement="floating"
+                    :label="$t('admin.name')"
+                ></ion-input>
+              </ion-item>
 
-            <ion-item>
-              <ion-label position="stacked">{{ $t('admin.description') }}</ion-label>
-              <ion-textarea v-model="selectedLocation.description" auto-grow />
-            </ion-item>
-
-            <div class="ion-margin-top">
-              <img
-                  :src="selectedLocation.image"
-                  style="width:100%;border-radius:12px"
-              />
-            </div>
-
-            <div style="margin-top:20px;display:flex;flex-direction:column;gap:12px;">
-              <ion-button
-                  expand="block"
-                  color="success"
-                  @click="approveLocation(selectedLocation)"
-              >
-                {{ $t('admin.approve') }}
-              </ion-button>
-
-              <div style="display:flex;gap:12px;">
-                <ion-button
-                    v-if="viewMode === 'pending'"
-                    style="flex:1"
-                    color="medium"
-                    @click="archiveLocation(selectedLocation.id)"
+              <!-- Category (Location Type) -->
+              <ion-item>
+                <ion-select
+                    v-model="selectedLocation.location_type_id"
+                    interface="popover"
+                    :label="$t('explore.categories')"
+                    label-placement="floating"
                 >
-                  {{ $t('admin.archive') }}
-                </ion-button>
-                <ion-button
-                    v-else
-                    style="flex:1"
-                    color="primary"
-                    @click="restoreLocation(selectedLocation.id)"
-                >
-                  {{ $t('admin.restore') || 'Restore' }}
-                </ion-button>
+                  <ion-select-option v-for="type in locationTypes" :key="type.id" :value="type.id">
+                    {{ type.name }}
+                  </ion-select-option>
+                </ion-select>
+              </ion-item>
 
-                <ion-button
-                    style="flex:1"
-                    color="danger"
-                    @click="rejectLocation(selectedLocation.id)"
-                >
-                  {{ $t('admin.reject') }}
-                </ion-button>
+              <!-- Address -->
+              <ion-item>
+                <ion-input
+                    v-model="selectedLocation.address"
+                    label-placement="floating"
+                    :label="$t('admin.address')"
+                ></ion-input>
+              </ion-item>
+
+              <!-- Pinpoint (Lat/Lng) -->
+              <div class="coordinates-row">
+                <ion-item style="flex: 1">
+                  <ion-input
+                      v-model.number="selectedLocation.lat"
+                      type="number"
+                      label-placement="floating"
+                      :label="$t('admin.latitude')"
+                  ></ion-input>
+                </ion-item>
+                <ion-item style="flex: 1">
+                  <ion-input
+                      v-model.number="selectedLocation.lng"
+                      type="number"
+                      label-placement="floating"
+                      :label="$t('admin.longitude')"
+                  ></ion-input>
+                </ion-item>
               </div>
-            </div>
 
-          </ion-list>
+              <!-- Map Preview -->
+              <div class="map-preview-container ion-margin-vertical">
+                <iframe
+                    v-if="selectedLocation.lat && selectedLocation.lng"
+                    width="100%"
+                    height="180"
+                    style="border:0; border-radius: 12px;"
+                    loading="lazy"
+                    allowfullscreen
+                    :src="`https://maps.google.com/maps?q=${selectedLocation.lat},${selectedLocation.lng}&z=16&output=embed`"
+                ></iframe>
+              </div>
+
+              <!-- Description -->
+              <ion-item>
+                <ion-textarea
+                    v-model="selectedLocation.description"
+                    label-placement="floating"
+                    :label="$t('admin.description')"
+                    auto-grow
+                ></ion-textarea>
+              </ion-item>
+
+              <!-- Contact Info -->
+              <ion-item>
+                <ion-icon :icon="callOutline" slot="start" size="small" />
+                <ion-input
+                    v-model="selectedLocation.phone"
+                    label-placement="floating"
+                    :label="$t('explore.details.phone')"
+                ></ion-input>
+              </ion-item>
+
+              <ion-item>
+                <ion-icon :icon="logoInstagram" slot="start" size="small" />
+                <ion-input
+                    v-model="selectedLocation.instagram"
+                    label-placement="floating"
+                    :label="$t('addPlace.instagramLabel')"
+                ></ion-input>
+              </ion-item>
+
+              <ion-item>
+                <ion-icon :icon="chatboxEllipsesOutline" slot="start" size="small" />
+                <ion-input
+                    v-model="selectedLocation.line_id"
+                    label-placement="floating"
+                    :label="$t('addPlace.lineIdLabel')"
+                ></ion-input>
+              </ion-item>
+
+              <!-- Price Range -->
+              <ion-item>
+                <ion-icon :icon="cashOutline" slot="start" size="small" />
+                <ion-select
+                    v-model="selectedLocation.price_range"
+                    interface="popover"
+                    :label="$t('explore.filters.priceRange')"
+                    label-placement="floating"
+                >
+                  <ion-select-option value="$">{{ $t('addPlace.priceLevels.low') }}</ion-select-option>
+                  <ion-select-option value="$$">{{ $t('addPlace.priceLevels.medium') }}</ion-select-option>
+                  <ion-select-option value="$$$">{{ $t('addPlace.priceLevels.high') }}</ion-select-option>
+                </ion-select>
+              </ion-item>
+
+              <!-- Image Section -->
+              <div class="ion-margin-top ion-padding-horizontal">
+                <ion-label><strong>{{ $t('admin.locationImage') }}</strong></ion-label>
+                <div class="img-preview-container ion-margin-top">
+                  <div class="img-preview-box">
+                    <img :src="imagePreviewUrl || 'https://placehold.co/300x200?text=No+Image'" />
+                  </div>
+                  <div class="img-controls">
+                    <ion-button size="small" fill="clear" @click="takePicture">
+                      <ion-icon slot="icon-only" :icon="cameraOutline" />
+                    </ion-button>
+                    <ion-button size="small" fill="clear" @click="uploadFromGallery">
+                      <ion-icon slot="icon-only" :icon="cloudUploadOutline" />
+                    </ion-button>
+                  </div>
+                </div>
+              </div>
+
+            </ion-item-group>
+
+            <div class="ion-padding-top ion-margin-top" style="border-top: 1px solid var(--ion-color-step-150); display: flex; gap: 8px;">
+              <ion-button v-if="viewMode === 'pending'" @click="archiveLocation(selectedLocation.id)" color="warning" style="flex: 1;">
+                <ion-icon slot="start" :icon="trashOutline" />
+                {{ $t('admin.archive') }}
+              </ion-button>
+              <ion-button v-else @click="restoreLocation(selectedLocation.id)" color="success" style="flex: 1;">
+                <ion-icon slot="start" :icon="swapVerticalOutline" />
+                {{ $t('admin.restore') }}
+              </ion-button>
+              <ion-button @click="rejectLocation(selectedLocation.id)" color="danger" fill="outline" style="flex: 1;">
+                <ion-icon slot="start" :icon="trashOutline" />
+                {{ $t('admin.reject') }}
+              </ion-button>
+            </div>
+          </div>
         </ion-content>
       </ion-modal>
 
@@ -185,16 +298,23 @@
 import {
   IonPage, IonHeader, IonContent, IonList,
   IonItem, IonThumbnail, IonLabel, IonText,
-  IonModal, IonToolbar, IonTitle, IonButtons,
-  IonButton, IonInput, IonTextarea, IonSkeletonText,
+  IonModal, IonToolbar, IonTitle, IonButtons, IonAvatar, IonBadge, IonItemGroup,
+  IonButton, IonInput, IonTextarea, IonSkeletonText, IonSelect, IonSelectOption,
   IonSearchbar, IonSegment, IonSegmentButton, IonPopover, IonIcon
 } from '@ionic/vue'
 
 import { ref, onMounted, reactive, computed } from 'vue'
 import { supabase } from '@/plugins/supabaseClient'
-import { listOutline, funnelOutline, timeOutline, checkmarkCircle, swapVerticalOutline } from 'ionicons/icons'
+import {
+  listOutline, timeOutline, checkmarkCircle, swapVerticalOutline,
+  closeOutline, checkmarkOutline, cameraOutline, cloudUploadOutline,
+  trashOutline, callOutline, logoInstagram, chatboxEllipsesOutline,
+  cashOutline, locationOutline, shieldCheckmarkOutline, sparkles
+} from 'ionicons/icons'
 import AppHeader from '@/components/AppHeader.vue'
 import { useI18n } from 'vue-i18n'
+import { Camera, CameraDirection, CameraResultType, CameraSource } from '@capacitor/camera'
+import { useImageResizer } from "@/composables/useImageResizer"
 
 const { t } = useI18n()
 
@@ -202,10 +322,22 @@ const pendingLocations = ref<any[]>([])
 const loadingLocations = ref(true)
 const showModal = ref(false)
 const selectedLocation = ref<any | null>(null)
+const locationTypes = ref<{ id: number, name: string }[]>([])
+const isUnmounted = ref(false)
+const { resizeImage } = useImageResizer()
+
+// Image states
+const imageFile = ref<File | null>(null)
+const imagePreviewUrl = ref<string | null>(null)
 
 const searchQuery = ref('')
 const viewMode = ref<'pending' | 'archived'>('pending')
 const sortBy = ref<'recent' | 'alpha'>('recent')
+
+import { onUnmounted } from 'vue'
+onUnmounted(() => {
+  isUnmounted.value = true
+})
 
 const sortIcon = computed(() => {
   return sortBy.value === 'recent' ? timeOutline : listOutline
@@ -246,27 +378,102 @@ const filteredLocations = computed(() => {
   return result
 })
 
+async function loadLocationTypes() {
+  const { data, error } = await supabase.from('location_types').select('id, name')
+  if (!error && data) locationTypes.value = data
+}
+
 async function loadPendingLocations() {
   loadingLocations.value = true
 
-  const { data } = await supabase
+  const { data: locations, error: locError } = await supabase
       .from('locations')
       .select('*')
       .or('approved.eq.false,is_archived.eq.true')
       .order('created_at', { ascending: false })
 
-  pendingLocations.value = data || []
+  if (locError) {
+    console.error("❌ Error fetching pending locations:", locError)
+    loadingLocations.value = false
+    return
+  }
+
+  if (locations && locations.length > 0) {
+    const uploaderIds = [...new Set(locations.map(l => l.created_by).filter(Boolean))]
+
+    if (uploaderIds.length > 0) {
+      const { data: profiles, error: profError } = await supabase
+          .from('user_profiles')
+          .select('id, display_name, avatar_url, donor_type')
+          .in('id', uploaderIds)
+
+      if (!profError && profiles) {
+        const profileMap = Object.fromEntries(profiles.map(p => [p.id, p]))
+        pendingLocations.value = locations.map(l => ({
+          ...l,
+          uploader: profileMap[l.created_by] || null
+        }))
+      } else {
+        pendingLocations.value = locations
+      }
+    } else {
+      pendingLocations.value = locations
+    }
+  } else {
+    pendingLocations.value = []
+  }
+
   loadingLocations.value = false
 }
 
 function openLocationModal(loc: any) {
   selectedLocation.value = reactive({ ...loc })
+  imageFile.value = null
+  imagePreviewUrl.value = loc.image
   showModal.value = true
 }
 
 function closeModal() {
   selectedLocation.value = null
+  imageFile.value = null
+  imagePreviewUrl.value = null
   showModal.value = false
+}
+
+async function takePicture() {
+  if (isUnmounted.value) return
+  try {
+    const image = await Camera.getPhoto({
+      quality: 90,
+      allowEditing: false,
+      resultType: CameraResultType.Uri,
+      source: CameraSource.Camera,
+      direction: CameraDirection.Rear
+    })
+    imagePreviewUrl.value = image.webPath || null
+    imageFile.value = await resizeImage(image.webPath || '')
+  } catch (error) {
+    console.error('Error taking photo:', error)
+  }
+}
+
+function uploadFromGallery() {
+  const input = document.createElement('input')
+  input.type = 'file'
+  input.accept = 'image/*'
+  input.onchange = (event: Event) => {
+    const target = event.target as HTMLInputElement
+    if (target.files && target.files[0]) {
+      const file = target.files[0]
+      const reader = new FileReader()
+      reader.onload = async () => {
+        imagePreviewUrl.value = reader.result as string
+        imageFile.value = await resizeImage(reader.result as string)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+  input.click()
 }
 
 async function approveLocation(loc: any) {
@@ -274,20 +481,49 @@ async function approveLocation(loc: any) {
   const user = data?.user
   if (!user) return
 
-  await supabase
+  let imageUrl = loc.image
+
+  // 1. Upload image if changed
+  if (imageFile.value && loc.id) {
+    const { error: uploadError } = await supabase.storage
+        .from('location-images')
+        .upload(`${loc.id}/main.jpg`, imageFile.value, { upsert: true })
+
+    if (!uploadError) {
+      const { data: publicUrl } = supabase.storage
+          .from('location-images')
+          .getPublicUrl(`${loc.id}/main.jpg`)
+      imageUrl = publicUrl.publicUrl
+    }
+  }
+
+  // 2. Update location
+  const { error } = await supabase
       .from('locations')
       .update({
         name: loc.name,
         address: loc.address,
         description: loc.description,
+        lat: loc.lat,
+        lng: loc.lng,
+        phone: loc.phone,
+        instagram: loc.instagram,
+        line_id: loc.line_id,
+        price_range: loc.price_range,
+        location_type_id: loc.location_type_id,
+        image: imageUrl,
         approved: true,
         approved_by: user.id,
         approved_at: new Date().toISOString()
       })
       .eq('id', loc.id)
 
-  await loadPendingLocations()
-  closeModal()
+  if (!error) {
+    await loadPendingLocations()
+    closeModal()
+  } else {
+    console.error("❌ Error approving location:", error)
+  }
 }
 
 async function archiveLocation(id: number) {
@@ -315,7 +551,7 @@ async function restoreLocation(id: number) {
 }
 
 async function rejectLocation(id: number) {
-  if (!confirm("Are you sure you want to delete/reject this location permanently?")) return
+  if (!confirm(t('admin.confirmDeletePlace'))) return
   
   await supabase
       .from('locations')
@@ -326,7 +562,10 @@ async function rejectLocation(id: number) {
   closeModal()
 }
 
-onMounted(loadPendingLocations)
+onMounted(() => {
+  loadLocationTypes()
+  loadPendingLocations()
+})
 </script>
 <style scoped>
 /* Consolidated Search Header Styles from SearchView.vue */
@@ -392,5 +631,83 @@ ion-header {
 .actions-toolbar ion-button,
 .actions-toolbar ion-icon {
   color: var(--ion-color-dark);
+}
+
+/* Review Modal Styles */
+.review-modal {
+  --width: 100%;
+  --height: 100%;
+}
+
+.form-container {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.uploader-info {
+  --background: var(--ion-color-step-50);
+  border-radius: 12px;
+  margin-bottom: 20px;
+}
+
+.coordinates-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.map-preview-container {
+  overflow: hidden;
+  border: 1px solid var(--ion-color-step-200);
+  border-radius: 12px;
+}
+
+.img-preview-container {
+  position: relative;
+  width: 100%;
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--ion-background-color-step-100);
+  border: 1px solid var(--ion-color-step-200);
+}
+
+.img-preview-box {
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.img-preview-box img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.img-controls {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 8px;
+  backdrop-filter: blur(4px);
+}
+
+.img-controls ion-button {
+  --color: var(--ion-color-dark);
+}
+
+@media (prefers-color-scheme: dark) {
+  .img-controls {
+    background: rgba(0, 0, 0, 0.6);
+  }
+  .img-controls ion-button {
+    --color: white;
+  }
 }
 </style>

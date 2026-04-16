@@ -367,7 +367,14 @@
       "title": "Butiran Tempat",
       "noticeTitle": "Butiran Pengendalian & Status",
       "readDescriptionNotice": "Sila semak butiran pengendalian khusus di bawah untuk lokasi ini.",
-      "handlingDetails": "Butiran Pengendalian"
+      "handlingDetails": "Butiran Pengendalian",
+      "phone": "Telefon"
+    },
+    "filters": {
+      "priceRange": "Julat Harga"
+    },
+    "filters": {
+      "priceRange": "Julat Harga"
     },
     "viewMap": "Peta",
     "viewBoth": "Kedua-duanya",
@@ -552,6 +559,17 @@
     },
     "defaultName": "Pengguna"
   },
+  "appReview": {
+    "title": "Suka Halal Formosa?",
+    "message": "Maklum balas anda membantu kami berkembang dan membantu Muslim lain mencari produk halal!",
+    "rateNow": "Nilai Sekarang",
+    "later": "Nanti saja",
+    "never": "Jangan tunjuk lagi",
+    "confirmNeverTitle": "Adakah anda pasti?",
+    "confirmNeverMessage": "Adakah anda pasti tidak mahu membantu Muslim mencari Halal Formosa untuk memudahkan kehidupan mereka?",
+    "confirmNeverConfirm": "Ya, jangan tunjuk lagi",
+    "confirmNeverCancel": "Tunggu, saya mahu membantu!"
+  },
   "credits": {
     "title": "Kredit & Penyumbang",
     "founder": "Pengasas & Pembangun Utama",
@@ -642,6 +660,32 @@
       "processError": "Tidak dapat memproses imej.",
       "saved": "Tempat disimpan!",
       "failed": "Gagal menyimpan."
+    },
+    "loginToSubmit": "Sila log masuk untuk menghantar tempat.",
+    "hideDetails": "Sembunyikan Butiran",
+    "moreDetails": "Maklumat Lanjut",
+    "descriptionPlaceholder": "Huraikan tempat ini (status halal, keistimewaan, nota, dll.)",
+    "contactInfo": "Maklumat Hubungan",
+    "phoneLabel": "Telefon / WhatsApp",
+    "phonePlaceholder": "+886 900 000 000",
+    "instagramLabel": "Instagram",
+    "lineIdLabel": "LINE ID",
+    "pricePlaceholder": "NTD 100–300",
+    "tagsAndCategories": "Tag & Kategori",
+    "addTagLabel": "Tambah Tag",
+    "tagPlaceholder": "Taip dan tekan Enter (cth. ntu, bilik-solat)",
+    "openingHours": "Waktu Operasi",
+    "closed": "Tutup",
+    "reviewNotice": "🕵️ Serahan akan disemak sebelum dipaparkan secara terbuka.",
+    "priceLevels": {
+      "low": "$ (Rendah)",
+      "medium": "$$ (Sederhana)",
+      "high": "$$$ (Tinggi)"
+    },
+    "duplicates": {
+      "high": "Sangat mungkin pendua berdekatan",
+      "medium": "Tempat serupa dikesan berdekatan",
+      "verify": "Sahkan jika ini adalah cawangan, tingkat, atau vendor yang berbeza."
     }
   },
   "review": {
