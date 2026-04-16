@@ -615,7 +615,21 @@
   "addProduct": {
     "title": "新增產品",
     "editTitle": "編輯產品",
+    "sections": {
+      "identity": "基本資訊",
+      "ingredients": "成份與分析",
+      "market": "市場與描述",
+      "photos": "產品照片"
+    },
+    "scanIngredientsTitle": "掃描成分",
+    "scanIngredientsDesc": "掃描成分列表以自動填寫表單並獲取背面照片。",
+    "camera": "相機",
+    "gallery": "相簿",
+    "skip": "先跳過",
+    "next": "下一步",
+    "back": "上一步",
     "cropIngredients": "裁剪成分",
+    "capturedBackPhoto": "已獲取的背面照片",
     "done": "完成",
     "processingOcr": "正在處理 OCR...",
     "barcode": "條碼",
@@ -642,6 +656,8 @@
     "backImage": "背面圖片",
     "showMuslimFriendly": "顯示穆斯林友善成分",
     "hideMuslimFriendly": "隱藏穆斯林友善成分",
+    "applyQuickDescription": "套用快速描述",
+    "nearbyStoreDetected": "偵測到附近的商店",
     "quickDescription": {
       "halal": "清真認證來自 ",
       "muslimFriendly": "穆斯林友善成分，OK。",

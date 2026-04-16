@@ -582,8 +582,22 @@
   },
   "addProduct": {
     "title": "Tambah Produk",
-    "editTitle": "Edit Produk",
+    "editTitle": "Ubah Produk",
+    "sections": {
+      "identity": "Maklumat Asas",
+      "ingredients": "Ramuan & Analisis",
+      "market": "Pasaran & Deskripsi",
+      "photos": "Foto Produk"
+    },
+    "scanIngredientsTitle": "Imbas Ramuan",
+    "scanIngredientsDesc": "Imbas senarai ramuan untuk mengisi borang secara automatik dan mengambil foto belakang.",
+    "camera": "Kamera",
+    "gallery": "Galeri",
+    "skip": "Langkau buat masa ini",
+    "next": "Seterusnya",
+    "back": "Kembali",
     "cropIngredients": "Potong Imej Bahan",
+    "capturedBackPhoto": "Foto Belakang Diambil",
     "done": "Selesai",
     "processingOcr": "Memproses OCR...",
     "barcode": "Barkod",

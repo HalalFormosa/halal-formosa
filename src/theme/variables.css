@@ -300,11 +300,6 @@ ion-card {
     cursor: pointer;
     border: 1px solid var(--card-border);
     overflow: hidden;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-ion-card:active {
-    transform: scale(0.98);
 }
 
 ion-card ion-list,
@@ -959,18 +954,16 @@ ion-popover {
     --box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
 }
 
-/* Glassmorphism content shell */
+/* Glassmorphism content shell - Updated to be Opaque for readability */
 ion-popover::part(content) {
-    backdrop-filter: blur(20px) saturate(180%);
-    -webkit-backdrop-filter: blur(20px) saturate(180%);
-    background: rgba(255, 255, 255, 0.75) !important;
+    background: var(--ion-background-color, #ffffff) !important;
     border: 0.5px solid rgba(0, 0, 0, 0.1);
     border-radius: 16px;
     overflow: hidden;
 }
 
 .ion-palette-dark ion-popover::part(content) {
-    background: rgba(28, 28, 30, 0.75) !important;
+    background: #1c1c1e !important;
     border-color: rgba(255, 255, 255, 0.1);
 }
 
@@ -1249,6 +1242,7 @@ ion-header.is-scrolled {
 .ion-palette-dark .compact-searchbar {
     --background: var(--ion-color-step-100, #1e1e1e);
 }
+
 /* ===============================
    Safe Area Utilities
    =============================== */

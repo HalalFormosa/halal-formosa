@@ -579,7 +579,21 @@
   "addProduct": {
     "title": "Tambah Produk",
     "editTitle": "Ubah Produk",
+    "sections": {
+      "identity": "Informasi Dasar",
+      "ingredients": "Bahan & Analisis",
+      "market": "Pasar & Deskripsi",
+      "photos": "Foto Produk"
+    },
+    "scanIngredientsTitle": "Pindai Bahan",
+    "scanIngredientsDesc": "Pindai daftar bahan untuk mengisi formulir secara otomatis dan mengambil foto belakang.",
+    "camera": "Kamera",
+    "gallery": "Galeri",
+    "skip": "Lewati dulu",
+    "next": "Selanjutnya",
+    "back": "Kembali",
     "cropIngredients": "Potong Gambar Komposisi",
+    "capturedBackPhoto": "Foto Belakang Diambil",
     "done": "Selesai",
     "processingOcr": "Memproses OCR...",
     "barcode": "Barcode",
@@ -604,6 +618,8 @@
     "descriptionPlaceholder": "Masukkan teks",
     "frontImage": "Gambar Depan",
     "backImage": "Gambar Belakang",
+    "applyQuickDescription": "Terapkan Deskripsi Cepat",
+    "nearbyStoreDetected": "Toko terdekat terdeteksi",
     "showMuslimFriendly": "Tampilkan bahan ramah muslim",
     "hideMuslimFriendly": "Sembunyikan bahan ramah muslim",
     "quickDescription": {
