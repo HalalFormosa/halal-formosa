@@ -697,8 +697,8 @@ const lastStableLoc = ref<LatLng | null>(null)
 const lastCalcLocation = ref<LatLng | null>(null)
 
 // Interaction States for Map/List Sync
-let isUserPanningMap = false
-let isUserScrollingList = false
+const isUserPanningMap = ref(false)
+const isUserScrollingList = ref(false)
 let lastPannedId: number | null = null
 
 const distanceInMeters = (a: LatLng, b: LatLng) => {
@@ -1545,10 +1545,10 @@ const initMap = async () => {
   })
   // ✅ Interaction Tracking: Stop list-to-map sync if user is touching map
   mapInstance.addListener('dragstart', () => {
-    isUserPanningMap = true
+    isUserPanningMap.value = true
   })
   mapInstance.addListener('zoom_changed', () => {
-    isUserPanningMap = true
+    isUserPanningMap.value = true
   })
 
   // ✅ Debounced idle listener (150ms) to prevent spamming updates
@@ -1557,7 +1557,7 @@ const initMap = async () => {
     if (idleTimeout) clearTimeout(idleTimeout);
     idleTimeout = setTimeout(() => {
       initMarkers(sortedLocations.value);
-      isUserPanningMap = false // User finished manual interaction
+      isUserPanningMap.value = false // User finished manual interaction
     }, 300);
   });
 
@@ -1716,7 +1716,7 @@ const initMarkers = (places: Place[] = sortedLocations.value) => {
     newMarkerArray.push(marker);
 
     // ✅ CHECK FOR PENDING INFO WINDOW (Reliability fix)
-    if (loc.id === pendingInfoWindowPlaceId.value && infoWindow) {
+    if (loc.id === pendingInfoWindowPlaceId.value && infoWindow && mapInstance) {
       infoWindow.setContent(buildInfoHtml(loc));
       infoWindow.open(mapInstance, marker);
       setTimeout(applyInfoWindowDarkClass, 50);
@@ -1743,7 +1743,9 @@ const initMarkers = (places: Place[] = sortedLocations.value) => {
   if (isFiltered && visiblePlaces.length > 0 && !hasCenteredInitiallyVisible) {
     const fitBounds = new google.maps.LatLngBounds()
     visiblePlaces.forEach(p => fitBounds.extend(p.position))
-    mapInstance.fitBounds(fitBounds)
+    if (fitBounds && mapInstance) {
+      mapInstance.fitBounds(fitBounds)
+    }
 
     google.maps.event.addListenerOnce(mapInstance, 'idle', () => {
       if (mapInstance!.getZoom()! > 17) mapInstance!.setZoom(17)
@@ -1766,7 +1768,7 @@ watch(searchQuery, q => {
 })
 
 /* ---------------- Interactions ---------------- */
-const selectPlace = (place: LocationType) => {
+const selectPlace = (place: Place) => {
   selectedPlace.value = place
   lastPannedId = place.id
   scrollCardIntoView(place.id)
@@ -1786,10 +1788,10 @@ const selectPlace = (place: LocationType) => {
   mapInstance.setZoom(targetZoom)
 
   const m = markerMap.get(place.id)
-  if (m && infoWindow) {
+  if (m && infoWindow && mapInstance) {
     // ⏲️ SEQUENCE: Pan first, then show InfoWindow
     setTimeout(() => {
-      if (selectedPlace.value?.id === place.id) {
+      if (selectedPlace.value?.id === place.id && infoWindow && mapInstance) {
         infoWindow.setContent(buildInfoHtml(place))
         infoWindow.open(mapInstance, m)
 
@@ -1863,20 +1865,20 @@ const initCardObserver = () => {
             // - Only if user is manually swiping (isUserScrollingList)
             // - AND not currently dragging the map (isUserPanningMap)
             // - AND we haven't already panned to this specific ID
-            if (isUserScrollingList && !isUserPanningMap && lastPannedId !== p.id) {
+            if (isUserScrollingList.value && !isUserPanningMap.value && lastPannedId !== p.id) {
               lastPannedId = p.id
               
               requestAnimationFrame(() => {
-                if (mapInstance && isUserScrollingList) {
+                if (mapInstance && isUserScrollingList.value) {
                    const currentZoom = mapInstance.getZoom() || 14
                    const latOffset = 100 * 360 / (256 * Math.pow(2, currentZoom))
                    mapInstance.panTo({ lat: p.position.lat + latOffset, lng: p.position.lng });
                    
                    const m = markerMap.get(p.id)
-                   if (m && infoWindow) {
+                   if (m && infoWindow && mapInstance) {
                      setTimeout(() => {
                        // Final check: only open if this card is still the selected one
-                       if (selectedPlace.value?.id === p.id) {
+                       if (selectedPlace.value?.id === p.id && infoWindow && mapInstance) {
                          infoWindow.setContent(buildInfoHtml(p))
                          infoWindow.open(mapInstance, m)
                          setTimeout(applyInfoWindowDarkClass, 50)
