@@ -1553,16 +1553,16 @@ onUnmounted(() => {
 /* 🤖 AI Summary Card */
 .ai-summary-card {
   margin-top: 20px;
-  background: linear-gradient(135deg, #fef9e7 0%, #fdf2d0 100%);
+  background: var(--soft-warning-bg);
   border-radius: 16px;
   padding: 16px;
-  border: 1px solid #f9e79f;
+  border: 1px solid var(--soft-warning-border);
 }
 
 .ai-summary-title {
   font-size: 16px;
   font-weight: 700;
-  color: #7d6608;
+  color: var(--soft-warning-text);
   margin-bottom: 10px;
   display: flex;
   align-items: center;
@@ -1572,7 +1572,8 @@ onUnmounted(() => {
 .ai-summary-text {
   font-size: 15px;
   line-height: 1.6;
-  color: #4d452d;
+  color: var(--soft-warning-text);
+  opacity: 0.9;
   white-space: pre-wrap;
 }
 
@@ -1587,7 +1588,7 @@ onUnmounted(() => {
   object-fit: contain;
   border-radius: 16px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-  background: #f4f4f4;
+  background: var(--ion-color-step-100);
 }
 
 /* 🔹 OCR Loading Overlay */
@@ -1698,7 +1699,7 @@ onUnmounted(() => {
 }
 
 .modal-wrapper {
-  background: white;
+  background: var(--ion-background-color);
   padding: 32px 24px;
 }
 
@@ -1709,14 +1710,14 @@ onUnmounted(() => {
 .icon-circle {
   width: 64px;
   height: 64px;
-  background: #fff8f1;
+  background: rgba(var(--ion-color-carrot-rgb), 0.1);
   border-radius: 50%;
   display: flex;
   justify-content: center;
   align-items: center;
   margin: 0 auto 16px;
   font-size: 32px;
-  box-shadow: 0 4px 12px rgba(237, 133, 41, 0.1);
+  box-shadow: 0 4px 12px rgba(var(--ion-color-carrot-rgb), 0.1);
 }
 
 .modal-title {
@@ -1735,12 +1736,12 @@ onUnmounted(() => {
 }
 
 .motivation-box {
-  background: linear-gradient(135deg, #fdfcfb 0%, #e2d1c3 100%);
+  background: var(--ion-color-step-50);
   border-radius: 20px;
   padding: 20px;
   text-align: center;
   margin-bottom: 32px;
-  border: 1px dashed rgba(237, 133, 41, 0.3);
+  border: 1px dashed rgba(var(--ion-color-carrot-rgb), 0.3);
 }
 
 .islamic-ornament {
@@ -1752,7 +1753,7 @@ onUnmounted(() => {
   font-size: 14px;
   font-style: italic;
   line-height: 1.6;
-  color: #5d4037;
+  color: var(--ion-color-step-600);
   margin: 0;
 }
 

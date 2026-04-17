@@ -278,6 +278,11 @@ ion-chip.status-chip.chip-medium {
     --card-inner-bg: #ffffff;
     --card-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
     --card-border: rgba(0, 0, 0, 0.08);
+
+    /* UI Utilities */
+    --soft-warning-bg: linear-gradient(135deg, #fef9e7 0%, #fdf2d0 100%);
+    --soft-warning-text: #7d6608;
+    --soft-warning-border: #f9e79f;
 }
 
 .ion-palette-dark {
@@ -289,6 +294,11 @@ ion-chip.status-chip.chip-medium {
     --card-inner-bg: #1c1c1d;
     --card-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
     --card-border: rgba(255, 255, 255, 0.08);
+
+    /* UI Utilities Dark */
+    --soft-warning-bg: linear-gradient(135deg, #1c1c1e 0%, #422006 100%);
+    --soft-warning-text: #fef3c7;
+    --soft-warning-border: rgba(230, 126, 34, 0.3);
 }
 
 ion-card {
