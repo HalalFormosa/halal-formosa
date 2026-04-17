@@ -169,7 +169,7 @@
             <ion-label>
               {{ $t('scanIngredients.todayScans', {
               used: todayScanCount,
-              total: isDonor ? '∞' : 10 + bonusScans
+              total: isDonor ? '∞' : DAILY_SCAN_LIMIT + bonusScans
             }) }}
             </ion-label>
           </ion-chip>
@@ -455,7 +455,7 @@
       />
       <ion-toast
           :is-open="showLimitToast"
-          message="Daily scan limit reached (10/day)"
+          :message="`Daily scan limit reached (${DAILY_SCAN_LIMIT}/day)`"
           :duration="2000"
           color="warning"
           position="bottom"
@@ -599,6 +599,9 @@ import { refreshSubscriptionStatus } from '@/composables/useSubscriptionStatus'
 import { useRouter } from 'vue-router'
 import { useAutoScanStore } from '@/composables/useAutoScanStore'
 import { useNotifier } from "@/composables/useNotifier"
+
+/** ---------- Constants ---------- */
+const DAILY_SCAN_LIMIT = 10
 
 /** ---------- Wizard Steps ---------- */
 const STEP_CAPTURE = 0
@@ -902,7 +905,7 @@ async function checkDailyScanLimit() {
     return true;   // fail-open instead of blocking users
   }
 
-  return data.length < (10 + bonusScans.value);
+  return data.length < (DAILY_SCAN_LIMIT + bonusScans.value);
 }
 // Gallery
 
@@ -1153,7 +1156,7 @@ async function handleConfirmCrop() {
 
 const canScan = computed(() => {
   if (isDonor.value) return true;
-  return todayScanCount.value < (10 + bonusScans.value);
+  return todayScanCount.value < (DAILY_SCAN_LIMIT + bonusScans.value);
 });
 
 function changeRatio(ratio: number | null) {
