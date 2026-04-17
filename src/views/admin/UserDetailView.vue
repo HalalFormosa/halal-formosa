@@ -176,60 +176,90 @@
         </ion-list>
       </ion-card>
 
-      <ion-card v-if="recentSearches.length">
+      <!-- 🔎 RECENT SEARCHES -->
+      <ion-card class="modern-card">
         <ion-card-header>
-          <ion-card-title>{{ $t('admin.recentSearches') }}</ion-card-title>
+          <div class="card-header-flex">
+            <div class="title-with-icon">
+              <ion-icon :icon="searchOutline" color="carrot" />
+              <ion-card-title>{{ $t('admin.recentSearches') || 'Recent Searches' }}</ion-card-title>
+            </div>
+            <ion-button v-if="recentSearches.length >= 20" fill="clear" size="small" color="carrot" @click="openFullSearchHistory">
+               {{ $t('common.viewMore') }}
+               <ion-icon slot="end" :icon="chevronForwardOutline" />
+            </ion-button>
+          </div>
         </ion-card-header>
 
-        <ion-list lines="none">
+        <ion-list lines="none" v-if="recentSearches.length">
           <ion-item v-for="(s, i) in recentSearches" :key="i">
+            <ion-icon :icon="searchOutline" slot="start" class="small-icon" />
             <ion-label>
               <strong>{{ s.search_text }}</strong>
               <p class="activity-time">{{ fromNow(s.searched_at) }}</p>
             </ion-label>
           </ion-item>
         </ion-list>
+
+        <div v-else class="empty-state-small">
+          <p>{{ $t('common.noData') === 'common.noData' ? 'No data found' : $t('common.noData') }}</p>
+        </div>
       </ion-card>
 
-
-      <ion-card v-if="recentProducts.length">
+      <!-- 📦 RECENT PRODUCTS -->
+      <ion-card class="modern-card">
         <ion-card-header>
-          <ion-card-title>{{ $t('admin.recentProducts') }}</ion-card-title>
+          <div class="title-with-icon">
+            <ion-icon :icon="cubeOutline" color="carrot" />
+            <ion-card-title>{{ $t('admin.recentProducts') || 'Recent Products' }}</ion-card-title>
+          </div>
         </ion-card-header>
 
-        <ion-list lines="none">
+        <ion-list lines="none" v-if="recentProducts.length">
           <ion-item v-for="(p, i) in recentProducts" :key="i">
             <ion-thumbnail slot="start" v-if="p.product_image">
               <img :src="p.product_image" />
             </ion-thumbnail>
+            <ion-icon v-else :icon="cubeOutline" slot="start" class="small-icon" />
 
             <ion-label>
               <strong>{{ p.product_name ?? `Barcode: ${p.product_id}` }}</strong>
               <p class="activity-time">{{ fromNow(p.viewed_at) }}</p>
             </ion-label>
           </ion-item>
-
         </ion-list>
+
+        <div v-else class="empty-state-small">
+          <p>{{ $t('common.noData') === 'common.noData' ? 'No data viewed' : $t('common.noData') }}</p>
+        </div>
       </ion-card>
 
-      <ion-card v-if="recentPlaces.length">
+      <!-- 📍 RECENT PLACES -->
+      <ion-card class="modern-card">
         <ion-card-header>
-          <ion-card-title>{{ $t('admin.recentPlaces') }}</ion-card-title>
+          <div class="title-with-icon">
+            <ion-icon :icon="locationOutline" color="carrot" />
+            <ion-card-title>{{ $t('admin.recentPlaces') || 'Recent Places' }}</ion-card-title>
+          </div>
         </ion-card-header>
 
-        <ion-list lines="none">
+        <ion-list lines="none" v-if="recentPlaces.length">
           <ion-item v-for="(p, i) in recentPlaces" :key="i">
             <ion-thumbnail slot="start" v-if="p.place_image">
               <img :src="p.place_image" />
             </ion-thumbnail>
+            <ion-icon v-else :icon="locationOutline" slot="start" class="small-icon" />
 
             <ion-label>
               <strong>{{ p.place_name ?? `Place #${p.place_id}` }}</strong>
               <p class="activity-time">{{ fromNow(p.interacted_at) }}</p>
             </ion-label>
           </ion-item>
-
         </ion-list>
+
+        <div v-else class="empty-state-small">
+          <p>{{ $t('common.noData') === 'common.noData' ? 'No places visited' : $t('common.noData') }}</p>
+        </div>
       </ion-card>
 
 
@@ -270,6 +300,48 @@
         </ion-list>
       </ion-card>
 
+      <!-- ================= SEARCH HISTORY MODAL ================= -->
+      <ion-modal :is-open="showSearchModal" @didDismiss="closeSearchModal">
+        <ion-header>
+          <app-header
+            :title="$t('admin.searchHistory')"
+            :icon="searchOutline"
+            :showBack="true"
+            :useRouterBack="false"
+            @back="closeSearchModal"
+            :contrast="true"
+          />
+        </ion-header>
+        
+        <ion-content class="ion-padding modal-content">
+          <ion-list lines="none" v-if="fullSearchHistory.length">
+            <ion-item v-for="(s, i) in fullSearchHistory" :key="i" class="history-modal-item">
+              <ion-icon :icon="searchOutline" slot="start" class="history-icon" />
+              <ion-label>
+                <h3 class="history-text">{{ s.search_text }}</h3>
+                <p class="activity-time">{{ fromNow(s.searched_at) }}</p>
+              </ion-label>
+            </ion-item>
+          </ion-list>
+          
+          <div v-else-if="!loadingFullHistory" class="empty-state-modal">
+            <ion-icon :icon="searchOutline" />
+            <p>{{ $t('common.noData') }}</p>
+          </div>
+
+          <ion-infinite-scroll
+            @ionInfinite="loadMoreFullHistory"
+            :disabled="noMoreFullHistory"
+            threshold="100px"
+          >
+            <ion-infinite-scroll-content
+              loading-spinner="bubbles"
+              :loading-text="$t('common.loading')"
+            />
+          </ion-infinite-scroll>
+        </ion-content>
+      </ion-modal>
+
       <!-- ================= INFINITE SCROLL ================= -->
       <ion-infinite-scroll
           threshold="100px"
@@ -304,10 +376,13 @@ import {
   IonAvatar,
   IonList,
   IonNote,
-    IonThumbnail,
-    IonCardContent,
+  IonThumbnail,
+  IonCardContent,
+  IonModal,
   IonInfiniteScroll,
-  IonInfiniteScrollContent
+  IonInfiniteScrollContent,
+  IonButton,
+  IonIcon
 } from '@ionic/vue'
 
 import AppHeader from '@/components/AppHeader.vue'
@@ -333,11 +408,19 @@ const recentSearches = ref<any[]>([])
 const recentProducts = ref<any[]>([])
 const recentPlaces = ref<any[]>([])
 
+// Full search history modal state
+const showSearchModal = ref(false)
+const fullSearchHistory = ref<any[]>([])
+const fullSearchHistoryLimit = 20
+const noMoreFullHistory = ref(false)
+const loadingFullHistory = ref(false)
+
 async function fetchRecents() {
   const [searchRes, productRes, placeRes] = await Promise.all([
     supabase.rpc('get_user_recent_searches', {
       p_user_id: userId,
-      p_limit: 20
+      p_limit: 20,
+      p_offset: 0
     }),
     supabase.rpc('get_user_recent_products', {
       p_user_id: userId,
@@ -350,10 +433,64 @@ async function fetchRecents() {
   ])
 
 
+  if (searchRes.error) console.error('❌ Search History RPC Error:', searchRes.error)
+  if (productRes.error) console.error('❌ Product History RPC Error:', productRes.error)
+  if (placeRes.error) console.error('❌ Place History RPC Error:', placeRes.error)
+
   if (!searchRes.error) recentSearches.value = searchRes.data ?? []
   if (!productRes.error) recentProducts.value = productRes.data ?? []
   if (!placeRes.error) recentPlaces.value = placeRes.data ?? []
 
+}
+
+async function openFullSearchHistory() {
+  showSearchModal.value = true
+  await fetchFullSearchHistory(true)
+}
+
+function closeSearchModal() {
+  showSearchModal.value = false
+}
+
+async function fetchFullSearchHistory(reset = false) {
+  if (reset) {
+    fullSearchHistory.value = []
+    noMoreFullHistory.value = false
+  }
+
+  const offset = fullSearchHistory.value.length
+  loadingFullHistory.value = true
+
+  const { data, error } = await supabase.rpc('get_user_recent_searches', {
+    p_user_id: userId,
+    p_limit: fullSearchHistoryLimit,
+    p_offset: offset
+  })
+
+  loadingFullHistory.value = false
+
+  if (error) {
+    console.error('❌ Failed to load full search history', error)
+    return
+  }
+
+  if (!data || data.length < fullSearchHistoryLimit) {
+    noMoreFullHistory.value = true
+  }
+
+  if (data) {
+    fullSearchHistory.value.push(...data)
+  }
+}
+
+async function loadMoreFullHistory(event: any) {
+  if (loadingFullHistory.value || noMoreFullHistory.value) {
+    event.target.complete()
+    return
+  }
+
+  await fetchFullSearchHistory()
+  event.target.complete()
 }
 
 /* Helpers */
@@ -449,6 +586,12 @@ function describeActivity(log: any) {
     /* ---------- SEARCH ---------- */
     case 'search_page_open':
       return t('admin.activities_desc.search_page_open')
+    case 'search_query':
+    case 'explore_search_query':
+    case 'store_search':
+    case 'explore_address_search':
+    case 'trip_search':
+      return t('admin.activities_desc.search_performed', { query: d.query || '?' })
     case 'search_product_click':
       return t('admin.activities_desc.search_product_click', { name: d.product_name || '?' })
     case 'search_sort_change':
@@ -788,6 +931,70 @@ onMounted(async () => {
 
 .ion-palette-dark .avatar-placeholder-hero {
   background: var(--ion-color-step-150);
+}
+
+.card-footer-action {
+  padding: 0 16px 12px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.history-modal-item {
+  --padding-top: 12px;
+  --padding-bottom: 12px;
+}
+
+.history-icon {
+  color: var(--ion-color-medium);
+  font-size: 1.2rem;
+  margin-right: 12px;
+}
+
+.history-text {
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.empty-state-modal {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  color: var(--ion-color-medium);
+  text-align: center;
+}
+
+.empty-state-modal ion-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  opacity: 0.3;
+}
+
+.empty-state-small {
+  padding: 16px;
+  text-align: center;
+  color: var(--ion-color-medium);
+  font-size: 0.9rem;
+}
+
+.card-header-flex {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.title-with-icon {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.small-icon {
+  font-size: 16px;
+  color: var(--ion-color-medium);
+  min-width: 24px;
 }
 </style>
 

@@ -1,4 +1,4 @@
-﻿import {supabase} from '@/plugins/supabaseClient'
+import {supabase} from '@/plugins/supabaseClient'
 import SessionService from '@/services/SessionService'
 
 // ðŸ”§ TEMPORARY GLOBAL SWITCH
@@ -143,7 +143,12 @@ function resolveEntity(activity: string, rawDetail: any): EntityResult {
             }
 
 
-        // ðŸŸ¢ SEARCH interactions
+        // 🟢 SEARCH interactions
+        case 'search_query':
+        case 'explore_search_query':
+        case 'store_search':
+        case 'trip_search':
+        case 'explore_address_search':
         case 'search_no_results':
              return {
                 entity_type: 'search_query',

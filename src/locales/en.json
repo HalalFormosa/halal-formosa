@@ -30,6 +30,9 @@
     "success": "Success!",
     "error": "Error occurred.",
     "notProvided": "Not provided",
+    "noData": "No data found",
+    "viewMore": "View More",
+    "loading": "Loading...",
     "replay": "Replay"
   },
   "master": {
@@ -940,6 +943,7 @@
     "activityByHour": "Activity by Hour ({range})",
     "topUserPaths": "Top User Paths",
     "recentSearches": "Recent Searches",
+    "searchHistory": "Search History",
     "stepsCount": "{count} steps",
     "usersCount": "{count} users",
     "selectRange": "Select Range",
@@ -983,6 +987,7 @@
       "explore_place_detail_view": "Viewed place details: {name}",
       "explore_detail_open_image": "Viewed place image: {name}",
       "search_page_open": "Opened Search page",
+      "search_performed": "Searched: \"{query}\"",
       "search_product_click": "Opened product: {name}",
       "search_sort_change": "Sort product by {sort}",
       "search_filter_status": "Filter product by {status}",

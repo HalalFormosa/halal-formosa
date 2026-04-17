@@ -10,6 +10,10 @@
     </ion-header>
 
     <ion-content class="ion-padding content-background">
+      <ion-refresher slot="fixed" @ionRefresh="handleRefresh">
+        <ion-refresher-content></ion-refresher-content>
+      </ion-refresher>
+
       <ion-list lines="none" class="points-list">
         <ion-item v-for="log in logs" :key="log.id" class="points-item">
           <!-- User Profile -->
@@ -53,6 +57,17 @@
           </ion-button>
         </ion-item>
       </ion-list>
+
+      <ion-infinite-scroll
+          threshold="100px"
+          @ionInfinite="loadMore"
+          :disabled="noMoreData"
+      >
+        <ion-infinite-scroll-content
+            loading-spinner="bubbles"
+            :loading-text="$t('admin.loadingMoreLogs')"
+        ></ion-infinite-scroll-content>
+      </ion-infinite-scroll>
     </ion-content>
   </ion-page>
 </template>
@@ -71,6 +86,10 @@ import {
   IonBadge,
   IonText,
   IonButton,
+  IonRefresher,
+  IonRefresherContent,
+  IonInfiniteScroll,
+  IonInfiniteScrollContent,
 } from "@ionic/vue";
 import AppHeader from "@/components/AppHeader.vue";
 import { ribbonOutline, discOutline, trashOutline } from "ionicons/icons";
@@ -84,6 +103,10 @@ import { useI18n } from 'vue-i18n';
 
 const { t } = useI18n();
 const logs = ref<any[]>([]);
+const limit = 15;
+const loadingMore = ref(false);
+const noMoreData = ref(false);
+
 dayjs.extend(utc);
 dayjs.extend(timezone);
 dayjs.extend(relativeTime);
@@ -110,14 +133,49 @@ async function retractLog(logId: string) {
   }
 }
 
-async function fetchLogs() {
-  const { data, error } = await supabase.rpc("get_point_logs_with_users", { limit_count: 15 });
+async function fetchLogs(isRefresh = false) {
+  if (isRefresh) {
+    logs.value = [];
+    noMoreData.value = false;
+  }
+
+  const offset = logs.value.length;
+
+  const { data, error } = await supabase.rpc("get_point_logs_with_users", { 
+    limit_count: limit,
+    offset_count: offset 
+  });
+
   if (error) {
     console.error("Error fetching point logs:", error);
-    logs.value = [];
-  } else {
-    logs.value = data || [];
+    return;
   }
+
+  if (!data || data.length < limit) {
+    noMoreData.value = true;
+  }
+
+  if (data) {
+    logs.value.push(...data);
+  }
+}
+
+async function handleRefresh(event: any) {
+  await fetchLogs(true);
+  event.target.complete();
+}
+
+async function loadMore(event: any) {
+  if (loadingMore.value || noMoreData.value) {
+    event.target.complete();
+    return;
+  }
+
+  loadingMore.value = true;
+  await fetchLogs();
+  loadingMore.value = false;
+
+  event.target.complete();
 }
 
 function fromNowToTaipei(dateString?: string) {
@@ -125,7 +183,7 @@ function fromNowToTaipei(dateString?: string) {
   return dayjs.utc(dateString).tz("Asia/Taipei").fromNow();
 }
 
-onMounted(fetchLogs);
+onMounted(() => fetchLogs(true));
 </script>
 
 <style scoped>
