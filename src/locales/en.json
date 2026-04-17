@@ -271,10 +271,21 @@
       "ingredientsEn": "Translated Ingredients (English)",
       "originalImage": "Original Image",
       "share": "Share",
-      "clear": "Clear",
+      "clear": "Scan Again",
       "cropTitle": "Crop Ingredients",
       "done": "Done",
-      "ocrProcessing": "Processing OCR..."
+      "ocrProcessing": "Processing OCR...",
+      "results": "Results",
+      "preparingResults": "Preparing results...",
+      "highlights": "Detected Ingredients",
+      "contribute": "Contribute to Database",
+      "contributionPrompt": {
+        "title": "Unlisted Product",
+        "message": "The product \"{name}\" is {status}, but it seems we don't have it in our database yet.",
+        "motivation": "With your contribution, you are helping thousands of Muslims using Halal Formosa to discover more products. Helping others is a noble act: \"Help one another in goodness and piety\" (Quran 5:2). The Prophet (SAW) said: \"The best of people are those that bring most benefit to others.\" (At-Tabarani)",
+        "action": "Contribute Now",
+        "skip": "Maybe later"
+      }
     },
     "toast": {
       "ok": "✅ Ingredients extracted!",
@@ -618,6 +629,8 @@
       "market": "Market & Description",
       "photos": "Product Photos"
     },
+    "scanBarcodeTitle": "Find Product",
+    "scanBarcodeDesc": "Scan the barcode on the product packaging to get started.",
     "scanIngredientsTitle": "Scan Ingredients",
     "scanIngredientsDesc": "Scan the ingredients list to automatically fill the form and capture the back photo.",
     "camera": "Camera",

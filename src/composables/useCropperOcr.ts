@@ -38,29 +38,93 @@ export function useCropperOcr(options: any) {
         cropperSrc.value = URL.createObjectURL(file)
         showCropper.value = true
         pendingRoi.value = roi
+        hasInitializedCoordinates.value = false // 🔄 Reset for new image
+    }
+
+    const stencilProps = ref({
+        aspectRatio: null as number | null
+    })
+
+    const hasInitializedCoordinates = ref(false)
+
+    function resetCoordinates(explicitRatio: number | null | undefined = undefined) {
+        if (!cropperRef.value) return
+        
+        const roi = pendingRoi.value
+        // Use provided ratio or fallback to current stencil state
+        const ratio = explicitRatio !== undefined ? explicitRatio : stencilProps.value.aspectRatio
+
+        // timeout is only needed on the very first load to wait for canvas initialization.
+        // For ratio changes, we can be much faster or immediate.
+        const delay = hasInitializedCoordinates.value ? 0 : 150;
+
+        setTimeout(() => {
+            if (!cropperRef.value) return;
+
+            try {
+                cropperRef.value.setCoordinates((coordinates: any, imageSize: any) => {
+                    // 🛡️ Safety Guard: Ensure imageSize and coordinates provided by the library are accessible
+                    if (!imageSize || typeof imageSize.width === 'undefined' || !coordinates) {
+                        return coordinates; 
+                    }
+                    
+                    console.log('📐 [Cropper] Resetting coordinates. Ratio:', ratio);
+                    hasInitializedCoordinates.value = true;
+
+                    if (roi) {
+                        const width = (roi.width * imageSize.width) / 100;
+                        const height = (roi.height * imageSize.height) / 100;
+                        const left = (roi.left * imageSize.width) / 100;
+                        const top = (roi.top * imageSize.height) / 100;
+                        return { width, height, left, top };
+                    } else {
+                        // 🧠 [SMART DEFAULT] Center a large box based on the ratio
+                        let sWidth = imageSize.width * 0.8;
+                        let sHeight = imageSize.height * 0.45;
+
+                        if (ratio && ratio > 0) {
+                           // If we have a ratio, ensure sWidth/sHeight respect it
+                           if (imageSize.width / imageSize.height > ratio) {
+                              // Image is wider than ratio
+                              sHeight = imageSize.height * 0.7;
+                              sWidth = sHeight * ratio;
+                           } else {
+                              // Image is taller than ratio
+                              sWidth = imageSize.width * 0.8;
+                              sHeight = sWidth / ratio;
+                           }
+                        }
+
+                        // 📐 Ensure coordinates are integers and within bounds
+                        const finalWidth = Math.min(Math.floor(sWidth), imageSize.width);
+                        const finalHeight = Math.min(Math.floor(sHeight), imageSize.height);
+                        const sLeft = Math.max(0, Math.floor((imageSize.width - finalWidth) / 2));
+                        const sTop = Math.max(0, Math.floor((imageSize.height - finalHeight) / 2));
+
+                        return { width: finalWidth, height: finalHeight, left: sLeft, top: sTop };
+                    }
+                });
+            } catch (err) {
+                console.warn('⚠️ [Cropper] Failed to set coordinates safely:', err);
+            }
+            pendingRoi.value = null;
+        }, delay); 
     }
 
     function onCropperReady() {
-        if (!pendingRoi.value || !cropperRef.value) return
+        // Only auto-initialize if we haven't yet, or if there's a pending ROI
+        if (!hasInitializedCoordinates.value || pendingRoi.value) {
+           resetCoordinates()
+        }
+    }
 
-        const roi = pendingRoi.value
-        // Small timeout to ensure the cropper has finished internal calculations
-        setTimeout(() => {
-            if (cropperRef.value) {
-                cropperRef.value.setCoordinates((coordinates: any, imageSize: any) => {
-                    console.log('📐 [Cropper] Applying ROI to image size:', imageSize);
-
-                    // Convert percentages to absolute pixels
-                    const width = (roi.width * imageSize.width) / 100;
-                    const height = (roi.height * imageSize.height) / 100;
-                    const left = (roi.left * imageSize.width) / 100;
-                    const top = (roi.top * imageSize.height) / 100;
-
-                    return { width, height, left, top };
-                });
-                pendingRoi.value = null;
-            }
-        }, 100);
+    function setAspectRatio(ratio: number | null) {
+        // 1. Update the prop (Library will start its internal constraint transition)
+        stencilProps.value = {
+            aspectRatio: ratio
+        }
+        // 2. Immediately trigger a coordinate reset for the new ratio (Smooth expansion)
+        resetCoordinates(ratio)
     }
 
     async function confirmCrop() {
@@ -211,13 +275,15 @@ export function useCropperOcr(options: any) {
         showCropper,
         croppedPreviewUrl,
         ocrLoading,
+        stencilProps, // ✅ Exported
         openCropper,
         onCropperReady,
-        autoProcess, // ✅ Exported
+        autoProcess,
         confirmCrop,
         closeCropper,
         recrop,
         reset,
+        setAspectRatio, // ✅ Exported
         showOk,
         ingredientHighlights,
         ingredientsText,

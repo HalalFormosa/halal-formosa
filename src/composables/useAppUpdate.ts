@@ -32,7 +32,6 @@ export function useAppUpdate() {
     const checkForUpdate = async () => {
         try {
             const platform = Capacitor.getPlatform(); // 'android', 'ios', or 'web'
-            console.log(`[useAppUpdate] Initializing check for platform: ${platform}`);
 
             // Get current version
             let currentVer = '0.0.0';
@@ -47,7 +46,6 @@ export function useAppUpdate() {
             const versionKey = platform === 'ios' ? 'min_ios_version' : 'min_android_version';
             const urlKey = platform === 'ios' ? 'ios_store_url' : 'android_store_url';
 
-            console.log(`[useAppUpdate] Fetching config for: ${versionKey}, ${urlKey}`);
 
             // Fetch from app_config table
             const { data, error } = await supabase
@@ -70,8 +68,6 @@ export function useAppUpdate() {
             if (minVersionVal) {
                 minVersion.value = minVersionVal;
                 const comparison = compareVersions(currentVer, minVersionVal);
-
-                console.log(`[Version Check] Platform: ${platform}, Current: ${currentVer}, Required: ${minVersionVal}`);
 
                 if (comparison < 0) {
                     console.warn(`⚠️ Update Required! Current version (${currentVer}) is lower than minimum (${minVersionVal})`);

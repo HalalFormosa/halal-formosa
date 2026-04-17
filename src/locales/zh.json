@@ -277,7 +277,18 @@
       "clear": "清除",
       "cropTitle": "裁剪成分",
       "done": "完成",
-      "ocrProcessing": "正在進行 OCR 辨識..."
+      "ocrProcessing": "正在進行 OCR 辨識...",
+      "results": "結果",
+      "preparingResults": "正在準備結果...",
+      "highlights": "偵測到的成分",
+      "contribute": "貢獻到資料庫",
+      "contributionPrompt": {
+        "title": "未收錄產品",
+        "message": "產品「{name}」狀態為 {status}，但我們的資料庫似乎尚未收錄它。",
+        "motivation": "透過您的貢獻，您正在幫助成千上萬使用 Halal Formosa 的穆斯林發現更多產品。幫助他人是高尚的行為：「你們當為正義和敬畏而互助」(古蘭經 5:2)。穆聖 (SAW) 曾說：「最優秀的人是那些對他人最有益的人。」(泰伯拉尼 輯錄)",
+        "action": "立即貢獻",
+        "skip": "稍後再說"
+      }
     },
     "toast": {
       "ok": "✅ 已提取成分！",
@@ -621,6 +632,8 @@
       "market": "市場與描述",
       "photos": "產品照片"
     },
+    "scanBarcodeTitle": "尋找產品",
+    "scanBarcodeDesc": "掃描產品包裝上的條碼以開始使用。",
     "scanIngredientsTitle": "掃描成分",
     "scanIngredientsDesc": "掃描成分列表以自動填寫表單並獲取背面照片。",
     "camera": "相機",

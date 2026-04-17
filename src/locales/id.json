@@ -245,7 +245,18 @@
       "clear": "Hapus",
       "cropTitle": "Potong Gambar Komposisi",
       "done": "Selesai",
-      "ocrProcessing": "Memproses OCR..."
+      "ocrProcessing": "Memproses OCR...",
+      "results": "Hasil",
+      "preparingResults": "Menyiapkan hasil...",
+      "highlights": "Bahan Terdeteksi",
+      "contribute": "Kontribusi ke Database",
+      "contributionPrompt": {
+        "title": "Produk Belum Terdaftar",
+        "message": "Produk \"{name}\" statusnya {status}, namun sepertinya belum ada di database kami.",
+        "motivation": "Dengan kontribusi Anda, Anda membantu ribuan umat Muslim yang menggunakan Halal Formosa untuk menemukan lebih banyak produk. Membantu orang lain adalah amal mulia: \"Dan tolong-menolonglah kamu dalam (mengerjakan) kebajikan dan takwa\" (Quran 5:2). Rasulullah SAW bersabda: \"Sebaik-baik manusia adalah yang paling bermanfaat bagi manusia lainnya.\" (HR. At-Tabarani)",
+        "action": "Kontribusi Sekarang",
+        "skip": "Mungkin nanti"
+      }
     },
     "toast": {
       "ok": "✅ Komposisi berhasil diekstrak!",
@@ -585,6 +596,8 @@
       "market": "Pasar & Deskripsi",
       "photos": "Foto Produk"
     },
+    "scanBarcodeTitle": "Cari Produk",
+    "scanBarcodeDesc": "Pindai barcode pada kemasan produk untuk memulai.",
     "scanIngredientsTitle": "Pindai Bahan",
     "scanIngredientsDesc": "Pindai daftar bahan untuk mengisi formulir secara otomatis dan mengambil foto belakang.",
     "camera": "Kamera",

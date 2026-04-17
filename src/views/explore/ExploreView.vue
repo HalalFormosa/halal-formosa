@@ -145,7 +145,7 @@
 
     <!-- 4. List View Overlay -->
     <transition name="fade-slide">
-      <div v-if="viewMode === 'list'" class="list-view-overlay">
+      <div v-if="viewMode === 'list'" class="list-view-overlay" :style="{ paddingTop: listPaddingTop }">
         <div class="list-container">
           <div class="list-header">
             <div class="list-sort-container">
@@ -212,7 +212,7 @@
             </template>
 
             <div
-              v-for="place in displayedLocations"
+              v-for="place in listLocations"
               :key="place.id"
               class="modern-location-card list-mode-card"
               :class="['tier-' + String(place.partner_tier || 'basic').toLowerCase()]"
@@ -274,6 +274,21 @@
               <ion-icon :icon="informationCircleOutline" />
               <p>{{ $t('explore.noResults') }}</p>
             </div>
+
+            <!-- Load More button -->
+            <div 
+              v-if="displayedLocations.length > listLimit" 
+              class="load-more-container"
+            >
+              <ion-button 
+                fill="outline" 
+                color="carrot" 
+                @click="listLimit += 20"
+                class="load-more-btn"
+              >
+                {{ $t('common.loadMore') || 'LOAD MORE' }}
+              </ion-button>
+            </div>
           </div>
         </div>
       </div>
@@ -304,6 +319,11 @@
       <div 
         ref="contentRef" 
         class="horizontal-scroll-wrapper"
+        @touchstart="isUserScrollingList = true"
+        @touchend="isUserScrollingList = false"
+        @mousedown="isUserScrollingList = true"
+        @mouseup="isUserScrollingList = false"
+        @mouseleave="isUserScrollingList = false"
       >
         <div class="cards-track">
           <!-- Skeleton list while locating OR loading data -->
@@ -379,8 +399,14 @@
                       </span>
                     </div>
                     
-                    <div v-if="userLocation && (place as any).distance !== undefined" class="distance">
-                      <ion-icon :icon="locationOutline" style="font-size: 0.85rem; vertical-align: middle; margin-top: -2px;" /> {{ formatKm((place as any).distance) }} km
+                    <div v-if="(userLocation || !locationAttemptFinished) && (place as any).distance !== undefined" class="distance">
+                      <ion-icon :icon="locationOutline" style="font-size: 0.85rem; vertical-align: middle; margin-top: -2px;" />
+                      <template v-if="!locationAttemptFinished">
+                        {{ $t('explore.locating') }}
+                      </template>
+                      <template v-else>
+                        {{ formatKm((place as any).distance) }} km
+                      </template>
                     </div>
 
                   </div>
@@ -471,7 +497,8 @@ import {
   IonPage, IonContent, IonToolbar, IonSearchbar, IonIcon, IonFab, IonFabButton,
   IonPopover, IonList, IonItem, IonFooter, IonModal, IonTitle, IonButtons, 
   IonHeader, IonLabel, IonChip, IonSkeletonText, IonCard, IonThumbnail, IonFabList,
-  onIonViewWillEnter, onIonViewDidEnter, onIonViewWillLeave, IonButton
+  onIonViewWillEnter, onIonViewDidEnter, onIonViewWillLeave, IonButton,
+  toastController
 } from '@ionic/vue'
 import { useI18n } from 'vue-i18n'
 import {
@@ -610,10 +637,23 @@ const loading = ref(true)
 const loadingCategories = ref(true)
 const loadingPlaces = ref(true)
 const campusPartners = ref<{ id: string; name: string; slug: string }[]>([])
-const sortBy = ref<'nearest' | 'recent' | 'popular' | 'trending'>('recent')
+const sortBy = ref<'nearest' | 'recent' | 'popular' | 'trending'>(userLocation.value ? 'nearest' : 'recent')
 const trendingPlaceIds = ref<number[]>([])
 const isFilterModalOpen = ref(false)
 const isSmallScreen = ref(window.innerWidth < 768)
+const listLimit = ref(20)
+
+const listPaddingTop = computed(() => {
+  let base = 90; // search row
+  if (isNative.value && !isDonor.value) base += 65; // Ad space
+  if (!isSmallScreen.value) base += 60; // Categories
+  if (campusPartners.value.length > 0) base += 50; // Campus bar
+  return `${base}px`;
+});
+
+const listLocations = computed(() => {
+  return displayedLocations.value.slice(0, listLimit.value)
+})
 
 const handleResize = () => {
   isSmallScreen.value = window.innerWidth < 768
@@ -644,6 +684,8 @@ let infoWindow: google.maps.InfoWindow | null = null
 const markerMap = new Map<number, google.maps.marker.AdvancedMarkerElement>()
 const userMarker = ref<google.maps.marker.AdvancedMarkerElement | null>(null)
 const userArrowEl = ref<HTMLElement | null>(null)
+let lastRotationUpdate = 0
+const ROTATION_THROTTLE_MS = 66 // ~15fps
 const {sharePlace} = useSharePlace()
 const locationTypes = ref<LocationType[]>([])
 const pendingInfoWindowPlaceId = ref<number | null>(null)
@@ -651,7 +693,13 @@ const lerp = (a: number, b: number, t: number) => a + (b - a) * t
 const hasAutoSelected = ref(false)
 let clusterer: MarkerClusterer | null = null
 let locationWatchId: string | null = null
-let lastStableLoc: LatLng | null = null
+const lastStableLoc = ref<LatLng | null>(null)
+const lastCalcLocation = ref<LatLng | null>(null)
+
+// Interaction States for Map/List Sync
+let isUserPanningMap = false
+let isUserScrollingList = false
+let lastPannedId: number | null = null
 
 const distanceInMeters = (a: LatLng, b: LatLng) => {
   const R = 6371000
@@ -696,7 +744,7 @@ watch([userLocation, () => mapInstance], ([newLoc, newMap]) => {
     const prevLat = prevPos instanceof google.maps.LatLng ? prevPos.lat() : (prevPos as any).lat
     const prevLng = prevPos instanceof google.maps.LatLng ? prevPos.lng() : (prevPos as any).lng
     
-    const prev: LatLng = lastStableLoc ?? { lat: prevLat, lng: prevLng }
+    const prev: LatLng = lastStableLoc.value ?? { lat: prevLat, lng: prevLng }
     const d = distanceInMeters(prev, userLoc)
     if (d < 2) return // Ignore tiny jitters
 
@@ -707,7 +755,7 @@ watch([userLocation, () => mapInstance], ([newLoc, newMap]) => {
     }
 
     userMarker.value.position = next
-    lastStableLoc = next
+    lastStableLoc.value = next
   } else {
     // Create new dot (AdvancedMarkerElement)
     const dot = document.createElement('div')
@@ -727,6 +775,19 @@ watch([userLocation, () => mapInstance], ([newLoc, newMap]) => {
     
     initHeadingTracking()
   }
+
+  // 3. 🎯 Update lastCalcLocation for distance sorting (Throttled to 20m)
+  if (newLoc) {
+    const loc: LatLng = { lat: newLoc.lat, lng: newLoc.lng }
+    if (!lastCalcLocation.value) {
+      lastCalcLocation.value = loc
+    } else {
+      const dist = distanceInMeters(lastCalcLocation.value, loc)
+      if (dist > 20) {
+        lastCalcLocation.value = loc
+      }
+    }
+  }
 }, { immediate: true })
 
 const initHeadingTracking = async () => {
@@ -745,6 +806,10 @@ const initHeadingTracking = async () => {
 
   try {
     await Motion.addListener('orientation', (event) => {
+      const now = Date.now()
+      if (now - lastRotationUpdate < ROTATION_THROTTLE_MS) return
+      lastRotationUpdate = now
+
       if (userArrowEl.value) {
         // alpha is heading (0-360)
         const heading = (event as any).webkitCompassHeading || event.alpha || 0
@@ -849,7 +914,6 @@ const onSearchCommit = async () => {
 }
 
 
-import {toastController} from '@ionic/vue'
 
 const showAddressToast = async () => {
   const toast = await toastController.create({
@@ -1000,12 +1064,13 @@ const getDomEl = (node: Element | ComponentPublicInstance | null | undefined) =>
 const formatKm = (n: number) => (Number.isFinite(n) ? n.toFixed(2) : '–')
 
 const getDistanceInKm = (locPos: LatLng) => {
-  if (!userLocation.value) return Number.POSITIVE_INFINITY
+  const refLoc = lastCalcLocation.value
+  if (!refLoc) return Number.POSITIVE_INFINITY
   const R = 6371
-  const dLat = (locPos.lat - userLocation.value.lat) * Math.PI / 180
-  const dLon = (locPos.lng - userLocation.value.lng) * Math.PI / 180
+  const dLat = (locPos.lat - refLoc.lat) * Math.PI / 180
+  const dLon = (locPos.lng - refLoc.lng) * Math.PI / 180
   const a = Math.sin(dLat / 2) ** 2 +
-      Math.cos(userLocation.value.lat * Math.PI / 180) *
+      Math.cos(refLoc.lat * Math.PI / 180) *
       Math.cos(locPos.lat * Math.PI / 180) *
       Math.sin(dLon / 2) ** 2
   return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)))
@@ -1368,7 +1433,8 @@ const fetchLocations = async () => {
 }
 
 const fetchTrendingPlaces = async () => {
-  const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+  const oneDayAgo = Date.now() - (24 * 60 * 60 * 1000);
+  const yesterday = new Date(oneDayAgo).toISOString();
   
   const { data, error } = await supabase
     .from('activity_log')
@@ -1477,13 +1543,22 @@ const initMap = async () => {
   onUnmounted(() => {
     window.removeEventListener('resize', handleResize)
   })
+  // ✅ Interaction Tracking: Stop list-to-map sync if user is touching map
+  mapInstance.addListener('dragstart', () => {
+    isUserPanningMap = true
+  })
+  mapInstance.addListener('zoom_changed', () => {
+    isUserPanningMap = true
+  })
+
   // ✅ Debounced idle listener (150ms) to prevent spamming updates
   let idleTimeout: any = null;
   mapInstance.addListener('idle', () => {
     if (idleTimeout) clearTimeout(idleTimeout);
     idleTimeout = setTimeout(() => {
       initMarkers(sortedLocations.value);
-    }, 150);
+      isUserPanningMap = false // User finished manual interaction
+    }, 300);
   });
 
   loading.value = false
@@ -1597,11 +1672,15 @@ const initMarkers = (places: Place[] = sortedLocations.value) => {
   const visibleIds = new Set(visiblePlaces.map(p => p.id));
 
   // Remove markers no longer in viewport from the map (but keep in cache)
-  markerMap.forEach((marker, id) => {
-    if (!visibleIds.has(id)) {
-      marker.map = null;
-      markerMap.delete(id);
-    }
+  const idsToRemove = [] as number[];
+  markerMap.forEach((_, id) => {
+    if (!visibleIds.has(id)) idsToRemove.push(id);
+  });
+  
+  idsToRemove.forEach(id => {
+    const marker = markerMap.get(id);
+    if (marker) marker.map = null;
+    markerMap.delete(id);
   });
 
   visiblePlaces.forEach((loc) => {
@@ -1654,6 +1733,7 @@ const initMarkers = (places: Place[] = sortedLocations.value) => {
       algorithm: new SuperClusterAlgorithm({ radius: 80 })
     });
   } else {
+    // Optimization: Don't clear markers if the set hasn't changed (though initMarkers logic already does some filtering)
     clusterer.clearMarkers();
     clusterer.addMarkers(newMarkerArray);
   }
@@ -1686,16 +1766,9 @@ watch(searchQuery, q => {
 })
 
 /* ---------------- Interactions ---------------- */
-const selectPlace = (place: Place) => {
-  ActivityLogService.log("explore_place_card_click", {
-    id: place.id,
-    name: place.name,
-    type: place.type,
-    lat: place.position.lat,
-    lng: place.position.lng
-  });
-
+const selectPlace = (place: LocationType) => {
   selectedPlace.value = place
+  lastPannedId = place.id
   scrollCardIntoView(place.id)
 
   if (!mapInstance) return
@@ -1705,6 +1778,7 @@ const selectPlace = (place: Place) => {
   
   // Calculate offset to center info card (~100px North)
   const latOffset = 100 * 360 / (256 * Math.pow(2, targetZoom))
+  
   mapInstance.panTo({
     lat: place.position.lat + latOffset,
     lng: place.position.lng
@@ -1713,40 +1787,41 @@ const selectPlace = (place: Place) => {
 
   const m = markerMap.get(place.id)
   if (m && infoWindow) {
-    infoWindow.setContent(buildInfoHtml(place))
-    infoWindow.open(mapInstance, m)
-
+    // ⏲️ SEQUENCE: Pan first, then show InfoWindow
     setTimeout(() => {
-      applyInfoWindowDarkClass()
+      if (selectedPlace.value?.id === place.id) {
+        infoWindow.setContent(buildInfoHtml(place))
+        infoWindow.open(mapInstance, m)
 
-      const shareBtn = document.querySelector('.share-btn')
-      if (shareBtn) {
-        shareBtn.addEventListener('click', () => {
-          ActivityLogService.log("explore_share_place", {
-            id: place.id,
-            name: place.name
-          });
+        // Wait for DOM to render to attach button listeners
+        setTimeout(() => {
+          if (selectedPlace.value?.id !== place.id) return;
+          
+          applyInfoWindowDarkClass()
 
-          sharePlace({
-            name: place.name,
-            type: place.type,
-            imageUrl: place.image || 'https://placehold.co/200x100',
-            lat: place.position.lat,
-            lng: place.position.lng
-          })
-        })
+          const shareBtn = document.querySelector('.share-btn')
+          if (shareBtn) {
+            shareBtn.addEventListener('click', () => {
+              ActivityLogService.log("explore_share_place", { id: place.id, name: place.name });
+              sharePlace({
+                name: place.name,
+                type: place.type,
+                imageUrl: place.image || 'https://placehold.co/200x100',
+                lat: place.position.lat,
+                lng: place.position.lng
+              })
+            })
+          }
+
+          const navigateBtn = document.querySelector('.navigate-btn')
+          if (navigateBtn) {
+            navigateBtn.addEventListener('click', () => {
+              ActivityLogService.log("explore_navigate_click", { id: place.id, name: place.name });
+            })
+          }
+        }, 50)
       }
-
-      const navigateBtn = document.querySelector('.navigate-btn')
-      if (navigateBtn) {
-        navigateBtn.addEventListener('click', () => {
-          ActivityLogService.log("explore_navigate_click", {
-            id: place.id,
-            name: place.name
-          });
-        })
-      }
-    }, 50)
+    }, 350)
   } else if (infoWindow) {
     // 🔥 Marker not in DOM yet (off-screen)? 
     // Set pending and let initMarkers pick it up after the pan
@@ -1775,33 +1850,42 @@ const initCardObserver = () => {
     cardObserver = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
         if (entry.isIntersecting && entry.intersectionRatio >= 0.4) {
-          // Skip map panning if triggered by programmatic scroll (e.g. marker click)
-          // but allow UI highlight (selectedPlace) to update
           const id = Number(entry.target.getAttribute('data-id'))
           const p = locations.value.find(l => l.id === id)
           
-          if (p && selectedPlace.value?.id !== p.id) {
-            selectedPlace.value = p
+          if (p) {
+            // 1. Always update the UI highlight (orange border)
+            if (selectedPlace.value?.id !== id) {
+              selectedPlace.value = p
+            }
             
-            if (isProgrammaticScroll) return
-
-            // Throttle map pans
-            requestAnimationFrame(() => {
-              if (mapInstance && selectedPlace.value?.id === p.id) {
-                 const currentZoom = mapInstance.getZoom() || 14
-                 const latOffset = 100 * 360 / (256 * Math.pow(2, currentZoom))
-                 mapInstance.panTo({ lat: p.position.lat + latOffset, lng: p.position.lng });
-                 
-                 const m = markerMap.get(p.id)
-                 if (m && infoWindow) {
-                   infoWindow.setContent(buildInfoHtml(p))
-                   infoWindow.open(mapInstance, m)
-                   setTimeout(applyInfoWindowDarkClass, 50)
-                 } else {
-                   pendingInfoWindowPlaceId.value = p.id
-                 }
-              }
-            })
+            // 2. 🚀 SMART CAMERA CONTROL: Only pan map once per highlighted card
+            // - Only if user is manually swiping (isUserScrollingList)
+            // - AND not currently dragging the map (isUserPanningMap)
+            // - AND we haven't already panned to this specific ID
+            if (isUserScrollingList && !isUserPanningMap && lastPannedId !== p.id) {
+              lastPannedId = p.id
+              
+              requestAnimationFrame(() => {
+                if (mapInstance && isUserScrollingList) {
+                   const currentZoom = mapInstance.getZoom() || 14
+                   const latOffset = 100 * 360 / (256 * Math.pow(2, currentZoom))
+                   mapInstance.panTo({ lat: p.position.lat + latOffset, lng: p.position.lng });
+                   
+                   const m = markerMap.get(p.id)
+                   if (m && infoWindow) {
+                     setTimeout(() => {
+                       // Final check: only open if this card is still the selected one
+                       if (selectedPlace.value?.id === p.id) {
+                         infoWindow.setContent(buildInfoHtml(p))
+                         infoWindow.open(mapInstance, m)
+                         setTimeout(applyInfoWindowDarkClass, 50)
+                       }
+                     }, 350)
+                   }
+                }
+              });
+            }
           }
         }
       });
@@ -1903,7 +1987,7 @@ const sortedLocations = computed(() => {
 
   // 🏆 Hybrid Sorting Strategy
   const mapped = base.map(p => {
-    const distance = userLocation.value ? getDistanceInKm(p.position) : 999999;
+    const distance = lastCalcLocation.value ? getDistanceInKm(p.position) : Number.POSITIVE_INFINITY;
     return { ...p, distance };
   });
 
@@ -1938,9 +2022,9 @@ watch(filteredIdsHash, () => {
 })
 
 // ✅ CONSOLIDATED AUTO-SELECT WATCHER
-watch([() => sortedLocations.value.length, userLocation, loading], ([count, loc, isLoading]) => {
-  if (count > 0 && loc && !isLoading && !hasAutoSelected.value && !selectedPlace.value) {
-    // Select the first item once everything (Map, GPS, Data) is ready
+watch([() => sortedLocations.value.length, userLocation, loading, locationAttemptFinished, sortBy], ([count, loc, isLoading, finished, currentSort]) => {
+  if (count > 0 && loc && !isLoading && !hasAutoSelected.value && !selectedPlace.value && finished && currentSort === 'nearest') {
+    // Select the first item once everything (Map, GPS, Data, and Sort Order) is ready
     selectPlace(sortedLocations.value[0]);
     hasAutoSelected.value = true;
   }
@@ -1973,24 +2057,36 @@ watch(viewMode, (mode) => {
 
 /* ---------------- Lifecycle ---------------- */
 onMounted(async () => {
+  isPageActive.value = true
+
+  // 🔥 START GPS WATCH IMMEDIATELY (Non-blocking)
+  startWatching()
+
   await ActivityLogService.log("explore_page_open")
 
-  await initMap()
-  await loadRole()
+  // Parallelize basic data and map init
+  initMap()
+  loadRole()
   fetchLocationTypes()
+  
+  // These are more critical for the list, but let's fire them 
   fetchCampusPartners()
+  
+  // Await the heavy locations fetch
   await fetchLocations()
-  await fetchTrendingPlaces()
-  await refreshViewCounts()
-
-  // 🔥 START GPS WATCH HERE (Shared)
-  await startWatching()
+  
+  // Await secondary data
+  await Promise.allSettled([
+    fetchTrendingPlaces(),
+    refreshViewCounts()
+  ])
   
   if (viewMode.value === 'map') {
     nextTick(() => initCardObserver())
   }
 
   processUrlParams()
+  window.addEventListener('resize', handleResize)
 })
 
 const processUrlParams = () => {
@@ -2013,34 +2109,6 @@ const processUrlParams = () => {
   }
 }
 
-onMounted(async () => {
-  isPageActive.value = true
-  fetchLocationTypes()
-  fetchLocations()
-  fetchCampusPartners()
-  fetchTrendingPlaces()
-
-  isLoggedIn.value = (await supabase.auth.getSession()).data.session !== null
-  
-  if (isLoggedIn.value) {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('is_contributor')
-      .single()
-    if (profile) isContributor.value = profile.is_contributor
-  }
-
-  await initMap()
-  startWatching()
-  
-  if (viewMode.value === 'map') {
-    nextTick(() => initCardObserver())
-  }
-
-  processUrlParams()
-  
-  window.addEventListener('resize', handleResize)
-})
 
 onUnmounted(() => {
   window.removeEventListener('resize', handleResize)
@@ -2079,7 +2147,7 @@ onIonViewDidEnter(async () => {
 onIonViewWillLeave(() => {
   isPageActive.value = false
   clearCampusOverlays()
-  lastStableLoc = null   // 🔥 REQUIRED
+  lastStableLoc.value = null   // 🔥 REQUIRED
 })
 
 
@@ -2193,6 +2261,8 @@ button.gm-ui-hover-effect > span {
   width: 34px;
   height: 46px;
   cursor: pointer;
+  will-change: transform;
+  contain: layout paint;
 }
 
 .pin {
@@ -2246,9 +2316,9 @@ button.gm-ui-hover-effect > span {
   background: var(--ion-color-carrot);
   border-radius: 50%;
   border: 4px solid white;
-  border: 4px solid white;
   z-index: 10;
   will-change: transform;
+  contain: layout paint;
 }
 
 .user-location-dot::after {
@@ -3066,7 +3136,7 @@ button.gm-ui-hover-effect > span {
   bottom: 0;
   z-index: 800;
   background: var(--ion-background-color);
-  padding-top: 80px; /* Increased to accommodate double-row header (search + chips) */
+  padding-top: 140px; /* Default fallback */
   overflow-y: auto;
 }
 
@@ -3185,6 +3255,18 @@ button.gm-ui-hover-effect > span {
   flex: none !important;
   max-width: none !important;
   width: 100% !important;
+}
+
+.load-more-container {
+  display: flex;
+  justify-content: center;
+  padding: 20px 0;
+}
+
+.load-more-btn {
+  --border-radius: 12px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
 }
 
 .map-dimmed {

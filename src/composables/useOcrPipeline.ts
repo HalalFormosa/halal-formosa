@@ -87,14 +87,12 @@ export default function useOcrPipeline({
             if (!raw || !raw.trim()) {
                 return setError('OCR failed to detect any text.');
             }
-            console.log('📄 Raw OCR text detected:', raw);
             ocrRawText.value = raw || ''
 
             progress.value = 0.30
             progressLabel.value = "Detecting language..."
 
             detectedLanguage.value = detectLanguage(raw);
-            console.log('🌐 OCR detected language:', detectedLanguage.value);
 
             let translated = '';
             let cleanedZh = raw;
@@ -115,23 +113,18 @@ export default function useOcrPipeline({
                     return setError('OCR detected text but nothing meaningful remained after cleanup.');
                 }
 
-                console.log('🀄 Cleaned Chinese OCR:', cleanedZh);
-
                 // 🧹 Extract ingredients-only before translation
                 ingredientsOnlyZh = stripToIngredientsOnly(cleanedZh);
-                console.log('🀄 Cleaned Chinese OCR (ingredients-only):', ingredientsOnlyZh);
 
                 progress.value = 0.55
                 progressLabel.value = "Translating..."
 
-                console.log('🌐 [OcrPipeline] Translating full text (chars):', raw.length);
                 const resFull = await translateToEnglish(raw);
                 if (!resFull) {
                     return setError('Translation of product information failed.');
                 }
                 const translatedFull = normalizeEnglishIngredients(resFull);
 
-                console.log('🌐 [OcrPipeline] Translating stripped ingredients (chars):', ingredientsOnlyZh.length);
                 const resClean = await translateToEnglish(ingredientsOnlyZh);
                 const translatedClean = resClean ? normalizeEnglishIngredients(resClean) : '';
 
@@ -166,8 +159,6 @@ export default function useOcrPipeline({
                 // 🔒 English-only OCR → never populate Chinese field
                 ingredientsTextZh.value = '';
             }
-
-            console.log('📝 [OcrPipeline] Pre-cleaning translated string:', translated);
 
             // ✅ Clean translated English
             ingredientsText.value = cleanTranslatedIngredients(translated)
@@ -240,11 +231,9 @@ export default function useOcrPipeline({
             const isHeader = /(營養標示|營養成分|營養信息|nutrition\s*(information|facts|label)|amount\s*per\s*serving)/i.test(context);
 
             if (match.index < 40 && isHeader) {
-                console.log(`⏩ [OcrPipeline] Ignoring header stop-word: "${hit}" found in context: "${context}"`);
                 continue;
             }
             cutIndex = match.index;
-            console.log(`🧩 [OcrPipeline] stripToIngredientsOnly found valid stop candidate at ${cutIndex}: ${hit}`);
             break;
         }
 
@@ -358,7 +347,6 @@ export default function useOcrPipeline({
         cleaned = cleaned.replace(/品名[:：]/gi, 'Product name: ')
         cleaned = cleaned.replace(/,\s*,+/g, ', ').replace(/^,|,$/g, '')
 
-        console.log("🧹 Cleaned before blacklist:", cleaned)
 
         // ✅ Apply blacklist *only* outside ingredients
         const [beforeIng, afterIng] = cleaned.split(/Ingredients:/i)
@@ -383,8 +371,6 @@ export default function useOcrPipeline({
         }
 
         cleaned = safeBefore + (afterIng ? 'Ingredients: ' + safeAfter : '')
-
-        console.log("🧹 [OcrPipeline] Cleaned after safe blacklist (chars):", cleaned.length)
         return cleaned.trim()
     }
 
@@ -394,11 +380,9 @@ export default function useOcrPipeline({
     }
 
     function cleanTranslatedIngredients(text: string): string {
-        console.log('🧹 [OcrPipeline] cleanTranslatedIngredients INPUT:', text);
         // 1️⃣ Cut everything before "ingredients:"
         const idx = text.toLowerCase().indexOf('ingredients:');
         let extracted = idx !== -1 ? text.substring(idx + 'ingredients:'.length).trim() : text;
-        console.log('🧹 [OcrPipeline] After "ingredients:" split:', extracted);
 
         // 2️⃣ Normalize whitespace & newlines
         extracted = extracted.replace(/\n+/g, ', ').replace(/\s{2,}/g, ' ');
@@ -410,7 +394,6 @@ export default function useOcrPipeline({
                 extracted = newExtracted;
             }
         });
-        console.log('🧹 [OcrPipeline] After blacklist patterns:', extracted);
 
         // 4️⃣ Split and normalize
         let parts = extracted
@@ -418,24 +401,18 @@ export default function useOcrPipeline({
             .map((p) => p.trim())
             .filter(Boolean);
 
-        console.log('🧹 [OcrPipeline] After comma split:', JSON.stringify(parts));
-
         // 5️⃣ Expand compound ingredients inside ()
         const expanded: string[] = [];
         for (const p of parts) {
             expanded.push(...expandCompoundIngredients(p));
         }
         parts = expanded;
-        console.log('🧹 [OcrPipeline] After grouping expansion:', JSON.stringify(parts));
 
         // 6️⃣ Remove weight-only items like "250ml", "1kg"
         parts = parts.filter((p) => !/^\d+\s*(g|kg|ml|毫升|公克)$/i.test(p));
 
-        console.log('🧹 [OcrPipeline] Parts before guard 7:', JSON.stringify(parts));
-
         // 7️⃣ Guard: if first item looks like product name (title-case + digits), drop it
         if (parts.length && /^[A-Z][a-z]+.*\d+.*$/i.test(parts[0])) {
-            console.log('🧹 [OcrPipeline] Dropping first item (assumed product name):', parts[0]);
             parts.shift();
         }
 
@@ -643,11 +620,8 @@ export default function useOcrPipeline({
 
                         if (isMatch) {
                             if ([...found].some(f => f.matchedVariant && f.matchedVariant.includes(normVariant))) {
-                                console.log(`⏩ Skipping smaller match: ${variant} (already covered)`);
                                 continue;
                             }
-
-                            console.log("✅ Match detected:", variant, "→", h);
                             found.push({ ...h, matchedVariant: variant });
                         }
                     }

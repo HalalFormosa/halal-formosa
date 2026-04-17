@@ -326,7 +326,7 @@ import {
   IonThumbnail, IonLabel, IonButton, IonText, IonModal,
   IonToolbar, IonTitle, IonButtons, IonInput, IonSelect,
   IonSelectOption, IonTextarea, IonChip, IonSkeletonText,
-  IonSearchbar, IonSegment, IonSegmentButton, IonPopover, IonIcon, IonAvatar, IonBadge
+  IonSearchbar, IonSegment, IonSegmentButton, IonPopover, IonIcon, IonAvatar, IonBadge, IonItemGroup
 } from '@ionic/vue'
 
 import { ref, onMounted, computed, reactive, onUnmounted } from 'vue'

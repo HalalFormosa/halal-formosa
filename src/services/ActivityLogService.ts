@@ -1,7 +1,7 @@
-import {supabase} from '@/plugins/supabaseClient'
+﻿import {supabase} from '@/plugins/supabaseClient'
 import SessionService from '@/services/SessionService'
 
-// 🔧 TEMPORARY GLOBAL SWITCH
+// ðŸ”§ TEMPORARY GLOBAL SWITCH
 const ACTIVITY_LOG_ENABLED = true
 
 /* -------------------------
@@ -24,7 +24,7 @@ function resolveEntity(activity: string, rawDetail: any): EntityResult {
 
     switch (activity) {
 
-        // 🟢 PLACE interactions
+        // ðŸŸ¢ PLACE interactions
         case 'home_location_click':
         case 'explore_share_place':
         case 'explore_place_detail_view':
@@ -39,7 +39,7 @@ function resolveEntity(activity: string, rawDetail: any): EntityResult {
                 entity_id: detail.id ? String(detail.id) : null
             }
 
-        // 🟢 PRODUCT interactions
+        // ðŸŸ¢ PRODUCT interactions
         case 'barcode_scan_success':
         case 'product_details_open':
         case 'search_product_click':
@@ -57,7 +57,7 @@ function resolveEntity(activity: string, rawDetail: any): EntityResult {
             }
         }
 
-        // 🟢 TRIP interactions
+        // ðŸŸ¢ TRIP interactions
         case 'trip_open':
         case 'trip_click':
             return {
@@ -86,7 +86,7 @@ function resolveEntity(activity: string, rawDetail: any): EntityResult {
             }
 
 
-        // 🟢 NEWS interactions
+        // ðŸŸ¢ NEWS interactions
         case 'home_news_click':
         case 'news_page_open':
         case 'news_detail_open':
@@ -100,7 +100,7 @@ function resolveEntity(activity: string, rawDetail: any): EntityResult {
                         : null
             }
 
-        // 🟢 PARTNER interactions
+        // ðŸŸ¢ PARTNER interactions
         case 'partner_click':
         case 'partner_detail_open':
         case 'partner_logo_preview':
@@ -143,7 +143,7 @@ function resolveEntity(activity: string, rawDetail: any): EntityResult {
             }
 
 
-        // 🟢 SEARCH interactions
+        // ðŸŸ¢ SEARCH interactions
         case 'search_no_results':
              return {
                 entity_type: 'search_query',
@@ -151,7 +151,7 @@ function resolveEntity(activity: string, rawDetail: any): EntityResult {
             }
 
 
-        // 🟢 SEARCH FILTER interactions
+        // ðŸŸ¢ SEARCH FILTER interactions
         case 'search_filter_category':
             return {
                 entity_type: 'category',
@@ -179,7 +179,7 @@ function resolveEntity(activity: string, rawDetail: any): EntityResult {
                 entity_id: null
             }
 
-        // 🟢 CATEGORY interactions
+        // ðŸŸ¢ CATEGORY interactions
         case 'explore_filter_category':
             return {
                 entity_type: 'category',
@@ -190,14 +190,14 @@ function resolveEntity(activity: string, rawDetail: any): EntityResult {
                         : null
             }
 
-        // 🟢 USER-to-USER interactions
+        // ðŸŸ¢ USER-to-USER interactions
         case 'home_leaderboard_profile':
             return {
                 entity_type: 'user',
                 entity_id: detail.user_id ?? null
             }
 
-        // 🟢 USER
+        // ðŸŸ¢ USER
         case 'profile_page_open':
         case 'profile_edit_open':
         case 'profile_logout':
@@ -206,7 +206,7 @@ function resolveEntity(activity: string, rawDetail: any): EntityResult {
                 entity_id: detail.user_id ?? null
             }
 
-// 🟢 MONETIZATION
+// ðŸŸ¢ MONETIZATION
         case 'pro_paywall_open':
         case 'pro_purchase_success':
             return {
@@ -214,7 +214,7 @@ function resolveEntity(activity: string, rawDetail: any): EntityResult {
                 entity_id: detail.entitlement ?? 'Halal Formosa Pro'
             }
 
-// 🟢 DONATION
+// ðŸŸ¢ DONATION
         case 'donation_click':
         case 'donation_success':
             return {
@@ -222,14 +222,14 @@ function resolveEntity(activity: string, rawDetail: any): EntityResult {
                 entity_id: detail.product ?? null
             }
 
-        // 🟢 SOCIAL
+        // ðŸŸ¢ SOCIAL
         case 'social_link_click':
             return {
                 entity_type: 'external_link',
                 entity_id: detail.platform ?? null
             }
 
-        // 🟢 STORE / MERCHANT
+        // ðŸŸ¢ STORE / MERCHANT
         case 'store_product_click':
         case 'store_product_detail_open':
         case 'store_add_to_cart':
@@ -262,7 +262,7 @@ function resolveEntity(activity: string, rawDetail: any): EntityResult {
                 entity_id: detail.application_id ? String(detail.application_id) : null
             }
 
-        // 🟢 REELS
+        // ðŸŸ¢ REELS
         case 'reels_item_view':
         case 'reels_preview_limit_reached':
         case 'reels_view_original_click':
@@ -282,7 +282,7 @@ function resolveEntity(activity: string, rawDetail: any): EntityResult {
                 entity_id: null
             }
 
-        // 🟢 AUTH interactions
+        // ðŸŸ¢ AUTH interactions
         case 'auth_login_success':
         case 'auth_login_failed':
         case 'auth_signup_success':
@@ -292,7 +292,7 @@ function resolveEntity(activity: string, rawDetail: any): EntityResult {
                 entity_id: detail.method ?? 'email'
             }
 
-        // 🟢 SETTINGS
+        // ðŸŸ¢ SETTINGS
         case 'settings_language_change':
             return {
                 entity_type: 'language',
@@ -305,14 +305,14 @@ function resolveEntity(activity: string, rawDetail: any): EntityResult {
                 entity_id: detail.theme ?? null
             }
 
-        // 🟢 UTILITIES
+        // ðŸŸ¢ UTILITIES
         case 'utility_qibla_open':
             return {
                 entity_type: null,
                 entity_id: null
             }
 
-        // 🟢 CONTRIBUTIONS
+        // ðŸŸ¢ CONTRIBUTIONS
         case 'add_product_start':
         case 'add_product_ocr_start':
         case 'add_product_submit_success':
@@ -322,7 +322,7 @@ function resolveEntity(activity: string, rawDetail: any): EntityResult {
             }
 
 
-        // ❌ Everything else
+        // âŒ Everything else
         default:
             return {
                 entity_type: null,
@@ -545,7 +545,7 @@ function resolveActivityGroup(activity: string): string | null {
 export class ActivityLogService {
     static async log(activity: string, detail: any = {}) {
 
-        // 🚫 HARD STOP (no Supabase, no auth, no side effects)
+        // ðŸš« HARD STOP (no Supabase, no auth, no side effects)
         if (!ACTIVITY_LOG_ENABLED) {
             console.log("[ActivityLogService] Skipped")
             return
@@ -561,7 +561,7 @@ export class ActivityLogService {
 
         const { entity_type, entity_id } = resolveEntity(activity, detail)
 
-        if (entity_type && !entity_id) {
+        const skipWarn = activity === 'add_product_start' || activity === 'add_product_ocr_start'; if (entity_type && !entity_id && !skipWarn) {
             console.warn(
                 `[ActivityLogService] Missing entity_id for activity "${activity}"`,
                 detail

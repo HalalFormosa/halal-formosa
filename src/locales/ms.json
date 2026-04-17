@@ -245,7 +245,18 @@
       "clear": "Padam",
       "cropTitle": "Potong Imej Bahan",
       "done": "Selesai",
-      "ocrProcessing": "Memproses OCR..."
+      "ocrProcessing": "Memproses OCR...",
+      "results": "Keputusan",
+      "preparingResults": "Menyediakan keputusan...",
+      "highlights": "Bahan Dikesan",
+      "contribute": "Sumbang ke Pangkalan Data",
+      "contributionPrompt": {
+        "title": "Produk Belum Disenaraikan",
+        "message": "Produk \"{name}\" bertaraf {status}, tetapi nampaknya belum ada dalam pangkalan data kami.",
+        "motivation": "Dengan sumbangan anda, anda membantu ribuan umat Islam yang menggunakan Halal Formosa untuk menemui lebih banyak produk. Membantu orang lain adalah amalan mulia: \"Dan hendaklah kamu bertolong-tolongan untuk membuat kebajikan dan bertaqwa\" (Quran 5:2). Rasulullah SAW bersabda: \"Sebaik-baik manusia adalah yang paling bermanfaat bagi orang lain.\" (HR. At-Tabarani)",
+        "action": "Sumbang Sekarang",
+        "skip": "Mungkin nanti"
+      }
     },
     "toast": {
       "ok": "✅ Bahan berjaya diekstrak!",

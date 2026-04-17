@@ -41,20 +41,26 @@
 
       <ion-modal :is-open="showCropper" @didDismiss="closeCropper">
         <ion-header>
-          <ion-toolbar>
-            <ion-title>{{ $t('addProduct.cropIngredients') }}</ion-title>
-            <ion-buttons slot="end">
-              <ion-button @click="handleConfirmCrop">{{ $t('addProduct.done') }}</ion-button>
-            </ion-buttons>
-          </ion-toolbar>
+          <app-header
+              :title="$t('addProduct.cropIngredients')"
+              show-back
+              :useRouterBack="false"
+              @back="closeCropper"
+          />
         </ion-header>
 
-        <ion-content>
+        <ion-content :scroll-y="false" class="modal-no-scroll">
           <cropper
               ref="cropperRef"
               class="cropper"
               :src="cropperSrc"
-              :stencil-props="{ aspectRatio: null }"
+              :transitions="true"
+              :stencil-props="{
+                aspectRatio: stencilProps.aspectRatio,
+                resizable: true,
+                movable: true
+              }"
+              @ready="onCropperReady"
           />
           
           <!-- Full-screen loading overlay inside the cropper modal -->
@@ -84,6 +90,35 @@
             </div>
           </div>
         </ion-content>
+
+        <ion-footer>
+          <!-- 🛠️ Ratio Toolbar (Moved to bottom for reachability) -->
+          <div class="ratio-toolbar ion-padding-horizontal" style="background: transparent; border: none;">
+            <ion-button 
+                v-for="r in [
+                    { label: 'Free', value: null, icon: expandOutline },
+                    { label: '1:1', value: 1, icon: squareOutline },
+                    { label: '3:4', value: 3/4, icon: phonePortraitOutline },
+                    { label: '2:1', value: 2, icon: tabletLandscapeOutline },
+                ]"
+                :key="r.label"
+                size="small"
+                :fill="stencilProps.aspectRatio === r.value ? 'solid' : 'clear'"
+                color="dark"
+                @click="setAspectRatio(r.value)"
+                class="ratio-btn"
+            >
+              <ion-icon slot="start" :icon="r.icon" style="font-size: 14px;" />
+              {{ r.label }}
+            </ion-button>
+          </div>
+
+          <ion-toolbar class="ion-padding">
+            <ion-button expand="block" color="carrot" @click="handleConfirmCrop" style="font-weight: 700; height: 48px;">
+               {{ $t('addProduct.done') }}
+            </ion-button>
+          </ion-toolbar>
+        </ion-footer>
       </ion-modal>
 
       <!-- 🟢 Step Indicator -->
@@ -104,76 +139,107 @@
       </div>
       <form @submit.prevent="handleSubmit">
         <div class="form-container">
-            <!-- 🟢 STEP 0: Barcode -->
+            <!-- 🔍 STEP 1: Barcode -->
             <div v-show="currentStep === STEP_BARCODE">
-              <ion-item :class="{ 'barcode-valid': barcodeValid === true, 'barcode-invalid': barcodeValid === false }">
-                <ion-input
-                    ref="barcodeInput"
-                    v-model="form.barcode"
-                    required
-                    type="tel"
-                    inputmode="numeric"
-                    pattern="[0-9]*"
-                    :maxlength="14"
-                    :minlength="8"
-                    clear-input
-                    label-placement="floating"
-                    :placeholder="$t('addProduct.barcodePlaceholder')"
+              <!-- Hero Header -->
+              <div class="ion-padding-vertical ion-text-center">
+                <div style="font-size: 48px; margin-bottom: 12px;">🔍</div>
+                <h2 style="font-weight: 700; margin-bottom: 8px;">{{ $t('addProduct.scanBarcodeTitle') || 'Find Product' }}</h2>
+                <p style="color: var(--ion-color-medium); font-size: 14px; margin-bottom: 24px;">
+                  {{ $t('addProduct.scanBarcodeDesc') || 'Scan the barcode on the product packaging to get started.' }}
+                </p>
+
+                <ion-button 
+                  expand="block" 
+                  color="carrot" 
+                  class="ion-margin-bottom" 
+                  style="height: 56px; font-weight: 700;" 
+                  @click="startBarcodeScan"
+                  :disabled="scanning"
                 >
-                  <div slot="label">
-                    {{ $t('addProduct.barcode') }} <ion-text color="danger">*</ion-text>
-                  </div>
-                </ion-input>
+                  <ion-icon slot="start" :icon="scanning ? stopCircle : barcodeOutline" />
+                  {{ scanning ? 'Scanning...' : $t('addProduct.camera') }}
+                </ion-button>
+              </div>
 
-                <ion-icon
-                    v-if="barcodeValid !== null"
-                    :icon="barcodeValid ? checkmarkCircle : closeCircle"
-                    :color="barcodeValid ? 'success' : 'danger'"
-                    slot="end"
-                    style="font-size: 20px;"
-                />
-                <ion-button
-                    color="carrot"
-                    slot="end"
-                    size="default"
-                    @click="startBarcodeScan"
+              <!-- Manual Entry Card -->
+              <div class="form-section ion-margin-top">
+                <ion-list-header>
+                  <ion-label>Manual Entry</ion-label>
+                </ion-list-header>
+
+                <ion-card class="input-card">
+                  <ion-card-content class="ion-no-padding">
+                    <ion-item lines="none" :class="{ 'barcode-valid': barcodeValid === true, 'barcode-invalid': barcodeValid === false }">
+                      <ion-input
+                          ref="barcodeInput"
+                          v-model="form.barcode"
+                          required
+                          type="tel"
+                          inputmode="numeric"
+                          pattern="[0-9]*"
+                          :maxlength="14"
+                          :minlength="8"
+                          clear-input
+                          label-placement="floating"
+                          :placeholder="$t('addProduct.barcodePlaceholder')"
+                          class="ion-margin-vertical"
+                      >
+                        <div slot="label">
+                          {{ $t('addProduct.barcode') }} <ion-text color="danger">*</ion-text>
+                        </div>
+                      </ion-input>
+
+                      <ion-icon
+                          v-if="barcodeValid !== null"
+                          :icon="barcodeValid ? checkmarkCircle : closeCircle"
+                          :color="barcodeValid ? 'success' : 'danger'"
+                          slot="end"
+                          style="font-size: 20px;"
+                      />
+                    </ion-item>
+                  </ion-card-content>
+                </ion-card>
+
+                <!-- Status Message -->
+                <ion-note 
+                  v-if="barcodeMessage" 
+                  :color="barcodeValid ? 'success' : 'danger'" 
+                  class="ion-padding-horizontal"
+                  style="font-size: 14px; font-weight: 500;"
                 >
-                  <ion-icon :icon="scanning ? stopCircle : barcodeOutline" />
-                </ion-button>
-              </ion-item>
+                  {{ barcodeMessage }}
+                </ion-note>
+              </div>
 
-              <!-- 🟢 message shown here -->
-              <ion-note v-if="barcodeMessage" :color="barcodeValid ? 'success' : 'danger'" class="ion-padding-start">
-                {{ barcodeMessage }}
-              </ion-note>
+              <!-- 🟣 Detected Product Preview (If exists) -->
+              <div v-if="detectedProduct" class="form-section ion-margin-top">
+                <ion-list-header>
+                   <ion-label>Existing Product Found</ion-label>
+                </ion-list-header>
+                <ion-card class="input-card">
+                   <ion-item lines="none" class="detected-product">
+                    <ion-thumbnail slot="start" style="--border-radius: 8px;">
+                      <ion-img :src="detectedProduct.photo_front_url || '/placeholder-product.png'" />
+                    </ion-thumbnail>
 
-              <!-- 🟣 Detected Product Preview -->
-              <ion-item
-                  v-if="detectedProduct"
-                  lines="none"
-                  class="detected-product"
-              >
-                <ion-thumbnail slot="start">
-                  <ion-img
-                      :src="detectedProduct.photo_front_url || '/placeholder-product.png'"
-                  />
-                </ion-thumbnail>
+                    <ion-label>
+                      <h3 style="font-weight: 600;">{{ detectedProduct.name }}</h3>
+                      <ion-chip
+                          size="small"
+                          :class="`chip-${statusChipColor(detectedProduct.status)}`"
+                          style="margin: 4px 0 0 0;"
+                      >
+                        {{ detectedProduct.status }}
+                      </ion-chip>
+                    </ion-label>
 
-                <ion-label>
-                  <h3>{{ detectedProduct.name }}</h3>
-                  <ion-chip
-                      size="small"
-                      :class="`chip-${statusChipColor(detectedProduct.status)}`"
-                  >
-                    {{ detectedProduct.status }}
-                  </ion-chip>
-                </ion-label>
-
-                <!-- Link to Edit if exists -->
-                <ion-button v-if="detectedProduct" slot="end" fill="clear" @click="router.push(`/item/${form.barcode}`)">
-                  View
-                </ion-button>
-              </ion-item>
+                    <ion-button slot="end" fill="clear" color="primary" @click="router.push(`/item/${form.barcode}`)">
+                      View
+                    </ion-button>
+                  </ion-item>
+                </ion-card>
+              </div>
 
               <div v-if="scanning && cameras.length > 1" class="ion-padding">
                 <ion-item>
@@ -188,8 +254,9 @@
 
               <div v-if="scanning && !Capacitor.isNativePlatform()" id="reader"></div>
 
+              <!-- Manual Next Button (If needed) -->
               <div class="ion-padding-top">
-                <ion-button expand="block" @click="nextStep" :disabled="!barcodeValid || !!detectedProduct">
+                <ion-button expand="block" @click="nextStep" :disabled="!barcodeValid || !!detectedProduct" fill="outline" color="carrot">
                   {{ $t('addProduct.next') || 'Next' }}
                   <ion-icon slot="end" :icon="arrowForwardOutline" />
                 </ion-button>
@@ -551,7 +618,7 @@ import {
   IonToolbar,
   IonAccordion,
   IonAccordionGroup, IonNote, IonImg, IonThumbnail,
-  IonSegment, IonSegmentButton, IonCard, IonCardHeader, IonCardContent, IonListHeader
+  IonSegment, IonSegmentButton, IonCard, IonCardHeader, IonCardContent, IonListHeader, IonFooter
 } from '@ionic/vue';
 import {
   addOutline,
@@ -565,8 +632,13 @@ import {
   arrowBackOutline,
   sparklesOutline,
   checkmarkCircleOutline,
+  expandOutline,
+  squareOutline,
+  phonePortraitOutline,
+  tabletLandscapeOutline,
 } from 'ionicons/icons';
 import { computed, nextTick, onMounted, onUnmounted, ref, watch} from 'vue'
+import { useI18n } from 'vue-i18n'
 import {supabase} from '@/plugins/supabaseClient'
 
 import { Capacitor } from '@capacitor/core'
@@ -591,7 +663,7 @@ import googleMapsLoader from '@/plugins/googleMapsLoader'
 import { useImageResizer } from "@/composables/useImageResizer";
 import { useCropperOcr } from "@/composables/useCropperOcr"
 import type { Product } from '@/types/Product'
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
 import StoreLogoBar from "@/components/StoreLogoBar.vue";
 import { BarcodeValidator } from "@/utils/barcodeValidator";
 import { ActivityLogService } from "@/services/ActivityLogService";
@@ -599,13 +671,16 @@ import { ActivityLogService } from "@/services/ActivityLogService";
 const { notifyEvent } = useNotifier();
 const { awardAndCelebrate } = usePoints();
 const { errorMsg, setError } = useError()
+const { t } = useI18n()
 const router = useRouter()
+const route = useRoute()
 
 /** ---------- Wizard Steps ---------- */
 const STEP_BARCODE = 0
 const STEP_OCR = 1
 const STEP_DETAILS = 2
 const currentStep = ref(STEP_BARCODE)
+const wizardStartTime = ref<number>(Date.now())
 
 const contentRef = ref<any>(null)
 
@@ -623,6 +698,9 @@ const scrollToBottom = () => {
 
 const nextStep = () => {
   if (currentStep.value < STEP_DETAILS) {
+    if (currentStep.value === STEP_BARCODE) {
+      stopScanner()
+    }
     currentStep.value++
     scrollToTop()
     
@@ -711,7 +789,7 @@ const detectNearbyStore = async () => {
             const match = stores.value.find(s => s.name === brandName)
             if (match && !form.value.store_ids.includes(match.id)) {
               form.value.store_ids.push(match.id)
-              setError(`${$t('addProduct.nearbyStoreDetected') || 'Nearby store detected'}: ${match.name}`, 'success')
+              setError(`${t('addProduct.nearbyStoreDetected') || 'Nearby store detected'}: ${match.name}`)
               return // Found!
             }
           }
@@ -763,7 +841,7 @@ const detectNearbyStore = async () => {
 
       if (match && !form.value.store_ids.includes(match.id)) {
         form.value.store_ids.push(match.id);
-        setError(`${$t('addProduct.nearbyStoreDetected') || 'Nearby store detected'}: ${match.name}`, 'success');
+        setError(`${t('addProduct.nearbyStoreDetected') || 'Nearby store detected'}: ${match.name}`);
       }
     }
   } catch (e) {
@@ -823,16 +901,20 @@ const {
   showCropper,
   croppedPreviewUrl,
   ocrLoading,
+  stencilProps,
   openCropper,
+  onCropperReady,
   confirmCrop,
   closeCropper,
-  ingredientHighlights,
+  ingredientsTextZh,
   ingredientsText,
+  ingredientHighlights,
   autoStatus,
   productName,
-  recheckHighlightsSmart,
   progress,
   progressLabel,
+  setAspectRatio,
+  recheckHighlightsSmart
 } = useCropperOcr({
   allHighlights,
   blacklistPatterns,
@@ -881,7 +963,9 @@ onMounted(async () => {
   if (!highlightsResult.error && highlightsResult.data) {
     allHighlights.value = highlightsResult.data;
   }
-  if (!blacklistResult.error && blacklistResult.data) {
+  if (blacklistResult.error || !blacklistResult.data) {
+    console.warn('Blacklist fetch failed or empty');
+  } else {
     blacklistPatterns.value = blacklistResult.data.map((row) => new RegExp(row.pattern, 'i'));
   }
 
@@ -907,14 +991,65 @@ onMounted(async () => {
     if (linkedStores) {
       form.value.store_ids = linkedStores.map(s => s.store_id)
     }
+  } else {
+    // ⚡ Logic for "Contribute to Database" from ScanIngredientsView
+    // ⚡ Auto-start barcode scanner for new products
+    setTimeout(() => {
+        if (currentStep.value === STEP_BARCODE && !scanning.value) {
+            startBarcodeScan();
+        }
+    }, 800);
   }
 
-  // 🟢 Add this
   await fetchStores()
   await fetchHighlightsWithCache(true)
   await fetchCategoryRules()
   await fetchCategories()
+
+  // 📥 Move pre-population AFTER rules are loaded so auto-category works!
+  if (route.query.fromScan === 'true') {
+    console.log("📥 Pre-populating from scan data:", route.query)
+    if (route.query.name) form.value.name = String(route.query.name)
+    if (route.query.ingredients) form.value.ingredients = String(route.query.ingredients)
+    if (route.query.status) form.value.status = String(route.query.status)
+    
+    // 🖼️ Retrieve image if passed as Blob URL
+    if (route.query.image) {
+      try {
+        const blobUrl = String(route.query.image)
+        fetch(blobUrl).then(res => res.blob()).then(blob => {
+          const file = new File([blob], "scanned-back.jpg", { type: blob.type })
+          backFile.value = file
+          backPreview.value = blobUrl
+          console.log("✅ Scanned image recovered as Back Photo")
+        })
+      } catch (err) {
+        console.warn("❌ Failed to recover scanned image:", err)
+      }
+    }
+
+    // 🔬 Pre-populate Ingredient Analysis (Chips)
+    if (route.query.analysis) {
+       try {
+         ingredientHighlights.value = JSON.parse(String(route.query.analysis))
+         console.log("🔬 Analysis chips recovered:", ingredientHighlights.value.length)
+       } catch (e) {
+         console.warn("❌ Failed to parse analysis data:", e)
+       }
+    }
+
+    // 📄 Pre-populate Raw OCR text
+    if (route.query.rawOcr) {
+      rawChineseOcr.value = String(route.query.rawOcr)
+    }
+
+    scannedOnce.value = true // Enable post-scan logic
+    applyAutoCategory()      // Match category based on name (now rules are loaded!)
+    detectNearbyStore()     // Detect closest store
+  }
+
   ActivityLogService.log('add_product_start')
+  wizardStartTime.value = Date.now() // Start the timer!
 })
 
 interface ProductForm {
@@ -976,18 +1111,22 @@ watch([autoStatus, productName, ingredientsText],
         console.log("🏷 AutoProductName applied:", newName)
       }
 
-      if (form.value.name && !form.value.product_category_id) {
-        const lower = form.value.name.toLowerCase()
-        for (const keyword in categoryRules.value) {
-          if (lower.includes(keyword)) {
-            form.value.product_category_id = categoryRules.value[keyword]
-            console.log(`📂 AutoCategory applied: "${form.value.product_category_id}" (matched "${keyword}")`)
-            break
-          }
-        }
-      }
+      applyAutoCategory()
     }
 )
+
+function applyAutoCategory() {
+  if (form.value.name && !form.value.product_category_id) {
+    const lower = form.value.name.toLowerCase()
+    for (const keyword in categoryRules.value) {
+      if (lower.includes(keyword)) {
+        form.value.product_category_id = categoryRules.value[keyword]
+        console.log(`📂 AutoCategory applied: "${form.value.product_category_id}" (matched "${keyword}")`)
+        break
+      }
+    }
+  }
+}
 
 // Manual status change
 watch(() => form.value.status, (newStatus) => {
@@ -1220,13 +1359,27 @@ async function loadCameras() {
   }
 }
 
+async function stopScanner() {
+  if (html5QrCodeInstance.value) {
+    try {
+       await html5QrCodeInstance.value.stop()
+    } catch (e) {
+       console.warn('⚠️ Scanner stop error:', e)
+    } finally {
+       const reader = document.getElementById('reader')
+       if (reader) reader.innerHTML = ''
+       html5QrCodeInstance.value = null
+       scanning.value = false
+    }
+  }
+}
+
 async function switchCamera(camId: string) {
   if (!html5QrCodeInstance.value) return
 
   try {
-    await html5QrCodeInstance.value.stop()
-    document.getElementById('reader')!.innerHTML = ''
-
+    await stopScanner()
+    
     const config = {
       fps: 15,
       qrbox: { width: 300, height: 150 },
@@ -1366,7 +1519,11 @@ async function startBarcodeScan() {
             scanning.value = false
           },
           (errorMessage) => {
-            console.log(errorMessage) // gets called often
+            // 🤫 Silence 'width is 0' errors that happen during transitions
+            if (errorMessage?.includes('IndexSizeError') || errorMessage?.includes('width is 0')) {
+              return
+            }
+            console.log('📡 Scan error:', errorMessage)
           }
       )
     }
@@ -1378,6 +1535,7 @@ async function startBarcodeScan() {
 
 const isUnmounted = false
 onUnmounted(() => {
+  stopScanner() // 🛑 Ensure camera is dead when leaving page
   if (cropperSrc.value) URL.revokeObjectURL(cropperSrc.value)
   if (croppedPreviewUrl.value) URL.revokeObjectURL(croppedPreviewUrl.value)
 })
@@ -1720,16 +1878,19 @@ async function handleSubmit() {
 
       // 🔔 Notify differently depending on role
       if (autoApprove) {
+        const elapsedSeconds = Math.floor((Date.now() - wizardStartTime.value) / 1000)
+        
         // 🟢 Admin/Contributor → public notification
         await notifyEvent(
             "new_product",
             "🆕 New Product Published!",
-            `${form.value.name} (${form.value.status})\nBarcode: ${form.value.barcode}`,
+            `${form.value.name} (${form.value.status})\nBarcode: ${form.value.barcode}\nProcessed in: ${elapsedSeconds} seconds`,
             frontUrl || backUrl,
             {
               barcode: form.value.barcode,
               status: form.value.status,
               isNative: true,
+              processing_time: elapsedSeconds
             }
         );
       }
@@ -1740,6 +1901,7 @@ async function handleSubmit() {
       frontFile.value = null; backFile.value = null
       frontPreview.value = null; backPreview.value = null
       ingredientHighlights.value = []; barcodeValid.value = null; barcodeMessage.value = ''
+      wizardStartTime.value = Date.now() // Reset timer for next product
       await awardAndCelebrate("add_product", 10000)
       
       await ActivityLogService.log("add_product_success", {
@@ -2198,6 +2360,44 @@ ion-content::part(scroll) {
 
 .keyboard-open ion-footer {
   margin-bottom: 300px;
+}
+
+/* 🛠️ Smart Cropping Ratios */
+.ratio-toolbar {
+  display: flex;
+  justify-content: center; /* 🎯 Center buttons */
+  gap: 8px;
+  overflow-x: auto;
+  padding-top: 12px;
+  padding-bottom: 8px;
+  scrollbar-width: none;
+  background: var(--ion-background-color);
+}
+.ratio-toolbar::-webkit-scrollbar {
+  display: none;
+}
+.ratio-btn {
+  --padding-start: 12px;
+  --padding-end: 12px;
+  --border-radius: 20px;
+  height: 32px;
+  font-size: 13px;
+  margin: 0;
+  flex-shrink: 0;
+  text-transform: none;
+}
+
+/* Mandatory height for vue-advanced-cropper to function */
+.cropper {
+  height: 60vh;
+  width: 100%;
+  background: #000;
+  touch-action: none; /* 🚫 Prevent browser scroll interference */
+}
+
+/* 🔒 Lock scrolling when cropper is open */
+.modal-no-scroll {
+  --overflow: hidden;
 }
 </style>
 

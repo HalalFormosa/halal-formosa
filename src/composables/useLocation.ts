@@ -18,6 +18,10 @@ const isLocating = ref(false)
 const hasAutoCentered = ref(false)
 let locationWatchId: string | null = null
 
+// Throttling state for geocoding
+const lastGeocodeTime = ref(0)
+const GEOCODE_THROTTLE_MS = 60000 // 1 minute
+
 /**
  * Shared Location Logic
  */
@@ -40,21 +44,21 @@ export function useLocation() {
       }
 
       // Initial check to speed things up if permissions are already given
-      try {
-        const currentPos = await Geolocation.getCurrentPosition({
-          enableHighAccuracy: true,
-          timeout: 5000
-        });
-        if (currentPos) {
+      // We don't AWAIT this because we want to start the watch ASAP
+      Geolocation.getCurrentPosition({
+        enableHighAccuracy: true,
+        timeout: 5000
+      }).then(currentPos => {
+        if (currentPos && !userLocation.value) {
           userLocation.value = {
             lat: currentPos.coords.latitude,
             lng: currentPos.coords.longitude
           }
           locationAttemptFinished.value = true
         }
-      } catch (err) {
-         console.warn("[GPS] getCurrentPosition failed, falling back to watch", err)
-      }
+      }).catch(err => {
+         console.warn("[GPS] getCurrentPosition failed, watch will take over", err)
+      })
 
       // Continuous watching
       locationWatchId = await Geolocation.watchPosition(
@@ -78,9 +82,11 @@ export function useLocation() {
             lng: pos.coords.longitude
           }
           
-          // Optional: resolve city name
-          if (userLocation.value) {
-            reverseGeocode(userLocation.value.lat, userLocation.value.lng)
+          // Optional: resolve city name (THROTTLED)
+          const now = Date.now()
+          if (now - lastGeocodeTime.value > GEOCODE_THROTTLE_MS) {
+            lastGeocodeTime.value = now
+            reverseGeocode(pos.coords.latitude, pos.coords.longitude)
           }
         }
       )

@@ -251,7 +251,7 @@
             <ion-card class="for-you-info">
               <ion-card-content>
                 <div class="for-you-row">
-                  <ion-icon name="sparkles-outline" class="for-you-icon"/>
+                  <Sparkles :size="24" class="for-you-icon" />
                   <div>
                     <strong>{{ $t('search.forYou.title') }}</strong>
                     <p>
@@ -291,7 +291,7 @@
             >
               <ion-card-content>
                 <div class="for-you-row">
-                  <ion-icon name="sparkles-outline" class="for-you-icon"/>
+                  <Sparkles :size="24" class="for-you-icon" />
                   <div>
                     <strong>{{ $t('search.forYou.title') }}</strong>
                     <p>
@@ -342,7 +342,7 @@
                       />
                       <!-- Floating Status Pill on Image (Bottom Left) -->
                       <div :class="['floating-status-pill bottom-left', product.status.toLowerCase().replace(' ', '-')]">
-                        <ion-icon :icon="getStatusIcon(product.status)" />
+                        <component :is="getStatusIcon(product.status)" :size="14" />
                         <span>{{ $t('search.status.' + product.status) }}</span>
                       </div>
                       <!-- Vertical Separator Strip -->
@@ -356,7 +356,7 @@
                         <!-- Tier Badge (Gold, Silver, Bronze) -->
                         <div v-if="product.partner_tier" class="tier-header">
                           <div :class="['tier-badge', product.partner_tier.toLowerCase()]">
-                            <ion-icon :icon="sparkles" />
+                            <Sparkles :size="14" />
                             <span>{{ $t('home.partnerTier', { tier: (product.partner_tier || '').toUpperCase() }) }}</span>
                           </div>
                         </div>
@@ -367,12 +367,12 @@
                           </span>
                           <span v-if="product.product_categories?.name" class="meta-dot">•</span>
                           <span class="meta">
-                            <ion-icon :icon="eyeOutline" class="meta-icon" />
+                            <Eye :size="14" class="lucide-meta-icon" />
                             {{ product.view_count || 0 }}
                           </span>
                           <span class="meta-dot">•</span>
                           <span class="meta">
-                            <ion-icon :icon="timeOutline" class="meta-icon" />
+                            <Clock :size="14" class="lucide-meta-icon" />
                             {{ fromNowToTaipei(product.created_at) }}
                           </span>
                         </div>
@@ -381,7 +381,7 @@
                       <!-- BOTTOM: Official partner (if any) + metas, always at the bottom -->
                       <div class="info-bottom">
                         <div v-if="product.partner_tier" class="premium-verified-tag">
-                          <ion-icon :icon="shieldCheckmarkOutline" />
+                          <ShieldCheck :size="14" />
                           <span class="verified-label">{{ $t('search.officialPartner') }}</span>
                         </div>
                       </div>
@@ -410,13 +410,13 @@
                     />
                     <!-- Floating Tier Badge (Top Left) -->
                     <div v-if="product.partner_tier" :class="['grid-tier-badge', product.partner_tier.toLowerCase()]">
-                      <ion-icon :icon="sparkles" />
+                      <Sparkles :size="14" />
                       <span>{{ $t('home.partnerTier', { tier: (product.partner_tier || '').toUpperCase() }) }}</span>
                     </div>
 
                     <!-- Small Status Label -->
                     <div :class="['grid-status-label', product.status.toLowerCase().replace(' ', '-')]">
-                      <ion-icon :icon="getStatusIcon(product.status)" />
+                      <component :is="getStatusIcon(product.status)" :size="14" />
                       <span>{{ $t('search.status.' + product.status) }}</span>
                     </div>
                   </div>
@@ -506,6 +506,16 @@ import {
   listOutline,
   closeOutline
 } from 'ionicons/icons'
+import {
+  CheckCircle2,
+  ShieldCheck,
+  AlertCircle,
+  XCircle,
+  AlertTriangle,
+  Eye,
+  Clock,
+  Sparkles
+} from 'lucide-vue-next'
 import {Capacitor} from '@capacitor/core'
 import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
 import {Haptics, ImpactStyle} from '@capacitor/haptics'
@@ -1591,11 +1601,11 @@ onIonViewDidEnter(async () => {
 
 const getStatusIcon = (status: string) => {
   switch (status.toLowerCase()) {
-    case 'halal': return checkmarkCircle
-    case 'muslim-friendly': return shieldCheckmarkOutline
-    case 'syubhah': return alertCircle
-    case 'haram': return closeCircle
-    default: return warning
+    case 'halal': return CheckCircle2
+    case 'muslim-friendly': return ShieldCheck
+    case 'syubhah': return AlertCircle
+    case 'haram': return XCircle
+    default: return AlertTriangle
   }
 }
 
