@@ -242,7 +242,7 @@
             </ion-buttons>
             <ion-title>{{ $t('admin.selectDates') }}</ion-title>
             <ion-buttons slot="end">
-              <ion-button @click="applyCustomDates" strong="true">{{ $t('common.apply') }}</ion-button>
+              <ion-button @click="applyCustomDates" strong>{{ $t('common.apply') }}</ion-button>
             </ion-buttons>
           </ion-toolbar>
         </ion-header>
@@ -348,7 +348,7 @@ const nationalityChartData = computed(() => {
       return match ? match.name.common : n.name;
     }),
     datasets: [{
-      data: data.map((n:any) => n.value),
+      data: data.map((n:any) => n.value as number),
       backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF']
     }]
   };
@@ -360,7 +360,7 @@ const accountTypeChartData = computed(() => {
   return {
     labels: data.map((n:any) => n.name || 'Free'),
     datasets: [{
-      data: data.map((n:any) => n.value),
+      data: data.map((n:any) => n.value as number),
       backgroundColor: ['#2ecc71', '#e67e22']
     }]
   };
@@ -372,7 +372,7 @@ const funnelChartData = computed(() => {
     labels: ['Starts', 'Success', 'Errors'],
     datasets: [{
       label: 'Volume',
-      data: [scanFunnel.value.start, scanFunnel.value.success, scanFunnel.value.error],
+      data: [scanFunnel.value.start, scanFunnel.value.success, scanFunnel.value.error].map(v => v as number),
       backgroundColor: ['rgba(255, 159, 64, 0.7)', 'rgba(46, 204, 113, 0.7)', 'rgba(231, 76, 60, 0.7)']
     }]
   };
@@ -380,7 +380,7 @@ const funnelChartData = computed(() => {
 
 const dailyChartData = computed(() => {
   if (!recentTrends.value?.daily) return null;
-  const entries = Object.entries(recentTrends.value.daily).sort();
+  const entries = Object.entries(recentTrends.value.daily as Record<string, number>).sort();
   return {
     labels: entries.map(([d]) => d.split('-').slice(1).join('/')),
     datasets: [{
@@ -389,7 +389,7 @@ const dailyChartData = computed(() => {
       backgroundColor: 'rgba(54, 162, 235, 0.5)',
       borderColor: '#36A2EB',
       borderWidth: 1,
-      type: 'bar'
+      type: 'bar' as const
     }]
   };
 });
@@ -470,7 +470,14 @@ async function fetchAnalytics() {
 
   const hours = Array(24).fill(0);
   Object.entries(analytics.trends.hourly || {}).forEach(([h, v]:any) => hours[Number(h)] = v);
-  hourlyChartData.value = { labels: hours.map((_, i) => `${i}h`), datasets: [{ data: hours, backgroundColor: '#f39c12', borderRadius: 2 }] };
+  hourlyChartData.value = { 
+    labels: hours.map((_, i) => `${i}h`), 
+    datasets: [{ 
+      data: hours as number[], 
+      backgroundColor: '#f39c12', 
+      borderRadius: 2 
+    }] 
+  };
   generateInsightsList(analytics);
 }
 
