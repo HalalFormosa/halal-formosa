@@ -158,6 +158,22 @@ export function useDailyMissions() {
                     case 'add_place_success': {
                         const mAddProd = missions.value.find(m => m.id === 'add_product')
                         if (mAddProd && mAddProd.current < mAddProd.required) mAddProd.current++
+
+                        if (log.activity_type === 'add_product_success') {
+                            // 🟢 Also count for "Scan Barcode" mission (implicitly done during add)
+                            const mBarcode = missions.value.find(m => m.id === 'scan_barcode')
+                            if (mBarcode && mBarcode.current < mBarcode.required) mBarcode.current++
+
+                            // 🟢 Also count for "Scan Ingredients" mission
+                            const mScan = missions.value.find(m => m.id === 'scan_ingredients')
+                            if (mScan && mScan.current < mScan.required) mScan.current++
+
+                            // 🟢 Also count for "Find muslim-friendly product" if status matches
+                            if (detail?.status === 'Muslim-friendly') {
+                                const mMF = missions.value.find(m => m.id === 'find_muslim_friendly')
+                                if (mMF && mMF.current < mMF.required) mMF.current++
+                            }
+                        }
                         break
                     }
                 }

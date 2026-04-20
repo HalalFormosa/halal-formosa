@@ -320,6 +320,7 @@ function resolveEntity(activity: string, rawDetail: any): EntityResult {
         // ðŸŸ¢ CONTRIBUTIONS
         case 'add_product_start':
         case 'add_product_ocr_start':
+        case 'add_product_success':
         case 'add_product_submit_success':
             return {
                 entity_type: 'product',
@@ -527,6 +528,7 @@ function resolveActivityGroup(activity: string): string | null {
         -------------------------- */
         case 'add_product_start':
         case 'add_product_ocr_start':
+        case 'add_product_success':
         case 'add_product_submit_success':
             return 'contributions'
 

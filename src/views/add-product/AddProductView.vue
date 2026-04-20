@@ -789,7 +789,6 @@ const detectNearbyStore = async () => {
             const match = stores.value.find(s => s.name === brandName)
             if (match && !form.value.store_ids.includes(match.id)) {
               form.value.store_ids.push(match.id)
-              setError(`${t('addProduct.nearbyStoreDetected') || 'Nearby store detected'}: ${match.name}`)
               return // Found!
             }
           }
@@ -810,7 +809,10 @@ const detectNearbyStore = async () => {
         .lt('lng', coords.longitude + range)
         .limit(20)
 
-    if (locError || !nearLoc) return
+    if (locError || !nearLoc) {
+      applyOtherStoreFallback()
+      return
+    }
 
     const getDist = (lat1: number, lon1: number, lat2: number, lon2: number) => {
       const R = 6371e3; 
@@ -841,11 +843,26 @@ const detectNearbyStore = async () => {
 
       if (match && !form.value.store_ids.includes(match.id)) {
         form.value.store_ids.push(match.id);
-        setError(`${t('addProduct.nearbyStoreDetected') || 'Nearby store detected'}: ${match.name}`);
       }
     }
+
+    applyOtherStoreFallback()
+
   } catch (e) {
     console.warn('Geolocation failed', e);
+    applyOtherStoreFallback()
+  }
+}
+
+/** 🏪 Fallback to "Other Stores" if none detected */
+function applyOtherStoreFallback() {
+  if (form.value.store_ids.length === 0) {
+    const OTHER_STORES_ID = '2a013308-190c-4684-a607-3bc3d7817115'
+    const found = stores.value.find(s => s.id === OTHER_STORES_ID)
+    if (found) {
+      form.value.store_ids = [OTHER_STORES_ID]
+      console.log("🏪 No nearby store found. Defaulted to Other Stores.")
+    }
   }
 }
 
@@ -1895,20 +1912,31 @@ async function handleSubmit() {
         );
       }
 
+      // ✅ Log first, reset after
+      await ActivityLogService.log("add_product_success", {
+        barcode: barcode,
+        name: productData.name,
+        status: productData.status
+      })
+
       // reset form
       form.value = { barcode: '', name: '', status: 'Muslim-friendly',
         product_category_id: null, ingredients: '', description: '', store_ids: [] }
       frontFile.value = null; backFile.value = null
       frontPreview.value = null; backPreview.value = null
       ingredientHighlights.value = []; barcodeValid.value = null; barcodeMessage.value = ''
+      
+      // Reset wizard state
+      detectedProduct.value = null
+      scannedOnce.value = false
+      rawChineseOcr.value = ''
+      autoStatusApplied.value = false
+      userTouchedDescription.value = false
+      currentStep.value = STEP_BARCODE
+      scrollToTop()
+
       wizardStartTime.value = Date.now() // Reset timer for next product
       await awardAndCelebrate("add_product", 10000)
-      
-      await ActivityLogService.log("add_product_success", {
-        barcode: barcode,
-        name: form.value.name,
-        status: form.value.status
-      })
     }
 
     showToast.value = true
