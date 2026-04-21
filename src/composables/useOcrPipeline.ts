@@ -1,6 +1,7 @@
 import { Ref, ref, nextTick } from 'vue'
 import type { IngredientHighlight } from '@/types/Ingredient'
 import { extractIonColor } from '@/utils/ingredientHelpers'
+import { supabase } from '@/plugins/supabaseClient'
 
 export interface BlacklistPattern {
     pattern: string
@@ -83,10 +84,11 @@ export default function useOcrPipeline({
             progress.value = 0.15
             progressLabel.value = "Running OCR..."
 
-            let raw = await extractTextFromImage(file);
-            if (!raw || !raw.trim()) {
+            const { text: rawText, translatedText: translatedFull } = await extractTextFromImage(file);
+            if (!rawText || !rawText.trim()) {
                 return setError('OCR failed to detect any text.');
             }
+            let raw = rawText;
             ocrRawText.value = raw || ''
 
             progress.value = 0.30
@@ -96,7 +98,7 @@ export default function useOcrPipeline({
 
             let translated = '';
             let cleanedZh = raw;
-            let ingredientsOnlyZh = '';  // ✅ <--- Declare here so it's visible everywhere
+            let ingredientsOnlyZh = '';
 
             progress.value = 0.40
             progressLabel.value = "Cleaning text..."
@@ -119,11 +121,7 @@ export default function useOcrPipeline({
                 progress.value = 0.55
                 progressLabel.value = "Translating..."
 
-                const resFull = await translateToEnglish(raw);
-                if (!resFull) {
-                    return setError('Translation of product information failed.');
-                }
-                const translatedFull = normalizeEnglishIngredients(resFull);
+                const translatedFullNormalized = normalizeEnglishIngredients(translatedFull);
 
                 const resClean = await translateToEnglish(ingredientsOnlyZh);
                 const translatedClean = resClean ? normalizeEnglishIngredients(resClean) : '';
@@ -138,7 +136,7 @@ export default function useOcrPipeline({
                 }
 
                 // 🟢 Extract product name from full translation
-                productName.value = extractProductName(translatedFull) || '';
+                productName.value = extractProductName(translatedFullNormalized) || '';
             }
 
             progress.value = 0.70
@@ -264,22 +262,33 @@ export default function useOcrPipeline({
         try {
             const base64 = await fileToBase64(file)
             const res = await withTimeout(
-                fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/google-ocr`, {
-                    method: 'POST',
-                    headers: {
-                        Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ imageBase64: base64 })
+                supabase.functions.invoke('google-ocr', {
+                    body: { imageBase64: base64, translate: true }
                 }),
-                15000
+                20000
             )
-            const json = await res.json()
-            if (!res.ok || json.error) {
-                setError(`OCR failed: ${json.error || 'Google OCR server error'}`)
-                return ''
+            const { data, error } = res
+            if (error || !data) {
+                setError(`OCR failed: ${error?.message || 'Google OCR server error'}`)
+                return { text: '', translatedText: '' }
             }
-            return json.text || ''
+
+            const text = data.text || ''
+            let translatedText = data.translatedText || ''
+
+            // Fallback for translation if google-ocr returned text but no translation
+            if (text.trim() && !translatedText.trim()) {
+                const apiKey = import.meta.env.VITE_GOOGLE_TRANSLATION_API_KEY;
+                if (apiKey) {
+                    console.warn("⚠️ [OcrPipeline] Falling back to manual translation for full text");
+                    translatedText = await translateToEnglish(text) || '';
+                }
+            }
+
+            return {
+                text,
+                translatedText
+            }
         } catch (e: any) {
             if (e.message === 'timeout') {
                 setError('OCR server is busy, please try again later.')
@@ -305,31 +314,50 @@ export default function useOcrPipeline({
 
     async function translateToEnglish(text: string, attempt = 1): Promise<string | null> {
         try {
-            const apiKey = import.meta.env.VITE_GOOGLE_TRANSLATION_API_KEY as string;
-            const res = await withTimeout(
-                fetch(`https://translation.googleapis.com/language/translate/v2?key=${apiKey}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        q: text,
-                        source: 'zh',
-                        target: 'en',
-                        format: 'text'
-                    }),
+            // 1. Try secure Edge Function first
+            const { data, error } = await withTimeout(
+                supabase.functions.invoke('google-translate', {
+                    body: { text, target: 'en' }
                 }),
-                10000
+                12000
             );
-            const json = await res.json();
-            if (!json?.data?.translations?.[0]?.translatedText) {
-                throw new Error(json?.error?.message || 'Empty translation');
+
+            if (error || !data) {
+                throw new Error(error?.message || 'Empty translation');
             }
-            return json.data.translations[0].translatedText;
-        } catch {
-            if (attempt < 2) {
+            return data.translatedText;
+        } catch (e: any) {
+            // 2. Fallback to direct call if key exists (backward compatibility)
+            const apiKey = import.meta.env.VITE_GOOGLE_TRANSLATION_API_KEY;
+            if (apiKey) {
+                console.warn("⚠️ [OcrPipeline] Falling back to direct Google Translation API call");
+                try {
+                    const res = await withTimeout(
+                        fetch(`https://translation.googleapis.com/language/translate/v2?key=${apiKey}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                q: text,
+                                target: 'en',
+                                format: 'text'
+                            }),
+                        }),
+                        10000
+                    );
+                    const json = await res.json();
+                    const result = json.data?.translations?.[0]?.translatedText;
+                    if (result) return result;
+                } catch (fallbackErr) {
+                    console.error("❌ [OcrPipeline] Fallback translation failed:", fallbackErr);
+                }
+            }
+
+            if (attempt < 2 && e.message !== 'timeout') {
                 console.warn(`Retrying translation (attempt ${attempt + 1})...`);
                 return translateToEnglish(text, attempt + 1);
             }
-            setError('Translation server failed after retry.');
+            console.error("❌ [OcrPipeline] Translation failed:", e);
+            setError('Translation server failed.');
             return null;
         }
     }
