@@ -555,7 +555,7 @@
 import {
   IonPage, IonContent, IonButton, IonIcon, IonCard, IonCardContent, IonItem,
   IonTextarea, IonModal, IonHeader, IonToolbar, IonTitle, IonButtons, IonToast,
-  IonProgressBar, IonChip, IonLabel, onIonViewWillEnter, IonList,
+  IonProgressBar, IonChip, IonLabel, onIonViewWillEnter, IonList, IonSpinner,
   IonFooter, IonLoading
 } from '@ionic/vue'
 import {

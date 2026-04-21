@@ -296,7 +296,7 @@ export default function useOcrPipeline({
                 setError('Failed to connect to OCR server. Please try again later.')
             }
             console.error(e)
-            return ''
+            return { text: '', translatedText: '' }
         }
     }
 
