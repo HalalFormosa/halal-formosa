@@ -1009,10 +1009,16 @@ onMounted(async () => {
       form.value.store_ids = linkedStores.map(s => s.store_id)
     }
   } else {
+    // ⚡ Handle pre-filled barcode from query params (e.g. from ItemDetails lookup fail)
+    if (route.query.barcode) {
+      form.value.barcode = String(route.query.barcode)
+      console.log("📥 Pre-filled barcode detected:", form.value.barcode)
+    }
+
     // ⚡ Logic for "Contribute to Database" from ScanIngredientsView
-    // ⚡ Auto-start barcode scanner for new products
+    // ⚡ Auto-start barcode scanner for new products ONLY if barcode is empty
     setTimeout(() => {
-        if (currentStep.value === STEP_BARCODE && !scanning.value) {
+        if (currentStep.value === STEP_BARCODE && !scanning.value && !form.value.barcode) {
             startBarcodeScan();
         }
     }, 800);

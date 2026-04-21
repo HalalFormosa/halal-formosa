@@ -320,8 +320,74 @@
               </ion-card-content>
             </ion-card>
 
+            <!-- 🏆 FEATURED GOLD PARTNERS (Horizontal Scroll) -->
+            <div v-if="goldProducts.length > 0 && !searchQuery" class="featured-partners-container">
+            
+              <div class="horizontal-scroller no-scrollbar" ref="goldScroller">
+                <div 
+                  v-for="product in goldProducts" 
+                  :key="'featured-' + product.barcode"
+                  class="featured-gold-wrapper"
+                  @click="openDetails(product)"
+                >
+                  <div class="modern-product-card status-halal tier-card-gold featured-inner-card">
+                    <div class="card-inner">
+                      <!-- Left: Image -->
+                      <div class="card-image-section">
+                        <img 
+                          loading="lazy"
+                          :src="product.photo_front_url || 'https://via.placeholder.com/150x150.webp?text=No+Photo'" 
+                        />
+                        <div class="floating-status-pill bottom-left" :class="product.status.toLowerCase().replace(' ', '-')">
+                          <component :is="getStatusIcon(product.status)" :size="14" />
+                          <span>{{ $t('search.status.' + product.status) }}</span>
+                        </div>
+                        <div class="status-strip" :class="product.status.toLowerCase().replace(' ', '-')"></div>
+                      </div>
+
+                      <!-- Right: Info -->
+                      <div class="card-info-section">
+                        <div class="info-top">
+                          <div class="tier-header">
+                            <div class="tier-badge gold">
+                              <Sparkles :size="14" />
+                              <span>{{ $t('home.partnerTier', { tier: 'GOLD' }) }}</span>
+                            </div>
+                          </div>
+                          <h3 class="name">{{ product.name }}</h3>
+                          <div class="metas metas-indent">
+                             <span v-if="product.product_categories?.name" class="meta">
+                               {{ $te('search.categoriesList.' + product.product_categories.name) ? $t('search.categoriesList.' + product.product_categories.name) : product.product_categories.name }}
+                             </span>
+                             <span v-if="product.product_categories?.name" class="meta-dot">•</span>
+                             <span class="meta">
+                               <Eye :size="14" class="lucide-meta-icon" />
+                               {{ product.view_count || 0 }}
+                             </span>
+                             <span class="meta-dot">•</span>
+                             <span class="meta">
+                               <Clock :size="14" class="lucide-meta-icon" />
+                               {{ fromNowToTaipei(product.created_at) }}
+                             </span>
+                          </div>
+                        </div>
+                        <div class="info-bottom">
+                          <div class="premium-verified-tag">
+                            <ShieldCheck :size="14" />
+                            <span class="verified-label">{{ $t('search.officialPartner') }}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <!-- Premium Flare for Gold -->
+                    <div class="premium-flare"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <div :class="['product-grid', viewMode + '-mode']">
-              <template v-for="product in results" :key="product.barcode">
+              <template v-for="product in regularProducts" :key="product.barcode">
                 <!-- LIST MODE -->
                 <div
                     v-if="viewMode === 'list'"
@@ -587,6 +653,7 @@ const loadingCount = ref(true)
 const allLoaded = ref(false)
 const isFetching = ref(false)
 const shouldResetSearch = ref(false)
+const rotationSeed = ref(parseInt(localStorage.getItem('product_rotation_seed') || '0'))
 
 const pageSize = 20
 const currentPage = ref(0)
@@ -913,6 +980,45 @@ function dismissForYouInfo() {
 
 const { t } = useI18n()
 
+/* ---------------- Product Groups ---------------- */
+const goldProducts = computed(() => {
+  return results.value.filter(p => (p.partner_tier || '').toLowerCase() === 'gold')
+})
+
+const regularProducts = computed(() => {
+  return results.value.filter(p => (p.partner_tier || '').toLowerCase() !== 'gold')
+})
+
+/* ---------------- Gold Rotation Logic ---------------- */
+const goldRotationOffset = ref(0) // Now acts as activeIndex
+let goldRotationTimer: any = null
+const goldScroller = ref<HTMLElement | null>(null)
+
+function startGoldRotation() {
+  if (goldRotationTimer) clearInterval(goldRotationTimer)
+  goldRotationTimer = setInterval(() => {
+    if (!goldScroller.value || goldProducts.value.length <= 1) return
+
+    goldRotationOffset.value = (goldRotationOffset.value + 1) % goldProducts.value.length
+    
+    const children = goldScroller.value.querySelectorAll('.featured-gold-wrapper')
+    if (children[goldRotationOffset.value]) {
+      children[goldRotationOffset.value].scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'nearest', 
+        inline: 'center' 
+      })
+    }
+  }, 10000) // 10s rotation
+}
+
+function stopGoldRotation() {
+  if (goldRotationTimer) {
+    clearInterval(goldRotationTimer)
+    goldRotationTimer = null
+  }
+}
+
 const sortLabel = computed(() => {
   if (sortBy.value === 'for_you') return 'For You'
   if (sortBy.value === 'views') return 'Hot'
@@ -1163,6 +1269,15 @@ const fetchProducts = async (reset = false) => {
           isFetching.value = false
           loadingProducts.value = false
           return
+        } else {
+          // 🆕 If product not found but we were scanning, navigate anyway 
+          // to trigger the contribution prompt in ItemDetailsView
+          if (isScanning.value) {
+             isScanning.value = false;
+             shouldResetSearch.value = true;
+             router.push({path: `/item/${q}`});
+             return;
+          }
         }
       }
 
@@ -1174,7 +1289,8 @@ const fetchProducts = async (reset = false) => {
         p_sort: sortBy.value,
         p_store_ids: activeStores.value.length > 0 ? activeStores.value.map(s => s.id) : null,
         p_category_ids: activeCategories.value.length > 0 ? activeCategories.value.map(c => c.id) : null,
-        p_statuses: activeStatuses.value.length > 0 ? activeStatuses.value : null
+        p_statuses: activeStatuses.value.length > 0 ? activeStatuses.value : null,
+        p_seed: rotationSeed.value
       })
 
       if (error) {
@@ -1186,7 +1302,7 @@ const fetchProducts = async (reset = false) => {
 
         const processedData = (data || []).map((p: any) => ({
           ...p,
-          partner_tier: Array.isArray(p.partner) ? p.partner[0]?.partner_tier : p.partner?.partner_tier
+          partner_tier: p.partner_tier || (Array.isArray(p.partner) ? p.partner[0]?.partner_tier : p.partner?.partner_tier)
         }))
 
         results.value = reset
@@ -1299,7 +1415,7 @@ const fetchProducts = async (reset = false) => {
 
         const processedData = (data || []).map((p: any) => ({
           ...p,
-          partner_tier: Array.isArray(p.partner) ? p.partner[0]?.partner_tier : p.partner?.partner_tier
+          partner_tier: p.partner_tier || (Array.isArray(p.partner) ? p.partner[0]?.partner_tier : p.partner?.partner_tier)
         }))
 
         results.value = reset
@@ -1317,38 +1433,16 @@ const fetchProducts = async (reset = false) => {
        📦 NORMAL BROWSING MODE
     ========================================================= */
 
-    let query = supabase
-        .from("products")
-        .select(baseSelect)
-        .eq("approved", true)
-
-    // 🏬 Store filter
-    if (activeStores.value.length > 0) {
-      const storeIds = activeStores.value.map(s => s.id)
-      query = query.in("product_stores.store_id", storeIds)
-    }
-
-    // 🏷 Category filter
-    if (activeCategories.value.length > 0) {
-      const categoryIds = activeCategories.value.map(c => c.id)
-      query = query.in("product_category_id", categoryIds)
-    }
-
-    // 🛡 Status filter
-    if (activeStatuses.value.length > 0) {
-      query = query.in("status", activeStatuses.value)
-    }
-
-    // Sorting
-    if (sortBy.value === 'views') {
-      query = query.order('view_count', { ascending: false })
-    } else {
-      query = query.order('created_at', { ascending: false })
-    }
-
-    query = query.range(from, from + pageSize - 1)
-
-    const { data, error } = await query.returns<Product[]>()
+    const { data, error } = await supabase.rpc('search_products', {
+      p_query: '',
+      p_limit: pageSize,
+      p_offset: from,
+      p_sort: sortBy.value,
+      p_store_ids: activeStores.value.length > 0 ? activeStores.value.map(s => s.id) : null,
+      p_category_ids: activeCategories.value.length > 0 ? activeCategories.value.map(c => c.id) : null,
+      p_statuses: activeStatuses.value.length > 0 ? activeStatuses.value : null,
+      p_seed: rotationSeed.value
+    })
 
     if (error) {
       errorMsg.value = error.message
@@ -1357,60 +1451,17 @@ const fetchProducts = async (reset = false) => {
         allLoaded.value = true
       }
 
-      const processedData = data || []
-      
-      // 🏎️ Special Sort for "Recent" mode: Gold/Silver < 7 days old go to the top
-      if (sortBy.value === 'recent' && processedData.length > 0) {
-        const sevenDaysAgo = dayjs().subtract(7, 'day');
-        // Sort the ENTIRE current results plus new data to ensure pinning works
-        const allResults = reset ? processedData : [...results.value, ...processedData];
-        
-        allResults.sort((a: any, b: any) => {
-          const getWeight = (p: any) => {
-            const t = Array.isArray(p.partner) ? p.partner[0]?.partner_tier : p.partner?.partner_tier;
-            const tier = String(t || '').toLowerCase();
-            const isNew = dayjs(p.created_at).isAfter(sevenDaysAgo) || (p.updated_at && dayjs(p.updated_at).isAfter(sevenDaysAgo));
-            
-            if (tier === 'gold' && isNew) return 3; // Absolute priority
-            if (tier === 'gold') return 2;          // Regular Gold
-            if (tier === 'silver' && isNew) return 1;
-            return 0;
-          };
-          
-          const weightA = getWeight(a);
-          const weightB = getWeight(b);
+      const processedData = (data || []).map((p: any) => ({
+        ...p,
+        partner_tier: p.partner_tier || (Array.isArray(p.partner) ? p.partner[0]?.partner_tier : p.partner?.partner_tier)
+      }))
 
-          if (weightA !== weightB) return weightB - weightA;
-          return dayjs(b.created_at).valueOf() - dayjs(a.created_at).valueOf();
-        });
-
-        results.value = allResults.map((p: any) => ({
-          ...p,
-          partner_tier: Array.isArray(p.partner) ? p.partner[0]?.partner_tier : p.partner?.partner_tier
-        }));
-      } else {
-        const mapped = processedData.map((p: any) => ({
-          ...p,
-          partner_tier: Array.isArray(p.partner) ? p.partner[0]?.partner_tier : p.partner?.partner_tier
-        }));
-        results.value = reset
-            ? mapped
-            : [...results.value, ...mapped]
-      }
-
-      if (reset && results.value.length === 0 && hasActiveFilters.value) {
-        ActivityLogService.log("search_no_results", {
-          query: searchQuery.value,
-          filters: {
-            stores: activeStores.value.map(s => s.id),
-            categories: activeCategories.value.map(c => c.id),
-            statuses: activeStatuses.value
-          }
-        })
-      }
-
+      results.value = reset ? processedData : [...results.value, ...processedData]
       currentPage.value++
     }
+
+
+
 
   } finally {
     isFetching.value = false
@@ -1535,10 +1586,8 @@ onMounted(async () => {
     }, {} as Record<string, string>)
   }
 
-  // 🔹 Initial data load
+  // 🔹 Load static data only once
   await Promise.all([
-    fetchProducts(true),
-    fetchTotalCount(),
     fetchCategories(),
     fetchStores(),
   ])
@@ -1551,6 +1600,37 @@ onIonViewWillEnter(async () => {
     clearAllFilters();
     shouldResetSearch.value = false;
   }
+
+  // Increment rotation seed for "Round Robin" feel
+  rotationSeed.value = (rotationSeed.value + 1) % 1000 
+  localStorage.setItem('product_rotation_seed', rotationSeed.value.toString())
+  
+  // Set initial scroll position based on Round Robin seed
+  if (goldProducts.value.length > 0) {
+    goldRotationOffset.value = rotationSeed.value % goldProducts.value.length
+    
+    // Jump to the starting partner instantly
+    await nextTick()
+    if (goldScroller.value) {
+      const children = goldScroller.value.querySelectorAll('.featured-gold-wrapper')
+      if (children[goldRotationOffset.value]) {
+        children[goldRotationOffset.value].scrollIntoView({ 
+          behavior: 'auto', 
+          block: 'nearest', 
+          inline: 'center' 
+        })
+      }
+    }
+  }
+
+  startGoldRotation()
+
+  // Refresh products and count every time the view enters
+  // This triggers the server-side random() shuffle for Gold partners
+  await Promise.all([
+    fetchProducts(true),
+    fetchTotalCount(),
+  ])
 })
 
 
@@ -2253,6 +2333,62 @@ ion-header {
 .grid-status-label.muslim-friendly { background: rgba(var(--ion-color-primary-rgb), 0.95); }
 .grid-status-label.syubhah { background: rgba(var(--ion-color-warning-rgb), 0.95); color: var(--ion-color-warning-contrast); }
 .grid-status-label.haram { background: rgba(var(--ion-color-danger-rgb), 0.9); }
+
+/* =========================================================
+   Featured Gold Carousel Styles
+   ========================================================= */
+
+.featured-partners-container {
+  padding: 4px 0 0 0;
+  background: var(--ion-background-color);
+  overflow: hidden;
+}
+
+.featured-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 16px 8px;
+}
+
+.featured-header h2 {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ion-color-carrot);
+}
+
+.horizontal-scroller {
+  display: flex;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x mandatory;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.featured-gold-wrapper {
+  flex: 0 0 100%; /* Matches exactly the list card width (Container - 32px) */
+  scroll-snap-align: center;
+  padding: 0;
+}
+
+.featured-inner-card {  
+  border: 1px solid rgba(202, 138, 4, 0.2) !important;
+  background: var(--ion-card-background) !important;
+  height: 160px !important; /* MATCH standard list card height */
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
 </style>
 
 <style>

@@ -317,20 +317,38 @@
           <!-- AI Summary -->
           <div v-if="isDonor && (loadingSummary || overallNote || errorSummary)" class="ai-summary-card animate__animated animate__fadeInUp">
             <h3 class="ai-summary-title">🤖 AI Analysis Summary</h3>
+            
+            <!-- Initial Loader -->
+            <div v-if="loadingSummary && !overallNote && !errorSummary" class="ai-initial-loader">
+              <ion-spinner name="crescent" color="secondary"></ion-spinner>
+              <div class="ai-status-msg">Preparing Analysis...</div>
+            </div>
+
+            <div v-if="loadingSummary && !overallNote && tryingModel" class="ai-trying-text">
+              <ion-spinner name="dots" color="medium" style="zoom: 0.6; margin-right: 4px;"></ion-spinner>
+              <span>Connecting to {{ tryingModel.split('/')[0].toUpperCase() }} {{ tryingModel.split('/')[1]?.split('-')[0].replace('it', '').toUpperCase() }}...</span>
+            </div>
             <div class="ai-summary-text" v-html="errorSummary || overallNote"></div>
+            <div v-if="activeModel" class="ai-summary-footer">
+              Answer written & structured by {{ activeModel.split('/')[0].toUpperCase() }} {{ activeModel.split('/')[1]?.split('-')[0].replace('it', '').toUpperCase() }} using Halal Formosa Database
+            </div>
           </div>
 
           <ion-button
-              v-if="ingredientsTextZh && !summaryUsed"
+              v-if="ingredientsTextZh && !overallNote && !errorSummary"
               expand="block"
               color="carrot"
               :disabled="loadingSummary"
               @click="handleSummaryClick"
               class="ai-button ion-margin-top"
           >
-            <ion-icon v-if="!isDonor" slot="start" :icon="lockClosedOutline" />
-            <span>{{ loadingSummary ? 'Analyzing…' : 'Unlock AI Explanation' }}</span>
-            <span v-if="!isDonor" class="pro-pill">PRO</span>
+            <ion-icon v-if="!isDonor && !loadingSummary" slot="start" :icon="lockClosedOutline" />
+            <ion-spinner v-if="loadingSummary" name="crescent" slot="start"></ion-spinner>
+            <ion-icon v-if="!loadingSummary" :icon="sparklesOutline" style="margin-right: 6px; font-size: 18px; vertical-align: middle;"></ion-icon>
+            <span style="vertical-align: middle;">
+              {{ loadingSummary ? 'AI is Thinking…' : (isDonor ? 'AI Explanation' : 'Unlock AI Explanation') }}
+            </span>
+            <span v-if="!isDonor && !loadingSummary" class="pro-pill">PRO</span>
           </ion-button>
 
           <!-- Step 2 Actions -->
@@ -884,8 +902,8 @@ async function loadTodayScanCount() {
 }
 
 async function checkDailyScanLimit() {
-  // Donors → unlimited scans
-  if (isDonor.value) return true;
+  // DEV mode or Donors → unlimited scans
+  if (import.meta.env.DEV || isDonor.value) return true;
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return true;
@@ -924,6 +942,8 @@ const {
   overallNote,
   loadingSummary,
   errorSummary,
+  activeModel,
+  tryingModel,
   generateSummary
 } = useAISummary()
 
@@ -1012,6 +1032,9 @@ function clearAll() {
   originalFile.value = null
   croppedFile.value = null
   overallNote.value = ''
+  errorSummary.value = null
+  activeModel.value = ''
+  tryingModel.value = ''
   summaryUsed.value = false
   showTutorial.value = true
   currentStep.value = STEP_CAPTURE
@@ -1569,12 +1592,63 @@ onUnmounted(() => {
   gap: 8px;
 }
 
+.ai-initial-loader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 30px 10px;
+  text-align: center;
+}
+
+.ai-status-msg {
+  margin-top: 15px;
+  font-size: 14px;
+  color: var(--ion-color-step-600);
+  font-weight: 500;
+}
+
+.ai-trying-text {
+  font-size: 13px;
+  color: var(--ion-color-medium);
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  font-style: italic;
+  opacity: 0.8;
+}
+
 .ai-summary-text {
   font-size: 15px;
   line-height: 1.6;
   color: var(--soft-warning-text);
   opacity: 0.9;
-  white-space: pre-wrap;
+}
+
+.ai-summary-text p {
+  margin-bottom: 12px;
+}
+
+.ai-summary-text ul {
+  padding-left: 20px !important;
+  margin: 12px 0 !important;
+  list-style-type: disc !important;
+}
+
+.ai-summary-text li {
+  margin-bottom: 8px !important;
+  display: list-item !important;
+}
+
+.ai-summary-footer {
+  margin-top: 12px;
+  font-size: 11px;
+  color: var(--soft-warning-text);
+  opacity: 0.5;
+  text-align: right;
+  font-style: italic;
+  border-top: 1px solid rgba(var(--ion-color-step-300-rgb), 0.2);
+  padding-top: 8px;
 }
 
 .actions-group {

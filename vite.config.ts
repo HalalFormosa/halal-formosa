@@ -29,12 +29,12 @@ export default defineConfig({
         minify: 'terser',
         terserOptions: {
             compress: {
-                keep_fnames: true,
-                keep_classnames: true,
+                keep_fnames: false,
+                keep_classnames: false,
             },
             mangle: {
-                keep_fnames: true,
-                keep_classnames: true,
+                keep_fnames: false,
+                keep_classnames: false,
                 reserved: [
                     // html5-qrcode related names
                     'Html5Qrcode',

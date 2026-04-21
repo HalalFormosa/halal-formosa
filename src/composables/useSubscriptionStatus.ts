@@ -3,7 +3,7 @@ import { Purchases } from "@revenuecat/purchases-capacitor";
 import { Capacitor } from "@capacitor/core";
 import { supabase } from "@/plugins/supabaseClient";
 
-export const isDonor = ref(false);
+export const isDonor = ref(import.meta.env.DEV ? true : false);
 export const lastSyncedEntitlement = ref<string | null>(null);
 
 export async function refreshSubscriptionStatus(options?: {

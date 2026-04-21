@@ -1,23 +1,20 @@
 import { ref } from 'vue'
-import { GoogleGenAI } from '@google/genai'
 import { extractIonColor, colorMeaning } from '@/utils/ingredientHelpers'
 import { marked } from 'marked'
 import DOMPurify from 'dompurify'
+import { supabase } from '@/plugins/supabaseClient'
 
 export default function useAISummary() {
     const overallNote = ref<string>('') // summary text (HTML after parsing)
     const loadingSummary = ref(false)
     const errorSummary = ref<string | null>(null)
-
-    const ai = new GoogleGenAI({
-        apiKey: import.meta.env.VITE_GEMINI_API_KEY
-    })
+    const activeModel = ref<string>('')
+    const tryingModel = ref<string>('')
 
     async function renderMarkdown(text: string): Promise<string> {
-        const raw = await marked.parseInline(text)
+        const raw = await marked.parse(text)
         return DOMPurify.sanitize(raw)
     }
-
 
     async function generateSummary(ingredientsText: string, highlights: any[] = [], systemStatus: string = '') {
         if (!ingredientsText) return
@@ -25,6 +22,10 @@ export default function useAISummary() {
         loadingSummary.value = true
         errorSummary.value = null
         overallNote.value = ''
+        activeModel.value = ''
+        tryingModel.value = 'AI Cloud' // Initial feedback
+
+        let accumulatedText = ''
 
         try {
             const input = ingredientsText
@@ -36,45 +37,77 @@ export default function useAISummary() {
                 ? highlights.map(h => `${h.keyword}: ${colorMeaning(extractIonColor(h.color))}`).join(', ')
                 : 'None'
 
-            const response = await ai.models.generateContent({
-                model: 'gemini-2.5-flash-lite',
-                contents: `You are providing official but friendly explanations on behalf of Halal Formosa. 
-Do NOT include greetings, OCR results, introductions, or disclaimers. Go straight to the ingredient analysis.
+            const { data: { session } } = await supabase.auth.getSession()
 
-Ingredients (OCR result):
-${input}
-
-Trusted ingredient status from the Halal Formosa database:
-${highlightInfo}
-
-Strict instructions:
-1. ONLY explain ingredients flagged in the database (*Muslim-friendly*, *Haram*, *Syubhah*). 
-2. For *Muslim-friendly* items, group them into one efficient sentence (e.g., "**Sugar and Water** are *Muslim-friendly* because they are plant-based or natural").
-3. For **Haram** or **Syubhah** items, you MUST provide a detailed "Why." Do not use generic summaries. Instead, use specific reasoning like scientific origins (e.g., "extracted from animal fat") or scriptural references (e.g., "Pork is *Haram* per Quranic verse Al-Baqarah 2:173").
-4. If the database provides a specific verse or a chemical source, it is MANDATORY to include it.
-5. Total explanation must be descriptive but concise, between 4 to 8 sentences.
-Overall system status:
-${systemStatus}
-6. Always end exactly with:
-"Based on our Halal Formosa ingredients database, this product is ${systemStatus}."
-7. Use Markdown (**bold** names, *italic* statuses).`,
-                config: { thinkingConfig: { thinkingBudget: 0 } } // Set budget > 0 if you want the model to 'reason' internally first
+            const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-ai-explanation`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${session?.access_token || import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+                },
+                body: JSON.stringify({
+                    ingredientsText: input,
+                    highlightInfo: highlightInfo,
+                    systemStatus: systemStatus
+                })
             })
 
-            const text =
-                response.text ||
-                response.candidates?.[0]?.content?.parts?.[0]?.text ||
-                ''
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}))
+                throw new Error(errorData.error || `AI Error: ${response.status}`)
+            }
 
-            if (!text) {
+            // Capture which model distance finally answered
+            const modelUsed = response.headers.get('X-Model-Used')
+            if (modelUsed) {
+                activeModel.value = modelUsed
+            }
+
+            const reader = response.body?.getReader()
+            if (!reader) throw new Error("No reader available")
+
+            const decoder = new TextDecoder()
+            let buffer = ""
+
+            tryingModel.value = '' // Clear connecting status once data starts
+
+            while (true) {
+                const { done, value } = await reader.read()
+                if (done) break
+
+                buffer += decoder.decode(value, { stream: true })
+                const lines = buffer.split("\n")
+                buffer = lines.pop() || ""
+
+                for (const line of lines) {
+                    const trimmedLine = line.trim()
+                    if (!trimmedLine || trimmedLine === "data: [DONE]") continue
+
+                    if (trimmedLine.startsWith("data: ")) {
+                        try {
+                            const json = JSON.parse(trimmedLine.replace("data: ", ""))
+                            const content = json.choices?.[0]?.delta?.content || ""
+                            if (content) {
+                                accumulatedText += content
+                                overallNote.value = await renderMarkdown(accumulatedText)
+                            }
+                        } catch (e) {
+                            // Silently ignore partial JSON or keep-alive chunks
+                        }
+                    }
+                }
+            }
+
+            if (!accumulatedText) {
                 throw new Error('Empty AI response')
             }
 
-            overallNote.value = await renderMarkdown(text)
         } catch (err: any) {
+            console.error("AI Summary Error:", err)
             errorSummary.value = err.message || 'Failed to generate summary.'
         } finally {
             loadingSummary.value = false
+            tryingModel.value = ''
         }
     }
 
@@ -83,6 +116,8 @@ ${systemStatus}
         overallNote,
         loadingSummary,
         errorSummary,
+        activeModel,
+        tryingModel,
         generateSummary
     }
 }

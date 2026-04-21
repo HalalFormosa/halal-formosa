@@ -449,6 +449,44 @@
       />
     </ion-modal>
 
+    <!-- Contribution Prompt Modal -->
+    <ion-modal :is-open="showContributionPrompt" class="contribution-modal" @didDismiss="showContributionPrompt = false">
+      <div class="modal-wrapper ion-padding">
+        <div class="modal-header ion-text-center">
+           <div class="icon-circle">
+             <ion-icon :icon="sparklesOutline" color="carrot" />
+           </div>
+           <h2 class="modal-title">{{ $t('scanIngredients.scan.contributionPrompt.title') }}</h2>
+        </div>
+
+        <div class="modal-body">
+          <p class="main-message">
+            {{ $t('search.details.no-item') }}: <strong>{{ barcode }}</strong>.
+            <br><br>
+            {{ $t('scanIngredients.scan.contributionPrompt.message', { name: barcode, status: $t('search.status.Unknown') }) }}
+          </p>
+
+          <div class="motivation-box">
+             <div class="islamic-ornament">📿</div>
+             <p class="religious-text">
+               {{ $t('scanIngredients.scan.contributionPrompt.motivation') }}
+             </p>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <ion-button expand="block" color="carrot" class="action-btn" @click="() => { showContributionPrompt = false; goToAddProduct(); }">
+            <ion-icon slot="start" :icon="addOutline" />
+            {{ $t('scanIngredients.scan.contributionPrompt.action') }}
+          </ion-button>
+          <ion-button expand="block" fill="clear" color="medium" @click="showContributionPrompt = false">
+            {{ $t('scanIngredients.scan.contributionPrompt.skip') }}
+          </ion-button>
+        </div>
+
+      </div>
+    </ion-modal>
+
     <!-- Toasts for save actions -->
     <ion-toast
       :is-open="showSuccessToast"
@@ -496,13 +534,29 @@ import 'swiper/css'
 import 'swiper/css/pagination'
 import 'swiper/css/zoom'
 import AppHeader from "@/components/AppHeader.vue";
-import {alertCircleOutline, bagOutline, barcodeOutline, createOutline, bookmarkOutline, bookmark, addOutline, folderOutline, sparkles, star, shieldCheckmarkOutline, shareSocialOutline} from "ionicons/icons";
+import {
+  alertCircleOutline,
+  bagOutline,
+  barcodeOutline,
+  createOutline,
+  bookmarkOutline,
+  bookmark,
+  addOutline,
+  folderOutline,
+  sparkles,
+  star,
+  shieldCheckmarkOutline,
+  shareSocialOutline,
+  sparklesOutline // Added for contribution prompt
+} from "ionicons/icons";
 import AddProductView from "@/views/add-product/AddProductView.vue";
 import { userRole } from '@/composables/userProfile'
 import { isDonor, refreshSubscriptionStatus } from '@/composables/useSubscriptionStatus'
 import { ActivityLogService } from "@/services/ActivityLogService";
 import { RevenueCatUI, PAYWALL_RESULT } from '@revenuecat/purchases-capacitor-ui'
 import { useNotifier } from "@/composables/useNotifier";
+
+const showContributionPrompt = ref(false) // Added state
 
 const showEditModal = ref(false)
 const route = useRoute()
@@ -596,6 +650,13 @@ dayjs.extend(relativeTime)
 function fromNowToTaipei(dateString?: string) {
   if (!dateString) return ''
   return dayjs.utc(dateString).tz('Asia/Taipei').fromNow()
+}
+
+function goToAddProduct() {
+  router.push({
+    path: '/add',
+    query: { barcode: barcode }
+  })
 }
 
 function getColorFromHtml(html: string): string {
@@ -1171,6 +1232,9 @@ onMounted(async () => {
 
       await fetchRelatedProducts()
       await loadFoldersAndSavedState()
+    } else if (!prodRes.data && !prodRes.error) {
+      // Product not found in database -> Show contribution prompt
+      showContributionPrompt.value = true
     }
 
     // ✅ ingredient highlights
@@ -1605,4 +1669,84 @@ ion-skeleton-text {
 .product-name-gold   { color: #ca8a04 !important; }
 .product-name-silver { color: #475569 !important; }
 .product-name-bronze { color: #b45309 !important; }
+
+/* 🎁 Contribution Modal Styles */
+.contribution-modal {
+  --height: auto;
+  --border-radius: 28px 28px 0 0;
+  align-items: flex-end;
+}
+
+.contribution-modal .modal-wrapper {
+  background: var(--ion-background-color);
+  padding: 32px 24px;
+  border-radius: 28px 28px 0 0;
+}
+
+.contribution-modal .modal-header {
+  margin-bottom: 24px;
+}
+
+.contribution-modal .icon-circle {
+  width: 64px;
+  height: 64px;
+  background: rgba(var(--ion-color-carrot-rgb), 0.1);
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 0 auto 16px;
+  font-size: 32px;
+  box-shadow: 0 4px 12px rgba(var(--ion-color-carrot-rgb), 0.1);
+}
+
+.contribution-modal .modal-title {
+  font-weight: 800;
+  font-size: 24px;
+  margin: 0;
+  color: var(--ion-color-step-900);
+}
+
+.contribution-modal .main-message {
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--ion-color-step-700);
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.contribution-modal .motivation-box {
+  background: var(--ion-color-step-50);
+  border-radius: 20px;
+  padding: 20px;
+  text-align: center;
+  margin-bottom: 32px;
+  border: 1px dashed rgba(var(--ion-color-carrot-rgb), 0.3);
+}
+
+.contribution-modal .islamic-ornament {
+  font-size: 24px;
+  margin-bottom: 8px;
+}
+
+.contribution-modal .religious-text {
+  font-size: 14px;
+  font-style: italic;
+  line-height: 1.6;
+  color: var(--ion-color-step-600);
+  margin: 0;
+}
+
+.contribution-modal .modal-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.contribution-modal .action-btn {
+  height: 54px;
+  font-weight: 700;
+  font-size: 16px;
+  --border-radius: 14px;
+}
 </style>
