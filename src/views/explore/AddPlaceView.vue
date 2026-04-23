@@ -8,35 +8,51 @@
           :useRouterBack="false"
           @back="handleBack"
       />
+
+      <!-- 🟢 Step Indicator -->
+      <div v-if="!isEditing" id="step-indicator">
+        <div class="step-item" :class="{ active: currentStep >= 0 }">
+          <div class="step-dot">
+            <ion-icon :icon="locationOutline" v-if="currentStep <= 0" />
+            <ion-icon :icon="checkmarkCircle" v-else />
+          </div>
+          <span class="step-label">Location</span>
+        </div>
+        <div class="step-line" :class="{ active: currentStep >= 1 }"></div>
+        <div class="step-item" :class="{ active: currentStep >= 1 }">
+          <div class="step-dot">
+            <ion-icon :icon="shieldCheckmarkOutline" v-if="currentStep <= 1" />
+            <ion-icon :icon="checkmarkCircle" v-else />
+          </div>
+          <span class="step-label">Source</span>
+        </div>
+        <div class="step-line" :class="{ active: currentStep >= 2 }"></div>
+        <div class="step-item" :class="{ active: currentStep >= 2 }">
+          <div class="step-dot">
+            <ion-icon :icon="cameraOutline" v-if="currentStep <= 2" />
+            <ion-icon :icon="checkmarkCircle" v-else />
+          </div>
+          <span class="step-label">Photos</span>
+        </div>
+        <div class="step-line" :class="{ active: currentStep >= 3 }"></div>
+        <div class="step-item" :class="{ active: currentStep >= 3 }">
+          <div class="step-dot">
+            <ion-icon :icon="sparklesOutline" v-if="currentStep <= 3" />
+            <ion-icon :icon="checkmarkCircle" v-else />
+          </div>
+          <span class="step-label">Details</span>
+        </div>
+        <div class="step-line" :class="{ active: currentStep >= 4 }"></div>
+        <div class="step-item" :class="{ active: currentStep >= 4 }">
+          <div class="step-dot">
+            <ion-icon :icon="checkmarkCircle" />
+          </div>
+          <span class="step-label">Done</span>
+        </div>
+      </div>
     </ion-header>
 
     <ion-content class="ion-padding">
-      <!-- 🟢 Step Indicator -->
-      <div v-if="!isEditing" id="step-indicator" class="ion-margin-bottom">
-        <div class="step-dot" :class="{ active: currentStep >= 0 }">
-           <ion-icon :icon="locationOutline" v-if="currentStep <= 0" />
-           <ion-icon :icon="checkmarkCircle" v-else />
-        </div>
-        <div class="step-line" :class="{ active: currentStep >= 1 }"></div>
-        <div class="step-dot" :class="{ active: currentStep >= 1 }">
-           <ion-icon :icon="shieldCheckmarkOutline" v-if="currentStep <= 1" />
-           <ion-icon :icon="checkmarkCircle" v-else />
-        </div>
-        <div class="step-line" :class="{ active: currentStep >= 2 }"></div>
-        <div class="step-dot" :class="{ active: currentStep >= 2 }">
-           <ion-icon :icon="cameraOutline" v-if="currentStep <= 2" />
-           <ion-icon :icon="checkmarkCircle" v-else />
-        </div>
-        <div class="step-line" :class="{ active: currentStep >= 3 }"></div>
-        <div class="step-dot" :class="{ active: currentStep >= 3 }">
-           <ion-icon :icon="sparklesOutline" v-if="currentStep <= 3" />
-           <ion-icon :icon="checkmarkCircle" v-else />
-        </div>
-        <div class="step-line" :class="{ active: currentStep >= 4 }"></div>
-        <div class="step-dot" :class="{ active: currentStep >= 4 }">
-           <ion-icon :icon="checkmarkCircle" />
-        </div>
-      </div>
 
       <!-- Not logged in -->
       <ion-card v-if="checkedRole && !myRole">
@@ -381,12 +397,16 @@
               <ion-card class="input-card">
                 <div class="photo-selection-grid ion-padding">
                   <ion-button @click="takePicture" fill="outline" color="carrot" class="photo-btn" :disabled="uploading">
-                    <ion-icon slot="top" :icon="cameraOutline" />
-                    {{ $t('addProduct.camera') }}
+                    <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
+                      <ion-icon :icon="cameraOutline" style="font-size: 32px;" />
+                      <span>{{ $t('addProduct.camera') }}</span>
+                    </div>
                   </ion-button>
                   <ion-button @click="uploadFromGallery" fill="outline" color="carrot" class="photo-btn" :disabled="uploading">
-                    <ion-icon slot="top" :icon="cloudUploadOutline" />
-                    {{ $t('addProduct.gallery') }}
+                    <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
+                      <ion-icon :icon="cloudUploadOutline" style="font-size: 32px;" />
+                      <span>{{ $t('addProduct.gallery') }}</span>
+                    </div>
                   </ion-button>
                 </div>
 
@@ -421,19 +441,55 @@
             <ion-card
                 v-if="warningLevel"
                 :color="warningLevel === 'high' ? 'danger' : 'warning'"
-                class="input-card ion-margin-bottom"
-                style="border: none;"
+                class="input-card ion-margin-bottom duplicate-warning"
             >
-              <ion-card-content>
-                <strong>
-                  ⚠️ {{ warningLevel === 'high'
-                    ? $t('addPlace.duplicates.high')
-                    : $t('addPlace.duplicates.medium')
-                  }}
-                </strong>
-                <ul style="margin:6px 0 0 16px; padding:0; font-size:14px;">
-                  <li v-for="m in nearbyMatches.slice(0, 3)" :key="m.id">{{ m.name }} · {{ m.distance_meters }} m</li>
-                </ul>
+              <ion-card-content style="padding: 20px;">
+                <div style="display: flex; align-items: flex-start; gap: 16px;">
+                  <div
+                    style="flex-shrink: 0; width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center;"
+                    :style="{ background: warningLevel === 'high' ? 'var(--ion-color-danger-tint)' : 'var(--ion-color-warning-tint)' }"
+                  >
+                    <ion-icon
+                      :icon="warningLevel === 'high' ? alertCircleOutline : warningOutline"
+                      style="font-size: 24px;"
+                      :style="{ color: warningLevel === 'high' ? 'var(--ion-color-danger)' : 'var(--ion-color-warning-shade)' }"
+                    />
+                  </div>
+                  <div style="flex: 1;">
+                    <div
+                      style="font-weight: 700; font-size: 16px; margin-bottom: 6px;"
+                      :style="{ color: warningLevel === 'high' ? 'var(--ion-color-danger)' : 'var(--ion-color-warning-contrast)' }"
+                    >
+                      {{ warningLevel === 'high' ? 'Potential Duplicate Found!' : 'Similar Place Nearby' }}
+                    </div>
+                    <p
+                      style="margin: 0 0 12px; font-size: 14px; line-height: 1.5;"
+                      :style="{ color: warningLevel === 'high' ? 'var(--ion-color-danger-contrast)' : 'var(--ion-color-warning-contrast)' }"
+                    >
+                      {{ warningLevel === 'high'
+                        ? 'This location appears to already exist in our database. Please check if it\'s the same place before adding.'
+                        : 'There may be a similar place nearby. Please verify before adding.'
+                      }}
+                    </p>
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                      <div
+                        v-for="m in nearbyMatches.slice(0, 3)"
+                        :key="m.id"
+                        style="display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 8px; font-size: 14px;"
+                        :style="{ background: warningLevel === 'high' ? 'rgba(var(--ion-color-danger-rgb), 0.15)' : 'rgba(var(--ion-color-warning-rgb), 0.15)' }"
+                      >
+                        <ion-icon :icon="locationOutline" size="small" />
+                        <span style="flex: 1; font-weight: 600;">{{ m.name }}</span>
+                        <span
+                          style="font-size: 12px; padding: 2px 8px; border-radius: 12px;"
+                          :style="{ background: warningLevel === 'high' ? 'var(--ion-color-danger)' : 'var(--ion-color-warning-shade)', color: 'white' }"
+                        >
+                          {{ m.distance_meters < 1000 ? m.distance_meters + 'm' : (m.distance_meters / 1000).toFixed(1) + 'km' }}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </ion-card-content>
             </ion-card>
 
@@ -518,6 +574,22 @@
               </ion-card>
             </div>
 
+            <!-- 🛠️ Section: Admin Controls -->
+            <div v-if="myRole === 'admin'" class="form-section">
+              <ion-list-header><ion-label>{{ $t('admin.controls') }}</ion-label></ion-list-header>
+              <ion-card class="input-card">
+                <ion-item lines="none">
+                  <ion-icon :icon="checkmarkCircleOutline" slot="start" color="success" />
+                  <ion-label>{{ $t('admin.master.published') }}</ion-label>
+                  <ion-toggle
+                      slot="end"
+                      :checked="form.approved"
+                      @ionChange="form.approved = $event.detail.checked"
+                  />
+                </ion-item>
+              </ion-card>
+            </div>
+
             <div class="ion-padding-top">
               <ion-button 
                 expand="block" 
@@ -554,22 +626,6 @@
           :duration="2200"
           @didDismiss="toast.open = false"
       />
-
-      <!-- Admin Controls -->
-      <ion-list v-if="myRole === 'admin' && currentStep === STEP_DETAILS" class="ion-margin-top">
-        <ion-list-header>
-          <ion-label color="carrot">{{ $t('admin.controls').toUpperCase() }}</ion-label>
-        </ion-list-header>
-        <ion-item>
-          <ion-icon :icon="checkmarkCircleOutline" slot="start" color="success" />
-          <ion-label>{{ $t('admin.master.published') }}</ion-label>
-          <ion-toggle
-              slot="end"
-              :checked="form.approved"
-              @ionChange="form.approved = $event.detail.checked"
-          />
-        </ion-item>
-      </ion-list>
 
     </ion-content>
   </ion-page>
@@ -624,7 +680,9 @@ import {
     shieldCheckmarkOutline,
     checkmarkCircle,
     barcodeOutline,
-    addCircleOutline
+    addCircleOutline,
+    alertCircleOutline,
+    warningOutline
 } from 'ionicons/icons'
 import {Capacitor} from '@capacitor/core'
 import {Geolocation} from '@capacitor/geolocation'
@@ -2295,42 +2353,64 @@ onBeforeUnmount(() => {
 }
 
 /* 🟢 Step Indicator */
+ion-header {
+  overflow: visible;
+}
+
 #step-indicator {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
-  padding: 16px 0;
+  padding: 12px 16px 16px;
   background: var(--ion-background-color);
-  position: sticky;
-  top: 0;
-  z-index: 10;
+  border-bottom: 1px solid var(--ion-color-light);
+}
+
+.step-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.step-item.active .step-label {
+  color: var(--ion-color-carrot);
+  font-weight: 600;
 }
 
 .step-dot {
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   background: var(--ion-color-light);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
+  font-size: 16px;
   color: var(--ion-color-medium);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.step-dot.active {
+.step-item.active .step-dot {
   background: var(--ion-color-carrot);
   color: white;
   box-shadow: 0 4px 12px rgba(216, 98, 13, 0.3);
   transform: scale(1.1);
 }
 
+.step-label {
+  font-size: 11px;
+  color: var(--ion-color-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
 .step-line {
   height: 2px;
-  width: 30px;
+  width: 20px;
   background: var(--ion-color-light);
-  margin: 0 4px;
+  margin: 16px 2px 0;
   transition: background 0.3s ease;
 }
 

@@ -9,6 +9,32 @@
           :useRouterBack="false"
           @back="handleBack"
       />
+
+      <!-- 🟢 Step Indicator -->
+      <div id="step-indicator">
+        <div class="step-item" :class="{ active: currentStep >= 0 }">
+          <div class="step-dot">
+            <ion-icon :icon="barcodeOutline" v-if="currentStep <= 0" />
+            <ion-icon :icon="checkmarkCircle" v-else />
+          </div>
+          <span class="step-label">Barcode</span>
+        </div>
+        <div class="step-line" :class="{ active: currentStep >= 1 }"></div>
+        <div class="step-item" :class="{ active: currentStep >= 1 }">
+          <div class="step-dot">
+            <ion-icon :icon="sparklesOutline" v-if="currentStep <= 1" />
+            <ion-icon :icon="checkmarkCircle" v-else />
+          </div>
+          <span class="step-label">Ingredients</span>
+        </div>
+        <div class="step-line" :class="{ active: currentStep >= 2 }"></div>
+        <div class="step-item" :class="{ active: currentStep >= 2 }">
+          <div class="step-dot">
+            <ion-icon :icon="checkmarkCircleOutline" />
+          </div>
+          <span class="step-label">Details</span>
+        </div>
+      </div>
     </ion-header>
 
     <ion-content ref="contentRef" class="ion-padding" >
@@ -120,23 +146,6 @@
           </ion-toolbar>
         </ion-footer>
       </ion-modal>
-
-      <!-- 🟢 Step Indicator -->
-      <div id="step-indicator" class="ion-margin-bottom">
-        <div class="step-dot" :class="{ active: currentStep >= 0 }">
-           <ion-icon :icon="barcodeOutline" v-if="currentStep <= 0" />
-           <ion-icon :icon="checkmarkCircle" v-else />
-        </div>
-        <div class="step-line" :class="{ active: currentStep >= 1 }"></div>
-        <div class="step-dot" :class="{ active: currentStep >= 1 }">
-           <ion-icon :icon="sparklesOutline" v-if="currentStep <= 1" />
-           <ion-icon :icon="checkmarkCircle" v-else />
-        </div>
-        <div class="step-line" :class="{ active: currentStep >= 2 }"></div>
-        <div class="step-dot" :class="{ active: currentStep >= 2 }">
-           <ion-icon :icon="checkmarkCircleOutline" />
-        </div>
-      </div>
       <form @submit.prevent="handleSubmit">
         <div class="form-container">
             <!-- 🔍 STEP 1: Barcode -->
@@ -2220,38 +2229,65 @@ ion-item {
 }
 
 /* 🟢 Step Indicator */
+ion-header {
+  overflow: visible;
+}
+
 #step-indicator {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
-  padding: 16px 0;
-  gap: 8px;
+  padding: 12px 16px 16px;
+  background: var(--ion-background-color);
+  border-bottom: 1px solid var(--ion-color-light);
+}
+
+.step-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.step-item.active .step-label {
+  color: var(--ion-color-carrot);
+  font-weight: 600;
 }
 
 .step-dot {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: var(--ion-color-light-shade);
-  color: var(--ion-color-medium);
+  background: var(--ion-color-light);
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.3s ease;
-  font-size: 18px;
+  font-size: 16px;
+  color: var(--ion-color-medium);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.step-dot.active {
+.step-item.active .step-dot {
   background: var(--ion-color-carrot);
   color: white;
-  box-shadow: 0 0 10px var(--ion-color-carrot-tint);
+  box-shadow: 0 4px 12px rgba(216, 98, 13, 0.3);
+  transform: scale(1.1);
+}
+
+.step-label {
+  font-size: 11px;
+  color: var(--ion-color-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
 }
 
 .step-line {
   height: 2px;
-  width: 40px;
-  background: var(--ion-color-light-shade);
-  transition: all 0.3s ease;
+  width: 32px;
+  background: var(--ion-color-light);
+  margin: 16px 2px 0;
+  transition: background 0.3s ease;
 }
 
 .step-line.active {
