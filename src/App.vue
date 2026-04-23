@@ -263,6 +263,14 @@ onMounted(async () => {
   setInterval(() => {
     if (currentUser.value?.id) updateLastSeen();
   }, 1000 * 60 * 5);
+
+  // 🔐 Listen for Auth events (Recovery, Invite, etc)
+  supabase.auth.onAuthStateChange((event) => {
+    if (event === 'PASSWORD_RECOVERY') {
+      console.log('🔄 Password recovery event detected. Redirecting...');
+      router.push('/update-password');
+    }
+  });
 });
 </script>
 

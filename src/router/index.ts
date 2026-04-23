@@ -102,6 +102,12 @@ const routes: Array<RouteRecordRaw> = [
     { path: '/signup', component: () => import('@/views/auth/SignUpView.vue') },
     { path: '/login', component: () => import('@/views/auth/LoginView.vue') },
     {
+        path: '/update-password',
+        name: 'UpdatePassword',
+        component: () => import('@/views/auth/UpdatePasswordView.vue'),
+        meta: { requiresAuth: true, noTabs: true, noAds: true }
+    },
+    {
         path: '/admin/review-products',
         component: () => import('@/views/admin/ReviewProductsView.vue'),
         meta: { requiresAuth: true, requiresAdmin: true }

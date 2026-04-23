@@ -66,6 +66,17 @@
     "loggingIn": "Sedang masuk...",
     "continueWithGoogle": "Lanjutkan dengan Google"
   },
+  "updatePassword": {
+    "title": "Setel Kata Sandi Baru",
+    "subtitle": "Silakan masukkan kata sandi yang kuat untuk mengamankan akun Anda.",
+    "newPassword": "Kata Sandi Baru",
+    "confirmPassword": "Konfirmasi Kata Sandi Baru",
+    "update": "Setel Kata Sandi",
+    "updating": "Memperbarui...",
+    "success": "Kata sandi berhasil diperbarui!",
+    "error": "Gagal memperbarui kata sandi.",
+    "mismatchError": "Kata sandi tidak cocok"
+  },
   "main": {
     "title": "Halal Formosa",
     "scan": "Scan Bahan",

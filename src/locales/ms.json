@@ -66,6 +66,17 @@
     "loggingIn": "Sedang log masuk...",
     "continueWithGoogle": "Teruskan dengan Google"
   },
+  "updatePassword": {
+    "title": "Tetapkan Kata Laluan Baru",
+    "subtitle": "Sila masukkan kata laluan yang kuat untuk melindungi akaun anda.",
+    "newPassword": "Kata Laluan Baru",
+    "confirmPassword": "Sahkan Kata Laluan Baru",
+    "update": "Tetapkan Kata Laluan",
+    "updating": "Mengemaskini...",
+    "success": "Kata laluan berjaya dikemaskini!",
+    "error": "Gagal mengemaskini kata laluan.",
+    "mismatchError": "Kata laluan tidak sepadan"
+  },
   "main": {
     "title": "Halal Formosa",
     "scan": "Imbas Bahan",
