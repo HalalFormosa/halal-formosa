@@ -1,17 +1,38 @@
 <template>
   <ion-page>
     <ion-header>
-      <ion-toolbar>
-        <ion-buttons slot="start">
-          <ion-back-button default-href="/explore"/>
-        </ion-buttons>
-        <ion-title>
-          {{ isEditing ? $t('addPlace.editTitle') : $t('addPlace.title') }}
-        </ion-title>
-      </ion-toolbar>
+      <app-header
+          :title="isEditing ? $t('addPlace.editTitle') : $t('addPlace.title')"
+          :icon="locationOutline"
+          show-back
+          :useRouterBack="false"
+          @back="handleBack"
+      />
     </ion-header>
 
     <ion-content class="ion-padding">
+      <!-- 🟢 Step Indicator -->
+      <div v-if="!isEditing" id="step-indicator" class="ion-margin-bottom">
+        <div class="step-dot" :class="{ active: currentStep >= 0 }">
+           <ion-icon :icon="locationOutline" v-if="currentStep <= 0" />
+           <ion-icon :icon="checkmarkCircle" v-else />
+        </div>
+        <div class="step-line" :class="{ active: currentStep >= 1 }"></div>
+        <div class="step-dot" :class="{ active: currentStep >= 1 }">
+           <ion-icon :icon="shieldCheckmarkOutline" v-if="currentStep <= 1" />
+           <ion-icon :icon="checkmarkCircle" v-else />
+        </div>
+        <div class="step-line" :class="{ active: currentStep >= 2 }"></div>
+        <div class="step-dot" :class="{ active: currentStep >= 2 }">
+           <ion-icon :icon="cameraOutline" v-if="currentStep <= 2" />
+           <ion-icon :icon="checkmarkCircle" v-else />
+        </div>
+        <div class="step-line" :class="{ active: currentStep >= 3 }"></div>
+        <div class="step-dot" :class="{ active: currentStep >= 3 }">
+           <ion-icon :icon="sparklesOutline" />
+        </div>
+      </div>
+
       <!-- Not logged in -->
       <ion-card v-if="checkedRole && !myRole">
         <ion-card-content>
@@ -19,206 +40,302 @@
         </ion-card-content>
       </ion-card>
 
-      <!-- Logged in: everyone can submit; approval handled by role -->
+      <!-- Logged in -->
       <form v-else @submit.prevent="submitPlace" class="form">
         <div class="form-container">
-          <!-- 🏷️ Section 1: Basic Information -->
-          <div class="form-section">
-            <ion-list-header>
-              <ion-label>{{ $t('addPlace.nameLabel') }} & {{ $t('addPlace.typeLabel') }}</ion-label>
-            </ion-list-header>
+          
+          <!-- 🔍 STEP 0: SEARCH PLACE -->
+          <div v-show="currentStep === STEP_SOURCE">
+            <div class="ion-padding-vertical ion-text-center">
+              <div style="font-size: 48px; margin-bottom: 12px;">📍</div>
+              <h2 style="font-weight: 700; margin-bottom: 8px;">Find Location</h2>
+              <p style="color: var(--ion-color-medium); font-size: 14px; margin-bottom: 24px;">
+                Search for a place by name or address.
+              </p>
 
-            <ion-card class="input-card">
-              <ion-item lines="full">
-                <ion-input
-                    v-model="form.name"
-                    label-placement="stacked"
-                    required
-                    :placeholder="$t('addPlace.namePlaceholder')"
-                >
-                  <div slot="label">
-                    {{ $t('addPlace.nameLabel') }}
-                    <ion-text color="danger">*</ion-text>
-                  </div>
-                </ion-input>
-              </ion-item>
-
-              <ion-item lines="none">
-                <ion-select
-                    v-model.number="form.type_id"
-                    label-placement="stacked"
-                    interface="alert"
-                    :placeholder="$t('addPlace.typePlaceholder')"
-                    required
-                    class="full-width-select"
-                >
-                  <div slot="label">
-                    {{ $t('addPlace.typeLabel') }}
-                    <ion-text color="danger">*</ion-text>
-                  </div>
-                  <ion-select-option
-                      v-for="lt in locationTypes"
-                      :key="lt.id"
-                      :value="lt.id"
-                  >
-                    {{ lt.name }}
-                  </ion-select-option>
-                </ion-select>
-              </ion-item>
-            </ion-card>
-          </div>
-
-          <!-- 📸 Section 2: Image -->
-          <div class="form-section">
-            <ion-list-header>
-              <ion-label>{{ $t('addPlace.imageLabel') }}</ion-label>
-            </ion-list-header>
-
-            <ion-card class="input-card">
-              <ion-item lines="none">
-                <ion-label>
-                  {{ $t('addPlace.imageLabel') }}
-                  <ion-text color="danger">*</ion-text>
-                </ion-label>
-                <ion-buttons slot="end">
-                  <ion-button @click="takePicture" fill="clear" :disabled="uploading">
-                    <ion-icon :icon="cameraOutline"/>
-                  </ion-button>
-                  <ion-button @click="uploadFromGallery" fill="clear" :disabled="uploading">
-                    <ion-icon :icon="cloudUploadOutline"/>
-                  </ion-button>
-                </ion-buttons>
-              </ion-item>
-
-              <!-- Preview -->
-              <div v-if="imagePreview" class="img-preview-wrap">
-                <img :src="imagePreview" alt="Preview" class="img-preview"/>
-              </div>
-            </ion-card>
-          </div>
-
-          <!-- 📍 Section 3: Address & Map -->
-          <div class="form-section">
-            <ion-list-header>
-              <ion-label>{{ $t('addPlace.addressLabel') }}</ion-label>
-            </ion-list-header>
-
-            <ion-card class="input-card">
-              <ion-item lines="full">
-                <ion-input
-                    v-model="form.address"
-                    label-placement="stacked"
-                    :placeholder="$t('addPlace.addressPlaceholder')"
-                    required
-                    @ionBlur="onAddressConfirm"
-                    @ionChange="onAddressConfirm"
-                    @keyup.enter="onAddressConfirm"
-                >
-                  <div slot="label">
-                    {{ $t('addPlace.addressLabel') }}
-                    <ion-text color="danger">*</ion-text>
-                  </div>
-                </ion-input>
-              </ion-item>
-
-              <div class="row-2" style="margin: 0;">
-                <ion-item lines="none">
-                  <ion-input
-                      v-model.number="form.lat"
-                      type="number"
-                      step="any"
-                      label-placement="stacked"
-                      required
-                      readonly
-                  >
-                    <div slot="label">
-                      {{ $t('addPlace.latLabel') }}
-                      <ion-text color="danger">*</ion-text>
-                    </div>
-                  </ion-input>
-                </ion-item>
-                <ion-item lines="none">
-                  <ion-input
-                      v-model.number="form.lng"
-                      type="number"
-                      step="any"
-                      label-placement="stacked"
-                      required
-                      readonly
-                  >
-                    <div slot="label">
-                      {{ $t('addPlace.lngLabel') }}
-                      <ion-text color="danger">*</ion-text>
-                    </div>
-                  </ion-input>
-                </ion-item>
-              </div>
-            </ion-card>
-
-            <div class="map-wrap ion-padding-horizontal">
-              <div class="hint">{{ $t('addPlace.mapHint') }}</div>
-
-              <div class="map-holder">
-                <!-- Real map is ALWAYS in the DOM -->
-                <div id="add-map" :class="{'fade-in': mapReady}"></div>
-
-                <!-- Skeleton overlays while loading -->
-                <ion-skeleton-text
-                    v-if="mapLoading"
-                    animated
-                    class="map-skeleton"
+              <div style="padding: 0 12px; margin-bottom: 16px; position: relative;">
+                <input
+                  ref="searchInputRef"
+                  v-model="searchQuery"
+                  type="text"
+                  placeholder="Search by name or address..."
+                  :disabled="autocompleteLoading"
+                  style="
+                    width: 100%;
+                    padding: 16px 40px 16px 16px;
+                    font-size: 16px;
+                    border: 2px solid var(--ion-color-step-200, #333);
+                    border-radius: 14px;
+                    background: var(--ion-card-background, #1e1e1e);
+                    color: var(--ion-text-color, #fff);
+                    outline: none;
+                    box-sizing: border-box;
+                    transition: border-color 0.2s;
+                  "
+                  @focus="($event.target as HTMLInputElement).style.borderColor = 'var(--ion-color-carrot, #d8620d)'"
+                  @blur="($event.target as HTMLInputElement).style.borderColor = 'var(--ion-color-step-200, #333)'"
+                  @input="handleSearchInput"
                 />
+                <!-- Clear button -->
+                <ion-button
+                  v-if="searchQuery || selectedPlacePreview"
+                  fill="clear"
+                  size="small"
+                  style="
+                    position: absolute;
+                    right: 18px;
+                    top: 50%;
+                    transform: translateY(-50%);
+                    margin: 0;
+                    --padding-start: 8px;
+                    --padding-end: 8px;
+                  "
+                  @click="clearPlaceSelection"
+                >
+                  <ion-icon :icon="closeCircle" color="medium" />
+                </ion-button>
+                <!-- Loading spinner -->
+                <ion-spinner
+                  v-if="autocompleteLoading"
+                  name="crescent"
+                  style="
+                    position: absolute;
+                    right: 18px;
+                    top: 50%;
+                    transform: translateY(-50%);
+                    width: 20px;
+                    height: 20px;
+                  "
+                />
+
+                <!-- Custom dropdown -->
+                <div
+                  v-if="searchResults.length > 0"
+                  style="
+                    position: absolute;
+                    top: 100%;
+                    left: 0;
+                    right: 0;
+                    margin-top: 8px;
+                    background: var(--ion-card-background, #1e1e1e);
+                    border: 1px solid var(--ion-color-step-200, #333);
+                    border-radius: 12px;
+                    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+                    max-height: 300px;
+                    overflow-y: auto;
+                    z-index: 99999;
+                  "
+                >
+                  <div
+                    v-for="(result, index) in searchResults"
+                    :key="index"
+                    @click="selectPlace(result)"
+                    style="
+                      padding: 12px 16px;
+                      cursor: pointer;
+                      border-bottom: 1px solid var(--ion-color-step-200, #333);
+                      transition: background-color 0.2s;
+                    "
+                    @mouseover="($event.currentTarget as HTMLElement).style.backgroundColor = 'var(--ion-color-step-100, #333)'"
+                    @mouseout="($event.currentTarget as HTMLElement).style.backgroundColor = 'transparent'"
+                  >
+                    <div style="font-weight: 600; color: var(--ion-text-color, #fff);">{{ result.name }}</div>
+                    <div style="font-size: 13px; color: var(--ion-color-medium, #888); margin-top: 4px;">{{ result.address }}</div>
+                  </div>
+                </div>
               </div>
+
+              <!-- Selected place preview -->
+              <ion-card v-if="selectedPlacePreview" class="input-card" style="text-align: left;">
+                <ion-card-content>
+                  <div style="display: flex; align-items: flex-start; gap: 12px;">
+                    <ion-icon :icon="checkmarkCircleOutline" color="success" style="font-size: 24px; margin-top: 2px; flex-shrink: 0;" />
+                    <div>
+                      <h3 style="font-weight: 700; margin: 0 0 4px;">{{ selectedPlacePreview.name }}</h3>
+                      <p style="color: var(--ion-color-medium); font-size: 13px; margin: 0;">{{ selectedPlacePreview.address }}</p>
+                    </div>
+                  </div>
+                </ion-card-content>
+              </ion-card>
+
+              <ion-button 
+                expand="block" 
+                color="carrot" 
+                style="height: 56px; font-weight: 700; --border-radius: 12px; margin-top: 16px; margin: 16px 12px 0;" 
+                @click="currentStep = STEP_IDENTITY"
+                :disabled="!selectedPlacePreview"
+              >
+                Continue
+                <ion-icon slot="end" :icon="chevronForwardOutline" />
+              </ion-button>
             </div>
           </div>
 
-          <!-- ⚠️ Duplicate Warning Card -->
-          <ion-card
-              v-if="warningLevel"
-              :color="warningLevel === 'high' ? 'danger' : 'warning'"
-              class="input-card ion-margin-bottom"
-              style="border: none;"
-          >
-            <ion-card-content>
-              <strong>
-                ⚠️ {{ warningLevel === 'high'
-                  ? $t('addPlace.duplicates.high')
-                  : $t('addPlace.duplicates.medium')
-                }}
-              </strong>
-
-              <ul style="margin:6px 0 0 16px; padding:0; font-size:14px;">
-                <li v-for="m in nearbyMatches.slice(0, 3)" :key="m.id">
-                  {{ m.name }} · {{ m.distance_meters }} m
-                </li>
-              </ul>
-
-              <small style="opacity:0.8;">
-                {{ $t('addPlace.duplicates.verify') }}
-              </small>
-            </ion-card-content>
-          </ion-card>
-
-
-          <ion-button
-              fill="clear"
-              size="small"
-              @click="showMoreOptions = !showMoreOptions"
-              class="ion-margin-horizontal"
-              color="primary"
-              style="font-weight: 700;"
-          >
-            <ion-icon slot="start" :icon="showMoreOptions ? arrowUpOutline : arrowDownOutline" />
-            {{ showMoreOptions ? $t('addPlace.hideDetails') : $t('addPlace.moreDetails') }}
-          </ion-button>
-
-          <div v-if="showMoreOptions" class="details-wizard-step">
-            <!-- 📝 Section 4: Description -->
+          <!-- 🏷️ STEP 1: IDENTITY & MAP -->
+          <div v-show="currentStep === STEP_IDENTITY">
             <div class="form-section">
               <ion-list-header>
-                <ion-label>{{ $t('admin.description') }}</ion-label>
+                <ion-label>{{ $t('addPlace.nameLabel') }} & {{ $t('addPlace.typeLabel') }}</ion-label>
               </ion-list-header>
 
+              <ion-card class="input-card">
+                <ion-item lines="full">
+                  <ion-input
+                      v-model="form.name"
+                      label-placement="stacked"
+                      required
+                      :placeholder="$t('addPlace.namePlaceholder')"
+                  >
+                    <div slot="label">
+                      {{ $t('addPlace.nameLabel') }}
+                      <ion-text color="danger">*</ion-text>
+                    </div>
+                  </ion-input>
+                </ion-item>
+
+                <ion-item lines="none">
+                  <ion-select
+                      v-model.number="form.type_id"
+                      label-placement="stacked"
+                      interface="alert"
+                      :placeholder="$t('addPlace.typePlaceholder')"
+                      required
+                      class="full-width-select"
+                  >
+                    <div slot="label">
+                      {{ $t('addPlace.typeLabel') }}
+                      <ion-text color="danger">*</ion-text>
+                    </div>
+                    <ion-select-option
+                        v-for="lt in locationTypes"
+                        :key="lt.id"
+                        :value="lt.id"
+                    >
+                      {{ lt.name }}
+                    </ion-select-option>
+                  </ion-select>
+                </ion-item>
+              </ion-card>
+            </div>
+
+            <div class="form-section">
+              <ion-list-header>
+                <ion-label>{{ $t('addPlace.addressLabel') }}</ion-label>
+              </ion-list-header>
+
+              <ion-card class="input-card">
+                <ion-item lines="none">
+                  <ion-textarea
+                      v-model="form.address"
+                      label-placement="stacked"
+                      :placeholder="$t('addPlace.addressPlaceholder')"
+                      required
+                      :rows="2"
+                  >
+                    <div slot="label">
+                      {{ $t('addPlace.addressLabel') }}
+                      <ion-text color="danger">*</ion-text>
+                    </div>
+                  </ion-textarea>
+                </ion-item>
+              </ion-card>
+
+              <div class="map-wrap ion-padding-horizontal">
+                <div class="hint">{{ $t('addPlace.mapHint') }}</div>
+                <div class="map-holder">
+                  <div id="add-map" :class="{'fade-in': mapReady}"></div>
+                  <ion-skeleton-text v-if="mapLoading" animated class="map-skeleton" />
+                </div>
+              </div>
+            </div>
+
+            <ion-button 
+              expand="block" 
+              color="carrot" 
+              style="height: 52px; font-weight: 700; --border-radius: 12px;" 
+              @click="currentStep = STEP_PHOTOS"
+              :disabled="!form.name || !form.type_id || !form.address"
+            >
+              Continue to Photos
+              <ion-icon slot="end" :icon="chevronForwardOutline" />
+            </ion-button>
+          </div>
+
+          <!-- 📸 STEP 2: PHOTOS -->
+          <div v-show="currentStep === STEP_PHOTOS">
+             <div class="form-section">
+              <ion-list-header>
+                <ion-label>{{ $t('addPlace.imageLabel') }}</ion-label>
+              </ion-list-header>
+
+              <div class="ion-text-center ion-padding-vertical">
+                <p style="color: var(--ion-color-medium); font-size: 14px;">
+                  Provide a clear photo of the place's storefront or interior.
+                </p>
+              </div>
+
+              <ion-card class="input-card">
+                <div class="photo-selection-grid ion-padding">
+                  <ion-button @click="takePicture" fill="outline" color="carrot" class="photo-btn" :disabled="uploading">
+                    <ion-icon slot="top" :icon="cameraOutline" />
+                    {{ $t('addProduct.camera') }}
+                  </ion-button>
+                  <ion-button @click="uploadFromGallery" fill="outline" color="carrot" class="photo-btn" :disabled="uploading">
+                    <ion-icon slot="top" :icon="cloudUploadOutline" />
+                    {{ $t('addProduct.gallery') }}
+                  </ion-button>
+                </div>
+
+                <!-- Preview -->
+                <div v-if="imagePreview" class="img-preview-wrap ion-padding-bottom">
+                  <img :src="imagePreview" alt="Preview" class="img-preview rounded-xl shadow-md"/>
+                </div>
+              </ion-card>
+            </div>
+
+            <ion-button 
+              expand="block" 
+              color="carrot" 
+              style="height: 52px; font-weight: 700; --border-radius: 12px;" 
+              @click="currentStep = STEP_DETAILS"
+              :disabled="!imagePreview && !form.image"
+            >
+              Final Details
+              <ion-icon slot="end" :icon="chevronForwardOutline" />
+            </ion-button>
+          </div>
+
+          <!-- ✨ STEP 3: OPTIONAL DETAILS -->
+          <div v-show="currentStep === STEP_DETAILS">
+            <div class="ion-text-center ion-padding-vertical">
+               <p style="color: var(--ion-color-medium); font-size: 14px;">
+                 Almost done! Add any extra information like contact details or opening hours.
+               </p>
+            </div>
+
+            <!-- ⚠️ Duplicate Warning Card -->
+            <ion-card
+                v-if="warningLevel"
+                :color="warningLevel === 'high' ? 'danger' : 'warning'"
+                class="input-card ion-margin-bottom"
+                style="border: none;"
+            >
+              <ion-card-content>
+                <strong>
+                  ⚠️ {{ warningLevel === 'high'
+                    ? $t('addPlace.duplicates.high')
+                    : $t('addPlace.duplicates.medium')
+                  }}
+                </strong>
+                <ul style="margin:6px 0 0 16px; padding:0; font-size:14px;">
+                  <li v-for="m in nearbyMatches.slice(0, 3)" :key="m.id">{{ m.name }} · {{ m.distance_meters }} m</li>
+                </ul>
+              </ion-card-content>
+            </ion-card>
+
+            <!-- 📝 Section: Description -->
+            <div class="form-section">
+              <ion-list-header><ion-label>{{ $t('admin.description') }}</ion-label></ion-list-header>
               <ion-card class="input-card">
                 <ion-item lines="none">
                   <ion-textarea
@@ -229,64 +346,31 @@
                       auto-grow
                       :maxlength="1000"
                       counter
-                      class="ion-margin-bottom"
                   />
                 </ion-item>
               </ion-card>
             </div>
 
-            <!-- 📞 Section 5: Contact Info -->
+            <!-- 📞 Section: Contact Info -->
             <div class="form-section">
-              <ion-list-header>
-                <ion-label>{{ $t('addPlace.contactInfo') }}</ion-label>
-              </ion-list-header>
-
+              <ion-list-header><ion-label>{{ $t('addPlace.contactInfo') }}</ion-label></ion-list-header>
               <ion-card class="input-card">
                 <ion-item lines="full">
-                  <ion-input
-                      v-model="form.phone"
-                      :label="$t('addPlace.phoneLabel')"
-                      label-placement="stacked"
-                      :placeholder="$t('addPlace.phonePlaceholder')"
-                  />
+                  <ion-input v-model="form.phone" :label="$t('addPlace.phoneLabel')" label-placement="stacked" :placeholder="$t('addPlace.phonePlaceholder')" />
                 </ion-item>
-
                 <ion-item lines="full">
-                  <ion-input
-                      v-model="form.instagram"
-                      :label="$t('addPlace.instagramLabel')"
-                      label-placement="stacked"
-                      placeholder="@username"
-                  />
+                  <ion-input v-model="form.instagram" :label="$t('addPlace.instagramLabel')" label-placement="stacked" placeholder="@username" />
                 </ion-item>
-
                 <ion-item lines="none">
-                  <ion-input
-                      v-model="form.line_id"
-                      :label="$t('addPlace.lineIdLabel')"
-                      label-placement="stacked"
-                      placeholder="yourlineid"
-                  />
+                  <ion-input v-model="form.line_id" :label="$t('addPlace.lineIdLabel')" label-placement="stacked" placeholder="yourlineid" />
                 </ion-item>
               </ion-card>
             </div>
 
-            <!-- 💰 Section 6: Price & Tags -->
+            <!-- 💰 Section: Tags -->
             <div class="form-section">
-              <ion-list-header>
-                <ion-label>{{ $t('explore.filters.priceRange') }} & {{ $t('addPlace.tagsAndCategories') }}</ion-label>
-              </ion-list-header>
-
+              <ion-list-header><ion-label>{{ $t('addPlace.tagsAndCategories') }}</ion-label></ion-list-header>
               <ion-card class="input-card">
-                <ion-item lines="full">
-                  <ion-input
-                      v-model="form.price_range"
-                      :label="$t('explore.filters.priceRange')"
-                      label-placement="stacked"
-                      :placeholder="$t('addPlace.pricePlaceholder')"
-                  />
-                </ion-item>
-
                 <ion-item lines="none">
                   <ion-input
                       v-model="tagInput"
@@ -300,15 +384,8 @@
                     {{ $t('common.add') }}
                   </ion-button>
                 </ion-item>
-
                 <div v-if="form.tags.length > 0" class="tag-chips">
-                  <ion-chip
-                      v-for="tag in form.tags"
-                      :key="tag"
-                      color="primary"
-                      outline
-                      class="tag-chip"
-                  >
+                  <ion-chip v-for="tag in form.tags" :key="tag" color="primary" outline class="tag-chip">
                     <ion-label>{{ tag }}</ion-label>
                     <ion-icon :icon="closeCircle" @click="removeTag(tag)" />
                   </ion-chip>
@@ -316,77 +393,55 @@
               </ion-card>
             </div>
 
-            <!-- ⏰ Section 7: Opening Hours -->
+            <!-- ⏰ Section: Opening Hours -->
             <div class="form-section">
-              <ion-list-header>
-                <ion-label>{{ $t('addPlace.openingHours') }}</ion-label>
-              </ion-list-header>
-
+              <ion-list-header><ion-label>{{ $t('addPlace.openingHours') }}</ion-label></ion-list-header>
               <ion-card class="input-card">
                 <ion-list class="opening-hours-list" lines="none">
                   <template v-for="(label, key) in dayLabels" :key="key">
                     <ion-item class="opening-hours-item" lines="full">
-                      <ion-checkbox
-                          v-model="form.opening_hours[key].active"
-                          slot="start"
-                          @ionChange="openingHoursTouched = true"
-                      />
-
+                      <ion-checkbox v-model="form.opening_hours[key].active" slot="start" @ionChange="openingHoursTouched = true" />
                       <ion-label class="day-label">{{ $t('addPlace.days.' + key) }}</ion-label>
-
-                      <!-- CLOSED BADGE -->
-                      <span v-if="!form.opening_hours[key].active" class="closed-label">
-                        {{ $t('addPlace.closed') }}
-                      </span>
-
-                      <!-- TIME INPUTS -->
+                      <span v-if="!form.opening_hours[key].active" class="closed-label">{{ $t('addPlace.closed') }}</span>
                       <div v-else class="time-inputs">
-                        <ion-input
-                            v-model="form.opening_hours[key].open"
-                            type="time"
-                            class="time-field"
-                            @ionInput="openingHoursTouched = true"
-                        />
+                        <ion-input v-model="form.opening_hours[key].open" type="time" class="time-field" />
                         <span style="margin: 0 4px;">-</span>
-                        <ion-input
-                            v-model="form.opening_hours[key].close"
-                            type="time"
-                            class="time-field"
-                            @ionInput="openingHoursTouched = true"
-                        />
+                        <ion-input v-model="form.opening_hours[key].close" type="time" class="time-field" />
                       </div>
                     </ion-item>
                   </template>
                 </ion-list>
               </ion-card>
             </div>
+
+            <div class="ion-padding-top">
+              <ion-button 
+                expand="block" 
+                color="carrot" 
+                style="height: 56px; font-weight: 700; --border-radius: 12px;" 
+                @click="submitPlace"
+                :disabled="submitting || uploading || !isValid"
+              >
+                <ion-spinner v-if="submitting" name="crescent" slot="start" />
+                <span v-else>{{ isEditing ? $t('addPlace.updateBtn') : $t('addPlace.saveBtn') }}</span>
+              </ion-button>
+            </div>
           </div>
-        </div> <!-- End of form-container -->
-
-        <div class="ion-padding">
-          <ion-card
-              v-if="checkedRole && myRole && !isPrivileged(myRole)"
-              color="light"
-              class="ion-margin-bottom"
-              style="border-radius: 12px; margin-top: 0;"
-          >
-            <ion-card-content style="font-size:13px; color: var(--ion-color-medium);">
-              🕵️ {{ $t('addPlace.reviewNotice') }}
-            </ion-card-content>
-          </ion-card>
-
-          <ion-button
-              type="submit"
-              expand="block"
-              color="carrot"
-              style="height: 52px; font-weight: 700; --border-radius: 12px;"
-              :disabled="submitting || uploading || !isValid"
-          >
-            <ion-spinner v-if="submitting" name="crescent" slot="start" />
-            <span v-else>{{ isEditing ? $t('addPlace.updateBtn') : $t('addPlace.saveBtn') }}</span>
-          </ion-button>
         </div>
       </form>
+
+      <!-- Review Notice for non-privileged users -->
+      <div v-if="checkedRole && myRole && !isPrivileged(myRole) && currentStep === STEP_DETAILS" class="ion-padding-horizontal">
+        <ion-card
+            color="light"
+            class="ion-margin-bottom"
+            style="border-radius: 12px; margin-top: 0;"
+        >
+          <ion-card-content style="font-size:13px; color: var(--ion-color-medium);">
+            🕵️ {{ $t('addPlace.reviewNotice') }}
+          </ion-card-content>
+        </ion-card>
+      </div>
 
       <ion-toast
           :is-open="toast.open"
@@ -397,7 +452,7 @@
       />
 
       <!-- Admin Controls -->
-      <ion-list v-if="myRole === 'admin'" class="ion-margin-top">
+      <ion-list v-if="myRole === 'admin' && currentStep === STEP_DETAILS" class="ion-margin-top">
         <ion-list-header>
           <ion-label color="carrot">{{ $t('admin.controls').toUpperCase() }}</ion-label>
         </ion-list-header>
@@ -445,12 +500,27 @@ import {
     IonToggle,
     IonListHeader
 } from '@ionic/vue'
+import AppHeader from '@/components/AppHeader.vue'
 import {ref, onMounted, onBeforeUnmount, computed} from 'vue'
 import {useRouter} from 'vue-router'
 import {supabase} from '@/plugins/supabaseClient'
 import mapsLoader from '@/plugins/googleMapsLoader'
 import {Camera, CameraResultType, CameraSource} from '@capacitor/camera'
-import {cameraOutline, cloudUploadOutline, closeCircle, checkmarkCircleOutline, arrowDownOutline, arrowUpOutline} from 'ionicons/icons'
+import {
+    cameraOutline,
+    cloudUploadOutline,
+    closeCircle,
+    checkmarkCircleOutline,
+    arrowDownOutline,
+    arrowUpOutline,
+    locationOutline,
+    chevronForwardOutline,
+    chevronBackOutline,
+    sparklesOutline,
+    shieldCheckmarkOutline,
+    checkmarkCircle,
+    barcodeOutline
+} from 'ionicons/icons'
 import {Capacitor} from '@capacitor/core'
 import {Geolocation} from '@capacitor/geolocation'
 import {usePoints} from "@/composables/usePoints";
@@ -462,6 +532,13 @@ import {ActivityLogService} from "@/services/ActivityLogService";
 const route = useRoute()
 const isEditing = computed(() => !!route.params.id)
 const coordUpdateSource = ref<'address' | 'map' | 'manual' | null>(null)
+
+/* -------------------- Multi-Step Logic -------------------- */
+const STEP_SOURCE = 0
+const STEP_IDENTITY = 1
+const STEP_PHOTOS = 2
+const STEP_DETAILS = 3
+const currentStep = ref(isEditing.value ? STEP_IDENTITY : STEP_SOURCE)
 
 /* -------------------- Constants -------------------- */
 const MAP_ID = 'a40f1ec0ad0afbbb12694f19'
@@ -593,9 +670,264 @@ const addTag = (e?: any) => {
   }
   tagInput.value = ''
 }
-
 const removeTag = (tag: string) => {
   form.value.tags = form.value.tags.filter(t => t !== tag)
+}
+
+/* -------------------- Place Autocomplete -------------------- */
+const searchInputRef = ref<HTMLInputElement | null>(null)
+const searchQuery = ref('')
+const searchResults = ref<{ name: string; address: string; placeId: string }[]>([])
+const selectedPlacePreview = ref<{ name: string; address: string } | null>(null)
+const autocompleteLoading = ref(false)
+let autocompleteService: any = null
+let debounceTimer: number | undefined
+
+function clearPlaceSelection() {
+  searchQuery.value = ''
+  searchResults.value = []
+  selectedPlacePreview.value = null
+  form.value.name = ''
+  form.value.address = ''
+  form.value.phone = ''
+  form.value.lat = DEFAULT_CENTER.lat
+  form.value.lng = DEFAULT_CENTER.lng
+  form.value.tags = [] // Clear tags too
+  // Reset opening hours to default
+  form.value.opening_hours = {
+    mon: {active: false, open: "09:00", close: "18:00"},
+    tue: {active: false, open: "09:00", close: "18:00"},
+    wed: {active: false, open: "09:00", close: "18:00"},
+    thu: {active: false, open: "09:00", close: "18:00"},
+    fri: {active: false, open: "09:00", close: "18:00"},
+    sat: {active: false, open: "09:00", close: "18:00"},
+    sun: {active: false, open: "09:00", close: "18:00"},
+  }
+  openingHoursTouched.value = false
+  // Focus back on input
+  setTimeout(() => {
+    searchInputRef.value?.focus()
+  }, 100)
+}
+
+// Handle search input with debouncing
+function handleSearchInput() {
+  clearTimeout(debounceTimer)
+  if (!searchQuery.value || searchQuery.value.length < 2) {
+    searchResults.value = []
+    return
+  }
+
+  debounceTimer = window.setTimeout(async () => {
+    await performSearch(searchQuery.value)
+  }, 300)
+}
+
+// Perform search using AutocompleteService
+async function performSearch(query: string) {
+  if (!autocompleteService) {
+    const placesLib = await mapsLoader.importLibrary('places') as any
+    autocompleteService = new placesLib.AutocompleteService()
+  }
+
+  autocompleteLoading.value = true
+
+  try {
+    const response = await autocompleteService.getPlacePredictions({
+      input: query,
+      componentRestrictions: { country: 'tw' },
+      types: ['establishment', 'geocode']
+    })
+
+    if (response?.predictions) {
+      searchResults.value = response.predictions.map((pred: any) => ({
+        name: pred.structured_formatting.main_text,
+        address: pred.structured_formatting.secondary_text || pred.description,
+        placeId: pred.place_id
+      }))
+    } else {
+      searchResults.value = []
+    }
+  } catch (err) {
+    console.error('Search error:', err)
+    searchResults.value = []
+  } finally {
+    autocompleteLoading.value = false
+  }
+}
+
+// Select a place from the dropdown
+async function selectPlace(result: { name: string; address: string; placeId: string }) {
+  searchResults.value = []
+  searchQuery.value = result.name
+
+  autocompleteLoading.value = true
+
+  try {
+    const placesLib = await mapsLoader.importLibrary('places') as any
+    const placesService = new placesLib.PlacesService(map as any)
+
+    placesService.getDetails(
+      {
+        placeId: result.placeId,
+        fields: ['name', 'formatted_address', 'geometry', 'types', 'international_phone_number', 'opening_hours']
+      },
+      (place: any, status: string) => {
+        if (status === 'OK' && place) {
+          console.log('Selected place:', place.name, place.formatted_address, place.types)
+
+          // Populate form
+          form.value.name = place.name || ''
+          form.value.address = place.formatted_address || ''
+
+          if (place.geometry?.location) {
+            form.value.lat = place.geometry.location.lat()
+            form.value.lng = place.geometry.location.lng()
+          }
+
+          if (place.international_phone_number) {
+            form.value.phone = place.international_phone_number
+          }
+
+          // Auto-map category
+          if (place.types && locationTypes.value.length > 0) {
+            const typeMapping: Record<string, number> = {
+              'mosque': 4,
+              'place_of_worship': 4,
+              'church': 4,
+              'temple': 4,
+              'hindu_temple': 4,
+            }
+
+            for (const [type, id] of Object.entries(typeMapping)) {
+              if (place.types.includes(type)) {
+                form.value.type_id = id
+                break
+              }
+            }
+
+            if (!form.value.type_id) {
+              const matchedType = locationTypes.value.find((c: any) =>
+                place.types.some((t: string) => t.toLowerCase().includes(c.name.toLowerCase()) ||
+                  c.name.toLowerCase().includes(t.toLowerCase().replace(/_/g, ' ')))
+              )
+              if (matchedType) {
+                form.value.type_id = matchedType.id
+              } else if (place.types.includes('restaurant') || place.types.includes('food')) {
+                const restType = locationTypes.value.find((c: any) => c.name.toLowerCase().includes('restaurant'))
+                if (restType) form.value.type_id = restType.id
+              } else if (place.types.includes('store') || place.types.includes('grocery')) {
+                const storeType = locationTypes.value.find((c: any) =>
+                  c.name.toLowerCase().includes('store') || c.name.toLowerCase().includes('shop')
+                )
+                if (storeType) form.value.type_id = storeType.id
+              }
+            }
+          }
+
+          // Map opening hours
+          if (place.opening_hours?.periods) {
+            const daysMap: Record<number, string> = { 1: 'mon', 2: 'tue', 3: 'wed', 4: 'thu', 5: 'fri', 6: 'sat', 0: 'sun' }
+            const hours = { ...form.value.opening_hours }
+            place.opening_hours.periods.forEach((period: any) => {
+              const dayKey = daysMap[period.open?.day]
+              if (dayKey && hours[dayKey]) {
+                hours[dayKey].active = true
+                if (period.open) {
+                  hours[dayKey].open = `${String(period.open.hours).padStart(2,'0')}:${String(period.open.minutes).padStart(2,'0')}`
+                }
+                if (period.close) {
+                  hours[dayKey].close = `${String(period.close.hours).padStart(2,'0')}:${String(period.close.minutes).padStart(2,'0')}`
+                }
+              }
+            })
+            form.value.opening_hours = hours
+            openingHoursTouched.value = true
+          }
+
+          // Auto-generate 2-3 tags from place name
+          const autoTags = extractTagsFromName(place.name || '')
+          if (autoTags.length > 0 && form.value.tags.length === 0) {
+            form.value.tags = autoTags
+          }
+
+          // Show preview card
+          selectedPlacePreview.value = {
+            name: form.value.name,
+            address: form.value.address || ''
+          }
+
+          toast.value = { open: true, message: 'Place found! Click Continue to proceed.', color: 'success' }
+
+          // If map is ready, update marker position
+          if (map && clickMarker) {
+            const pos = { lat: form.value.lat, lng: form.value.lng }
+            clickMarker.position = pos
+            map.panTo(pos)
+            map.setZoom(16)
+          }
+        }
+        autocompleteLoading.value = false
+      }
+    )
+  } catch (err) {
+    console.error('Error fetching place details:', err)
+    toast.value = { open: true, message: 'Error processing place data.', color: 'danger' }
+    autocompleteLoading.value = false
+  }
+}
+
+// Extract 2-3 meaningful tags from place name
+function extractTagsFromName(name: string): string[] {
+  if (!name) return []
+
+  // Common words to skip (stop words)
+  const stopWords = new Set([
+    'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for',
+    'of', 'with', 'by', 'from', 'up', 'about', 'into', 'through', 'during',
+    'before', 'after', 'above', 'below', 'between', 'among', 'within',
+    'taiwan', 'taipei', 'taichung', 'kaohsiung', 'taitung', 'hualien',
+    'yilan', 'hsinchu', 'miaoli', 'changhua', 'nantou', 'yunlin',
+    'chiayi', 'pingtung', 'keelung', 'new', 'city', 'road', 'street',
+    'avenue', 'lane', 'district', 'no', 'number', 'floor', 'building'
+  ])
+
+  // Clean and split the name
+  const cleaned = name
+    .toLowerCase()
+    .replace(/[^\w\s]/g, ' ') // Remove punctuation
+    .replace(/\s+/g, ' ')     // Normalize spaces
+    .trim()
+
+  const words = cleaned.split(' ')
+
+  // Filter out stop words and short words, get unique meaningful words
+  const meaningfulWords = words.filter(word =>
+    word.length >= 2 &&
+    !stopWords.has(word) &&
+    !/^\d+$/.test(word) // Exclude pure numbers
+  )
+
+  // Get unique words (preserve order of appearance)
+  const uniqueWords: string[] = []
+  const seen = new Set<string>()
+  for (const word of meaningfulWords) {
+    if (!seen.has(word)) {
+      seen.add(word)
+      uniqueWords.push(word)
+    }
+  }
+
+  // Return top 3 most meaningful tags
+  return uniqueWords.slice(0, 3)
+}
+
+function handleBack() {
+  if (currentStep.value > 0 && !isEditing.value) {
+    currentStep.value--
+  } else {
+    router.back()
+  }
 }
 
 
@@ -682,7 +1014,7 @@ type NearbyMatch = {
 const nearbyMatches = ref<NearbyMatch[]>([])
 const checkingNearby = ref(false)
 
-let debounceTimer: number | undefined
+let nearbyDebounceTimer: number | undefined
 
 watch(
     () => ({
@@ -691,9 +1023,9 @@ watch(
       lng: form.value.lng
     }),
     (v) => {
-      clearTimeout(debounceTimer)
+      clearTimeout(nearbyDebounceTimer)
 
-      debounceTimer = window.setTimeout(async () => {
+      nearbyDebounceTimer = window.setTimeout(async () => {
         const { name, lat, lng } = v
 
         if (!name || !lat || !lng || name.trim().length < 4) {
@@ -1010,6 +1342,38 @@ async function geocodeAddress(address: string) {
   })
 }
 
+function updateMapMarker() {
+  if (!map || !clickMarker) return
+  const pos = { lat: form.value.lat, lng: form.value.lng }
+  clickMarker.position = pos
+  map.setCenter(pos)
+  map.setZoom(17)
+}
+
+function formatOpeningHours(googleHours: any) {
+  const hours = { ...form.value.opening_hours }
+  const daysMap: Record<number, string> = { 1: 'mon', 2: 'tue', 3: 'wed', 4: 'thu', 5: 'fri', 6: 'sat', 0: 'sun' }
+
+  if (googleHours?.periods) {
+    googleHours.periods.forEach((period: any) => {
+      const dayKey = daysMap[period.open.day]
+      if (dayKey && hours[dayKey]) {
+        hours[dayKey].active = true
+        const openH = String(period.open.hour).padStart(2, '0')
+        const openM = String(period.open.minute).padStart(2, '0')
+        hours[dayKey].open = `${openH}:${openM}`
+        
+        if (period.close) {
+          const closeH = String(period.close.hour).padStart(2, '0')
+          const closeM = String(period.close.minute).padStart(2, '0')
+          hours[dayKey].close = `${closeH}:${closeM}`
+        }
+      }
+    })
+  }
+  return hours
+}
+
 /* -------------------- Submit -------------------- */
 const uploadToSupabase = async (file: File): Promise<string> => {
   uploading.value = true
@@ -1295,16 +1659,16 @@ onMounted(async () => {
 
   }
 
-  // 2️⃣ Only center on user if adding a NEW place
+  // 3️⃣ Only center on user if adding a NEW place
   if (!isEditing.value && checkedRole.value && myRole.value) {
     await centerOnUserOnce()
   }
 
-  // 3️⃣ Initialize map in all cases
+  // 4️⃣ Initialize map in all cases
   await initMap()
   updatePinColor()
 
-  // 4️⃣ Wait until map is fully ready before fetching address
+  // 5️⃣ Wait until map is fully ready before fetching address
   const waitForMapReady = () =>
       new Promise<void>((resolve) => {
         const stop = watch(mapReady, (ready) => {
@@ -1316,14 +1680,14 @@ onMounted(async () => {
       })
   await waitForMapReady()
 
-  // 5️⃣ Auto-fill address if missing
+  // 6️⃣ Auto-fill address if missing
   if (!form.value.address && form.value.lat && form.value.lng) {
     const addr = await reverseGeocode(form.value.lat, form.value.lng)
     if (addr) form.value.address = addr
   }
 
 
-  // 6️⃣ Theme listener for dark/light map pin color
+  // 7️⃣ Theme listener for dark/light map pin color
   themeObserver = new MutationObserver(updatePinColor)
   themeObserver.observe(document.documentElement, {
     attributes: true,
@@ -1536,6 +1900,101 @@ onBeforeUnmount(() => {
 
 .day-label {
   min-width: 80px;
+}
+
+/* Autocomplete wrapper */
+.autocomplete-wrapper {
+  padding: 12px 16px;
+}
+
+.autocomplete-wrapper .autocomplete-input {
+  width: 100%;
+  padding: 14px 16px;
+  font-size: 16px;
+  border: 1px solid var(--ion-color-light-shade);
+  border-radius: 12px;
+  background: var(--ion-background-color);
+  color: var(--ion-text-color);
+  outline: none;
+  transition: border-color 0.2s ease;
+  box-sizing: border-box;
+}
+
+.autocomplete-wrapper .autocomplete-input:focus {
+  border-color: var(--ion-color-carrot);
+  box-shadow: 0 0 0 2px rgba(216, 98, 13, 0.15);
+}
+
+/* 🟢 Step Indicator */
+#step-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 0;
+  background: var(--ion-background-color);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.step-dot {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--ion-color-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  color: var(--ion-color-medium);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.step-dot.active {
+  background: var(--ion-color-carrot);
+  color: white;
+  box-shadow: 0 4px 12px rgba(216, 98, 13, 0.3);
+  transform: scale(1.1);
+}
+
+.step-line {
+  height: 2px;
+  width: 30px;
+  background: var(--ion-color-light);
+  margin: 0 4px;
+  transition: background 0.3s ease;
+}
+
+.step-line.active {
+  background: var(--ion-color-carrot);
+}
+
+.photo-selection-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.photo-btn {
+  height: 90px;
+  --border-radius: 16px;
+  font-weight: 700;
+  margin: 0;
+  font-size: 13px;
+  text-transform: none;
+}
+
+.photo-btn ion-icon {
+  font-size: 28px;
+  margin-bottom: 6px;
+}
+
+.rounded-xl {
+  border-radius: 16px;
+}
+
+.shadow-md {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
 </style>
