@@ -1002,11 +1002,11 @@ function startGoldRotation() {
     goldRotationOffset.value = (goldRotationOffset.value + 1) % goldProducts.value.length
     
     const children = goldScroller.value.querySelectorAll('.featured-gold-wrapper')
-    if (children[goldRotationOffset.value]) {
-      children[goldRotationOffset.value].scrollIntoView({ 
-        behavior: 'smooth', 
-        block: 'nearest', 
-        inline: 'center' 
+    const targetElement = children[goldRotationOffset.value] as HTMLElement
+    if (targetElement) {
+      goldScroller.value.scrollTo({
+        left: targetElement.offsetLeft,
+        behavior: 'smooth'
       })
     }
   }, 10000) // 10s rotation

@@ -275,19 +275,14 @@
               <p>{{ $t('explore.noResults') }}</p>
             </div>
 
-            <!-- Load More button -->
+            <!-- Infinite Scroll Sentinel -->
             <div 
-              v-if="displayedLocations.length > listLimit" 
-              class="load-more-container"
+              v-if="listLocations.length < displayedLocations.length" 
+              ref="infiniteSentinel" 
+              class="infinite-scroll-sentinel"
             >
-              <ion-button 
-                fill="outline" 
-                color="carrot" 
-                @click="listLimit += 20"
-                class="load-more-btn"
-              >
-                {{ $t('common.loadMore') || 'LOAD MORE' }}
-              </ion-button>
+              <ion-spinner name="bubbles" color="carrot" />
+              <span class="loading-text">{{ $t('explore.loadingMoreLocations') || 'Loading more locations...' }}</span>
             </div>
           </div>
         </div>
@@ -429,7 +424,7 @@
     <ion-footer v-if="viewMode === 'list'" style="position: absolute; bottom: 0; left: 0; right: 0; width: 100%; z-index: 1001; background: var(--ion-background-color); border-top: 1px solid rgba(var(--ion-color-dark-rgb), 0.05);">
       <div class="footer-count">
         <small>
-          {{ $t('explore.showingResults', {count: displayedLocations.length, total: locations.length}) }}
+          {{ $t('explore.showingResults', {count: listLocations.length, total: displayedLocations.length}) }}
         </small>
       </div>
     </ion-footer>
@@ -497,9 +492,11 @@ import {
   IonPage, IonContent, IonToolbar, IonSearchbar, IonIcon, IonFab, IonFabButton,
   IonPopover, IonList, IonItem, IonFooter, IonModal, IonTitle, IonButtons, 
   IonHeader, IonLabel, IonChip, IonSkeletonText, IonCard, IonThumbnail, IonFabList,
+  IonSpinner,
   onIonViewWillEnter, onIonViewDidEnter, onIonViewWillLeave, IonButton,
   toastController
 } from '@ionic/vue'
+import type { InfiniteScrollCustomEvent } from '@ionic/vue'
 import { useI18n } from 'vue-i18n'
 import {
   navigateCircleOutline,
@@ -543,8 +540,27 @@ const ionIconMap: Record<string, any> = {
 }
 
 /* ---------------- State ---------------- */
+const { 
+  userLocation, 
+  locationAttemptFinished, 
+  hasAutoCentered,
+  startWatching 
+} = useLocation()
+
+const locations = ref<Place[]>([])
+const selectedPlace = ref<Place | null>(null)
+const focusedPlaceId = ref<number | null>(null)
+
 const viewMode = ref<'map' | 'list'>('map')
 const activeTag = ref<string | null>(null)
+const activeCategoryIds = ref<number[]>([])
+const searchQuery = ref('')
+const sortBy = ref<'nearest' | 'recent' | 'popular' | 'trending'>(userLocation.value ? 'nearest' : 'recent')
+const listLimit = ref(20)
+// locations moved up
+const loadingPlaces = ref(true)
+const loadingCategories = ref(true)
+const isFetching = ref(false)
 const campusCircle = ref<google.maps.Circle | null>(null)
 const campusLabel = ref<google.maps.marker.AdvancedMarkerElement | null>(null)
 let campusOverlays: (google.maps.Circle | any)[] = []
@@ -617,31 +633,19 @@ const isLoggedIn = ref(false)
 const isContributor = ref(false)
 
 // Use shared location logic
-const { 
-  userLocation, 
-  locationAttemptFinished, 
-  hasAutoCentered,
-  startWatching 
-} = useLocation()
-
-const locations = ref<Place[]>([])
-const selectedPlace = ref<Place | null>(null)
-const focusedPlaceId = ref<number | null>(null)
-
 const cardRefs = ref<Record<number, Element | ComponentPublicInstance | null>>({})
 const contentRef = ref<HTMLIonContentElement | null>(null)
 
-const searchQuery = ref('')
+const isSmallScreen = ref(window.innerWidth < 768)
+// listLimit moved up
+const infiniteSentinel = ref<HTMLElement | null>(null)
+let infiniteObserver: IntersectionObserver | null = null
+
 const isNative = ref(Capacitor.isNativePlatform())
 const loading = ref(true)
-const loadingCategories = ref(true)
-const loadingPlaces = ref(true)
 const campusPartners = ref<{ id: string; name: string; slug: string }[]>([])
-const sortBy = ref<'nearest' | 'recent' | 'popular' | 'trending'>(userLocation.value ? 'nearest' : 'recent')
 const trendingPlaceIds = ref<number[]>([])
 const isFilterModalOpen = ref(false)
-const isSmallScreen = ref(window.innerWidth < 768)
-const listLimit = ref(20)
 
 const listPaddingTop = computed(() => {
   let base = 90; // search row
@@ -655,12 +659,44 @@ const listLocations = computed(() => {
   return displayedLocations.value.slice(0, listLimit.value)
 })
 
+const handleInfinite = () => {
+  if (isFetching.value) return
+  isFetching.value = true
+  
+  // Artificial delay to show loading animation like SearchView
+  setTimeout(() => {
+    listLimit.value += 20
+    isFetching.value = false
+  }, 800)
+}
+
+const initInfiniteObserver = () => {
+  if (infiniteObserver) infiniteObserver.disconnect()
+  
+  infiniteObserver = new IntersectionObserver((entries) => {
+    if (entries[0].isIntersecting) {
+      handleInfinite()
+    }
+  }, { threshold: 0.1 })
+
+  nextTick(() => {
+    if (infiniteSentinel.value) {
+      infiniteObserver?.observe(infiniteSentinel.value)
+    }
+  })
+}
+
 const handleResize = () => {
   isSmallScreen.value = window.innerWidth < 768
 }
 
 const activeFiltersCount = computed(() => {
   return activeCategoryIds.value.length + (activeTag.value ? 1 : 0)
+})
+
+// Reset pagination when filters or sort change
+watch([activeFiltersCount, sortBy, searchQuery], () => {
+  listLimit.value = 20
 })
 
 // Tag Overflow Popover
@@ -1459,8 +1495,6 @@ const fetchTrendingPlaces = async () => {
 
 const categories = computed(() => locationTypes.value)
 
-const activeCategoryIds = ref<number[]>([])
-
 const toggleCategory = (cat: LocationType) => {
   const index = activeCategoryIds.value.indexOf(cat.id)
 
@@ -2051,9 +2085,11 @@ watch(displayedIdsSet, () => {
 
 watch(viewMode, (mode) => {
   if (mode === 'map') {
+    if (infiniteObserver) infiniteObserver.disconnect()
     nextTick(() => initCardObserver())
-  } else if (cardObserver) {
-    cardObserver.disconnect()
+  } else {
+    if (cardObserver) cardObserver.disconnect()
+    nextTick(() => initInfiniteObserver())
   }
 })
 
@@ -2085,6 +2121,8 @@ onMounted(async () => {
   
   if (viewMode.value === 'map') {
     nextTick(() => initCardObserver())
+  } else {
+    nextTick(() => initInfiniteObserver())
   }
 
   processUrlParams()
@@ -2115,6 +2153,7 @@ const processUrlParams = () => {
 onUnmounted(() => {
   window.removeEventListener('resize', handleResize)
   if (cardObserver) cardObserver.disconnect()
+  if (infiniteObserver) infiniteObserver.disconnect()
   clearCampusOverlays()
 })
 
@@ -3259,16 +3298,20 @@ button.gm-ui-hover-effect > span {
   width: 100% !important;
 }
 
-.load-more-container {
+.infinite-scroll-sentinel {
   display: flex;
+  flex-direction: column;
+  align-items: center;
   justify-content: center;
-  padding: 20px 0;
+  padding: 30px 0 60px;
+  width: 100%;
+  gap: 12px;
 }
 
-.load-more-btn {
-  --border-radius: 12px;
-  font-weight: 700;
-  letter-spacing: 0.05em;
+.infinite-scroll-sentinel .loading-text {
+  font-size: 14px;
+  color: var(--ion-color-medium);
+  font-weight: 500;
 }
 
 .map-dimmed {

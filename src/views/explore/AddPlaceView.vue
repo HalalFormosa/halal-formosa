@@ -21,318 +21,371 @@
 
       <!-- Logged in: everyone can submit; approval handled by role -->
       <form v-else @submit.prevent="submitPlace" class="form">
-        <ion-item>
-          <ion-input
-              v-model="form.name"
-              label-placement="stacked"
-              required
-              :placeholder="$t('addPlace.namePlaceholder')"
-          >
-            <div slot="label">
-              {{ $t('addPlace.nameLabel') }}
-              <ion-text color="danger">*</ion-text>
-            </div>
-          </ion-input>
-        </ion-item>
+        <div class="form-container">
+          <!-- 🏷️ Section 1: Basic Information -->
+          <div class="form-section">
+            <ion-list-header>
+              <ion-label>{{ $t('addPlace.nameLabel') }} & {{ $t('addPlace.typeLabel') }}</ion-label>
+            </ion-list-header>
 
-        <ion-item>
-          <ion-select
-              v-model.number="form.type_id"
-              label-placement="stacked"
-              interface="popover"
-              :placeholder="$t('addPlace.typePlaceholder')"
-              required
-          >
-            <div slot="label">
-              {{ $t('addPlace.typeLabel') }}
-              <ion-text color="danger">*</ion-text>
-            </div>
-            <ion-select-option
-                v-for="lt in locationTypes"
-                :key="lt.id"
-                :value="lt.id"
-            >
-              {{ lt.name }}
-            </ion-select-option>
-          </ion-select>
-        </ion-item>
-
-        <!-- Image upload -->
-        <ion-item>
-          <ion-label>
-            {{ $t('addPlace.imageLabel') }}
-            <ion-text color="danger">*</ion-text>
-          </ion-label>
-          <ion-buttons slot="end">
-            <ion-button @click="takePicture" fill="clear" :disabled="uploading">
-              <ion-icon :icon="cameraOutline"/>
-            </ion-button>
-            <ion-button @click="uploadFromGallery" fill="clear" :disabled="uploading">
-              <ion-icon :icon="cloudUploadOutline"/>
-            </ion-button>
-          </ion-buttons>
-        </ion-item>
-
-        <!-- Preview -->
-        <div v-if="imagePreview" class="img-preview-wrap">
-          <img :src="imagePreview" alt="Preview" class="img-preview"/>
-        </div>
-
-        <ion-item>
-          <ion-input
-              v-model="form.address"
-              label-placement="stacked"
-              :placeholder="$t('addPlace.addressPlaceholder')"
-              required
-              @ionBlur="onAddressConfirm"
-              @ionChange="onAddressConfirm"
-              @keyup.enter="onAddressConfirm"
-          >
-            <div slot="label">
-              {{ $t('addPlace.addressLabel') }}
-              <ion-text color="danger">*</ion-text>
-            </div>
-          </ion-input>
-        </ion-item>
-
-        <div class="row-2">
-          <ion-item>
-            <ion-input
-                v-model.number="form.lat"
-                type="number"
-                step="any"
-                label-placement="stacked"
-                required
-                readonly
-            >
-              <div slot="label">
-                {{ $t('addPlace.latLabel') }}
-                <ion-text color="danger">*</ion-text>
-              </div>
-            </ion-input>
-          </ion-item>
-          <ion-item>
-            <ion-input
-                v-model.number="form.lng"
-                type="number"
-                step="any"
-                label-placement="stacked"
-                required
-                readonly
-            >
-              <div slot="label">
-                {{ $t('addPlace.lngLabel') }}
-                <ion-text color="danger">*</ion-text>
-              </div>
-            </ion-input>
-          </ion-item>
-        </div>
-
-        <div class="map-wrap">
-          <div class="hint">{{ $t('addPlace.mapHint') }}</div>
-
-          <div class="map-holder">
-            <!-- Real map is ALWAYS in the DOM -->
-            <div id="add-map" :class="{'fade-in': mapReady}"></div>
-
-            <!-- Skeleton overlays while loading -->
-            <ion-skeleton-text
-                v-if="mapLoading"
-                animated
-                class="map-skeleton"
-            />
-          </div>
-        </div>
-
-        <ion-card
-            v-if="warningLevel"
-            :color="warningLevel === 'high' ? 'danger' : 'warning'"
-            class="ion-margin-top"
-            style="margin: 12px 0 16px;"
-        >
-          <ion-card-content>
-
-            <strong>
-              ⚠️ {{ warningLevel === 'high'
-                ? $t('addPlace.duplicates.high')
-                : $t('addPlace.duplicates.medium')
-              }}
-            </strong>
-
-            <ul style="margin:6px 0 0 16px; padding:0; font-size:14px;">
-              <li v-for="m in nearbyMatches.slice(0, 3)" :key="m.id">
-                {{ m.name }} · {{ m.distance_meters }} m
-              </li>
-            </ul>
-
-            <small style="opacity:0.8;">
-              {{ $t('addPlace.duplicates.verify') }}
-            </small>
-
-          </ion-card-content>
-
-        </ion-card>
-
-
-        <ion-button
-            fill="outline"
-            size="small"
-            @click="showMoreOptions = !showMoreOptions"
-            style="margin-bottom: 12px;"
-        >
-          {{ showMoreOptions ? $t('addPlace.hideDetails') : $t('addPlace.moreDetails') }}
-        </ion-button>
-
-        <div v-if="showMoreOptions">
-
-          <p style="margin-top:20px; font-weight:600;">{{ $t('admin.description') }}</p>
-
-          <ion-item>
-            <ion-textarea
-                v-model="form.description"
-                :label="$t('admin.description')"
-                label-placement="stacked"
-                :placeholder="$t('addPlace.descriptionPlaceholder')"
-                auto-grow
-                :maxlength="1000"
-                counter
-            />
-          </ion-item>
-
-          <p style="margin-top:20px; font-weight:600;">{{ $t('addPlace.contactInfo') }}</p>
-
-          <ion-item>
-            <ion-input
-                v-model="form.phone"
-                :label="$t('addPlace.phoneLabel')"
-                label-placement="stacked"
-                :placeholder="$t('addPlace.phonePlaceholder')"
-            />
-          </ion-item>
-
-          <ion-item>
-            <ion-input
-                v-model="form.instagram"
-                :label="$t('addPlace.instagramLabel')"
-                label-placement="stacked"
-                placeholder="@username"
-            />
-          </ion-item>
-
-          <ion-item>
-            <ion-input
-                v-model="form.line_id"
-                :label="$t('addPlace.lineIdLabel')"
-                label-placement="stacked"
-                placeholder="yourlineid"
-            />
-          </ion-item>
-
-          <p style="margin-top:20px; font-weight:600;">{{ $t('explore.filters.priceRange') }}</p>
-
-          <ion-item>
-            <ion-input
-                v-model="form.price_range"
-                :label="$t('explore.filters.priceRange')"
-                label-placement="stacked"
-                :placeholder="$t('addPlace.pricePlaceholder')"
-            />
-          </ion-item>
-
-          <p style="margin-top:20px; font-weight:600;">{{ $t('addPlace.tagsAndCategories') }}</p>
-
-          <ion-item>
-            <ion-input
-                v-model="tagInput"
-                :label="$t('addPlace.addTagLabel')"
-                label-placement="stacked"
-                :placeholder="$t('addPlace.tagPlaceholder')"
-                @ionInput="handleTagInput"
-                @keyup.enter="addTag"
-            />
-            <ion-button slot="end" fill="clear" @click="addTag" style="margin-top: 14px;">
-              {{ $t('common.add') }}
-            </ion-button>
-          </ion-item>
-
-          <div v-if="form.tags.length > 0" class="tag-chips">
-            <ion-chip
-                v-for="tag in form.tags"
-                :key="tag"
-                color="primary"
-                outline
-                class="tag-chip"
-            >
-              <ion-label>{{ tag }}</ion-label>
-              <ion-icon :icon="closeCircle" @click="removeTag(tag)" />
-            </ion-chip>
-          </div>
-
-          <p style="margin-top:20px; font-weight:600;">{{ $t('addPlace.openingHours') }}</p>
-
-          <ion-list class="opening-hours-list">
-            <template v-for="(label, key) in dayLabels" :key="key">
-
-              <ion-item lines="full" class="opening-hours-item">
-
-                <ion-checkbox
-                    v-model="form.opening_hours[key].active"
-                    slot="start"
-                    @ionChange="openingHoursTouched = true"
-                />
-
-                <ion-label class="day-label">{{ $t('addProduct.opening_hours.' + key) }}</ion-label>
-
-                <!-- CLOSED BADGE -->
-                <span
-                    v-if="!form.opening_hours[key].active"
-                    class="closed-label"
+            <ion-card class="input-card">
+              <ion-item lines="full">
+                <ion-input
+                    v-model="form.name"
+                    label-placement="stacked"
+                    required
+                    :placeholder="$t('addPlace.namePlaceholder')"
                 >
-        {{ $t('addPlace.closed') }}
-      </span>
-
-                <!-- TIME INPUTS -->
-                <div
-                    v-else
-                    class="time-inputs"
-                >
-                  <ion-input
-                      v-model="form.opening_hours[key].open"
-                      type="time"
-                      class="time-field"
-                      @ionInput="openingHoursTouched = true"
-                  />
-
-                  <span style="margin: 0 4px;">-</span>
-
-                  <ion-input
-                      v-model="form.opening_hours[key].close"
-                      type="time"
-                      class="time-field"
-                      @ionInput="openingHoursTouched = true"
-                  />
-                </div>
-
+                  <div slot="label">
+                    {{ $t('addPlace.nameLabel') }}
+                    <ion-text color="danger">*</ion-text>
+                  </div>
+                </ion-input>
               </ion-item>
 
-            </template>
-          </ion-list>
+              <ion-item lines="none">
+                <ion-select
+                    v-model.number="form.type_id"
+                    label-placement="stacked"
+                    interface="alert"
+                    :placeholder="$t('addPlace.typePlaceholder')"
+                    required
+                    class="full-width-select"
+                >
+                  <div slot="label">
+                    {{ $t('addPlace.typeLabel') }}
+                    <ion-text color="danger">*</ion-text>
+                  </div>
+                  <ion-select-option
+                      v-for="lt in locationTypes"
+                      :key="lt.id"
+                      :value="lt.id"
+                  >
+                    {{ lt.name }}
+                  </ion-select-option>
+                </ion-select>
+              </ion-item>
+            </ion-card>
+          </div>
 
+          <!-- 📸 Section 2: Image -->
+          <div class="form-section">
+            <ion-list-header>
+              <ion-label>{{ $t('addPlace.imageLabel') }}</ion-label>
+            </ion-list-header>
+
+            <ion-card class="input-card">
+              <ion-item lines="none">
+                <ion-label>
+                  {{ $t('addPlace.imageLabel') }}
+                  <ion-text color="danger">*</ion-text>
+                </ion-label>
+                <ion-buttons slot="end">
+                  <ion-button @click="takePicture" fill="clear" :disabled="uploading">
+                    <ion-icon :icon="cameraOutline"/>
+                  </ion-button>
+                  <ion-button @click="uploadFromGallery" fill="clear" :disabled="uploading">
+                    <ion-icon :icon="cloudUploadOutline"/>
+                  </ion-button>
+                </ion-buttons>
+              </ion-item>
+
+              <!-- Preview -->
+              <div v-if="imagePreview" class="img-preview-wrap">
+                <img :src="imagePreview" alt="Preview" class="img-preview"/>
+              </div>
+            </ion-card>
+          </div>
+
+          <!-- 📍 Section 3: Address & Map -->
+          <div class="form-section">
+            <ion-list-header>
+              <ion-label>{{ $t('addPlace.addressLabel') }}</ion-label>
+            </ion-list-header>
+
+            <ion-card class="input-card">
+              <ion-item lines="full">
+                <ion-input
+                    v-model="form.address"
+                    label-placement="stacked"
+                    :placeholder="$t('addPlace.addressPlaceholder')"
+                    required
+                    @ionBlur="onAddressConfirm"
+                    @ionChange="onAddressConfirm"
+                    @keyup.enter="onAddressConfirm"
+                >
+                  <div slot="label">
+                    {{ $t('addPlace.addressLabel') }}
+                    <ion-text color="danger">*</ion-text>
+                  </div>
+                </ion-input>
+              </ion-item>
+
+              <div class="row-2" style="margin: 0;">
+                <ion-item lines="none">
+                  <ion-input
+                      v-model.number="form.lat"
+                      type="number"
+                      step="any"
+                      label-placement="stacked"
+                      required
+                      readonly
+                  >
+                    <div slot="label">
+                      {{ $t('addPlace.latLabel') }}
+                      <ion-text color="danger">*</ion-text>
+                    </div>
+                  </ion-input>
+                </ion-item>
+                <ion-item lines="none">
+                  <ion-input
+                      v-model.number="form.lng"
+                      type="number"
+                      step="any"
+                      label-placement="stacked"
+                      required
+                      readonly
+                  >
+                    <div slot="label">
+                      {{ $t('addPlace.lngLabel') }}
+                      <ion-text color="danger">*</ion-text>
+                    </div>
+                  </ion-input>
+                </ion-item>
+              </div>
+            </ion-card>
+
+            <div class="map-wrap ion-padding-horizontal">
+              <div class="hint">{{ $t('addPlace.mapHint') }}</div>
+
+              <div class="map-holder">
+                <!-- Real map is ALWAYS in the DOM -->
+                <div id="add-map" :class="{'fade-in': mapReady}"></div>
+
+                <!-- Skeleton overlays while loading -->
+                <ion-skeleton-text
+                    v-if="mapLoading"
+                    animated
+                    class="map-skeleton"
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- ⚠️ Duplicate Warning Card -->
+          <ion-card
+              v-if="warningLevel"
+              :color="warningLevel === 'high' ? 'danger' : 'warning'"
+              class="input-card ion-margin-bottom"
+              style="border: none;"
+          >
+            <ion-card-content>
+              <strong>
+                ⚠️ {{ warningLevel === 'high'
+                  ? $t('addPlace.duplicates.high')
+                  : $t('addPlace.duplicates.medium')
+                }}
+              </strong>
+
+              <ul style="margin:6px 0 0 16px; padding:0; font-size:14px;">
+                <li v-for="m in nearbyMatches.slice(0, 3)" :key="m.id">
+                  {{ m.name }} · {{ m.distance_meters }} m
+                </li>
+              </ul>
+
+              <small style="opacity:0.8;">
+                {{ $t('addPlace.duplicates.verify') }}
+              </small>
+            </ion-card-content>
+          </ion-card>
+
+
+          <ion-button
+              fill="clear"
+              size="small"
+              @click="showMoreOptions = !showMoreOptions"
+              class="ion-margin-horizontal"
+              color="primary"
+              style="font-weight: 700;"
+          >
+            <ion-icon slot="start" :icon="showMoreOptions ? arrowUpOutline : arrowDownOutline" />
+            {{ showMoreOptions ? $t('addPlace.hideDetails') : $t('addPlace.moreDetails') }}
+          </ion-button>
+
+          <div v-if="showMoreOptions" class="details-wizard-step">
+            <!-- 📝 Section 4: Description -->
+            <div class="form-section">
+              <ion-list-header>
+                <ion-label>{{ $t('admin.description') }}</ion-label>
+              </ion-list-header>
+
+              <ion-card class="input-card">
+                <ion-item lines="none">
+                  <ion-textarea
+                      v-model="form.description"
+                      :label="$t('admin.description')"
+                      label-placement="stacked"
+                      :placeholder="$t('addPlace.descriptionPlaceholder')"
+                      auto-grow
+                      :maxlength="1000"
+                      counter
+                      class="ion-margin-bottom"
+                  />
+                </ion-item>
+              </ion-card>
+            </div>
+
+            <!-- 📞 Section 5: Contact Info -->
+            <div class="form-section">
+              <ion-list-header>
+                <ion-label>{{ $t('addPlace.contactInfo') }}</ion-label>
+              </ion-list-header>
+
+              <ion-card class="input-card">
+                <ion-item lines="full">
+                  <ion-input
+                      v-model="form.phone"
+                      :label="$t('addPlace.phoneLabel')"
+                      label-placement="stacked"
+                      :placeholder="$t('addPlace.phonePlaceholder')"
+                  />
+                </ion-item>
+
+                <ion-item lines="full">
+                  <ion-input
+                      v-model="form.instagram"
+                      :label="$t('addPlace.instagramLabel')"
+                      label-placement="stacked"
+                      placeholder="@username"
+                  />
+                </ion-item>
+
+                <ion-item lines="none">
+                  <ion-input
+                      v-model="form.line_id"
+                      :label="$t('addPlace.lineIdLabel')"
+                      label-placement="stacked"
+                      placeholder="yourlineid"
+                  />
+                </ion-item>
+              </ion-card>
+            </div>
+
+            <!-- 💰 Section 6: Price & Tags -->
+            <div class="form-section">
+              <ion-list-header>
+                <ion-label>{{ $t('explore.filters.priceRange') }} & {{ $t('addPlace.tagsAndCategories') }}</ion-label>
+              </ion-list-header>
+
+              <ion-card class="input-card">
+                <ion-item lines="full">
+                  <ion-input
+                      v-model="form.price_range"
+                      :label="$t('explore.filters.priceRange')"
+                      label-placement="stacked"
+                      :placeholder="$t('addPlace.pricePlaceholder')"
+                  />
+                </ion-item>
+
+                <ion-item lines="none">
+                  <ion-input
+                      v-model="tagInput"
+                      :label="$t('addPlace.addTagLabel')"
+                      label-placement="stacked"
+                      :placeholder="$t('addPlace.tagPlaceholder')"
+                      @ionInput="handleTagInput"
+                      @keyup.enter="addTag"
+                  />
+                  <ion-button slot="end" fill="clear" @click="addTag" style="margin-top: 14px;">
+                    {{ $t('common.add') }}
+                  </ion-button>
+                </ion-item>
+
+                <div v-if="form.tags.length > 0" class="tag-chips">
+                  <ion-chip
+                      v-for="tag in form.tags"
+                      :key="tag"
+                      color="primary"
+                      outline
+                      class="tag-chip"
+                  >
+                    <ion-label>{{ tag }}</ion-label>
+                    <ion-icon :icon="closeCircle" @click="removeTag(tag)" />
+                  </ion-chip>
+                </div>
+              </ion-card>
+            </div>
+
+            <!-- ⏰ Section 7: Opening Hours -->
+            <div class="form-section">
+              <ion-list-header>
+                <ion-label>{{ $t('addPlace.openingHours') }}</ion-label>
+              </ion-list-header>
+
+              <ion-card class="input-card">
+                <ion-list class="opening-hours-list" lines="none">
+                  <template v-for="(label, key) in dayLabels" :key="key">
+                    <ion-item class="opening-hours-item" lines="full">
+                      <ion-checkbox
+                          v-model="form.opening_hours[key].active"
+                          slot="start"
+                          @ionChange="openingHoursTouched = true"
+                      />
+
+                      <ion-label class="day-label">{{ $t('addPlace.days.' + key) }}</ion-label>
+
+                      <!-- CLOSED BADGE -->
+                      <span v-if="!form.opening_hours[key].active" class="closed-label">
+                        {{ $t('addPlace.closed') }}
+                      </span>
+
+                      <!-- TIME INPUTS -->
+                      <div v-else class="time-inputs">
+                        <ion-input
+                            v-model="form.opening_hours[key].open"
+                            type="time"
+                            class="time-field"
+                            @ionInput="openingHoursTouched = true"
+                        />
+                        <span style="margin: 0 4px;">-</span>
+                        <ion-input
+                            v-model="form.opening_hours[key].close"
+                            type="time"
+                            class="time-field"
+                            @ionInput="openingHoursTouched = true"
+                        />
+                      </div>
+                    </ion-item>
+                  </template>
+                </ion-list>
+              </ion-card>
+            </div>
+          </div>
+        </div> <!-- End of form-container -->
+
+        <div class="ion-padding">
+          <ion-card
+              v-if="checkedRole && myRole && !isPrivileged(myRole)"
+              color="light"
+              class="ion-margin-bottom"
+              style="border-radius: 12px; margin-top: 0;"
+          >
+            <ion-card-content style="font-size:13px; color: var(--ion-color-medium);">
+              🕵️ {{ $t('addPlace.reviewNotice') }}
+            </ion-card-content>
+          </ion-card>
+
+          <ion-button
+              type="submit"
+              expand="block"
+              color="carrot"
+              style="height: 52px; font-weight: 700; --border-radius: 12px;"
+              :disabled="submitting || uploading || !isValid"
+          >
+            <ion-spinner v-if="submitting" name="crescent" slot="start" />
+            <span v-else>{{ isEditing ? $t('addPlace.updateBtn') : $t('addPlace.saveBtn') }}</span>
+          </ion-button>
         </div>
-
-        <ion-card
-            v-if="checkedRole && myRole && !isPrivileged(myRole)"
-            color="light"
-        >
-          <ion-card-content style="font-size:14px;">
-            {{ $t('addPlace.reviewNotice') }}
-          </ion-card-content>
-        </ion-card>
-
-        <ion-button type="submit" expand="block" :disabled="submitting || !isValid">
-          <ion-spinner v-if="submitting" name="lines-small" class="mr-2"/>
-          <span v-else>{{ isEditing ? $t('addPlace.updateBtn') : $t('addPlace.saveBtn') }}</span>
-        </ion-button>
       </form>
 
       <ion-toast
@@ -397,7 +450,7 @@ import {useRouter} from 'vue-router'
 import {supabase} from '@/plugins/supabaseClient'
 import mapsLoader from '@/plugins/googleMapsLoader'
 import {Camera, CameraResultType, CameraSource} from '@capacitor/camera'
-import {cameraOutline, cloudUploadOutline, closeCircle, checkmarkCircleOutline} from 'ionicons/icons'
+import {cameraOutline, cloudUploadOutline, closeCircle, checkmarkCircleOutline, arrowDownOutline, arrowUpOutline} from 'ionicons/icons'
 import {Capacitor} from '@capacitor/core'
 import {Geolocation} from '@capacitor/geolocation'
 import {usePoints} from "@/composables/usePoints";
@@ -1435,6 +1488,54 @@ onBeforeUnmount(() => {
 
 .tag-chip ion-icon:hover {
   color: var(--ion-color-danger);
+}
+/* Premium Form Styles (Synced with AddProductView) */
+.form-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background-color: var(--ion-background-color);
+  padding-bottom: 32px;
+}
+
+.form-section {
+  margin-bottom: 8px;
+}
+
+.form-section ion-list-header {
+  padding-inline-start: 16px;
+  min-height: 32px;
+  margin-bottom: 4px;
+}
+
+.form-section ion-list-header ion-label {
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ion-color-step-600);
+}
+
+.input-card {
+  margin: 0 12px;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+  background: var(--ion-card-background, white);
+  border: 1px solid var(--ion-color-light-shade);
+}
+
+.input-card ion-item {
+  --background-active: transparent;
+  --ripple-color: transparent;
+}
+
+.full-width-select {
+  width: 100%;
+  --padding-start: 0;
+}
+
+.day-label {
+  min-width: 80px;
 }
 
 </style>

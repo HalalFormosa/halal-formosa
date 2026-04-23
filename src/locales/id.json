@@ -396,6 +396,7 @@
     "showingPlace": "Menampilkan 1 tempat",
     "results": "Hasil",
     "showingResults": "Menampilkan {count} dari {total} lokasi",
+    "loadingMoreLocations": "Memuat lokasi lainnya...",
     "details": {
       "title": "Detail Tempat",
       "noticeTitle": "Detail Penanganan & Status",
@@ -725,6 +726,15 @@
     "addTagLabel": "Tambah Tag",
     "tagPlaceholder": "Ketik dan tekan Enter (misalnya ntu, ruang-doa)",
     "openingHours": "Jam Operasional",
+    "days": {
+      "mon": "Senin",
+      "tue": "Selasa",
+      "wed": "Rabu",
+      "thu": "Kamis",
+      "fri": "Jumat",
+      "sat": "Sabtu",
+      "sun": "Minggu"
+    },
     "closed": "Tutup",
     "reviewNotice": "🕵️ Kiriman akan ditinjau sebelum muncul secara publik.",
     "priceLevels": {

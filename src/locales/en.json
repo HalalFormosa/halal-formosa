@@ -431,7 +431,8 @@
     "clear": "Clear",
     "showingPlace": "Showing 1 place",
     "results": "Results",
-    "showingResults": "Showing {count} from {total} locations",
+    "showingResults": "Showing {count} of {total} locations",
+    "loadingMoreLocations": "Loading more locations...",
     "details": {
       "title": "Place Details",
       "noticeTitle": "Handling & Status Details",
@@ -761,6 +762,15 @@
     "addTagLabel": "Add Tag",
     "tagPlaceholder": "Type and press Enter (e.g. ntu, prayer-room)",
     "openingHours": "Opening Hours",
+    "days": {
+      "mon": "Monday",
+      "tue": "Tuesday",
+      "wed": "Wednesday",
+      "thu": "Thursday",
+      "fri": "Friday",
+      "sat": "Saturday",
+      "sun": "Sunday"
+    },
     "closed": "Closed",
     "reviewNotice": "🕵️ Submissions will be reviewed before appearing publicly.",
     "priceLevels": {

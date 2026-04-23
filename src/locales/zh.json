@@ -761,6 +761,15 @@
     "addTagLabel": "新增標籤",
     "tagPlaceholder": "輸入並按 Enter（例如：ntu、祈禱室）",
     "openingHours": "營業時間",
+    "days": {
+      "mon": "週一",
+      "tue": "週二",
+      "wed": "週三",
+      "thu": "週四",
+      "fri": "週五",
+      "sat": "週六",
+      "sun": "週日"
+    },
     "closed": "休息",
     "reviewNotice": "🕵️ 提交內容將在公開前進行審核。",
     "priceLevels": {

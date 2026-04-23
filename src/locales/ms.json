@@ -725,6 +725,15 @@
     "addTagLabel": "Tambah Tag",
     "tagPlaceholder": "Taip dan tekan Enter (cth. ntu, bilik-solat)",
     "openingHours": "Waktu Operasi",
+    "days": {
+      "mon": "Isnin",
+      "tue": "Selasa",
+      "wed": "Rabu",
+      "thu": "Khamis",
+      "fri": "Jumaat",
+      "sat": "Sabtu",
+      "sun": "Ahad"
+    },
     "closed": "Tutup",
     "reviewNotice": "🕵️ Serahan akan disemak sebelum dipaparkan secara terbuka.",
     "priceLevels": {

@@ -198,7 +198,7 @@
                   size="small"
                   color="carrot"
                   @click="logOpenMaps"
-                  :href="`https://www.google.com/maps/search/?api=1&query=${place.lat},${place.lng}`"
+                  :href="`https://www.google.com/maps/search/?api=1&query=${mapSearchQuery}&center=${place.lat},${place.lng}&zoom=16`"
                   target="_blank"
               >
                 Open
@@ -209,7 +209,7 @@
             <!-- 🗺️ Mini Map -->
             <div class="rounded-xl overflow-hidden ion-margin-vertical shadow-md">
               <iframe
-                  :src="`https://maps.google.com/maps?q=${place.lat},${place.lng}&z=16&output=embed`"
+                  :src="`https://maps.google.com/maps?q=${place.lat},${place.lng}(${place.name})&z=16&output=embed`"
                   width="100%"
                   height="200"
                   style="border:0;"
@@ -506,6 +506,13 @@ const formattedOpeningHours = computed(() => {
   })
 
   return result
+})
+
+const mapSearchQuery = computed(() => {
+  if (!place.value) return ''
+  const name = place.value.name
+  const address = place.value.address || ''
+  return encodeURIComponent(`${name} ${address}`.trim())
 })
 
 
