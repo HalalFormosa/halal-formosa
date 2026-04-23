@@ -99,6 +99,7 @@ import {
   rewardProgress
 } from "@/composables/useRewardOverlay";
 import { updateLastSeen, currentUser, hasReviewedApp, setHasReviewedApp } from '@/composables/userProfile';
+import { supabase } from '@/plugins/supabaseClient';
 const { initTheme } = useTheme();
 const { t } = useI18n();
 const { isUpdateRequired, storeUrl, currentVersion, minVersion } = useAppUpdate();
@@ -265,7 +266,7 @@ onMounted(async () => {
   }, 1000 * 60 * 5);
 
   // 🔐 Listen for Auth events (Recovery, Invite, etc)
-  supabase.auth.onAuthStateChange((event) => {
+  supabase.auth.onAuthStateChange((event: string) => {
     if (event === 'PASSWORD_RECOVERY') {
       console.log('🔄 Password recovery event detected. Redirecting...');
       router.push('/update-password');
