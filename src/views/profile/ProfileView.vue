@@ -608,7 +608,8 @@ import {
   timeOutline,
   closeCircleOutline,
   refreshOutline,
-  alertCircleOutline
+  alertCircleOutline,
+  keyOutline
 } from "ionicons/icons";
 
 // ✅ Composables
@@ -662,7 +663,8 @@ const icons = {
   logoInstagram,
   createOutline,
   refreshOutline,
-  alertCircleOutline
+  alertCircleOutline,
+  keyOutline
 }
 
 interface RcProduct {

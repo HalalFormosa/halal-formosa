@@ -97,18 +97,29 @@
     "loggingIn": "登入中...",
     "continueWithGoogle": "使用 Google 帳號繼續",
     "forgotPassword": "忘記密碼？",
-    "resetEmailSent": "重置密碼郵件已發送！請檢查您的收件箱。"
+    "resetEmailSent": "重置密碼郵件已發送！請檢查您的收件箱。",
+    "noAccount": "還沒有帳戶？",
+    "signUp": "註冊",
+    "signUpSubtitle": "創建帳戶以解鎖所有功能。",
+    "signingUp": "正在創建帳戶...",
+    "alreadyHaveAccount": "已經有帳戶了？",
+    "displayName": "全名",
+    "confirmPassword": "確認密碼",
+    "signUpSuccessTitle": "註冊成功",
+    "signUpSuccessMessage": "請在登入前檢查您的電子郵件以確認您的帳戶。"
   },
   "updatePassword": {
     "title": "設定新密碼",
     "subtitle": "請輸入一個強大的密碼來保護您的帳戶。",
+    "oldPassword": "目前密碼",
     "newPassword": "新密碼",
     "confirmPassword": "確認新密碼",
     "update": "設定密碼",
     "updating": "更新中...",
     "success": "密碼更新成功！",
     "error": "密碼更新失敗。",
-    "mismatchError": "密碼不匹配"
+    "mismatchError": "密碼不匹配",
+    "change": "更改密碼"
   },
   "main": {
     "title": "Halal Formosa",

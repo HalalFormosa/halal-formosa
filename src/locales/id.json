@@ -66,18 +66,29 @@
     "loggingIn": "Sedang masuk...",
     "continueWithGoogle": "Lanjutkan dengan Google",
     "forgotPassword": "Lupa Kata Sandi?",
-    "resetEmailSent": "Email reset kata sandi telah dikirim! Silakan periksa kotak masuk Anda."
+    "resetEmailSent": "Email reset kata sandi telah dikirim! Silakan periksa kotak masuk Anda.",
+    "noAccount": "Belum punya akun?",
+    "signUp": "Daftar",
+    "signUpSubtitle": "Buat akun untuk membuka semua fitur.",
+    "signingUp": "Sedang membuat akun...",
+    "alreadyHaveAccount": "Sudah punya akun?",
+    "displayName": "Nama Lengkap",
+    "confirmPassword": "Konfirmasi Kata Sandi",
+    "signUpSuccessTitle": "Pendaftaran Berhasil",
+    "signUpSuccessMessage": "Silakan periksa email Anda untuk mengonfirmasi akun Anda sebelum masuk."
   },
   "updatePassword": {
     "title": "Setel Kata Sandi Baru",
     "subtitle": "Silakan masukkan kata sandi yang kuat untuk mengamankan akun Anda.",
+    "oldPassword": "Kata Sandi Saat Ini",
     "newPassword": "Kata Sandi Baru",
     "confirmPassword": "Konfirmasi Kata Sandi Baru",
     "update": "Setel Kata Sandi",
     "updating": "Memperbarui...",
     "success": "Kata sandi berhasil diperbarui!",
     "error": "Gagal memperbarui kata sandi.",
-    "mismatchError": "Kata sandi tidak cocok"
+    "mismatchError": "Kata sandi tidak cocok",
+    "change": "Ubah Kata Sandi"
   },
   "main": {
     "title": "Halal Formosa",

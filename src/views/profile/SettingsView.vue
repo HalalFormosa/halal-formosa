@@ -56,6 +56,15 @@
           </div>
         </ion-item>
       </ion-list>
+      
+      <!-- 👤 Account -->
+      <ion-list v-if="currentUser" style="border-radius: 12px; margin-top: 20px;">
+        <ion-list-header>{{ $t('profile.sections.account') }}</ion-list-header>
+        <ion-item button lines="full" @click="router.push('/update-password?mode=change')" style="--border-radius: 12px;">
+          <ion-icon :icon="keyOutline" slot="start" style="margin-right: 12px; color: var(--ion-color-carrot)" />
+          <ion-label>{{ isSocialLogin ? $t('updatePassword.title') : $t('updatePassword.change') }}</ion-label>
+        </ion-item>
+      </ion-list>
 
       <!-- 🌐 Language -->
       <ion-list style="border-radius: 12px; margin-top: 20px;">
@@ -90,9 +99,10 @@ import {
   IonRadio,
   IonRadioGroup,
   IonNote,
-  IonLabel
+  IonLabel,
+  IonIcon
 } from '@ionic/vue'
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
   currentUser,
@@ -102,9 +112,16 @@ import {
   setShowLastSeen
 } from '@/composables/userProfile'
 import { useTheme } from '@/composables/useTheme'
+import { keyOutline } from 'ionicons/icons'
+import { useRouter } from 'vue-router'
 
 const { locale } = useI18n()
 const lang = ref(locale.value)
+const router = useRouter()
+
+const isSocialLogin = computed(() => {
+  return currentUser.value?.app_metadata?.provider !== 'email'
+})
 
 const languages = [
   { code: 'en', name: 'English', flag: 'https://flagcdn.com/w80/us.png' },

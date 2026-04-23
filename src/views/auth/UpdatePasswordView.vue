@@ -36,6 +36,19 @@
 
         <!-- Form -->
         <form @submit.prevent="handleUpdatePassword">
+          <!-- Old Password (Optional) -->
+          <div class="input-card" v-if="mode === 'change' && !isSocialLogin">
+            <ion-input
+                fill="outline"
+                :label="$t('updatePassword.oldPassword')"
+                label-placement="floating"
+                type="password"
+                v-model="oldPassword"
+                required
+            >
+              <ion-input-password-toggle slot="end" />
+            </ion-input>
+          </div>
           <!-- Password -->
           <div class="input-card">
             <ion-input
@@ -129,16 +142,32 @@ import { supabase } from '@/plugins/supabaseClient';
 import { useI18n } from 'vue-i18n'
 import { saveOutline } from "ionicons/icons";
 import { ActivityLogService } from '@/services/ActivityLogService'
+import { onMounted } from 'vue';
+import { useRoute } from 'vue-router';
 
 const { locale, t } = useI18n()
 
 // form fields
+const oldPassword = ref('');
 const password = ref('');
 const confirmPassword = ref('');
 const errorMsg = ref('');
 const loading = ref(false);
 
 const router = useRouter();
+const route = useRoute();
+const mode = ref(route.query.mode as string || 'reset');
+
+const currentUser = ref<any>(null);
+const isSocialLogin = ref(false);
+
+onMounted(async () => {
+  const { data } = await supabase.auth.getUser();
+  if (data?.user) {
+    currentUser.value = data.user;
+    isSocialLogin.value = data.user.app_metadata?.provider !== 'email';
+  }
+});
 
 async function handleUpdatePassword() {
   if (password.value !== confirmPassword.value) {
@@ -148,6 +177,26 @@ async function handleUpdatePassword() {
 
   loading.value = true
   errorMsg.value = ''
+
+  // 🔐 Verify old password if in "change" mode for email users
+  if (mode.value === 'change' && !isSocialLogin.value) {
+    if (!oldPassword.value) {
+      errorMsg.value = 'Please enter your current password.';
+      loading.value = false;
+      return;
+    }
+
+    const { error: authError } = await supabase.auth.signInWithPassword({
+      email: currentUser.value?.email,
+      password: oldPassword.value,
+    });
+
+    if (authError) {
+      errorMsg.value = 'Incorrect current password.';
+      loading.value = false;
+      return;
+    }
+  }
 
   const { error } = await supabase.auth.updateUser({
     password: password.value,

@@ -100,18 +100,29 @@
     "loggingIn": "Logging in...",
     "continueWithGoogle": "Continue with Google",
     "forgotPassword": "Forgot Password?",
-    "resetEmailSent": "Password reset email sent! Please check your inbox."
+    "resetEmailSent": "Password reset email sent! Please check your inbox.",
+    "noAccount": "Don't have an account?",
+    "signUp": "Sign Up",
+    "signUpSubtitle": "Create an account to unlock all features.",
+    "signingUp": "Creating account...",
+    "alreadyHaveAccount": "Already have an account?",
+    "displayName": "Full Name",
+    "confirmPassword": "Confirm Password",
+    "signUpSuccessTitle": "Registration Successful",
+    "signUpSuccessMessage": "Please check your email to confirm your account before logging in."
   },
   "updatePassword": {
-    "title": "Set New Password",
     "subtitle": "Please enter a strong password to secure your account.",
+    "oldPassword": "Current Password",
     "newPassword": "New Password",
     "confirmPassword": "Confirm New Password",
     "update": "Set Password",
     "updating": "Updating...",
     "success": "Password updated successfully!",
     "error": "Failed to update password.",
-    "mismatchError": "Passwords do not match"
+    "mismatchError": "Passwords do not match",
+    "change": "Change Password",
+    "changePassword": "Change Password"
   },
   "main": {
     "title": "Halal Formosa",

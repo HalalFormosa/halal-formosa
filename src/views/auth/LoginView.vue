@@ -122,6 +122,12 @@
             <span>{{ $t('common.backToHome') }}</span>
           </div>
 
+          <!-- Sign Up -->
+          <div class="signup-prompt">
+            {{ $t('auth.noAccount') }}
+            <span class="signup-link" @click="goToSignUp">{{ $t('auth.signUp') }}</span>
+          </div>
+
 
         </form>
 
@@ -300,6 +306,10 @@ async function loginWithGoogle() {
 
 function goHome() {
   router.push('/');
+}
+
+function goToSignUp() {
+  router.push('/signup');
 }
 </script>
 
@@ -609,5 +619,28 @@ html.ion-palette-dark .theme-btn ion-icon {
 .forgot-password-link:hover {
   opacity: 1;
   text-decoration: underline;
+}
+
+.signup-prompt {
+  text-align: center;
+  margin-top: 32px;
+  font-size: 14px;
+  color: #8f8f8f;
+}
+
+.signup-link {
+  color: var(--ion-color-carrot);
+  font-weight: 700;
+  cursor: pointer;
+  margin-left: 4px;
+  text-decoration: underline;
+}
+
+.signup-link:hover {
+  opacity: 0.8;
+}
+
+html:not(.ion-palette-dark) .signup-prompt {
+  color: #6b7280;
 }
 </style>
