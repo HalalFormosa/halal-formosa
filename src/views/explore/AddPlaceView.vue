@@ -29,7 +29,12 @@
         </div>
         <div class="step-line" :class="{ active: currentStep >= 3 }"></div>
         <div class="step-dot" :class="{ active: currentStep >= 3 }">
-           <ion-icon :icon="sparklesOutline" />
+           <ion-icon :icon="sparklesOutline" v-if="currentStep <= 3" />
+           <ion-icon :icon="checkmarkCircle" v-else />
+        </div>
+        <div class="step-line" :class="{ active: currentStep >= 4 }"></div>
+        <div class="step-dot" :class="{ active: currentStep >= 4 }">
+           <ion-icon :icon="checkmarkCircle" />
         </div>
       </div>
 
@@ -43,17 +48,63 @@
       <!-- Logged in -->
       <form v-else @submit.prevent="submitPlace" class="form">
         <div class="form-container">
-          
-          <!-- 🔍 STEP 0: SEARCH PLACE -->
+
+          <!-- 📍 STEP 0: LOCATION CONTEXT -->
+          <div v-show="currentStep === STEP_CONTEXT">
+            <div class="ion-padding-vertical ion-text-center">
+              <div style="font-size: 48px; margin-bottom: 12px;">📍</div>
+              <h2 style="font-weight: 700; margin-bottom: 8px;">Where are you?</h2>
+              <p style="color: var(--ion-color-medium); font-size: 14px; margin-bottom: 32px;">
+                Choose how you want to add this place.
+              </p>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 0 12px;">
+                <!-- Nearby Option -->
+                <ion-card
+                  @click="selectLocationContext('nearby')"
+                  style="margin: 0; cursor: pointer; transition: transform 0.2s;"
+                  @mouseover="($event.currentTarget as HTMLElement).style.transform = 'translateY(-4px)'"
+                  @mouseout="($event.currentTarget as HTMLElement).style.transform = 'translateY(0)'"
+                >
+                  <ion-card-content style="text-align: center; padding: 24px 16px;">
+                    <div style="font-size: 40px; margin-bottom: 12px;">🏪</div>
+                    <h3 style="font-weight: 700; margin: 0 0 8px; font-size: 16px;">I'm at/near the store</h3>
+                    <p style="color: var(--ion-color-medium); font-size: 13px; margin: 0;">
+                      Use GPS to find nearby places
+                    </p>
+                  </ion-card-content>
+                </ion-card>
+
+                <!-- Remote Option -->
+                <ion-card
+                  @click="selectLocationContext('remote')"
+                  style="margin: 0; cursor: pointer; transition: transform 0.2s;"
+                  @mouseover="($event.currentTarget as HTMLElement).style.transform = 'translateY(-4px)'"
+                  @mouseout="($event.currentTarget as HTMLElement).style.transform = 'translateY(0)'"
+                >
+                  <ion-card-content style="text-align: center; padding: 24px 16px;">
+                    <div style="font-size: 40px; margin-bottom: 12px;">🏠</div>
+                    <h3 style="font-weight: 700; margin: 0 0 8px; font-size: 16px;">I'm entering from elsewhere</h3>
+                    <p style="color: var(--ion-color-medium); font-size: 13px; margin: 0;">
+                      Search by name or address
+                    </p>
+                  </ion-card-content>
+                </ion-card>
+              </div>
+            </div>
+          </div>
+
+          <!-- 🔍 STEP 1: SEARCH PLACE -->
           <div v-show="currentStep === STEP_SOURCE">
             <div class="ion-padding-vertical ion-text-center">
               <div style="font-size: 48px; margin-bottom: 12px;">📍</div>
               <h2 style="font-weight: 700; margin-bottom: 8px;">Find Location</h2>
               <p style="color: var(--ion-color-medium); font-size: 14px; margin-bottom: 24px;">
-                Search for a place by name or address.
+                {{ locationContext === 'nearby' ? 'Select a nearby place or add a new one.' : 'Search for a place by name or address.' }}
               </p>
 
-              <div style="padding: 0 12px; margin-bottom: 16px; position: relative;">
+              <!-- Search input (only for remote mode) -->
+              <div v-if="locationContext === 'remote'" style="padding: 0 12px; margin-bottom: 16px; position: relative;">
                 <input
                   ref="searchInputRef"
                   v-model="searchQuery"
@@ -158,10 +209,63 @@
                 </ion-card-content>
               </ion-card>
 
-              <ion-button 
-                expand="block" 
-                color="carrot" 
-                style="height: 56px; font-weight: 700; --border-radius: 12px; margin-top: 16px; margin: 16px 12px 0;" 
+              <!-- Nearby places list (when using GPS) -->
+              <div v-if="locationContext === 'nearby'" style="padding: 0 12px; margin-top: 24px;">
+                <!-- Loading nearby places -->
+                <div v-if="checkingNearby" style="text-align: center;">
+                  <ion-spinner name="crescent" />
+                  <p style="color: var(--ion-color-medium); font-size: 14px; margin-top: 12px;">Finding nearby places...</p>
+                </div>
+
+                <!-- Nearby places found -->
+                <div v-else-if="nearbyMatches.length > 0">
+                  <h3 style="font-weight: 700; margin: 0 0 12px; font-size: 16px;">Nearby Places</h3>
+                  <ion-card v-for="place in nearbyMatches" :key="place.place_id" style="margin: 0 0 12px; cursor: pointer;" @click="selectNearbyPlace(place)">
+                    <ion-card-content>
+                      <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;">
+                        <div style="flex: 1;">
+                          <h4 style="font-weight: 600; margin: 0 0 4px; font-size: 15px;">{{ place.name }}</h4>
+                          <p style="color: var(--ion-color-medium); font-size: 13px; margin: 0 0 8px;">
+                            {{ place.distance_meters < 1000 ? `${place.distance_meters}m` : `${(place.distance_meters / 1000).toFixed(1)}km` }} away
+                          </p>
+                        </div>
+                        <ion-icon :icon="chevronForwardOutline" color="medium" />
+                      </div>
+                    </ion-card-content>
+                  </ion-card>
+
+                  <!-- Add new place button -->
+                  <ion-button
+                    expand="block"
+                    fill="outline"
+                    @click="addAtCurrentLocation"
+                    style="margin-top: 16px;"
+                  >
+                    <ion-icon :icon="addCircleOutline" slot="start" />
+                    Not listed, add new place here
+                  </ion-button>
+                </div>
+
+                <!-- No nearby places found -->
+                <div v-else style="text-align: center;">
+                  <p style="color: var(--ion-color-medium); font-size: 14px; margin: 0 0 16px;">
+                    No places found nearby. Add a new place at your current location.
+                  </p>
+                  <ion-button
+                    expand="block"
+                    @click="addAtCurrentLocation"
+                  >
+                    <ion-icon :icon="addCircleOutline" slot="start" />
+                    Add New Place Here
+                  </ion-button>
+                </div>
+              </div>
+
+              <ion-button
+                v-if="locationContext === 'remote' || (locationContext === 'nearby' && selectedPlacePreview)"
+                expand="block"
+                color="carrot"
+                style="height: 56px; font-weight: 700; --border-radius: 12px; margin-top: 16px; margin: 16px 12px 0;"
                 @click="currentStep = STEP_IDENTITY"
                 :disabled="!selectedPlacePreview"
               >
@@ -519,7 +623,8 @@ import {
     sparklesOutline,
     shieldCheckmarkOutline,
     checkmarkCircle,
-    barcodeOutline
+    barcodeOutline,
+    addCircleOutline
 } from 'ionicons/icons'
 import {Capacitor} from '@capacitor/core'
 import {Geolocation} from '@capacitor/geolocation'
@@ -534,11 +639,13 @@ const isEditing = computed(() => !!route.params.id)
 const coordUpdateSource = ref<'address' | 'map' | 'manual' | null>(null)
 
 /* -------------------- Multi-Step Logic -------------------- */
-const STEP_SOURCE = 0
-const STEP_IDENTITY = 1
-const STEP_PHOTOS = 2
-const STEP_DETAILS = 3
-const currentStep = ref(isEditing.value ? STEP_IDENTITY : STEP_SOURCE)
+const STEP_CONTEXT = 0
+const STEP_SOURCE = 1
+const STEP_IDENTITY = 2
+const STEP_PHOTOS = 3
+const STEP_DETAILS = 4
+const currentStep = ref(isEditing.value ? STEP_IDENTITY : STEP_CONTEXT)
+const locationContext = ref<'nearby' | 'remote' | null>(null)
 
 /* -------------------- Constants -------------------- */
 const MAP_ID = 'a40f1ec0ad0afbbb12694f19'
@@ -735,12 +842,52 @@ async function performSearch(query: string) {
   try {
     const response = await autocompleteService.getPlacePredictions({
       input: query,
-      componentRestrictions: { country: 'tw' },
-      types: ['establishment', 'geocode']
+      componentRestrictions: { country: 'tw' }
     })
 
     if (response?.predictions) {
-      searchResults.value = response.predictions.map((pred: any) => ({
+      // Strict filter: only allow business types, exclude ANY geographic type
+      const geographicTypes = [
+        'locality',
+        'administrative_area_level_1',
+        'administrative_area_level_2',
+        'administrative_area_level_3',
+        'administrative_area_level_4',
+        'administrative_area_level_5',
+        'country',
+        'postal_code',
+        'postal_code_prefix',
+        'postal_code_suffix',
+        'route',
+        'street_address',
+        'intersection',
+        'sublocality',
+        'sublocality_level_1',
+        'sublocality_level_2',
+        'sublocality_level_3',
+        'sublocality_level_4',
+        'sublocality_level_5',
+        'neighborhood',
+        'premise',
+        'subpremise',
+        'natural_feature',
+        'airport',
+        'park',
+        'geocode',
+        'political'
+      ]
+      const filteredPredictions = response.predictions.filter((pred: any) => {
+        const types = pred.types || []
+        // Exclude if ANY geographic type is present
+        if (types.some((t: string) => geographicTypes.includes(t))) {
+          return false
+        }
+        // Must have at least one business-related type
+        const businessTypes = ['establishment', 'store', 'restaurant', 'food', 'cafe', 'bakery', 'bar', 'night_club', 'shopping_mall', 'department_store', 'supermarket', 'convenience_store', 'pharmacy', 'doctor', 'hospital', 'lodging', 'hotel', 'mosque', 'church', 'synagogue', 'hindu_temple', 'place_of_worship', 'tourist_attraction', 'museum', 'art_gallery', 'zoo', 'aquarium', 'amusement_park']
+        return types.some((t: string) => businessTypes.includes(t))
+      })
+
+      searchResults.value = filteredPredictions.map((pred: any) => ({
         name: pred.structured_formatting.main_text,
         address: pred.structured_formatting.secondary_text || pred.description,
         placeId: pred.place_id
@@ -923,7 +1070,7 @@ function extractTagsFromName(name: string): string[] {
 }
 
 function handleBack() {
-  if (currentStep.value > 0 && !isEditing.value) {
+  if (currentStep.value > STEP_CONTEXT && !isEditing.value) {
     currentStep.value--
   } else {
     router.back()
@@ -1005,10 +1152,14 @@ async function resizeImageFromWebPath(
 }
 
 type NearbyMatch = {
-  id: number
+  id: string | number // Can be Google place_id or database id
   name: string
+  address?: string
+  lat?: number
+  lng?: number
   distance_meters: number
   name_similarity: number
+  place_id?: string // Google place_id
 }
 
 const nearbyMatches = ref<NearbyMatch[]>([])
@@ -1070,6 +1221,221 @@ const warningLevel = computed(() => {
 
   return 'low'
 })
+
+// Fetch nearby places from Google Places API (for Step 0 nearby flow)
+const fetchNearbyPlaces = async (lat: number, lng: number, radiusMeters: number = 500) => {
+  checkingNearby.value = true
+  try {
+    const placesLib = await mapsLoader.importLibrary('places') as any
+    const service = new placesLib.PlacesService(new google.maps.Map(document.createElement('div')))
+
+    service.nearbySearch(
+      {
+        location: { lat, lng },
+        radius: radiusMeters,
+        type: 'establishment'
+      },
+      (results: any[], status: string) => {
+        if (status === google.maps.places.PlacesServiceStatus.OK && results) {
+          // Filter out geographic types
+          const geographicTypes = [
+            'locality',
+            'administrative_area_level_1',
+            'administrative_area_level_2',
+            'administrative_area_level_3',
+            'administrative_area_level_4',
+            'administrative_area_level_5',
+            'country',
+            'postal_code',
+            'postal_code_prefix',
+            'postal_code_suffix',
+            'route',
+            'street_address',
+            'intersection',
+            'sublocality',
+            'sublocality_level_1',
+            'sublocality_level_2',
+            'sublocality_level_3',
+            'sublocality_level_4',
+            'sublocality_level_5',
+            'neighborhood',
+            'premise',
+            'subpremise',
+            'natural_feature',
+            'airport',
+            'park',
+            'geocode',
+            'political'
+          ]
+
+          const filteredResults = results.filter((place: any) => {
+            const types = place.types || []
+            // Exclude if ANY geographic type is present
+            if (types.some((t: string) => geographicTypes.includes(t))) {
+              return false
+            }
+            // Must have at least one business-related type
+            const businessTypes = ['establishment', 'store', 'restaurant', 'food', 'cafe', 'bakery', 'bar', 'night_club', 'shopping_mall', 'department_store', 'supermarket', 'convenience_store', 'pharmacy', 'doctor', 'hospital', 'lodging', 'hotel', 'mosque', 'church', 'synagogue', 'hindu_temple', 'place_of_worship', 'tourist_attraction', 'museum', 'art_gallery', 'zoo', 'aquarium', 'amusement_park']
+            return types.some((t: string) => businessTypes.includes(t))
+          })
+
+          // Limit to 5 results and add distance
+          const placesWithDistance = filteredResults.slice(0, 5).map((place: any) => {
+            const distance = calculateDistance(lat, lng, place.geometry.location.lat(), place.geometry.location.lng())
+            return {
+              id: place.place_id, // Use Google's place_id as id
+              name: place.name,
+              address: place.vicinity || '',
+              lat: place.geometry.location.lat(),
+              lng: place.geometry.location.lng(),
+              distance_meters: Math.round(distance),
+              name_similarity: 0,
+              place_id: place.place_id // Store for selection
+            }
+          }).sort((a: any, b: any) => a.distance_meters - b.distance_meters)
+
+          nearbyMatches.value = placesWithDistance
+        } else {
+          console.warn('Nearby search failed:', status)
+          nearbyMatches.value = []
+        }
+        checkingNearby.value = false
+      }
+    )
+  } catch (err) {
+    console.error('Error fetching nearby places:', err)
+    nearbyMatches.value = []
+    checkingNearby.value = false
+  }
+}
+
+// Calculate distance between two coordinates in meters (Haversine formula)
+const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
+  const R = 6371000 // Earth's radius in meters
+  const dLat = (lat2 - lat1) * Math.PI / 180
+  const dLng = (lng2 - lng1) * Math.PI / 180
+  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLng / 2) * Math.sin(dLng / 2)
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+  return R * c
+}
+
+// Handle location context selection
+const selectLocationContext = async (context: 'nearby' | 'remote') => {
+  locationContext.value = context
+
+  if (context === 'nearby') {
+    // Get GPS location
+    const coords = await getLocation()
+    if (coords) {
+      form.value.lat = coords.lat
+      form.value.lng = coords.lng
+      // Fetch nearby places
+      await fetchNearbyPlaces(coords.lat, coords.lng)
+      // Move to Step 1 (source) to show nearby places
+      currentStep.value = STEP_SOURCE
+    } else {
+      toast.value = { open: true, message: 'Could not get your location. Please try remote entry.', color: 'warning' }
+    }
+  } else {
+    // Remote entry - proceed to search flow
+    currentStep.value = STEP_SOURCE
+  }
+}
+
+// Select a nearby Google place to populate the form
+const selectNearbyPlace = async (place: any) => {
+  try {
+    const placesLib = await mapsLoader.importLibrary('places') as any
+    const service = new placesLib.PlacesService(new google.maps.Map(document.createElement('div')))
+
+    service.getDetails(
+      { placeId: place.place_id },
+      (details: any, status: string) => {
+        if (status === google.maps.places.PlacesServiceStatus.OK && details) {
+          // Populate form with Google place details
+          form.value.name = details.name || ''
+          form.value.address = details.formatted_address || details.vicinity || ''
+
+          if (details.geometry?.location) {
+            form.value.lat = details.geometry.location.lat()
+            form.value.lng = details.geometry.location.lng()
+          }
+
+          if (details.international_phone_number) {
+            form.value.phone = details.international_phone_number
+          }
+
+          // Auto-map category
+          if (details.types && locationTypes.value.length > 0) {
+            const matchedType = locationTypes.value.find((c: any) =>
+              details.types.some((t: string) => t.toLowerCase().includes(c.name.toLowerCase()))
+            )
+            if (matchedType) {
+              form.value.type_id = matchedType.id
+            } else if (details.types.includes('mosque') || details.types.includes('place_of_worship')) {
+              form.value.type_id = 4
+            } else if (details.types.includes('restaurant') || details.types.includes('food')) {
+              const restType = locationTypes.value.find((c: any) => c.name.toLowerCase().includes('restaurant'))
+              if (restType) form.value.type_id = restType.id
+            }
+          }
+
+          // Map opening hours
+          if (details.opening_hours?.periods) {
+            const daysMap: Record<number, string> = { 1: 'mon', 2: 'tue', 3: 'wed', 4: 'thu', 5: 'fri', 6: 'sat', 0: 'sun' }
+            const hours = { ...form.value.opening_hours }
+            details.opening_hours.periods.forEach((period: any) => {
+              const dayKey = daysMap[period.open?.day]
+              if (dayKey && hours[dayKey]) {
+                hours[dayKey].active = true
+                if (period.open) {
+                  hours[dayKey].open = `${String(period.open.hours).padStart(2,'0')}:${String(period.open.minutes).padStart(2,'0')}`
+                }
+                if (period.close) {
+                  hours[dayKey].close = `${String(period.close.hours).padStart(2,'0')}:${String(period.close.minutes).padStart(2,'0')}`
+                }
+              }
+            })
+            form.value.opening_hours = hours
+            openingHoursTouched.value = true
+          }
+
+          // Auto-generate tags
+          const autoTags = extractTagsFromName(details.name || '')
+          if (autoTags.length > 0 && form.value.tags.length === 0) {
+            form.value.tags = autoTags
+          }
+
+          // Show preview
+          selectedPlacePreview.value = {
+            name: form.value.name,
+            address: form.value.address || ''
+          }
+
+          // Clear nearby matches to show the selected place
+          nearbyMatches.value = []
+        } else {
+          console.warn('Place details failed:', status)
+        }
+      }
+    )
+  } catch (err) {
+    console.error('Error fetching place details:', err)
+  }
+}
+
+// Add new place at current GPS location
+const addAtCurrentLocation = () => {
+  nearbyMatches.value = []
+  // Move to Step 1 with GPS coordinates pre-filled
+  currentStep.value = STEP_SOURCE
+  // Focus on search input
+  setTimeout(() => {
+    searchInputRef.value?.focus()
+  }, 100)
+}
 
 
 
@@ -1552,7 +1918,8 @@ const submitPlace = async () => {
 }
 
 /* -------------------- Lifecycle -------------------- */
-const centerOnUserOnce = async () => {
+// Reusable geolocation function that returns coordinates
+const getLocation = async (): Promise<{lat: number; lng: number} | null> => {
   // Native (Android/iOS): use Capacitor plugin
   if (Capacitor.getPlatform() !== 'web') {
     try {
@@ -1568,39 +1935,41 @@ const centerOnUserOnce = async () => {
         timeout: 10000,
       })
       const {latitude, longitude} = pos.coords
-      form.value.lat = latitude
-      form.value.lng = longitude
-
-      const addr = await reverseGeocode(latitude, longitude)
-      if (addr) form.value.address = addr
-
-      return
+      return {lat: latitude, lng: longitude}
     } catch (err) {
       console.warn('Native geolocation failed, falling back to default', err)
-      return
+      return null
     }
   }
 
   // Web fallback: use the browser API
-  return new Promise<void>((resolve) => {
+  return new Promise((resolve) => {
     navigator.geolocation.getCurrentPosition(
         (pos) => {
           const {latitude, longitude} = pos.coords
-          form.value.lat = latitude
-          form.value.lng = longitude
-          resolve()
+          resolve({lat: latitude, lng: longitude})
         },
         (err) => {
           console.warn('Web geolocation failed or denied', err)
-          resolve()
+          resolve(null)
         },
         {
-          enableHighAccuracy: false, // Low accuracy is standard and faster for web
-          timeout: 15000,           // 15 seconds is more reliable for triangulation
-          maximumAge: 60000         // Use a cached position up to 1 min old
+          enableHighAccuracy: false,
+          timeout: 15000,
+          maximumAge: 60000
         }
     )
   })
+}
+
+const centerOnUserOnce = async () => {
+  const coords = await getLocation()
+  if (coords) {
+    form.value.lat = coords.lat
+    form.value.lng = coords.lng
+    const addr = await reverseGeocode(coords.lat, coords.lng)
+    if (addr) form.value.address = addr
+  }
 }
 
 onMounted(async () => {
