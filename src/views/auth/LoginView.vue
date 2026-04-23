@@ -76,7 +76,9 @@
             >
               <ion-input-password-toggle slot="end" />
             </ion-input>
-
+            <div class="forgot-password-link" @click="handleForgotPassword">
+              {{ $t('auth.forgotPassword') }}
+            </div>
           </div>
 
           <!-- Error -->
@@ -136,7 +138,7 @@ import {
   IonButton,
   IonText,
   IonInputPasswordToggle,
-  IonContent, IonSelectOption, IonSelect, IonIcon
+  IonContent, IonSelectOption, IonSelect, IonIcon, alertController
 } from '@ionic/vue';
 import { defineComponent } from 'vue';
 
@@ -174,7 +176,7 @@ document.documentElement.classList.toggle(
     theme.value === 'dark'
 )
 
-const { locale } = useI18n()
+const { locale, t } = useI18n()
 
 // form fields
 const email = ref('');
@@ -203,6 +205,34 @@ async function login() {
     ActivityLogService.log('auth_login_failed', { error_message: error.message, method: 'email' })
   } else {
     ActivityLogService.log('auth_login_success', { method: 'email' })
+  }
+}
+
+async function handleForgotPassword() {
+  if (!email.value) {
+    errorMsg.value = 'Please enter your email address first.';
+    return;
+  }
+
+  loading.value = true;
+  errorMsg.value = '';
+
+  const { error } = await supabase.auth.resetPasswordForEmail(email.value, {
+    redirectTo: window.location.origin + '/update-password',
+  });
+
+  loading.value = false;
+
+  if (error) {
+    errorMsg.value = error.message;
+  } else {
+    const alert = await alertController.create({
+      header: t('auth.forgotPassword'),
+      message: t('auth.resetEmailSent'),
+      buttons: ['OK'],
+    });
+    await alert.present();
+    ActivityLogService.log('auth_password_reset_requested', { email: email.value });
   }
 }
 
@@ -566,4 +596,18 @@ html.ion-palette-dark .theme-btn ion-icon {
   transform: rotate(180deg);
 }
 
+.forgot-password-link {
+  text-align: right;
+  margin-top: 8px;
+  font-size: 13px;
+  color: var(--ion-color-carrot);
+  cursor: pointer;
+  font-weight: 500;
+  opacity: 0.9;
+}
+
+.forgot-password-link:hover {
+  opacity: 1;
+  text-decoration: underline;
+}
 </style>

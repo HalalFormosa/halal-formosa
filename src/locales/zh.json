@@ -95,7 +95,9 @@
     "email": "電子郵件",
     "password": "密碼",
     "loggingIn": "登入中...",
-    "continueWithGoogle": "使用 Google 帳號繼續"
+    "continueWithGoogle": "使用 Google 帳號繼續",
+    "forgotPassword": "忘記密碼？",
+    "resetEmailSent": "重置密碼郵件已發送！請檢查您的收件箱。"
   },
   "updatePassword": {
     "title": "設定新密碼",

@@ -64,7 +64,9 @@
     "email": "Emel",
     "password": "Kata Laluan",
     "loggingIn": "Sedang log masuk...",
-    "continueWithGoogle": "Teruskan dengan Google"
+    "continueWithGoogle": "Teruskan dengan Google",
+    "forgotPassword": "Lupa Kata Laluan?",
+    "resetEmailSent": "Emel set semula kata laluan telah dihantar! Sila semak peti masuk anda."
   },
   "updatePassword": {
     "title": "Tetapkan Kata Laluan Baru",

@@ -98,7 +98,9 @@
     "email": "Email",
     "password": "Password",
     "loggingIn": "Logging in...",
-    "continueWithGoogle": "Continue with Google"
+    "continueWithGoogle": "Continue with Google",
+    "forgotPassword": "Forgot Password?",
+    "resetEmailSent": "Password reset email sent! Please check your inbox."
   },
   "updatePassword": {
     "title": "Set New Password",

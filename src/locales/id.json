@@ -64,7 +64,9 @@
     "email": "Email",
     "password": "Kata Sandi",
     "loggingIn": "Sedang masuk...",
-    "continueWithGoogle": "Lanjutkan dengan Google"
+    "continueWithGoogle": "Lanjutkan dengan Google",
+    "forgotPassword": "Lupa Kata Sandi?",
+    "resetEmailSent": "Email reset kata sandi telah dikirim! Silakan periksa kotak masuk Anda."
   },
   "updatePassword": {
     "title": "Setel Kata Sandi Baru",
