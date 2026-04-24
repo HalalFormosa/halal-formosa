@@ -492,6 +492,32 @@
                 </ion-card>
               </div>
 
+              <!-- 💰 Section: Tags -->
+              <div class="form-section">
+                <ion-list-header><ion-label>{{ $t('addPlace.tagsAndCategories', 'Tags') }}</ion-label></ion-list-header>
+                <ion-card class="input-card">
+                  <ion-item lines="none">
+                    <ion-input
+                        v-model="tagInput"
+                        :label="$t('addPlace.addTagLabel', 'Add a tag')"
+                        label-placement="stacked"
+                        :placeholder="$t('addPlace.tagPlaceholder', 'e.g. Snack, Spicy')"
+                        @ionInput="handleTagInput"
+                        @keyup.enter="addTag"
+                    />
+                    <ion-button slot="end" fill="clear" @click="addTag" style="margin-top: 14px;">
+                      {{ $t('common.add', 'Add') }}
+                    </ion-button>
+                  </ion-item>
+                  <div v-if="form.tags.length > 0" class="tag-chips ion-padding-horizontal ion-padding-bottom" style="display: flex; flex-wrap: wrap; gap: 8px;">
+                    <ion-chip v-for="tag in form.tags" :key="tag" color="primary" outline class="tag-chip" style="margin: 0;">
+                      <ion-label>{{ tag }}</ion-label>
+                      <ion-icon :icon="closeCircle" @click="removeTag(tag)" />
+                    </ion-chip>
+                  </div>
+                </ion-card>
+              </div>
+
               <!-- 📸 Section 5: Photos -->
               <div class="form-section">
                 <ion-list-header>
@@ -1003,7 +1029,8 @@ onMounted(async () => {
       product_category_id: props.editProduct.product_category_id ?? null,
       ingredients: props.editProduct.ingredients ?? '',
       description: props.editProduct.description ?? '',
-      store_ids: []
+      store_ids: [],
+      tags: props.editProduct.tags ?? []
     }
 
     frontPreview.value = props.editProduct.photo_front_url ?? null
@@ -1092,6 +1119,7 @@ interface ProductForm {
   ingredients: string
   description: string
   store_ids: string[]   // ✅ string IDs
+  tags: string[]
 }
 
 const form = ref<ProductForm>({
@@ -1101,8 +1129,35 @@ const form = ref<ProductForm>({
   product_category_id: null,
   ingredients: '',
   description: '',
-  store_ids: []        // ✅ start empty
+  store_ids: [],
+  tags: []
 })
+
+const tagInput = ref('')
+
+const handleTagInput = (e: any) => {
+  const val = e.target.value
+  if (val.endsWith(',')) {
+    const tag = val.slice(0, -1).trim()
+    if (tag && !form.value.tags.includes(tag)) {
+      form.value.tags.push(tag)
+    }
+    tagInput.value = ''
+  }
+}
+
+const addTag = (e?: any) => {
+  if (e) e.preventDefault()
+  const val = tagInput.value.trim().replace(/,/g, '')
+  if (val && !form.value.tags.includes(val)) {
+    form.value.tags.push(val)
+  }
+  tagInput.value = ''
+}
+
+const removeTag = (t: string) => {
+  form.value.tags = form.value.tags.filter(tag => tag !== t)
+}
 
 // ✅ rules fetched from DB
 const categoryRules = ref<Record<string, number>>({})

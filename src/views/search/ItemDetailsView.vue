@@ -284,6 +284,18 @@
                 v-html="highlightedDescription"
             ></h5>
 
+            <!-- Tags -->
+            <div v-if="item.tags && item.tags.length > 0" class="ion-margin-top">
+              <p class="section-title">
+                <strong><small>{{ $t('addPlace.tagsAndCategories', 'Tags') }}</small></strong>
+              </p>
+              <div class="tag-chips" style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px;">
+                <ion-chip v-for="tag in item.tags" :key="tag" style="margin: 0; font-size: 12px; height: 24px; padding: 0 10px;">
+                  <ion-label>{{ tag }}</ion-label>
+                </ion-chip>
+              </div>
+            </div>
+
             <!-- Ingredients -->
             <p class="section-title ion-margin-top">
               <strong><small>{{ $t('search.details.ingredients') }}</small></strong>

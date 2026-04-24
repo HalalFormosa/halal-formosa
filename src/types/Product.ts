@@ -41,4 +41,5 @@ export interface Product {
 
     partner_id?: string | null;
     partner_tier?: string | null;
+    tags?: string[];
 }

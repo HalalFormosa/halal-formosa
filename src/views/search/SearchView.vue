@@ -365,11 +365,11 @@
                                {{ product.view_count || 0 }}
                              </span>
                              <span class="meta-dot">•</span>
-                             <span class="meta">
+                              <span class="meta">
                                <Clock :size="14" class="lucide-meta-icon" />
                                {{ fromNowToTaipei(product.created_at) }}
                              </span>
-                          </div>
+                           </div>
                         </div>
                         <div class="info-bottom">
                           <div class="premium-verified-tag">
@@ -620,6 +620,7 @@ interface Product {
   created_at?: string
   view_count?: number
   partner_tier?: 'Gold' | 'Silver' | 'Bronze'
+  tags?: string[]
 }
 
 const STATUS_COLOR_MAP: Record<string, string> = {
