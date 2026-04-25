@@ -622,7 +622,7 @@ async function moveItem(saveId: string, currentFolderId: string, productId: stri
 .item-img-wrapper img {
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  object-fit: cover;
 }
 
 .item-info {

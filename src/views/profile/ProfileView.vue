@@ -215,6 +215,13 @@
               <ion-label>{{ $t('profile.savedItems') }}</ion-label>
             </ion-item>
 
+            <ion-item v-if="userEmail" button @click="goToSavedLocations">
+              <div class="icon-box" slot="start">
+                <ion-icon :icon="icons.locationOutline" />
+              </div>
+              <ion-label>{{ $t('savedLocations.title') }}</ion-label>
+            </ion-item>
+
             <ion-item v-if="userEmail" button @click="$router.push('/store/my-orders')" :disabled="isStoreUnderConstruction">
               <div class="icon-box" slot="start">
                 <ion-icon :icon="icons.bagHandleOutline" />
@@ -598,6 +605,7 @@ import {
   personCircleOutline,
   settingsOutline,
   bookmarkOutline,
+  locationOutline,
   logOutOutline,
   checkmarkCircle,
   chevronDown,
@@ -657,6 +665,7 @@ const icons = {
   documentTextOutline,
   personCircleOutline,
   bookmarkOutline,
+  locationOutline,
   globeOutline,
   logOutOutline,
   checkmarkCircle,
@@ -1110,6 +1119,10 @@ function logAndOpen(platform: string, url: string) {
 
 function goToSavedItems() {
   router.push('/profile/saved-items')
+}
+
+function goToSavedLocations() {
+  router.push('/profile/saved-locations')
 }
 
 async function openProPaywall() {

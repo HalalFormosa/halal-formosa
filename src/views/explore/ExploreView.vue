@@ -393,21 +393,18 @@
                         {{ fromNowToTaipei(place.created_at) }}
                       </span>
                     </div>
-                    
-                    <div v-if="(userLocation || !locationAttemptFinished) && (place as any).distance !== undefined" class="distance">
-                      <ion-icon :icon="locationOutline" style="font-size: 0.85rem; vertical-align: middle; margin-top: -2px;" />
-                      <template v-if="!locationAttemptFinished">
-                        {{ $t('explore.locating') }}
-                      </template>
-                      <template v-else>
-                        {{ formatKm((place as any).distance) }} km
-                      </template>
-                    </div>
-
                   </div>
-
                   <div class="info-actions">
                     <div class="action-row">
+                      <ion-button 
+                        v-if="isLoggedIn" 
+                        fill="clear" 
+                        size="small" 
+                        :color="isLocationSaved(place.id) ? 'carrot' : 'medium'" 
+                        @click.stop="openSaveModal(place)"
+                      >
+                        <ion-icon :icon="isLocationSaved(place.id) ? bookmark : bookmarkOutline" slot="start" />
+                      </ion-button>
                       <ion-button fill="clear" size="small" color="carrot" @click.stop="goToDetail(place.id)" class="detail-btn">
                         {{ $t('common.details') }}
                       </ion-button>
@@ -421,6 +418,16 @@
         </div>
       </div>
     </div>
+
+    <!-- Save Location Modal -->
+    <SaveLocationModal
+      :is-open="showSaveLocationModal"
+      :location-id="selectedLocationForSave?.id || 0"
+      :location-name="selectedLocationForSave?.name || ''"
+      @close="showSaveLocationModal = false"
+      @saved="checkSavedState(selectedLocationForSave?.id || 0)"
+    />
+
     <ion-footer v-if="viewMode === 'list'" style="position: absolute; bottom: 0; left: 0; right: 0; width: 100%; z-index: 1001; background: var(--ion-background-color); border-top: 1px solid rgba(var(--ion-color-dark-rgb), 0.05);">
       <div class="footer-count">
         <small>
@@ -505,7 +512,8 @@ import {
   layersOutline, listOutline, gridOutline, mapOutline, sparkles, shieldCheckmarkOutline, checkmarkCircle,
   trendingUpOutline, flameOutline, timeOutline, locationOutline, filterOutline,
   eyeOutline, shareSocialOutline, navigateOutline, closeCircleOutline,
-  calendarOutline, pricetagOutline, school, funnelOutline, closeOutline
+  calendarOutline, pricetagOutline, school, funnelOutline, closeOutline,
+  bookmarkOutline, bookmark
 } from 'ionicons/icons'
 import { ref, onMounted, onUnmounted, nextTick, watch, computed } from 'vue'
 import type {ComponentPublicInstance, VNodeRef} from 'vue'
@@ -529,6 +537,8 @@ import { useLocation } from '@/composables/useLocation'
 import {ActivityLogService} from "@/services/ActivityLogService";
 
 import {isDonor} from "@/composables/useSubscriptionStatus";
+import { useSavedLocations } from '@/composables/useSavedLocations';
+import SaveLocationModal from '@/components/SaveLocationModal.vue';
 
 const ionIconMap: Record<string, any> = {
   restaurant,
@@ -729,6 +739,12 @@ const lerp = (a: number, b: number, t: number) => a + (b - a) * t
 const hasAutoSelected = ref(false)
 let clusterer: MarkerClusterer | null = null
 let locationWatchId: string | null = null
+
+// Saved Locations State
+const { isLocationSaved, checkSavedState } = useSavedLocations()
+const showSaveLocationModal = ref(false)
+const selectedLocationForSave = ref<{ id: number; name: string } | null>(null)
+
 const lastStableLoc = ref<LatLng | null>(null)
 const lastCalcLocation = ref<LatLng | null>(null)
 
@@ -2232,6 +2248,25 @@ const goToDetail = async (id: number) => {
   });
 
   router.push(`/place/${id}`);
+};
+
+const openSaveModal = (place: Place) => {
+  if (!isLoggedIn.value) {
+    router.push({
+      path: '/login',
+      query: { redirect: '/explore' }
+    });
+    return;
+  }
+  
+  selectedLocationForSave.value = { id: place.id, name: place.name };
+  showSaveLocationModal.value = true;
+  
+  ActivityLogService.log("location_save_click", {
+    location_id: place.id,
+    location_name: place.name,
+    source: viewMode.value === 'map' ? 'explore_map' : 'explore_list'
+  });
 };
 
 </script>

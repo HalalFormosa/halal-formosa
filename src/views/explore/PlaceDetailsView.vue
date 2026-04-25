@@ -25,6 +25,11 @@
              <ion-icon :icon="shareSocialOutline" slot="start"/>
              <ion-label>{{ $t('search.details.share') }}</ion-label>
            </ion-item>
+
+           <ion-item v-if="isLoggedIn" button @click="openSaveModal" lines="none">
+             <ion-icon :icon="isLocationSaved(place?.id || 0) ? bookmark : bookmarkOutline" slot="start" :color="isLocationSaved(place?.id || 0) ? 'carrot' : ''" />
+             <ion-label>{{ isLocationSaved(place?.id || 0) ? $t('savedLocations.saved') || 'Saved' : $t('savedLocations.save') || 'Save Location' }}</ion-label>
+           </ion-item>
          </template>
        </app-header>
      </ion-header>
@@ -347,6 +352,15 @@
         </Swiper>
       </ion-content>
     </ion-modal>
+
+    <!-- Save Location Modal -->
+    <SaveLocationModal
+      :is-open="showSaveLocationModal"
+      :location-id="place?.id || 0"
+      :location-name="place?.name || ''"
+      @close="showSaveLocationModal = false"
+      @saved="checkSavedState(place?.id || 0)"
+    />
   </ion-page>
 </template>
 
@@ -383,7 +397,9 @@ import {
   navigateOutline,
   shareSocialOutline,
   sparkles,
-  shieldCheckmarkOutline
+  shieldCheckmarkOutline,
+  bookmarkOutline,
+  bookmark
 } from 'ionicons/icons'
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
@@ -400,6 +416,8 @@ function fromNowToTaipei(dateString?: string) {
 }
 
 import {ActivityLogService} from "@/services/ActivityLogService";
+import { useSavedLocations } from '@/composables/useSavedLocations';
+import SaveLocationModal from '@/components/SaveLocationModal.vue';
 
 type DayKey = "mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun"
 
@@ -458,6 +476,11 @@ const router = useRouter()
 const place = ref<PlaceDetail | null>(null)
 const canEdit = ref(false)
 const modules = [Pagination, Zoom]
+const isLoggedIn = ref(false)
+
+// Saved Locations
+const { isLocationSaved, checkSavedState } = useSavedLocations()
+const showSaveLocationModal = ref(false)
 
 const isScrolled = ref(false)
 const handleScroll = (ev: any) => {
@@ -476,6 +499,15 @@ function openImageModal() {
   showImageModal.value = true
 }
 
+function openSaveModal() {
+  if (!place.value) return
+  showSaveLocationModal.value = true
+  ActivityLogService.log("location_save_click", {
+    location_id: place.value.id,
+    location_name: place.value.name,
+    source: "place_details"
+  })
+}
 
 function closeImageModal() {
   showImageModal.value = false
@@ -595,6 +627,7 @@ const loadPlace = async () => {
     // 🔹 Check if the current user can edit
     const {data: {user}} = await supabase.auth.getUser()
     if (user) {
+      isLoggedIn.value = true
       // Check if user is the creator or an admin/contributor
       const {data: roleData} = await supabase
           .from('user_roles')
