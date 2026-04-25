@@ -393,6 +393,9 @@
                         {{ fromNowToTaipei(place.created_at) }}
                       </span>
                     </div>
+                    <div v-if="userLocation && (place as any).distance !== undefined" class="distance">
+                      <ion-icon :icon="locationOutline" style="font-size: 0.85rem; vertical-align: middle; margin-top: -2px;" /> {{ formatKm((place as any).distance) }} km
+                    </div>
                   </div>
                   <div class="info-actions">
                     <div class="action-row">

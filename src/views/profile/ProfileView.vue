@@ -833,6 +833,7 @@ async function fetchPendingLocationsCount() {
     .from('locations')
     .select('*', { count: 'exact', head: true })
     .eq('approved', false)
+    .eq('is_archived', false)
 
   pendingLocationsCount.value = count || 0
 }
