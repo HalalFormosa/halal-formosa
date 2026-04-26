@@ -435,7 +435,8 @@
     "locating": "Mencari lokasi Anda...",
     "gettingFix": "Mendapatkan posisi...",
     "searchWait": "Harap tunggu...",
-    "searchMap": "Mencari alamat di peta..."
+    "searchMap": "Mencari alamat di peta...",
+    "moreFilters": "lainnya ..."
   },
   "trip": {
     "title": "Wisata Ramah Muslim",

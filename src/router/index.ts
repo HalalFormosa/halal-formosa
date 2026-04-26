@@ -289,7 +289,7 @@ const routes: Array<RouteRecordRaw> = [
         path: '/reels',
         name: 'FullReels',
         component: () => import('@/views/home/FullReelsView.vue'),
-        meta: { noTabs: true, noAds: true }
+        meta: { noAds: true }
     }
 
 ];

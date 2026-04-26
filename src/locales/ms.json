@@ -440,7 +440,8 @@
     "locating": "Mencari lokasi anda...",
     "gettingFix": "Mendapatkan kedudukan...",
     "searchWait": "Sila tunggu...",
-    "searchMap": "Mencari alamat di peta..."
+    "searchMap": "Mencari alamat di peta...",
+    "moreFilters": "lainnya ..."
   },
   "trip": {
     "title": "Trip Mesra Muslim",

@@ -43,11 +43,43 @@
           </div>
         </div>
 
+        <!-- Quick Filters Bar (Mobile Only) -->
+        <div
+          v-if="isSmallScreen && !loadingCategories && categories.length > 0"
+          class="quick-filters-bar"
+        >
+          <div class="quick-filters-scroll">
+            <ion-chip
+              v-for="cat in categories.slice(0, 4)"
+              :key="'quick-' + cat.id"
+              class="quick-filter-chip"
+              :class="{ active: activeCategoryIds.includes(cat.id) }"
+              :style="{
+                '--cat-color': cat.color || 'var(--ion-color-carrot)',
+                '--cat-bg': activeCategoryIds.includes(cat.id) ? (cat.color || 'var(--ion-color-carrot)') : hexToRgba(cat.color || 'var(--ion-color-carrot)', 0.15)
+              }"
+              @click="toggleCategory(cat)"
+            >
+              <span v-if="typeof categoryIconMap[cat.name] === 'string' && categoryIconMap[cat.name].length === 2" class="category-emoji">
+                {{ categoryIconMap[cat.name] }}
+              </span>
+              <ion-icon v-else-if="categoryIconMap[cat.name]" :icon="categoryIconMap[cat.name]" class="category-icon" />
+              <ion-label>{{ cat.name }}</ion-label>
+            </ion-chip>
+            <ion-chip
+              class="quick-filter-chip more-chip"
+              @click="isFilterModalOpen = true"
+            >
+              <ion-label>{{ $t('explore.moreFilters') }}</ion-label>
+            </ion-chip>
+          </div>
+        </div>
+
         <!-- Desktop Filters (Inline) -->
         <template v-if="!isSmallScreen">
           <!-- Category bar row -->
           <div class="category-bar-row">
-            <div v-show="!loadingCategories" class="category-bar">
+            <div v-show="!loadingCategories" class="category-bar scrollable" ref="desktopCategoryBar">
               
               <ion-chip
                   v-if="activeTag && !isCampusTagSelected"
@@ -184,12 +216,67 @@
                     <ion-label>{{ $t('search.sortViews') }}</ion-label>
                     <ion-icon v-if="sortBy === 'popular'" :icon="checkmarkCircle" slot="end" color="success" style="font-size: 14px;" />
                   </ion-item>
+
+                  <ion-item v-if="canShowForYouSort" button @click="sortBy = 'for_you'">
+                    <ion-icon :icon="sparklesOutline" slot="start" />
+                    <ion-label>{{ $t('search.sortForYou') }}</ion-label>
+                    <ion-icon v-if="sortBy === 'for_you'" :icon="checkmarkCircle" slot="end" color="success" style="font-size: 14px;" />
+                  </ion-item>
                 </ion-list>
               </ion-popover>
             </div>
           </div>
           
           <div class="vertical-cards-stack">
+            <!-- 🔒 For You (Non-Pro Gate) -->
+            <template v-if="showForYouGate && viewMode === 'list'">
+              <ion-card class="for-you-info">
+                <ion-card-content>
+                  <div class="for-you-row">
+                    <ion-icon :icon="sparklesOutline" size="large" color="carrot" class="for-you-icon" />
+                    <div>
+                      <strong>{{ $t('explore.forYou.title') }}</strong>
+                      <p>{{ $t('explore.forYou.gateDesc') }}</p>
+                    </div>
+                  </div>
+                  <ion-button color="carrot" size="small" expand="block">
+                    {{ $t('explore.forYou.upgrade') }}
+                  </ion-button>
+                </ion-card-content>
+              </ion-card>
+            </template>
+
+            <!-- ✨ For You Explanation (Pro Users) -->
+            <ion-card
+                v-if="showForYouInfo && !hideForYouInfo && viewMode === 'list'"
+                class="for-you-info"
+            >
+              <ion-card-content>
+                <div class="for-you-row">
+                  <ion-icon :icon="sparklesOutline" size="large" color="carrot" class="for-you-icon" />
+                  <div>
+                    <strong>{{ $t('explore.forYou.title') }}</strong>
+                    <p class="for-you-desc">
+                      Because you love to find
+                      <span v-if="forYouCategories.length > 0" class="factor-values">{{ forYouCategories.join(', ') }}</span>
+                      <span v-else>places based on your activity</span>
+                    </p>
+
+                    <!-- Learning message when no factors yet -->
+                    <p
+                        v-if="forYouCategories.length === 0 && forYouSearchTerms.length === 0 && forYouTags.length === 0"
+                        style="margin-top:6px; font-size:12px; color:var(--ion-color-medium);"
+                    >
+                      {{ $t('explore.forYou.learningMsg') }}
+                    </p>
+                  </div>
+                </div>
+                <ion-button fill="clear" size="small" @click="dismissForYouInfo">
+                  {{ $t('search.gotIt') }}
+                </ion-button>
+              </ion-card-content>
+            </ion-card>
+
             <!-- Skeleton list while loading -->
             <template v-if="loadingPlaces">
               <div v-for="n in 5" :key="'skeleton-list-' + n" class="modern-location-card list-mode-card">
@@ -199,12 +286,17 @@
                   </div>
                   <div class="card-info-section">
                     <div class="info-top">
-                      <ion-skeleton-text animated style="width:70%; height:20px; margin-bottom:12px;" />
+                      <ion-skeleton-text animated style="width:75%; height:20px; margin-bottom:12px;" />
                       <div class="metas">
-                        <ion-skeleton-text animated style="width:30%; height:14px;" />
+                        <ion-skeleton-text animated style="width:25%; height:14px;" />
                         <ion-skeleton-text animated style="width:20%; height:14px;" />
+                        <ion-skeleton-text animated style="width:30%; height:14px;" />
                       </div>
-                      <ion-skeleton-text animated style="width:40%; height:14px; margin-top:8px;" />
+                      <ion-skeleton-text animated style="width:35%; height:14px; margin-top:8px;" />
+                      <div class="card-tags-row horizontal-scroll" style="margin-top:8px;">
+                        <ion-skeleton-text animated style="width:50px; height:18px; border-radius:6px;" />
+                        <ion-skeleton-text animated style="width:60px; height:18px; border-radius:6px;" />
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -241,9 +333,7 @@
                     </h5>
                     <div class="metas">
                       <span class="meta">{{ place.type }}</span>
-                      <span class="meta-dot">•</span>
                       <span class="meta"><ion-icon :icon="eyeOutline" style="vertical-align: middle; margin-top: -2px;" /> {{ place.view_count || 0 }}</span>
-                      <span class="meta-dot">•</span>
                       <span class="meta">
                         <ion-icon :icon="calendarOutline" style="vertical-align: middle; margin-top: -2px;" />
                         {{ fromNowToTaipei(place.created_at) }}
@@ -323,7 +413,7 @@
         <div class="cards-track">
           <!-- Skeleton list while locating OR loading data -->
           <template v-if="!locationAttemptFinished || loadingPlaces">
-            <div v-for="n in 3" :key="'skeleton-map-' + n" class="modern-location-card">
+            <div v-for="n in 5" :key="'skeleton-map-' + n" class="modern-location-card">
               <div class="card-inner">
                 <div class="card-image-section">
                   <ion-skeleton-text
@@ -333,13 +423,20 @@
                 </div>
                 <div class="card-info-section">
                   <div class="info-top">
-                    <ion-skeleton-text animated style="width:75%; height:20px; margin-bottom:12px;" />
+                    <ion-skeleton-text animated style="width:80%; height:20px; margin-bottom:12px;" />
                     <div class="metas">
-                      <ion-skeleton-text animated style="width:30%; height:14px;" />
-                      <ion-skeleton-text animated style="width:20%; height:14px;" />
-                      <ion-skeleton-text animated style="width:20%; height:14px;" />
+                      <ion-skeleton-text animated style="width:25%; height:14px;" />
+                      <ion-skeleton-text animated style="width:35%; height:14px;" />
                     </div>
-                    <ion-skeleton-text animated style="width:45%; height:14px; margin-top:8px;" />
+                    <ion-skeleton-text animated style="width:40%; height:14px; margin-top:8px;" />
+                  </div>
+                  <div class="info-actions">
+                    <div class="action-row" style="display:flex; gap:8px; margin-top:12px;">
+                      <ion-skeleton-text animated style="width:36px; height:36px; border-radius:50%;" />
+                      <ion-skeleton-text animated style="width:36px; height:36px; border-radius:50%;" />
+                      <ion-skeleton-text animated style="width:36px; height:36px; border-radius:50%;" />
+                      <ion-skeleton-text animated style="width:70px; height:32px; border-radius:16px; margin-left:auto;" />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -384,10 +481,7 @@
                       <ion-icon v-if="place.partner_tier" :icon="checkmarkCircle" class="verified-badge" />
                     </h5>
                     <div class="metas">
-                      <span class="meta">{{ place.type }}</span>
-                      <span class="meta-dot">•</span>
                       <span class="meta"><ion-icon :icon="eyeOutline" style="vertical-align: middle; margin-top: -2px;" /> {{ place.view_count || 0 }}</span>
-                      <span class="meta-dot">•</span>
                       <span class="meta">
                         <ion-icon :icon="calendarOutline" style="vertical-align: middle; margin-top: -2px;" />
                         {{ fromNowToTaipei(place.created_at) }}
@@ -408,9 +502,29 @@
                       >
                         <ion-icon :icon="isLocationSaved(place.id) ? bookmark : bookmarkOutline" slot="start" />
                       </ion-button>
-                      <ion-button fill="clear" size="small" color="carrot" @click.stop="goToDetail(place.id)" class="detail-btn">
-                        {{ $t('common.details') }}
-                      </ion-button>
+                      <div class="action-icons">
+                        <ion-button 
+                          fill="clear" 
+                          size="small" 
+                          color="carrot" 
+                          @click.stop="sharePlace({ name: place.name, type: place.type, imageUrl: place.image || 'https://placehold.co/200x100', lat: place.position.lat, lng: place.position.lng })"
+                          class="icon-btn"
+                        >
+                          <ion-icon :icon="shareSocialOutline" />
+                        </ion-button>
+                        <ion-button 
+                          fill="clear" 
+                          size="small" 
+                          color="carrot" 
+                          @click.stop="openNavigation(place)"
+                          class="icon-btn"
+                        >
+                          <ion-icon :icon="navigateOutline" />
+                        </ion-button>
+                        <ion-button fill="clear" size="small" color="carrot" @click.stop="goToDetail(place.id)" class="detail-btn">
+                          {{ $t('common.details') }}
+                        </ion-button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -502,7 +616,7 @@ import {
   IonPage, IonContent, IonToolbar, IonSearchbar, IonIcon, IonFab, IonFabButton,
   IonPopover, IonList, IonItem, IonFooter, IonModal, IonTitle, IonButtons, 
   IonHeader, IonLabel, IonChip, IonSkeletonText, IonCard, IonThumbnail, IonFabList,
-  IonSpinner,
+  IonSpinner, IonCardContent,
   onIonViewWillEnter, onIonViewDidEnter, onIonViewWillLeave, IonButton,
   toastController
 } from '@ionic/vue'
@@ -516,7 +630,8 @@ import {
   trendingUpOutline, flameOutline, timeOutline, locationOutline, filterOutline,
   eyeOutline, shareSocialOutline, navigateOutline, closeCircleOutline,
   calendarOutline, pricetagOutline, school, funnelOutline, closeOutline,
-  bookmarkOutline, bookmark
+  bookmarkOutline, bookmark,
+  sparklesOutline
 } from 'ionicons/icons'
 import { ref, onMounted, onUnmounted, nextTick, watch, computed } from 'vue'
 import type {ComponentPublicInstance, VNodeRef} from 'vue'
@@ -568,7 +683,7 @@ const viewMode = ref<'map' | 'list'>('map')
 const activeTag = ref<string | null>(null)
 const activeCategoryIds = ref<number[]>([])
 const searchQuery = ref('')
-const sortBy = ref<'nearest' | 'recent' | 'popular' | 'trending'>(userLocation.value ? 'nearest' : 'recent')
+const sortBy = ref<'nearest' | 'recent' | 'popular' | 'trending' | 'for_you'>(userLocation.value ? 'nearest' : 'recent')
 const listLimit = ref(20)
 // locations moved up
 const loadingPlaces = ref(true)
@@ -648,6 +763,7 @@ const isContributor = ref(false)
 // Use shared location logic
 const cardRefs = ref<Record<number, Element | ComponentPublicInstance | null>>({})
 const contentRef = ref<HTMLIonContentElement | null>(null)
+const desktopCategoryBar = ref<HTMLElement | null>(null)
 
 const isSmallScreen = ref(window.innerWidth < 768)
 // listLimit moved up
@@ -659,6 +775,16 @@ const loading = ref(true)
 const campusPartners = ref<{ id: string; name: string; slug: string }[]>([])
 const trendingPlaceIds = ref<number[]>([])
 const isFilterModalOpen = ref(false)
+const currentZoom = ref(14)
+const forYouPlaceIds = ref<number[]>([])
+const forYouReason = ref<string | null>(null)
+const forYouCategories = ref<string[]>([])
+const forYouSearchTerms = ref<string[]>([])
+const forYouTags = ref<string[]>([])
+const hideForYouInfo = ref(
+  localStorage.getItem('hide_explore_for_you_info') === '1'
+)
+const visitedPlaceIds = ref<number[]>([])
 
 const listPaddingTop = computed(() => {
   let base = 90; // search row
@@ -707,9 +833,31 @@ const activeFiltersCount = computed(() => {
   return activeCategoryIds.value.length + (activeTag.value ? 1 : 0)
 })
 
+// For You computed properties
+const showForYouGate = computed(() => {
+  return sortBy.value === 'for_you' && !isDonor.value
+})
+
+const showForYouInfo = computed(() => {
+  return sortBy.value === 'for_you' && isDonor.value
+})
+
+const canShowForYouSort = computed(() => {
+  return isLoggedIn.value
+})
+
 // Reset pagination when filters or sort change
 watch([activeFiltersCount, sortBy, searchQuery], () => {
   listLimit.value = 20
+})
+
+// Load For You data when sort changes to for_you
+watch(sortBy, (newSort) => {
+  if (newSort === 'for_you') {
+    loadForYouReason()
+    // Reset hide flag when user re-selects For You
+    hideForYouInfo.value = false
+  }
 })
 
 // Tag Overflow Popover
@@ -1082,6 +1230,7 @@ const sortLabel = computed(() => {
   if (sortBy.value === 'recent') return 'Recent'
   if (sortBy.value === 'trending') return 'Trending'
   if (sortBy.value === 'popular') return 'Hot'
+  if (sortBy.value === 'for_you') return 'For You'
   return 'Sort'
 })
 
@@ -1090,8 +1239,37 @@ const sortIcon = computed(() => {
   if (sortBy.value === 'recent') return timeOutline
   if (sortBy.value === 'trending') return trendingUpOutline
   if (sortBy.value === 'popular') return flameOutline
+  if (sortBy.value === 'for_you') return sparklesOutline
   return filterOutline
 })
+
+// For You functions
+async function loadForYouReason() {
+  const user = (await supabase.auth.getUser()).data.user
+  if (!user) return
+
+  const {data} = await supabase.rpc(
+      'get_user_place_preferences',
+      {p_user_id: user.id}
+  )
+
+  if (data && data.length > 0) {
+    forYouReason.value = data[0].reason
+    forYouCategories.value = data[0].categories || []
+    forYouSearchTerms.value = data[0].search_terms || []
+    forYouTags.value = data[0].tags || []
+  } else {
+    forYouReason.value = null
+    forYouCategories.value = []
+    forYouSearchTerms.value = []
+    forYouTags.value = []
+  }
+}
+
+function dismissForYouInfo() {
+  hideForYouInfo.value = true
+  localStorage.setItem('hide_explore_for_you_info', '1')
+}
 
 const markerStyles = computed<Record<string, {
   color: string
@@ -1223,6 +1401,23 @@ const darkenColor = (color: string, amount = 0.35) => {
 }
 
 
+const hexToRgba = (hex: string, alpha: number) => {
+  // Handle CSS variables
+  if (hex.startsWith('var(')) {
+    return `rgba(var(--ion-color-carrot-rgb), ${alpha})`
+  }
+  // Handle hex colors
+  let c = hex.replace('#', '')
+  if (c.length === 3) {
+    c = c[0] + c[0] + c[1] + c[1] + c[2] + c[2]
+  }
+  if (c.length !== 6) return `rgba(255, 159, 64, ${alpha})`
+  const r = parseInt(c.substring(0, 2), 16)
+  const g = parseInt(c.substring(2, 4), 16)
+  const b = parseInt(c.substring(4, 6), 16)
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`
+}
+
 const buildInfoHtml = (p: Place) => {
   const baseColor =
       markerStyles.value[p.type]?.color ?? 'var(--ion-color-carrot)'
@@ -1230,130 +1425,51 @@ const buildInfoHtml = (p: Place) => {
   const textColor = darkenColor(baseColor, 0.45)
   const emoji = markerStyles.value[p.type]?.emoji ?? ''
 
+  // Check dark mode
+  const isDark = document.documentElement.classList.contains('ion-palette-dark')
+  const textColorStyle = isDark ? 'color: var(--ion-color-light);' : 'color: var(--ion-color-dark);'
+  const subTextColor = isDark ? '#a0a0a0' : '#6b7280'
+
+  // Compact info window with small image
   return `
-    <div style="max-width: 230px;">
+    <div style="max-width: 200px; padding: 4px; ${textColorStyle}">
       <img
-        src="${p.image || 'https://placehold.co/200x100'}"
+        src="${p.image || 'https://placehold.co/120x80'}"
         alt="${p.name}"
         style="
           width: 100%;
-          height: 120px;
+          height: 80px;
           object-fit: cover;
-          border-radius: 8px;
+          border-radius: 6px;
           margin-bottom: 6px;
         "
-        onerror="this.src='https://placehold.co/200x100';"
+        onerror="this.src='https://placehold.co/120x80';"
       />
 
-      <strong style="display:block; font-size:14px; margin-bottom:2px;">
+      <strong style="display:block; font-size:14px; margin-bottom:4px; line-height: 1.3; ${textColorStyle}">
         ${p.name}
       </strong>
 
       <!-- Category badge -->
       <span
-  style="
-    display: inline-block;
-    margin-top: 2px;
-    padding: 2px 8px;
-    border-radius: 999px;
-    font-size: 12px;
-    font-weight: 500;
-    color: ${textColor};
-    border-width: 1px;
-    border-style: solid;
-    border-color: ${textColor};
-    background: rgba(0,0,0,0.03);
-  "
->
-        ${emoji ? `${emoji}&nbsp;` : ''}${p.type}
-      </span>
-
-      ${p.address ? `
-        <div
-          style="
-            font-size: 12px;
-            color: #6b7280;
-            margin-top: 4px;
-            line-height: 1.3;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-          "
-        >
-          <ion-icon :icon="locationOutline" style="font-size: 14px; flex-shrink: 0;"></ion-icon>
-          <span>${p.address}</span>
-        </div>
-      ` : ''}
-
-      ${p.description ? `
-        <div
-          style="
-            font-size: 13px;
-            color: #4b5563;
-            margin-top: 8px;
-            line-height: 1.4;
-            display: -webkit-box;
-            -webkit-line-clamp: 3;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-            border-top: 1px solid rgba(0,0,0,0.05);
-            padding-top: 6px;
-          "
-        >
-          ${p.description}
-        </div>
-      ` : ''}
-
-      <div
         style="
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-top: 8px;
+          display: inline-block;
+          padding: 2px 8px;
+          border-radius: 999px;
+          font-size: 11px;
+          font-weight: 500;
+          color: ${textColor};
+          border-width: 1px;
+          border-style: solid;
+          border-color: ${textColor};
+          background: rgba(0,0,0,0.03);
         "
       >
-        <a
-          href="https://www.google.com/maps/dir/?api=1&destination=${p.position.lat},${p.position.lng}"
-          target="_blank"
-          rel="noopener noreferrer"
-          style="
-            color: var(--ion-color-carrot);
-            font-weight: 600;
-            text-decoration: none;
-            font-size: 13px;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-          "
-        >
-          <ion-icon :icon="navigateOutline"></ion-icon>
-          Navigate
-        </a>
-
-        <button
-          class="share-btn"
-          data-id="${p.id}"
-          style="
-            background: none;
-            border: none;
-            color: var(--ion-color-carrot);
-            font-size: 13px;
-            font-weight: 600;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-          "
-        >
-          <ion-icon :icon="shareSocialOutline"></ion-icon>
-          Share
-        </button>
-      </div>
+        ${emoji ? `${emoji}&nbsp;` : ''}${p.type}
+      </span>
     </div>
   `
 }
-
-
 const createPinElement = (place: Place) => {
   const style =
       markerStyles.value[place.type] ?? {
@@ -1602,6 +1718,7 @@ const initMap = async () => {
   })
   mapInstance.addListener('zoom_changed', () => {
     isUserPanningMap.value = true
+    currentZoom.value = mapInstance?.getZoom() || 14
   })
 
   // ✅ Debounced idle listener (150ms) to prevent spamming updates
@@ -1777,18 +1894,32 @@ const initMarkers = (places: Place[] = sortedLocations.value) => {
     }
   });
 
-  // 3. Update Clusterer (Reuse instance if possible)
-  if (!clusterer) {
-    clusterer = new MarkerClusterer({
-      map: mapInstance,
-      markers: newMarkerArray,
-      renderer: carrotRippleClusterRenderer,
-      algorithm: new SuperClusterAlgorithm({ radius: 80 })
-    });
+  // 3. Update Clusterer - only cluster when zoomed out (zoom <= 12)
+  const shouldCluster = currentZoom.value <= 12;
+
+  if (shouldCluster) {
+    if (!clusterer) {
+      clusterer = new MarkerClusterer({
+        map: mapInstance,
+        markers: newMarkerArray,
+        renderer: carrotRippleClusterRenderer,
+        algorithm: new SuperClusterAlgorithm({ radius: 80 })
+      });
+    } else {
+      clusterer.clearMarkers();
+      clusterer.addMarkers(newMarkerArray);
+    }
   } else {
-    // Optimization: Don't clear markers if the set hasn't changed (though initMarkers logic already does some filtering)
-    clusterer.clearMarkers();
-    clusterer.addMarkers(newMarkerArray);
+    // Remove clustering at higher zoom levels - show individual markers
+    if (clusterer) {
+      clusterer.clearMarkers();
+      clusterer.setMap(null);
+      clusterer = null;
+    }
+    // Ensure all markers are directly on the map
+    newMarkerArray.forEach(marker => {
+      marker.map = mapInstance;
+    });
   }
 
   // 4. Fit bounds ONLY IF specifically filtered by user (tag/category/search)
@@ -1824,6 +1955,12 @@ watch(searchQuery, q => {
 const selectPlace = (place: Place) => {
   selectedPlace.value = place
   lastPannedId = place.id
+  
+  // Track this place as visited for For You recommendations
+  if (!visitedPlaceIds.value.includes(place.id)) {
+    visitedPlaceIds.value.push(place.id)
+  }
+  
   scrollCardIntoView(place.id)
 
   if (!mapInstance) return
@@ -1842,7 +1979,7 @@ const selectPlace = (place: Place) => {
 
   const m = markerMap.get(place.id)
   if (m && infoWindow && mapInstance) {
-    // ⏲️ SEQUENCE: Pan first, then show InfoWindow
+    // SEQUENCE: Pan first, then show InfoWindow
     setTimeout(() => {
       if (selectedPlace.value?.id === place.id && infoWindow && mapInstance) {
         infoWindow.setContent(buildInfoHtml(place))
@@ -1878,7 +2015,7 @@ const selectPlace = (place: Place) => {
       }
     }, 350)
   } else if (infoWindow) {
-    // 🔥 Marker not in DOM yet (off-screen)? 
+    // Marker not in DOM yet (off-screen)? 
     // Set pending and let initMarkers pick it up after the pan
     pendingInfoWindowPlaceId.value = place.id
   }
@@ -1895,7 +2032,7 @@ const initCardObserver = () => {
   
   const currentRoot = (contentRef.value as HTMLElement)
   
-  // ✅ Proper cleanup if root changes or if we want a fresh start
+  // Proper cleanup if root changes or if we want a fresh start
   if (cardObserver && (cardObserver as any).root !== currentRoot) {
     cardObserver.disconnect()
     cardObserver = null
@@ -1914,7 +2051,7 @@ const initCardObserver = () => {
               selectedPlace.value = p
             }
             
-            // 2. 🚀 SMART CAMERA CONTROL: Only pan map once per highlighted card
+            // 2. SMART CAMERA CONTROL: Only pan map once per highlighted card
             // - Only if user is manually swiping (isUserScrollingList)
             // - AND not currently dragging the map (isUserPanningMap)
             // - AND we haven't already panned to this specific ID
@@ -1950,7 +2087,7 @@ const initCardObserver = () => {
     })
   }
 
-  // ✅ Re-observe cards
+  // Re-observe cards
   nextTick(() => {
     const cards = (contentRef.value as HTMLElement)?.querySelectorAll('.modern-location-card')
     cards?.forEach(c => cardObserver?.observe(c))
@@ -2001,25 +2138,25 @@ watch(searchQuery, (q) => {
       remoteSearchIds.value = data.map(d => d.id)
     }
   }, 500) // 500ms debounce
-})
+}) // Added the missing }) here
 
 const sortedLocations = computed(() => {
   let base = [...locations.value]
 
-  // ✅ filter by strict tag
+  // filter by strict tag
   if (activeTag.value) {
     const qTag = activeTag.value.toLowerCase()
     base = base.filter(l => l.tags && l.tags.some(t => t.toLowerCase() === qTag))
   }
 
-  // ✅ filter by category
+  // filter by category
   if (activeCategoryIds.value.length > 0) {
     base = base.filter(l =>
         l.typeId && activeCategoryIds.value.includes(l.typeId)
     )
   }
 
-  // ✅ search (this already works for all matches)
+  // search (this already works for all matches)
   const q = searchQuery.value.toLowerCase().trim()
 
   if (q) {
@@ -2040,7 +2177,7 @@ const sortedLocations = computed(() => {
   }
 
 
-  // 🏆 Hybrid Sorting Strategy
+  // Hybrid Sorting Strategy
   const mapped = base.map(p => {
     const distance = lastCalcLocation.value ? getDistanceInKm(p.position) : Number.POSITIVE_INFINITY;
     return { ...p, distance };
@@ -2061,12 +2198,68 @@ const sortedLocations = computed(() => {
       if (bIndex !== -1) return 1;
       return (b.view_count || 0) - (a.view_count || 0);
     });
+  } else if (sortBy.value === 'for_you') {
+    // For You: Random discovery within user's interests (within 10km)
+    const MAX_FOR_YOU_DISTANCE = 10; // km
+    
+    // Filter to only places within 10km
+    const withinRange = mapped.filter(p => p.distance <= MAX_FOR_YOU_DISTANCE);
+    const outsideRange = mapped.filter(p => p.distance > MAX_FOR_YOU_DISTANCE);
+    
+    // Shuffle seeded by session so order stays consistent during the session
+    const sessionSeed = Date.now().toString().slice(0, -5); // Changes every ~3 hours
+    const seededRandom = (id: number) => {
+      const str = `${sessionSeed}-${id}`;
+      let hash = 0;
+      for (let i = 0; i < str.length; i++) {
+        const char = str.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash;
+      }
+      return Math.abs(hash) / 2147483647;
+    };
+
+    // Sort within-range places by For You criteria
+    withinRange.sort((a, b) => {
+      const aInForYou = forYouPlaceIds.value.includes(a.id);
+      const bInForYou = forYouPlaceIds.value.includes(b.id);
+      const aVisited = visitedPlaceIds.value.includes(a.id);
+      const bVisited = visitedPlaceIds.value.includes(b.id);
+
+      // Priority 1: In forYou list AND not visited → highest priority (random order)
+      if (aInForYou && !aVisited && !(bInForYou && !bVisited)) return -1;
+      if (bInForYou && !bVisited && !(aInForYou && !aVisited)) return 1;
+
+      // Priority 2: Both are unvisited forYou places → random shuffle
+      if (aInForYou && !aVisited && bInForYou && !bVisited) {
+        return seededRandom(a.id) - seededRandom(b.id);
+      }
+
+      // Priority 3: In forYou list but visited
+      if (aInForYou && !bInForYou) return -1;
+      if (bInForYou && !aInForYou) return 1;
+
+      // Priority 4: Both in forYou and visited → random shuffle
+      if (aInForYou && bInForYou) {
+        return seededRandom(a.id) - seededRandom(b.id);
+      }
+
+      // Priority 5: Neither in forYou → random discovery within range
+      return seededRandom(a.id) - seededRandom(b.id);
+    });
+
+    // Sort outside-range by distance
+    outsideRange.sort((a, b) => a.distance - b.distance);
+
+    // Combine: within-range first, then outside-range
+    return [...withinRange, ...outsideRange];
   }
 
   return mapped;
 })
 
-// ✅ Watch for actual changes in the FILTERED set of locations
+/* ... */
+// Watch for actual changes in the FILTERED set of locations
 const filteredIdsHash = computed(() => {
   return sortedLocations.value.map(l => l.id).join(',');
 });
@@ -2076,7 +2269,7 @@ watch(filteredIdsHash, () => {
   initMarkers(sortedLocations.value)
 })
 
-// ✅ CONSOLIDATED AUTO-SELECT WATCHER
+// CONSOLIDATED AUTO-SELECT WATCHER
 watch([() => sortedLocations.value.length, userLocation, loading, locationAttemptFinished, sortBy], ([count, loc, isLoading, finished, currentSort]) => {
   if (count > 0 && loc && !isLoading && !hasAutoSelected.value && !selectedPlace.value && finished && currentSort === 'nearest') {
     // Select the first item once everything (Map, GPS, Data, and Sort Order) is ready
@@ -2089,7 +2282,7 @@ watch(activeTag, () => {
   updateCampusCircle()
 })
 
-// ✅ Only re-init observer if IDs change (ignoring simple re-ordering)
+// Only re-init observer if IDs change (ignoring simple re-ordering)
 const displayedIdsSet = computed(() => {
   const ids = displayedLocations.value.map(l => l.id);
   ids.sort((a, b) => a - b);
@@ -2099,24 +2292,65 @@ const displayedIdsSet = computed(() => {
 watch(displayedIdsSet, () => {
   if (viewMode.value === 'map') {
     initCardObserver()
-  }
-})
-
-watch(viewMode, (mode) => {
-  if (mode === 'map') {
-    if (infiniteObserver) infiniteObserver.disconnect()
-    nextTick(() => initCardObserver())
   } else {
-    if (cardObserver) cardObserver.disconnect()
+    if (infiniteObserver) infiniteObserver.disconnect()
     nextTick(() => initInfiniteObserver())
   }
 })
+
+/* ---------------- Drag Scroll Logic for Desktop Category Bar ---------------- */
+let isDraggingCategoryBar = false
+let categoryBarStartX = 0
+let categoryBarScrollLeft = 0
+
+const initCategoryBarDrag = () => {
+  const bar = desktopCategoryBar.value
+  if (!bar) return
+
+  const onMouseDown = (e: MouseEvent) => {
+    isDraggingCategoryBar = true
+    bar.classList.add('dragging')
+    categoryBarStartX = e.pageX - bar.offsetLeft
+    categoryBarScrollLeft = bar.scrollLeft
+  }
+
+  const onMouseMove = (e: MouseEvent) => {
+    if (!isDraggingCategoryBar) return
+    e.preventDefault()
+    const x = e.pageX - bar.offsetLeft
+    const walk = (x - categoryBarStartX) * 1.5 // Scroll speed multiplier
+    bar.scrollLeft = categoryBarScrollLeft - walk
+  }
+
+  const onMouseUp = () => {
+    isDraggingCategoryBar = false
+    bar.classList.remove('dragging')
+  }
+
+  const onMouseLeave = () => {
+    isDraggingCategoryBar = false
+    bar.classList.remove('dragging')
+  }
+
+  bar.addEventListener('mousedown', onMouseDown)
+  bar.addEventListener('mousemove', onMouseMove)
+  bar.addEventListener('mouseup', onMouseUp)
+  bar.addEventListener('mouseleave', onMouseLeave)
+
+  // Cleanup function
+  return () => {
+    bar.removeEventListener('mousedown', onMouseDown)
+    bar.removeEventListener('mousemove', onMouseMove)
+    bar.removeEventListener('mouseup', onMouseUp)
+    bar.removeEventListener('mouseleave', onMouseLeave)
+  }
+}
 
 /* ---------------- Lifecycle ---------------- */
 onMounted(async () => {
   isPageActive.value = true
 
-  // 🔥 START GPS WATCH IMMEDIATELY (Non-blocking)
+  // START GPS WATCH IMMEDIATELY (Non-blocking)
   startWatching()
 
   await ActivityLogService.log("explore_page_open")
@@ -2143,6 +2377,9 @@ onMounted(async () => {
   } else {
     nextTick(() => initInfiniteObserver())
   }
+
+  // Initialize drag scroll for desktop category bar
+  nextTick(() => initCategoryBarDrag())
 
   processUrlParams()
   window.addEventListener('resize', handleResize)
@@ -2201,13 +2438,13 @@ onIonViewWillEnter(async () => {
 
 
 onIonViewDidEnter(async () => {
-  await refreshViewCounts();  // 👈 refresh again when user returns
+  await refreshViewCounts();  // refresh again when user returns
 });
 
 onIonViewWillLeave(() => {
   isPageActive.value = false
   clearCampusOverlays()
-  lastStableLoc.value = null   // 🔥 REQUIRED
+  lastStableLoc.value = null   // REQUIRED
 })
 
 
@@ -2243,6 +2480,11 @@ const goToDetail = async (id: number) => {
 
   const place = locations.value.find(p => p.id === id)
   if (place) place.view_count = (place.view_count ?? 0) + 1
+  
+  // Track this place as visited for For You recommendations
+  if (!visitedPlaceIds.value.includes(id)) {
+    visitedPlaceIds.value.push(id)
+  }
 
   ActivityLogService.log("explore_place_detail_open", {
     id,
@@ -2251,6 +2493,12 @@ const goToDetail = async (id: number) => {
   });
 
   router.push(`/place/${id}`);
+};
+
+const openNavigation = (place: Place) => {
+  ActivityLogService.log("explore_navigate_click", { id: place.id, name: place.name });
+  const url = `https://www.google.com/maps/dir/?api=1&destination=${place.position.lat},${place.position.lng}`;
+  window.open(url, '_blank');
 };
 
 const openSaveModal = (place: Place) => {
@@ -2330,6 +2578,90 @@ button.gm-ui-hover-effect > span {
   width: 24px !important;
   height: 24px !important;
   margin: 0 !important;
+}
+
+/*********************************************
+ * QUICK FILTERS BAR (Map View Only)
+ *********************************************/
+.quick-filters-bar {
+  padding: 6px 12px;
+  background: transparent;
+  pointer-events: auto;
+  z-index: 1001;
+  position: relative;
+}
+
+.quick-filters-scroll {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  padding-bottom: 2px;
+}
+
+.quick-filters-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.quick-filter-chip {
+  background: var(--ion-background-color) !important;
+  --color: var(--cat-color, var(--ion-color-carrot));
+  border: 1px solid var(--cat-color, var(--ion-color-carrot));
+  border-radius: 16px;
+  padding: 4px 12px;
+  margin: 0;
+  height: 32px;
+  font-size: 13px;
+  font-weight: 500;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.quick-filter-chip.active {
+  --background: var(--cat-bg, var(--ion-color-carrot));
+  --color: white;
+  border-color: var(--cat-bg, var(--ion-color-carrot));
+}
+
+.quick-filter-chip .category-icon {
+  font-size: 14px;
+  margin-right: 4px;
+}
+
+.quick-filter-chip .category-emoji {
+  font-size: 12px;
+  margin-right: 4px;
+}
+
+.quick-filter-chip ion-label {
+  font-size: 13px;
+}
+
+/* Dark mode support for unselected quick filter chips */
+.ion-palette-dark .quick-filter-chip:not(.active) {
+  --background: rgba(var(--ion-color-carrot-rgb), 0.12) !important;
+  opacity: 0.9;
+}
+
+.quick-filter-chip.more-chip {
+  --background: rgba(var(--ion-color-medium-rgb), 0.15);
+  color: var(--ion-color-medium);
+  border-color: rgba(var(--ion-color-medium-rgb), 0.3);
+  font-style: italic;
+}
+
+.quick-filter-chip.more-chip:hover {
+  --background: rgba(var(--ion-color-medium-rgb), 0.25);
+}
+
+/* Dark mode for more chip */
+.ion-palette-dark .quick-filter-chip.more-chip {
+  --background: rgba(var(--ion-color-medium-rgb), 0.25);
+  --color: var(--ion-color-light);
+  border-color: rgba(var(--ion-color-light-rgb), 0.2);
 }
 
 /*********************************************
@@ -2592,10 +2924,27 @@ button.gm-ui-hover-effect > span {
   overflow-x: auto;
   padding-bottom: 2px;
   scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
 .category-bar::-webkit-scrollbar {
   display: none;
+}
+
+/* Draggable scrollable category bar for desktop */
+.category-bar.scrollable {
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+  scroll-behavior: auto;
+}
+
+.category-bar.scrollable:active {
+  cursor: grabbing;
+}
+
+.category-bar.scrollable.dragging {
+  scroll-behavior: auto;
 }
 
 .modern-category-chip {
@@ -2695,8 +3044,9 @@ button.gm-ui-hover-effect > span {
 
 .metas {
   display: flex;
-  align-items: center;
-  gap: 6px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
   font-size: 0.7rem;
   font-weight: 600;
   color: var(--ion-color-medium);
@@ -2959,8 +3309,8 @@ button.gm-ui-hover-effect > span {
 
 .metas {
   display: flex;
-  align-items: center;
-  flex-wrap: wrap;
+  flex-direction: column;
+  align-items: flex-start;
   gap: 4px;
   margin-bottom: 2px;
 }
@@ -2972,6 +3322,7 @@ button.gm-ui-hover-effect > span {
   white-space: nowrap;
   display: flex;
   align-items: center;
+  align-self: flex-start;
 }
 
 .ion-palette-dark .meta { color: #d1d5db; }
@@ -2994,6 +3345,25 @@ button.gm-ui-hover-effect > span {
   align-items: center;
   justify-content: flex-end;
   gap: 8px;
+}
+
+.action-icons {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.icon-btn {
+  --padding-start: 6px;
+  --padding-end: 6px;
+  height: 32px;
+  width: 32px;
+  --border-radius: 50%;
+  margin: 0;
+}
+
+.icon-btn ion-icon {
+  font-size: 18px;
 }
 
 .tags-popover {
@@ -3572,6 +3942,106 @@ button.gm-ui-hover-effect > span {
 
 .ion-palette-dark .walk-text {
   color: #f87171;
+}
+</style>
+
+<style>
+/* For You Info Card */
+.for-you-info {
+  margin: 0 16px 16px;
+  border-radius: 12px;
+  background: var(--ion-background-color);
+  border: 1px solid rgba(var(--ion-color-carrot-rgb), 0.3);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.for-you-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.for-you-icon {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.for-you-row > div {
+  flex: 1;
+  min-width: 0;
+}
+
+.for-you-row strong {
+  display: block;
+  font-size: 16px;
+  color: var(--ion-text-color);
+  margin-bottom: 4px;
+}
+
+.for-you-row p {
+  margin: 0 0 8px;
+  font-size: 13px;
+  color: var(--ion-color-medium);
+  line-height: 1.4;
+}
+
+/* Factor rows */
+.for-you-factors {
+  margin-top: 8px;
+}
+
+.factor-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+  flex-wrap: wrap;
+}
+
+.factor-row ion-icon {
+  flex-shrink: 0;
+}
+
+.factor-label {
+  font-size: 12px;
+  color: var(--ion-color-medium);
+  flex-shrink: 0;
+}
+
+.factor-values {
+  font-size: 12px;
+  color: var(--ion-text-color);
+  font-weight: 500;
+}
+
+/* Dark mode support */
+.ion-palette-dark .for-you-info {
+  background: var(--ion-background-color);
+  border-color: rgba(var(--ion-color-carrot-rgb), 0.4);
+}
+
+.ion-palette-dark .for-you-row strong {
+  color: var(--ion-text-color);
+}
+
+.ion-palette-dark .for-you-row p {
+  color: var(--ion-color-medium);
+}
+
+.ion-palette-dark .factor-values {
+  color: var(--ion-text-color);
+}
+
+/* Responsive for small devices */
+@media (max-width: 480px) {
+  .factor-row {
+    gap: 4px;
+  }
+  
+  .factor-label,
+  .factor-values {
+    font-size: 11px;
+  }
 }
 </style>
 

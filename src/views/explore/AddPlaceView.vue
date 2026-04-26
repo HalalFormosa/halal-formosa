@@ -1937,6 +1937,9 @@ const submitPlace = async () => {
       }
 
       // ✅ Notification if approved
+      const userEmail = user?.email || 'Unknown'
+      const userName = user?.user_metadata?.name || user?.user_metadata?.full_name || 'Unknown'
+
       if (payload.approved) {
         const selectedType = locationTypes.value.find(t => t.id === form.value.type_id)
         const placeTypeName = selectedType?.name || 'Halal Place'
@@ -1944,9 +1947,22 @@ const submitPlace = async () => {
         await notifyEvent(
             'new_place',
             `🕌 New ${placeTypeName} Added!`,
-            `${form.value.name} (${placeTypeName})\nLat: ${form.value.lat}, Lng: ${form.value.lng}`,
+            `${form.value.name} (${placeTypeName})\nLat: ${form.value.lat}, Lng: ${form.value.lng}\nAdded by: ${userName} (${userEmail})`,
             form.value.image ?? undefined,
-            { id: newPlace.id, lat: form.value.lat, lng: form.value.lng, isNative: true }
+            { id: newPlace.id, lat: form.value.lat, lng: form.value.lng, isNative: true, added_by: userEmail, user_id: user?.id }
+        )
+      } else {
+        // 🔴 Non-admin → notify Discord admins only
+        const selectedType = locationTypes.value.find(t => t.id === form.value.type_id)
+        const placeTypeName = selectedType?.name || 'Halal Place'
+
+        await notifyEvent(
+            'location_needs_review',
+            `🔍 Location Needs Review`,
+            `${form.value.name} (${placeTypeName})\nAddress: ${form.value.address || 'N/A'}\nSubmitted by: ${userName} (${userEmail})\nAwaiting approval.`,
+            form.value.image ?? undefined,
+            { id: newPlace.id, lat: form.value.lat, lng: form.value.lng, isNative: true, added_by: userEmail, user_id: user?.id },
+            ['discord']
         )
       }
 

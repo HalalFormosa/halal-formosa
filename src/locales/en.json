@@ -471,7 +471,21 @@
       "Prayer Room": "Prayer Room",
       "Attraction": "Attraction",
       "Others": "Others"
-    }
+    },
+    "forYou": {
+      "title": "For You",
+      "gateDesc": "You're viewing For You. This personalized feed unlocks with Halal Formosa Pro and adapts to your explore activity over time.",
+      "upgrade": "Upgrade to Pro",
+      "infoDesc": "We recommend places based on your activity in explore:",
+      "reasonMsg": "💡 You're seeing this because you often explore {reason}.",
+      "learningMsg": "💡 We're learning your preferences as you explore more places.",
+      "nativeOnly": "✨ For You is available on mobile apps only.",
+      "categories": "Categories you filter",
+      "searchTerms": "Recent searches",
+      "tags": "Places you view"
+    },
+    "noResults": "No results found",
+    "moreFilters": "more ..."
   },
   "trip": {
     "title": "Muslim-Friendly Trips",

@@ -1964,21 +1964,42 @@ async function handleSubmit() {
           : "✅ Product submitted and awaiting approval."
 
       // 🔔 Notify differently depending on role
+      const userEmail = user?.email || 'Unknown'
+      const userName = user?.user_metadata?.name || user?.user_metadata?.full_name || 'Unknown'
+
       if (autoApprove) {
         const elapsedSeconds = Math.floor((Date.now() - wizardStartTime.value) / 1000)
-        
+
         // 🟢 Admin/Contributor → public notification
         await notifyEvent(
             "new_product",
             "🆕 New Product Published!",
-            `${form.value.name} (${form.value.status})\nBarcode: ${form.value.barcode}\nProcessed in: ${elapsedSeconds} seconds`,
+            `${form.value.name} (${form.value.status})\nBarcode: ${form.value.barcode}\nProcessed in: ${elapsedSeconds} seconds\nAdded by: ${userName} (${userEmail})`,
             frontUrl || backUrl,
             {
               barcode: form.value.barcode,
               status: form.value.status,
               isNative: true,
-              processing_time: elapsedSeconds
+              processing_time: elapsedSeconds,
+              added_by: userEmail,
+              user_id: user?.id
             }
+        );
+      } else {
+        // 🔴 Non-admin → notify Discord admins only
+        await notifyEvent(
+            "product_needs_review",
+            "🔍 Product Needs Review",
+            `${form.value.name} (${form.value.status})\nBarcode: ${form.value.barcode}\nSubmitted by: ${userName} (${userEmail})\nAwaiting approval.`,
+            frontUrl || backUrl,
+            {
+              barcode: form.value.barcode,
+              status: form.value.status,
+              isNative: true,
+              added_by: userEmail,
+              user_id: user?.id
+            },
+            ['discord']
         );
       }
 
