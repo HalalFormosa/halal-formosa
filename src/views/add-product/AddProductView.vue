@@ -2012,7 +2012,7 @@ async function handleSubmit() {
 
       // reset form
       form.value = { barcode: '', name: '', status: 'Muslim-friendly',
-        product_category_id: null, ingredients: '', description: '', store_ids: [] }
+        product_category_id: null, ingredients: '', description: '', store_ids: [], tags: [] }
       frontFile.value = null; backFile.value = null
       frontPreview.value = null; backPreview.value = null
       ingredientHighlights.value = []; barcodeValid.value = null; barcodeMessage.value = ''
