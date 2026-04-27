@@ -318,6 +318,11 @@
                     :alt="place.name" 
                     @error="onImageError"
                   />
+                  <!-- Floating Open/Closed Status Pill -->
+                  <div v-if="place.opening_hours" :class="['floating-status-pill', 'bottom-left', isOpenNow(place) ? 'open' : 'closed']">
+                    <ion-icon :icon="timeOutline" style="font-size: 14px;" />
+                    <span>{{ isOpenNow(place) ? 'Open' : 'Closed' }}</span>
+                  </div>
                   <div v-if="place.partner_tier" class="floating-tier-badge">
                     <div :class="['tier-pill', place.partner_tier.toLowerCase()]">
                       <ion-icon :icon="sparkles" />
@@ -332,16 +337,20 @@
                       <ion-icon v-if="place.partner_tier" :icon="checkmarkCircle" class="verified-badge" />
                     </h5>
                     <div class="metas">
-                      <span class="meta">{{ place.type }}</span>
-                      <span class="meta"><ion-icon :icon="eyeOutline" style="vertical-align: middle; margin-top: -2px;" /> {{ place.view_count || 0 }}</span>
+                      <span class="meta type-badge">{{ place.type }}</span>
+                      
+                      <span class="meta"><ion-icon :icon="eyeOutline" style="font-size: 14px; vertical-align: middle;" /> {{ place.view_count || 0 }}</span>
+                      
                       <span class="meta">
-                        <ion-icon :icon="calendarOutline" style="vertical-align: middle; margin-top: -2px;" />
+                        <ion-icon :icon="calendarOutline" style="font-size: 14px; vertical-align: middle;" />
                         {{ fromNowToTaipei(place.created_at) }}
                       </span>
-                    </div>
-                    <div v-if="userLocation && (place as any).distance !== undefined" class="distance">
+
+                      <span v-if="userLocation && (place as any).distance !== undefined" class="distance">
                       <ion-icon :icon="locationOutline" style="font-size: 0.85rem; vertical-align: middle; margin-top: -2px;" /> {{ formatKm((place as any).distance) }} km
+                      </span>
                     </div>
+                    
 
                     <!-- Tags section (Horizontal Scroll) -->
                     <div v-if="place.tags && place.tags.length > 0" class="card-tags-row horizontal-scroll">
@@ -465,6 +474,11 @@
                       :alt="place.name"
                       @error="onImageError"
                   />
+                  <!-- Floating Open/Closed Status Pill -->
+                  <div v-if="place.opening_hours" :class="['floating-status-pill', 'bottom-left', isOpenNow(place) ? 'open' : 'closed']">
+                    <ion-icon :icon="isOpenNow(place) ? timeOutline : timeOutline" style="font-size: 14px;" />
+                    <span>{{ isOpenNow(place) ? 'Open' : 'Closed' }}</span>
+                  </div>
                   <!-- Floating Tier Badge -->
                   <div v-if="place.partner_tier" class="floating-tier-badge">
                     <div :class="['tier-pill', place.partner_tier.toLowerCase()]">
@@ -481,15 +495,20 @@
                       <ion-icon v-if="place.partner_tier" :icon="checkmarkCircle" class="verified-badge" />
                     </h5>
                     <div class="metas">
-                      <span class="meta"><ion-icon :icon="eyeOutline" style="vertical-align: middle; margin-top: -2px;" /> {{ place.view_count || 0 }}</span>
+                      
+                      
+                      <span class="meta"><ion-icon :icon="eyeOutline" style="font-size: 14px; vertical-align: middle;" /> {{ place.view_count || 0 }}</span>
+                      
                       <span class="meta">
-                        <ion-icon :icon="calendarOutline" style="vertical-align: middle; margin-top: -2px;" />
+                        <ion-icon :icon="calendarOutline" style="font-size: 14px; vertical-align: middle;" />
                         {{ fromNowToTaipei(place.created_at) }}
                       </span>
-                    </div>
-                    <div v-if="userLocation && (place as any).distance !== undefined" class="distance">
+
+                      <span v-if="userLocation && (place as any).distance !== undefined" class="distance">
                       <ion-icon :icon="locationOutline" style="font-size: 0.85rem; vertical-align: middle; margin-top: -2px;" /> {{ formatKm((place as any).distance) }} km
+                      </span>
                     </div>
+                    
                   </div>
                   <div class="info-actions">
                     <div class="action-row">
@@ -720,6 +739,17 @@ type Place = {
   created_at?: string
   tags?: string[]
   description?: string | null
+  opening_hours?: {
+    periods?: Array<{ open: { day: number; time: string }; close: { day: number; time: string } }>
+    weekday_text?: string[]
+    mon?: { active: boolean; open: string; close: string }
+    tue?: { active: boolean; open: string; close: string }
+    wed?: { active: boolean; open: string; close: string }
+    thu?: { active: boolean; open: string; close: string }
+    fri?: { active: boolean; open: string; close: string }
+    sat?: { active: boolean; open: string; close: string }
+    sun?: { active: boolean; open: string; close: string }
+  } | null
 }
 
 
@@ -914,6 +944,59 @@ const distanceInMeters = (a: LatLng, b: LatLng) => {
   const y = dLat
 
   return Math.sqrt(x * x + y * y) * R
+}
+
+// Check if a place is currently open based on opening hours
+const isOpenNow = (place: Place): boolean => {
+  if (!place.opening_hours) return false
+  
+  const now = dayjs().tz('Asia/Taipei')
+  const currentDay = now.day() // 0 = Sunday, 1 = Monday, etc.
+  const currentTime = now.format('HHmm')
+  
+  // Google Places format (periods array)
+  if (place.opening_hours.periods && Array.isArray(place.opening_hours.periods)) {
+    for (const period of place.opening_hours.periods) {
+      // Skip malformed periods
+      if (!period?.open || !period?.close) continue
+      if (typeof period.open.day !== 'number' || typeof period.close.day !== 'number') continue
+      if (typeof period.open.time !== 'string' || typeof period.close.time !== 'string') continue
+      
+      const openDay = period.open.day
+      const closeDay = period.close.day
+      const openTime = period.open.time.replace(':', '')
+      const closeTime = period.close.time.replace(':', '')
+      
+      // Handle same day opening
+      if (openDay === currentDay && closeDay === currentDay) {
+        if (currentTime >= openTime && currentTime <= closeTime) {
+          return true
+        }
+      }
+      // Handle overnight (e.g., opens Monday, closes Tuesday)
+      else if (openDay === currentDay && closeDay !== currentDay) {
+        if (currentTime >= openTime) {
+          return true
+        }
+      }
+      else if (closeDay === currentDay && openDay !== currentDay) {
+        if (currentTime <= closeTime) {
+          return true
+        }
+      }
+    }
+    return false
+  }
+  
+  // Original format (day keys like mon, tue, etc.)
+  const dayMap = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"]
+  const currentDayKey = dayMap[currentDay] as 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun'
+  const todayHours = place.opening_hours[currentDayKey]
+  
+  if (!todayHours || !todayHours.active) return false
+  
+  const currentTimeFormatted = now.format('HH:mm')
+  return currentTimeFormatted >= todayHours.open && currentTimeFormatted <= todayHours.close
 }
 
 // Sorting logic: if GPS succeeded, default to 'nearest'
@@ -1572,6 +1655,7 @@ const fetchLocations = async () => {
     created_at,
     tags,
     description,
+    opening_hours,
     location_types(name),
     partner:partners(partner_tier)
   `)
@@ -1595,7 +1679,8 @@ const fetchLocations = async () => {
       partner_tier: Array.isArray(loc.partner) ? loc.partner[0]?.partner_tier : loc.partner?.partner_tier,
       created_at: loc.created_at,
       tags: loc.tags || [],
-      description: loc.description
+      description: loc.description,
+      opening_hours: loc.opening_hours
     }))
   }
 
@@ -3042,10 +3127,21 @@ button.gm-ui-hover-effect > span {
   overflow: hidden;
 }
 
+.info-top .metas {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start !important;
+  gap: 2px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--ion-color-medium);
+  opacity: 0.8;
+}
+
 .metas {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: flex-start !important;
   gap: 4px;
   font-size: 0.7rem;
   font-weight: 600;
@@ -3306,15 +3402,6 @@ button.gm-ui-hover-effect > span {
   flex-shrink: 0;
   vertical-align: middle;
 }
-
-.metas {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 4px;
-  margin-bottom: 2px;
-}
-
 .meta {
   font-size: 0.7rem;
   font-weight: 500;
@@ -3322,12 +3409,51 @@ button.gm-ui-hover-effect > span {
   white-space: nowrap;
   display: flex;
   align-items: center;
-  align-self: flex-start;
+  gap: 4px;
+}
+
+.meta.type-badge {
+  color: var(--ion-color-carrot);
+  font-weight: 600;
+}
+
+.floating-status-pill {
+  position: absolute;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  z-index: 10;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.floating-status-pill.bottom-left {
+  bottom: 8px;
+  left: 8px;
+}
+
+.floating-status-pill.open {
+  background: rgba(34, 197, 94, 0.9);
+  color: #fff;
+}
+
+.floating-status-pill.closed {
+  background: rgba(239, 68, 68, 0.9);
+  color: #fff;
 }
 
 .ion-palette-dark .meta { color: #d1d5db; }
 
-.meta-dot { opacity: 0.5; }
+.meta-dot { 
+  opacity: 0.5; 
+  font-size: 0.5rem;
+  margin: 0 2px;
+}
 
 .distance {
   font-size: 0.75rem;

@@ -359,12 +359,12 @@
                              <span v-if="product.product_categories?.name" class="meta">
                                {{ $te('search.categoriesList.' + product.product_categories.name) ? $t('search.categoriesList.' + product.product_categories.name) : product.product_categories.name }}
                              </span>
-                             <span v-if="product.product_categories?.name" class="meta-dot">•</span>
+                             
                              <span class="meta">
                                <Eye :size="14" class="lucide-meta-icon" />
                                {{ product.view_count || 0 }}
                              </span>
-                             <span class="meta-dot">•</span>
+                             
                               <span class="meta">
                                <Clock :size="14" class="lucide-meta-icon" />
                                {{ fromNowToTaipei(product.created_at) }}
@@ -431,12 +431,12 @@
                           <span v-if="product.product_categories?.name" class="meta">
                             {{ $te('search.categoriesList.' + product.product_categories.name) ? $t('search.categoriesList.' + product.product_categories.name) : product.product_categories.name }}
                           </span>
-                          <span v-if="product.product_categories?.name" class="meta-dot">•</span>
+                          
                           <span class="meta">
                             <Eye :size="14" class="lucide-meta-icon" />
                             {{ product.view_count || 0 }}
                           </span>
-                          <span class="meta-dot">•</span>
+                          
                           <span class="meta">
                             <Clock :size="14" class="lucide-meta-icon" />
                             {{ fromNowToTaipei(product.created_at) }}
@@ -1914,9 +1914,9 @@ ion-searchbar.rounded {
 /* metas is now inside info-top */
 .info-top .metas {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 3px !important;
   font-size: 0.78rem;
   color: var(--ion-color-medium);
   margin-top: 4px;

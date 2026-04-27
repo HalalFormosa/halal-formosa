@@ -211,26 +211,24 @@
             </ion-item>
 
 
-            <!-- 🗺️ Mini Map -->
-            <div class="rounded-xl overflow-hidden ion-margin-vertical shadow-md">
-              <iframe
-                  :src="`https://maps.google.com/maps?q=${place.lat},${place.lng}(${place.name})&z=16&output=embed`"
-                  width="100%"
-                  height="200"
-                  style="border:0;"
-                  loading="lazy"
-                  referrerpolicy="no-referrer-when-downgrade"
-              ></iframe>
+            <!-- 🗺️ Interactive Map -->
+            <div class="rounded-xl overflow-hidden ion-margin-vertical shadow-md detail-map-container">
+              <div id="detail-map" class="detail-map"></div>
             </div>
 
             <!-- ⭐ Additional Details -->
             <div class="ion-margin-vertical">
               <!-- 🕒 Opening Hours -->
               <template v-if="place.opening_hours">
-                <h3 class="font-bold text-lg ion-margin-top">Opening Hours</h3>
+                <div class="ion-margin-top ion-margin-bottom">
+                  <h3 class="font-bold text-lg">Opening Hours</h3>
+                  <div class="open-status-badge" :class="{ open: isOpenNow, closed: !isOpenNow }">
+                    {{ isOpenNow ? 'Open Now' : 'Closed Now' }}
+                  </div>
+                </div>
 
                 <ion-list>
-                  <ion-item v-for="(value, day) in formattedOpeningHours" :key="day">
+                  <ion-item v-for="(value, day) in formattedOpeningHours" :key="day" :class="{ 'today-highlight': day === todayDayLabel }">
                     <ion-label class="capitalize">{{ day }}</ion-label>
                     <ion-label slot="end" class="ion-text-right">
             <span v-if="value.active">
@@ -377,7 +375,7 @@ import {
   IonList,
   popoverController
 } from '@ionic/vue'
-import {ref, onMounted, computed} from 'vue'
+import {ref, onMounted, computed, nextTick} from 'vue'
 import {useI18n} from 'vue-i18n'
 import {onIonViewWillEnter} from '@ionic/vue'
 import {useRoute, useRouter} from 'vue-router'
@@ -418,6 +416,8 @@ function fromNowToTaipei(dateString?: string) {
 import {ActivityLogService} from "@/services/ActivityLogService";
 import { useSavedLocations } from '@/composables/useSavedLocations';
 import SaveLocationModal from '@/components/SaveLocationModal.vue';
+import mapsLoader from '@/plugins/googleMapsLoader'
+import { useLocation } from '@/composables/useLocation'
 
 type DayKey = "mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun"
 
@@ -515,9 +515,122 @@ function closeImageModal() {
 
 const loading = ref(true)
 
+/* ---------------- Map State ---------------- */
+let mapInstance: google.maps.Map | null = null
+let placeMarker: google.maps.marker.AdvancedMarkerElement | null = null
+let userMarker: google.maps.marker.AdvancedMarkerElement | null = null
+let advancedMarkerLib: typeof google.maps.marker | null = null
+const { userLocation } = useLocation()
+
+const MAP_ID = '6d203f1adb514723' // Same as ExploreView
+
+const initMap = async () => {
+  if (!place.value) return
+  
+  await nextTick()
+  
+  const el = document.getElementById('detail-map')
+  if (!el) {
+    console.warn('[Map] #detail-map not ready yet, retrying...')
+    requestAnimationFrame(initMap)
+    return
+  }
+  
+  const [{Map}, marker] = await Promise.all([
+    mapsLoader.importLibrary('maps'),
+    mapsLoader.importLibrary('marker')
+  ])
+  advancedMarkerLib = marker
+  
+  const center = { lat: place.value.lat, lng: place.value.lng }
+  
+  mapInstance = new Map(el, {
+    center,
+    zoom: 16,
+    disableDefaultUI: true,
+    mapId: MAP_ID,
+    clickableIcons: false
+  })
+  
+  // Create place marker with custom pin element
+  const pinElement = document.createElement('div')
+  pinElement.className = 'place-marker-pin'
+  pinElement.innerHTML = `
+    <svg viewBox="0 0 24 24" width="36" height="36" fill="var(--ion-color-carrot, #ff9800)">
+      <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+    </svg>
+  `
+  
+  placeMarker = new marker.AdvancedMarkerElement({
+    position: center,
+    map: mapInstance,
+    content: pinElement,
+    title: place.value.name
+  })
+  
+  // Add user location marker if available
+  if (userLocation.value) {
+    const dot = document.createElement('div')
+    dot.className = 'user-location-dot'
+    
+    userMarker = new marker.AdvancedMarkerElement({
+      position: { lat: userLocation.value.lat, lng: userLocation.value.lng },
+      map: mapInstance,
+      content: dot,
+      title: 'Your Location'
+    })
+  }
+}
+
 const formattedOpeningHours = computed(() => {
   if (!place.value?.opening_hours) return {}
 
+  // Check if opening_hours is in Google Places format (with periods)
+  const hours = place.value.opening_hours as any
+  if (hours.periods && Array.isArray(hours.periods)) {
+    const dayMap = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"]
+    const labels = {
+      sun: "Sun",
+      mon: "Mon",
+      tue: "Tue",
+      wed: "Wed",
+      thu: "Thu",
+      fri: "Fri",
+      sat: "Sat",
+    }
+
+    const result: any = {}
+    
+    // Initialize all days as closed
+    dayMap.forEach(day => {
+      result[labels[day as keyof typeof labels]] = { active: false, open: '', close: '' }
+    })
+
+    // Process periods
+    hours.periods.forEach((period: any) => {
+      const dayKey = dayMap[period.open.day] as keyof typeof labels
+      const openTime = period.open.time.replace(':', '')
+      const closeTime = period.close.time.replace(':', '')
+      
+      // Format time from HHMM to HH:MM
+      const formatTime = (time: string) => {
+        if (time.length === 4) {
+          return `${time.substring(0, 2)}:${time.substring(2, 4)}`
+        }
+        return time
+      }
+
+      result[labels[dayKey]] = {
+        active: true,
+        open: formatTime(openTime),
+        close: formatTime(closeTime)
+      }
+    })
+
+    return result
+  }
+
+  // Original format (day keys with active/open/close)
   const order = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
   const labels = {
     mon: "Mon",
@@ -538,6 +651,70 @@ const formattedOpeningHours = computed(() => {
   })
 
   return result
+})
+
+const isOpenNow = computed(() => {
+  if (!place.value?.opening_hours) return false
+  
+  const hours = place.value.opening_hours as any
+  
+  // Check if opening_hours is in Google Places format (with periods)
+  if (hours.periods && Array.isArray(hours.periods)) {
+    const now = dayjs().tz('Asia/Taipei')
+    const currentDay = now.day() // 0 = Sunday, 1 = Monday, etc.
+    const currentTime = now.format('HHmm')
+    
+    for (const period of hours.periods) {
+      // Skip malformed periods (same validation as ExploreView)
+      if (!period?.open || !period?.close) continue
+      if (typeof period.open.day !== 'number' || typeof period.close.day !== 'number') continue
+      if (typeof period.open.time !== 'string' || typeof period.close.time !== 'string') continue
+      
+      const openDay = period.open.day
+      const closeDay = period.close.day
+      const openTime = period.open.time.replace(':', '')
+      const closeTime = period.close.time.replace(':', '')
+      
+      // Handle same day opening
+      if (openDay === currentDay && closeDay === currentDay) {
+        if (currentTime >= openTime && currentTime <= closeTime) {
+          return true
+        }
+      }
+      // Handle overnight (e.g., opens Monday, closes Tuesday)
+      else if (openDay === currentDay && closeDay !== currentDay) {
+        if (currentTime >= openTime) {
+          return true
+        }
+      }
+      else if (closeDay === currentDay && openDay !== currentDay) {
+        if (currentTime <= closeTime) {
+          return true
+        }
+      }
+    }
+    
+    return false
+  }
+  
+  // Original format - check if current day is active and within time range
+  const now = dayjs().tz('Asia/Taipei')
+  const currentDay = now.day()
+  const currentTime = now.format('HH:mm')
+  const dayMap = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"]
+  const currentDayKey = dayMap[currentDay] as DayKey
+  
+  const todayHours = hours[currentDayKey]
+  if (!todayHours || !todayHours.active) return false
+  
+  return currentTime >= todayHours.open && currentTime <= todayHours.close
+})
+
+const todayDayLabel = computed(() => {
+  const now = dayjs().tz('Asia/Taipei')
+  const currentDay = now.day()
+  const labels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+  return labels[currentDay]
 })
 
 const mapSearchQuery = computed(() => {
@@ -652,6 +829,9 @@ const loadPlace = async () => {
   }
 
   loading.value = false
+  
+  // Initialize map after data is loaded
+  initMap()
 }
 
 async function fetchLocationCertifications(locationId: number) {
@@ -761,7 +941,9 @@ const editItem = async () => {
 
   try {
     await popoverController.dismiss();
-  } catch (e) {}
+  } catch {
+    // Ignore if no popover is open
+  }
 
   router.push(`/place/${place.value.id}/edit`);
 };
@@ -776,7 +958,9 @@ const reportItem = async () => {
 
   try {
     await popoverController.dismiss();
-  } catch (e) {}
+  } catch {
+    // Ignore if no popover is open
+  }
 
   router.push(`/place/${place.value.id}/report`);
 };
@@ -805,6 +989,40 @@ const scrollToDescription = () => {
 
 
 <style scoped>
+/* MAP STYLES */
+.detail-map-container {
+  width: 100%;
+  height: 200px;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.detail-map {
+  width: 100%;
+  height: 100%;
+}
+
+/* Place Marker */
+.place-marker-pin {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  filter: drop-shadow(0 3px 6px rgba(0,0,0,0.3));
+  transform: translateY(-50%);
+}
+
+/* User Location Dot (same as ExploreView) */
+.user-location-dot {
+  width: 16px;
+  height: 16px;
+  background: #4285f4;
+  border: 2px solid white;
+  border-radius: 50%;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+}
+
 /* TIERED PAGE STYLES - Inherit from global variables if needed, otherwise clean up redundant local backgrounds */
 .tier-gold .official-verified-tag {
   color: #ca8a04;
@@ -947,6 +1165,37 @@ const scrollToDescription = () => {
   text-transform: uppercase;
   letter-spacing: 0.8px;
   font-size: 10px;
+}
+
+.open-status-badge {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 13px;
+  margin-top: 8px;
+}
+
+.open-status-badge.open {
+  background: rgba(34, 197, 94, 0.15);
+  color: #16a34a;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.open-status-badge.closed {
+  background: rgba(239, 68, 68, 0.15);
+  color: #dc2626;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.today-highlight {
+  background: rgba(234, 88, 12, 0.08);
+  border-left: 3px solid var(--ion-color-carrot);
+}
+
+.today-highlight ion-label {
+  font-weight: 600;
+  color: var(--ion-color-carrot);
 }
 
 /* PREMIUM BADGES */
