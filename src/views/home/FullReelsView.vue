@@ -511,7 +511,7 @@ onUnmounted(() => {
 }
 
 .main-media {
-  position: relative;
+  position: absolute;
   z-index: 2;
   width: 100%;
   height: 100%;
@@ -526,7 +526,7 @@ onUnmounted(() => {
 /* Metadata Overlay */
 .meta-overlay {
   position: absolute;
-  bottom: 0;
+  bottom: 45px;
   left: 0;
   right: 0;
   padding: 24px 20px calc(24px + var(--safe-area-inset-bottom));

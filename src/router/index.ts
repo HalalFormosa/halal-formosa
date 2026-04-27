@@ -45,6 +45,12 @@ const routes: Array<RouteRecordRaw> = [
             },
             { path: 'add', component: () => import('@/views/add-product/AddProductView.vue'), meta: { requiresAuth: true } },
             { path: 'profile', component: () => import('@/views/profile/ProfileView.vue'), meta: { noAds: true } },
+            {
+        path: '/reels',
+        name: 'FullReels',
+        component: () => import('@/views/home/FullReelsView.vue'),
+        meta: { noAds: true }
+    }
         ],
     },
     {
@@ -285,12 +291,7 @@ const routes: Array<RouteRecordRaw> = [
         component: () => import('@/views/store/MerchantRegistrationView.vue'),
         meta: { requiresAuth: true, noAds: true }
     },
-    {
-        path: '/reels',
-        name: 'FullReels',
-        component: () => import('@/views/home/FullReelsView.vue'),
-        meta: { noAds: true }
-    }
+    
 
 ];
 
