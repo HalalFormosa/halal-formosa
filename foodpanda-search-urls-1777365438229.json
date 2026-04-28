@@ -1,0 +1,151 @@
+{
+  "generated_at": "2026-04-28T08:37:18.228Z",
+  "total_locations": 17,
+  "without_foodpanda_url": 16,
+  "locations": [
+    {
+      "id": 226,
+      "name": "Fried Chicken Branch Taipei Nangang Exhibition Center Hall 2 炸鷄大獅北市南港二館店",
+      "address": "No. 2, Jingmao 2nd Rd, Nangang District, Taipei City, Taiwan 115",
+      "lat": 25.0563176379851,
+      "lng": 121.61583032459,
+      "foodpanda_search_url": "https://www.foodpanda.com.tw/?query=Fried%20Chicken%20Branch%20Taipei%20Nangang%20Exhibition%20Center%20Hall%202%20%E7%82%B8%E9%B7%84%E5%A4%A7%E7%8D%85%E5%8C%97%E5%B8%82%E5%8D%97%E6%B8%AF%E4%BA%8C%E9%A4%A8%E5%BA%97&lat=25.0563176379851&lng=121.61583032459",
+      "manual_search_url": "https://www.foodpanda.com.tw/?query=%E7%82%B8%E9%B7%84%E5%A4%A7%E7%8D%85&lat=25.0563176379851&lng=121.61583032459"
+    },
+    {
+      "id": 190,
+      "name": "Fried Chicken Master - Chang'an West Store",
+      "address": "No. 211號, Chang'an W Rd, Datong District, Taipei City, Taiwan 103",
+      "lat": 25.0520179212422,
+      "lng": 121.512716023167,
+      "foodpanda_search_url": "https://www.foodpanda.com.tw/?query=Fried%20Chicken%20Master%20-%20Chang'an%20West%20Store&lat=25.0520179212422&lng=121.512716023167",
+      "manual_search_url": "https://www.foodpanda.com.tw/?query=%E7%82%B8%E9%B7%84%E5%A4%A7%E7%8D%85&lat=25.0520179212422&lng=121.512716023167"
+    },
+    {
+      "id": 103,
+      "name": "Fried Chicken Master - Donghai Xinxing Branch",
+      "address": "No. 9, Lane 3, Section 5, Taiwan Blvd, Longjing District, Taichung City, Taiwan 434",
+      "lat": 24.1823434692481,
+      "lng": 120.592908141145,
+      "foodpanda_search_url": "https://www.foodpanda.com.tw/?query=Fried%20Chicken%20Master%20-%20Donghai%20Xinxing%20Branch&lat=24.1823434692481&lng=120.592908141145",
+      "manual_search_url": "https://www.foodpanda.com.tw/?query=%E7%82%B8%E9%B7%84%E5%A4%A7%E7%8D%85&lat=24.1823434692481&lng=120.592908141145"
+    },
+    {
+      "id": 41,
+      "name": "Fried Chicken Master - Linjiang Branch",
+      "address": "No. 116號四樓, Tonghua St, Da’an District, Taipei City, Taiwan 106",
+      "lat": 25.0294,
+      "lng": 121.5539,
+      "foodpanda_search_url": "https://www.foodpanda.com.tw/?query=Fried%20Chicken%20Master%20-%20Linjiang%20Branch&lat=25.0294&lng=121.5539",
+      "manual_search_url": "https://www.foodpanda.com.tw/?query=%E7%82%B8%E9%B7%84%E5%A4%A7%E7%8D%85&lat=25.0294&lng=121.5539"
+    },
+    {
+      "id": 101,
+      "name": "Fried Chicken Master - Shalu Xinsheng Branch",
+      "address": "No. 22之5號, Xinsheng St, Shalu District, Taichung City, Taiwan 433",
+      "lat": 24.2389277111782,
+      "lng": 120.560969528862,
+      "foodpanda_search_url": "https://www.foodpanda.com.tw/?query=Fried%20Chicken%20Master%20-%20Shalu%20Xinsheng%20Branch&lat=24.2389277111782&lng=120.560969528862",
+      "manual_search_url": "https://www.foodpanda.com.tw/?query=%E7%82%B8%E9%B7%84%E5%A4%A7%E7%8D%85&lat=24.2389277111782&lng=120.560969528862"
+    },
+    {
+      "id": 169,
+      "name": "Fried Chicken Master - Xinyi Branch",
+      "address": "110, Taiwan, Taipei City, Xinyi District, Lane 269, Wuxing St, 13號5樓",
+      "lat": 25.0273951517678,
+      "lng": 121.564734578133,
+      "foodpanda_search_url": "https://www.foodpanda.com.tw/?query=Fried%20Chicken%20Master%20-%20Xinyi%20Branch&lat=25.0273951517678&lng=121.564734578133",
+      "manual_search_url": "https://www.foodpanda.com.tw/?query=%E7%82%B8%E9%B7%84%E5%A4%A7%E7%8D%85&lat=25.0273951517678&lng=121.564734578133"
+    },
+    {
+      "id": 227,
+      "name": "Fried Chicken Master Global Mall Nanggang TRA Station",
+      "address": "No. 369, Section 7, Zhongxiao E Rd, Nangang District, Taipei City, Taiwan 115",
+      "lat": 25.0528176,
+      "lng": 121.6058982,
+      "foodpanda_search_url": "https://www.foodpanda.com.tw/?query=Fried%20Chicken%20Master%20Global%20Mall%20Nanggang%20TRA%20Station&lat=25.0528176&lng=121.6058982",
+      "manual_search_url": "https://www.foodpanda.com.tw/?query=%E7%82%B8%E9%B7%84%E5%A4%A7%E7%8D%85&lat=25.0528176&lng=121.6058982"
+    },
+    {
+      "id": 5,
+      "name": "Fried Chicken Master Gongguan Branch",
+      "address": "No. 14-1號, Lane 24, Section 4, Roosevelt Rd, Zhongzheng District, Taipei City, Taiwan 100",
+      "lat": 25.0149,
+      "lng": 121.5327,
+      "foodpanda_search_url": "https://www.foodpanda.com.tw/?query=Fried%20Chicken%20Master%20Gongguan%20Branch&lat=25.0149&lng=121.5327",
+      "manual_search_url": "https://www.foodpanda.com.tw/?query=%E7%82%B8%E9%B7%84%E5%A4%A7%E7%8D%85&lat=25.0149&lng=121.5327"
+    },
+    {
+      "id": 419,
+      "name": "Fried Chicken Master Linkou Chang Gung",
+      "address": "No. 35號, Lane 6, Fuxing N Rd, Guishan District, Taoyuan City, Taiwan 333",
+      "lat": 25.0585692,
+      "lng": 121.3679966,
+      "foodpanda_search_url": "https://www.foodpanda.com.tw/?query=Fried%20Chicken%20Master%20Linkou%20Chang%20Gung&lat=25.0585692&lng=121.3679966",
+      "manual_search_url": "https://www.foodpanda.com.tw/?query=%E7%82%B8%E9%B7%84%E5%A4%A7%E7%8D%85&lat=25.0585692&lng=121.3679966"
+    },
+    {
+      "id": 46,
+      "name": "Fried Chicken Master Nanggang Exhibition Center",
+      "address": "No. 1號, Jingmao 2nd Rd, Nangang District, Taipei City, Taiwan 115",
+      "lat": 25.0564452,
+      "lng": 121.6179513,
+      "foodpanda_search_url": "https://www.foodpanda.com.tw/?query=Fried%20Chicken%20Master%20Nanggang%20Exhibition%20Center&lat=25.0564452&lng=121.6179513",
+      "manual_search_url": "https://www.foodpanda.com.tw/?query=%E7%82%B8%E9%B7%84%E5%A4%A7%E7%8D%85&lat=25.0564452&lng=121.6179513"
+    },
+    {
+      "id": 373,
+      "name": "Fried Chicken Master NTUT",
+      "address": "No. 81, Section 1, Jianguo S Rd, Da’an District, Taipei City, Taiwan 106",
+      "lat": 25.0435197931535,
+      "lng": 121.537711668361,
+      "foodpanda_search_url": "https://www.foodpanda.com.tw/?query=Fried%20Chicken%20Master%20NTUT&lat=25.0435197931535&lng=121.537711668361",
+      "manual_search_url": "https://www.foodpanda.com.tw/?query=%E7%82%B8%E9%B7%84%E5%A4%A7%E7%8D%85&lat=25.0435197931535&lng=121.537711668361"
+    },
+    {
+      "id": 45,
+      "name": "Fried Chicken Master Taipei Neihu",
+      "address": "No. 88號, Minshan St, Neihu District, Taipei City, Taiwan 114",
+      "lat": 25.0603164,
+      "lng": 121.5751745,
+      "foodpanda_search_url": "https://www.foodpanda.com.tw/?query=Fried%20Chicken%20Master%20Taipei%20Neihu&lat=25.0603164&lng=121.5751745",
+      "manual_search_url": "https://www.foodpanda.com.tw/?query=%E7%82%B8%E9%B7%84%E5%A4%A7%E7%8D%85&lat=25.0603164&lng=121.5751745"
+    },
+    {
+      "id": 236,
+      "name": "Fried Chicken Master Taoyuan HSR",
+      "address": "Taoyuan HSR, No. 5, Section 1, Gaotie N Rd, Zhongli District, Taoyuan City, Taiwan 32056",
+      "lat": 25.01374,
+      "lng": 121.2140636,
+      "foodpanda_search_url": "https://www.foodpanda.com.tw/?query=Fried%20Chicken%20Master%20Taoyuan%20HSR&lat=25.01374&lng=121.2140636",
+      "manual_search_url": "https://www.foodpanda.com.tw/?query=%E7%82%B8%E9%B7%84%E5%A4%A7%E7%8D%85&lat=25.01374&lng=121.2140636"
+    },
+    {
+      "id": 235,
+      "name": "Fried Chicken Master Taoyuan Station 炸雞大獅 桃車店",
+      "address": "No. 1, Zhongzheng Rd, Taoyuan District, Taoyuan City, Taiwan 330",
+      "lat": 24.9891024,
+      "lng": 121.3136822,
+      "foodpanda_search_url": "https://www.foodpanda.com.tw/?query=Fried%20Chicken%20Master%20Taoyuan%20Station%20%E7%82%B8%E9%9B%9E%E5%A4%A7%E7%8D%85%20%E6%A1%83%E8%BB%8A%E5%BA%97&lat=24.9891024&lng=121.3136822",
+      "manual_search_url": "https://www.foodpanda.com.tw/?query=%E7%82%B8%E9%B7%84%E5%A4%A7%E7%8D%85&lat=24.9891024&lng=121.3136822"
+    },
+    {
+      "id": 228,
+      "name": "Fried Chicken Master Ximen Guilin",
+      "address": "No. 1號, Guilin Rd, Wanhua District, Taipei City, Taiwan 108",
+      "lat": 25.0378901,
+      "lng": 121.5058635,
+      "foodpanda_search_url": "https://www.foodpanda.com.tw/?query=Fried%20Chicken%20Master%20Ximen%20Guilin&lat=25.0378901&lng=121.5058635",
+      "manual_search_url": "https://www.foodpanda.com.tw/?query=%E7%82%B8%E9%B7%84%E5%A4%A7%E7%8D%85&lat=25.0378901&lng=121.5058635"
+    },
+    {
+      "id": 170,
+      "name": "Fried Chicken Master-NTOU (炸雞 大獅-基隆海大店)",
+      "address": "202, Taiwan, Keelung City, Zhongzheng District, Xiangfeng St, 769號一樓",
+      "lat": 25.1494179493591,
+      "lng": 121.771480925381,
+      "foodpanda_search_url": "https://www.foodpanda.com.tw/?query=Fried%20Chicken%20Master-NTOU%20(%E7%82%B8%E9%9B%9E%20%E5%A4%A7%E7%8D%85-%E5%9F%BA%E9%9A%86%E6%B5%B7%E5%A4%A7%E5%BA%97)&lat=25.1494179493591&lng=121.771480925381",
+      "manual_search_url": "https://www.foodpanda.com.tw/?query=%E7%82%B8%E9%B7%84%E5%A4%A7%E7%8D%85&lat=25.1494179493591&lng=121.771480925381"
+    }
+  ]
+}

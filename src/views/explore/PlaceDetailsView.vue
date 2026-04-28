@@ -115,6 +115,28 @@
               {{ $t('home.added') }} {{ fromNowToTaipei(place.created_at) }}
             </p>
 
+            <!-- Order Via Foodpanda -->
+            <div v-if="place.foodpanda_url" class="ion-margin-top ion-margin-bottom">
+              <p class="section-title">
+                <strong><small>Order Via</small></strong>
+              </p>
+              <div class="foodpanda-card" @click="logFoodpanda">
+                <img
+                  src="https://ph-test-11.slatic.net/p/9a66c3f38bcbb5940d790d9fd58855ee.png"
+                  alt="Foodpanda"
+                  class="foodpanda-card-logo"
+                />
+                <ion-button
+                    fill="solid"
+                    color="carrot"
+                    size="small"
+                    :href="place.foodpanda_url"
+                    target="_blank">
+                  Order Now
+                </ion-button>
+              </div>
+            </div>
+
             <!-- Certified By (Gold Partner) -->
             <div
                 v-if="!loadingCertifications && certifications.length"
@@ -442,6 +464,7 @@ type PlaceDetail = {
   phone?: string | null
   instagram?: string | null
   line_id?: string | null
+  foodpanda_url?: string | null
   price_range?: string | null
   opening_hours?: OpeningHours | null
   created_at?: string
@@ -742,6 +765,7 @@ const loadPlace = async () => {
     phone,
     instagram,
     line_id,
+    foodpanda_url,
     price_range,
     opening_hours,
     created_at,
@@ -775,6 +799,7 @@ const loadPlace = async () => {
       phone: data.phone,
       instagram: data.instagram,
       line_id: data.line_id,
+      foodpanda_url: data.foodpanda_url,
       price_range: data.price_range,
       opening_hours: data.opening_hours,
       created_at: data.created_at,
@@ -973,6 +998,20 @@ const logLine = () => {
   });
 };
 
+const logFoodpanda = () => {
+  if (!place.value) return;
+  ActivityLogService.log("explore_detail_foodpanda", {
+    id: place.value.id,
+    foodpanda_url: place.value.foodpanda_url
+  });
+};
+
+// Generate Foodpanda search URL from location data
+const generateFoodpandaSearchUrl = (name: string, lat: number, lng: number) => {
+  const encodedName = encodeURIComponent(name);
+  return `https://www.foodpanda.com.tw/?query=${encodedName}&lat=${lat}&lng=${lng}`;
+};
+
 const isMuslimFriendly = computed(() => {
   if (!place.value?.type) return false
   return place.value.type.toLowerCase().includes('muslim-friendly')
@@ -1029,6 +1068,42 @@ const scrollToDescription = () => {
 }
 .tier-silver .official-verified-tag {
   color: #64748b;
+}
+
+.foodpanda-logo-wrapper {
+  display: flex;
+  align-items: center;
+  height: 24px;
+}
+
+.foodpanda-logo {
+  height: 24px;
+  width: auto;
+  object-fit: contain;
+}
+
+.foodpanda-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--ion-card-background, #ffffff);
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--ion-color-light, #f0f0f0);
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.foodpanda-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.foodpanda-card-logo {
+  height: 40px;
+  width: auto;
+  object-fit: contain;
 }
 
 .details-container {
