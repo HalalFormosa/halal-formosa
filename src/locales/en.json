@@ -39,7 +39,11 @@
     "open": "Open",
     "closed": "Closed",
     "instagram": "Instagram",
-    "lineId": "LINE ID"
+    "lineId": "LINE ID",
+    "underMaintenance": "Under Maintenance",
+    "comingSoon": "Coming Soon",
+    "maintenanceMessage": "This feature is currently undergoing maintenance. We'll be back soon!",
+    "copied": "Copied to clipboard"
   },
   "master": {
     "active": "Active",
@@ -283,7 +287,41 @@
       "disclaimerNote": "Results are for reference only. Always verify with trusted sources before consuming.",
       "gotIt": "Got It"
     },
+    "progress": {
+      "initializing": "Initializing...",
+      "loadingDb": "Loading ingredient database...",
+      "runningOcr": "Running OCR...",
+      "detectingLang": "Detecting language...",
+      "cleaningText": "Cleaning text...",
+      "translating": "Translating...",
+      "extractingIng": "Extracting ingredients...",
+      "matchingIng": "Matching ingredients...",
+      "finalizing": "Finalizing...",
+      "failed": "Failed"
+    },
+    "aiSummary": {
+      "title": "AI Analysis Summary",
+      "preparing": "Preparing Analysis...",
+      "connecting": "Connecting to {model}...",
+      "footer": "Answer written & structured by {model} using Halal Formosa Database",
+      "thinking": "AI is Thinking...",
+      "explanation": "AI Explanation",
+      "unlock": "Unlock AI Explanation",
+      "unlockPro": "Unlock AI Explanation (PRO)"
+    },
+    "limit": {
+      "reached": "Daily scan limit reached ({limit}/day)",
+      "bonus": "Watch Ad +5 Scans",
+      "adLimit": "You can only watch {count} ads per day."
+    },
+    "errors": {
+      "ocrFailed": "OCR analysis failed. Please try again with a clearer photo.",
+      "noIngredients": "No ingredients detected. Please try cropping more closely.",
+      "noKeywords": "No ingredient keywords detected. Please crop the ingredients section only.",
+      "couldNotAccessCamera": "Could not access camera. Please check permissions."
+    },
     "autoScan": {
+      "label": "Auto Scan",
       "title": "Auto Scanner",
       "hint": "Position ingredients inside the frame",
       "status": {
@@ -446,6 +484,7 @@
       "handlingDetails": "Handling Details",
       "phone": "Phone",
       "officialPartner": "OFFICIAL PARTNER",
+      "orderVia": "Order Via",
       "orderNow": "Order Now",
       "certifiedBy": "Certified by",
       "verifiedGoldPartner": "Verified Gold Partner",
@@ -1198,6 +1237,10 @@
   "store": {
     "underConstructionDesc": "We're brewing something amazing! The store will be back soon.",
     "title": "Halal Formosa Store",
+    "construction": {
+      "title": "Under Construction",
+      "message": "We're brewing something amazing! The Halal Formosa store will be available soon."
+    },
     "searchPlaceholder": "Search products...",
     "categories": "Categories",
     "allCategories": "All",

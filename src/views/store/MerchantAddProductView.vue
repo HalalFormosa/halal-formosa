@@ -12,8 +12,8 @@
       <div v-if="isUnderConstruction" slot="fixed" class="under-construction-overlay">
         <div class="construction-card">
           <ion-icon :icon="constructOutline" class="construction-icon" />
-          <h2>{{ $t('common.underConstruction') || 'Under Construction' }}</h2>
-          <p>Product management is currently offline for maintenance.</p>
+          <h2>{{ $t('store.construction.title') }}</h2>
+          <p>{{ $t('store.construction.message') }}</p>
         </div>
       </div>
 
@@ -132,7 +132,7 @@
             </div>
             <div v-if="form.images.length < 8" class="add-image-btn" @click="addImageUrl">
               <ion-icon :icon="addOutline" />
-              <span>Add URL</span>
+              <span>{{ $t('common.add') }} URL</span>
             </div>
           </div>
         </div>
@@ -141,7 +141,7 @@
         <div class="form-card">
           <ion-item class="form-item no-icon" lines="none">
             <ion-textarea v-model="form.description" :label="$t('store.description')" label-placement="stacked"
-              :rows="4" placeholder="Product description in English" />
+              :rows="4" :placeholder="$t('store.descriptionPlaceholder')" />
           </ion-item>
 
           <ion-item class="form-item no-icon" lines="none">
@@ -177,7 +177,7 @@
             <ion-icon :icon="pricetagOutline" class="field-icon" />
             <ion-item class="form-item" lines="none">
               <ion-input v-model="tagsInput" :label="$t('store.tags')" label-placement="stacked"
-                placeholder="halal, ramadan, snack" />
+                placeholder="e.g. halal, snack" />
             </ion-item>
           </div>
         </div>
@@ -307,7 +307,7 @@ async function ensureStoreExists() {
 
 async function addImageUrl() {
   const alert = await alertController.create({
-    header: 'Add Image URL',
+    header: t('common.add') + ' Image URL',
     inputs: [{ name: 'url', type: 'url', placeholder: 'https://...' }],
     buttons: [
       { text: t('common.cancel'), role: 'cancel' },

@@ -39,7 +39,11 @@
     "open": "खुला",
     "closed": "बंद किया हुआ",
     "instagram": "Instagram",
-    "lineId": "लाइन आईडी"
+    "lineId": "लाइन आईडी",
+    "underMaintenance": "Under Maintenance",
+    "comingSoon": "Coming Soon",
+    "maintenanceMessage": "This feature is currently undergoing maintenance. We'll be back soon!",
+    "copied": "Copied to clipboard"
   },
   "master": {
     "active": "सक्रिय",
@@ -293,7 +297,8 @@
         "scanning": "एआई स्कैनिंग...",
         "found": "सामग्री मिल गई! ध्यान केंद्रित करना...",
         "notFound": "सामग्री नहीं मिली, पकड़े रहें..."
-      }
+      },
+      "label": "Auto Scan"
     },
     "scan": {
       "camera": "कैमरा",
@@ -325,6 +330,39 @@
       "ok": "✅ सामग्री निकाली गई!",
       "error": "कुछ गलत हो गया।",
       "copied": "क्लिपबोर्ड पर कॉपी किया गया"
+    },
+    "aiSummary": {
+      "title": "AI Analysis Summary",
+      "preparing": "Preparing Analysis...",
+      "connecting": "Connecting to {model}...",
+      "footer": "Answer written & structured by {model} using Halal Formosa Database",
+      "thinking": "AI is Thinking...",
+      "explanation": "AI Explanation",
+      "unlock": "Unlock AI Explanation",
+      "unlockPro": "Unlock AI Explanation (PRO)"
+    },
+    "limit": {
+      "reached": "Daily scan limit reached ({limit}/day)",
+      "bonus": "Watch Ad +5 Scans",
+      "adLimit": "You can only watch {count} ads per day."
+    },
+    "progress": {
+      "initializing": "Initializing...",
+      "loadingDb": "Loading ingredient database...",
+      "runningOcr": "Running OCR...",
+      "detectingLang": "Detecting language...",
+      "cleaningText": "Cleaning text...",
+      "translating": "Translating...",
+      "extractingIng": "Extracting ingredients...",
+      "matchingIng": "Matching ingredients...",
+      "finalizing": "Finalizing...",
+      "failed": "Failed"
+    },
+    "errors": {
+      "ocrFailed": "OCR analysis failed. Please try again with a clearer photo.",
+      "noIngredients": "No ingredients detected. Please try cropping more closely.",
+      "noKeywords": "No ingredient keywords detected. Please crop the ingredients section only.",
+      "couldNotAccessCamera": "Could not access camera. Please check permissions."
     }
   },
   "search": {
@@ -455,7 +493,8 @@
       "openNow": "अभी खोलें",
       "closedNow": "अभी बंद है",
       "additionalDetails": "अतिरिक्त विवरण",
-      "estimatedPrice": "अनुमानित मूल्य"
+      "estimatedPrice": "अनुमानित मूल्य",
+      "orderVia": "Order Via"
     },
     "filters": {
       "priceRange": "मूल्य सीमा"
@@ -1336,6 +1375,10 @@
         "cod_meetup": "स्वयं",
         "in_person": "व्यक्तिगत रूप से मिलें/कैश ऑन डिलीवरी"
       }
+    },
+    "construction": {
+      "title": "Under Construction",
+      "message": "We're brewing something amazing! The Halal Formosa store will be available soon."
     }
   },
   "merchant": {

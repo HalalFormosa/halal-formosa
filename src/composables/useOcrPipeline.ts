@@ -17,6 +17,7 @@ export interface OcrPipelineOptions {
         blacklist: { pattern: string }[]
     } | null>
     setError: (msg: string) => void
+    t: (key: string) => string
 }
 
 export default function useOcrPipeline({
@@ -26,6 +27,7 @@ export default function useOcrPipeline({
     incrementUsageCount,
     fetchHighlightsWithCache,
     setError,
+    t,
 }: OcrPipelineOptions) {
     const ingredientHighlights = ref<IngredientHighlight[]>([])
     const ingredientsTextZh = ref('')
@@ -36,7 +38,7 @@ export default function useOcrPipeline({
     const detectedLanguage = ref<'chinese' | 'english' | 'mixed' | 'unknown'>('unknown')
     const ocrRawText = ref('')
     const progress = ref(0)
-    const progressLabel = ref('Initializing...')
+    const progressLabel = ref(t('scanIngredients.progress.initializing'))
 
     function normalizeIngredients(text: string): string {
         return text
@@ -69,7 +71,7 @@ export default function useOcrPipeline({
             if (incrementDisclaimerCount) incrementDisclaimerCount();
 
             progress.value = 0.05
-            progressLabel.value = "Loading ingredient database..."
+            progressLabel.value = t('scanIngredients.progress.loadingDb')
 
             // ✅ Load highlights + blacklist
             const data = await fetchHighlightsWithCache();
@@ -82,7 +84,7 @@ export default function useOcrPipeline({
 
             // ✅ OCR
             progress.value = 0.15
-            progressLabel.value = "Running OCR..."
+            progressLabel.value = t('scanIngredients.progress.runningOcr')
 
             const { text: rawText, translatedText: translatedFull } = await extractTextFromImage(file);
             if (!rawText || !rawText.trim()) {
@@ -92,7 +94,7 @@ export default function useOcrPipeline({
             ocrRawText.value = raw || ''
 
             progress.value = 0.30
-            progressLabel.value = "Detecting language..."
+            progressLabel.value = t('scanIngredients.progress.detectingLang')
 
             detectedLanguage.value = detectLanguage(raw);
 
@@ -101,7 +103,7 @@ export default function useOcrPipeline({
             let ingredientsOnlyZh = '';
 
             progress.value = 0.40
-            progressLabel.value = "Cleaning text..."
+            progressLabel.value = t('scanIngredients.progress.cleaningText')
 
             if (detectedLanguage.value === 'english') {
                 // ✅ Already English → no need to clean Chinese
@@ -112,14 +114,14 @@ export default function useOcrPipeline({
                 cleanedZh = normalizeIngredients(cleanChineseOcrText(raw));
 
                 if (!cleanedZh.trim()) {
-                    return setError('OCR detected text but nothing meaningful remained after cleanup.');
+                    return setError(t('scanIngredients.errors.noIngredients'));
                 }
 
                 // 🧹 Extract ingredients-only before translation
                 ingredientsOnlyZh = stripToIngredientsOnly(cleanedZh);
 
                 progress.value = 0.55
-                progressLabel.value = "Translating..."
+                progressLabel.value = t('scanIngredients.progress.translating')
 
                 const translatedFullNormalized = normalizeEnglishIngredients(translatedFull);
 
@@ -140,12 +142,12 @@ export default function useOcrPipeline({
             }
 
             progress.value = 0.70
-            progressLabel.value = "Extracting ingredients..."
+            progressLabel.value = t('scanIngredients.progress.extractingIng')
 
             // ✅ Guard: ensure we actually got a reasonable ingredient list
             const ingKeywords = /(ingredient|成分|成份|配料|原料|內容物|内容物|材料)/i;
             if (!ingKeywords.test(raw) && !ingKeywords.test(translated)) {
-                throw new Error('No ingredient keywords detected. Please crop the ingredients section only.');
+                throw new Error(t('scanIngredients.errors.noKeywords'));
             }
 
             // ✅ Save Chinese ingredients ONLY if OCR is Chinese / Mixed
@@ -169,12 +171,12 @@ export default function useOcrPipeline({
             await nextTick();
 
             progress.value = 0.85
-            progressLabel.value = "Matching ingredients..."
+            progressLabel.value = t('scanIngredients.progress.matchingIng')
 
             await recheckHighlightsSmart();
 
             progress.value = 0.95
-            progressLabel.value = "Finalizing..."
+            progressLabel.value = t('scanIngredients.progress.finalizing')
 
             const count = incrementUsageCount();
             if (count >= 1) {
@@ -194,10 +196,10 @@ export default function useOcrPipeline({
             console.error("❌ OCR pipeline error:", e);
 
             progress.value = 0
-            progressLabel.value = "Failed"
+            progressLabel.value = t('scanIngredients.progress.failed')
 
             // if the error already has a message, keep it
-            const message = e?.message || 'OCR failed.';
+            const message = e?.message || t('scanIngredients.errors.ocrFailed');
             setError(message);
 
             // rethrow so outer layers (useOcrService / confirmCrop) can react properly

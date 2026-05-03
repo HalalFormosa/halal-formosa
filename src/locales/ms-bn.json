@@ -39,7 +39,11 @@
     "open": "Buka",
     "closed": "tertutup",
     "instagram": "Instagram",
-    "lineId": "ID TALIAN"
+    "lineId": "ID TALIAN",
+    "underMaintenance": "Under Maintenance",
+    "comingSoon": "Coming Soon",
+    "maintenanceMessage": "This feature is currently undergoing maintenance. We'll be back soon!",
+    "copied": "Copied to clipboard"
   },
   "master": {
     "active": "Aktif",
@@ -293,7 +297,8 @@
         "scanning": "Pengimbasan AI...",
         "found": "Bahan Ditemui! Memfokuskan...",
         "notFound": "Bahan tak jumpa, terus pegang..."
-      }
+      },
+      "label": "Auto Scan"
     },
     "scan": {
       "camera": "Kamera",
@@ -325,6 +330,39 @@
       "ok": "✅ Bahan diekstrak!",
       "error": "Sesuatu telah berlaku.",
       "copied": "Disalin ke papan keratan"
+    },
+    "aiSummary": {
+      "title": "AI Analysis Summary",
+      "preparing": "Preparing Analysis...",
+      "connecting": "Connecting to {model}...",
+      "footer": "Answer written & structured by {model} using Halal Formosa Database",
+      "thinking": "AI is Thinking...",
+      "explanation": "AI Explanation",
+      "unlock": "Unlock AI Explanation",
+      "unlockPro": "Unlock AI Explanation (PRO)"
+    },
+    "limit": {
+      "reached": "Daily scan limit reached ({limit}/day)",
+      "bonus": "Watch Ad +5 Scans",
+      "adLimit": "You can only watch {count} ads per day."
+    },
+    "progress": {
+      "initializing": "Initializing...",
+      "loadingDb": "Loading ingredient database...",
+      "runningOcr": "Running OCR...",
+      "detectingLang": "Detecting language...",
+      "cleaningText": "Cleaning text...",
+      "translating": "Translating...",
+      "extractingIng": "Extracting ingredients...",
+      "matchingIng": "Matching ingredients...",
+      "finalizing": "Finalizing...",
+      "failed": "Failed"
+    },
+    "errors": {
+      "ocrFailed": "OCR analysis failed. Please try again with a clearer photo.",
+      "noIngredients": "No ingredients detected. Please try cropping more closely.",
+      "noKeywords": "No ingredient keywords detected. Please crop the ingredients section only.",
+      "couldNotAccessCamera": "Could not access camera. Please check permissions."
     }
   },
   "search": {
@@ -455,7 +493,8 @@
       "openNow": "Buka Sekarang",
       "closedNow": "Ditutup Sekarang",
       "additionalDetails": "Butiran Tambahan",
-      "estimatedPrice": "Anggaran Harga"
+      "estimatedPrice": "Anggaran Harga",
+      "orderVia": "Order Via"
     },
     "filters": {
       "priceRange": "Julat Harga"
@@ -1336,6 +1375,10 @@
         "cod_meetup": "Secara peribadi",
         "in_person": "Bertemu secara langsung/Cash on delivery"
       }
+    },
+    "construction": {
+      "title": "Under Construction",
+      "message": "We're brewing something amazing! The Halal Formosa store will be available soon."
     }
   },
   "merchant": {

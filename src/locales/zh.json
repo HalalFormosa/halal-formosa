@@ -30,7 +30,20 @@
     "success": "成功！",
     "error": "發生錯誤。",
     "notProvided": "未提供",
-    "replay": "重新播放"
+    "replay": "重新播放",
+    "noData": "No data found",
+    "viewMore": "View More",
+    "loading": "Loading...",
+    "phone": "Phone",
+    "call": "Call",
+    "open": "Open",
+    "closed": "Closed",
+    "instagram": "Instagram",
+    "lineId": "LINE ID",
+    "underMaintenance": "Under Maintenance",
+    "comingSoon": "Coming Soon",
+    "maintenanceMessage": "This feature is currently undergoing maintenance. We'll be back soon!",
+    "copied": "Copied to clipboard"
   },
   "master": {
     "active": "啟用",
@@ -119,7 +132,8 @@
     "success": "密碼更新成功！",
     "error": "密碼更新失敗。",
     "mismatchError": "密碼不匹配",
-    "change": "更改密碼"
+    "change": "更改密碼",
+    "changePassword": "Change Password"
   },
   "main": {
     "title": "Halal Formosa",
@@ -287,7 +301,8 @@
         "scanning": "AI 掃描中...",
         "found": "找到成分！對焦中...",
         "notFound": "未找到成分，請繼續保持..."
-      }
+      },
+      "label": "Auto Scan"
     },
     "scan": {
       "camera": "相機",
@@ -319,6 +334,39 @@
       "ok": "✅ 已提取成分！",
       "error": "發生錯誤。",
       "copied": "已複製到剪貼簿"
+    },
+    "aiSummary": {
+      "title": "AI Analysis Summary",
+      "preparing": "Preparing Analysis...",
+      "connecting": "Connecting to {model}...",
+      "footer": "Answer written & structured by {model} using Halal Formosa Database",
+      "thinking": "AI is Thinking...",
+      "explanation": "AI Explanation",
+      "unlock": "Unlock AI Explanation",
+      "unlockPro": "Unlock AI Explanation (PRO)"
+    },
+    "limit": {
+      "reached": "Daily scan limit reached ({limit}/day)",
+      "bonus": "Watch Ad +5 Scans",
+      "adLimit": "You can only watch {count} ads per day."
+    },
+    "progress": {
+      "initializing": "Initializing...",
+      "loadingDb": "Loading ingredient database...",
+      "runningOcr": "Running OCR...",
+      "detectingLang": "Detecting language...",
+      "cleaningText": "Cleaning text...",
+      "translating": "Translating...",
+      "extractingIng": "Extracting ingredients...",
+      "matchingIng": "Matching ingredients...",
+      "finalizing": "Finalizing...",
+      "failed": "Failed"
+    },
+    "errors": {
+      "ocrFailed": "OCR analysis failed. Please try again with a clearer photo.",
+      "noIngredients": "No ingredients detected. Please try cropping more closely.",
+      "noKeywords": "No ingredient keywords detected. Please crop the ingredients section only.",
+      "couldNotAccessCamera": "Could not access camera. Please check permissions."
     }
   },
   "search": {
@@ -437,7 +485,19 @@
       "noticeTitle": "處理與狀態說明",
       "readDescriptionNotice": "請查看此地點下方的特定處理細節。",
       "handlingDetails": "處理細節",
-      "phone": "電話"
+      "phone": "電話",
+      "officialPartner": "OFFICIAL PARTNER",
+      "orderVia": "Order Via",
+      "orderNow": "Order Now",
+      "certifiedBy": "Certified by",
+      "verifiedGoldPartner": "Verified Gold Partner",
+      "address": "Address",
+      "noAddress": "No address available",
+      "openingHours": "Opening Hours",
+      "openNow": "Open Now",
+      "closedNow": "Closed Now",
+      "additionalDetails": "Additional Details",
+      "estimatedPrice": "Estimated Price"
     },
     "filters": {
       "priceRange": "價格範圍"
@@ -471,7 +531,21 @@
       "Attraction": "景點",
       "Others": "其他"
     },
-    "moreFilters": "更多 ..."
+    "moreFilters": "更多 ...",
+    "loadingMoreLocations": "Loading more locations...",
+    "forYou": {
+      "title": "For You",
+      "gateDesc": "You're viewing For You. This personalized feed unlocks with Halal Formosa Pro and adapts to your explore activity over time.",
+      "upgrade": "Upgrade to Pro",
+      "infoDesc": "We recommend places based on your activity in explore:",
+      "reasonMsg": "💡 You're seeing this because you often explore {reason}.",
+      "learningMsg": "💡 We're learning your preferences as you explore more places.",
+      "nativeOnly": "✨ For You is available on mobile apps only.",
+      "categories": "Categories you filter",
+      "searchTerms": "Recent searches",
+      "tags": "Places you view"
+    },
+    "noResults": "No results found"
   },
   "trip": {
     "title": "穆斯林友善旅遊",
@@ -956,7 +1030,6 @@
     "noPendingLocations": "尚無待審核地點。",
     "approve": "通過",
     "reject": "拒絕",
-    "archive": "封存",
     "confirmArchive": "您確定要封存此地點嗎？它將從地圖和審核隊列中隱藏。",
     "sortRecent": "最近新增",
     "sortAlpha": "按名稱排序",
@@ -1033,7 +1106,8 @@
       "scan_ingredients_success": "掃描結果：{product} • {status}",
       "scan_ingredients_error": "掃描失敗：{error}",
       "profile_page_open": "打開了個人主頁",
-      "social_link_click": "點擊了社交連結 ({platform})"
+      "social_link_click": "點擊了社交連結 ({platform})",
+      "search_performed": "Searched: \"{query}\""
     },
     "cancelEdit": "取消編輯",
     "addNew": "新增",
@@ -1085,7 +1159,35 @@
         "resolved": "已解決",
         "rejected": "已拒絕"
       }
-    }
+    },
+    "noReports": "No reports found",
+    "reportDetail": "Report Detail",
+    "reporter": "Reporter",
+    "ingredient_highlights": "Ingredient Highlights",
+    "location_types": "Location Types",
+    "category_rules": "Category Rules",
+    "dau": "Active Sessions",
+    "activity": "Activity",
+    "custom": "Custom Range",
+    "selectDates": "Select Dates",
+    "startDate": "Start Date",
+    "endDate": "End Date",
+    "topSearches": "Top Search Queries",
+    "quickInsights": "Quick Insights",
+    "newUsers": "New Registrations",
+    "conversion": "Conversion Rate",
+    "stickiness": "App Stickiness",
+    "topNationalities": "Top Nationalities",
+    "accountRatios": "Account Distribution",
+    "scanFunnel": "AI Scanner Funnel",
+    "activityTrends": "Activity Trends",
+    "hourlyDistribution": "Activity by Hour",
+    "topFeatures": "Top Features",
+    "topProducts": "Top Products",
+    "topLocations": "Top Locations",
+    "insight_high_scan_success": "AI Scanner is performing exceptionally well (>70% success).",
+    "insight_low_scan_success": "Scanner error rates are higher than usual. Check visibility/lighting logs.",
+    "searchHistory": "Search History"
   },
   "merchantApplications": {
     "title": "申請管理",
@@ -1252,6 +1354,10 @@
         "cod_meetup": "自取",
         "in_person": "面交自取 / 貨到付款"
       }
+    },
+    "construction": {
+      "title": "Under Construction",
+      "message": "We're brewing something amazing! The Halal Formosa store will be available soon."
     }
   },
   "merchant": {
@@ -1310,5 +1416,37 @@
       "halalProofPlaceholder": "上傳清真證書、成分標籤或店面照片",
       "halalProofError": "食品類別必須提供清真驗證證明。"
     }
+  },
+  "savedLocations": {
+    "title": "Saved Locations",
+    "save": "Save",
+    "saved": "Saved",
+    "freeTier": "Free Tier Usage",
+    "proUpgrade": "Upgrade to {pro} for unlimited saves.",
+    "freeLimitReached": "You've reached your free limit. Upgrade to Pro to save unlimited locations!",
+    "noCollections": "No Collections Yet",
+    "noCollectionsDesc": "Create a folder to start organizing your saved locations!",
+    "createFolder": "Create Folder",
+    "myCollections": "My Collections",
+    "locationsCount": "{count} locations",
+    "noLocations": "No locations saved here.",
+    "newFolder": "New Folder",
+    "folderName": "Folder Name",
+    "create": "Create",
+    "removeLocation": "Remove Location",
+    "removeConfirm": "Are you sure you want to remove this location from your folder?",
+    "remove": "Remove",
+    "noOtherFolders": "No Other Folders",
+    "noOtherFoldersDesc": "You have no other folders to move this location to. Create a new folder first!",
+    "moveToFolder": "Move to folder...",
+    "locationAlreadyInFolder": "Location already exists in that folder!",
+    "moveSuccess": "Moved to {name}",
+    "moveFailed": "Failed to move location.",
+    "saveToFolder": "Save to Folder",
+    "newCollectionPlaceholder": "New collection name...",
+    "yourCollections": "Your Collections",
+    "locationSavedSuccess": "Location saved successfully!",
+    "locationAlreadySaved": "This location is already saved in this folder.",
+    "saveFailed": "Failed to save location. Please try again."
   }
 }

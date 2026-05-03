@@ -39,7 +39,11 @@
     "open": "열려 있는",
     "closed": "닫은",
     "instagram": "인스타그램",
-    "lineId": "라인아이디"
+    "lineId": "라인아이디",
+    "underMaintenance": "Under Maintenance",
+    "comingSoon": "Coming Soon",
+    "maintenanceMessage": "This feature is currently undergoing maintenance. We'll be back soon!",
+    "copied": "Copied to clipboard"
   },
   "master": {
     "active": "활동적인",
@@ -293,7 +297,8 @@
         "scanning": "AI 스캐닝...",
         "found": "성분 발견! 집중 중...",
         "notFound": "성분이 발견되지 않아 계속 보관하세요."
-      }
+      },
+      "label": "Auto Scan"
     },
     "scan": {
       "camera": "카메라",
@@ -325,6 +330,39 @@
       "ok": "✅성분을 추출했어요!",
       "error": "문제가 발생했습니다.",
       "copied": "클립보드에 복사됨"
+    },
+    "aiSummary": {
+      "title": "AI Analysis Summary",
+      "preparing": "Preparing Analysis...",
+      "connecting": "Connecting to {model}...",
+      "footer": "Answer written & structured by {model} using Halal Formosa Database",
+      "thinking": "AI is Thinking...",
+      "explanation": "AI Explanation",
+      "unlock": "Unlock AI Explanation",
+      "unlockPro": "Unlock AI Explanation (PRO)"
+    },
+    "limit": {
+      "reached": "Daily scan limit reached ({limit}/day)",
+      "bonus": "Watch Ad +5 Scans",
+      "adLimit": "You can only watch {count} ads per day."
+    },
+    "progress": {
+      "initializing": "Initializing...",
+      "loadingDb": "Loading ingredient database...",
+      "runningOcr": "Running OCR...",
+      "detectingLang": "Detecting language...",
+      "cleaningText": "Cleaning text...",
+      "translating": "Translating...",
+      "extractingIng": "Extracting ingredients...",
+      "matchingIng": "Matching ingredients...",
+      "finalizing": "Finalizing...",
+      "failed": "Failed"
+    },
+    "errors": {
+      "ocrFailed": "OCR analysis failed. Please try again with a clearer photo.",
+      "noIngredients": "No ingredients detected. Please try cropping more closely.",
+      "noKeywords": "No ingredient keywords detected. Please crop the ingredients section only.",
+      "couldNotAccessCamera": "Could not access camera. Please check permissions."
     }
   },
   "search": {
@@ -455,7 +493,8 @@
       "openNow": "지금 열기",
       "closedNow": "지금은 문을 닫음",
       "additionalDetails": "추가 세부정보",
-      "estimatedPrice": "예상 가격"
+      "estimatedPrice": "예상 가격",
+      "orderVia": "Order Via"
     },
     "filters": {
       "priceRange": "가격대"
@@ -1336,6 +1375,10 @@
         "cod_meetup": "직접",
         "in_person": "직접 만나기/대금 상환"
       }
+    },
+    "construction": {
+      "title": "Under Construction",
+      "message": "We're brewing something amazing! The Halal Formosa store will be available soon."
     }
   },
   "merchant": {

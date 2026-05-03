@@ -118,7 +118,7 @@
             <!-- Order Via Foodpanda -->
             <div v-if="place.foodpanda_url" class="ion-margin-top ion-margin-bottom">
               <p class="section-title">
-                <strong><small>Order Via</small></strong>
+                <strong><small>{{ $t('explore.details.orderVia') }}</small></strong>
               </p>
               <div class="foodpanda-card" @click="logFoodpanda">
                 <img

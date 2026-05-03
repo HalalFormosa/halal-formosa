@@ -39,7 +39,11 @@
     "open": "打开",
     "closed": "关闭",
     "instagram": "Instagram",
-    "lineId": "线路编号"
+    "lineId": "线路编号",
+    "underMaintenance": "Under Maintenance",
+    "comingSoon": "Coming Soon",
+    "maintenanceMessage": "This feature is currently undergoing maintenance. We'll be back soon!",
+    "copied": "Copied to clipboard"
   },
   "master": {
     "active": "积极的",
@@ -293,7 +297,8 @@
         "scanning": "人工智能扫描...",
         "found": "成分找到了！ 聚焦...",
         "notFound": "未找到成分，继续持有..."
-      }
+      },
+      "label": "Auto Scan"
     },
     "scan": {
       "camera": "相机",
@@ -325,6 +330,39 @@
       "ok": "✅ 成分提取！",
       "error": "出了点问题。",
       "copied": "已复制到剪贴板"
+    },
+    "aiSummary": {
+      "title": "AI Analysis Summary",
+      "preparing": "Preparing Analysis...",
+      "connecting": "Connecting to {model}...",
+      "footer": "Answer written & structured by {model} using Halal Formosa Database",
+      "thinking": "AI is Thinking...",
+      "explanation": "AI Explanation",
+      "unlock": "Unlock AI Explanation",
+      "unlockPro": "Unlock AI Explanation (PRO)"
+    },
+    "limit": {
+      "reached": "Daily scan limit reached ({limit}/day)",
+      "bonus": "Watch Ad +5 Scans",
+      "adLimit": "You can only watch {count} ads per day."
+    },
+    "progress": {
+      "initializing": "Initializing...",
+      "loadingDb": "Loading ingredient database...",
+      "runningOcr": "Running OCR...",
+      "detectingLang": "Detecting language...",
+      "cleaningText": "Cleaning text...",
+      "translating": "Translating...",
+      "extractingIng": "Extracting ingredients...",
+      "matchingIng": "Matching ingredients...",
+      "finalizing": "Finalizing...",
+      "failed": "Failed"
+    },
+    "errors": {
+      "ocrFailed": "OCR analysis failed. Please try again with a clearer photo.",
+      "noIngredients": "No ingredients detected. Please try cropping more closely.",
+      "noKeywords": "No ingredient keywords detected. Please crop the ingredients section only.",
+      "couldNotAccessCamera": "Could not access camera. Please check permissions."
     }
   },
   "search": {
@@ -455,7 +493,8 @@
       "openNow": "立即开放",
       "closedNow": "现已关闭",
       "additionalDetails": "其他细节",
-      "estimatedPrice": "预计价格"
+      "estimatedPrice": "预计价格",
+      "orderVia": "Order Via"
     },
     "filters": {
       "priceRange": "价格范围"
@@ -1336,6 +1375,10 @@
         "cod_meetup": "亲自",
         "in_person": "亲自见面/货到付款"
       }
+    },
+    "construction": {
+      "title": "Under Construction",
+      "message": "We're brewing something amazing! The Halal Formosa store will be available soon."
     }
   },
   "merchant": {

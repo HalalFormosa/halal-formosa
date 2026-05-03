@@ -30,7 +30,20 @@
     "success": "Berhasil!",
     "error": "Terjadi kesalahan.",
     "notProvided": "Tidak tersedia",
-    "replay": "Putar Ulang"
+    "replay": "Putar Ulang",
+    "noData": "No data found",
+    "viewMore": "View More",
+    "loading": "Loading...",
+    "phone": "Phone",
+    "call": "Call",
+    "open": "Open",
+    "closed": "Closed",
+    "instagram": "Instagram",
+    "lineId": "LINE ID",
+    "underMaintenance": "Under Maintenance",
+    "comingSoon": "Coming Soon",
+    "maintenanceMessage": "This feature is currently undergoing maintenance. We'll be back soon!",
+    "copied": "Copied to clipboard"
   },
   "dailyMissions": {
     "title": "Misi Harian",
@@ -88,7 +101,8 @@
     "success": "Kata sandi berhasil diperbarui!",
     "error": "Gagal memperbarui kata sandi.",
     "mismatchError": "Kata sandi tidak cocok",
-    "change": "Ubah Kata Sandi"
+    "change": "Ubah Kata Sandi",
+    "changePassword": "Change Password"
   },
   "main": {
     "title": "Halal Formosa",
@@ -255,7 +269,8 @@
         "scanning": "Pemindaian AI...",
         "found": "Komposisi Ditemukan! Memfokuskan...",
         "notFound": "Komposisi tidak ditemukan, tahan posisi..."
-      }
+      },
+      "label": "Auto Scan"
     },
     "scan": {
       "camera": "Kamera",
@@ -287,6 +302,39 @@
       "ok": "✅ Komposisi berhasil diekstrak!",
       "error": "Terjadi kesalahan.",
       "copied": "Berhasil disalin"
+    },
+    "aiSummary": {
+      "title": "AI Analysis Summary",
+      "preparing": "Preparing Analysis...",
+      "connecting": "Connecting to {model}...",
+      "footer": "Answer written & structured by {model} using Halal Formosa Database",
+      "thinking": "AI is Thinking...",
+      "explanation": "AI Explanation",
+      "unlock": "Unlock AI Explanation",
+      "unlockPro": "Unlock AI Explanation (PRO)"
+    },
+    "limit": {
+      "reached": "Daily scan limit reached ({limit}/day)",
+      "bonus": "Watch Ad +5 Scans",
+      "adLimit": "You can only watch {count} ads per day."
+    },
+    "progress": {
+      "initializing": "Initializing...",
+      "loadingDb": "Loading ingredient database...",
+      "runningOcr": "Running OCR...",
+      "detectingLang": "Detecting language...",
+      "cleaningText": "Cleaning text...",
+      "translating": "Translating...",
+      "extractingIng": "Extracting ingredients...",
+      "matchingIng": "Matching ingredients...",
+      "finalizing": "Finalizing...",
+      "failed": "Failed"
+    },
+    "errors": {
+      "ocrFailed": "OCR analysis failed. Please try again with a clearer photo.",
+      "noIngredients": "No ingredients detected. Please try cropping more closely.",
+      "noKeywords": "No ingredient keywords detected. Please crop the ingredients section only.",
+      "couldNotAccessCamera": "Could not access camera. Please check permissions."
     }
   },
   "search": {
@@ -359,7 +407,8 @@
       "noCollections": "Anda belum membuat folder apa pun.",
       "itemAlreadySaved": "Item ini sudah tersimpan di folder ini.",
       "itemSavedSuccess": "Item berhasil disimpan!",
-      "saveFailed": "Gagal menyimpan item. Silakan coba lagi."
+      "saveFailed": "Gagal menyimpan item. Silakan coba lagi.",
+      "producedBy": "Produced By"
     },
     "status": {
       "Halal": "Halal",
@@ -402,7 +451,19 @@
       "noticeTitle": "Detail Penanganan & Status",
       "readDescriptionNotice": "Mohon tinjau detail penanganan khusus di bawah ini untuk lokasi ini.",
       "handlingDetails": "Detail Penanganan",
-      "phone": "Telepon"
+      "phone": "Telepon",
+      "officialPartner": "OFFICIAL PARTNER",
+      "orderVia": "Order Via",
+      "orderNow": "Order Now",
+      "certifiedBy": "Certified by",
+      "verifiedGoldPartner": "Verified Gold Partner",
+      "address": "Address",
+      "noAddress": "No address available",
+      "openingHours": "Opening Hours",
+      "openNow": "Open Now",
+      "closedNow": "Closed Now",
+      "additionalDetails": "Additional Details",
+      "estimatedPrice": "Estimated Price"
     },
     "filters": {
       "priceRange": "Rentang Harga"
@@ -436,7 +497,23 @@
     "gettingFix": "Mendapatkan posisi...",
     "searchWait": "Harap tunggu...",
     "searchMap": "Mencari alamat di peta...",
-    "moreFilters": "lainnya ..."
+    "moreFilters": "lainnya ...",
+    "activeFilters": "Active Filters",
+    "categories": "Categories",
+    "campusPartners": "Campus Partners",
+    "forYou": {
+      "title": "For You",
+      "gateDesc": "You're viewing For You. This personalized feed unlocks with Halal Formosa Pro and adapts to your explore activity over time.",
+      "upgrade": "Upgrade to Pro",
+      "infoDesc": "We recommend places based on your activity in explore:",
+      "reasonMsg": "💡 You're seeing this because you often explore {reason}.",
+      "learningMsg": "💡 We're learning your preferences as you explore more places.",
+      "nativeOnly": "✨ For You is available on mobile apps only.",
+      "categories": "Categories you filter",
+      "searchTerms": "Recent searches",
+      "tags": "Places you view"
+    },
+    "noResults": "No results found"
   },
   "trip": {
     "title": "Wisata Ramah Muslim",
@@ -800,7 +877,10 @@
       "email": "Email",
       "website": "Situs Web"
     },
-    "goldPartner": "MITRA GOLD"
+    "goldPartner": "MITRA GOLD",
+    "activeFilters": "目前篩選",
+    "verifiedLabelShort": "Verified",
+    "producedProducts": "Produced Products"
   },
   "points": {
     "title": "Tinjau Log Poin"
@@ -876,7 +956,29 @@
     "archive": "Arsip",
     "confirmDeletePlace": "Apakah Anda yakin ingin menghapus/menolak lokasi ini secara permanen?",
     "master": {
-      "published": "Diterbitkan"
+      "product_categories": "Kategori Produk",
+      "ingredient_highlights": "Sorotan Bahan",
+      "location_types": "Jenis Lokasi",
+      "stores": "Toko",
+      "category_rules": "Aturan Kategori",
+      "fields": {
+        "name": "Nama",
+        "keyword": "Kata Kunci",
+        "keyword_en": "Kata Kunci (EN)",
+        "keyword_zh": "Kata Kunci (ZH)",
+        "color": "Warna",
+        "status": "Status",
+        "emoji": "Emoji",
+        "website": "Situs Web",
+        "logo_url": "URL Logo",
+        "sort_order": "Urutan Sortir",
+        "is_active": "Aktif",
+        "category": "Kategori",
+        "store_name": "Nama Toko",
+        "active": "Aktif",
+        "inactive": "Tidak Aktif"
+      },
+      "published": "Published"
     },
     "name": "Nama",
     "address": "Alamat",
@@ -910,7 +1012,6 @@
     "noPendingLocations": "Tidak ada lokasi yang menunggu tinjauan.",
     "approve": "Setujui",
     "reject": "Tolak",
-    "archive": "Arsip",
     "confirmArchive": "Apakah Anda yakin ingin mengarsipkan lokasi ini? Lokasi ini akan disembunyikan dari peta publik dan antrean peninjauan.",
     "sortRecent": "Baru Ditambahkan",
     "sortAlpha": "Urutan Abjad",
@@ -968,30 +1069,6 @@
     "flag": "Bendera",
     "locationImage": "Gambar Lokasi",
     "pts": "pts",
-    "master": {
-      "product_categories": "Kategori Produk",
-      "ingredient_highlights": "Sorotan Bahan",
-      "location_types": "Jenis Lokasi",
-      "stores": "Toko",
-      "category_rules": "Aturan Kategori",
-      "fields": {
-        "name": "Nama",
-        "keyword": "Kata Kunci",
-        "keyword_en": "Kata Kunci (EN)",
-        "keyword_zh": "Kata Kunci (ZH)",
-        "color": "Warna",
-        "status": "Status",
-        "emoji": "Emoji",
-        "website": "Situs Web",
-        "logo_url": "URL Logo",
-        "sort_order": "Urutan Sortir",
-        "is_active": "Aktif",
-        "category": "Kategori",
-        "store_name": "Nama Toko",
-        "active": "Aktif",
-        "inactive": "Tidak Aktif"
-      }
-    },
     "ingredient_highlights": "Sorotan Bahan",
     "location_types": "Jenis Lokasi",
     "category_rules": "Aturan Kategori",
@@ -1027,7 +1104,8 @@
       "scan_ingredients_success": "Hasil scan: {product} • {status}",
       "scan_ingredients_error": "Scan gagal: {error}",
       "profile_page_open": "Membuka halaman Profil",
-      "social_link_click": "Mengetuk tautan sosial ({platform})"
+      "social_link_click": "Mengetuk tautan sosial ({platform})",
+      "search_performed": "Searched: \"{query}\""
     },
     "merchant": {
       "title": "Aplikasi Merchant",
@@ -1075,7 +1153,29 @@
         "resolved": "Selesai",
         "rejected": "Ditolak"
       }
-    }
+    },
+    "dau": "Active Sessions",
+    "activity": "Activity",
+    "custom": "Custom Range",
+    "selectDates": "Select Dates",
+    "startDate": "Start Date",
+    "endDate": "End Date",
+    "topSearches": "Top Search Queries",
+    "quickInsights": "Quick Insights",
+    "newUsers": "New Registrations",
+    "conversion": "Conversion Rate",
+    "stickiness": "App Stickiness",
+    "topNationalities": "Top Nationalities",
+    "accountRatios": "Account Distribution",
+    "scanFunnel": "AI Scanner Funnel",
+    "activityTrends": "Activity Trends",
+    "hourlyDistribution": "Activity by Hour",
+    "topFeatures": "Top Features",
+    "topProducts": "Top Products",
+    "topLocations": "Top Locations",
+    "insight_high_scan_success": "AI Scanner is performing exceptionally well (>70% success).",
+    "insight_low_scan_success": "Scanner error rates are higher than usual. Check visibility/lighting logs.",
+    "searchHistory": "Search History"
   },
   "update": {
     "required_title": "Pembaruan Diperlukan",
@@ -1224,6 +1324,10 @@
         "cod_meetup": "Ketemuan Langsung",
         "in_person": "Ketemuan langsung/Bayar di tempat"
       }
+    },
+    "construction": {
+      "title": "Under Construction",
+      "message": "We're brewing something amazing! The Halal Formosa store will be available soon."
     }
   },
   "master": {
@@ -1327,5 +1431,37 @@
       "halalProofPlaceholder": "Unggah sertifikat Halal, label bahan, atau foto toko",
       "halalProofError": "Bukti Halal wajib dilampirkan untuk kategori makanan."
     }
+  },
+  "savedLocations": {
+    "title": "Saved Locations",
+    "save": "Save",
+    "saved": "Saved",
+    "freeTier": "Free Tier Usage",
+    "proUpgrade": "Upgrade to {pro} for unlimited saves.",
+    "freeLimitReached": "You've reached your free limit. Upgrade to Pro to save unlimited locations!",
+    "noCollections": "No Collections Yet",
+    "noCollectionsDesc": "Create a folder to start organizing your saved locations!",
+    "createFolder": "Create Folder",
+    "myCollections": "My Collections",
+    "locationsCount": "{count} locations",
+    "noLocations": "No locations saved here.",
+    "newFolder": "New Folder",
+    "folderName": "Folder Name",
+    "create": "Create",
+    "removeLocation": "Remove Location",
+    "removeConfirm": "Are you sure you want to remove this location from your folder?",
+    "remove": "Remove",
+    "noOtherFolders": "No Other Folders",
+    "noOtherFoldersDesc": "You have no other folders to move this location to. Create a new folder first!",
+    "moveToFolder": "Move to folder...",
+    "locationAlreadyInFolder": "Location already exists in that folder!",
+    "moveSuccess": "Moved to {name}",
+    "moveFailed": "Failed to move location.",
+    "saveToFolder": "Save to Folder",
+    "newCollectionPlaceholder": "New collection name...",
+    "yourCollections": "Your Collections",
+    "locationSavedSuccess": "Location saved successfully!",
+    "locationAlreadySaved": "This location is already saved in this folder.",
+    "saveFailed": "Failed to save location. Please try again."
   }
 }

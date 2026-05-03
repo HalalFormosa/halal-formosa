@@ -39,7 +39,11 @@
     "open": "Mở",
     "closed": "Đã đóng",
     "instagram": "Instagram",
-    "lineId": "ID DÒNG"
+    "lineId": "ID DÒNG",
+    "underMaintenance": "Under Maintenance",
+    "comingSoon": "Coming Soon",
+    "maintenanceMessage": "This feature is currently undergoing maintenance. We'll be back soon!",
+    "copied": "Copied to clipboard"
   },
   "master": {
     "active": "Tích cực",
@@ -293,7 +297,8 @@
         "scanning": "Quét AI...",
         "found": "Thành phần được tìm thấy! Tập trung...",
         "notFound": "Không tìm thấy thành phần, tiếp tục giữ..."
-      }
+      },
+      "label": "Auto Scan"
     },
     "scan": {
       "camera": "Máy ảnh",
@@ -325,6 +330,39 @@
       "ok": "✅Thành phần được chiết xuất!",
       "error": "Đã xảy ra lỗi.",
       "copied": "Đã sao chép vào bảng nhớ tạm"
+    },
+    "aiSummary": {
+      "title": "AI Analysis Summary",
+      "preparing": "Preparing Analysis...",
+      "connecting": "Connecting to {model}...",
+      "footer": "Answer written & structured by {model} using Halal Formosa Database",
+      "thinking": "AI is Thinking...",
+      "explanation": "AI Explanation",
+      "unlock": "Unlock AI Explanation",
+      "unlockPro": "Unlock AI Explanation (PRO)"
+    },
+    "limit": {
+      "reached": "Daily scan limit reached ({limit}/day)",
+      "bonus": "Watch Ad +5 Scans",
+      "adLimit": "You can only watch {count} ads per day."
+    },
+    "progress": {
+      "initializing": "Initializing...",
+      "loadingDb": "Loading ingredient database...",
+      "runningOcr": "Running OCR...",
+      "detectingLang": "Detecting language...",
+      "cleaningText": "Cleaning text...",
+      "translating": "Translating...",
+      "extractingIng": "Extracting ingredients...",
+      "matchingIng": "Matching ingredients...",
+      "finalizing": "Finalizing...",
+      "failed": "Failed"
+    },
+    "errors": {
+      "ocrFailed": "OCR analysis failed. Please try again with a clearer photo.",
+      "noIngredients": "No ingredients detected. Please try cropping more closely.",
+      "noKeywords": "No ingredient keywords detected. Please crop the ingredients section only.",
+      "couldNotAccessCamera": "Could not access camera. Please check permissions."
     }
   },
   "search": {
@@ -455,7 +493,8 @@
       "openNow": "Mở ngay",
       "closedNow": "Đang đóng cửa",
       "additionalDetails": "Chi tiết bổ sung",
-      "estimatedPrice": "Giá ước tính"
+      "estimatedPrice": "Giá ước tính",
+      "orderVia": "Order Via"
     },
     "filters": {
       "priceRange": "Khoảng giá"
@@ -1336,6 +1375,10 @@
         "cod_meetup": "Trực tiếp",
         "in_person": "Gặp trực tiếp/Trả tiền khi nhận hàng"
       }
+    },
+    "construction": {
+      "title": "Under Construction",
+      "message": "We're brewing something amazing! The Halal Formosa store will be available soon."
     }
   },
   "merchant": {

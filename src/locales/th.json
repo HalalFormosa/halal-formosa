@@ -39,7 +39,11 @@
     "open": "เปิด",
     "closed": "ปิด",
     "instagram": "อินสตาแกรม",
-    "lineId": "ไลน์ไอดี"
+    "lineId": "ไลน์ไอดี",
+    "underMaintenance": "Under Maintenance",
+    "comingSoon": "Coming Soon",
+    "maintenanceMessage": "This feature is currently undergoing maintenance. We'll be back soon!",
+    "copied": "Copied to clipboard"
   },
   "master": {
     "active": "คล่องแคล่ว",
@@ -293,7 +297,8 @@
         "scanning": "การสแกน AI...",
         "found": "พบส่วนผสมแล้ว! กำลังโฟกัส...",
         "notFound": "ไม่พบส่วนผสม เก็บต่อไป..."
-      }
+      },
+      "label": "Auto Scan"
     },
     "scan": {
       "camera": "กล้อง",
@@ -325,6 +330,39 @@
       "ok": "✅ ส่วนผสมสกัด!",
       "error": "มีบางอย่างผิดพลาด",
       "copied": "คัดลอกไปยังคลิปบอร์ดแล้ว"
+    },
+    "aiSummary": {
+      "title": "AI Analysis Summary",
+      "preparing": "Preparing Analysis...",
+      "connecting": "Connecting to {model}...",
+      "footer": "Answer written & structured by {model} using Halal Formosa Database",
+      "thinking": "AI is Thinking...",
+      "explanation": "AI Explanation",
+      "unlock": "Unlock AI Explanation",
+      "unlockPro": "Unlock AI Explanation (PRO)"
+    },
+    "limit": {
+      "reached": "Daily scan limit reached ({limit}/day)",
+      "bonus": "Watch Ad +5 Scans",
+      "adLimit": "You can only watch {count} ads per day."
+    },
+    "progress": {
+      "initializing": "Initializing...",
+      "loadingDb": "Loading ingredient database...",
+      "runningOcr": "Running OCR...",
+      "detectingLang": "Detecting language...",
+      "cleaningText": "Cleaning text...",
+      "translating": "Translating...",
+      "extractingIng": "Extracting ingredients...",
+      "matchingIng": "Matching ingredients...",
+      "finalizing": "Finalizing...",
+      "failed": "Failed"
+    },
+    "errors": {
+      "ocrFailed": "OCR analysis failed. Please try again with a clearer photo.",
+      "noIngredients": "No ingredients detected. Please try cropping more closely.",
+      "noKeywords": "No ingredient keywords detected. Please crop the ingredients section only.",
+      "couldNotAccessCamera": "Could not access camera. Please check permissions."
     }
   },
   "search": {
@@ -455,7 +493,8 @@
       "openNow": "เปิดเลย",
       "closedNow": "ปิดแล้ว",
       "additionalDetails": "รายละเอียดเพิ่มเติม",
-      "estimatedPrice": "ราคาโดยประมาณ"
+      "estimatedPrice": "ราคาโดยประมาณ",
+      "orderVia": "Order Via"
     },
     "filters": {
       "priceRange": "ช่วงราคา"
@@ -1336,6 +1375,10 @@
         "cod_meetup": "ในบุคคล",
         "in_person": "นัดเจอด้วยตนเอง/เก็บเงินปลายทาง"
       }
+    },
+    "construction": {
+      "title": "Under Construction",
+      "message": "We're brewing something amazing! The Halal Formosa store will be available soon."
     }
   },
   "merchant": {

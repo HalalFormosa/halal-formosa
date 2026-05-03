@@ -182,7 +182,7 @@
               class="ion-margin-top"
               @click="watchAdForExtraScans"
           >
-            🎁 Watch Ad +5 Scans
+            🎁 {{ $t('scanIngredients.limit.bonus') }}
           </ion-button>
         </div>
 
@@ -229,8 +229,8 @@
                 </ion-button>
                 <ion-button fill="outline" color="carrot" style="flex: 1; height: 48px;" @click="router.push('/scan/auto')">
                   <ion-icon slot="start" :icon="eyeOutline" />
-                  Auto Scan
-                </ion-button>
+                {{ $t('scanIngredients.autoScan.label') }}
+              </ion-button>
             </div>
           </ion-card-content>
         </ion-card>
@@ -254,7 +254,7 @@
                 {{ $t(`search.status.${autoStatus}`, autoStatus) }}
               </ion-chip>
             </div>
-            <h2 style="font-weight: 700; margin-top: 12px; font-size: 22px;">{{ productName || 'Scan Results' }}</h2>
+            <h2 style="font-weight: 700; margin-top: 12px; font-size: 22px;">{{ productName || $t('scanIngredients.scan.results') }}</h2>
           </div>
 
           <!-- Results Card -->
@@ -316,21 +316,21 @@
 
           <!-- AI Summary -->
           <div v-if="isDonor && (loadingSummary || overallNote || errorSummary)" class="ai-summary-card animate__animated animate__fadeInUp">
-            <h3 class="ai-summary-title">🤖 AI Analysis Summary</h3>
+            <h3 class="ai-summary-title">🤖 {{ $t('scanIngredients.aiSummary.title') }}</h3>
             
             <!-- Initial Loader -->
             <div v-if="loadingSummary && !overallNote && !errorSummary" class="ai-initial-loader">
               <ion-spinner name="crescent" color="secondary"></ion-spinner>
-              <div class="ai-status-msg">Preparing Analysis...</div>
+              <div class="ai-status-msg">{{ $t('scanIngredients.aiSummary.preparing') }}</div>
             </div>
 
             <div v-if="loadingSummary && !overallNote && tryingModel" class="ai-trying-text">
               <ion-spinner name="dots" color="medium" style="zoom: 0.6; margin-right: 4px;"></ion-spinner>
-              <span>Connecting to {{ tryingModel.split('/')[0].toUpperCase() }} {{ tryingModel.split('/')[1]?.split('-')[0].replace('it', '').toUpperCase() }}...</span>
+              <span>{{ $t('scanIngredients.aiSummary.connecting', { model: tryingModel.split('/')[0].toUpperCase() + ' ' + (tryingModel.split('/')[1]?.split('-')[0].replace('it', '').toUpperCase() || '') }) }}</span>
             </div>
             <div class="ai-summary-text" v-html="errorSummary || overallNote"></div>
             <div v-if="activeModel" class="ai-summary-footer">
-              Answer written & structured by {{ activeModel.split('/')[0].toUpperCase() }} {{ activeModel.split('/')[1]?.split('-')[0].replace('it', '').toUpperCase() }} using Halal Formosa Database
+              {{ $t('scanIngredients.aiSummary.footer', { model: activeModel.split('/')[0].toUpperCase() + ' ' + (activeModel.split('/')[1]?.split('-')[0].replace('it', '').toUpperCase() || '') }) }}
             </div>
           </div>
 
@@ -346,7 +346,7 @@
             <ion-spinner v-if="loadingSummary" name="crescent" slot="start"></ion-spinner>
             <ion-icon v-if="!loadingSummary" :icon="sparklesOutline" style="margin-right: 6px; font-size: 18px; vertical-align: middle;"></ion-icon>
             <span style="vertical-align: middle;">
-              {{ loadingSummary ? 'AI is Thinking…' : (isDonor ? 'AI Explanation' : 'Unlock AI Explanation') }}
+              {{ loadingSummary ? $t('scanIngredients.aiSummary.thinking') : (isDonor ? $t('scanIngredients.aiSummary.explanation') : $t('scanIngredients.aiSummary.unlock')) }}
             </span>
             <span v-if="!isDonor && !loadingSummary" class="pro-pill">PRO</span>
           </ion-button>
@@ -466,14 +466,14 @@
       />
       <ion-toast
           :is-open="showCopied"
-          message="Copied to clipboard"
+          :message="$t('common.copied')"
           :duration="1200"
           position="bottom"
           @did-dismiss="showCopied=false"
       />
       <ion-toast
           :is-open="showLimitToast"
-          :message="`Daily scan limit reached (${DAILY_SCAN_LIMIT}/day)`"
+          :message="$t('scanIngredients.limit.reached', { limit: DAILY_SCAN_LIMIT })"
           :duration="2000"
           color="warning"
           position="bottom"
@@ -826,6 +826,7 @@ const {
   fetchHighlightsWithCache,
   incrementUsageCount,
   setError,
+  t,
 })
 
 /** ---------- Log Scan ------------ */
@@ -1044,7 +1045,7 @@ function clearAll() {
 async function watchAdForExtraScans() {
   if (dailyAdUses.value >= 2) {
     showErr.value = true;
-    errorMsg.value = "You can only watch 2 ads per day.";
+    errorMsg.value = t('scanIngredients.limit.adLimit', { count: 2 });
     return;
   }
 
@@ -1154,12 +1155,12 @@ async function handleConfirmCrop() {
 
     } else {
       console.warn('🚫 OCR text found but no ingredient section detected, skipping log')
-      setError('No ingredients detected. Please try cropping more closely.')
+      setError(t('scanIngredients.errors.noIngredients'))
     }
 
   } catch (err: any) {
 
-    setError(err.message || 'OCR failed')
+    setError(err.message || t('scanIngredients.errors.ocrFailed'))
 
     await ActivityLogService.log("scan_ingredients_error", {
       error: err.message || "OCR failed",
@@ -1243,7 +1244,7 @@ function scanFromCamera() {
     }).catch((err) => {
       console.warn('Camera failed:', err)
       if (err.message !== 'User cancelled photos app' && !err.message?.includes('cancelled')) {
-        setError(err.message || 'Could not access camera')
+        setError(err.message || t('scanIngredients.errors.couldNotAccessCamera'))
       }
     });
   } else {

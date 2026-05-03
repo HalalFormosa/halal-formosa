@@ -34,8 +34,8 @@
       <div v-if="isUnderConstruction" slot="fixed" class="under-construction-overlay">
         <div class="construction-card">
           <ion-icon :icon="constructOutline" class="construction-icon" />
-          <h2>{{ $t('common.underConstruction') || 'Under Construction' }}</h2>
-          <p>We're brewing something amazing! The Halal Formosa store will be available soon.</p>
+          <h2>{{ $t('store.construction.title') }}</h2>
+          <p>{{ $t('store.construction.message') }}</p>
         </div>
       </div>
 
