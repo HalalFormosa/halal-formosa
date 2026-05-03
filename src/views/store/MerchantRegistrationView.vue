@@ -182,7 +182,29 @@
             </div>
             <ion-icon :icon="checkmarkCircleOutline" class="field-valid-indicator" />
           </div>
-          
+
+          <!-- Line ID (Optional) -->
+          <div class="innovative-field" :class="{ 'field-is-valid': form.line_id.length > 0 }">
+            <div class="field-icon-wrapper">
+              <ion-icon :icon="chatbubblesOutline" />
+            </div>
+            <div class="field-content">
+              <label class="field-label">
+                {{ $t('merchant.register.placeholders.lineId') }}
+              </label>
+              <ion-input
+                v-model="form.line_id"
+                :placeholder="$t('merchant.register.placeholders.lineId')"
+                class="innovative-input"
+              />
+              <p class="field-hint" style="margin-top: 4px;">
+                <ion-icon :icon="informationCircleOutline" />
+                {{ $t('merchant.register.hints.lineId') }}
+              </p>
+            </div>
+            <ion-icon :icon="checkmarkCircleOutline" class="field-valid-indicator" />
+          </div>
+
           <div class="verification-note ion-margin-top ion-padding">
             <ion-icon :icon="callOutline" size="large" color="carrot" />
             <h3 class="ion-padding-top">{{ $t('merchant.register.hints.human_verify') }}</h3>
@@ -261,6 +283,10 @@
                 <label>{{ $t('merchant.register.steps.contact') }}</label>
                 <p>{{ form.contact_phone }}</p>
               </div>
+              <div v-if="form.line_id" class="review-item">
+                <label>{{ $t('merchant.register.placeholders.lineId') }}</label>
+                <p>{{ form.line_id }}</p>
+              </div>
               <div v-if="form.unified_business_number" class="review-item">
                 <label>{{ $t('merchant.register.steps.business') }}</label>
                 <p>{{ form.unified_business_number }}</p>
@@ -334,7 +360,8 @@ import {
   checkmarkCircleOutline,
   businessOutline,
   alertCircleOutline,
-  checkmarkCircle
+  checkmarkCircle,
+  chatbubblesOutline
 } from 'ionicons/icons'
 import { MerchantService } from '@/services/MerchantService'
 import { ActivityLogService } from '@/services/ActivityLogService'
@@ -378,6 +405,7 @@ onIonViewWillEnter(async () => {
       form.value.store_name_zh = app.store_name_zh || ''
       form.value.store_address = app.store_address || ''
       form.value.store_description = app.store_description || ''
+      form.value.line_id = app.line_id || ''
       form.value.unified_business_number = app.unified_business_number || ''
       
       if (app.unified_business_number) {
@@ -426,6 +454,7 @@ const form = ref({
   store_address: '',
   store_description: '',
   contact_phone: '',
+  line_id: '',
   unified_business_number: ''
 })
 
@@ -480,6 +509,7 @@ async function submitApplication() {
       `A merchant has ${isUpdate ? 'resubmitted' : 'applied'} for verification.\n\n` +
       `**Store:** ${form.value.store_name} (${form.value.store_name_zh || 'N/A'})\n` +
       `**Phone:** ${fullPhone}\n` +
+      `**Line ID:** ${form.value.line_id || 'N/A'}\n` +
       `**Address:** ${form.value.store_address || 'N/A'}\n` +
       `**UBN:** ${form.value.unified_business_number || 'None'}\n\n` +
       `**Description:**\n${form.value.store_description}`,
@@ -487,6 +517,7 @@ async function submitApplication() {
       { 
         store_name: form.value.store_name,
         contact_phone: fullPhone,
+        line_id: form.value.line_id,
         ubn: form.value.unified_business_number,
         is_update: isUpdate
       },

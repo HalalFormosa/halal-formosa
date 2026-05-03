@@ -33,7 +33,13 @@
     "noData": "No data found",
     "viewMore": "View More",
     "loading": "Loading...",
-    "replay": "Replay"
+    "replay": "Replay",
+    "phone": "Phone",
+    "call": "Call",
+    "open": "Open",
+    "closed": "Closed",
+    "instagram": "Instagram",
+    "lineId": "LINE ID"
   },
   "master": {
     "active": "Active",
@@ -438,7 +444,18 @@
       "noticeTitle": "Handling & Status Details",
       "readDescriptionNotice": "Please review the specific handling details below for this location.",
       "handlingDetails": "Handling Details",
-      "phone": "Phone"
+      "phone": "Phone",
+      "officialPartner": "OFFICIAL PARTNER",
+      "orderNow": "Order Now",
+      "certifiedBy": "Certified by",
+      "verifiedGoldPartner": "Verified Gold Partner",
+      "address": "Address",
+      "noAddress": "No address available",
+      "openingHours": "Opening Hours",
+      "openNow": "Open Now",
+      "closedNow": "Closed Now",
+      "additionalDetails": "Additional Details",
+      "estimatedPrice": "Estimated Price"
     },
     "filters": {
       "priceRange": "Price Range"
@@ -912,6 +929,8 @@
   },
   "savedLocations": {
     "title": "Saved Locations",
+    "save": "Save",
+    "saved": "Saved",
     "freeTier": "Free Tier Usage",
     "proUpgrade": "Upgrade to {pro} for unlimited saves.",
     "freeLimitReached": "You've reached your free limit. Upgrade to Pro to save unlimited locations!",
@@ -1338,12 +1357,14 @@
         "address": "Store Address / City",
         "description": "Describe your products and services...",
         "phone": "Contact Phone Number",
+        "lineId": "LINE ID (Optional)",
         "ubn": "Unified Business Number (8-digits)"
       },
       "hints": {
         "address": "📍 Providing just the city is OK for now.",
         "description": "💡 Please mention what you sell (e.g. Fried Chicken, Indonesian Grocery) to help us with Halal verification.",
         "phone": "📞 Our team will give you a quick call to verify your identity. No sensitive ID documents required!",
+        "lineId": "💬 Optional. Provide your LINE ID for easier communication.",
         "ubn": "Do you have a Unified Business Number (UBN)?",
         "phone_warning": "Must be a valid number for our team to verify your identity.",
         "contact_note": "After submission, our team will reach you via Call, WhatsApp, or LINE for final identity verification. Halal business should be Easy and Trusted!",

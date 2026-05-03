@@ -1786,7 +1786,7 @@ function formatOpeningHours(googleHours: any) {
         const openH = String(period.open.hour).padStart(2, '0')
         const openM = String(period.open.minute).padStart(2, '0')
         hours[dayKey].open = `${openH}:${openM}`
-        
+
         if (period.close) {
           const closeH = String(period.close.hour).padStart(2, '0')
           const closeM = String(period.close.minute).padStart(2, '0')
@@ -1796,6 +1796,74 @@ function formatOpeningHours(googleHours: any) {
     })
   }
   return hours
+}
+
+// Convert opening hours from DB (Google Places or custom format) to form format
+function convertOpeningHoursForEdit(dbHours: any) {
+  // Default hours structure
+  const defaultHours = {
+    mon: { active: false, open: "09:00", close: "18:00" },
+    tue: { active: false, open: "09:00", close: "18:00" },
+    wed: { active: false, open: "09:00", close: "18:00" },
+    thu: { active: false, open: "09:00", close: "18:00" },
+    fri: { active: false, open: "09:00", close: "18:00" },
+    sat: { active: false, open: "09:00", close: "18:00" },
+    sun: { active: false, open: "09:00", close: "18:00" },
+  }
+
+  if (!dbHours) return defaultHours
+
+  // Check if it's Google Places format (has periods array)
+  if (dbHours.periods && Array.isArray(dbHours.periods)) {
+    const hours = { ...defaultHours }
+    const daysMap: Record<number, string> = { 0: 'sun', 1: 'mon', 2: 'tue', 3: 'wed', 4: 'thu', 5: 'fri', 6: 'sat' }
+
+    dbHours.periods.forEach((period: any) => {
+      if (!period?.open?.day && period?.open?.day !== 0) return
+
+      const dayKey = daysMap[period.open.day]
+      if (!dayKey || !hours[dayKey as keyof typeof hours]) return
+
+      const dayData = hours[dayKey as keyof typeof hours]
+      dayData.active = true
+
+      // Format time from HHMM to HH:MM
+      const formatTime = (timeStr: string) => {
+        if (!timeStr) return "09:00"
+        // Remove any existing colons
+        const cleanTime = timeStr.replace(/:/g, '')
+        if (cleanTime.length === 4) {
+          return `${cleanTime.substring(0, 2)}:${cleanTime.substring(2, 4)}`
+        }
+        return timeStr
+      }
+
+      dayData.open = formatTime(period.open.time)
+
+      if (period.close?.time) {
+        dayData.close = formatTime(period.close.time)
+      }
+    })
+
+    return hours
+  }
+
+  // Check if it's already in custom format (has day keys like mon, tue, etc.)
+  if (dbHours.mon || dbHours.tue || dbHours.wed || dbHours.thu || dbHours.fri || dbHours.sat || dbHours.sun) {
+    // Merge with defaults to ensure all days exist
+    return {
+      mon: dbHours.mon || defaultHours.mon,
+      tue: dbHours.tue || defaultHours.tue,
+      wed: dbHours.wed || defaultHours.wed,
+      thu: dbHours.thu || defaultHours.thu,
+      fri: dbHours.fri || defaultHours.fri,
+      sat: dbHours.sat || defaultHours.sat,
+      sun: dbHours.sun || defaultHours.sun,
+    }
+  }
+
+  // Unknown format, return defaults
+  return defaultHours
 }
 
 /* -------------------- Submit -------------------- */
@@ -2088,7 +2156,7 @@ onMounted(async () => {
         line_id: data.line_id || '',
         price_range: data.price_range || '',
 
-        opening_hours: data.opening_hours || form.value.opening_hours,
+        opening_hours: convertOpeningHoursForEdit(data.opening_hours),
         tags: data.tags || [],
         approved: data.approved || false,
       }

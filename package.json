@@ -98,6 +98,7 @@
     "eslint": "^10.0.2",
     "eslint-plugin-vue": "^10.8.0",
     "globals": "^17.3.0",
+    "google-translate-api-x": "^10.7.2",
     "jsdom": "^22.1.0",
     "supabase": "^2.84.10",
     "terser": "^5.4.0",

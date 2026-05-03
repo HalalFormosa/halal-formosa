@@ -80,7 +80,7 @@
               <ion-chip color="carrot" class="capitalize">{{ place?.type }}</ion-chip>
               <div v-if="place?.partner_tier" class="official-verified-tag">
                 <ion-icon :icon="shieldCheckmarkOutline" />
-                <span>OFFICIAL PARTNER</span>
+                <span>{{ $t('explore.details.officialPartner') }}</span>
               </div>
             </div>
 
@@ -132,7 +132,7 @@
                     size="small"
                     :href="place.foodpanda_url"
                     target="_blank">
-                  Order Now
+                  {{ $t('explore.details.orderNow') }}
                 </ion-button>
               </div>
             </div>
@@ -143,7 +143,7 @@
                 class="ion-margin-top"
             >
               <p class="section-title">
-                <strong><small>Certified by</small></strong>
+                <strong><small>{{ $t('explore.details.certifiedBy') }}</small></strong>
               </p>
 
               <div
@@ -171,7 +171,7 @@
                       </div>
                       <div class="premium-verified-tag">
                         <ion-icon :icon="sparkles" />
-                        Verified Gold Partner
+                        {{ $t('explore.details.verifiedGoldPartner') }}
                       </div>
                     </div>
                   </div>
@@ -216,8 +216,8 @@
               <ion-icon :icon="navigateOutline" slot="start" color="carrot"/>
 
               <ion-label>
-                <p class="text-sm text-gray-500">Address</p>
-                <p>{{ place.address || 'No address available' }}</p>
+                <p class="text-sm text-gray-500">{{ $t('explore.details.address') }}</p>
+                <p>{{ place.address || $t('explore.details.noAddress') }}</p>
               </ion-label>
 
               <ion-button
@@ -228,7 +228,7 @@
                   :href="`https://www.google.com/maps/search/?api=1&query=${mapSearchQuery}&center=${place.lat},${place.lng}&zoom=16`"
                   target="_blank"
               >
-                Open
+                {{ $t('common.open') }}
               </ion-button>
             </ion-item>
 
@@ -243,9 +243,9 @@
               <!-- 🕒 Opening Hours -->
               <template v-if="place.opening_hours">
                 <div class="ion-margin-top ion-margin-bottom">
-                  <h3 class="font-bold text-lg">Opening Hours</h3>
+                  <h3 class="font-bold text-lg">{{ $t('explore.details.openingHours') }}</h3>
                   <div class="open-status-badge" :class="{ open: isOpenNow, closed: !isOpenNow }">
-                    {{ isOpenNow ? 'Open Now' : 'Closed Now' }}
+                    {{ isOpenNow ? $t('explore.details.openNow') : $t('explore.details.closedNow') }}
                   </div>
                 </div>
 
@@ -256,7 +256,7 @@
             <span v-if="value.active">
               {{ value.open }} – {{ value.close }}
             </span>
-                      <span v-else class="text-gray-400">Closed</span>
+                      <span v-else class="text-gray-400">{{ $t('common.closed') }}</span>
                     </ion-label>
                   </ion-item>
                 </ion-list>
@@ -264,12 +264,12 @@
 
               <!-- 📞 Contact Info -->
               <template v-if="place.phone || place.instagram || place.line_id">
-                <h3 class="font-bold text-lg ion-margin-top">Additional Details</h3>
+                <h3 class="font-bold text-lg ion-margin-top">{{ $t('explore.details.additionalDetails') }}</h3>
 
                 <ion-item lines="none" v-if="place.phone">
                   <ion-icon :icon="callOutline" slot="start" color="carrot"/>
                   <ion-label>
-                    <p class="text-sm text-gray-500">Phone</p>
+                    <p class="text-sm text-gray-500">{{ $t('common.phone') }}</p>
                     <p>{{ place.phone }}</p>
                   </ion-label>
 
@@ -279,7 +279,7 @@
                       @click="logCall"
                       :href="`tel:${place.phone}`"
                   >
-                    Call
+                    {{ $t('common.call') }}
                   </ion-button>
                 </ion-item>
 
@@ -287,7 +287,7 @@
                 <ion-item lines="none" v-if="place.instagram">
                   <ion-icon :icon="logoInstagram" slot="start" color="carrot"/>
                   <ion-label>
-                    <p class="text-sm text-gray-500">Instagram</p>
+                    <p class="text-sm text-gray-500">{{ $t('common.instagram') }}</p>
                     <p>@{{ place.instagram.replace('@', '') }}</p>
                   </ion-label>
                   <ion-button
@@ -296,14 +296,14 @@
                       @click="logInstagram"
                       :href="`https://instagram.com/${place.instagram.replace('@','')}`"
                       target="_blank">
-                    Open
+                    {{ $t('common.open') }}
                   </ion-button>
                 </ion-item>
 
                 <ion-item lines="none" v-if="place.line_id">
                   <ion-icon :icon="chatboxEllipsesOutline" slot="start" color="carrot"/>
                   <ion-label>
-                    <p class="text-sm text-gray-500">LINE ID</p>
+                    <p class="text-sm text-gray-500">{{ $t('common.lineId') }}</p>
                     <p>{{ place.line_id }}</p>
                   </ion-label>
 
@@ -312,7 +312,7 @@
                       size="small"
                       @click="logLine"
                       :href="`line://ti/p/~${place.line_id}`">
-                    Open
+                    {{ $t('common.open') }}
                   </ion-button>
 
                 </ion-item>
@@ -324,7 +324,7 @@
                 <ion-item lines="none">
                   <ion-icon :icon="cashOutline" slot="start" color="carrot"/>
                   <ion-label>
-                    <p class="text-sm text-gray-500">Estimated Price</p>
+                    <p class="text-sm text-gray-500">{{ $t('explore.details.estimatedPrice') }}</p>
                     <p>{{ place.price_range }}</p>
                   </ion-label>
                 </ion-item>

@@ -10,6 +10,7 @@ export interface MerchantApplication {
   store_address?: string
   store_description?: string
   contact_phone: string
+  line_id?: string
   unified_business_number?: string
   rejection_reason?: string
   created_at?: string

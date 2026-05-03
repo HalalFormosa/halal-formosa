@@ -13,6 +13,18 @@ import en from '@/locales/en.json'
 import id from '@/locales/id.json'
 import zh from '@/locales/zh.json'
 import ms from '@/locales/ms.json'
+import hi from '@/locales/hi.json'
+import ur from '@/locales/ur.json'
+import bn from '@/locales/bn.json'
+import ar from '@/locales/ar.json'
+import tr from '@/locales/tr.json'
+import tl from '@/locales/tl.json'
+import th from '@/locales/th.json'
+import zhCN from '@/locales/zh-CN.json'
+import vi from '@/locales/vi.json'
+import ko from '@/locales/ko.json'
+import ja from '@/locales/ja.json'
+import msBn from '@/locales/ms-bn.json'
 import '@ionic/vue/css/core.css'
 import '@ionic/vue/css/normalize.css'
 import '@ionic/vue/css/structure.css'
@@ -74,9 +86,25 @@ const i18n = createI18n({
         en,
         id,
         ms,
-        zh
+        zh,
+        hi,
+        ur,
+        bn,
+        ar,
+        tr,
+        tl,
+        th,
+        'zh-CN': zhCN,
+        vi,
+        ko,
+        ja,
+        'ms-bn': msBn
     }
 })
+
+// Set initial RTL direction
+const initialLang = localStorage.getItem('lang') || 'en'
+document.documentElement.dir = ['ar', 'ur'].includes(initialLang) ? 'rtl' : 'ltr'
 
 /* Create app */
 const app = createApp(App).use(IonicVue).use(router).use(i18n)
@@ -202,6 +230,8 @@ supabase.auth.getSession().then(({ data }) => {
 
 // ✅ Auth events (still needed for sign-in/out within app)
 supabase.auth.onAuthStateChange(async (event, session) => {
+    console.log(`🔔 [Auth] Event: ${event}`, session?.user?.id);
+
     if (event === 'SIGNED_OUT') {
         try { await Purchases.logOut() } catch { /* empty */ }
         resetUserProfileState()
@@ -210,8 +240,10 @@ supabase.auth.onAuthStateChange(async (event, session) => {
         return
     }
 
-    if (event === 'SIGNED_IN' && session?.user) {
-        // ✅ always set immediately
+    // ✅ Handle all "active session" events: SIGNED_IN, INITIAL_SESSION, TOKEN_REFRESHED
+    if (['SIGNED_IN', 'INITIAL_SESSION', 'TOKEN_REFRESHED'].includes(event) && session?.user) {
+        
+        const isNewUserObject = !currentUser.value || currentUser.value.id !== session.user.id;
         currentUser.value = session.user
 
         // ✅ redirect IMMEDIATELY (don’t wait for RevenueCat/network)
@@ -230,15 +262,27 @@ supabase.auth.onAuthStateChange(async (event, session) => {
                 loadDonorFromCache(session.user.id)
                 loadUserRoleFromCache(session.user.id)
                 loadPublicLeaderboardFromCache(session.user.id)
+                // Always refresh profile from server on session events
+                loadUserProfile(session.user.id).catch(console.warn)
             } catch (e) {
-                console.warn('[Post-login cache] failed', e)
+                console.warn('[Post-auth cache] failed', e)
             }
         })
 
-        // Native plugins: never block
+        // Native plugins: sync identity and subscription status
         if (Capacitor.isNativePlatform()) {
-            Purchases.logIn({ appUserID: session.user.id }).catch(console.warn)
-            refreshSubscriptionStatus({ syncToServer: true }).catch(console.warn)
+            try {
+                // Ensure RevenueCat is linked to this user ID before syncing
+                await Purchases.logIn({ appUserID: session.user.id });
+                
+                // Only sync to server if it's a significant event or identity changed
+                // (Using a small delay to ensure we don't spam if multiple events fire)
+                await refreshSubscriptionStatus({ syncToServer: true });
+                
+                console.log('✅ [Sub Sync] Successful for user:', session.user.id);
+            } catch (e) {
+                console.warn('⚠️ [Sub Sync] Background sync failed:', e);
+            }
         }
     }
 })
@@ -366,18 +410,14 @@ async function bootstrap() {
         if (session?.user) {
             currentUser.value = session.user;
 
-            // Logged in: Load profile data in background
+            // Logged in: Load profile data in background from cache
             loadDonorFromCache(session.user.id);
             loadUserRoleFromCache(session.user.id);
             loadPublicLeaderboardFromCache(session.user.id);
 
-            loadUserProfile(session.user.id).catch(e => console.error("Profile load failed", e));
-
             if (Capacitor.isNativePlatform()) {
-                // Initialize RevenueCat & Subscriptions without blocking the mount
-                initRevenueCat(session.user.id)
-                    .then(() => refreshSubscriptionStatus({ syncToServer: true }))
-                    .catch(e => console.warn('RevenueCat/Sub init failed:', e));
+                // Initialize RevenueCat anonymously or with ID (listener will handle full login/sync)
+                initRevenueCat(session.user.id).catch(e => console.warn('RevenueCat init failed:', e));
             }
         } else {
             currentUser.value = null;

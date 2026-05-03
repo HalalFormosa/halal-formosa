@@ -1228,12 +1228,14 @@
         "address": "Alamat Kedai / Bandar",
         "description": "Terangkan produk dan perkhidmatan anda...",
         "phone": "Nombor Telefon Hubungan",
+        "lineId": "LINE ID (Pilihan)",
         "ubn": "Nombor Perniagaan Bersepadu (UBN 8-digit)"
       },
       "hints": {
         "address": "📍 Menyediakan bandar sahaja sudah memadai buat masa ini.",
         "description": "💡 Sila nyatakan apa yang anda jual (cth. Ayam Goreng, Barangan Runcit Indonesia) untuk membantu kami dengan pengesahan Halal.",
         "phone": "📞 Pasukan kami akan membuat panggilan pantas kepada anda untuk mengesahkan identiti anda. Tiada dokumen ID sensitif diperlukan!",
+        "lineId": "💬 Pilihan. Sediakan LINE ID anda untuk komunikasi yang lebih mudah.",
         "ubn": "Adakah anda mempunyai Nombor Perniagaan Bersepadu (UBN)?",
         "phone_warning": "Mestilah nombor yang sah untuk pasukan kami mengesahkan identiti anda.",
         "contact_note": "Selepas penyerahan, pasukan kami akan menghubungi anda melalui Panggilan, WhatsApp, atau LINE untuk pengesahan identiti terakhir. Perniagaan halal mestilah Mudah dan Dipercayai!",

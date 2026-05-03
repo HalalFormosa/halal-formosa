@@ -712,7 +712,8 @@ const campusCircle = ref<google.maps.Circle | null>(null)
 const campusLabel = ref<google.maps.marker.AdvancedMarkerElement | null>(null)
 let campusOverlays: (google.maps.Circle | any)[] = []
 const CAMPUS_COORDS: Record<string, { lat: number; lng: number }> = {
-  'ntu': { lat: 25.01737, lng: 121.5398 }
+  'ntu': { lat: 25.01737, lng: 121.5398 },
+  'pu': { lat: 24.2331, lng: 120.5638 }
 }
 
 /* ---------------- Types ---------------- */
@@ -1852,9 +1853,9 @@ function updateCampusCircle() {
   // 1. Force clear EVERYTHING before drawing anything new
   clearCampusOverlays()
 
-  // 2. Draw ONLY if the ntu tag is active
-  if (activeTag.value === 'ntu') {
-    const coords = CAMPUS_COORDS['ntu']
+  // 2. Draw ONLY if a campus tag is active
+  if (activeTag.value === 'ntu' || activeTag.value === 'pu') {
+    const coords = CAMPUS_COORDS[activeTag.value]
     
     const circle = new google.maps.Circle({
       strokeColor: '#FF0000',
@@ -1874,9 +1875,10 @@ function updateCampusCircle() {
     if (advancedMarkerLib) {
       const labelDiv = document.createElement('div')
       labelDiv.className = 'campus-radius-label'
+      const campusName = activeTag.value === 'ntu' ? 'NTU' : 'PU'
       labelDiv.innerHTML = `
         <div class="walk-label-content">
-          <div class="campus-title-small">${t('explore.campusRadiusTitle', { name: 'NTU' })}</div>
+          <div class="campus-title-small">${t('explore.campusRadiusTitle', { name: campusName.toUpperCase() })}</div>
           <div class="walk-info-row">
             <span class="walk-icon">🚶</span>
             <span class="walk-text">${t('explore.walkingRadius')}</span>

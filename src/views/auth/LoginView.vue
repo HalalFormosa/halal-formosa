@@ -5,17 +5,7 @@
 
         <div class="top-bar">
           <div class="lang-wrapper">
-            <ion-select
-                interface="popover"
-                :value="locale"
-                @ionChange="setLanguage($event.detail.value)"
-                class="lang-select"
-            >
-              <ion-select-option value="en">English</ion-select-option>
-              <ion-select-option value="id">Bahasa Indonesia</ion-select-option>
-              <ion-select-option value="ms">Bahasa Melayu</ion-select-option>
-              <ion-select-option value="zh">繁體中文</ion-select-option>
-            </ion-select>
+            <LanguagePicker @update="setLanguage" />
           </div>
 
           <ion-button
@@ -144,7 +134,7 @@ import {
   IonButton,
   IonText,
   IonInputPasswordToggle,
-  IonContent, IonSelectOption, IonSelect, IonIcon, alertController
+  IonContent, IonIcon, alertController
 } from '@ionic/vue';
 import { defineComponent } from 'vue';
 
@@ -156,8 +146,6 @@ export default defineComponent({
     IonText,
     IonInputPasswordToggle,
     IonContent,
-    IonSelectOption,
-    IonSelect,
     IonIcon
   },
 });
@@ -169,6 +157,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { supabase } from '@/plugins/supabaseClient';
 import { Capacitor } from '@capacitor/core';
 import { useI18n } from 'vue-i18n'
+import LanguagePicker from '@/components/LanguagePicker.vue'
 import {logoGoogle, logInOutline, moonOutline, sunnyOutline} from "ionicons/icons";
 import { ActivityLogService } from '@/services/ActivityLogService'
 

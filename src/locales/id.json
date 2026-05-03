@@ -1289,12 +1289,14 @@
         "address": "Alamat Toko / Kota",
         "description": "Jelaskan produk dan layanan Anda...",
         "phone": "Nomor Telepon Kontak",
+        "lineId": "LINE ID (Opsional)",
         "ubn": "Nomor Bisnis Terpadu (UBN 8-digit)"
       },
       "hints": {
         "address": "📍 Menyertakan kotanya saja sudah cukup untuk saat ini.",
         "description": "💡 Harap sebutkan apa yang Anda jual (misal: Ayam Goreng, Toko Kelontong Indonesia) untuk membantu kami dengan verifikasi Halal.",
         "phone": "📞 Tim kami akan menelepon Anda sebentar untuk memverifikasi identitas Anda. Tidak diperlukan dokumen ID sensitif!",
+        "lineId": "💬 Opsional. Sediakan LINE ID Anda untuk komunikasi yang lebih mudah.",
         "ubn": "Apakah Anda memiliki Nomor Bisnis Terpadu (UBN)?",
         "phone_warning": "Harus nomor yang valid agar tim kami dapat memverifikasi identitas Anda.",
         "contact_note": "Setelah pengiriman, tim kami akan menghubungi Anda melalui Telepon, WhatsApp, atau LINE untuk verifikasi identitas akhir. Bisnis Halal harus Mudah dan Terpercaya!",

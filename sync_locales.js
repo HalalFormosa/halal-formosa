@@ -26,7 +26,7 @@ function setMissingKeys(targetObj, sourceObj) {
     }
     return changed;
 }
-const locales = ['id.json', 'ms.json', 'zh.json'];
+const locales = ['id.json', 'ms.json', 'zh.json', 'hi.json', 'ur.json', 'bn.json', 'ar.json', 'tr.json', 'tl.json', 'th.json', 'zh-CN.json', 'vi.json', 'ko.json', 'ja.json', 'ms-bn.json'];
 locales.forEach(file => {
     const filePath = path.join(localesDir, file);
     const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));

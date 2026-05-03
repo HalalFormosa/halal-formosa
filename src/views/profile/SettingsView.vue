@@ -69,15 +69,16 @@
       <!-- 🌐 Language -->
       <ion-list style="border-radius: 12px; margin-top: 20px;">
         <ion-list-header>{{ $t('settings.language')}}</ion-list-header>
-        <ion-radio-group :value="lang" @ionChange="(e) => changeLanguage(e.detail.value)">
-          <ion-item v-for="l in languages" :key="l.code" lines="full">
-            <div slot="start" style="width: 32px; height: 22px; border-radius: 4px; overflow: hidden; border: 1px solid rgba(0,0,0,0.1); margin-right: 12px;">
-              <img :src="l.flag" :alt="l.name" style="width: 100%; height: 100%; object-fit: cover;" />
-            </div>
-            <ion-label style="font-weight: 500;">{{ l.name }}</ion-label>
-            <ion-radio slot="end" :value="l.code"></ion-radio>
-          </ion-item>
-        </ion-radio-group>
+        <LanguagePicker @update="changeLanguage">
+          <template #trigger="{ openModal, currentLang }">
+            <ion-item button lines="full" @click="openModal" style="--border-radius: 12px;">
+              <div slot="start" style="width: 32px; height: 22px; border-radius: 4px; overflow: hidden; border: 1px solid rgba(0,0,0,0.1); margin-right: 12px;">
+                <img v-if="currentLang?.flag" :src="currentLang.flag" :alt="currentLang.name" style="width: 100%; height: 100%; object-fit: cover;" />
+              </div>
+              <ion-label style="font-weight: 500;">{{ currentLang?.name }}</ion-label>
+            </ion-item>
+          </template>
+        </LanguagePicker>
       </ion-list>
     </ion-content>
   </ion-page>
@@ -96,14 +97,13 @@ import {
   IonToolbar,
   IonTitle,
   IonPage,
-  IonRadio,
-  IonRadioGroup,
   IonNote,
   IonLabel,
   IonIcon
 } from '@ionic/vue'
 import { ref, onMounted, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import LanguagePicker from '@/components/LanguagePicker.vue'
 import {
   currentUser,
   isPublicProfile,
@@ -122,13 +122,6 @@ const router = useRouter()
 const isSocialLogin = computed(() => {
   return currentUser.value?.app_metadata?.provider !== 'email'
 })
-
-const languages = [
-  { code: 'en', name: 'English', flag: 'https://flagcdn.com/w80/us.png' },
-  { code: 'zh', name: '繁體中文', flag: 'https://flagcdn.com/w80/tw.png' },
-  { code: 'id', name: 'Bahasa Indonesia', flag: 'https://flagcdn.com/w80/id.png' },
-  { code: 'ms', name: 'Bahasa Melayu', flag: 'https://flagcdn.com/w80/my.png' }
-]
 
 const changeLanguage = (newLang: string) => {
   if (!newLang) return
