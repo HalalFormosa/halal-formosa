@@ -71,6 +71,16 @@
             </div>
           </div>
 
+          <!-- hCaptcha container -->
+          <div id="hcaptcha-login" style="display: none;"></div>
+
+          <!-- hCaptcha disclosure -->
+          <p class="hcaptcha-disclosure">
+            This site is protected by hCaptcha and its
+            <a href="https://www.hcaptcha.com/privacy" target="_blank">Privacy Policy</a> and
+            <a href="https://www.hcaptcha.com/terms" target="_blank">Terms of Service</a> apply.
+          </p>
+
           <!-- Error -->
           <ion-text color="danger" v-if="errorMsg" class="error-text">
             {{ errorMsg }}
@@ -82,10 +92,10 @@
               expand="block"
               color="carrot"
               class="primary-btn"
-              :disabled="loading"
+              :disabled="loading || captchaLoading"
           >
-            <ion-icon :icon="logInOutline" slot="start" v-if="!loading"></ion-icon>
-            {{ loading ? $t('auth.loggingIn') : $t('auth.login') }}
+            <ion-icon :icon="logInOutline" slot="start" v-if="!loading && !captchaLoading"></ion-icon>
+            {{ captchaLoading ? 'Verifying...' : (loading ? $t('auth.loggingIn') : $t('auth.login')) }}
           </ion-button>
 
 
@@ -152,7 +162,7 @@ export default defineComponent({
 </script>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { supabase } from '@/plugins/supabaseClient';
 import { Capacitor } from '@capacitor/core';
@@ -160,6 +170,7 @@ import { useI18n } from 'vue-i18n'
 import LanguagePicker from '@/components/LanguagePicker.vue'
 import {logoGoogle, logInOutline, moonOutline, sunnyOutline} from "ionicons/icons";
 import { ActivityLogService } from '@/services/ActivityLogService'
+import { useHCaptcha } from '@/composables/useHCaptcha'
 
 type Theme = 'dark' | 'light'
 
@@ -172,22 +183,54 @@ document.documentElement.classList.toggle(
 )
 
 const { locale, t } = useI18n()
+const { loadScript, initInvisible, execute, isExecuting } = useHCaptcha()
 
 // form fields
 const email = ref('');
 const password = ref('');
 const errorMsg = ref('');
 const loading = ref(false);
+const captchaLoading = ref(false);
 
 // router helpers
 const router = useRouter();
 const route = useRoute();
 
+// Initialize hCaptcha on mount
+onMounted(async () => {
+  await loadScript()
+  await initInvisible('hcaptcha-login')
+})
+
 // email/password login
 async function login() {
-  loading.value = true
   errorMsg.value = ''
 
+  // Step 1: Execute invisible hCaptcha
+  try {
+    captchaLoading.value = true
+    const captchaToken = await execute()
+
+    // Step 2: Verify captcha token with Edge Function
+    const { data: verifyData, error: verifyError } = await supabase.functions.invoke('verify-captcha', {
+      body: { token: captchaToken }
+    })
+
+    if (verifyError || !verifyData?.success) {
+      errorMsg.value = 'Verification failed. Please try again.'
+      captchaLoading.value = false
+      return
+    }
+  } catch (err) {
+    errorMsg.value = 'Captcha verification failed. Please try again.'
+    captchaLoading.value = false
+    return
+  }
+
+  captchaLoading.value = false
+  loading.value = true
+
+  // Step 3: Proceed with Supabase login
   const { error } = await supabase.auth.signInWithPassword({
     email: email.value,
     password: password.value,

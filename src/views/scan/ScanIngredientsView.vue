@@ -617,6 +617,9 @@ import { refreshSubscriptionStatus } from '@/composables/useSubscriptionStatus'
 import { useRouter } from 'vue-router'
 import { useAutoScanStore } from '@/composables/useAutoScanStore'
 import { useNotifier } from "@/composables/useNotifier"
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 /** ---------- Constants ---------- */
 const DAILY_SCAN_LIMIT = 10
