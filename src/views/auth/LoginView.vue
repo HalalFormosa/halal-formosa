@@ -75,7 +75,7 @@
           <div id="hcaptcha-login" style="display: none;"></div>
 
           <!-- hCaptcha disclosure -->
-          <p class="hcaptcha-disclosure">
+          <p class="hcaptcha-disclosure" v-if="!isDev">
             This site is protected by hCaptcha and its
             <a href="https://www.hcaptcha.com/privacy" target="_blank">Privacy Policy</a> and
             <a href="https://www.hcaptcha.com/terms" target="_blank">Terms of Service</a> apply.
@@ -184,6 +184,7 @@ document.documentElement.classList.toggle(
 
 const { locale, t } = useI18n()
 const { loadScript, initInvisible, execute, isExecuting } = useHCaptcha()
+const isDev = import.meta.env.DEV
 
 // form fields
 const email = ref('');
@@ -198,8 +199,10 @@ const route = useRoute();
 
 // Initialize hCaptcha on mount
 onMounted(async () => {
-  await loadScript()
-  await initInvisible('hcaptcha-login')
+  if (!isDev) {
+    await loadScript()
+    await initInvisible('hcaptcha-login')
+  }
 })
 
 // email/password login
@@ -207,24 +210,26 @@ async function login() {
   errorMsg.value = ''
 
   // Step 1: Execute invisible hCaptcha
-  try {
-    captchaLoading.value = true
-    const captchaToken = await execute()
+  if (!import.meta.env.DEV) {
+    try {
+      captchaLoading.value = true
+      const captchaToken = await execute()
 
-    // Step 2: Verify captcha token with Edge Function
-    const { data: verifyData, error: verifyError } = await supabase.functions.invoke('verify-captcha', {
-      body: { token: captchaToken }
-    })
+      // Step 2: Verify captcha token with Edge Function
+      const { data: verifyData, error: verifyError } = await supabase.functions.invoke('verify-captcha', {
+        body: { token: captchaToken }
+      })
 
-    if (verifyError || !verifyData?.success) {
-      errorMsg.value = 'Verification failed. Please try again.'
+      if (verifyError || !verifyData?.success) {
+        errorMsg.value = 'Verification failed. Please try again.'
+        captchaLoading.value = false
+        return
+      }
+    } catch (err) {
+      errorMsg.value = 'Captcha verification failed. Please try again.'
       captchaLoading.value = false
       return
     }
-  } catch (err) {
-    errorMsg.value = 'Captcha verification failed. Please try again.'
-    captchaLoading.value = false
-    return
   }
 
   captchaLoading.value = false

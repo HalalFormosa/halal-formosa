@@ -43,7 +43,9 @@
     "underMaintenance": "Under Maintenance",
     "comingSoon": "Coming Soon",
     "maintenanceMessage": "This feature is currently undergoing maintenance. We'll be back soon!",
-    "copied": "Copied to clipboard"
+    "copied": "Copied to clipboard",
+    "change": "Change",
+    "mandatory": "Mandatory"
   },
   "master": {
     "active": "アクティブ",
@@ -679,7 +681,9 @@
       "consentContent1": "生年月日、国籍、性別は匿名の統計にのみ使用され、決して公開されることはありません。",
       "consentContent2": "設定で「リーダーボードに自分の名前を表示」を有効にすると、私の経歴が一般公開される場合があります。",
       "save": "保存",
-      "completeToContinue": "プロフィールを完了して続行してください"
+      "completeToContinue": "プロフィールを完了して続行してください",
+      "phone": "Phone Number",
+      "phonePlaceholder": "09xxxxxxxx"
     },
     "merchant": {
       "startSelling": "販売を開始する",
@@ -1379,6 +1383,29 @@
     "construction": {
       "title": "Under Construction",
       "message": "We're brewing something amazing! The Halal Formosa store will be available soon."
+    },
+    "selectCvsStore": "Select Pickup Store",
+    "selectCvsStoreHint": "Choose a convenience store branch for pickup",
+    "selectedStore": "Selected Store",
+    "cvsStoreId": "Store ID",
+    "logistics": "Logistics",
+    "logisticsId": "Logistics ID",
+    "shippingNo": "Shipping No",
+    "createShipment": "Create Shipment",
+    "printLabel": "Print Label",
+    "logisticsStatus": "Logistics Status",
+    "trackingNumber": "Tracking Number",
+    "shippingLabel": "Shipping Label",
+    "logisticsStatuses": {
+      "300": "Order Created",
+      "310": "Awaiting Pickup",
+      "325": "Received by Logistics",
+      "330": "In Transit",
+      "2030": "Arrived at Store",
+      "2063": "Picked Up",
+      "2067": "Unclaimed, Returning",
+      "2068": "Returned to Sender",
+      "2073": "Closed"
     }
   },
   "merchant": {

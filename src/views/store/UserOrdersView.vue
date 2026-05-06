@@ -113,9 +113,23 @@
               </div>
 
               <!-- CVS store info -->
-              <div v-if="order.cvs_store_info" class="detail-row">
+              <div v-if="order.cvs_store_name || order.cvs_store_info" class="detail-row">
                 <ion-icon :icon="storefrontOutline" />
-                <span>🏪 {{ order.cvs_store_info }}</span>
+                <span>🏪 {{ order.cvs_store_name || order.cvs_store_info }} <span v-if="order.cvs_store_id" style="opacity:0.6">({{ order.cvs_store_id }})</span></span>
+              </div>
+              <div v-if="order.cvs_store_address" class="detail-row">
+                <ion-icon :icon="locationOutline" />
+                <span>{{ order.cvs_store_address }}</span>
+              </div>
+
+              <!-- Logistics tracking -->
+              <div v-if="order.cvs_payment_no" class="detail-row">
+                <ion-icon :icon="barcodeOutline" />
+                <span>{{ $t('store.shippingNo') || 'Shipping No' }}: <strong>{{ order.cvs_payment_no }}</strong><span v-if="order.cvs_validation_no"> / {{ order.cvs_validation_no }}</span></span>
+              </div>
+              <div v-if="order.logistics_status_msg" class="detail-row">
+                <ion-icon :icon="informationCircleOutline" />
+                <span>{{ order.logistics_status_msg }}</span>
               </div>
 
               <!-- Shipping address -->
@@ -167,7 +181,8 @@ import {
 import {
   locationOutline, receiptOutline, bagHandleOutline, constructOutline,
   timeOutline, cardOutline, cubeOutline, checkmarkCircleOutline, closeOutline,
-  storefrontOutline, moonOutline, sunnyOutline, calendarOutline
+  storefrontOutline, moonOutline, sunnyOutline, calendarOutline,
+  barcodeOutline, informationCircleOutline
 } from 'ionicons/icons'
 import AppHeader from '@/components/AppHeader.vue'
 import { supabase } from '@/plugins/supabaseClient'

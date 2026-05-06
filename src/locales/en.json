@@ -43,7 +43,9 @@
     "underMaintenance": "Under Maintenance",
     "comingSoon": "Coming Soon",
     "maintenanceMessage": "This feature is currently undergoing maintenance. We'll be back soon!",
-    "copied": "Copied to clipboard"
+    "copied": "Copied to clipboard",
+    "change": "Change",
+    "mandatory": "Mandatory"
   },
   "master": {
     "active": "Active",
@@ -577,7 +579,7 @@
     "publicProfile": "Public Profile",
     "publicProfileNote": "Your name will be shown on the leaderboard and on content you contributed (products, locations, news, etc.).",
     "showLastSeen": "Show Last Active Status",
-    "showLastSeenNote": "Allow others to see when you were last active in chat.",
+    "showLastSeenNote": "Allow others to see when you were last active in store chat. This is only used for the chat feature.",
     "language": "Language (Experimental)"
   },
   "profile": {
@@ -672,12 +674,16 @@
       "selectGender": "Select gender",
       "genderMale": "Male",
       "genderFemale": "Female",
-      "genderOther": "Other",
+      "genderOther": "Prefer not to say",
       "bio": "Bio",
       "bioPlaceholder": "Write a short bio...",
+      "phone": "Phone Number",
+      "phonePlaceholder": "09xxxxxxxx",
+      "phoneHint": "Used for store delivery notifications, never shared publicly.",
       "consentTitle": "I understand that:",
-      "consentContent1": "Date of birth, nationality, and gender are used only for anonymous statistics and never shared publicly.",
-      "consentContent2": "My Bio may be visible publicly if I enable \"Show my name on leaderboard\" in Settings.",
+      "consentContentPhone": "Phone number is used for order fulfillment (e.g. Store delivery) and will never be shared publicly.",
+      "consentContentStats": "Date of birth, nationality, and gender are used for anonymous statistics and are never shared publicly.",
+      "consentContentBio": "My Bio may be visible publicly if I enable \"Show my name on leaderboard\" in Settings.",
       "save": "Save",
       "completeToContinue": "Complete Profile to Continue"
     },
@@ -1380,6 +1386,29 @@
         "cod_meetup": "In Person",
         "in_person": "Meet in person/Cash on delivery"
       }
+    },
+    "selectCvsStore": "Select Pickup Store",
+    "selectCvsStoreHint": "Choose a convenience store branch for pickup",
+    "selectedStore": "Selected Store",
+    "cvsStoreId": "Store ID",
+    "logistics": "Logistics",
+    "logisticsId": "Logistics ID",
+    "shippingNo": "Shipping No",
+    "createShipment": "Create Shipment",
+    "printLabel": "Print Label",
+    "logisticsStatus": "Logistics Status",
+    "trackingNumber": "Tracking Number",
+    "shippingLabel": "Shipping Label",
+    "logisticsStatuses": {
+      "300": "Order Created",
+      "310": "Awaiting Pickup",
+      "325": "Received by Logistics",
+      "330": "In Transit",
+      "2030": "Arrived at Store",
+      "2063": "Picked Up",
+      "2067": "Unclaimed, Returning",
+      "2068": "Returned to Sender",
+      "2073": "Closed"
     }
   },
   "merchant": {
@@ -1437,6 +1466,18 @@
       "halalProofHint": "Mandatory for food & consumable items. Max 5 images/documents.",
       "halalProofPlaceholder": "Upload Halal cert, ingredient label, or shop photo",
       "halalProofError": "Halal proof is required for food categories."
-    }
+    },
+    "updatePassword": {
+    "title": "Set New Password",
+    "subtitle": "Please enter a strong password to secure your account.",
+    "oldPassword": "Current Password",
+    "newPassword": "New Password",
+    "confirmPassword": "Confirm New Password",
+    "update": "Set Password",
+    "updating": "Updating...",
+    "success": "Password updated successfully!",
+    "error": "Failed to update password.",
+    "mismatchError": "Passwords do not match",
+    "backToProfile": "Back to Profile"
   }
 }

@@ -43,7 +43,9 @@
     "underMaintenance": "Under Maintenance",
     "comingSoon": "Coming Soon",
     "maintenanceMessage": "This feature is currently undergoing maintenance. We'll be back soon!",
-    "copied": "Copied to clipboard"
+    "copied": "Copied to clipboard",
+    "change": "Change",
+    "mandatory": "Mandatory"
   },
   "master": {
     "active": "فعال",
@@ -679,7 +681,9 @@
       "consentContent1": "تاریخ پیدائش، قومیت اور جنس کا استعمال صرف گمنام اعدادوشمار کے لیے کیا جاتا ہے اور عوامی طور پر کبھی شیئر نہیں کیا جاتا ہے۔",
       "consentContent2": "اگر میں ترتیبات میں \"لیڈر بورڈ پر اپنا نام دکھائیں\" کو فعال کرتا ہوں تو میرا بائیو عوامی طور پر نظر آ سکتا ہے۔",
       "save": "محفوظ کریں۔",
-      "completeToContinue": "جاری رکھنے کے لیے پروفائل مکمل کریں۔"
+      "completeToContinue": "جاری رکھنے کے لیے پروفائل مکمل کریں۔",
+      "phone": "Phone Number",
+      "phonePlaceholder": "09xxxxxxxx"
     },
     "merchant": {
       "startSelling": "فروخت شروع کریں۔",
@@ -1379,6 +1383,29 @@
     "construction": {
       "title": "Under Construction",
       "message": "We're brewing something amazing! The Halal Formosa store will be available soon."
+    },
+    "selectCvsStore": "Select Pickup Store",
+    "selectCvsStoreHint": "Choose a convenience store branch for pickup",
+    "selectedStore": "Selected Store",
+    "cvsStoreId": "Store ID",
+    "logistics": "Logistics",
+    "logisticsId": "Logistics ID",
+    "shippingNo": "Shipping No",
+    "createShipment": "Create Shipment",
+    "printLabel": "Print Label",
+    "logisticsStatus": "Logistics Status",
+    "trackingNumber": "Tracking Number",
+    "shippingLabel": "Shipping Label",
+    "logisticsStatuses": {
+      "300": "Order Created",
+      "310": "Awaiting Pickup",
+      "325": "Received by Logistics",
+      "330": "In Transit",
+      "2030": "Arrived at Store",
+      "2063": "Picked Up",
+      "2067": "Unclaimed, Returning",
+      "2068": "Returned to Sender",
+      "2073": "Closed"
     }
   },
   "merchant": {

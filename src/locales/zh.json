@@ -43,7 +43,9 @@
     "underMaintenance": "Under Maintenance",
     "comingSoon": "Coming Soon",
     "maintenanceMessage": "This feature is currently undergoing maintenance. We'll be back soon!",
-    "copied": "Copied to clipboard"
+    "copied": "Copied to clipboard",
+    "change": "更改",
+    "mandatory": "必填"
   },
   "master": {
     "active": "啟用",
@@ -132,7 +134,8 @@
     "success": "密碼更新成功！",
     "error": "密碼更新失敗。",
     "mismatchError": "密碼不匹配",
-    "change": "更改密碼",
+    "change": "更改",
+    "mandatory": "必填",
     "changePassword": "Change Password"
   },
   "main": {
@@ -581,7 +584,7 @@
     "publicProfile": "公開個人資料",
     "publicProfileNote": "開啟後，您的名稱將顯示在排行榜以及您新增的內容（產品、地點、新聞等）中。",
     "showLastSeen": "顯示上次在線時間",
-    "showLastSeenNote": "允許他人在聊天中查看您上次活動的時間。",
+    "showLastSeenNote": "允許他人在商店聊天中查看您上次活動的時間。這僅用於商店聊天功能。",
     "language": "語言 (實驗功能)"
   },
   "profile": {
@@ -676,12 +679,16 @@
       "selectGender": "選擇性別",
       "genderMale": "男性",
       "genderFemale": "女性",
-      "genderOther": "其他",
+      "genderOther": "不願透露",
       "bio": "簡介",
       "bioPlaceholder": "寫一段簡短的自我介紹...",
+      "phone": "電話號碼",
+      "phonePlaceholder": "09xxxxxxxx",
+      "phoneHint": "用於商店配送通知，絕不公開分享。",
       "consentTitle": "我明白：",
-      "consentContent1": "出生日期、國籍和性別僅用於匿名統計，絕不公開分享。",
-      "consentContent2": "如果在設定中開啟「在排行榜上顯示我的名稱」，我的簡介可能會被公開。",
+      "consentContentPhone": "電話號碼用於訂單配送（例如商店取貨），絕不公開分享。",
+      "consentContentStats": "出生日期、國籍和性別僅用於匿名統計，絕不公開分享。",
+      "consentContentBio": "如果在設定中開啟「在排行榜上顯示我的名稱」，我的簡介可能會被公開。",
       "save": "儲存",
       "completeToContinue": "完成個人資料以繼續"
     },
@@ -1358,6 +1365,29 @@
     "construction": {
       "title": "Under Construction",
       "message": "We're brewing something amazing! The Halal Formosa store will be available soon."
+    },
+    "selectCvsStore": "Select Pickup Store",
+    "selectCvsStoreHint": "Choose a convenience store branch for pickup",
+    "selectedStore": "Selected Store",
+    "cvsStoreId": "Store ID",
+    "logistics": "Logistics",
+    "logisticsId": "Logistics ID",
+    "shippingNo": "Shipping No",
+    "createShipment": "Create Shipment",
+    "printLabel": "Print Label",
+    "logisticsStatus": "Logistics Status",
+    "trackingNumber": "Tracking Number",
+    "shippingLabel": "Shipping Label",
+    "logisticsStatuses": {
+      "300": "Order Created",
+      "310": "Awaiting Pickup",
+      "325": "Received by Logistics",
+      "330": "In Transit",
+      "2030": "Arrived at Store",
+      "2063": "Picked Up",
+      "2067": "Unclaimed, Returning",
+      "2068": "Returned to Sender",
+      "2073": "Closed"
     }
   },
   "merchant": {
@@ -1448,5 +1478,18 @@
     "locationSavedSuccess": "Location saved successfully!",
     "locationAlreadySaved": "This location is already saved in this folder.",
     "saveFailed": "Failed to save location. Please try again."
+  },
+  "updatePassword": {
+    "title": "設定新密碼",
+    "subtitle": "請輸入強度足夠的密碼以保護您的帳戶。",
+    "oldPassword": "目前密碼",
+    "newPassword": "新密碼",
+    "confirmPassword": "確認新密碼",
+    "update": "設定密碼",
+    "updating": "更新中...",
+    "success": "密碼更新成功！",
+    "error": "更新密碼失敗。",
+    "mismatchError": "密碼不匹配",
+    "backToProfile": "返回個人資料"
   }
 }

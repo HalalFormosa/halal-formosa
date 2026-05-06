@@ -4,6 +4,11 @@
       <div class="auth-container">
 
         <div class="top-bar">
+          <ion-buttons slot="start" class="back-btn-wrapper">
+            <ion-button @click="goBack">
+              <ion-icon :icon="arrowBackOutline" />
+            </ion-button>
+          </ion-buttons>
           <div class="lang-wrapper">
             <LanguagePicker @update="setLanguage" />
           </div>
@@ -85,8 +90,8 @@
           </ion-button>
 
           <!-- Back -->
-          <div class="back-divider" @click="goHome">
-            <span>{{ $t('common.backToHome') }}</span>
+          <div class="back-divider" @click="goBack">
+            <span>{{ $t('updatePassword.backToProfile') }}</span>
           </div>
 
         </form>
@@ -103,8 +108,9 @@ import {
   IonButton,
   IonText,
   IonInputPasswordToggle,
-  IonContent, 
-  IonIcon
+  IonContent,
+  IonIcon,
+  IonButtons
 } from '@ionic/vue';
 import { defineComponent } from 'vue';
 
@@ -116,7 +122,8 @@ export default defineComponent({
     IonText,
     IonInputPasswordToggle,
     IonContent,
-    IonIcon
+    IonIcon,
+    IonButtons
   },
 });
 </script>
@@ -127,7 +134,7 @@ import { useRouter } from 'vue-router';
 import { supabase } from '@/plugins/supabaseClient';
 import { useI18n } from 'vue-i18n'
 import LanguagePicker from '@/components/LanguagePicker.vue'
-import { saveOutline } from "ionicons/icons";
+import { saveOutline, arrowBackOutline } from "ionicons/icons";
 import { ActivityLogService } from '@/services/ActivityLogService'
 import { onMounted } from 'vue';
 import { useRoute } from 'vue-router';
@@ -208,6 +215,14 @@ function setLanguage(lang: 'en' | 'id' | 'ms' | 'zh') {
 
 function goHome() {
   router.push('/');
+}
+
+function goBack() {
+  if (window.history.length > 1) {
+    router.back();
+  } else {
+    router.push('/profile');
+  }
 }
 </script>
 
@@ -299,8 +314,12 @@ html:not(.ion-palette-dark) .auth-page {
   right: 0;
   display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 0 18px;
+  justify-content: space-between;
+  padding: 0 8px;
+}
+
+.back-btn-wrapper {
+  margin-left: 0;
 }
 
 .lang-select {

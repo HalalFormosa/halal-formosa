@@ -83,6 +83,57 @@
                 </div>
               </div>
 
+              <!-- Logistics info for CVS orders -->
+              <div v-if="order.delivery_method && isCvsMethod(order.delivery_method)" class="logistics-section">
+                <div class="logistics-header">
+                  <ion-icon :icon="cubeOutline" />
+                  <strong>{{ $t('store.logistics') || 'Logistics' }}</strong>
+                </div>
+                <div v-if="order.cvs_store_name" class="detail-row">
+                  <ion-icon :icon="storefrontOutline" />
+                  <span>{{ order.cvs_store_name }} <span v-if="order.cvs_store_id" class="logistics-code">({{ order.cvs_store_id }})</span></span>
+                </div>
+                <div v-if="order.cvs_store_address" class="detail-row">
+                  <ion-icon :icon="locationOutline" />
+                  <span>{{ order.cvs_store_address }}</span>
+                </div>
+                <div v-if="order.logistics_id" class="detail-row">
+                  <ion-icon :icon="barcodeOutline" />
+                  <span>{{ $t('store.logisticsId') || 'Logistics ID' }}: {{ order.logistics_id }}</span>
+                </div>
+                <div v-if="order.cvs_payment_no" class="detail-row">
+                  <ion-icon :icon="receiptOutline" />
+                  <span>{{ $t('store.shippingNo') || 'Shipping No' }}: {{ order.cvs_payment_no }}<span v-if="order.cvs_validation_no"> / {{ order.cvs_validation_no }}</span></span>
+                </div>
+                <div v-if="order.logistics_status_msg" class="detail-row">
+                  <ion-icon :icon="informationCircleOutline" />
+                  <span>{{ order.logistics_status_msg }}</span>
+                </div>
+
+                <!-- Logistics action buttons -->
+                <div class="logistics-actions">
+                  <ion-button
+                    v-if="!order.logistics_id && ['paid', 'shipped'].includes(order.status)"
+                    size="small" fill="outline" color="primary"
+                    @click.stop="handleCreateShipment(order.id)"
+                    :disabled="logisticsLoading"
+                  >
+                    <ion-spinner v-if="logisticsLoading" name="dots" slot="start" />
+                    <ion-icon v-else :icon="cubeOutline" slot="start" />
+                    {{ $t('store.createShipment') || 'Create Shipment' }}
+                  </ion-button>
+                  <ion-button
+                    v-if="order.logistics_id"
+                    size="small" fill="outline" color="tertiary"
+                    @click.stop="handlePrintLabel(order.id)"
+                    :disabled="logisticsLoading"
+                  >
+                    <ion-icon :icon="printOutline" slot="start" />
+                    {{ $t('store.printLabel') || 'Print Label' }}
+                  </ion-button>
+                </div>
+              </div>
+
               <!-- Status actions -->
               <div class="status-actions">
                 <ion-button
@@ -128,17 +179,23 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import {
   IonPage, IonHeader, IonContent, IonChip, IonBadge, IonButton, IonIcon,
-  IonRefresher, IonRefresherContent, IonSkeletonText, toastController
+  IonRefresher, IonRefresherContent, IonSkeletonText, IonSpinner, toastController
 } from '@ionic/vue'
 import {
   personOutline, callOutline, locationOutline, chatbubbleOutline, receiptOutline, constructOutline,
-  timeOutline, cardOutline, cubeOutline, checkmarkCircleOutline, closeOutline
+  timeOutline, cardOutline, cubeOutline, checkmarkCircleOutline, closeOutline,
+  storefrontOutline, barcodeOutline, printOutline, informationCircleOutline
 } from 'ionicons/icons'
 import AppHeader from '@/components/AppHeader.vue'
 import { supabase } from '@/plugins/supabaseClient'
+import { useEcpayLogistics } from '@/composables/useEcpayLogistics'
 import { useI18n } from 'vue-i18n'
 
 const { t, locale } = useI18n()
+const { createLogisticsOrder, printShippingLabel, logisticsLoading } = useEcpayLogistics()
+
+const CVS_METHODS = ['7eleven', 'family_mart', 'hi_life', 'ok_mart']
+function isCvsMethod(method: string) { return CVS_METHODS.includes(method) }
 
 const isUnderConstruction = computed(() => import.meta.env.VITE_STORE_UNDER_CONSTRUCTION === 'true')
 const loading = ref(true)
@@ -222,6 +279,39 @@ function getActions(status: string) {
     ]
   }
   return actions[status] || []
+}
+
+async function handleCreateShipment(orderId: string) {
+  try {
+    const result = await createLogisticsOrder(orderId)
+    if (result?.success) {
+      const toast = await toastController.create({
+        message: `✅ Shipment created! Shipping No: ${result.cvs_payment_no || result.logistics_id}`,
+        duration: 3000, color: 'success', position: 'bottom'
+      })
+      toast.present()
+      // Refresh order data
+      await fetchOrders()
+    }
+  } catch (err: any) {
+    const toast = await toastController.create({
+      message: `⚠️ ${err.message || 'Failed to create shipment'}`,
+      duration: 3000, color: 'warning', position: 'bottom'
+    })
+    toast.present()
+  }
+}
+
+async function handlePrintLabel(orderId: string) {
+  try {
+    await printShippingLabel(orderId)
+  } catch (err: any) {
+    const toast = await toastController.create({
+      message: `⚠️ ${err.message || 'Failed to get label'}`,
+      duration: 3000, color: 'warning', position: 'bottom'
+    })
+    toast.present()
+  }
 }
 
 function toggleExpand(id: string) {
@@ -565,5 +655,42 @@ onMounted(async () => {
 
 .ion-palette-dark .items-section {
   background: rgba(255, 255, 255, 0.04);
+}
+
+/* Logistics section */
+.logistics-section {
+  margin-top: 12px;
+  padding: 12px;
+  background: rgba(var(--ion-color-primary-rgb, 56, 128, 255), 0.06);
+  border-radius: 12px;
+  border: 1px solid rgba(var(--ion-color-primary-rgb, 56, 128, 255), 0.12);
+}
+
+.logistics-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+  font-size: 0.85rem;
+  color: var(--ion-color-primary);
+}
+
+.logistics-code {
+  font-size: 0.75rem;
+  color: var(--ion-color-medium);
+}
+
+.logistics-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+.logistics-actions ion-button {
+  --border-radius: 10px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  text-transform: none;
 }
 </style>

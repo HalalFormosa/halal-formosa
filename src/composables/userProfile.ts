@@ -20,6 +20,7 @@ export const editDOB = ref<string | null>(null);
 export const editNationality = ref<string | null>(null);
 export const editGender = ref<string | null>(null);
 export const editBio = ref<string | null>(null);
+export const editPhone = ref<string | null>(null);
 
 export const selectedCountry = ref<any | null>(null); // for display
 export const acknowledged = ref(false);
@@ -29,7 +30,7 @@ export const isProfileComplete = computed(() => {
         !!editDOB.value &&
         !!editNationality.value &&
         !!editGender.value &&
-        !!editBio.value?.trim()
+        acknowledged.value
     );
 });
 
@@ -46,8 +47,10 @@ type UserProfileRow = {
     nationality: string | null;
     gender: string | null;
     bio: string | null;
+    phone: string | null;
     show_last_seen: boolean;
     has_reviewed_app: boolean;
+    consent_acknowledged: boolean;
     user_roles: {
         role: string;
     } | null;
@@ -150,8 +153,10 @@ export async function loadUserProfile(userId: string) {
           nationality,
           gender,
           bio,
+          phone,
           show_last_seen,
           has_reviewed_app,
+          consent_acknowledged,
           user_roles (
             role
           )
@@ -170,8 +175,10 @@ export async function loadUserProfile(userId: string) {
         editNationality.value = data.nationality;
         editGender.value = data.gender;
         editBio.value = data.bio;
+        editPhone.value = data.phone;
         showLastSeen.value = data.show_last_seen ?? true;
         hasReviewedApp.value = data.has_reviewed_app ?? false;
+        acknowledged.value = data.consent_acknowledged ?? false;
     } else {
         console.warn("⚠️ No profile found, resetting defaults");
 
@@ -185,6 +192,7 @@ export async function loadUserProfile(userId: string) {
         editNationality.value = null;
         editGender.value = null;
         editBio.value = null;
+        editPhone.value = null;
     }
 
     profileLoaded.value = true // ⬅️ NEW (end)
@@ -198,7 +206,9 @@ export async function updateUserProfile(userId: string) {
             nationality: editNationality.value,
             gender: editGender.value,
             bio: editBio.value,
-            show_last_seen: showLastSeen.value
+            phone: editPhone.value,
+            show_last_seen: showLastSeen.value,
+            consent_acknowledged: acknowledged.value
         })
         .eq("id", userId);
 
@@ -217,6 +227,7 @@ export function resetUserProfileState() {
     editNationality.value = null
     editGender.value = null
     editBio.value = null
+    editPhone.value = null
 
     selectedCountry.value = null
     hasReviewedApp.value = false

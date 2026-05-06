@@ -89,12 +89,29 @@
             <p class="field-hint">⚠️ Phone number and shipping address are required for home delivery</p>
           </div>
 
-          <!-- CVS Pickup: store info -->
+          <!-- CVS Pickup: map picker -->
           <div v-if="isCvsDelivery" class="conditional-fields">
-            <ion-item class="form-item">
-              <ion-input v-model="cvsStoreInfo" label="🏪 Store Name / Code / Address" label-placement="stacked"
-                :placeholder="cvsPlaceholder" />
-            </ion-item>
+            <!-- Selected store display -->
+            <div v-if="selectedCvsStore" class="cvs-store-card">
+              <div class="cvs-store-header">
+                <ion-icon :icon="storefrontOutline" class="cvs-store-icon" />
+                <div class="cvs-store-details">
+                  <h4>{{ selectedCvsStore.storeName }}</h4>
+                  <p v-if="selectedCvsStore.storeId">ID: {{ selectedCvsStore.storeId }}</p>
+                  <p v-if="selectedCvsStore.storeAddress">{{ selectedCvsStore.storeAddress }}</p>
+                </div>
+              </div>
+              <ion-button fill="clear" size="small" @click="pickCvsStore" :disabled="logisticsLoading">
+                {{ $t('common.change') || 'Change' }}
+              </ion-button>
+            </div>
+            <!-- Pick store button -->
+            <ion-button v-else expand="block" fill="outline" color="carrot" class="pick-store-btn" @click="pickCvsStore" :disabled="logisticsLoading">
+              <ion-spinner v-if="logisticsLoading" name="dots" slot="start" />
+              <ion-icon v-else :icon="mapOutline" slot="start" />
+              {{ $t('store.selectCvsStore') || 'Select Pickup Store' }}
+            </ion-button>
+            <p class="field-hint">{{ $t('store.selectCvsStoreHint') || 'Choose a convenience store branch for pickup' }}</p>
           </div>
 
           <!-- COD: date + location -->
@@ -137,11 +154,13 @@ import {
   IonList, IonItem, IonLabel, IonThumbnail, IonNote, IonInput, IonTextarea,
   IonSpinner, IonIcon, toastController, IonRadio, IonRadioGroup
 } from '@ionic/vue'
-import { constructOutline } from 'ionicons/icons'
+import { constructOutline, mapOutline } from 'ionicons/icons'
 import AppHeader from '@/components/AppHeader.vue'
 import { supabase } from '@/plugins/supabaseClient'
 import { useStoreCart } from '@/composables/useStoreCart'
 import { useEcpayPayment } from '@/composables/useEcpayPayment'
+import { useEcpayLogistics } from '@/composables/useEcpayLogistics'
+import type { CvsStoreSelection } from '@/composables/useEcpayLogistics'
 import { ActivityLogService } from '@/services/ActivityLogService'
 import { useI18n } from 'vue-i18n'
 import {
@@ -161,6 +180,7 @@ const { t } = useI18n()
 const router = useRouter()
 const { items: cartItems, cartTotal, clearCart } = useStoreCart()
 const { initiatePayment } = useEcpayPayment()
+const { openCvsMapPicker, createLogisticsOrder, logisticsLoading, selectedStore: selectedCvsStore } = useEcpayLogistics()
 
 const isUnderConstruction = computed(() => import.meta.env.VITE_STORE_UNDER_CONSTRUCTION === 'true')
 const buyerName = ref('')
@@ -181,15 +201,21 @@ const loadingDelivery = ref(true)
 const CVS_METHODS = ['7eleven', 'family_mart', 'hi_life', 'ok_mart']
 const isCvsDelivery = computed(() => CVS_METHODS.includes(selectedDelivery.value))
 
-const cvsPlaceholder = computed(() => {
-  const labels: Record<string, string> = {
-    '7eleven': 'e.g. 7-11 Xinyi Store #123 / 7-11 信義門市 #123',
-    'family_mart': 'e.g. FamilyMart Daan Store / 全家大安店',
-    'hi_life': 'e.g. Hi-Life Zhongshan Store / 萊爾富中山店',
-    'ok_mart': 'e.g. OK Mart Songshan Store / OK超商松山店',
+async function pickCvsStore() {
+  try {
+    const store = await openCvsMapPicker(selectedDelivery.value)
+    if (store) {
+      // Also keep legacy field populated for backward compatibility
+      cvsStoreInfo.value = `${store.storeName} (${store.storeId})`
+    }
+  } catch (err: any) {
+    const toast = await toastController.create({
+      message: `⚠️ ${err.message || 'Failed to open store picker'}`,
+      duration: 3000, color: 'warning', position: 'bottom'
+    })
+    toast.present()
   }
-  return labels[selectedDelivery.value] || 'Store name, code or address'
-})
+}
 
 function formatPrice(price: number) {
   return Number(price).toLocaleString()
@@ -201,6 +227,17 @@ onMounted(async () => {
   if (session?.user) {
     buyerEmail.value = session.user.email || ''
     buyerName.value = session.user.user_metadata?.full_name || session.user.user_metadata?.name || ''
+    
+    // Fetch additional info from profile
+    const { data: profile } = await supabase
+      .from('user_profiles')
+      .select('phone')
+      .eq('id', session.user.id)
+      .single()
+    
+    if (profile?.phone) {
+      buyerPhone.value = profile.phone
+    }
   }
   await fetchDeliveryOptions()
   ActivityLogService.log('store_checkout_page_open')
@@ -270,13 +307,24 @@ async function placeOrder() {
     }
   }
 
-  if (isCvsDelivery.value && !cvsStoreInfo.value.trim()) {
-    const toast = await toastController.create({
-      message: '⚠️ Please enter the pickup store info',
-      duration: 2000, color: 'warning', position: 'bottom'
-    })
-    toast.present()
-    return
+  if (isCvsDelivery.value) {
+    if (!buyerPhone.value.trim()) {
+      const toast = await toastController.create({
+        message: '⚠️ Phone number is required for convenience store pickup',
+        duration: 2000, color: 'warning', position: 'bottom'
+      })
+      toast.present()
+      return
+    }
+    
+    if (!selectedCvsStore.value && !cvsStoreInfo.value.trim()) {
+      const toast = await toastController.create({
+        message: '⚠️ Please select a pickup store',
+        duration: 2000, color: 'warning', position: 'bottom'
+      })
+      toast.present()
+      return
+    }
   }
 
   if (selectedDelivery.value === 'cod_meetup') {
@@ -327,6 +375,9 @@ async function placeOrder() {
         cod_location: selectedDelivery.value === 'cod_meetup' ? (codLocation.value.trim() || null) : null,
         cod_date: selectedDelivery.value === 'cod_meetup' ? (codDate.value || null) : null,
         cvs_store_info: isCvsDelivery.value ? (cvsStoreInfo.value.trim() || null) : null,
+        cvs_store_id: isCvsDelivery.value && selectedCvsStore.value ? selectedCvsStore.value.storeId : null,
+        cvs_store_name: isCvsDelivery.value && selectedCvsStore.value ? selectedCvsStore.value.storeName : null,
+        cvs_store_address: isCvsDelivery.value && selectedCvsStore.value ? selectedCvsStore.value.storeAddress : null,
       })
       .select('id')
       .single()
@@ -355,6 +406,17 @@ async function placeOrder() {
 
     // 💰 Initiate ECPay payment via composable
     console.log('💰 Initiating ECPay payment for order:', order.id)
+
+    // Create logistics order for CVS deliveries (will be shipped after payment confirmation)
+    if (isCvsDelivery.value) {
+      try {
+        console.log('📦 Creating logistics order for CVS delivery...')
+        await createLogisticsOrder(order.id)
+      } catch (logErr: any) {
+        console.warn('⚠️ Logistics order creation deferred:', logErr.message)
+        // Don't block payment - logistics can be created later from admin
+      }
+    }
 
     // Clear cart before redirecting
     clearCart()
@@ -478,5 +540,50 @@ async function placeOrder() {
 .delivery-option {
   --background: transparent;
   margin-bottom: 2px;
+}
+
+/* CVS Store Picker */
+.pick-store-btn {
+  margin: 8px 16px;
+  --border-radius: 12px;
+  font-weight: 600;
+  height: 48px;
+}
+
+.cvs-store-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  margin: 8px 0;
+  background: rgba(var(--ion-color-carrot-rgb, 255, 152, 0), 0.08);
+  border-radius: 14px;
+  border: 1px solid rgba(var(--ion-color-carrot-rgb, 255, 152, 0), 0.2);
+}
+
+.cvs-store-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.cvs-store-icon {
+  font-size: 28px;
+  color: var(--ion-color-carrot);
+  flex-shrink: 0;
+}
+
+.cvs-store-details h4 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--ion-text-color);
+}
+
+.cvs-store-details p {
+  margin: 2px 0 0;
+  font-size: 0.78rem;
+  color: var(--ion-color-medium);
 }
 </style>

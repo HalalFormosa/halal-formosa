@@ -21,12 +21,18 @@
 
 
       <ion-card class="fade-in">
+        <div style="padding: 16px 16px 0; font-size: 0.8rem; color: var(--ion-color-medium);">
+          <span class="required-star">*</span> {{ $t('common.mandatory') || 'Mandatory fields' }}
+        </div>
         <ion-list lines="inset">
           <ion-item>
             <div class="icon-box" slot="start">
               <ion-icon :icon="calendarOutline" />
             </div>
-            <ion-label>{{ $t('profile.editProfile.dob') }}</ion-label>
+            <ion-label>
+              {{ $t('profile.editProfile.dob') }}
+              <span class="required-star">*</span>
+            </ion-label>
             <ion-note slot="end">
               <ion-datetime-button
                   datetime="dobPicker"
@@ -51,7 +57,10 @@
             <div class="icon-box" slot="start">
               <ion-icon :icon="globeOutline" />
             </div>
-            <ion-label>{{ $t('profile.editProfile.nationality') }}</ion-label>
+            <ion-label>
+              {{ $t('profile.editProfile.nationality') }}
+              <span class="required-star">*</span>
+            </ion-label>
             <ion-text slot="end" style="color: var(--ion-color-dark)">
               <template v-if="!countries.length">
                 <ion-skeleton-text animated style="width:100px;height:16px;" />
@@ -70,7 +79,10 @@
             <div class="icon-box" slot="start">
               <ion-icon :icon="personOutline" />
             </div>
-            <ion-label>{{ $t('profile.editProfile.gender') }}</ion-label>
+            <ion-label>
+              {{ $t('profile.editProfile.gender') }}
+              <span class="required-star">*</span>
+            </ion-label>
             <ion-select v-model="editGender" interface="popover" slot="end" :placeholder="$t('profile.editProfile.selectGender')">
               <ion-select-option value="Male">{{ $t('profile.editProfile.genderMale') }}</ion-select-option>
               <ion-select-option value="Female">{{ $t('profile.editProfile.genderFemale') }}</ion-select-option>
@@ -78,17 +90,44 @@
             </ion-select>
           </ion-item>
 
-          <ion-item >
+          <ion-item>
+            <div class="icon-box" slot="start">
+              <ion-icon :icon="callOutline" />
+            </div>
+            <ion-input
+                v-model="editPhone"
+                type="tel"
+                label-placement="stacked"
+                :label="$t('profile.editProfile.phone') || 'Phone Number'"
+                :placeholder="$t('profile.editProfile.phonePlaceholder') || '09xxxxxxxx'"
+                :helper-text="$t('profile.editProfile.phoneHint') || 'Used for store delivery notifications, never shared publicly.'"
+            ></ion-input>
+          </ion-item>
+
+          <ion-item>
             <div class="icon-box" slot="start" style="align-self: flex-start; margin-top: 12px;">
               <ion-icon :icon="createOutline" />
             </div>
-            <ion-label position="stacked">{{ $t('profile.editProfile.bio') }}</ion-label>
             <ion-textarea
                 v-model="editBio"
                 auto-grow
+                label-placement="stacked"
+                :label="$t('profile.editProfile.bio')"
                 :placeholder="$t('profile.editProfile.bioPlaceholder')"
-                style="margin-top: 8px;"
             ></ion-textarea>
+          </ion-item>
+
+          <ion-item>
+            <div class="icon-box" slot="start">
+              <ion-icon :icon="trophyOutline" />
+            </div>
+            <ion-label>{{ $t('settings.publicProfile') }}</ion-label>
+            <ion-toggle
+                slot="end"
+                :checked="isPublicProfile"
+                @ionChange="setPublicProfile($event.detail.checked)"
+                color="carrot"
+            ></ion-toggle>
           </ion-item>
         </ion-list>
       </ion-card>
@@ -132,8 +171,9 @@
           <ion-label class="ion-text-wrap" style="font-size: 0.85rem;">
             {{ $t('profile.editProfile.consentTitle') }}
             <ul style="margin: 8px 0 0; padding-left: 1.2rem; font-size: 0.8rem; color: var(--ion-color-medium);">
-              <li>{{ $t('profile.editProfile.consentContent1') }}</li>
-              <li>{{ $t('profile.editProfile.consentContent2') }}</li>
+              <li>{{ $t('profile.editProfile.consentContentPhone') }}</li>
+              <li>{{ $t('profile.editProfile.consentContentStats') }}</li>
+              <li>{{ $t('profile.editProfile.consentContentBio') }}</li>
             </ul>
           </ion-label>
         </ion-item>
@@ -163,7 +203,7 @@ import {
   IonBackButton, IonList, IonItem, IonLabel, IonDatetime,
   IonSelect, IonSelectOption, IonTextarea, IonButton, IonModal,
   IonNote, IonSearchbar, IonDatetimeButton, IonText, IonCheckbox,
-  IonSkeletonText, IonCard, IonCardContent, IonIcon
+  IonSkeletonText, IonCard, IonCardContent, IonIcon, IonInput, IonToggle
 } from "@ionic/vue";
 import AppHeader from "@/components/AppHeader.vue";
 
@@ -172,8 +212,11 @@ import {
   editNationality,
   editGender,
   editBio,
+  editPhone,
   acknowledged,
   isProfileComplete,
+  isPublicProfile,
+  setPublicProfile,
   loadUserProfile,
   updateUserProfile, currentUser
 } from "@/composables/userProfile";
@@ -182,7 +225,9 @@ import {
   calendarOutline,
   createOutline,
   globeOutline,
-  personOutline
+  personOutline,
+  callOutline,
+  trophyOutline
 } from "ionicons/icons";
 
 import { countries, loadCountries } from "@/composables/useCountries"
@@ -383,6 +428,11 @@ ion-item {
 ion-toolbar {
   --background: transparent;
   --border-width: 0;
+}
+
+.required-star {
+  color: var(--ion-color-danger);
+  margin-left: 4px;
 }
 </style>
 
