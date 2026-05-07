@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@capacitor-community/admob": "^8.0.0",
+    "@capacitor-community/in-app-review": "^8.0.0",
     "@capacitor-mlkit/barcode-scanning": "^8.0.1",
     "@capacitor/android": "^8.0.0",
     "@capacitor/app": "^8.0.0",
@@ -34,7 +35,6 @@
     "@capacitor/share": "^8.0.0",
     "@capacitor/status-bar": "^8.0.0",
     "@capawesome-team/capacitor-datetime-picker": "^8.0.1",
-    "@capawesome/capacitor-app-review": "^8.0.1",
     "@capawesome/capacitor-app-update": "^8.0.3",
     "@capgo/capacitor-navigation-bar": "^8.0.22",
     "@capgo/native-purchases": "^8.1.1",

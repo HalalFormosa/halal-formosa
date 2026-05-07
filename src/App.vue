@@ -68,7 +68,7 @@ import { SpeedInsights } from '@vercel/speed-insights/vue';
 import { Capacitor } from '@capacitor/core'
 import { Geolocation } from '@capacitor/geolocation'
 import { AppUpdate, AppUpdateAvailability } from '@capawesome/capacitor-app-update';
-import { AppReview } from '@capawesome/capacitor-app-review';
+import { InAppReview } from '@capacitor-community/in-app-review';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import utc from 'dayjs/plugin/utc';
@@ -217,10 +217,9 @@ const checkAndAskForReview = async () => {
             // 2. Trigger Official Native In-App Review Sheet
             try {
               console.log('⭐ Triggering Native Review Sheet...');
-              await AppReview.requestReview();
+              await InAppReview.requestReview();
             } catch (err) {
-              console.error('❌ Native sheet failed, falling back to Store App:', err);
-              await AppReview.openAppStore();
+              console.error('❌ Native sheet failed:', err);
             }
           }
         }

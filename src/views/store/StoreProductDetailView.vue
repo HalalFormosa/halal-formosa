@@ -121,6 +121,48 @@
                 </ion-button>
               </div>
             </div>
+
+            <!-- Reviews Section -->
+            <div class="reviews-section">
+              <div class="reviews-header">
+                <h3>{{ $t('store.reviews') }}</h3>
+                <ion-button v-if="currentUserId" fill="clear" size="small" color="carrot" @click="openReviewModal">
+                  {{ $t('store.writeReview') }}
+                </ion-button>
+                <ion-button v-else fill="clear" size="small" color="medium" disabled>
+                  {{ $t('store.loginToReview') }}
+                </ion-button>
+              </div>
+
+              <!-- Rating Summary -->
+              <div v-if="product.avg_rating > 0" class="rating-summary">
+                <div class="rating-big">
+                  <span class="big-number">{{ product.avg_rating }}</span>
+                  <div class="big-stars" v-html="renderStars(product.avg_rating)"></div>
+                  <span class="total-reviews">{{ $t('store.ratingCount', { count: product.review_count }) }}</span>
+                </div>
+              </div>
+
+              <!-- Review List -->
+              <div v-if="reviews.length > 0" class="review-list">
+                <div v-for="review in reviews" :key="review.id" class="review-card">
+                  <div class="review-header">
+                    <ion-avatar class="reviewer-avatar">
+                      <img :src="review.user_profiles?.avatar_url || '/favicon-32x32.png'" />
+                    </ion-avatar>
+                    <div class="reviewer-info">
+                      <span class="reviewer-name">{{ review.user_profiles?.display_name || 'User' }}</span>
+                      <span class="review-date">{{ formatDate(review.created_at) }}</span>
+                    </div>
+                  </div>
+                  <div class="review-stars" v-html="renderStars(review.rating)"></div>
+                  <p v-if="review.comment" class="review-comment">{{ review.comment }}</p>
+                </div>
+              </div>
+              <div v-else class="no-reviews">
+                <p>{{ $t('store.noReviews') }}</p>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -225,6 +267,54 @@
         </div>
       </ion-content>
     </ion-modal>
+
+    <!-- Write Review Modal -->
+    <ion-modal :is-open="reviewModalOpen" @didDismiss="reviewModalOpen = false" :initial-breakpoint="0.55" :breakpoints="[0, 0.55, 0.8]">
+      <ion-header class="ion-no-border">
+        <ion-toolbar>
+          <ion-title>{{ $t('store.writeReview') }}</ion-title>
+          <ion-buttons slot="end">
+            <ion-button @click="reviewModalOpen = false">
+              <ion-icon :icon="closeOutline" />
+            </ion-button>
+          </ion-buttons>
+        </ion-toolbar>
+      </ion-header>
+      <ion-content class="ion-padding review-modal-content">
+        <div class="star-selector">
+          <h3>{{ $t('store.yourRating') }}</h3>
+          <div class="star-buttons">
+            <button
+              v-for="star in 5"
+              :key="star"
+              class="star-btn"
+              :class="{ 'star-active': star <= selectedRating }"
+              @click="selectedRating = star"
+            >
+              ★
+            </button>
+          </div>
+        </div>
+        <div class="comment-section">
+          <h3>{{ $t('store.yourComment') }}</h3>
+          <ion-textarea
+            v-model="reviewComment"
+            :placeholder="$t('store.yourComment')"
+            :rows="4"
+            class="review-textarea"
+          />
+        </div>
+        <ion-button
+          expand="block"
+          color="carrot"
+          class="submit-review-btn"
+          :disabled="selectedRating === 0 || submittingReview"
+          @click="submitReview"
+        >
+          {{ submittingReview ? '...' : $t('store.submitReview') }}
+        </ion-button>
+      </ion-content>
+    </ion-modal>
   </ion-page>
 </template>
 
@@ -234,7 +324,7 @@ import { useRoute, useRouter } from 'vue-router'
 import {
   IonPage, IonHeader, IonContent, IonFooter, IonToolbar, IonButton, IonIcon,
   IonChip, IonSkeletonText, toastController, IonAvatar, IonModal, IonTitle,
-  IonList, IonItem, IonLabel, IonButtons, IonThumbnail
+  IonList, IonItem, IonLabel, IonButtons, IonThumbnail, IonTextarea, IonBadge
 } from '@ionic/vue'
 import {
   imageOutline, cartOutline, bagHandleOutline, removeOutline, addOutline,
@@ -262,6 +352,12 @@ const qty = ref(1)
 const cartOpen = ref(false)
 const currentUserId = ref<string | null>(null)
 const isScrolled = ref(false)
+const reviews = ref<any[]>([])
+const reviewModalOpen = ref(false)
+const selectedRating = ref(0)
+const reviewComment = ref('')
+const submittingReview = ref(false)
+const existingReview = ref<any>(null)
 
 const handleScroll = (ev: any) => {
   isScrolled.value = ev.detail.scrollTop > 50
@@ -300,8 +396,128 @@ async function fetchProduct() {
     
     // Log detail view
     ActivityLogService.log('store_product_detail_open', { product_id: id, name: data.name })
+    
+    // Fetch reviews
+    fetchReviews(id)
   }
   loading.value = false
+}
+
+async function fetchReviews(productId: string) {
+  const { data } = await supabase
+    .from('store_product_reviews')
+    .select('*, user_profiles(display_name, avatar_url)')
+    .eq('product_id', productId)
+    .order('created_at', { ascending: false })
+    .limit(20)
+  reviews.value = data || []
+  
+  // Check if current user already has a review
+  if (currentUserId.value) {
+    existingReview.value = reviews.value.find(r => r.user_id === currentUserId.value) || null
+  }
+}
+
+function openReviewModal() {
+  if (existingReview.value) {
+    selectedRating.value = existingReview.value.rating
+    reviewComment.value = existingReview.value.comment || ''
+  } else {
+    selectedRating.value = 0
+    reviewComment.value = ''
+  }
+  reviewModalOpen.value = true
+}
+
+async function submitReview() {
+  if (!product.value || !currentUserId.value || selectedRating.value === 0) return
+  submittingReview.value = true
+  
+  const reviewData = {
+    product_id: product.value.id,
+    user_id: currentUserId.value,
+    rating: selectedRating.value,
+    comment: reviewComment.value.trim() || null
+  }
+
+  let isUpdate = false
+  if (existingReview.value) {
+    // Update existing review
+    await supabase
+      .from('store_product_reviews')
+      .update({ rating: reviewData.rating, comment: reviewData.comment })
+      .eq('id', existingReview.value.id)
+    isUpdate = true
+  } else {
+    // Insert new review
+    await supabase
+      .from('store_product_reviews')
+      .insert(reviewData)
+  }
+
+  // Mathematically update avg_rating and review_count to preserve seeded dummy data
+  let currentCount = product.value.review_count || 0
+  let currentAvg = product.value.avg_rating || 0
+
+  let newCount = currentCount
+  let newAvg = currentAvg
+
+  if (isUpdate) {
+    // Subtract old rating, add new rating
+    const oldRating = existingReview.value.rating
+    if (currentCount > 0) {
+      newAvg = ((currentAvg * currentCount) - oldRating + reviewData.rating) / currentCount
+    } else {
+      newAvg = reviewData.rating
+    }
+  } else {
+    // Add new rating
+    newAvg = ((currentAvg * currentCount) + reviewData.rating) / (currentCount + 1)
+    newCount += 1
+  }
+
+  const roundedAvg = Math.round(newAvg * 10) / 10
+
+  // Use RPC to bypass RLS, since normal users cannot update store_products
+  await supabase.rpc('update_store_product_rating', {
+    p_product_id: product.value.id,
+    p_avg_rating: roundedAvg,
+    p_review_count: newCount
+  })
+  
+  product.value.avg_rating = roundedAvg
+  product.value.review_count = newCount
+
+  // Refresh reviews
+  await fetchReviews(product.value.id)
+  
+  reviewModalOpen.value = false
+  submittingReview.value = false
+
+  const toast = await toastController.create({
+    message: isUpdate ? `✅ ${t('store.reviewUpdated')}` : `✅ ${t('store.reviewSubmitted')}`,
+    duration: 1500,
+    position: 'bottom',
+    color: 'success'
+  })
+  toast.present()
+}
+
+function renderStars(rating: number): string {
+  const full = Math.floor(rating)
+  const half = rating - full >= 0.3 && rating - full < 0.8 ? 1 : 0
+  const empty = 5 - full - half
+  let html = ''
+  for (let i = 0; i < full; i++) html += '★'
+  if (half) html += '★'
+  for (let i = 0; i < empty; i++) html += '☆'
+  return html
+}
+
+function formatDate(dateStr: string): string {
+  return new Date(dateStr).toLocaleDateString(locale.value === 'zh' ? 'zh-TW' : 'en-US', {
+    year: 'numeric', month: 'short', day: 'numeric'
+  })
 }
 
 async function fetchUser() {
@@ -796,5 +1012,203 @@ function updateQtyInCart(productId: string, newQty: number) {
     margin: 0 auto;
     border-radius: 16px 16px 0 0;
   }
+}
+
+/* Reviews Section */
+.reviews-section {
+  margin: 28px 0 16px;
+  border-top: 1px solid var(--ion-color-step-100, #eee);
+  padding-top: 20px;
+}
+
+.reviews-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.reviews-header h3 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin: 0;
+  color: var(--ion-text-color);
+}
+
+.rating-summary {
+  margin-bottom: 20px;
+}
+
+.rating-big {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.big-number {
+  font-size: 2.2rem;
+  font-weight: 800;
+  color: var(--ion-text-color);
+}
+
+.big-stars {
+  color: #f5a623;
+  font-size: 1.1rem;
+  letter-spacing: 2px;
+}
+
+.total-reviews {
+  font-size: 0.82rem;
+  color: var(--ion-color-medium);
+}
+
+.review-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.review-card {
+  padding: 14px;
+  background: var(--ion-color-step-50, #f8f9fa);
+  border-radius: 14px;
+  border: 1px solid var(--ion-color-step-100, rgba(0,0,0,0.04));
+}
+
+.review-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.reviewer-avatar {
+  width: 32px;
+  height: 32px;
+}
+
+.reviewer-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.reviewer-name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ion-text-color);
+}
+
+.review-date {
+  font-size: 0.7rem;
+  color: var(--ion-color-medium);
+}
+
+.review-stars {
+  color: #f5a623;
+  font-size: 0.85rem;
+  letter-spacing: 1px;
+  margin-bottom: 6px;
+}
+
+.review-comment {
+  font-size: 0.88rem;
+  color: var(--ion-color-step-600, #555);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.no-reviews {
+  text-align: center;
+  padding: 24px;
+  color: var(--ion-color-medium);
+  font-size: 0.88rem;
+}
+
+/* Review Modal */
+.review-modal-content {
+  --background: var(--ion-background-color);
+}
+
+.star-selector {
+  margin-bottom: 24px;
+}
+
+.star-selector h3,
+.comment-section h3 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin: 0 0 12px;
+  color: var(--ion-text-color);
+}
+
+.star-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.star-btn {
+  font-size: 2rem;
+  background: none;
+  border: none;
+  color: var(--ion-color-step-200, #ddd);
+  cursor: pointer;
+  padding: 4px;
+  transition: color 0.15s ease, transform 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.star-btn.star-active {
+  color: #f5a623;
+  transform: scale(1.15);
+}
+
+.comment-section {
+  margin-bottom: 24px;
+}
+
+.review-textarea {
+  --background: var(--ion-color-step-50, #f8f9fa);
+  --border-radius: 12px;
+  --padding-start: 14px;
+  --padding-end: 14px;
+  --padding-top: 12px;
+  border: 1px solid var(--ion-color-step-150, transparent);
+  border-radius: 12px;
+  font-size: 0.92rem;
+}
+
+.review-textarea:focus-within {
+  border-color: var(--ion-color-carrot);
+}
+
+.submit-review-btn {
+  --border-radius: 14px;
+  --box-shadow: 0 4px 12px rgba(255, 126, 0, 0.25);
+  font-weight: 700;
+  height: 50px;
+  font-size: 1rem;
+}
+
+/* Dark mode overrides for reviews */
+.ion-palette-dark .review-card {
+  background: var(--ion-color-step-100, #1e1e1e);
+  border-color: var(--ion-color-step-200, rgba(255,255,255,0.08));
+}
+
+.ion-palette-dark .review-comment {
+  color: var(--ion-color-step-700, #ccc);
+}
+
+.ion-palette-dark .star-btn {
+  color: var(--ion-color-step-300, #444);
+}
+
+.ion-palette-dark .star-btn.star-active {
+  color: #f5a623;
+}
+
+.ion-palette-dark .review-textarea {
+  --background: var(--ion-color-step-100, #1e1e1e);
+  border-color: var(--ion-color-step-200);
 }
 </style>

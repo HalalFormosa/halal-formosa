@@ -127,6 +127,11 @@
               <div class="product-info">
                 <p class="product-category">{{ getCategoryName(product.category_id) }}</p>
                 <h4 class="product-name">{{ localized(product.name_zh, product.name) }}</h4>
+                <div v-if="product.avg_rating > 0" class="product-rating-row">
+                  <span class="star-icons" v-html="renderStars(product.avg_rating)"></span>
+                  <span class="rating-count">{{ product.avg_rating }}</span>
+                  <span class="review-count" v-if="product.review_count > 0">({{ product.review_count }})</span>
+                </div>
                 <div v-if="product.merchant_stores" class="product-store-info" @click.stop="navigateToMerchant(product.store_id)">
                   <ion-icon :icon="storefrontOutline" class="store-icon" size="small" />
                   <span class="store-name-text">{{ product.merchant_stores.name }}</span>
@@ -303,7 +308,7 @@ import {
   IonSearchbar, IonChip, IonSkeletonText, IonInfiniteScroll, IonInfiniteScrollContent,
   IonFab, IonFabButton, IonRefresher, IonRefresherContent, IonFooter, IonTitle,
   IonPopover, IonList, IonItem, IonLabel, IonModal, IonThumbnail, IonBadge,
-  IonInput, IonToggle
+  IonInput, IonToggle, onIonViewWillEnter
 } from '@ionic/vue'
 import {
   bagHandleOutline, chatbubblesOutline, cartOutline, constructOutline,
@@ -351,6 +356,7 @@ const sortOptions = computed(() => [
   { value: 'popular', label: t('store.sortRelevance') },
   { value: 'recent', label: t('store.sortRecent') },
   { value: 'top_sale', label: t('store.sortTopSale') },
+  { value: 'top_rated', label: t('store.sortTopRated') },
   { value: 'price_desc', label: t('store.sortPriceDesc') },
   { value: 'price_asc', label: t('store.sortPriceAsc') }
 ])
@@ -384,6 +390,17 @@ function localized(zh: string | null | undefined, en: string | null | undefined)
 
 function formatPrice(price: number) {
   return Number(price).toLocaleString()
+}
+
+function renderStars(rating: number): string {
+  const full = Math.floor(rating)
+  const half = rating - full >= 0.3 && rating - full < 0.8 ? 1 : 0
+  const empty = 5 - full - half
+  let html = ''
+  for (let i = 0; i < full; i++) html += '★'
+  if (half) html += '★'  // show as full for simplicity
+  for (let i = 0; i < empty; i++) html += '☆'
+  return html
 }
 
 function openCart() {
@@ -519,6 +536,9 @@ function buildQuery(from: number, to: number) {
     case 'top_sale':
       query = query.order('sale_count', { ascending: false }).order('view_count', { ascending: false })
       break
+    case 'top_rated':
+      query = query.order('avg_rating', { ascending: false }).order('review_count', { ascending: false })
+      break
     case 'trending':
       // Fallback to view_count desc for now; proper trending via RPC later
       query = query.order('view_count', { ascending: false })
@@ -533,9 +553,9 @@ function buildQuery(from: number, to: number) {
   return query
 }
 
-async function fetchProducts(reset = true) {
-  loading.value = true
-  if (reset) {
+async function fetchProducts(reset = true, silent = false) {
+  if (!silent) loading.value = true
+  if (reset && !silent) {
     products.value = []
     noMore.value = false
   }
@@ -556,7 +576,7 @@ async function fetchProducts(reset = true) {
       noMore.value = true
     }
   }
-  loading.value = false
+  if (!silent) loading.value = false
 }
 
 async function loadMore(event: any) {
@@ -566,7 +586,7 @@ async function loadMore(event: any) {
 
 async function doRefresh(event: any) {
   stopAutoScroll()
-  await Promise.all([fetchProducts(), fetchCategories(), fetchBanners()])
+  await Promise.all([fetchProducts(true, false), fetchCategories(), fetchBanners()])
   startAutoScroll()
   event.target.complete()
 }
@@ -605,25 +625,30 @@ watch(searchQuery, (newVal) => {
   if (newVal.trim()) {
     ActivityLogService.log('store_search', { query: newVal })
   }
-  fetchProducts()
+  fetchProducts(true, false)
 })
 
 watch(selectedCategory, (newVal) => {
   if (newVal) {
     ActivityLogService.log('store_filter_category', { category_id: newVal })
   }
-  fetchProducts()
+  fetchProducts(true, false)
 })
 
 watch([sortBy, minPrice, maxPrice, stockOnly], () => {
-  fetchProducts()
+  fetchProducts(true, false)
 })
 
 onMounted(async () => {
   ActivityLogService.log('store_page_open')
   initGlobalUnreadSubscription()
-  await Promise.all([fetchCategories(), fetchBanners(), fetchProducts()])
+  await Promise.all([fetchCategories(), fetchBanners(), fetchProducts(true, false)])
   startAutoScroll()
+})
+
+onIonViewWillEnter(() => {
+  // Silently refresh products to pick up changes like review counts
+  fetchProducts(true, true)
 })
 
 onBeforeUnmount(() => {
@@ -1085,6 +1110,31 @@ onBeforeUnmount(() => {
   line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+.product-rating-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 2px 0;
+}
+
+.star-icons {
+  color: #f5a623;
+  font-size: 0.72rem;
+  letter-spacing: 0.5px;
+  line-height: 1;
+}
+
+.rating-count {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--ion-text-color);
+}
+
+.review-count {
+  font-size: 0.65rem;
+  color: var(--ion-color-medium);
 }
 
 .product-price-row {
