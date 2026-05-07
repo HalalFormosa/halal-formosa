@@ -119,6 +119,33 @@
             </div>
           </div>
         </section>
+
+        <!-- Sender / Pickup Address Section (for home delivery courier pickup) -->
+        <section v-if="isDeliveryEnabled('home_delivery')" class="settings-group">
+          <div class="group-header">
+            <h3 class="group-title">📦 {{ $t('store.settings.senderInfo') || 'Sender / Pickup Address' }}</h3>
+            <p class="group-subtitle">{{ $t('store.settings.senderInfoHint') || 'This address is where the courier picks up packages from' }}</p>
+          </div>
+
+          <div class="card-item">
+            <div class="field-group">
+              <label>{{ $t('store.settings.senderName') || 'Sender Name' }} (寄件人姓名)</label>
+              <ion-input v-model="store.sender_name" :placeholder="$t('store.settings.senderNamePlaceholder') || 'Name on the package'" class="premium-input" />
+            </div>
+            <div class="field-group" style="border-top: 1px solid rgba(0,0,0,0.05);">
+              <label>{{ $t('store.settings.senderPhone') || 'Sender Phone' }} (寄件人電話)</label>
+              <ion-input v-model="store.sender_phone" type="tel" placeholder="09xx-xxx-xxx" class="premium-input" />
+            </div>
+            <div class="field-group" style="border-top: 1px solid rgba(0,0,0,0.05);">
+              <label>{{ $t('store.settings.senderZipcode') || 'Sender Zipcode' }} (寄件人郵遞區號)</label>
+              <ion-input v-model="store.sender_zipcode" placeholder="e.g. 106" class="premium-input" />
+            </div>
+            <div class="field-group" style="border-top: 1px solid rgba(0,0,0,0.05);">
+              <label>{{ $t('store.settings.senderAddress') || 'Sender Address' }} (寄件人地址)</label>
+              <ion-textarea v-model="store.sender_address" :rows="2" :placeholder="$t('store.settings.senderAddressPlaceholder') || 'Full pickup address for courier'" class="premium-textarea" />
+            </div>
+          </div>
+        </section>
         
         <div class="footer-action ion-padding">
            <ion-button expand="block" shape="round" color="carrot" @click="saveSettings" :disabled="saving" class="big-save-btn">
@@ -260,6 +287,10 @@ async function saveSettings() {
       banner_url: store.value.banner_url,
       is_active: store.value.is_active,
       delivery_options: store.value.delivery_options,
+      sender_name: store.value.sender_name || null,
+      sender_phone: store.value.sender_phone || null,
+      sender_zipcode: store.value.sender_zipcode || null,
+      sender_address: store.value.sender_address || null,
       updated_at: new Date().toISOString()
     })
     .eq('id', store.value.id)

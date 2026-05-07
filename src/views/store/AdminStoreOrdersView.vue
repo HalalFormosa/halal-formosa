@@ -134,6 +134,65 @@
                 </div>
               </div>
 
+              <!-- Logistics info for HOME DELIVERY orders -->
+              <div v-if="order.delivery_method && isHomeDelivery(order.delivery_method)" class="logistics-section home-delivery-section">
+                <div class="logistics-header">
+                  <ion-icon :icon="cubeOutline" />
+                  <strong>🐱 {{ $t('store.homeDeliveryLogistics') || 'Home Delivery — Black Cat' }}</strong>
+                </div>
+                <div v-if="order.shipping_address" class="detail-row">
+                  <ion-icon :icon="locationOutline" />
+                  <span>{{ order.shipping_address }}</span>
+                </div>
+                <div v-if="order.buyer_phone" class="detail-row">
+                  <ion-icon :icon="callOutline" />
+                  <span>{{ order.buyer_phone }}</span>
+                </div>
+                <div v-if="order.is_cod" class="detail-row">
+                  <ion-icon :icon="cardOutline" />
+                  <span class="cod-badge">💰 {{ $t('store.codPayment') || 'Cash on Delivery (COD)' }}</span>
+                </div>
+                <div v-if="order.shipping_fee" class="detail-row">
+                  <ion-icon :icon="receiptOutline" />
+                  <span>{{ $t('store.shippingFee') || 'Shipping Fee' }}: {{ $t('store.twd') }}{{ formatPrice(order.shipping_fee) }}</span>
+                </div>
+                <div v-if="order.tracking_number" class="detail-row">
+                  <ion-icon :icon="barcodeOutline" />
+                  <span>{{ $t('store.trackingNumber') || 'Tracking Number' }}: <strong>{{ order.tracking_number }}</strong></span>
+                </div>
+                <div v-if="order.courier_name" class="detail-row">
+                  <ion-icon :icon="informationCircleOutline" />
+                  <span>{{ order.courier_name }}</span>
+                </div>
+                <div v-if="order.logistics_status_msg" class="detail-row">
+                  <ion-icon :icon="informationCircleOutline" />
+                  <span>{{ order.logistics_status_msg }}</span>
+                </div>
+
+                <!-- Ship via Black Cat button -->
+                <div class="logistics-actions">
+                  <ion-button
+                    v-if="!order.logistics_id && ['paid', 'pending_cod'].includes(order.status)"
+                    size="small" fill="solid" color="warning"
+                    @click.stop="handleCreateHomeShipment(order.id)"
+                    :disabled="logisticsLoading"
+                  >
+                    <ion-spinner v-if="logisticsLoading" name="dots" slot="start" />
+                    <ion-icon v-else :icon="cubeOutline" slot="start" />
+                    📦 {{ $t('store.shipViaTcat') || 'Ship via Black Cat' }}
+                  </ion-button>
+                  <ion-button
+                    v-if="order.logistics_id"
+                    size="small" fill="outline" color="tertiary"
+                    @click.stop="handlePrintLabel(order.id)"
+                    :disabled="logisticsLoading"
+                  >
+                    <ion-icon :icon="printOutline" slot="start" />
+                    {{ $t('store.printLabel') || 'Print Label' }}
+                  </ion-button>
+                </div>
+              </div>
+
               <!-- Status actions -->
               <div class="status-actions">
                 <ion-button
@@ -192,10 +251,11 @@ import { useEcpayLogistics } from '@/composables/useEcpayLogistics'
 import { useI18n } from 'vue-i18n'
 
 const { t, locale } = useI18n()
-const { createLogisticsOrder, printShippingLabel, logisticsLoading } = useEcpayLogistics()
+const { createLogisticsOrder, createHomeDeliveryOrder, printShippingLabel, logisticsLoading } = useEcpayLogistics()
 
 const CVS_METHODS = ['7eleven', 'family_mart', 'hi_life', 'ok_mart']
 function isCvsMethod(method: string) { return CVS_METHODS.includes(method) }
+function isHomeDelivery(method: string) { return method === 'home_delivery' }
 
 const isUnderConstruction = computed(() => import.meta.env.VITE_STORE_UNDER_CONSTRUCTION === 'true')
 const loading = ref(true)
@@ -255,12 +315,12 @@ function formatDate(d: string) {
 }
 
 function statusColor(status: string) {
-  const map: Record<string, string> = { pending: 'warning', paid: 'success', shipped: 'tertiary', completed: 'medium', cancelled: 'danger' }
+  const map: Record<string, string> = { pending: 'warning', pending_cod: 'warning', paid: 'success', shipped: 'tertiary', completed: 'medium', cancelled: 'danger' }
   return map[status] || 'medium'
 }
 
 function statusIcon(status: string) {
-  const map: Record<string, any> = { pending: timeOutline, paid: cardOutline, shipped: cubeOutline, completed: checkmarkCircleOutline, cancelled: closeOutline }
+  const map: Record<string, any> = { pending: timeOutline, pending_cod: timeOutline, paid: cardOutline, shipped: cubeOutline, completed: checkmarkCircleOutline, cancelled: closeOutline }
   return map[status] || receiptOutline
 }
 
@@ -268,6 +328,10 @@ function getActions(status: string) {
   const actions: Record<string, Array<{ status: string; label: string; icon: any; color: string }>> = {
     pending: [
       { status: 'paid', label: 'Mark Paid', icon: cardOutline, color: 'success' },
+      { status: 'cancelled', label: 'Cancel', icon: closeOutline, color: 'danger' }
+    ],
+    pending_cod: [
+      { status: 'shipped', label: 'Mark Shipped (COD)', icon: cubeOutline, color: 'tertiary' },
       { status: 'cancelled', label: 'Cancel', icon: closeOutline, color: 'danger' }
     ],
     paid: [
@@ -296,6 +360,27 @@ async function handleCreateShipment(orderId: string) {
   } catch (err: any) {
     const toast = await toastController.create({
       message: `⚠️ ${err.message || 'Failed to create shipment'}`,
+      duration: 3000, color: 'warning', position: 'bottom'
+    })
+    toast.present()
+  }
+}
+
+async function handleCreateHomeShipment(orderId: string) {
+  try {
+    const result = await createHomeDeliveryOrder(orderId)
+    if (result?.success) {
+      const toast = await toastController.create({
+        message: `✅ 📦 Shipped via Black Cat! Tracking: ${result.tracking_number || result.logistics_id}`,
+        duration: 4000, color: 'success', position: 'bottom'
+      })
+      toast.present()
+      await fetchOrders()
+      await fetchCounts()
+    }
+  } catch (err: any) {
+    const toast = await toastController.create({
+      message: `⚠️ ${err.message || 'Failed to create home delivery shipment'}`,
       duration: 3000, color: 'warning', position: 'bottom'
     })
     toast.present()
@@ -692,5 +777,19 @@ onMounted(async () => {
   font-size: 0.76rem;
   font-weight: 600;
   text-transform: none;
+}
+
+.home-delivery-section {
+  background: rgba(var(--ion-color-warning-rgb, 255, 196, 9), 0.06);
+  border: 1px solid rgba(var(--ion-color-warning-rgb, 255, 196, 9), 0.15);
+}
+
+.home-delivery-section .logistics-header {
+  color: var(--ion-color-warning-shade, #e0ac08);
+}
+
+.cod-badge {
+  font-weight: 700;
+  color: var(--ion-color-success);
 }
 </style>

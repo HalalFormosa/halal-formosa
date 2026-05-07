@@ -683,7 +683,11 @@
       "save": "बचाना",
       "completeToContinue": "जारी रखने के लिए संपूर्ण प्रोफ़ाइल",
       "phone": "Phone Number",
-      "phonePlaceholder": "09xxxxxxxx"
+      "phonePlaceholder": "09xxxxxxxx",
+      "phoneHint": "Used for store delivery notifications, never shared publicly.",
+      "consentContentPhone": "Phone number is used for order fulfillment (e.g. Store delivery) and will never be shared publicly.",
+      "consentContentStats": "Date of birth, nationality, and gender are used for anonymous statistics and are never shared publicly.",
+      "consentContentBio": "My Bio may be visible publicly if I enable \"Show my name on leaderboard\" in Settings."
     },
     "merchant": {
       "startSelling": "बेचना शुरू करें",
@@ -1329,7 +1333,8 @@
       "noConversations": "अभी तक कोई बातचीत नहीं.",
       "aboutProduct": "इस उत्पाद के बारे में बातचीत",
       "today": "आज",
-      "yesterday": "कल"
+      "yesterday": "कल",
+      "customer": "Customer"
     },
     "payNow": "अब भुगतान करें",
     "verifyingPayment": "भुगतान सत्यापित किया जा रहा है...",
@@ -1378,7 +1383,15 @@
         "cvs_pickup": "सुविधा स्टोर पिकअप",
         "cod_meetup": "स्वयं",
         "in_person": "व्यक्तिगत रूप से मिलें/कैश ऑन डिलीवरी"
-      }
+      },
+      "senderAddress": "Sender Address",
+      "senderAddressPlaceholder": "Sender Address Placeholder",
+      "senderInfo": "Sender Info",
+      "senderInfoHint": "Sender Info Hint",
+      "senderName": "Sender Name",
+      "senderNamePlaceholder": "Sender Name Placeholder",
+      "senderPhone": "Sender Phone",
+      "senderZipcode": "Sender Zipcode"
     },
     "construction": {
       "title": "Under Construction",
@@ -1406,7 +1419,20 @@
       "2067": "Unclaimed, Returning",
       "2068": "Returned to Sender",
       "2073": "Closed"
-    }
+    },
+    "cartSubtotal": "Cart Subtotal",
+    "codOrderConfirmed": "Cod Order Confirmed",
+    "codPayment": "Cash on Delivery (COD)",
+    "codPaymentHint": "Pay with cash when your package arrives",
+    "codPending": "Cod Pending",
+    "deleteConfirm": "Delete Confirm",
+    "deleteSuccess": "Delete Success",
+    "descriptionPlaceholder": "Description Placeholder",
+    "free": "Free",
+    "homeDeliveryLogistics": "Home Delivery Logistics",
+    "inStockShort": "In Stock Short",
+    "shipViaTcat": "Ship Via Tcat",
+    "shippingFee": "Shipping Fee"
   },
   "merchant": {
     "register": {
@@ -1463,6 +1489,62 @@
       "halalProofHint": "भोजन एवं उपभोज्य वस्तुओं के लिए अनिवार्य। अधिकतम 5 छवियाँ/दस्तावेज़।",
       "halalProofPlaceholder": "हलाल प्रमाणपत्र, घटक लेबल, या दुकान की फोटो अपलोड करें",
       "halalProofError": "खाद्य श्रेणियों के लिए हलाल प्रमाण आवश्यक है।"
+    },
+    "store": {
+      "shippingFee": "Shipping Fee",
+      "codPayment": "Cash on Delivery (COD)",
+      "codPaymentHint": "Pay when you receive the package",
+      "shipViaTcat": "Ship via Black Cat",
+      "trackingNumber": "Tracking Number",
+      "courierTcat": "Black Cat 🐱 黑貓宅急便",
+      "senderInfo": "Sender / Pickup Address",
+      "senderName": "Sender Name",
+      "senderPhone": "Sender Phone",
+      "senderZipcode": "Sender Zipcode",
+      "senderAddress": "Sender Address",
+      "senderInfoHint": "This address is where the courier picks up packages from",
+      "deliveryMethod": "Delivery Method",
+      "cartSubtotal": "Subtotal",
+      "cartTotal": "Total",
+      "twd": "NT$",
+      "free": "Free",
+      "logistics": "Logistics",
+      "logisticsId": "Logistics ID",
+      "shippingNo": "Shipping No",
+      "createShipment": "Create Shipment",
+      "printLabel": "Print Label",
+      "homeDeliveryLogistics": "Home Delivery — Black Cat",
+      "codOrderConfirmed": "Order placed! You will pay when you receive the package.",
+      "orderPending": "Pending",
+      "codPending": "COD Pending",
+      "orderPaid": "Paid",
+      "orderShipped": "Shipped",
+      "orderCompleted": "Completed",
+      "orderCancelled": "Cancelled",
+      "settings": {
+        "senderInfo": "Sender / Pickup Address",
+        "senderInfoHint": "This address is where the courier picks up packages from",
+        "senderName": "Sender Name",
+        "senderNamePlaceholder": "Name on the package",
+        "senderPhone": "Sender Phone",
+        "senderZipcode": "Sender Zipcode",
+        "senderAddress": "Sender Address",
+        "senderAddressPlaceholder": "Full pickup address for courier",
+        "saveProfile": "Save Settings"
+      }
+    },
+    "updatePassword": {
+      "title": "Set New Password",
+      "subtitle": "Please enter a strong password to secure your account.",
+      "oldPassword": "Current Password",
+      "newPassword": "New Password",
+      "confirmPassword": "Confirm New Password",
+      "update": "Set Password",
+      "updating": "Updating...",
+      "success": "Password updated successfully!",
+      "error": "Failed to update password.",
+      "mismatchError": "Passwords do not match",
+      "backToProfile": "Back to Profile"
     }
   }
 }

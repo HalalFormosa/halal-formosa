@@ -146,6 +146,27 @@ export function useEcpayLogistics() {
   }
 
   /**
+   * Create a HOME delivery logistics order (TCAT Black Cat) at ECPay.
+   * Should be triggered by the merchant from the admin panel after preparing the package.
+   */
+  async function createHomeDeliveryOrder(orderId: string, courierSubType = 'TCAT') {
+    logisticsLoading.value = true
+    try {
+      const { data, error } = await supabase.functions.invoke('ecpay-logistics', {
+        body: { action: 'create_home_order', orderId, courierSubType },
+      })
+
+      if (error) throw new Error(error.message)
+      if (data?.error) throw new Error(data.error)
+
+      console.log('[LOGISTICS] Home delivery order created:', data)
+      return data
+    } finally {
+      logisticsLoading.value = false
+    }
+  }
+
+  /**
    * Get the print label URL and form params for a logistics order.
    * Returns { printUrl, params } which should be submitted as a form POST.
    */
@@ -203,6 +224,7 @@ export function useEcpayLogistics() {
     selectedStore,
     openCvsMapPicker,
     createLogisticsOrder,
+    createHomeDeliveryOrder,
     printShippingLabel,
     clearSelectedStore,
   }

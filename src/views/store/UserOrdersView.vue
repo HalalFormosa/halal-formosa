@@ -138,6 +138,30 @@
                 <span>{{ order.shipping_address }}</span>
               </div>
 
+              <!-- Shipping fee -->
+              <div v-if="order.shipping_fee" class="detail-row">
+                <ion-icon :icon="receiptOutline" />
+                <span>{{ $t('store.shippingFee') || 'Shipping Fee' }}: {{ $t('store.twd') }}{{ formatPrice(order.shipping_fee) }}</span>
+              </div>
+
+              <!-- COD badge -->
+              <div v-if="order.is_cod" class="detail-row">
+                <ion-icon :icon="receiptOutline" />
+                <span class="cod-badge">💰 {{ $t('store.codPayment') || 'Cash on Delivery (COD)' }}</span>
+              </div>
+
+              <!-- Tracking number (home delivery) -->
+              <div v-if="order.tracking_number" class="detail-row tracking-row">
+                <ion-icon :icon="barcodeOutline" />
+                <span>{{ $t('store.trackingNumber') || 'Tracking Number' }}: <strong>{{ order.tracking_number }}</strong></span>
+              </div>
+
+              <!-- Courier name -->
+              <div v-if="order.courier_name" class="detail-row">
+                <ion-icon :icon="barcodeOutline" />
+                <span>🐱 {{ order.courier_name }}</span>
+              </div>
+
               <!-- Invoice -->
               <div v-if="order.ecpay_invoice_no" class="detail-row">
                 <ion-icon :icon="receiptOutline" />
@@ -237,18 +261,19 @@ function formatDate(d: string) {
 }
 
 function statusColor(status: string) {
-  const map: Record<string, string> = { pending: 'warning', paid: 'success', shipped: 'tertiary', completed: 'medium', cancelled: 'danger' }
+  const map: Record<string, string> = { pending: 'warning', pending_cod: 'warning', paid: 'success', shipped: 'tertiary', completed: 'medium', cancelled: 'danger' }
   return map[status] || 'medium'
 }
 
 function statusIcon(status: string) {
-  const map: Record<string, any> = { pending: timeOutline, paid: cardOutline, shipped: cubeOutline, completed: checkmarkCircleOutline, cancelled: closeOutline }
+  const map: Record<string, any> = { pending: timeOutline, pending_cod: timeOutline, paid: cardOutline, shipped: cubeOutline, completed: checkmarkCircleOutline, cancelled: closeOutline }
   return map[status] || receiptOutline
 }
 
 function statusLabel(status: string) {
   const map: Record<string, string> = {
     pending: t('store.orderPending'),
+    pending_cod: t('store.codPending') || 'COD Pending',
     paid: t('store.orderPaid'),
     shipped: t('store.orderShipped'),
     completed: t('store.orderCompleted'),
@@ -650,5 +675,17 @@ onUnmounted(() => {
 /* Dark mode overrides handled by variables.css but specific ones here */
 .ion-palette-dark .order-card {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.tracking-row {
+  background: rgba(var(--ion-color-primary-rgb, 56, 128, 255), 0.06);
+  padding: 6px 8px;
+  border-radius: 8px;
+  margin: 4px 0;
+}
+
+.cod-badge {
+  font-weight: 700;
+  color: var(--ion-color-success);
 }
 </style>

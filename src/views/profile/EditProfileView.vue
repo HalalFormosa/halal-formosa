@@ -121,7 +121,12 @@
             <div class="icon-box" slot="start">
               <ion-icon :icon="trophyOutline" />
             </div>
-            <ion-label>{{ $t('settings.publicProfile') }}</ion-label>
+            <ion-label class="ion-text-wrap" style="font-size: 0.85rem;">
+              {{ $t('settings.publicProfile') }}
+              <p style="margin: 4px 0 0; font-size: 0.8rem; color: var(--ion-color-medium);">
+                {{ $t('settings.publicProfileNote') }}
+              </p>
+            </ion-label>
             <ion-toggle
                 slot="end"
                 :checked="isPublicProfile"
