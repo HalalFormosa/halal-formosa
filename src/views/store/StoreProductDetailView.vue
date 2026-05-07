@@ -9,14 +9,16 @@
           :contrast="!isScrolled"
       >
         <template #actions>
-          <ion-button @click="handleChat" :disabled="isUnderConstruction" fill="clear">
+          <ion-item button lines="none" @click="handleChat" :disabled="isUnderConstruction">
             <ion-icon :icon="chatbubbleOutline" slot="start" />
-            <ion-badge v-if="totalUnreadCount > 0" color="danger" class="header-badge">{{ totalUnreadCount }}</ion-badge>
-          </ion-button>
-          <ion-button @click="openCart" :disabled="isUnderConstruction" fill="clear">
+            <ion-label>{{ $t('common.chat') || 'Chat' }}</ion-label>
+            <ion-badge v-if="totalUnreadCount > 0" color="danger" slot="end">{{ totalUnreadCount }}</ion-badge>
+          </ion-item>
+          <ion-item button lines="none" @click="openCart" :disabled="isUnderConstruction">
             <ion-icon :icon="cartOutline" slot="start" />
-            <ion-badge v-if="cartCount > 0" color="danger" class="header-badge">{{ cartCount }}</ion-badge>
-          </ion-button>
+            <ion-label>{{ $t('store.cart') || 'Cart' }}</ion-label>
+            <ion-badge v-if="cartCount > 0" color="danger" slot="end">{{ cartCount }}</ion-badge>
+          </ion-item>
         </template>
       </app-header>
     </ion-header>
@@ -127,7 +129,7 @@
               <div class="reviews-header">
                 <h3>{{ $t('store.reviews') }}</h3>
                 <ion-button v-if="currentUserId" fill="clear" size="small" color="carrot" @click="openReviewModal">
-                  {{ $t('store.writeReview') }}
+                  {{ existingReview ? $t('store.editReview') : $t('store.writeReview') }}
                 </ion-button>
                 <ion-button v-else fill="clear" size="small" color="medium" disabled>
                   {{ $t('store.loginToReview') }}
@@ -152,7 +154,8 @@
                     </ion-avatar>
                     <div class="reviewer-info">
                       <span class="reviewer-name">{{ review.user_profiles?.display_name || 'User' }}</span>
-                      <span class="review-date">{{ formatDate(review.created_at) }}</span>
+                      <span v-if="review.updated_at" class="review-date">{{ $t('common.edited') }} {{ formatDateTime(review.updated_at) }}</span>
+                      <span v-else class="review-date">{{ formatDateTime(review.created_at) }}</span>
                     </div>
                   </div>
                   <div class="review-stars" v-html="renderStars(review.rating)"></div>
@@ -272,7 +275,7 @@
     <ion-modal :is-open="reviewModalOpen" @didDismiss="reviewModalOpen = false" :initial-breakpoint="0.55" :breakpoints="[0, 0.55, 0.8]">
       <ion-header class="ion-no-border">
         <ion-toolbar>
-          <ion-title>{{ $t('store.writeReview') }}</ion-title>
+          <ion-title>{{ existingReview ? $t('store.editReview') : $t('store.writeReview') }}</ion-title>
           <ion-buttons slot="end">
             <ion-button @click="reviewModalOpen = false">
               <ion-icon :icon="closeOutline" />
@@ -445,7 +448,7 @@ async function submitReview() {
     // Update existing review
     await supabase
       .from('store_product_reviews')
-      .update({ rating: reviewData.rating, comment: reviewData.comment })
+      .update({ rating: reviewData.rating, comment: reviewData.comment, updated_at: new Date().toISOString() })
       .eq('id', existingReview.value.id)
     isUpdate = true
   } else {
@@ -520,6 +523,13 @@ function formatDate(dateStr: string): string {
   })
 }
 
+function formatDateTime(dateStr: string): string {
+  return new Date(dateStr).toLocaleDateString(locale.value === 'zh' ? 'zh-TW' : 'en-US', {
+    year: 'numeric', month: 'short', day: 'numeric',
+    hour: '2-digit', minute: '2-digit'
+  })
+}
+
 async function fetchUser() {
   const { data } = await supabase.auth.getUser()
   currentUserId.value = data?.user?.id || null
@@ -538,7 +548,8 @@ async function handleAddToCart() {
     message: `✅ ${t('store.addToCart')}`,
     duration: 1500,
     position: 'bottom',
-    color: 'success'
+    color: 'success',
+    cssClass: 'cart-toast-offset'
   })
   toast.present()
   ActivityLogService.log('store_add_to_cart', { product_id: product.value.id, qty: qty.value })

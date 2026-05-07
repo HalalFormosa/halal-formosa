@@ -330,4 +330,9 @@ ion-router-outlet {
 .ion-palette-dark .app-review-alert .alert-message {
   color: #dddddd; /* Light gray for dark theme */
 }
+
+/* Offset for Toasts over fixed footers */
+ion-toast.cart-toast-offset {
+  transform: translateY(-64px) !important;
+}
 </style>

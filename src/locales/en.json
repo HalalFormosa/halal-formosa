@@ -45,7 +45,9 @@
     "maintenanceMessage": "This feature is currently undergoing maintenance. We'll be back soon!",
     "copied": "Copied to clipboard",
     "change": "Change",
-    "mandatory": "Mandatory"
+    "mandatory": "Mandatory",
+    "chat": "Chat",
+    "edited": "(Edited)"
   },
   "master": {
     "active": "Active",
@@ -1355,6 +1357,7 @@
     "inactive": "Inactive",
     "reviews": "Reviews",
     "writeReview": "Write a Review",
+    "editReview": "Edit Review",
     "yourRating": "Your Rating",
     "yourComment": "Your Comment (optional)",
     "submitReview": "Submit Review",
