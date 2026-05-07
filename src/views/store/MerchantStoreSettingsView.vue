@@ -64,6 +64,7 @@
           <input type="file" ref="logoInput" style="display: none" accept="image/*" @change="handleLogoFile" />
         </section>
 
+
         <!-- Details Section -->
         <section class="settings-group">
           <h3 class="group-title">{{ $t('store.settings.basicInfo') }}</h3>
@@ -92,7 +93,6 @@
             </div>
           </div>
         </section>
-
         <!-- Delivery Section -->
         <section class="settings-group">
           <div class="group-header">
@@ -118,31 +118,122 @@
               />
             </div>
           </div>
+
+          <!-- Per-Provider ECPay Shipping Stores -->
+          <div v-for="method in deliveryMethods.filter(m => ['7eleven', 'family_mart', 'hi_life', 'ok_mart'].includes(m.key) && isDeliveryEnabled(m.key))" 
+               :key="method.key" 
+               class="settings-item card-item cvs-store-group"
+          >
+            <div class="cvs-header">
+              <label class="premium-label">{{ $t('store.settings.deliveryMethods.' + method.key) }} {{ $t('store.settings.shippingStoreTitle') || 'Shipping Store' }}</label>
+              
+              <ion-button 
+                fill="outline" 
+                size="small" 
+                color="carrot" 
+                @click="openCvsPicker(method.key)"
+                class="cvs-picker-btn"
+                :disabled="logisticsLoading"
+              >
+                <ion-spinner v-if="logisticsLoading" name="crescent" slot="start" />
+                <ion-icon :icon="storefrontOutline" slot="start" />
+                {{ store[`ecpay_${method.key}_store_id`] ? $t('store.settings.changeStore') || 'Change Store' : $t('store.settings.selectStore') || 'Select Store' }}
+              </ion-button>
+            </div>
+            
+            <div v-if="store[`ecpay_${method.key}_store_id`]" class="selected-cvs-info">
+              <div class="cvs-branch-tag">
+                <ion-badge color="carrot">{{ method.key.toUpperCase().replace('_', '') }}</ion-badge>
+                <span class="branch-name">{{ store[`ecpay_${method.key}_store_name`] }} ({{ store[`ecpay_${method.key}_store_id`] }})</span>
+              </div>
+              <p class="branch-address">{{ store[`ecpay_${method.key}_store_address`] }}</p>
+            </div>
+          </div>
+
+          <!-- Consistently shown hint if any CVS enabled -->
+          <p v-if="hasCvsEnabled" class="field-hint ion-padding-horizontal" style="margin-top: -8px; margin-bottom: 24px;">
+            {{ $t('store.settings.shippingHint') || 'Select the branch where you will drop off packages. This is required for shipping.' }}
+          </p>
         </section>
 
-        <!-- Sender / Pickup Address Section (for home delivery courier pickup) -->
-        <section v-if="isDeliveryEnabled('home_delivery')" class="settings-group">
+        <!-- Store Location & Logistics Section -->
+        <section class="settings-group">
           <div class="group-header">
-            <h3 class="group-title">📦 {{ $t('store.settings.senderInfo') || 'Sender / Pickup Address' }}</h3>
-            <p class="group-subtitle">{{ $t('store.settings.senderInfoHint') || 'This address is where the courier picks up packages from' }}</p>
+            <h3 class="group-title">📍 {{ $t('store.settings.locationAndLogistics') || 'Location & Logistics' }}</h3>
+            <p class="group-subtitle">{{ $t('store.settings.locationHint') || 'Specify where your products are shipped from' }}</p>
           </div>
 
           <div class="card-item">
+            <!-- City Selection (Searchable Modal) -->
             <div class="field-group">
-              <label>{{ $t('store.settings.senderName') || 'Sender Name' }} (寄件人姓名)</label>
-              <ion-input v-model="store.sender_name" :placeholder="$t('store.settings.senderNamePlaceholder') || 'Name on the package'" class="premium-input" />
+              <label>{{ $t('store.settings.city') }}</label>
+              <div class="searchable-select-trigger" @click="isCityModalOpen = true">
+                <span v-if="selectedCity" class="selected-value">
+                  {{ locale === 'zh' ? selectedCity.name_zh : selectedCity.name }}
+                </span>
+                <span v-else class="placeholder-text">
+                  {{ $t('store.settings.cityPlaceholder') }}
+                </span>
+                <ion-icon :icon="chevronDownOutline" class="trigger-icon" />
+              </div>
             </div>
+
+            <!-- City Search Modal -->
+            <ion-modal 
+              :is-open="isCityModalOpen" 
+              @didDismiss="isCityModalOpen = false" 
+              class="search-modal"
+              :initial-breakpoint="0.8"
+              :breakpoints="[0, 0.5, 0.8]"
+            >
+              <ion-header class="ion-no-border">
+                <ion-toolbar class="premium-toolbar">
+                  <ion-title>{{ $t('store.settings.city') }}</ion-title>
+                  <ion-buttons slot="end">
+                    <ion-button @click="isCityModalOpen = false">{{ $t('common.close') }}</ion-button>
+                  </ion-buttons>
+                </ion-toolbar>
+                <ion-toolbar class="premium-toolbar">
+                  <ion-searchbar 
+                    v-model="citySearchQuery" 
+                    :placeholder="$t('common.search')" 
+                    class="premium-searchbar"
+                    animated
+                  />
+                </ion-toolbar>
+              </ion-header>
+              <ion-content>
+                <ion-list lines="full" class="city-list">
+                  <ion-item 
+                    v-for="city in filteredCities" 
+                    :key="city.id" 
+                    button 
+                    @click="selectCity(city)"
+                    class="city-item"
+                  >
+                    <ion-label>
+                      <h2>{{ city.name_zh }}</h2>
+                      <p>{{ city.name }}</p>
+                    </ion-label>
+                    <ion-icon v-if="store.city_id === city.id" :icon="checkmarkOutline" slot="end" color="carrot" />
+                  </ion-item>
+                  <div v-if="filteredCities.length === 0" class="no-results ion-padding ion-text-center">
+                    <p>{{ $t('common.noResults') }}</p>
+                  </div>
+                </ion-list>
+              </ion-content>
+            </ion-modal>
+
+            <!-- Sender Name (For Logistics) -->
             <div class="field-group" style="border-top: 1px solid rgba(0,0,0,0.05);">
-              <label>{{ $t('store.settings.senderPhone') || 'Sender Phone' }} (寄件人電話)</label>
+              <label>{{ $t('store.settings.senderName') }}</label>
+              <ion-input v-model="store.sender_name" :placeholder="$t('store.settings.senderNamePlaceholder')" class="premium-input" />
+            </div>
+
+            <!-- Sender Phone (For Logistics) -->
+            <div class="field-group" style="border-top: 1px solid rgba(0,0,0,0.05);">
+              <label>{{ $t('store.settings.senderPhone') }}</label>
               <ion-input v-model="store.sender_phone" type="tel" placeholder="09xx-xxx-xxx" class="premium-input" />
-            </div>
-            <div class="field-group" style="border-top: 1px solid rgba(0,0,0,0.05);">
-              <label>{{ $t('store.settings.senderZipcode') || 'Sender Zipcode' }} (寄件人郵遞區號)</label>
-              <ion-input v-model="store.sender_zipcode" placeholder="e.g. 106" class="premium-input" />
-            </div>
-            <div class="field-group" style="border-top: 1px solid rgba(0,0,0,0.05);">
-              <label>{{ $t('store.settings.senderAddress') || 'Sender Address' }} (寄件人地址)</label>
-              <ion-textarea v-model="store.sender_address" :rows="2" :placeholder="$t('store.settings.senderAddressPlaceholder') || 'Full pickup address for courier'" class="premium-textarea" />
             </div>
           </div>
         </section>
@@ -159,18 +250,21 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import {
   IonPage, IonHeader, IonToolbar, IonButtons, IonBackButton, IonTitle,
   IonContent, IonSpinner, IonIcon, IonItem, IonLabel, IonInput,
-  IonTextarea, IonToggle, IonButton, IonAvatar, toastController
+  IonTextarea, IonToggle, IonButton, IonAvatar, IonSelect, IonSelectOption, IonBadge,
+  IonModal, IonSearchbar, IonList, toastController
 } from '@ionic/vue'
 import {
   alertCircleOutline, imageOutline, cameraOutline,
-  homeOutline, storefrontOutline, cartOutline, businessOutline, bagHandleOutline, peopleOutline
+  homeOutline, storefrontOutline, cartOutline, businessOutline, bagHandleOutline, peopleOutline,
+  chevronDownOutline, checkmarkOutline
 } from 'ionicons/icons'
 import { supabase } from '@/plugins/supabaseClient'
 import { useI18n } from 'vue-i18n'
+import { useEcpayLogistics } from '@/composables/useEcpayLogistics'
 
 const deliveryMethods = [
   { key: 'home_delivery', icon: homeOutline },
@@ -181,11 +275,63 @@ const deliveryMethods = [
   { key: 'cod_meetup', icon: peopleOutline },
 ]
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const user = ref<any>(null)
 const store = ref<any>(null)
+const cities = ref<any[]>([])
+const isCityModalOpen = ref(false)
+const citySearchQuery = ref('')
 const loading = ref(true)
 const saving = ref(false)
+
+const { openCvsMapPicker, logisticsLoading } = useEcpayLogistics()
+
+const hasCvsEnabled = computed(() => {
+  if (!store.value?.delivery_options) return false
+  const cvsMethods = ['7eleven', 'family_mart', 'hi_life', 'ok_mart']
+  return store.value.delivery_options.some((m: string) => cvsMethods.includes(m))
+})
+
+async function openCvsPicker(method: string) {
+  if (!store.value) return
+  
+  try {
+    const result = await openCvsMapPicker(method)
+    if (result) {
+      store.value[`ecpay_${method}_store_id`] = result.storeId
+      store.value[`ecpay_${method}_store_name`] = result.storeName
+      store.value[`ecpay_${method}_store_address`] = result.storeAddress
+    }
+  } catch (err: any) {
+    const toast = await toastController.create({
+      message: 'Failed to open store map: ' + err.message,
+      duration: 3000,
+      color: 'danger'
+    })
+    toast.present()
+  }
+}
+
+const filteredCities = computed(() => {
+  if (!citySearchQuery.value) return cities.value
+  const query = citySearchQuery.value.toLowerCase()
+  return cities.value.filter(city => 
+    city.name.toLowerCase().includes(query) || 
+    city.name_zh.includes(query)
+  )
+})
+
+const selectedCity = computed(() => {
+  return cities.value.find(c => c.id === store.value?.city_id)
+})
+
+function selectCity(city: any) {
+  if (store.value) {
+    store.value.city_id = city.id
+  }
+  isCityModalOpen.value = false
+  citySearchQuery.value = ''
+}
 
 const bannerInput = ref<HTMLInputElement | null>(null)
 const logoInput = ref<HTMLInputElement | null>(null)
@@ -197,21 +343,48 @@ async function fetchStore() {
   
   loading.value = true
   try {
-    const { data } = await supabase
+    const { data: storeData } = await supabase
       .from('merchant_stores')
       .select('*')
       .eq('user_id', user.value.id)
       .maybeSingle()
     
-    if (data) {
-      store.value = data
+    // Fetch user profile for auto-filling sender info
+    const { data: profileData } = await supabase
+      .from('user_profiles')
+      .select('display_name, phone')
+      .eq('id', user.value.id)
+      .maybeSingle()
+
+    if (storeData) {
+      store.value = storeData
       // Ensure defaults
       if (!store.value.delivery_options) store.value.delivery_options = ['home_delivery']
+      
+      // Auto-fill sender info if not already set
+      if (!store.value.sender_name && profileData?.display_name) {
+        store.value.sender_name = profileData.display_name
+      }
+      if (!store.value.sender_phone && profileData?.phone) {
+        store.value.sender_phone = profileData.phone
+      }
     }
   } catch (err) {
     console.error('Fetch error:', err)
   }
   loading.value = false
+}
+
+async function fetchCities() {
+  try {
+    const { data } = await supabase
+      .from('cities')
+      .select('*')
+      .order('sort_order')
+    if (data) cities.value = data
+  } catch (err) {
+    console.error('Fetch cities error:', err)
+  }
 }
 
 function isDeliveryEnabled(key: string): boolean {
@@ -289,8 +462,19 @@ async function saveSettings() {
       delivery_options: store.value.delivery_options,
       sender_name: store.value.sender_name || null,
       sender_phone: store.value.sender_phone || null,
-      sender_zipcode: store.value.sender_zipcode || null,
-      sender_address: store.value.sender_address || null,
+      city_id: store.value.city_id || null,
+      ecpay_7eleven_store_id: store.value.ecpay_7eleven_store_id || null,
+      ecpay_7eleven_store_name: store.value.ecpay_7eleven_store_name || null,
+      ecpay_7eleven_store_address: store.value.ecpay_7eleven_store_address || null,
+      ecpay_family_mart_store_id: store.value.ecpay_family_mart_store_id || null,
+      ecpay_family_mart_store_name: store.value.ecpay_family_mart_store_name || null,
+      ecpay_family_mart_store_address: store.value.ecpay_family_mart_store_address || null,
+      ecpay_hi_life_store_id: store.value.ecpay_hi_life_store_id || null,
+      ecpay_hi_life_store_name: store.value.ecpay_hi_life_store_name || null,
+      ecpay_hi_life_store_address: store.value.ecpay_hi_life_store_address || null,
+      ecpay_ok_mart_store_id: store.value.ecpay_ok_mart_store_id || null,
+      ecpay_ok_mart_store_name: store.value.ecpay_ok_mart_store_name || null,
+      ecpay_ok_mart_store_address: store.value.ecpay_ok_mart_store_address || null,
       updated_at: new Date().toISOString()
     })
     .eq('id', store.value.id)
@@ -313,7 +497,10 @@ async function showToast(message: string, color: string) {
   await toast.present()
 }
 
-onMounted(fetchStore)
+onMounted(() => {
+  fetchStore()
+  fetchCities()
+})
 </script>
 
 <style scoped>
@@ -534,6 +721,13 @@ onMounted(fetchStore)
   --placeholder-color: var(--ion-color-step-400);
 }
 
+.premium-select {
+  --padding-start: 0;
+  --padding-end: 0;
+  font-weight: 600;
+  font-size: 1rem;
+}
+
 /* Delivery Row */
 .delivery-row {
   display: flex;
@@ -587,6 +781,75 @@ onMounted(fetchStore)
   --box-shadow: 0 8px 24px rgba(var(--ion-color-carrot-rgb), 0.35);
 }
 
+/* Searchable Select Trigger */
+.searchable-select-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+  cursor: pointer;
+}
+
+.selected-value {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--ion-text-color);
+}
+
+.placeholder-text {
+  font-size: 1rem;
+  color: var(--ion-color-step-400);
+}
+
+.trigger-icon {
+  font-size: 1.2rem;
+  color: var(--ion-color-medium);
+}
+
+/* Search Modal */
+.search-modal {
+  --border-radius: 24px 24px 0 0;
+  --background: var(--ion-background-color);
+}
+
+.search-modal ion-content {
+  --background: var(--ion-background-color);
+}
+
+.premium-searchbar {
+  --background: var(--ion-color-step-50);
+  --border-radius: 12px;
+  padding: 0 16px 12px;
+}
+
+.city-list {
+  background: transparent;
+}
+
+.city-item {
+  --padding-start: 16px;
+  --padding-end: 16px;
+  --inner-padding-top: 12px;
+  --inner-padding-bottom: 12px;
+}
+
+.city-item h2 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.city-item p {
+  font-size: 0.85rem;
+  color: var(--ion-color-medium);
+  margin: 2px 0 0;
+}
+
+.no-results {
+  color: var(--ion-color-medium);
+  font-size: 0.95rem;
+}
+
 /* Loading state */
 .loading-overlay {
   height: 100%;
@@ -627,5 +890,58 @@ onMounted(fetchStore)
 
 .ion-palette-dark .delivery-row {
   border-bottom-color: rgba(255, 255, 255, 0.05);
+}
+
+.cvs-store-group {
+  padding: 16px;
+}
+
+.cvs-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  gap: 12px;
+}
+
+.cvs-header .premium-label {
+  margin-bottom: 0;
+  flex: 1;
+}
+
+.cvs-picker-btn {
+  margin: 0;
+  height: 32px;
+  font-size: 0.75rem;
+}
+
+.selected-cvs-info {
+  background: var(--ion-color-step-50);
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  border: 1px solid var(--ion-color-step-150);
+}
+
+.cvs-branch-tag {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.branch-name {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.branch-address {
+  font-size: 0.8rem;
+  color: var(--ion-color-medium);
+  margin: 0;
+}
+
+.cvs-picker-btn {
+  margin-top: 4px;
 }
 </style>

@@ -1482,9 +1482,9 @@
     },
     "products": {
       "pricingBreakdown": "انهيار التسعير",
-      "processingFee": "رسوم المعالجة (10%)",
+      "processingFee": "رسوم المعالجة (30%)",
       "payoutAmount": "سوف تتلقى",
-      "payoutHint": "هذا المبلغ تقديري بعد رسوم المعالجة.",
+      "payoutHint": "This amount is an estimate after processing fees. The 30% platform fee consists of 2.75% payment gateway fee, 10% tax, and the rest would be used for the development and maintenance fee of Halal Formosa (YIQI Consulting LTD).",
       "halalProof": "التحقق من إثبات الحلال",
       "halalProofHint": "إلزامية للمواد الغذائية والمواد الاستهلاكية. الحد الأقصى 5 صور / وثائق.",
       "halalProofPlaceholder": "قم بتحميل شهادة الحلال أو ملصق المكونات أو صورة المتجر",

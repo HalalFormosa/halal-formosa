@@ -1482,9 +1482,9 @@
     },
     "products": {
       "pricingBreakdown": "価格の内訳",
-      "processingFee": "手数料(10%)",
+      "processingFee": "手数料(30%)",
       "payoutAmount": "受け取ります",
-      "payoutHint": "この金額は手数料を差し引いた概算の金額です。",
+      "payoutHint": "この金額は手数料を差し引いた概算の金額です。プラットフォーム手数料（30%）には、2.75%の決済ゲートウェイ手数料、10%の税金が含まれており、残りはHalal Formosa（YIQI Consulting LTD）の開発および維持管理費に充てられます。",
       "halalProof": "ハラール証明の検証",
       "halalProofHint": "食品および消耗品には必須です。 最大 5 つの画像/ドキュメント。",
       "halalProofPlaceholder": "ハラール証明書、成分ラベル、または店舗の写真をアップロードします",

@@ -24,9 +24,13 @@
       <div class="merchant-container">
         <!-- Store Profile Header -->
         <div class="store-profile-card">
-          <div class="store-banner"></div>
+          <div 
+            class="store-banner clickable" 
+            :style="store?.banner_url ? { backgroundImage: `url(${store.banner_url})` } : {}"
+            @click="openZoomModal(store?.banner_url)"
+          ></div>
           <div class="store-profile-content">
-            <ion-avatar class="main-store-avatar">
+            <ion-avatar class="main-store-avatar clickable" @click="openZoomModal(store?.logo_url || '/favicon-32x32.png')">
               <img :src="store?.logo_url || '/favicon-32x32.png'" />
             </ion-avatar>
             <div class="store-info-text">
@@ -190,6 +194,30 @@
         </div>
       </ion-content>
     </ion-modal>
+
+    <!-- Fullscreen Image Modal -->
+    <ion-modal :is-open="showImageModal" @didDismiss="closeImageModal" class="image-zoom-modal">
+      <ion-content fullscreen class="ion-no-padding">
+        <ion-button fill="solid" color="carrot" class="image-modal-close-btn" @click="closeImageModal">
+          <ion-icon :icon="closeOutline" />
+        </ion-button>
+
+        <Swiper
+          v-if="zoomImages.length"
+          :modules="[Pagination, Zoom]"
+          :zoom="true"
+          :slides-per-view="1"
+          :pagination="{ clickable: true }"
+          class="fullscreen-swiper"
+        >
+          <SwiperSlide v-for="(img, i) in zoomImages" :key="i">
+            <div class="swiper-zoom-container">
+              <img :src="img" alt="Zoomed Store Image" />
+            </div>
+          </SwiperSlide>
+        </Swiper>
+      </ion-content>
+    </ion-modal>
   </ion-page>
 </template>
 
@@ -211,6 +239,11 @@ import { supabase } from '@/plugins/supabaseClient'
 import { useI18n } from 'vue-i18n'
 import { useStoreChat } from '@/composables/useStoreChat'
 import { useTheme } from '@/composables/useTheme'
+import { Swiper, SwiperSlide } from 'swiper/vue'
+import { Pagination, Zoom } from 'swiper/modules'
+import 'swiper/css'
+import 'swiper/css/pagination'
+import 'swiper/css/zoom'
 
 const { t, locale } = useI18n()
 const route = useRoute()
@@ -234,6 +267,20 @@ const filterOpen = ref(false)
 const tempMinPrice = ref<number | null>(null)
 const tempMaxPrice = ref<number | null>(null)
 const tempStockOnly = ref(false)
+
+// Zoom Logic
+const showImageModal = ref(false)
+const zoomImages = ref<string[]>([])
+
+function openZoomModal(url: string | null) {
+  if (!url) return
+  zoomImages.value = [url]
+  showImageModal.value = true
+}
+
+function closeImageModal() {
+  showImageModal.value = false
+}
 
 const sortOptions = computed(() => [
   { value: 'popular', label: t('store.sortRelevance') },
@@ -452,9 +499,23 @@ onIonViewWillEnter(() => {
 }
 
 .store-banner {
-  height: 120px;
+  height: 140px;
   background: linear-gradient(135deg, var(--ion-color-carrot-shade, #e67e22), var(--ion-color-carrot, #f39c12));
-  opacity: 0.15;
+  background-size: cover;
+  background-position: center;
+  position: relative;
+  transition: opacity 0.2s ease;
+}
+
+.store-banner.clickable:active {
+  opacity: 0.8;
+}
+
+.store-banner::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.1);
 }
 
 .store-profile-content {
@@ -483,6 +544,12 @@ onIonViewWillEnter(() => {
   border: 4px solid var(--ion-background-color);
   box-shadow: 0 4px 12px rgba(0,0,0,0.12);
   background: var(--ion-color-step-50, #ffffff);
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.main-store-avatar:active {
+  transform: scale(0.95);
 }
 
 .store-info-text {
@@ -669,7 +736,7 @@ onIonViewWillEnter(() => {
   padding: 0 12px;
   height: 50px;
   border: 1px solid var(--ion-color-step-200, transparent);
-  transition: border-color 0.2s ease;
+  transition: all 0.2s ease;
 }
 
 .price-input-container:focus-within {
@@ -687,6 +754,7 @@ onIonViewWillEnter(() => {
   --placeholder-color: var(--ion-color-step-400, #999);
   --placeholder-opacity: 0.6;
   font-weight: 600;
+  --color: var(--ion-text-color);
   color: var(--ion-text-color);
 }
 
@@ -708,8 +776,10 @@ onIonViewWillEnter(() => {
   border: 1px solid var(--ion-color-step-150, transparent);
 }
 
-.ion-palette-dark .stock-toggle-card {
-  --background: var(--ion-color-step-100, #1e1e1e);
+.ion-palette-dark .stock-toggle-card,
+.ion-palette-dark .price-input-container {
+  background: var(--ion-color-step-150, #1e1e1e) !important;
+  --background: var(--ion-color-step-150, #1e1e1e) !important;
   border-color: var(--ion-color-step-200);
 }
 
@@ -883,5 +953,52 @@ onIonViewWillEnter(() => {
 
 .ion-palette-dark .store-profile-card {
   border-bottom: 1px solid var(--ion-color-step-100, rgba(255,255,255,0.05));
+}
+
+/* Image Zoom Modal */
+.image-zoom-modal {
+  --background: #000;
+}
+
+.image-modal-close-btn {
+  position: fixed;
+  top: calc(var(--ion-safe-area-top) + 20px);
+  right: 20px;
+  z-index: 1000;
+  --border-radius: 50%;
+  --padding-start: 0;
+  --padding-end: 0;
+  width: 40px;
+  height: 40px;
+  --box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.fullscreen-swiper {
+  width: 100%;
+  height: 100%;
+  background: #000;
+}
+
+.swiper-zoom-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+
+.swiper-zoom-container img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+:deep(.swiper-pagination-bullet) {
+  background: #fff;
+  opacity: 0.5;
+}
+
+:deep(.swiper-pagination-bullet-active) {
+  background: var(--ion-color-carrot);
+  opacity: 1;
 }
 </style>

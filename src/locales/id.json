@@ -1476,9 +1476,9 @@
     },
     "products": {
       "pricingBreakdown": "Rincian Harga",
-      "processingFee": "Biaya Pemrosesan (10%)",
+      "processingFee": "Biaya Pemrosesan (30%)",
       "payoutAmount": "Anda akan menerima",
-      "payoutHint": "Jumlah ini adalah perkiraan setelah biaya pemrosesan.",
+      "payoutHint": "Jumlah ini adalah perkiraan setelah biaya pemrosesan. Biaya platform (30%) terdiri dari 2,75% biaya gateway pembayaran, pajak 10%, dan sisanya digunakan untuk biaya pengembangan dan pemeliharaan Halal Formosa (YIQI Consulting LTD).",
       "halalProof": "Verifikasi Bukti Halal",
       "halalProofHint": "Wajib untuk kategori makanan & konsumsi. Maksimal 5 gambar/dokumen.",
       "halalProofPlaceholder": "Unggah sertifikat Halal, label bahan, atau foto toko",

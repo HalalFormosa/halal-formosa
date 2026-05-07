@@ -11,6 +11,7 @@ import {
 import { cameraOutline, cloudUploadOutline, closeCircle, alertCircleOutline } from 'ionicons/icons';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 import { useImageResizer } from '@/composables/useImageResizer';
+import { useNotifier } from '@/composables/useNotifier';
 import AppHeader from '@/components/AppHeader.vue';
 
 const props = defineProps<{
@@ -135,6 +136,19 @@ async function submitReport() {
     }]);
 
     if (error) throw error;
+
+    // 🔔 Notify Discord
+    const { notifyEvent } = useNotifier()
+    const userName = freshUser?.user_metadata?.name || freshUser?.email || 'Anonymous'
+
+    await notifyEvent(
+      'product_report',
+      '🚩 Product Reported',
+      `Product: ${product.value.name}\nBarcode: ${product.value.barcode}\nReason: ${reportDescription.value.trim()}\nBy: ${userName}`,
+      imageUrl || product.value.photo_front_url,
+      { barcode: product.value.barcode, isNative: true },
+      ['discord']
+    )
 
     toastMessage.value = '✅ Report submitted!';
     toastColor.value = 'success';

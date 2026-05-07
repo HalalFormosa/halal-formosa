@@ -19,6 +19,9 @@
         <!-- Buyer Info -->
         <div class="section-card">
           <h3 class="section-title">{{ $t('store.buyerInfo') }}</h3>
+          <p class="field-hint" style="margin-bottom: 12px; color: var(--ion-color-carrot);">
+            ℹ️ {{ $t('store.buyerInfoDisclaimer') || 'To ensure delivery accuracy, please use your valid name as it appears on your ID.' }}
+          </p>
 
           <ion-item class="form-item">
             <ion-input v-model="buyerName" label-placement="stacked" :placeholder="$t('store.buyerName')">
@@ -86,19 +89,6 @@
             <p class="field-hint">⚠️ Phone number and shipping address are required for home delivery</p>
           </div>
 
-          <!-- COD Option -->
-          <div v-if="selectedDelivery === 'home_delivery' || isCvsDelivery" class="conditional-fields">
-            <div class="cod-option">
-              <ion-item lines="none" class="cod-toggle-item">
-                <ion-icon :icon="cashOutline" slot="start" color="success" style="font-size: 20px; margin-right: 10px;" />
-                <ion-label>
-                  <h3 style="font-weight: 600; margin: 0; font-size: 0.9rem;">💰 {{ $t('store.codPayment') || 'Cash on Delivery (COD)' }}</h3>
-                  <p style="color: var(--ion-color-medium); margin: 2px 0 0; font-size: 0.78rem;">{{ $t('store.codPaymentHint') || 'Pay when you receive the package' }}</p>
-                </ion-label>
-                <ion-toggle v-model="isCod" slot="end" color="success" />
-              </ion-item>
-            </div>
-          </div>
 
           <!-- CVS Pickup: map picker -->
           <div v-if="isCvsDelivery" class="conditional-fields">
@@ -125,25 +115,6 @@
             <p class="field-hint">{{ $t('store.selectCvsStoreHint') || 'Choose a convenience store branch for pickup' }}</p>
           </div>
 
-          <!-- COD: date + location -->
-          <div v-if="selectedDelivery === 'cod_meetup'" class="conditional-fields">
-            <ion-item class="form-item">
-              <ion-input v-model="codDate" type="datetime-local" label-placement="stacked">
-                <div slot="label">
-                  📅 Meet-up Date & Time / 面交日期時間 <span class="required-star">*</span>
-                </div>
-              </ion-input>
-            </ion-item>
-            <ion-item class="form-item">
-              <ion-textarea v-model="codLocation" label-placement="stacked"
-                placeholder="Where to meet? / 請輸入面交地點" :rows="2">
-                <div slot="label">
-                  📍 Meet-up Location / 面交地點 <span class="required-star">*</span>
-                </div>
-              </ion-textarea>
-            </ion-item>
-            <p class="field-hint">ℹ️ Use the notes field for any specific meet-up details</p>
-          </div>
         </div>
 
         <!-- Order Summary -->
@@ -236,8 +207,7 @@ const ALL_DELIVERY_METHODS = [
   { key: '7eleven', label: '7-Eleven Pickup', labelZh: '7-ELEVEN 取貨', icon: storefrontOutline, fee: 65 },
   { key: 'family_mart', label: 'FamilyMart Pickup', labelZh: '全家取貨', icon: cartOutline, fee: 65 },
   { key: 'hi_life', label: 'Hi-Life Pickup', labelZh: '萊爾富取貨', icon: businessOutline, fee: 65 },
-  { key: 'ok_mart', label: 'OK Mart Pickup', labelZh: 'OK超商取貨', icon: bagHandleOutline, fee: 65 },
-  { key: 'cod_meetup', label: 'Meet in Person', labelZh: '面交自取', icon: peopleOutline, fee: 0 },
+  { key: 'ok_mart', label: 'OK Mart Pickup', labelZh: 'OK超商取貨', icon: bagHandleOutline, fee: 65 }
 ]
 
 const { t } = useI18n()
@@ -429,27 +399,22 @@ async function placeOrder() {
 
     const storeId = firstProd?.store_id || null
 
-    // Determine if this is a COD order
-    const isCodOrder = (selectedDelivery.value === 'home_delivery' || isCvsDelivery.value) && isCod.value
-
     // Create order
     const { data: order, error: orderErr } = await supabase
       .from('store_orders')
       .insert({
         user_id: session.user.id,
         store_id: storeId,
-        total_amount: cartTotal.value,
+        total_amount: cartTotal.value + currentShippingFee.value,
         shipping_fee: currentShippingFee.value,
-        is_cod: isCodOrder,
+        is_cod: false,
         buyer_name: buyerName.value.trim(),
         buyer_email: buyerEmail.value.trim(),
         buyer_phone: buyerPhone.value.trim() || null,
-        shipping_address: selectedDelivery.value === 'cod_meetup' ? null : (shippingAddress.value.trim() || null),
+        shipping_address: shippingAddress.value.trim() || null,
         note: note.value.trim() || null,
-        status: isCodOrder ? 'pending_cod' : 'pending',
+        status: 'pending',
         delivery_method: selectedDelivery.value || null,
-        cod_location: selectedDelivery.value === 'cod_meetup' ? (codLocation.value.trim() || null) : null,
-        cod_date: selectedDelivery.value === 'cod_meetup' ? (codDate.value || null) : null,
         cvs_store_info: isCvsDelivery.value ? (cvsStoreInfo.value.trim() || null) : null,
         cvs_store_id: isCvsDelivery.value && selectedCvsStore.value ? selectedCvsStore.value.storeId : null,
         cvs_store_name: isCvsDelivery.value && selectedCvsStore.value ? selectedCvsStore.value.storeName : null,
@@ -462,7 +427,7 @@ async function placeOrder() {
       throw new Error(orderErr?.message || 'Order creation failed')
     }
 
-    ActivityLogService.log('store_order_submit', { order_id: order.id, total: cartTotal.value, is_cod: isCodOrder })
+    ActivityLogService.log('store_order_submit', { order_id: order.id, total: cartTotal.value + currentShippingFee.value, is_cod: false })
 
     // Create order items
     const orderItems = cartItems.value.map(item => ({
@@ -494,19 +459,9 @@ async function placeOrder() {
     // Clear cart before redirecting
     clearCart()
 
-    // COD orders skip payment — go directly to orders page
-    if (isCodOrder) {
-      const toast = await toastController.create({
-        message: `✅ ${t('store.codOrderConfirmed') || 'Order placed! You will pay when you receive the package.'}`,
-        duration: 4000, color: 'success', position: 'bottom'
-      })
-      toast.present()
-      router.push('/store/orders')
-    } else {
-      // 💰 Initiate ECPay payment via composable
-      console.log('💰 Initiating ECPay payment for order:', order.id)
-      await initiatePayment(order.id)
-    }
+    // 💰 Initiate ECPay payment via composable
+    console.log('💰 Initiating ECPay payment for order:', order.id)
+    await initiatePayment(order.id)
 
   } catch (err: any) {
     const toast = await toastController.create({

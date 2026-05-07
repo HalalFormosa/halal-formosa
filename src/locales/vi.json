@@ -1482,9 +1482,9 @@
     },
     "products": {
       "pricingBreakdown": "Phân tích giá",
-      "processingFee": "Phí xử lý (10%)",
+      "processingFee": "Phí xử lý (30%)",
       "payoutAmount": "Bạn sẽ nhận được",
-      "payoutHint": "Số tiền này là ước tính sau khi tính phí xử lý.",
+      "payoutHint": "Số tiền này là ước tính sau khi tính phí xử lý. Phí nền tảng (30%) bao gồm 2,75% phí cổng thanh toán, 10% thuế và phần còn lại sẽ được sử dụng cho chi phí phát triển và bảo trì của Halal Formosa (YIQI Consulting LTD).",
       "halalProof": "Xác minh bằng chứng Halal",
       "halalProofHint": "Bắt buộc đối với thực phẩm và vật phẩm tiêu hao. Tối đa 5 hình ảnh/tài liệu.",
       "halalProofPlaceholder": "Tải lên chứng nhận Halal, nhãn thành phần hoặc ảnh cửa hàng",

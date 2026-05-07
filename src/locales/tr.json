@@ -1482,9 +1482,9 @@
     },
     "products": {
       "pricingBreakdown": "Fiyatlandırma Dağılımı",
-      "processingFee": "İşlem Ücreti (%10)",
+      "processingFee": "İşlem Ücreti (%30)",
       "payoutAmount": "Alacaksın",
-      "payoutHint": "Bu tutar, işlem ücretleri sonrasındaki tahmini bir tutardır.",
+      "payoutHint": "Bu tutar, işlem ücretleri sonrasındaki tahmini bir tutardır. Platform ücreti (%30), %2.75 ödeme ağ geçidi ücreti, %10 vergi ve geri kalanı Halal Formosa (YIQI Consulting LTD) geliştirme ve bakım ücreti için kullanılacaktır.",
       "halalProof": "Helal Kanıt Doğrulaması",
       "halalProofHint": "Yiyecek ve sarf malzemeleri için zorunludur. Maksimum 5 resim/belge.",
       "halalProofPlaceholder": "Helal sertifikası, içerik etiketi veya mağaza fotoğrafı yükleyin",

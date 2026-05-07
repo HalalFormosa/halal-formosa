@@ -70,12 +70,12 @@
             </div>
             <div class="calc-row fee-row">
               <span class="calc-label">{{ $t('merchant.products.processingFee') }}</span>
-              <span class="calc-value">- NT$ {{ (form.price * 0.1).toFixed(0) }}</span>
+              <span class="calc-value">- NT$ {{ (form.price * 0.3).toFixed(0) }}</span>
             </div>
             <div class="calc-divider"></div>
             <div class="calc-row total-row">
               <span class="calc-label">{{ $t('merchant.products.payoutAmount') }}</span>
-              <span class="calc-value highlight">NT$ {{ (form.price * 0.9).toFixed(0) }}</span>
+              <span class="calc-value highlight">NT$ {{ (form.price * 0.7).toFixed(0) }}</span>
             </div>
             <p class="payout-hint">
               <ion-icon :icon="informationCircleOutline" />
@@ -106,10 +106,11 @@
                     <ion-icon :icon="closeCircleOutline" />
                   </ion-button>
                 </div>
-                <div v-if="form.halal_proof.length < 5" class="add-image-btn" @click="addHalalProof">
+                <div v-if="form.halal_proof.length < 5" class="add-image-btn" @click="triggerHalalUpload">
                   <ion-icon :icon="shieldCheckmarkOutline" />
                   <span>{{ $t('common.add') }}</span>
                 </div>
+                <input type="file" ref="halalInput" @change="onHalalSelected" style="display: none" accept="image/*,application/pdf" multiple />
               </div>
 
               <div class="halal-disclaimer">
@@ -130,10 +131,15 @@
                 <ion-icon :icon="closeCircleOutline" />
               </ion-button>
             </div>
-            <div v-if="form.images.length < 8" class="add-image-btn" @click="addImageUrl">
+            <div v-if="form.images.length < 8" class="add-image-btn" @click="triggerImageUpload">
               <ion-icon :icon="addOutline" />
-              <span>{{ $t('common.add') }} URL</span>
+              <span>{{ $t('common.add') }}</span>
             </div>
+            <div class="add-image-btn url-btn" @click="addImageUrl">
+              <ion-icon :icon="languageOutline" />
+              <span>URL</span>
+            </div>
+            <input type="file" ref="imageInput" @change="onImagesSelected" style="display: none" accept="image/*" multiple />
           </div>
         </div>
 
@@ -215,8 +221,10 @@ import {
 import AppHeader from '@/components/AppHeader.vue'
 import { supabase } from '@/plugins/supabaseClient'
 import { useI18n } from 'vue-i18n'
+import { useImageResizer } from '@/composables/useImageResizer'
 
 const { t, locale } = useI18n()
+const { resizeImage } = useImageResizer()
 const route = useRoute()
 const router = useRouter()
 
@@ -226,6 +234,9 @@ const categories = ref<any[]>([])
 const submitting = ref(false)
 const tagsInput = ref('')
 const storeId = ref<string | null>(null)
+
+const imageInput = ref<HTMLInputElement | null>(null)
+const halalInput = ref<HTMLInputElement | null>(null)
 
 const form = reactive({
   name: '',
@@ -342,6 +353,92 @@ async function addHalalProof() {
     ]
   })
   alert.present()
+}
+
+// Image Upload Logic
+function triggerImageUpload() {
+  imageInput.value?.click()
+}
+
+function triggerHalalUpload() {
+  halalInput.value?.click()
+}
+
+async function uploadFileToSupabase(file: File, prefix = 'product') {
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session) return null
+
+  // Specific path requested by user: store/merchant/product/picture/
+  const fileExt = file.name.split('.').pop()
+  const fileName = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${fileExt}`
+  const path = `store/merchant/product/picture/${fileName}`
+
+  const { error: uploadError } = await supabase.storage
+    .from('product-images')
+    .upload(path, file)
+
+  if (uploadError) {
+    console.error('Upload error:', uploadError)
+    return null
+  }
+
+  const { data: { publicUrl } } = supabase.storage
+    .from('product-images')
+    .getPublicUrl(path)
+
+  return publicUrl
+}
+
+async function onImagesSelected(event: Event) {
+  const input = event.target as HTMLInputElement
+  if (!input.files?.length) return
+
+  submitting.value = true
+  const loadingToast = await toastController.create({
+    message: t('store.saving') + '...',
+    duration: 0,
+    position: 'bottom'
+  })
+  loadingToast.present()
+
+  try {
+    for (const file of Array.from(input.files)) {
+      if (form.images.length >= 8) break
+      
+      let uploadFile = file
+      if (file.type.startsWith('image/')) {
+        try {
+          uploadFile = await resizeImage(file, 1200, 0.8)
+        } catch (e) {
+          console.warn('Resize failed, uploading original', e)
+        }
+      }
+      
+      const url = await uploadFileToSupabase(uploadFile)
+      if (url) form.images.push(url)
+    }
+  } finally {
+    loadingToast.dismiss()
+    submitting.value = false
+    input.value = '' // Reset
+  }
+}
+
+async function onHalalSelected(event: Event) {
+  const input = event.target as HTMLInputElement
+  if (!input.files?.length) return
+
+  submitting.value = true
+  try {
+    for (const file of Array.from(input.files)) {
+      if (form.halal_proof.length >= 5) break
+      const url = await uploadFileToSupabase(file, 'halal')
+      if (url) form.halal_proof.push(url)
+    }
+  } finally {
+    submitting.value = false
+    input.value = '' // Reset
+  }
 }
 
 async function saveProduct() {
@@ -609,6 +706,12 @@ onMounted(async () => {
 
 .add-image-btn:active {
   background: rgba(0,0,0,0.05);
+}
+
+.url-btn {
+  border-style: solid;
+  border-width: 1px;
+  background: rgba(var(--ion-color-carrot-rgb), 0.03);
 }
 
 .halal-disclaimer {

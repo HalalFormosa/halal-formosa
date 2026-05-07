@@ -11,6 +11,7 @@ import {
 import { cameraOutline, cloudUploadOutline, closeCircle, alertCircleOutline } from 'ionicons/icons'
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera'
 import { useImageResizer } from '@/composables/useImageResizer'
+import { useNotifier } from '@/composables/useNotifier'
 import AppHeader from '@/components/AppHeader.vue'
 
 const props = defineProps<{
@@ -128,6 +129,19 @@ async function submitReport() {
     ])
 
     if (error) throw error
+
+    // 🔔 Notify Discord
+    const { notifyEvent } = useNotifier()
+    const userName = currentUser.value?.user_metadata?.name || currentUser.value?.email || 'Anonymous'
+    
+    await notifyEvent(
+      'location_report',
+      '🚩 Location Reported',
+      `Place: ${place.value.name}\nReason: ${reportDescription.value.trim()}\nBy: ${userName}`,
+      imageUrl || place.value.image,
+      { id: place.value.id, isNative: true },
+      ['discord']
+    )
 
     toastMessage.value = '✅ Report submitted successfully!'
     toastColor.value = 'success'

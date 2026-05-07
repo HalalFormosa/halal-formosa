@@ -910,7 +910,7 @@ onBeforeUnmount(() => {
   padding: 0 12px;
   height: 50px;
   border: 1px solid var(--ion-color-step-200, transparent);
-  transition: border-color 0.2s ease;
+  transition: all 0.2s ease;
 }
 
 .price-input-container:focus-within {
@@ -928,6 +928,7 @@ onBeforeUnmount(() => {
   --placeholder-color: var(--ion-color-step-400, #999);
   --placeholder-opacity: 0.6;
   font-weight: 600;
+  --color: var(--ion-text-color);
   color: var(--ion-text-color);
 }
 
@@ -974,7 +975,8 @@ onBeforeUnmount(() => {
 
 .ion-palette-dark .price-input-container,
 .ion-palette-dark .stock-toggle-card {
-  --background: var(--ion-color-step-150, #262626);
+  background: var(--ion-color-step-150, #262626) !important;
+  --background: var(--ion-color-step-150, #262626) !important;
 }
 
 /* Product Grid */

@@ -1482,9 +1482,9 @@
     },
     "products": {
       "pricingBreakdown": "定价细目",
-      "processingFee": "手续费 (10%)",
+      "processingFee": "手续费 (30%)",
       "payoutAmount": "您将收到",
-      "payoutHint": "该金额是扣除处理费后的估计金额。",
+      "payoutHint": "该金额是扣除处理费后的估计金额。平台手续费 (30%) 包含 2.75% 支付网关手续费、10% 营业税，其余则用于 Halal Formosa (YIQI Consulting LTD) 的开发与维护费用。",
       "halalProof": "清真证明验证",
       "halalProofHint": "食品和消费品强制要求。 最多 5 个图像/文档。",
       "halalProofPlaceholder": "上传清真证书、成分标签或商店照片",

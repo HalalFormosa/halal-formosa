@@ -1482,9 +1482,9 @@
     },
     "products": {
       "pricingBreakdown": "가격 분석",
-      "processingFee": "처리수수료(10%)",
+      "processingFee": "처리수수료(30%)",
       "payoutAmount": "당신은 받게됩니다",
-      "payoutHint": "이 금액은 처리 수수료를 공제한 추정 금액입니다.",
+      "payoutHint": "이 금액은 처리 수수료를 공제한 추정 금액입니다. 플랫폼 수수료(30%)는 2.75%의 결제 게이트웨이 수수료, 10%의 세금으로 구성되며, 나머지는 Halal Formosa(YIQI Consulting LTD)의 개발 및 유지 보수 비용으로 사용됩니다.",
       "halalProof": "할랄 증명 검증",
       "halalProofHint": "식품 및 소모품에 대해서는 필수입니다. 최대 5개의 이미지/문서.",
       "halalProofPlaceholder": "할랄 인증서, 성분 라벨 또는 매장 사진 업로드",

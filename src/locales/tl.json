@@ -1482,9 +1482,9 @@
     },
     "products": {
       "pricingBreakdown": "Breakdown ng Presyo",
-      "processingFee": "Bayad sa Pagproseso (10%)",
+      "processingFee": "Bayad sa Pagproseso (30%)",
       "payoutAmount": "Matatanggap mo",
-      "payoutHint": "Ang halagang ito ay isang pagtatantya pagkatapos ng mga bayarin sa pagproseso.",
+      "payoutHint": "This amount is an estimate after processing fees. The 30% platform fee consists of 2.75% payment gateway fee, 10% tax, and the rest would be used for the development and maintenance fee of Halal Formosa (YIQI Consulting LTD).",
       "halalProof": "Halal Proof Verification",
       "halalProofHint": "Mandatory para sa pagkain at consumable item. Max 5 larawan/dokumento.",
       "halalProofPlaceholder": "Mag-upload ng Halal cert, label ng sangkap, o larawan ng tindahan",

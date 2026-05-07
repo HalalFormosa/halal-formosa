@@ -1482,9 +1482,9 @@
     },
     "products": {
       "pricingBreakdown": "Pecahan Harga",
-      "processingFee": "Yuran Pemprosesan (10%)",
+      "processingFee": "Yuran Pemprosesan (30%)",
       "payoutAmount": "Anda akan menerima",
-      "payoutHint": "Jumlah ini adalah anggaran selepas yuran pemprosesan.",
+      "payoutHint": "Jumlah ini adalah anggaran selepas yuran pemprosesan. Yuran platform (30%) terdiri daripada 2.75% yuran get laluan pembayaran, 10% cukai, and selebihnya digunakan untuk yuran pembangunan dan penyelenggaraan Halal Formosa (YIQI Consulting LTD).",
       "halalProof": "Pengesahan Bukti Halal",
       "halalProofHint": "Wajib untuk makanan & barang habis pakai. Maks 5 imej/dokumen.",
       "halalProofPlaceholder": "Muat naik sijil Halal, label ramuan atau foto kedai",

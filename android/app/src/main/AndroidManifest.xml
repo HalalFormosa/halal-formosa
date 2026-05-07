@@ -56,7 +56,6 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="https" android:host="halalformosa.com" />
-                <data android:scheme="https" android:host="www.halalformosa.com" />
                 <data android:scheme="https" android:host="app.halalformosa.com" />
             </intent-filter>
         </activity>

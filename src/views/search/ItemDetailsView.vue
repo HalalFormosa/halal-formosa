@@ -1247,6 +1247,16 @@ onMounted(async () => {
     } else if (!prodRes.data && !prodRes.error) {
       // Product not found in database -> Show contribution prompt
       showContributionPrompt.value = true
+
+      // 🔔 Notify Discord about unknown barcode
+      await notifyEvent(
+        'unknown_product_scanned',
+        '🔍 Unknown Product Scanned',
+        `A user just scanned a barcode that is not in our database: **${barcode}**.\nConsider adding it!`,
+        undefined,
+        { barcode, isNative: true },
+        ['discord'] // Only discord, no need to push to all users
+      ).catch(console.error)
     }
 
     // ✅ ingredient highlights

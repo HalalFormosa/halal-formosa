@@ -49,12 +49,45 @@
         <!-- Product Content -->
         <div v-if="!loading && product" class="detail-page-container">
           <!-- Image gallery -->
-          <div class="gallery-scroll">
-            <div v-for="(img, i) in product.images" :key="i" class="gallery-item">
-              <img :src="img" :alt="`${product.name} ${Number(i) + 1}`" class="gallery-image" />
+          <div class="gallery-container">
+            <div class="gallery-scroll" ref="galleryRef" @scroll="handleGalleryScroll">
+              <div v-for="(img, i) in product.images" :key="i" class="gallery-item" :id="'gallery-img-' + i">
+                <img :src="img" :alt="`${product.name} ${Number(i) + 1}`" class="gallery-image" @click="openImageModal(i)" />
+              </div>
+              <div v-if="!product.images?.length" class="gallery-item gallery-placeholder">
+                <ion-icon :icon="imageOutline" />
+              </div>
             </div>
-            <div v-if="!product.images?.length" class="gallery-item gallery-placeholder">
-              <ion-icon :icon="imageOutline" />
+
+            <!-- Navigation Arrows (Desktop Only) -->
+            <div v-if="product.images?.length > 1" class="gallery-nav desktop-only">
+              <ion-button fill="solid" class="nav-btn prev" @click="scrollToImage(activeImageIndex - 1)" :disabled="activeImageIndex === 0">
+                <ion-icon :icon="chevronBackOutline" />
+              </ion-button>
+              <ion-button fill="solid" class="nav-btn next" @click="scrollToImage(activeImageIndex + 1)" :disabled="activeImageIndex === product.images.length - 1">
+                <ion-icon :icon="chevronForwardOutline" />
+              </ion-button>
+            </div>
+
+            <!-- Thumbnails (Desktop Only) -->
+            <div v-if="product.images?.length > 1" class="gallery-thumbnails desktop-only">
+              <div v-for="(img, i) in product.images" :key="i" 
+                class="thumb-item" 
+                :class="{ active: activeImageIndex === i }"
+                @click="scrollToImage(i)"
+              >
+                <img :src="img" />
+              </div>
+            </div>
+            
+            <!-- Mobile Pagination Dots -->
+            <div v-if="product.images?.length > 1" class="gallery-pagination-wrapper mobile-only">
+              <div class="gallery-pagination">
+                <div v-for="(_, i) in product.images" :key="i" 
+                  class="pagination-dot" 
+                  :class="{ active: activeImageIndex === i }"
+                ></div>
+              </div>
             </div>
           </div>
 
@@ -108,6 +141,11 @@
                   {{ $t('store.visitShop') || 'Visit Shop' }}
                 </ion-button>
               </div>
+              <div v-if="product.merchant_stores?.cities" class="store-location-info">
+                <ion-icon :icon="storefrontOutline" class="location-icon" />
+                <span class="location-label">{{ $t('store.settings.shipsFrom') }}:</span>
+                <span class="location-value">{{ localized(product.merchant_stores.cities.name_zh, product.merchant_stores.cities.name) }}</span>
+              </div>
             </div>
 
             <!-- Quantity -->
@@ -128,10 +166,10 @@
             <div class="reviews-section">
               <div class="reviews-header">
                 <h3>{{ $t('store.reviews') }}</h3>
-                <ion-button v-if="currentUserId" fill="clear" size="small" color="carrot" @click="openReviewModal">
+                <ion-button v-if="currentUserId && !isOwner" fill="clear" size="small" color="carrot" @click="openReviewModal">
                   {{ existingReview ? $t('store.editReview') : $t('store.writeReview') }}
                 </ion-button>
-                <ion-button v-else fill="clear" size="small" color="medium" disabled>
+                <ion-button v-else-if="!currentUserId" fill="clear" size="small" color="medium" disabled>
                   {{ $t('store.loginToReview') }}
                 </ion-button>
               </div>
@@ -163,7 +201,7 @@
                 </div>
               </div>
               <div v-else class="no-reviews">
-                <p>{{ $t('store.noReviews') }}</p>
+                <p>{{ isOwner ? $t('store.noReviewsYet') : $t('store.noReviews') }}</p>
               </div>
             </div>
           </div>
@@ -318,6 +356,30 @@
         </ion-button>
       </ion-content>
     </ion-modal>
+    <!-- Fullscreen Image Modal -->
+    <ion-modal :is-open="showImageModal" @didDismiss="closeImageModal" class="image-zoom-modal">
+      <ion-content fullscreen class="ion-no-padding">
+        <ion-button fill="solid" color="carrot" class="image-modal-close-btn" @click="closeImageModal">
+          <ion-icon :icon="closeOutline" />
+        </ion-button>
+
+        <Swiper
+          v-if="product?.images?.length"
+          :modules="[Pagination, Zoom]"
+          :zoom="true"
+          :slides-per-view="1"
+          :pagination="{ clickable: true }"
+          :initial-slide="activeImageIndex"
+          class="fullscreen-swiper"
+        >
+          <SwiperSlide v-for="(img, i) in product.images" :key="i">
+            <div class="swiper-zoom-container">
+              <img :src="img" :alt="`Product Image ${i + 1}`" />
+            </div>
+          </SwiperSlide>
+        </Swiper>
+      </ion-content>
+    </ion-modal>
   </ion-page>
 </template>
 
@@ -332,7 +394,8 @@ import {
 import {
   imageOutline, cartOutline, bagHandleOutline, removeOutline, addOutline,
   checkmarkCircleOutline, closeCircleOutline, chatbubbleOutline, constructOutline,
-  storefrontOutline, createOutline, closeOutline, removeCircleOutline, addCircleOutline
+  storefrontOutline, createOutline, closeOutline, removeCircleOutline, addCircleOutline,
+  chevronBackOutline, chevronForwardOutline
 } from 'ionicons/icons'
 import AppHeader from '@/components/AppHeader.vue'
 import { supabase } from '@/plugins/supabaseClient'
@@ -340,6 +403,11 @@ import { useStoreCart } from '@/composables/useStoreCart'
 import { useStoreChat } from '@/composables/useStoreChat'
 import { ActivityLogService } from '@/services/ActivityLogService'
 import { useI18n } from 'vue-i18n'
+import { Swiper, SwiperSlide } from 'swiper/vue'
+import { Pagination, Zoom } from 'swiper/modules'
+import 'swiper/css'
+import 'swiper/css/pagination'
+import 'swiper/css/zoom'
 
 const { t, locale } = useI18n()
 const route = useRoute()
@@ -361,6 +429,38 @@ const selectedRating = ref(0)
 const reviewComment = ref('')
 const submittingReview = ref(false)
 const existingReview = ref<any>(null)
+
+// Gallery logic
+const galleryRef = ref<HTMLElement | null>(null)
+const activeImageIndex = ref(0)
+
+const showImageModal = ref(false)
+
+function handleGalleryScroll(ev: any) {
+  const scrollLeft = ev.target.scrollLeft
+  const width = ev.target.offsetWidth
+  activeImageIndex.value = Math.round(scrollLeft / width)
+}
+
+function scrollToImage(index: number) {
+  if (!galleryRef.value || index < 0 || index >= (product.value.images?.length || 0)) return
+  
+  const width = galleryRef.value.offsetWidth
+  galleryRef.value.scrollTo({
+    left: index * width,
+    behavior: 'smooth'
+  })
+  activeImageIndex.value = index
+}
+
+function openImageModal(index: number) {
+  activeImageIndex.value = index
+  showImageModal.value = true
+}
+
+function closeImageModal() {
+  showImageModal.value = false
+}
 
 const handleScroll = (ev: any) => {
   isScrolled.value = ev.detail.scrollTop > 50
@@ -384,9 +484,9 @@ async function fetchProduct() {
   loading.value = true
   const id = route.params.id as string
 
-  const { data, error } = await supabase
+    const { data, error } = await supabase
     .from('store_products')
-    .select('*, store_product_categories(name, name_zh), merchant_stores(name, logo_url)')
+    .select('*, store_product_categories(name, name_zh), merchant_stores(name, logo_url, cities(name, name_zh))')
     .eq('id', id)
     .maybeSingle()
 
@@ -938,6 +1038,32 @@ function updateQtyInCart(productId: string, newQty: number) {
   color: var(--ion-text-color);
 }
 
+.store-location-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--ion-color-step-100, #eee);
+  color: var(--ion-color-medium);
+}
+
+.location-icon {
+  font-size: 16px;
+  color: var(--ion-color-carrot);
+}
+
+.location-label {
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.location-value {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--ion-text-color);
+}
+
 .store-tagline {
   font-size: 0.75rem;
   color: var(--ion-color-medium);
@@ -979,7 +1105,7 @@ function updateQtyInCart(productId: string, newQty: number) {
 }
 
 @media (min-width: 768px) {
-  .detail-page {
+  .detail-page-container {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 32px;
@@ -987,22 +1113,108 @@ function updateQtyInCart(productId: string, newQty: number) {
     align-items: start;
   }
   
+  .gallery-container {
+    position: sticky;
+    top: 100px;
+  }
+  
   .gallery-scroll {
-    flex-direction: column;
-    gap: 16px;
-    overflow: visible;
+    flex-direction: row;
+    gap: 0;
+    overflow-x: auto;
+    border-radius: 24px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
   }
   
   .gallery-item {
     min-width: 100%;
-    border-radius: 16px;
-    overflow: hidden;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    border-radius: 0;
+    box-shadow: none;
   }
   
   .gallery-image {
     height: auto;
     aspect-ratio: 1;
+    cursor: zoom-in;
+  }
+
+  /* Navigation for desktop carousel */
+  .gallery-nav {
+    display: block;
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    transform: translateY(-50%);
+    pointer-events: none;
+    z-index: 10;
+    padding: 0 10px;
+  }
+
+  .nav-btn {
+    position: absolute;
+    pointer-events: auto;
+    --border-radius: 50%;
+    --padding-start: 0;
+    --padding-end: 0;
+    width: 44px;
+    height: 44px;
+    --background: rgba(0, 0, 0, 0.4);
+    --background-hover: rgba(0, 0, 0, 0.6);
+    --color: #ffffff;
+    --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    margin: 0;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    transition: all 0.2s ease;
+  }
+
+  .nav-btn:hover {
+    --background: rgba(0, 0, 0, 0.7);
+    transform: scale(1.05);
+  }
+
+  .nav-btn.prev { left: 20px; }
+  .nav-btn.next { right: 20px; }
+
+  /* Ensure visibility in both modes */
+  .ion-palette-dark .nav-btn {
+    --background: rgba(255, 255, 255, 0.15);
+    --background-hover: rgba(255, 255, 255, 0.25);
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .gallery-thumbnails {
+    display: flex;
+    gap: 12px;
+    margin-top: 16px;
+    overflow-x: auto;
+    padding-bottom: 8px;
+  }
+
+  .thumb-item {
+    width: 70px;
+    height: 70px;
+    border-radius: 12px;
+    overflow: hidden;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: all 0.2s;
+    opacity: 0.6;
+    flex-shrink: 0;
+  }
+
+  .thumb-item.active {
+    border-color: var(--ion-color-carrot);
+    opacity: 1;
+    transform: translateY(-2px);
+  }
+
+  .thumb-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
   }
   
   .detail-body {
@@ -1221,5 +1433,120 @@ function updateQtyInCart(productId: string, newQty: number) {
 .ion-palette-dark .review-textarea {
   --background: var(--ion-color-step-100, #1e1e1e);
   border-color: var(--ion-color-step-200);
+}
+
+/* Visibility Utilities */
+.desktop-only {
+  display: none;
+}
+
+.mobile-only {
+  display: block;
+}
+
+@media (min-width: 768px) {
+  .desktop-only {
+    display: block;
+  }
+  .mobile-only {
+    display: none;
+  }
+  
+  .gallery-nav {
+    display: block !important;
+  }
+  
+  .gallery-thumbnails {
+    display: flex !important;
+  }
+}
+
+.gallery-container {
+  position: relative;
+  width: 100%;
+  min-height: 300px;
+  overflow: hidden;
+}
+
+.gallery-pagination-wrapper {
+  position: absolute;
+  bottom: 20px;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.gallery-pagination {
+  background: rgba(0,0,0,0.25);
+  padding: 6px 10px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+.pagination-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.5);
+  transition: all 0.3s;
+}
+
+.pagination-dot.active {
+  background: #ffffff;
+  width: 14px;
+  border-radius: 4px;
+}
+
+/* Image Zoom Modal */
+.image-zoom-modal {
+  --background: #000;
+}
+
+.image-modal-close-btn {
+  position: fixed;
+  top: calc(var(--ion-safe-area-top) + 20px);
+  right: 20px;
+  z-index: 1000;
+  --border-radius: 50%;
+  --padding-start: 0;
+  --padding-end: 0;
+  width: 40px;
+  height: 40px;
+  --box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.fullscreen-swiper {
+  width: 100%;
+  height: 100%;
+  background: #000;
+}
+
+.swiper-zoom-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+
+.swiper-zoom-container img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+:deep(.swiper-pagination-bullet) {
+  background: #fff;
+  opacity: 0.5;
+}
+
+:deep(.swiper-pagination-bullet-active) {
+  background: var(--ion-color-carrot);
+  opacity: 1;
 }
 </style>

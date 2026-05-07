@@ -1482,9 +1482,9 @@
     },
     "products": {
       "pricingBreakdown": "मूल्य निर्धारण टूटना",
-      "processingFee": "प्रोसेसिंग शुल्क (10%)",
+      "processingFee": "प्रोसेसिंग शुल्क (30%)",
       "payoutAmount": "तुम्हें प्राप्त होगा",
-      "payoutHint": "यह रकम प्रोसेसिंग फीस के बाद का अनुमान है.",
+      "payoutHint": "This amount is an estimate after processing fees. The 30% platform fee consists of 2.75% payment gateway fee, 10% tax, and the rest would be used for the development and maintenance fee of Halal Formosa (YIQI Consulting LTD).",
       "halalProof": "हलाल प्रमाण सत्यापन",
       "halalProofHint": "भोजन एवं उपभोज्य वस्तुओं के लिए अनिवार्य। अधिकतम 5 छवियाँ/दस्तावेज़।",
       "halalProofPlaceholder": "हलाल प्रमाणपत्र, घटक लेबल, या दुकान की फोटो अपलोड करें",
