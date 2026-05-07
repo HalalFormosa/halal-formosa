@@ -973,6 +973,7 @@ const {
   fetchHighlightsWithCache,
   incrementUsageCount,
   setError,
+  t,
   setBackFile: (file: File) => {
     backFile.value = file
     if (backPreview.value) {

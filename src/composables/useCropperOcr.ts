@@ -1,9 +1,14 @@
-// composables/useCropperOcr.ts
 import { ref } from "vue"
 import { useOcrService } from "@/composables/useOcrService"
 import { useImageResizer } from "@/composables/useImageResizer"
+import type { OcrPipelineOptions } from "@/composables/useOcrPipeline"
 
-export function useCropperOcr(options: any) {
+export interface CropperOcrOptions extends OcrPipelineOptions {
+    setBackFile?: (file: File) => void
+    onSuccess?: () => void
+}
+
+export function useCropperOcr(options: CropperOcrOptions) {
     const { resizeImage } = useImageResizer()
 
     const cropperRef = ref<any>(null)
