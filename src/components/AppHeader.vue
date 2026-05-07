@@ -27,7 +27,6 @@
       </div>
     </ion-title>
 
-    <!-- Actions as 3-dot menu (only if slot provided) -->
     <ion-buttons slot="end" v-if="$slots.actions">
       <ion-button id="actions-trigger" :class="['header-action-button', { 'contrast': contrast }]">
         <ion-icon :icon="ellipsisVerticalOutline" />
@@ -40,6 +39,11 @@
           </ion-list>
         </ion-content>
       </ion-popover>
+    </ion-buttons>
+
+    <!-- Custom end actions -->
+    <ion-buttons slot="end">
+      <slot name="end"></slot>
     </ion-buttons>
 
     <!-- Profile button (optional) -->

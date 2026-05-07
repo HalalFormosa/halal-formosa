@@ -234,6 +234,35 @@
           </ion-list>
         </ion-card>
 
+        <!-- Contributions Section -->
+        <ion-card v-if="userEmail">
+          <ion-list lines="none">
+            <ion-list-header style="min-height: 32px; padding-bottom: 4px;">
+              <ion-label style="font-size: 0.85rem; color: var(--ion-color-medium); margin-top: 0; text-transform: uppercase;">{{ $t('profile.sections.contributions') }}</ion-label>
+            </ion-list-header>
+
+            <ion-item button @click="$router.push('/submissions/products')">
+              <div class="icon-box" slot="start">
+                <ion-icon :icon="icons.bagHandleOutline" />
+              </div>
+              <ion-label>
+                <h3>{{ $t('profile.submittedProducts') }}</h3>
+                <p v-if="myProductsCount !== null">{{ myProductsCount }} Items</p>
+              </ion-label>
+            </ion-item>
+
+            <ion-item button @click="$router.push('/submissions/locations')">
+              <div class="icon-box" slot="start">
+                <ion-icon :icon="icons.locationOutline" />
+              </div>
+              <ion-label>
+                <h3>{{ $t('profile.submittedLocations') }}</h3>
+                <p v-if="myLocationsCount !== null">{{ myLocationsCount }} Places</p>
+              </ion-label>
+            </ion-item>
+          </ion-list>
+        </ion-card>
+
         <!-- Become a Merchant Section -->
         <ion-card v-if="userEmail && !merchantStore">
           <ion-list lines="none" style="padding-bottom: 0;">
@@ -700,6 +729,8 @@ const pendingProductReportsCount = ref(0);
 const pendingMerchantAppsCount = ref(0);
 const merchantStore = ref<any | null>(null);
 const merchantApplication = ref<MerchantApplication | null>(null);
+const myProductsCount = ref<number | null>(null);
+const myLocationsCount = ref<number | null>(null);
 
 const loadingProfile = ref(true)     // avatar, name, email
 const loadingAdmin = ref(false)      // admin-only data
@@ -861,6 +892,16 @@ async function fetchPendingProductReportsCount() {
   pendingProductReportsCount.value = count || 0
 }
 
+async function fetchMyContributionsCount(userId: string) {
+  const [productsRes, locationsRes] = await Promise.all([
+    supabase.from('products').select('*', { count: 'exact', head: true }).eq('added_by', userId),
+    supabase.from('locations').select('*', { count: 'exact', head: true }).eq('created_by', userId)
+  ]);
+
+  myProductsCount.value = productsRes.count;
+  myLocationsCount.value = locationsRes.count;
+}
+
 const renewalMessage = computed(() => {
   if (!entitlement.value) return ''
 
@@ -910,7 +951,8 @@ async function refreshAllData(userId: string) {
             fetchPendingProductReportsCount()
           ])
         }
-      })()
+      })(),
+      fetchMyContributionsCount(userId)
     ]);
 
     // Check for profile completion

@@ -590,6 +590,7 @@
     "sections": {
       "account": "Account & Preferences",
       "activity": "Activity",
+      "contributions": "Contributions",
       "about": "About App"
     },
     "title": "Profile",
@@ -600,6 +601,18 @@
     "noBio": "No bio added yet",
     "level": "Level {level}",
     "savedItems": "Saved Items",
+    "submittedProducts": "Submitted Products",
+    "submittedLocations": "Submitted Locations",
+    "myProducts": {
+      "title": "My Submitted Products",
+      "noProducts": "You haven't submitted any products yet.",
+      "status": "Status",
+      "approval": "Approval"
+    },
+    "myLocations": {
+      "title": "My Submitted Locations",
+      "noLocations": "You haven't submitted any locations yet."
+    },
     "supportSuccess": "Thank you for supporting Halal Formosa ❤️",
     "donors": {
       "Free": "Free",

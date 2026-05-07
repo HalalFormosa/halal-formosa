@@ -45,7 +45,11 @@
     "maintenanceMessage": "This feature is currently undergoing maintenance. We'll be back soon!",
     "copied": "Copied to clipboard",
     "change": "Change",
-    "mandatory": "Mandatory"
+    "mandatory": "Mandatory",
+    "search": "Search",
+    "noResults": "No results found",
+    "chat": "Chat",
+    "edited": "(Edited)"
   },
   "master": {
     "active": "アクティブ",
@@ -586,7 +590,8 @@
     "sections": {
       "account": "アカウントと設定",
       "activity": "活動",
-      "about": "アプリについて"
+      "about": "アプリについて",
+      "contributions": "Contributions"
     },
     "title": "プロフィール",
     "logout": "ログアウト",
@@ -704,7 +709,19 @@
       "line": "ライン",
       "website": "Webサイト"
     },
-    "defaultName": "ユーザー"
+    "defaultName": "ユーザー",
+    "submittedProducts": "Submitted Products",
+    "submittedLocations": "Submitted Locations",
+    "myProducts": {
+      "title": "My Submitted Products",
+      "noProducts": "You haven't submitted any products yet.",
+      "status": "Status",
+      "approval": "Approval"
+    },
+    "myLocations": {
+      "title": "My Submitted Locations",
+      "noLocations": "You haven't submitted any locations yet."
+    }
   },
   "appReview": {
     "title": "ハラール フォルモサを満喫していますか?",
@@ -1391,7 +1408,16 @@
       "senderName": "Sender Name",
       "senderNamePlaceholder": "Sender Name Placeholder",
       "senderPhone": "Sender Phone",
-      "senderZipcode": "Sender Zipcode"
+      "senderZipcode": "Sender Zipcode",
+      "shippingStoreTitle": "Shipping Store",
+      "selectStore": "Select Store",
+      "changeStore": "Change Store",
+      "shippingHint": "Select the branch where you will drop off packages. This is required for shipping.",
+      "city": "Store City",
+      "cityPlaceholder": "Select your city",
+      "shipsFrom": "Ships from",
+      "locationAndLogistics": "Location & Logistics",
+      "locationHint": "Specify where your products are shipped from"
     },
     "construction": {
       "title": "Under Construction",
@@ -1432,7 +1458,21 @@
     "homeDeliveryLogistics": "Home Delivery Logistics",
     "inStockShort": "In Stock Short",
     "shipViaTcat": "Ship Via Tcat",
-    "shippingFee": "Shipping Fee"
+    "shippingFee": "Shipping Fee",
+    "sortTopRated": "Top Rated",
+    "buyerInfoDisclaimer": "To ensure accuracy, please use your valid name as it appears on your ID.",
+    "reviews": "Reviews",
+    "writeReview": "Write a Review",
+    "editReview": "Edit Review",
+    "yourRating": "Your Rating",
+    "yourComment": "Your Comment (optional)",
+    "submitReview": "Submit Review",
+    "reviewSubmitted": "Review submitted!",
+    "reviewUpdated": "Review updated!",
+    "noReviews": "No reviews yet. Be the first!",
+    "noReviewsYet": "No reviews yet.",
+    "ratingCount": "({count} reviews)",
+    "loginToReview": "Log in to write a review"
   },
   "merchant": {
     "register": {

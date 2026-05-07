@@ -71,6 +71,18 @@ const routes: Array<RouteRecordRaw> = [
         component: () => import('@/views/profile/SavedLocationsView.vue'),
         meta: { requiresAuth: true, noTabs: true, noAds: true }
     },
+    {
+        path: '/submissions/products',
+        name: 'MyProducts',
+        component: () => import('@/views/profile/MyProductsView.vue'),
+        meta: { requiresAuth: true, noTabs: true, noAds: true }
+    },
+    {
+        path: '/submissions/locations',
+        name: 'MyLocations',
+        component: () => import('@/views/profile/MyLocationsView.vue'),
+        meta: { requiresAuth: true, noTabs: true, noAds: true }
+    },
 
     { path: '/place/:id', name: 'PlaceDetail', component: () => import('@/views/explore/PlaceDetailsView.vue'), props: true, meta: { noAds: true } },
     { path: '/place/:id/edit', name: 'EditPlace', component: () => import('@/views/explore/AddPlaceView.vue'), },

@@ -47,7 +47,9 @@
     "maintenanceMessage": "This feature is currently undergoing maintenance. We'll be back soon!",
     "copied": "Copied to clipboard",
     "change": "更改",
-    "mandatory": "必填"
+    "mandatory": "必填",
+    "chat": "Chat",
+    "edited": "(Edited)"
   },
   "master": {
     "active": "啟用",
@@ -593,7 +595,8 @@
     "sections": {
       "account": "帳戶與偏好",
       "activity": "活動",
-      "about": "關於 App"
+      "about": "關於 App",
+      "contributions": "Contributions"
     },
     "title": "個人資料",
     "logout": "登出",
@@ -709,7 +712,19 @@
       "line": "LINE",
       "website": "網站"
     },
-    "defaultName": "用戶"
+    "defaultName": "用戶",
+    "submittedProducts": "Submitted Products",
+    "submittedLocations": "Submitted Locations",
+    "myProducts": {
+      "title": "My Submitted Products",
+      "noProducts": "You haven't submitted any products yet.",
+      "status": "Status",
+      "approval": "Approval"
+    },
+    "myLocations": {
+      "title": "My Submitted Locations",
+      "noLocations": "You haven't submitted any locations yet."
+    }
   },
   "appReview": {
     "title": "喜歡 Halal Formosa 嗎？",
@@ -1431,7 +1446,8 @@
     "free": "Free",
     "homeDeliveryLogistics": "Home Delivery Logistics",
     "shipViaTcat": "Ship Via Tcat",
-    "shippingFee": "Shipping Fee"
+    "shippingFee": "Shipping Fee",
+    "sortTopRated": "Top Rated"
   },
   "merchant": {
     "register": {
