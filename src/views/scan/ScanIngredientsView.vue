@@ -286,7 +286,7 @@
                 <div class="highlights-title">{{ $t('scanIngredients.scan.highlights') || 'Detected Ingredients' }}</div>
                 <div class="chip-group">
                   <ion-chip
-                      v-for="(h, idx) in ingredientHighlights.filter(h => extractIonColor(h.color) !== 'primary')"
+                      v-for="(h, idx) in dangerousHighlights"
                       :key="idx"
                       class="compact-chip"
                       :class="['chip-' + extractIonColor(h.color)]"
@@ -296,13 +296,13 @@
                 </div>
 
                 <!-- Muslim Friendly Toggle -->
-                <div v-if="ingredientHighlights.some(h => extractIonColor(h.color) === 'primary')" class="ion-margin-top">
+                <div v-if="hasFriendlyHighlights" class="ion-margin-top">
                   <ion-button fill="clear" size="small" @click="showMuslimFriendly = !showMuslimFriendly" style="font-size: 11px; --padding-start: 0;">
                     {{ showMuslimFriendly ? $t('scanIngredients.muslimFriendly.hide') : $t('scanIngredients.muslimFriendly.show') }}
                   </ion-button>
                   <div v-if="showMuslimFriendly" style="display: flex; flex-wrap: wrap; gap: 4px;">
                      <ion-chip
-                        v-for="(h, idx) in ingredientHighlights.filter(h => extractIonColor(h.color) === 'primary')"
+                        v-for="(h, idx) in friendlyHighlights"
                         :key="idx"
                         class="compact-chip chip-primary"
                      >
@@ -831,6 +831,16 @@ const {
   setError,
   t,
 })
+
+const dangerousHighlights = computed(() => 
+  ingredientHighlights.value.filter(h => extractIonColor(h.color) !== 'primary')
+)
+const friendlyHighlights = computed(() => 
+  ingredientHighlights.value.filter(h => extractIonColor(h.color) === 'primary')
+)
+const hasFriendlyHighlights = computed(() => 
+  ingredientHighlights.value.some(h => extractIonColor(h.color) === 'primary')
+)
 
 /** ---------- Log Scan ------------ */
 async function logIngredientScan({

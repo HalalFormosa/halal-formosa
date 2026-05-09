@@ -364,7 +364,7 @@
                     <!-- Highlight Clips -->
                     <div v-if="ingredientHighlights.length" class="highlights-preview ion-padding">
                        <ion-chip
-                          v-for="(h, idx) in ingredientHighlights.filter(h => extractIonColor(h.color) !== 'primary')"
+                          v-for="(h, idx) in dangerousHighlights"
                           :key="idx"
                           class="compact-chip"
                           :class="['chip-' + extractIonColor(h.color)]"
@@ -372,13 +372,13 @@
                          {{ h.keyword }}
                        </ion-chip>
                        
-                       <div v-if="ingredientHighlights.some(h => extractIonColor(h.color) === 'primary')" class="ion-margin-top">
+                       <div v-if="hasFriendlyHighlights" class="ion-margin-top">
                          <ion-button fill="clear" size="small" @click="showMuslimFriendly = !showMuslimFriendly" class="toggle-friendly-btn">
                            {{ showMuslimFriendly ? 'Hide Friendly' : 'Show Friendly' }}
                          </ion-button>
                          <div v-if="showMuslimFriendly" class="friendly-chips">
                             <ion-chip
-                              v-for="(h, idx) in ingredientHighlights.filter(h => extractIonColor(h.color) === 'primary')"
+                              v-for="(h, idx) in friendlyHighlights"
                               :key="idx"
                               class="compact-chip chip-primary"
                             >
@@ -997,6 +997,16 @@ type DetectedProduct = {
 }
 
 const detectedProduct = ref<DetectedProduct | null>(null)
+
+const dangerousHighlights = computed(() => 
+  ingredientHighlights.value.filter(h => extractIonColor(h.color) !== 'primary')
+)
+const friendlyHighlights = computed(() => 
+  ingredientHighlights.value.filter(h => extractIonColor(h.color) === 'primary')
+)
+const hasFriendlyHighlights = computed(() => 
+  ingredientHighlights.value.some(h => extractIonColor(h.color) === 'primary')
+)
 
 
 // 🟢 Keep product-specific syncing into form
