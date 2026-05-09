@@ -1111,21 +1111,16 @@ ion-header {
     top: 0;
     left: 0;
     right: 0;
-    background: transparent;
-    z-index: 100;
-    transition: background-color 0.3s ease, backdrop-filter 0.3s ease;
+    z-index: 1000;
+    background: transparent !important;
+    transition: background-color 0.3s ease, backdrop-filter 0.3s ease, box-shadow 0.3s ease;
 }
 
 .immersive-header.is-scrolled {
-    background: transparent !important;
-}
-
-/* Apply background filter to the actual header when scrolled */
-ion-header.is-scrolled {
     background: var(--ion-background-color) !important;
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
-    transition: background-color 0.3s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
 
@@ -1268,30 +1263,7 @@ ion-header.is-scrolled {
     --padding-bottom: var(--safe-area-inset-bottom, 0px);
 }
 
-/* ===============================
-   Immersive Page Layout Components
-   =============================== */
-
-.immersive-header {
-  --background: transparent;
-  transition: background 0.3s ease-in-out;
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 1000;
-}
-
-.immersive-header.is-scrolled {
-  
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-}
-
-.immersive-header.has-ads {
-  position: relative !important;
-  --background: transparent;
-  z-index: 1000;
-}
+/* Removed duplicate and moved to consolidated block above */
 
 .details-container {
   background: var(--ion-background-color);
