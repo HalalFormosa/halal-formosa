@@ -20,15 +20,29 @@ export interface OcrPipelineOptions {
     t: (key: string) => string
 }
 
-export default function useOcrPipeline({
-    allHighlights,
-    blacklistPatterns,
-    incrementDisclaimerCount,
-    incrementUsageCount,
-    fetchHighlightsWithCache,
-    setError,
-    t,
-}: OcrPipelineOptions) {
+export default function useOcrPipeline(options: OcrPipelineOptions) {
+    // 🛡️ Safety Guard: Ensure options object exists
+    if (!options) {
+        console.error("❌ [OcrPipeline] Options object is missing!");
+        return {} as any;
+    }
+
+    const {
+        allHighlights,
+        blacklistPatterns,
+        incrementDisclaimerCount,
+        incrementUsageCount = () => 0,
+        fetchHighlightsWithCache = async () => null,
+        setError = (msg: string) => console.error(msg),
+    } = options;
+
+    // ✅ Defensive check for translation function
+    const t = typeof options.t === 'function' ? options.t : (key: string) => {
+        console.warn(`⚠️ [OcrPipeline] Translation function 't' is missing. Returning key: ${key}`);
+        return key;
+    };
+
+
     const ingredientHighlights = ref<IngredientHighlight[]>([])
     const ingredientsTextZh = ref('')
     const autoStatus = ref('')

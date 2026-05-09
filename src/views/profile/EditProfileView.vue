@@ -129,7 +129,7 @@
             </ion-label>
             <ion-toggle
                 slot="end"
-                :checked="isPublicProfile"
+                :checked="isPublicProfile ?? false"
                 @ionChange="setPublicProfile($event.detail.checked)"
                 color="carrot"
             ></ion-toggle>

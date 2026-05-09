@@ -52,7 +52,7 @@
           <div class="gallery-container">
             <div class="gallery-scroll" ref="galleryRef" @scroll="handleGalleryScroll">
               <div v-for="(img, i) in product.images" :key="i" class="gallery-item" :id="'gallery-img-' + i">
-                <img :src="img" :alt="`${product.name} ${Number(i) + 1}`" class="gallery-image" @click="openImageModal(i)" />
+                <img :src="img" :alt="`${product.name} ${Number(i) + 1}`" class="gallery-image" @click="openImageModal(Number(i))" />
               </div>
               <div v-if="!product.images?.length" class="gallery-item gallery-placeholder">
                 <ion-icon :icon="imageOutline" />
@@ -74,7 +74,7 @@
               <div v-for="(img, i) in product.images" :key="i" 
                 class="thumb-item" 
                 :class="{ active: activeImageIndex === i }"
-                @click="scrollToImage(i)"
+                @click="scrollToImage(Number(i))"
               >
                 <img :src="img" />
               </div>
@@ -374,7 +374,7 @@
         >
           <SwiperSlide v-for="(img, i) in product.images" :key="i">
             <div class="swiper-zoom-container">
-              <img :src="img" :alt="`Product Image ${i + 1}`" />
+              <img :src="img" :alt="`Product Image ${Number(i) + 1}`" />
             </div>
           </SwiperSlide>
         </Swiper>
