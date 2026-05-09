@@ -36,12 +36,18 @@ const routes: Array<RouteRecordRaw> = [
             {
                 path: 'trip',
                 component: () => import('@/views/trip/TripListView.vue'),
-                meta: { noAds: false }
+                meta: { 
+                    adSpaceId: 'ad-space-trip',
+                    adId: import.meta.env.VITE_ADMOB_TRIP_BANNER_ID
+                }
             },
             {
                 path: 'store',
                 component: () => import('@/views/store/StoreView.vue'),
-                meta: { noAds: true }
+                meta: { 
+                    adSpaceId: 'ad-space-store',
+                    adId: import.meta.env.VITE_ADMOB_STORE_BANNER_ID
+                }
             },
             { path: 'add', component: () => import('@/views/add-product/AddProductView.vue'), meta: { requiresAuth: true } },
             { path: 'profile', component: () => import('@/views/profile/ProfileView.vue'), meta: { noAds: true } },
@@ -84,11 +90,20 @@ const routes: Array<RouteRecordRaw> = [
         meta: { requiresAuth: true, noTabs: true, noAds: true }
     },
 
-    { path: '/place/:id', name: 'PlaceDetail', component: () => import('@/views/explore/PlaceDetailsView.vue'), props: true, meta: { noAds: true } },
+    { 
+        path: '/place/:id', 
+        name: 'PlaceDetail', 
+        component: () => import('@/views/explore/PlaceDetailsView.vue'), 
+        props: true, 
+        meta: { 
+            adSpaceId: 'ad-space-place-detail',
+            adId: import.meta.env.VITE_ADMOB_PLACE_DETAIL_BANNER_ID
+        } 
+    },
     { path: '/place/:id/edit', name: 'EditPlace', component: () => import('@/views/explore/AddPlaceView.vue'), },
     { path: '/place/:id/report', name: 'ReportPlaceView', component: () => import('@/views/explore/ReportPlaceView.vue'), props: true },
 
-    { path: '/item/:barcode', name: 'item-details', component: () => import('@/views/search/ItemDetailsView.vue'), meta: { noAds: true } },
+    { path: '/item/:barcode', name: 'item-details', component: () => import('@/views/search/ItemDetailsView.vue'), meta: { adSpaceId: 'ad-space-item-details', adId: import.meta.env.VITE_ADMOB_ITEM_DETAILS_BANNER_ID } },
 
     {
         path: '/partners',
@@ -109,7 +124,15 @@ const routes: Array<RouteRecordRaw> = [
         component: () => import('@/views/utilities/QiblaFinderView.vue')
     },
 
-    { path: '/scan', component: ScanIngredientsView, meta: { requiresAuth: true, noAds: true } },
+    { 
+      path: '/scan', 
+      component: ScanIngredientsView, 
+      meta: { 
+        requiresAuth: true, 
+        adSpaceId: 'ad-space-scan-results', 
+        adId: import.meta.env.VITE_ADMOB_SCAN_RESULTS_BANNER_ID 
+      } 
+    },
     { path: '/scan/auto', component: () => import('@/views/scan/AutoScanView.vue'), meta: { requiresAuth: true, noAds: true, noTabs: true } },
 
     { path: '/news', component: () => import('@/views/news/NewsListView.vue') },
@@ -203,7 +226,10 @@ const routes: Array<RouteRecordRaw> = [
         name: 'StoreProductDetail',
         component: () => import('@/views/store/StoreProductDetailView.vue'),
         props: true,
-        meta: { noAds: true }
+        meta: { 
+            adSpaceId: 'ad-space-store-detail',
+            adId: import.meta.env.VITE_ADMOB_STORE_DETAIL_BANNER_ID
+        }
     },
     {
         path: '/store/merchant/:id',

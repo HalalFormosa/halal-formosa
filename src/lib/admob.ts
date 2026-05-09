@@ -31,25 +31,23 @@ export async function moveBanner(adId: string, spaceId: string, isTesting: boole
     if (!Capacitor.isNativePlatform()) return
     const myJob = ++jobId
 
-    // wait until the slot exists
-    const el = await waitForEl(spaceId)
-    if (!el) {
-        // page never produced the slot -> ensure nothing shows
-        if (myJob === jobId) { try { await AdMob.removeBanner() } catch (e) { console.debug('AdMob remove skip', e) } }
-        return
-    }
-
-    // let layout settle so top offset is correct
-    await new Promise<void>(r => requestAnimationFrame(() => r()))
-    await delay(120) // 120ms to let Ionic header animate in
-    const rect = el.getBoundingClientRect()
-    const topOffset = Math.max(0, Math.round(rect.top + window.scrollY))
-
-    // hard reset before re-show to avoid carry-over margins
+    // Hard reset immediately to clear any existing banner at the top
     try { await AdMob.removeBanner() } catch (e) { console.debug('AdMob remove skip', e) }
 
-    // if a newer navigation happened, abort
+    // wait until the slot exists
+    const el = await waitForEl(spaceId)
+    if (!el) return
+
+    // Let the page settle. Ionic transitions can take 400ms+.
+    // We wait a bit longer to ensure the "details-container" has moved to its final spot.
+    await delay(350)
+    
     if (myJob !== jobId) return
+
+    const rect = el.getBoundingClientRect()
+    // In Ionic, the scroll happens inside ion-content. 
+    // We want the position relative to the viewport at this moment.
+    const topOffset = Math.max(0, Math.round(rect.top))
 
     await AdMob.showBanner({
         adId,

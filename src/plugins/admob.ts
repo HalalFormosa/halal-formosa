@@ -1,5 +1,6 @@
 import { Capacitor } from '@capacitor/core'
 import { hideBanner, moveBanner } from '@/lib/admob'
+import { isDonor } from '@/composables/useSubscriptionStatus'
 import router from '@/router'
 
 
@@ -9,7 +10,7 @@ export function scheduleBannerUpdate() {
     clearTimeout((window as any).__adT)
         ; (window as any).__adT = setTimeout(async () => {
             const r = router.currentRoute.value
-            const noAds = !!r.meta?.noAds
+            const noAds = !!r.meta?.noAds || isDonor.value
             const spaceId = r.meta?.adSpaceId as string | undefined
             const adId = (r.meta?.adId as string | undefined) || import.meta.env.VITE_ADMOB_BANNER_ID
 

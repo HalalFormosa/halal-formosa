@@ -1,6 +1,8 @@
 <template>
   <ion-page>
-   <ion-header class="ion-no-border immersive-header" :class="{ 'is-scrolled': isScrolled }">
+    <ion-header class="ion-no-border immersive-header" :class="{ 'is-scrolled': isScrolled, 'has-ads': isNative && showAds }">
+       <!-- Native (mobile) AdMob banner -->
+       <div v-if="isNative && showAds" id="ad-space-place-detail" :style="{ height: '65px', paddingTop: 'var(--ion-safe-area-top, 0)' }"></div>
        <app-header
            :title="$t('explore.details.title')"
            show-back
@@ -34,7 +36,7 @@
        </app-header>
      </ion-header>
 
-    <ion-content :scroll-events="true" @ionScroll="handleScroll" fullscreen>
+    <ion-content :scroll-events="true" @ionScroll="handleScroll" :fullscreen="!showAds">
       <div v-if="!loading && place">
         <!-- 🖼️ Image carousel (Swiper) -->
         <Swiper
@@ -395,8 +397,11 @@ import {
   IonModal,
   IonButton, IonHeader, IonChip,
   IonList,
-  popoverController
+  popoverController, onIonViewDidEnter
 } from '@ionic/vue'
+import { Capacitor } from '@capacitor/core'
+import { isDonor } from "@/composables/useSubscriptionStatus"
+import { scheduleBannerUpdate } from '@/plugins/admob'
 import {ref, onMounted, computed, nextTick} from 'vue'
 import {useI18n} from 'vue-i18n'
 import {onIonViewWillEnter} from '@ionic/vue'
@@ -500,6 +505,13 @@ const place = ref<PlaceDetail | null>(null)
 const canEdit = ref(false)
 const modules = [Pagination, Zoom]
 const isLoggedIn = ref(false)
+const isNative = ref(Capacitor.isNativePlatform())
+
+const showAds = computed(() => !isDonor.value)
+
+onIonViewDidEnter(() => {
+  scheduleBannerUpdate()
+})
 
 // Saved Locations
 const { isLocationSaved, checkSavedState } = useSavedLocations()
@@ -1354,7 +1366,6 @@ const scrollToDescription = () => {
   padding: 0 !important;
   width: 100%;
   height: 350px;
-  border-radius: 0 0 24px 24px;
   overflow: hidden;
 }
 
@@ -1381,4 +1392,6 @@ const scrollToDescription = () => {
 iframe {
   border-radius: 4px;
 }
+
+
 </style>

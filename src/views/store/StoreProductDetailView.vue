@@ -1,6 +1,8 @@
 <template>
   <ion-page>
-    <ion-header class="ion-no-border immersive-header" :class="{ 'is-scrolled': isScrolled }">
+    <ion-header class="ion-no-border immersive-header" :class="{ 'is-scrolled': isScrolled, 'has-ads': isNative && showAds }">
+      <!-- Native (mobile) AdMob banner -->
+      <div v-if="isNative && showAds" id="ad-space-store-detail" :style="{ height: '65px', paddingTop: 'var(--ion-safe-area-top, 0)' }"></div>
       <app-header 
           :title="product?.name || $t('store.title')" 
           :showBack="true" 
@@ -23,7 +25,7 @@
       </app-header>
     </ion-header>
 
-    <ion-content :fullscreen="true" :scroll-events="true" @ionScroll="handleScroll">
+    <ion-content :scroll-events="true" @ionScroll="handleScroll" :fullscreen="!showAds">
       <div v-if="isUnderConstruction" slot="fixed" class="under-construction-overlay">
         <div class="construction-card">
           <ion-icon :icon="constructOutline" class="construction-icon" />
@@ -91,7 +93,8 @@
             </div>
           </div>
 
-          <div class="detail-body">
+          <div class="details-container">
+            <div class="detail-body">
             <!-- Category badge -->
             <ion-chip v-if="categoryName" size="small" class="category-badge">
               {{ categoryName }}
@@ -204,8 +207,9 @@
                 <p>{{ isOwner ? $t('store.noReviewsYet') : $t('store.noReviews') }}</p>
               </div>
             </div>
-          </div>
-        </div>
+            </div><!-- .detail-body -->
+          </div><!-- .details-container -->
+        </div><!-- .detail-page-container -->
 
         <!-- Not found -->
         <div v-if="!loading && !product" class="empty-state">
@@ -389,8 +393,11 @@ import { useRoute, useRouter } from 'vue-router'
 import {
   IonPage, IonHeader, IonContent, IonFooter, IonToolbar, IonButton, IonIcon,
   IonChip, IonSkeletonText, toastController, IonAvatar, IonModal, IonTitle,
-  IonList, IonItem, IonLabel, IonButtons, IonThumbnail, IonTextarea, IonBadge
+  IonList, IonItem, IonLabel, IonButtons, IonThumbnail, IonTextarea, IonBadge, onIonViewDidEnter
 } from '@ionic/vue'
+import { Capacitor } from '@capacitor/core'
+import { isDonor } from "@/composables/useSubscriptionStatus"
+import { scheduleBannerUpdate } from '@/plugins/admob'
 import {
   imageOutline, cartOutline, bagHandleOutline, removeOutline, addOutline,
   checkmarkCircleOutline, closeCircleOutline, chatbubbleOutline, constructOutline,
@@ -414,6 +421,14 @@ const route = useRoute()
 const router = useRouter()
 const { addItem, items: cartItems, cartCount, cartTotal } = useStoreCart()
 const { getOrCreateConversation, totalUnreadCount, initGlobalUnreadSubscription } = useStoreChat()
+
+const isNative = ref(Capacitor.isNativePlatform())
+
+const showAds = computed(() => !isDonor.value)
+
+onIonViewDidEnter(() => {
+  scheduleBannerUpdate()
+})
 
 const isUnderConstruction = computed(() => import.meta.env.VITE_STORE_UNDER_CONSTRUCTION === 'true')
 const product = ref<any>(null)
@@ -463,7 +478,7 @@ function closeImageModal() {
 }
 
 const handleScroll = (ev: any) => {
-  isScrolled.value = ev.detail.scrollTop > 50
+  isScrolled.value = ev.detail.scrollTop > 80
 }
 
 const isOwner = computed(() => {
@@ -704,24 +719,12 @@ function updateQtyInCart(productId: string, newQty: number) {
 </script>
 
 <style scoped>
-.immersive-header {
-  --background: transparent;
-  transition: background 0.3s ease-in-out;
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 1000;
-}
 
-.immersive-header.is-scrolled {
-  --background: var(--ion-background-color);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-}
 
 .cart-button {
   position: relative;
 }
+
 
 .header-badge {
   position: absolute;

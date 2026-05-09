@@ -17,6 +17,7 @@ declare global {
 }
 
 const HCAPTCHA_SITE_KEY = import.meta.env.VITE_HCAPTCHA_SITE_KEY || '';
+const IS_HCAPTCHA_ENABLED = import.meta.env.VITE_HCAPTCHA_ENABLED === 'true';
 
 export function useHCaptcha() {
   const isScriptLoaded = ref(false);
@@ -25,9 +26,15 @@ export function useHCaptcha() {
   const error = ref<string | null>(null);
   let widgetId: number | null = null;
 
+  const isCaptchaEnabled = IS_HCAPTCHA_ENABLED;
+
   // Load hCaptcha script
   const loadScript = (): Promise<void> => {
     return new Promise((resolve, reject) => {
+      if (!isCaptchaEnabled) {
+        resolve();
+        return;
+      }
       if (window.hcaptcha) {
         isScriptLoaded.value = true;
         resolve();
@@ -56,6 +63,10 @@ export function useHCaptcha() {
   // Initialize invisible hCaptcha
   const initInvisible = (containerId: string): Promise<void> => {
     return new Promise((resolve, reject) => {
+      if (!isCaptchaEnabled) {
+        resolve();
+        return;
+      }
       if (!HCAPTCHA_SITE_KEY) {
         reject(new Error('VITE_HCAPTCHA_SITE_KEY is not set'));
         return;
@@ -103,6 +114,10 @@ export function useHCaptcha() {
   // Execute invisible challenge
   const execute = (): Promise<string> => {
     return new Promise((resolve, reject) => {
+      if (!isCaptchaEnabled) {
+        resolve('disabled');
+        return;
+      }
       if (!window.hcaptcha || widgetId === null) {
         reject(new Error('hCaptcha not initialized'));
         return;
@@ -154,8 +169,8 @@ export function useHCaptcha() {
   });
 
   return {
-    isScriptLoaded,
     isExecuting,
+    isCaptchaEnabled,
     token,
     error,
     loadScript,

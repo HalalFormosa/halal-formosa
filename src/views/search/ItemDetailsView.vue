@@ -1,10 +1,13 @@
 <template>
   <ion-page>
-    <ion-header class="ion-no-border immersive-header" :class="{ 'is-scrolled': isScrolled }">
+    <ion-header class="ion-no-border immersive-header" :class="{ 'is-scrolled': isScrolled, 'has-ads': isNative && showAds }">
+      <!-- Native (mobile) AdMob banner -->
+      <div v-if="isNative && showAds" id="ad-space-item-details" :style="{ height: '65px', paddingTop: 'var(--ion-safe-area-top, 0)' }"></div>
+
       <app-header 
         :title="$t('search.details.title')" 
         show-back 
-        back-route="/search" 
+        backRoute="/search" 
         :icon="bagOutline"
         :transparent="!isScrolled"
         :contrast="!isScrolled"
@@ -34,10 +37,9 @@
     </ion-header>
 
 
-    <!-- If this page should show ads, include this slot and set meta.adSpaceId above -->
-    <div v-if="isNative && showAds" id="ad-space-item-details" :style="{ height: '60px', paddingTop: 'var(--ion-safe-area-top, 0)' }"></div>
 
-    <ion-content :scroll-events="true" @ionScroll="handleScroll" fullscreen>
+
+    <ion-content :scroll-events="true" @ionScroll="handleScroll" :fullscreen="!showAds">
 
       <div v-if="loading">
         <!-- Image carousel skeleton -->
@@ -532,7 +534,7 @@ import {
   IonPage,
   IonContent, IonSkeletonText, IonChip, IonButton, IonHeader, IonModal,
   IonIcon, IonItem, IonLabel, IonCard, IonInput, IonList, IonListHeader, IonToast,
-  popoverController
+  popoverController, onIonViewDidEnter
 } from '@ionic/vue'
 import { onMounted, ref, nextTick, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -582,6 +584,10 @@ const isScrolled = ref(false)
 const handleScroll = (ev: any) => {
   isScrolled.value = ev.detail.scrollTop > 80
 }
+
+onIonViewDidEnter(() => {
+  (window as any).scheduleBannerUpdate?.()
+})
 
 const loading = ref(true)
 const isNative = ref(Capacitor.isNativePlatform())
@@ -653,7 +659,7 @@ const colorPriority: Record<string, number> = {
 
 // If this page should show ads (set meta accordingly), keep this true and include the slot.
 // If you used meta:{noAds:true} you can leave the slot out and keep showAds = false.
-const showAds = false // set true only if meta.adSpaceId is configured
+const showAds = computed(() => !isDonor.value)
 
 dayjs.extend(utc)
 dayjs.extend(timezone)
@@ -1317,15 +1323,9 @@ const share = async () => {
   color: #64748b;
 }
 
-.details-container {
-  background: var(--ion-background-color); /* Default theme background */
-  margin-top: -24px;
-  position: relative;
-  border-radius: 24px 24px 0 0;
-  min-height: 100vh; /* Ensure background fills to bottom */
-  z-index: 10;
-  overflow: hidden;
-}
+
+
+
 
 /* PREMIUM FLARE */
 .premium-flare {
@@ -1764,6 +1764,8 @@ ion-skeleton-text {
   flex-direction: column;
   gap: 8px;
 }
+
+
 
 .contribution-modal .action-btn {
   height: 54px;

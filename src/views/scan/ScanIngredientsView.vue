@@ -1,6 +1,9 @@
 <template>
   <ion-page>
-    <ion-header>
+    <ion-header :class="{ 'has-ads': isNative && !isDonor && currentStep === STEP_RESULTS }">
+      <!-- Native (mobile) AdMob banner - shown only on results step -->
+      <div v-if="isNative && !isDonor && currentStep === STEP_RESULTS" id="ad-space-scan-results" :style="{ height: '65px', paddingTop: 'var(--ion-safe-area-top, 0)' }"></div>
+
       <app-header
           :title="$t('scanIngredients.title')"
           :icon="scanOutline"
@@ -615,6 +618,9 @@ import { ActivityLogService } from "@/services/ActivityLogService";
 import { RevenueCatUI, PAYWALL_RESULT } from '@revenuecat/purchases-capacitor-ui'
 import { refreshSubscriptionStatus } from '@/composables/useSubscriptionStatus'
 import { useRouter } from 'vue-router'
+import { scheduleBannerUpdate } from '@/plugins/admob'
+import { hideBanner } from '@/lib/admob'
+import { onIonViewDidEnter } from '@ionic/vue'
 import { useAutoScanStore } from '@/composables/useAutoScanStore'
 import { useNotifier } from "@/composables/useNotifier"
 import { useI18n } from 'vue-i18n'
@@ -629,6 +635,26 @@ const STEP_CAPTURE = 0
 const STEP_RESULTS = 1
 const currentStep = ref(STEP_CAPTURE)
 const contentRef = ref<any>(null)
+
+onIonViewDidEnter(() => {
+  if (currentStep.value === STEP_RESULTS) {
+    scheduleBannerUpdate()
+  } else {
+    hideBanner()
+  }
+})
+
+// Update banner when step changes
+watch([currentStep, isDonor], ([newStep, donorStatus]) => {
+  if (newStep === STEP_RESULTS && !donorStatus) {
+    // Small delay to ensure DOM is updated with the ad slot
+    setTimeout(() => {
+      scheduleBannerUpdate()
+    }, 100)
+  } else {
+    hideBanner()
+  }
+})
 
 const scrollToTop = () => {
   nextTick(() => {
@@ -1864,4 +1890,11 @@ onUnmounted(() => {
 .status-text-warning { color: var(--ion-color-warning); font-weight: 700; }
 .status-text-danger  { color: var(--ion-color-danger);  font-weight: 700; }
 .status-text-medium  { color: var(--ion-color-medium);  font-weight: 700; }
+
+.has-ads {
+  background: var(--ion-background-color);
+}
+.has-ads {
+  background: var(--ion-background-color);
+}
 </style>

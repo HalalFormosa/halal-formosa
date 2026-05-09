@@ -1,14 +1,20 @@
 <template>
   <ion-page>
-    <ion-header>
-      <!-- ✅ This must be inside <template>, not in <script> -->
-      <div v-if="isNative && !isDonor" id="ad-space-news-detail" :style="{ height: '65px', paddingTop: 'var(--ion-safe-area-top, 0)' }"></div>
-      <app-header title="" show-back back-route="/news" icon="none" />
+    <ion-header class="ion-no-border immersive-header" :class="{ 'is-scrolled': isScrolled, 'has-ads': isNative && showAds }">
+      <div v-if="isNative && showAds" id="ad-space-news-detail" :style="{ height: '65px', paddingTop: 'var(--ion-safe-area-top, 0)' }"></div>
+      <app-header 
+        :title="newsItem?.title || ''" 
+        show-back 
+        back-route="/news" 
+        icon="none" 
+        :transparent="!isScrolled"
+        :contrast="!isScrolled"
+      />
     </ion-header>
 
 
 
-    <ion-content>
+    <ion-content :scroll-events="true" @ionScroll="handleScroll" :fullscreen="!showAds">
       <div v-if="loading" class="ion-text-center">
       </div>
 
@@ -16,33 +22,35 @@
         <img
             v-if="newsItem.header_image"
             :src="newsItem.header_image"
-            :class="['news-header-img', { 'has-ad': isNative && !isDonor }]"
+            class="news-header-img"
             alt="header-image"
         />
 
-        <div class="ion-padding" style="padding-top: 0;">
-          <h1>{{ newsItem.title }}</h1>
-          <p style="margin: 4px 0 8px 0; font-size: 13px; color: var(--ion-color-medium);">
-            <template v-if="authorProfile?.public_profile">
-              {{ $t('home.addedBy', { author: authorProfile.display_name }) }} - {{ fromNowToTaipei(newsItem.created_at) }}
-            </template>
-            <template v-else>
-              {{ $t('home.added') }} {{ fromNowToTaipei(newsItem.created_at) }}
-            </template>
-          </p>
-          <div class="article-content" v-html="newsItem.content"></div>
-          <p
-              class="ion-text-end ion-margin-top"
-              style="color: var(--ion-color-shade); font-size: 0.8rem;"
-          >
-            <template v-if="authorProfile?.public_profile">
-              {{ $t('home.addedBy', { author: authorProfile.display_name }) }} •
-            </template>
-            <template v-else>
-              {{ $t('home.added') }} •
-            </template>
-            {{ new Date(newsItem.created_at).toLocaleDateString() }}
-          </p>
+        <div class="details-container">
+          <div class="ion-padding" style="padding-top: 20px;">
+            <h1>{{ newsItem.title }}</h1>
+            <p style="margin: 4px 0 8px 0; font-size: 13px; color: var(--ion-color-medium);">
+              <template v-if="authorProfile?.public_profile">
+                {{ $t('home.addedBy', { author: authorProfile.display_name }) }} - {{ fromNowToTaipei(newsItem.created_at) }}
+              </template>
+              <template v-else>
+                {{ $t('home.added') }} {{ fromNowToTaipei(newsItem.created_at) }}
+              </template>
+            </p>
+            <div class="article-content" v-html="newsItem.content"></div>
+            <p
+                class="ion-text-end ion-margin-top"
+                style="color: var(--ion-color-shade); font-size: 0.8rem;"
+            >
+              <template v-if="authorProfile?.public_profile">
+                {{ $t('home.addedBy', { author: authorProfile.display_name }) }} •
+              </template>
+              <template v-else>
+                {{ $t('home.added') }} •
+              </template>
+              {{ new Date(newsItem.created_at).toLocaleDateString() }}
+            </p>
+          </div>
         </div>
       </div>
 
@@ -65,12 +73,13 @@
 </template>
 
 <script setup lang="ts">
-import {ref, onMounted, nextTick} from 'vue';
+import {ref, onMounted, nextTick, computed} from 'vue';
 import {
   IonPage,
   IonHeader,
   IonContent,
-  IonFab, IonFabButton, IonIcon
+  IonFab, IonFabButton, IonIcon,
+  onIonViewDidEnter
 } from '@ionic/vue';
 import { useRoute } from 'vue-router';
 import { supabase } from '@/plugins/supabaseClient';
@@ -86,6 +95,17 @@ const newsItem = ref<any>(null);
 const authorProfile = ref<{ display_name: string | null; public_profile: boolean } | null>(null);
 const loading = ref(true);
 const isNative = ref(Capacitor.isNativePlatform())
+
+const isScrolled = ref(false)
+const handleScroll = (ev: any) => {
+  isScrolled.value = ev.detail.scrollTop > 80
+}
+
+const showAds = computed(() => !isDonor.value)
+
+onIonViewDidEnter(() => {
+  (window as any).scheduleBannerUpdate?.()
+})
 
 import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
@@ -155,6 +175,9 @@ onMounted(async () => {
 }
 
 .news-header-img {
-  max-width: 100%;
+  width: 100%;
+  height: 300px;
+  object-fit: cover;
+  display: block;
 }
 </style>

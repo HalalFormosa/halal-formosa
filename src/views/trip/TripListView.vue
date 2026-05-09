@@ -4,6 +4,9 @@
     <!-- ================= HEADER ================= -->
     <ion-header>
 
+      <!-- Native (mobile) AdMob banner -->
+      <div v-if="isNative && !isDonor" id="ad-space-trip" :style="{ height: '65px', paddingTop: 'var(--ion-safe-area-top, 0)' }"></div>
+
       <!-- Top App Header -->
       <app-header
           :title="$t('trip.title')"
@@ -253,9 +256,12 @@ import { useI18n } from 'vue-i18n'
 import {
   IonPage, IonContent, IonSearchbar, IonToolbar,
   IonButton, IonIcon, IonText,
-  IonCard, IonCardContent, IonChip, IonSkeletonText, IonLabel, IonHeader, IonBadge, IonSelect,IonSelectOption,
-  IonPopover, IonList, IonItem, IonModal, IonTitle, IonButtons
+  IonCard, IonCardContent, IonChip, IonSkeletonText, IonLabel, IonHeader, IonBadge, IonSelect, IonSelectOption,
+  IonPopover, IonList, IonItem, IonModal, IonTitle, IonButtons, onIonViewDidEnter
 } from '@ionic/vue'
+import { Capacitor } from '@capacitor/core'
+import { isDonor } from "@/composables/useSubscriptionStatus"
+import { scheduleBannerUpdate } from '@/plugins/admob'
 
 import {
   funnelOutline, chevronUpOutline, chevronDownOutline, mapOutline, compassOutline, locationOutline,
@@ -283,6 +289,11 @@ const showFilters = ref(false)
 const isFilterModalOpen = ref(false)
 const activeCategoryIds = ref<number[]>([])
 const sortBy = ref<'recent' | 'views'>('recent')
+const isNative = ref(Capacitor.isNativePlatform())
+
+onIonViewDidEnter(() => {
+  scheduleBannerUpdate()
+})
 
 const isSmallScreen = ref(window.innerWidth < 768)
 
@@ -660,6 +671,21 @@ onUnmounted(() => {
   right: 0;
   height: 60px;
   background: linear-gradient(to bottom, transparent, rgba(0,0,0,0.35));
+}
+
+.premium-flare {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.05) 0%, transparent 50%, rgba(255, 215, 0, 0.05) 100%);
+  z-index: 1;
+}
+
+.has-ads {
+  background: var(--ion-background-color);
 }
 
 /* Tier badge overlay */

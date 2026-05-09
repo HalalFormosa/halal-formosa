@@ -75,7 +75,7 @@
           <div id="hcaptcha-login" style="display: none;"></div>
 
           <!-- hCaptcha disclosure -->
-          <p class="hcaptcha-disclosure" v-if="!isDev">
+          <p class="hcaptcha-disclosure" v-if="isCaptchaEnabled">
             This site is protected by hCaptcha and its
             <a href="https://www.hcaptcha.com/privacy" target="_blank">Privacy Policy</a> and
             <a href="https://www.hcaptcha.com/terms" target="_blank">Terms of Service</a> apply.
@@ -183,7 +183,7 @@ document.documentElement.classList.toggle(
 )
 
 const { locale, t } = useI18n()
-const { loadScript, initInvisible, execute, isExecuting } = useHCaptcha()
+const { loadScript, initInvisible, execute, isExecuting, isCaptchaEnabled } = useHCaptcha()
 const isDev = import.meta.env.DEV
 
 // form fields
@@ -199,7 +199,7 @@ const route = useRoute();
 
 // Initialize hCaptcha on mount
 onMounted(async () => {
-  if (!isDev) {
+  if (isCaptchaEnabled) {
     await loadScript()
     await initInvisible('hcaptcha-login')
   }
@@ -210,7 +210,7 @@ async function login() {
   errorMsg.value = ''
 
   // Step 1: Execute invisible hCaptcha
-  if (!import.meta.env.DEV) {
+  if (isCaptchaEnabled) {
     try {
       captchaLoading.value = true
       const captchaToken = await execute()

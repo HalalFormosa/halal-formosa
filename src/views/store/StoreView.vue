@@ -1,6 +1,9 @@
 <template>
   <ion-page>
     <ion-header>
+      <!-- Native (mobile) AdMob banner -->
+      <div v-if="isNative && !isDonor" id="ad-space-store" :style="{ height: '65px', paddingTop: 'var(--ion-safe-area-top, 0)' }"></div>
+
       <app-header :title="$t('store.title')" :icon="bagHandleOutline" :showProfile="true" />
 
       <!-- Actions toolbar: search input + chats + cart -->
@@ -308,8 +311,11 @@ import {
   IonSearchbar, IonChip, IonSkeletonText, IonInfiniteScroll, IonInfiniteScrollContent,
   IonFab, IonFabButton, IonRefresher, IonRefresherContent, IonFooter, IonTitle,
   IonPopover, IonList, IonItem, IonLabel, IonModal, IonThumbnail, IonBadge,
-  IonInput, IonToggle, onIonViewWillEnter
+  IonInput, IonToggle, onIonViewWillEnter, onIonViewDidEnter
 } from '@ionic/vue'
+import { Capacitor } from '@capacitor/core'
+import { isDonor } from "@/composables/useSubscriptionStatus"
+import { scheduleBannerUpdate } from '@/plugins/admob'
 import {
   bagHandleOutline, chatbubblesOutline, cartOutline, constructOutline,
   chevronDownOutline, checkmarkOutline, filterOutline, imageOutline,
@@ -328,6 +334,12 @@ const { items: cartItems, cartCount, cartTotal, updateQty } = useStoreCart()
 const { totalUnreadCount, initGlobalUnreadSubscription } = useStoreChat()
 
 // State
+const isNative = ref(Capacitor.isNativePlatform())
+
+onIonViewDidEnter(() => {
+  scheduleBannerUpdate()
+})
+
 const isUnderConstruction = computed(() => import.meta.env.VITE_STORE_UNDER_CONSTRUCTION === 'true')
 const promoScroll = ref<HTMLElement | null>(null)
 let autoScrollInterval: any = null
@@ -1305,5 +1317,8 @@ onBeforeUnmount(() => {
   .filter-row {
     padding: 8px 24px 16px;
   }
+}
+.has-ads {
+  background: var(--ion-background-color);
 }
 </style>
