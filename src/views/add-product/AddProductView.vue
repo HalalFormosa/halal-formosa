@@ -699,6 +699,7 @@ import { useImageResizer } from "@/composables/useImageResizer";
 import { useCropperOcr } from "@/composables/useCropperOcr"
 import type { Product } from '@/types/Product'
 import { useRouter, useRoute } from 'vue-router';
+import type { IngredientHighlight } from '@/types/Ingredient'
 import StoreLogoBar from "@/components/StoreLogoBar.vue";
 import { BarcodeValidator } from "@/utils/barcodeValidator";
 import { ActivityLogService } from "@/services/ActivityLogService";
@@ -999,13 +1000,13 @@ type DetectedProduct = {
 const detectedProduct = ref<DetectedProduct | null>(null)
 
 const dangerousHighlights = computed(() => 
-  ingredientHighlights.value.filter(h => extractIonColor(h.color) !== 'primary')
+  ingredientHighlights.value.filter((h: IngredientHighlight) => extractIonColor(h.color) !== 'primary')
 )
 const friendlyHighlights = computed(() => 
-  ingredientHighlights.value.filter(h => extractIonColor(h.color) === 'primary')
+  ingredientHighlights.value.filter((h: IngredientHighlight) => extractIonColor(h.color) === 'primary')
 )
 const hasFriendlyHighlights = computed(() => 
-  ingredientHighlights.value.some(h => extractIonColor(h.color) === 'primary')
+  ingredientHighlights.value.some((h: IngredientHighlight) => extractIonColor(h.color) === 'primary')
 )
 
 

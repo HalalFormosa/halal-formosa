@@ -600,7 +600,7 @@ import useShareCard from "@/composables/useShareCard";
 import useError from '@/composables/useError'
 import useHighlightCache from '@/composables/useHighlightCache'
 import { extractIonColor, colorMeaning } from '@/utils/ingredientHelpers'
-import {BlacklistPattern} from "@/types/Ingredient";
+import type { IngredientHighlight, BlacklistPattern } from "@/types/Ingredient";
 import useAISummary from '@/composables/useAISummary'
 import { isDonor } from "@/composables/useSubscriptionStatus";
 import { useCropperOcr } from "@/composables/useCropperOcr"
@@ -833,13 +833,13 @@ const {
 })
 
 const dangerousHighlights = computed(() => 
-  ingredientHighlights.value.filter(h => extractIonColor(h.color) !== 'primary')
+  ingredientHighlights.value.filter((h: IngredientHighlight) => extractIonColor(h.color) !== 'primary')
 )
 const friendlyHighlights = computed(() => 
-  ingredientHighlights.value.filter(h => extractIonColor(h.color) === 'primary')
+  ingredientHighlights.value.filter((h: IngredientHighlight) => extractIonColor(h.color) === 'primary')
 )
 const hasFriendlyHighlights = computed(() => 
-  ingredientHighlights.value.some(h => extractIonColor(h.color) === 'primary')
+  ingredientHighlights.value.some((h: IngredientHighlight) => extractIonColor(h.color) === 'primary')
 )
 
 /** ---------- Log Scan ------------ */
