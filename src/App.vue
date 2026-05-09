@@ -143,6 +143,7 @@ const askGeolocationPermission = async () => {
 };
 
 const APP_OPEN_KEY = 'app_open_count';
+const NEVER_SHOW_REVIEW_KEY = 'app_review_never_show';
 
 const checkAppUpdate = async () => {
   if (!Capacitor.isNativePlatform() || Capacitor.getPlatform() !== 'android') return;
@@ -162,8 +163,10 @@ const checkAndAskForReview = async () => {
   const platform = Capacitor.getPlatform();
   if (platform !== 'android' && platform !== 'ios') return;
 
-  // 📝 Skip if already reviewed (synced from Supabase)
-  if (hasReviewedApp.value) return;
+  // 📝 Skip if already reviewed (synced from Supabase) OR "Never" pressed locally
+  if (hasReviewedApp.value || localStorage.getItem(NEVER_SHOW_REVIEW_KEY) === 'true') {
+    return;
+  }
 
   let count = parseInt(localStorage.getItem(APP_OPEN_KEY) || '0', 10);
   count++;
@@ -191,6 +194,7 @@ const checkAndAskForReview = async () => {
                 {
                   text: t('appReview.confirmNeverConfirm'),
                   handler: () => {
+                    localStorage.setItem(NEVER_SHOW_REVIEW_KEY, 'true');
                     setHasReviewedApp(true);
                   }
                 }
@@ -211,7 +215,8 @@ const checkAndAskForReview = async () => {
           text: t('appReview.rateNow'),
           cssClass: 'alert-button-confirm',
           handler: async () => {
-            // 1. Mark as reviewed in DB immediately to stop asking
+            // 1. Mark as reviewed locally & in DB immediately to stop asking
+            localStorage.setItem(NEVER_SHOW_REVIEW_KEY, 'true');
             setHasReviewedApp(true);
 
             // 2. Trigger Official Native In-App Review Sheet

@@ -3,7 +3,11 @@ import { Purchases } from "@revenuecat/purchases-capacitor";
 import { Capacitor } from "@capacitor/core";
 import { supabase } from "@/plugins/supabaseClient";
 
-export const isDonor = ref(import.meta.env.DEV ? true : false);
+const SUB_CACHE_KEY = "user_pro_status";
+
+// Initialize from cache if available to prevent UI flicker/ads on bad internet
+const cachedStatus = localStorage.getItem(SUB_CACHE_KEY) === "true";
+export const isDonor = ref(import.meta.env.DEV ? true : cachedStatus);
 export const lastSyncedEntitlement = ref<string | null>(null);
 
 export async function refreshSubscriptionStatus(options?: {
@@ -23,8 +27,9 @@ export async function refreshSubscriptionStatus(options?: {
             customerInfo.entitlements.active["Halal Formosa Pro"]
         );
 
-        // ✅ ONLY responsibility
+        // ✅ Update ref and cache
         isDonor.value = hasPro;
+        localStorage.setItem(SUB_CACHE_KEY, String(hasPro));
 
         console.log("⭐ [Sub] Pro entitlement =", hasPro);
 
@@ -45,7 +50,7 @@ export async function refreshSubscriptionStatus(options?: {
             }
 
             console.log("✅ [Sub] sync-subscription success")
-            return data   // ✅ ADD THIS
+            return data
 
         } else {
             console.log("⏭️ [Sub] syncToServer disabled, skipping backend sync");
@@ -53,6 +58,7 @@ export async function refreshSubscriptionStatus(options?: {
 
     } catch (err) {
         console.error("❌ [Sub] refreshSubscriptionStatus failed:", err);
-        isDonor.value = false;
+        // 🛡️ IMPORTANT: Don't set isDonor to false on network error.
+        // Keep the last known status (cachedStatus) to allow offline/poor-internet access.
     }
 }
