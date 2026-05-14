@@ -2445,7 +2445,7 @@ onMounted(async () => {
   // Parallelize basic data and map init
   initMap()
   loadRole()
-  fetchLocationTypes()
+  await fetchLocationTypes()
   
   // These are more critical for the list, but let's fire them 
   fetchCampusPartners()
@@ -2490,6 +2490,17 @@ const processUrlParams = () => {
     delete query.tag
     router.replace({ query })
   }
+
+  const typeParam = router.currentRoute.value.query.type as string
+  if (typeParam) {
+    const cat = categories.value.find(c => c.name === typeParam)
+    if (cat) {
+      activeCategoryIds.value = [cat.id]
+    }
+    const query = { ...router.currentRoute.value.query }
+    delete query.type
+    router.replace({ query })
+  }
 }
 
 
@@ -2513,6 +2524,7 @@ onIonViewWillEnter(async () => {
   }
 
   await fetchLocations()
+  await fetchLocationTypes()
   await fetchCampusPartners()
   await nextTick()
 

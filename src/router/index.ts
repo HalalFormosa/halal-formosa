@@ -56,6 +56,12 @@ const routes: Array<RouteRecordRaw> = [
         name: 'FullReels',
         component: () => import('@/views/home/FullReelsView.vue'),
         meta: { noAds: true }
+    },
+    {
+        path: '/analytics/:type',
+        name: 'Analytics',
+        component: () => import('@/views/analytics/AnalyticsView.vue'),
+        meta: { noTabs: true, noAds: true }
     }
         ],
     },
@@ -123,6 +129,7 @@ const routes: Array<RouteRecordRaw> = [
         name: 'Qibla',
         component: () => import('@/views/utilities/QiblaFinderView.vue')
     },
+
 
     { 
       path: '/scan', 

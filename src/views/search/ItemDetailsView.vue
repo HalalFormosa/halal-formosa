@@ -39,7 +39,7 @@
 
 
 
-    <ion-content :scroll-events="true" @ionScroll="handleScroll" fullscreen="true">
+    <ion-content :scroll-events="true" @ionScroll="handleScroll" fullscreen>
 
       <div v-if="loading">
         <!-- Image carousel skeleton -->

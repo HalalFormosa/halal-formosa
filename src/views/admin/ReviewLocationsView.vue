@@ -90,7 +90,13 @@
 
           <ion-label>
             <h2>{{ loc.name }}</h2>
-            <p>{{ loc.address }}</p>
+            <p>
+              <ion-text color="primary" style="font-weight: 600;">
+                {{ loc.location_types?.name || $t('common.unknown') }}
+              </ion-text>
+              <span style="margin: 0 4px;">•</span>
+              {{ loc.address }}
+            </p>
           </ion-label>
         </ion-item>
       </ion-list>
@@ -146,7 +152,7 @@
               <!-- Category (Location Type) -->
               <ion-item>
                 <ion-select
-                    v-model="selectedLocation.location_type_id"
+                    v-model.number="selectedLocation.type_id"
                     interface="popover"
                     :label="$t('explore.categories')"
                     label-placement="floating"
@@ -252,6 +258,49 @@
                 </ion-select>
               </ion-item>
 
+              <!-- Tags Section -->
+              <ion-item-divider mode="md">
+                <ion-label>{{ $t('addPlace.tagsAndCategories') }}</ion-label>
+              </ion-item-divider>
+              <ion-item lines="none">
+                <ion-input
+                    v-model="tagInput"
+                    :label="$t('addPlace.addTagLabel')"
+                    label-placement="stacked"
+                    :placeholder="$t('addPlace.tagPlaceholder')"
+                    @ionInput="handleTagInput"
+                    @keyup.enter="addTag"
+                />
+                <ion-button slot="end" fill="clear" @click="addTag" style="margin-top: 14px;">
+                  <ion-icon :icon="checkmarkOutline" />
+                </ion-button>
+              </ion-item>
+              <div v-if="selectedLocation.tags?.length > 0" class="tag-chips ion-padding-horizontal">
+                <ion-chip v-for="tag in selectedLocation.tags" :key="tag" color="primary" outline class="tag-chip">
+                  <ion-label>{{ tag }}</ion-label>
+                  <ion-icon :icon="closeOutline" @click="removeTag(tag)" />
+                </ion-chip>
+              </div>
+
+              <!-- Opening Hours Section -->
+              <ion-item-divider mode="md">
+                <ion-label>{{ $t('addPlace.openingHours') }}</ion-label>
+              </ion-item-divider>
+              <ion-list class="opening-hours-list" lines="none">
+                <template v-for="(label, key) in dayLabels" :key="key">
+                  <ion-item class="opening-hours-item" lines="full">
+                    <ion-checkbox v-model="selectedLocation.opening_hours[key].active" slot="start" />
+                    <ion-label class="day-label">{{ $t('addPlace.days.' + key) }}</ion-label>
+                    <span v-if="!selectedLocation.opening_hours[key]?.active" class="closed-label">{{ $t('addPlace.closed') }}</span>
+                    <div v-else class="time-inputs">
+                      <ion-input v-model="selectedLocation.opening_hours[key].open" type="time" class="time-field" />
+                      <span style="margin: 0 4px;">-</span>
+                      <ion-input v-model="selectedLocation.opening_hours[key].close" type="time" class="time-field" />
+                    </div>
+                  </ion-item>
+                </template>
+              </ion-list>
+
               <!-- Image Section -->
               <div class="ion-margin-top ion-padding-horizontal">
                 <ion-label><strong>{{ $t('admin.locationImage') }}</strong></ion-label>
@@ -300,7 +349,8 @@ import {
   IonItem, IonThumbnail, IonLabel, IonText,
   IonModal, IonToolbar, IonTitle, IonButtons, IonAvatar, IonBadge, IonItemGroup,
   IonButton, IonInput, IonTextarea, IonSkeletonText, IonSelect, IonSelectOption,
-  IonSearchbar, IonSegment, IonSegmentButton, IonPopover, IonIcon
+  IonSearchbar, IonSegment, IonSegmentButton, IonPopover, IonIcon,
+  IonItemDivider, IonChip, IonCheckbox
 } from '@ionic/vue'
 
 import { ref, onMounted, reactive, computed } from 'vue'
@@ -325,6 +375,52 @@ const selectedLocation = ref<any | null>(null)
 const locationTypes = ref<{ id: number, name: string }[]>([])
 const isUnmounted = ref(false)
 const { resizeImage } = useImageResizer()
+
+// Tags logic
+const tagInput = ref('')
+const dayLabels = {
+  mon: 'Monday', tue: 'Tuesday', wed: 'Wednesday', thu: 'Thursday',
+  fri: 'Friday', sat: 'Saturday', sun: 'Sunday'
+}
+
+function addTag() {
+  if (!tagInput.value.trim() || !selectedLocation.value) return
+  if (!selectedLocation.value.tags) selectedLocation.value.tags = []
+  if (!selectedLocation.value.tags.includes(tagInput.value.trim())) {
+    selectedLocation.value.tags.push(tagInput.value.trim())
+  }
+  tagInput.value = ''
+}
+
+function removeTag(tag: string) {
+  if (!selectedLocation.value?.tags) return
+  selectedLocation.value.tags = selectedLocation.value.tags.filter((t: string) => t !== tag)
+}
+
+function handleTagInput(ev: any) {
+  const val = ev.target.value
+  if (val?.includes(',') || val?.includes(' ')) {
+    const parts = val.split(/[ ,]+/).filter(Boolean)
+    parts.forEach((p: string) => {
+      if (!selectedLocation.value.tags) selectedLocation.value.tags = []
+      if (!selectedLocation.value.tags.includes(p)) {
+        selectedLocation.value.tags.push(p)
+      }
+    })
+    tagInput.value = ''
+  }
+}
+
+// Opening hours helper
+const defaultHours = {
+  mon: { active: false, open: "09:00", close: "18:00" },
+  tue: { active: false, open: "09:00", close: "18:00" },
+  wed: { active: false, open: "09:00", close: "18:00" },
+  thu: { active: false, open: "09:00", close: "18:00" },
+  fri: { active: false, open: "09:00", close: "18:00" },
+  sat: { active: false, open: "09:00", close: "18:00" },
+  sun: { active: false, open: "09:00", close: "18:00" },
+}
 
 // Image states
 const imageFile = ref<File | null>(null)
@@ -388,7 +484,7 @@ async function loadPendingLocations() {
 
   const { data: locations, error: locError } = await supabase
       .from('locations')
-      .select('*')
+      .select('*, location_types(name)')
       .or('approved.eq.false,is_archived.eq.true')
       .order('created_at', { ascending: false })
 
@@ -427,7 +523,20 @@ async function loadPendingLocations() {
 }
 
 function openLocationModal(loc: any) {
-  selectedLocation.value = reactive({ ...loc })
+  // Ensure opening_hours has the right structure
+  let hours = loc.opening_hours
+  if (!hours || typeof hours !== 'object' || Array.isArray(hours)) {
+    hours = JSON.parse(JSON.stringify(defaultHours))
+  } else {
+    // Merge with defaults to ensure all days exist
+    hours = { ...JSON.parse(JSON.stringify(defaultHours)), ...hours }
+  }
+
+  selectedLocation.value = reactive({ 
+    ...loc,
+    tags: loc.tags || [],
+    opening_hours: hours
+  })
   imageFile.value = null
   imagePreviewUrl.value = loc.image
   showModal.value = true
@@ -510,7 +619,9 @@ async function approveLocation(loc: any) {
         instagram: loc.instagram,
         line_id: loc.line_id,
         price_range: loc.price_range,
-        location_type_id: loc.location_type_id,
+        type_id: loc.type_id,
+        tags: loc.tags,
+        opening_hours: loc.opening_hours,
         image: imageUrl,
         approved: true,
         approved_by: user.id,
@@ -709,5 +820,56 @@ ion-header {
   .img-controls ion-button {
     --color: white;
   }
+}
+
+/* Tags and Opening Hours */
+.tag-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.tag-chip {
+  height: 28px;
+  font-size: 12px;
+  margin: 0;
+}
+
+.opening-hours-list {
+  background: transparent;
+}
+
+.opening-hours-item {
+  --padding-start: 16px;
+  --min-height: 48px;
+  font-size: 14px;
+}
+
+.day-label {
+  min-width: 80px;
+  font-weight: 500;
+}
+
+.time-inputs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.time-field {
+  max-width: 90px;
+  --padding-start: 4px;
+  --padding-end: 4px;
+  text-align: center;
+  background: var(--ion-color-step-100);
+  border-radius: 6px;
+}
+
+.closed-label {
+  margin-left: auto;
+  color: var(--ion-color-medium);
+  font-size: 13px;
 }
 </style>

@@ -449,7 +449,27 @@
       "Muslim-friendly": "穆斯林友好",
       "Syubhah": "黄昏",
       "Haram": "哈拉姆",
-      "Unknown": "未知"
+      "Unknown": "未知",
+      "Restaurant": "餐厅",
+      "Halal Restaurant": "清真餐厅",
+      "Muslim-friendly Restaurant": "穆斯林友好餐厅",
+      "Butcher Shop": "肉店",
+      "Market": "市场",
+      "Store": "商店",
+      "Hotel": "酒店",
+      "Muslim-friendly Accomodation": "穆斯林友好住宿",
+      "Muslim-friendly Environment": "穆斯林友好环境",
+      "Masjid": "清真寺",
+      "Musholla": "伊斯兰祈祷室",
+      "Mosque": "清真寺",
+      "Prayer Room": "祈祷室",
+      "Vegan Restaurant": "素食餐厅",
+      "Muslim-friendly Stall": "穆斯林友好摊位",
+      "Halal Stall": "清真摊位",
+      "Muslim-friendly Souvenirs": "穆斯林友好伴手礼",
+      "Halal Kitchen": "清真厨房",
+      "Attraction": "景点",
+      "Others": "其他"
     },
     "sortNearest": "最近的",
     "sortRecent": "最近添加",
@@ -531,6 +551,11 @@
       "Musholla": "伊斯兰祈祷室",
       "Mosque": "清真寺",
       "Prayer Room": "祈祷室",
+      "Vegan Restaurant": "素食餐厅",
+      "Muslim-friendly Stall": "穆斯林友好摊位",
+      "Halal Stall": "清真摊位",
+      "Muslim-friendly Souvenirs": "穆斯林友好伴手礼",
+      "Halal Kitchen": "清真厨房",
       "Attraction": "景点",
       "Others": "其他的"
     },
@@ -1586,5 +1611,13 @@
       "mismatchError": "Passwords do not match",
       "backToProfile": "Back to Profile"
     }
+  },
+  "analytics": {
+    "productTitle": "Product Analytics",
+    "productDesc": "Comprehensive breakdown of products analyzed and verified by the Halal Formosa ecosystem.",
+    "locationTitle": "Location Analytics",
+    "locationDesc": "Comprehensive breakdown of verified locations categorized by the Halal Formosa ecosystem.",
+    "seeAllProducts": "See All Products",
+    "seeAllLocations": "See All Locations"
   }
 }

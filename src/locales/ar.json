@@ -1586,5 +1586,13 @@
       "mismatchError": "Passwords do not match",
       "backToProfile": "Back to Profile"
     }
+  },
+  "analytics": {
+    "productTitle": "Product Analytics",
+    "productDesc": "Comprehensive breakdown of products analyzed and verified by the Halal Formosa ecosystem.",
+    "locationTitle": "Location Analytics",
+    "locationDesc": "Comprehensive breakdown of verified locations categorized by the Halal Formosa ecosystem.",
+    "seeAllProducts": "See All Products",
+    "seeAllLocations": "See All Locations"
   }
 }

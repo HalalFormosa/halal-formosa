@@ -25,7 +25,7 @@
       </app-header>
     </ion-header>
 
-    <ion-content :scroll-events="true" @ionScroll="handleScroll" fullscreen="true">
+    <ion-content :scroll-events="true" @ionScroll="handleScroll" fullscreen>
       <div v-if="isUnderConstruction" slot="fixed" class="under-construction-overlay">
         <div class="construction-card">
           <ion-icon :icon="constructOutline" class="construction-icon" />

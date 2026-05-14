@@ -240,7 +240,9 @@
       </ion-card>
 
       <!-- === Daily Missions === -->
-      <DailyMissions v-if="isAuthenticated" />
+      <LazySection placeholderHeight="120px" @load="isAuthenticated && fetchProgress()">
+        <DailyMissions v-if="isAuthenticated" />
+      </LazySection>
 
 
       <!-- === Discover Products === -->
@@ -293,7 +295,7 @@
               <!-- Shine Effect (Gold ONLY) -->
               <div v-if="['gold', 'silver'].includes(String(p.partner_tier || '').toLowerCase())" class="premium-flare"></div>
 
-              <img :src="p.image || 'https://placehold.co/200x200'" :alt="$t('home.altProduct')" class="discover-img" />
+              <img :src="p.image || 'https://placehold.co/200x200'" :alt="$t('home.altProduct')" class="discover-img" loading="lazy" />
               <ion-label class="discover-label">
                 <div class="status-row">
                   <ion-chip
@@ -321,29 +323,30 @@
 
 
       <!-- === Discover Locations === -->
-      <ion-card>
-        <ion-card-header>
-          <div class="card-header-row">
-            <ion-card-title>{{ $t('home.discoverLocations') }}</ion-card-title>
-            <ion-button
-                fill="clear"
-                size="small"
-                color="carrot"
-                @click="viewMoreLocations"
-            >
-              {{ $t('home.viewMore') }}
-            </ion-button>
-          </div>
-        </ion-card-header>
-        <ion-card-content>
-          <div v-if="loadingLocations" class="discover-grid">
-            <ion-card v-for="n in 5" :key="'skeleton-l-' + n" class="discover-item">
-              <ion-skeleton-text animated style="width: 100%; height: 140px; border-radius: 12px;" />
-              <ion-skeleton-text animated style="width: 90%; height: 12px; margin: 6px auto;" />
-              <ion-skeleton-text animated style="width: 80%; height: 12px; margin: 6px auto;" />
-              <ion-skeleton-text animated style="width: 40%; height: 12px; margin: 0 auto;" />
-            </ion-card>
-          </div>
+      <LazySection placeholderHeight="200px" @load="fetchRecentLocations">
+        <ion-card>
+          <ion-card-header>
+            <div class="card-header-row">
+              <ion-card-title>{{ $t('home.discoverLocations') }}</ion-card-title>
+              <ion-button
+                  fill="clear"
+                  size="small"
+                  color="carrot"
+                  @click="viewMoreLocations"
+              >
+                {{ $t('home.viewMore') }}
+              </ion-button>
+            </div>
+          </ion-card-header>
+          <ion-card-content>
+            <div v-if="loadingLocations" class="discover-grid">
+              <ion-card v-for="n in 5" :key="'skeleton-l-' + n" class="discover-item">
+                <ion-skeleton-text animated style="width: 100%; height: 140px; border-radius: 12px;" />
+                <ion-skeleton-text animated style="width: 90%; height: 12px; margin: 6px auto;" />
+                <ion-skeleton-text animated style="width: 80%; height: 12px; margin: 6px auto;" />
+                <ion-skeleton-text animated style="width: 40%; height: 12px; margin: 0 auto;" />
+              </ion-card>
+            </div>
 
           <div v-else class="discover-grid">
             <ion-card
@@ -372,6 +375,7 @@
                   :src="loc.image || 'https://placehold.co/200x200'"
                   :alt="$t('home.altLocation')"
                   class="discover-img"
+                  loading="lazy"
               />
               <ion-label class="discover-label">
                 <div class="name-row">
@@ -387,8 +391,10 @@
           </div>
         </ion-card-content>
       </ion-card>
+      </LazySection>
 
       <!-- === Discover Trips === -->
+      <LazySection placeholderHeight="200px" @load="fetchTrips">
       <ion-card>
         <ion-card-header>
           <div class="card-header-row">
@@ -430,7 +436,7 @@
               </div>
               <div v-if="['gold', 'silver'].includes(String(trip.provider?.partner_tier || '').toLowerCase())" class="premium-flare"></div>
 
-              <img :src="trip.cover_url || 'https://placehold.co/400x250?text=Trip'" class="discover-img" alt="trip" />
+              <img :src="trip.cover_url || 'https://placehold.co/400x250?text=Trip'" class="discover-img" alt="trip" loading="lazy" />
               <ion-label class="discover-label">
                 <h3 class="discover-name">{{ localized(trip.title_zh, trip.title) }}</h3>
                 <p>{{ trip.duration }} • {{ trip.provider?.name }}</p>
@@ -439,8 +445,10 @@
           </div>
         </ion-card-content>
       </ion-card>
+      </LazySection>
 
       <!-- === Store === -->
+      <LazySection placeholderHeight="200px" @load="fetchMarketplaceProducts">
       <ion-card style="position: relative;">
         <div v-if="isUnderConstruction" class="under-construction-overlay">
           <div class="construction-card">
@@ -479,7 +487,7 @@
                 button
                 @click="openMarketplaceProduct(p)"
             >
-              <img :src="(p.images && p.images[0]) || 'https://placehold.co/200x200?text=Product'" class="discover-img" alt="product" />
+              <img :src="(p.images && p.images[0]) || 'https://placehold.co/200x200?text=Product'" class="discover-img" alt="product" loading="lazy" />
               <ion-label class="discover-label">
                 <h3 class="discover-name">{{ localized(p.name_zh, p.name) }}</h3>
                 <p class="marketplace-price">{{ $t('store.twd') }}{{ p.price?.toLocaleString() }}</p>
@@ -488,8 +496,10 @@
           </div>
         </ion-card-content>
       </ion-card>
+      </LazySection>
 
       <!-- === Community Buzz (Instagram & TikTok) === -->
+      <LazySection placeholderHeight="250px" @load="fetchCommunityReels">
       <ion-card class="reels-section">
         <ion-card-header>
           <div class="card-header-row">
@@ -513,8 +523,10 @@
           @refresh-needed="handleReelsRefreshNeeded"
         />
       </ion-card>
+      </LazySection>
 
       <!-- === Latest News === -->
+      <LazySection placeholderHeight="200px" @load="fetchRecentNews">
       <ion-card>
         <ion-card-header>
           <div class="card-header-row">
@@ -560,6 +572,7 @@
                   :src="news.cover || 'https://placehold.co/400x250?text=News'"
                   class="discover-img"
                   :alt="$t('home.altNews')"
+                  loading="lazy"
               />
 
               <ion-label class="discover-label">
@@ -575,13 +588,15 @@
           </div>
         </ion-card-content>
       </ion-card>
+      </LazySection>
 
 
       <!-- === Insights Horizontal Scroll === -->
+      <LazySection placeholderHeight="120px" @load="() => { fetchStats(); fetchLocationCategoryStats(); }">
       <div class="insights-container">
         <div class="insights-scroll">
           <!-- Card 1: Total Products -->
-          <div class="insight-card stat-card">
+          <div class="insight-card stat-card" @click="router.push('/analytics/products')">
             <div class="stat-icon-wrapper products">
               <ion-icon :icon="sparkles" />
             </div>
@@ -589,10 +604,11 @@
               <span class="stat-label">{{ $t('home.totalProducts') }}</span>
               <h2 class="stat-value">{{ totalProductCount }}</h2>
             </div>
+            <ion-icon :icon="chevronForwardOutline" class="forward-icon" />
           </div>
 
           <!-- Card 2: Total Locations -->
-          <div class="insight-card stat-card">
+          <div class="insight-card stat-card" @click="router.push('/analytics/locations')">
             <div class="stat-icon-wrapper locations">
               <ion-icon :icon="locationOutline" />
             </div>
@@ -600,31 +616,14 @@
               <span class="stat-label">{{ $t('home.totalLocations') }}</span>
               <h2 class="stat-value">{{ totalLocationCount }}</h2>
             </div>
-          </div>
-
-          <!-- Card 3: Product Status Chart -->
-          <div class="insight-card chart-card">
-            <div class="insight-header">
-              <h3>{{ $t('home.productStatus') }}</h3>
-            </div>
-            <div class="chart-wrapper">
-              <DoughnutChart ref="doughnutRef" :data="statusChartData" :options="chartOptions" />
-            </div>
-          </div>
-
-          <!-- Card 4: Location Categories Chart -->
-          <div class="insight-card chart-card">
-            <div class="insight-header">
-              <h3>{{ $t('home.locationCategories') }}</h3>
-            </div>
-            <div class="chart-wrapper">
-              <DoughnutChart ref="locationChartRef" :data="locationChartData" :options="chartOptions" />
-            </div>
+            <ion-icon :icon="chevronForwardOutline" class="forward-icon" />
           </div>
         </div>
       </div>
+      </LazySection>
 
       <!-- === Leaderboard === -->
+      <LazySection placeholderHeight="300px" @load="fetchLeaderboard">
       <ion-card >
         <ion-card-header>
           <ion-card-title>{{ $t('home.leaderboard') }}</ion-card-title>
@@ -653,7 +652,8 @@
                 <ion-avatar style="width: 40px; height: 40px; margin: 0 10px;">
                   <img
                       :src="user.public_profile ? (user.avatar_url || 'https://placehold.co/64x64') : `https://placehold.co/64x64?text=${$t('home.unknownAvatar')}`"
-                       :alt="$t('home.altAvatar')"/>
+                       :alt="$t('home.altAvatar')"
+                       loading="lazy"/>
                 </ion-avatar>
 
                 <!-- Info -->
@@ -679,6 +679,7 @@
           </ion-list>
         </ion-card-content>
       </ion-card>
+      </LazySection>
     </ion-content>
 
     <!-- 👇 Popover instead of modal -->
@@ -773,10 +774,7 @@ import {
     IonList, IonBadge, IonAvatar, IonItem, IonPopover
 } from '@ionic/vue'
 import { useRouter } from 'vue-router'
-import { Chart as ChartJS, Title, Tooltip, Legend, ArcElement, BarElement, CategoryScale, LinearScale } from 'chart.js'
-import { Doughnut } from 'vue-chartjs'
 import { supabase } from '@/plugins/supabaseClient'
-import type { ChartData, ChartOptions } from 'chart.js'
 import AppHeader from "@/components/AppHeader.vue"
 import relativeTime from 'dayjs/plugin/relativeTime'
 import dayjs from 'dayjs'
@@ -793,7 +791,8 @@ import {
   shieldCheckmarkOutline,
   locateOutline,
   cartOutline,
-  constructOutline
+  constructOutline,
+  chevronForwardOutline
 } from "ionicons/icons"
 import { useLeaderboard } from "@/composables/useLeaderboard";
 import {getLevelColor} from "@/composables/useLevels";
@@ -805,10 +804,13 @@ import {Capacitor} from "@capacitor/core";
 import { Geolocation } from '@capacitor/geolocation'
 import { Browser } from '@capacitor/browser'
 import { PrayTime } from 'praytime'
+import { useLocation, type LatLng } from '@/composables/useLocation'
+import { useHomeData } from '@/composables/useHomeData'
+import LazySection from '@/components/LazySection.vue'
 import DailyMissions from "@/components/DailyMissions.vue"
 import { useDailyMissions } from '@/composables/useDailyMissions'
-import { useLocation, type LatLng } from '@/composables/useLocation'
 
+const { withCache } = useHomeData()
 const { userLocation: sharedLocation, startWatching } = useLocation()
 
 /* ---------------- Community Reels (Instagram & TikTok) ---------------- */
@@ -818,25 +820,28 @@ const loadingReels = ref(true)
 const fetchCommunityReels = async () => {
   loadingReels.value = true
   try {
-    // 📸 Fetch Instagram
-    const { data: igData, error: igError } = await supabase
-      .from('instagram_posts')
-      .select('*')
-      .order('timestamp', { ascending: false })
-      .limit(10)
+    const data = await withCache('community_reels', async () => {
+      // 📸 Fetch Instagram
+      const { data: igData, error: igError } = await supabase
+        .from('instagram_posts')
+        .select('*')
+        .order('timestamp', { ascending: false })
+        .limit(10)
 
-    // 🎵 Fetch TikTok
-    const { data: ttData, error: ttError } = await supabase
-      .from('tiktok_posts')
-      .select('*')
-      .order('timestamp', { ascending: false })
-      .limit(10)
+      // 🎵 Fetch TikTok
+      const { data: ttData, error: ttError } = await supabase
+        .from('tiktok_posts')
+        .select('*')
+        .order('timestamp', { ascending: false })
+        .limit(10)
 
-    if (igError) console.error('IG Fetch Error:', igError)
-    if (ttError) console.error('TikTok Fetch Error:', ttError)
+      if (igError) console.error('IG Fetch Error:', igError)
+      if (ttError) console.error('TikTok Fetch Error:', ttError)
 
-    // 🔀 Merge and Sort by deduplicating
-    communityReels.value = SocialMediaService.mergeSocialPosts(igData, ttData)
+      // 🔀 Merge and Sort by deduplicating
+      return SocialMediaService.mergeSocialPosts(igData, ttData)
+    })
+    communityReels.value = data
   } catch (err) {
     console.error('Error fetching community reels:', err)
   } finally {
@@ -884,15 +889,13 @@ const selectedUser = ref<any | null>(null)
 const popoverEvent = ref<Event | null>(null)
 
 /* ---------------- Chart Setup ---------------- */
-ChartJS.register(Title, Tooltip, Legend, ArcElement, BarElement, CategoryScale, LinearScale)
-const DoughnutChart = Doughnut
+// Removed ChartJS registration to improve performance
+
 
 /* ---------------- State ---------------- */
 const router = useRouter()
 const { t, te, locale } = useI18n()
 const { fetchProgress } = useDailyMissions()
-const doughnutRef = ref<any>(null)
-const locationChartRef = ref<any>(null)
 const RECENT_DISCOVER_LIMIT = 15
 const loadingStats = ref(true)
 
@@ -972,54 +975,14 @@ onMounted(() => {
   observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
 })
 
-const chartOptions = computed<ChartOptions<'doughnut'>>(() => ({
-  responsive: true,
-  maintainAspectRatio: false,
-  plugins: {
-    legend: {
-      position: 'right',
-      align: 'center',
-      labels: {
-        color: isDark.value ? '#ffffff' : '#1e1e1e',
-        boxWidth: 14,
-        font: { size: 12 },
-        padding: 8
-      }
-    }
-  }
-}))
 
-/* ---------------- Product Status Chart ---------------- */
-const statusChartData = ref<ChartData<'doughnut'>>({
-  labels: [],
-  datasets: [{
-    backgroundColor: ['#28a745', '#007bff', '#ffc107', '#dc3545'],
-    data: []
-  }]
-})
 
-watch([() => locale.value, isDark], () => {
-  // Update status labels if we have data
-  if (statusChartData.value && statusChartData.value.labels && statusChartData.value.labels.length > 0) {
-    statusChartData.value = {
-      ...statusChartData.value,
-      labels: [
-        t('home.statuses.halal'),
-        t('home.statuses.muslimFriendly'),
-        t('home.statuses.syubhah'),
-        t('home.statuses.haram')
-      ]
-    }
-  }
 
-  // Refresh location category labels because they are translated in the fetcher
+
+
+watch([() => locale.value], () => {
+  // Refresh location category stats because they might have changed
   fetchLocationCategoryStats()
-  
-  // Re-render charts
-  nextTick(() => {
-    if (doughnutRef.value?.chart) doughnutRef.value.chart.update();
-    if (locationChartRef.value?.chart) locationChartRef.value.chart.update();
-  })
 })
 
 watch(sharedLocation, (newLoc) => {
@@ -1028,17 +991,7 @@ watch(sharedLocation, (newLoc) => {
   }
 })
 
-/* ---------------- Location Categories Chart ---------------- */
-const locationChartData = ref<ChartData<'doughnut'>>({
-  labels: [],
-  datasets: [{
-    backgroundColor: [
-      '#3498db', '#2ecc71', '#f1c40f',
-      '#e74c3c', '#9b59b6', '#1abc9c', '#e67e22'
-    ],
-    data: []
-  }]
-})
+
 
 const halalPartners = ref<any[]>([])
 const halalPartnersFull = ref<any[]>([])
@@ -1081,19 +1034,24 @@ function startClock() {
 async function fetchRecentNews() {
   loadingNews.value = true
 
-  const { data, error } = await supabase
-      .from('news')
-      .select('id, title, header_image, created_at') // 👈 FIX HERE
-      .order('created_at', { ascending: false })
-      .limit(RECENT_DISCOVER_LIMIT)
+  const data = await withCache('recent_news', async () => {
+    const { data, error } = await supabase
+        .from('news')
+        .select('id, title, header_image, created_at')
+        .order('created_at', { ascending: false })
+        .limit(RECENT_DISCOVER_LIMIT)
 
-  if (!error && data) {
-    recentNews.value = data.map(n => ({
+    if (error) throw error
+    return data.map(n => ({
       id: n.id,
       title: n.title,
-      cover: n.header_image || 'https://placehold.co/400x250?text=News', // 👈 FIX
+      cover: n.header_image || 'https://placehold.co/400x250?text=News',
       created_at: n.created_at
     }))
+  })
+
+  if (data) {
+    recentNews.value = data
   }
 
   loadingNews.value = false
@@ -1310,49 +1268,43 @@ function closePopover() {
 /* ---------------- Data Fetching ---------------- */
 async function fetchRecentProducts() {
   loadingProducts.value = true
-  const { data, error } = await supabase
-      .from("products")
-      .select(`
-        barcode, 
-        name, 
-        status, 
-        photo_front_url, 
-        created_at, 
-        updated_at, 
-        product_categories(name),
-        partner:partners(partner_tier)
-      `)
-      .eq("approved", true)
-      .order("created_at", { ascending: false })
-      .limit(100) // 🏁 Fetch more to ensure we catch recent Gold items
+  const data = await withCache('recent_products', async () => {
+    const { data, error } = await supabase
+        .from("products")
+        .select(`
+          barcode, 
+          name, 
+          status, 
+          photo_front_url, 
+          created_at, 
+          updated_at, 
+          product_categories(name),
+          partner:partners(partner_tier)
+        `)
+        .eq("approved", true)
+        .order("created_at", { ascending: false })
+        .limit(100)
 
-  if (!error && data) {
-    // 📅 Determine "New Gold" threshold (7 days)
+    if (error) throw error
+    
     const sevenDaysAgo = dayjs().subtract(7, 'day');
-
-    // 🏎️ Sort: Gold/Silver < 7 days old go to the top
     const sortedData = [...data].sort((a: any, b: any) => {
       const getWeight = (p: any) => {
         const t = Array.isArray(p.partner) ? p.partner[0]?.partner_tier : p.partner?.partner_tier;
         const tier = String(t || '').toLowerCase();
-        // Check both created_at and potentially updated_at if available
         const isNew = dayjs(p.created_at).isAfter(sevenDaysAgo) || (p.updated_at && dayjs(p.updated_at).isAfter(sevenDaysAgo));
-        
-        if (tier === 'gold' && isNew) return 3; // Absolute priority for fresh Gold
-        if (tier === 'gold') return 2;          // Regular Gold
+        if (tier === 'gold' && isNew) return 3;
+        if (tier === 'gold') return 2;
         if (tier === 'silver' && isNew) return 1;
         return 0;
       };
-
       const weightA = getWeight(a);
       const weightB = getWeight(b);
-
       if (weightA !== weightB) return weightB - weightA;
-      
       return dayjs(b.created_at).valueOf() - dayjs(a.created_at).valueOf();
     }).slice(0, RECENT_DISCOVER_LIMIT);
 
-    recentProducts.value = sortedData.map(p => ({
+    return sortedData.map(p => ({
       barcode: p.barcode,
       name: p.name,
       status: p.status,
@@ -1361,54 +1313,54 @@ async function fetchRecentProducts() {
       created_at: p.created_at,
       partner_tier: Array.isArray(p.partner) ? p.partner[0]?.partner_tier : (p.partner as any)?.partner_tier
     }))
+  })
+
+  if (data) {
+    recentProducts.value = data
   }
   loadingProducts.value = false
 }
 
 async function fetchRecentLocations() {
   loadingLocations.value = true
-  const { data, error } = await supabase
-      .from('locations')
-      .select(`
-        id, 
-        name, 
-        image, 
-        type_id, 
-        location_types(name), 
-        created_at, 
-        updated_at, 
-        partner:partners(partner_tier)
-      `)
-      .eq('approved', true)
-      .eq('is_archived', false)
-      .order('created_at', { ascending: false })
-      .limit(100)
+  const data = await withCache('recent_locations', async () => {
+    const { data, error } = await supabase
+        .from('locations')
+        .select(`
+          id, 
+          name, 
+          image, 
+          type_id, 
+          location_types(name), 
+          created_at, 
+          updated_at, 
+          partner:partners(partner_tier)
+        `)
+        .eq('approved', true)
+        .eq('is_archived', false)
+        .order('created_at', { ascending: false })
+        .limit(100)
 
-  if (!error && data) {
+    if (error) throw error
+    
     const sevenDaysAgo = dayjs().subtract(7, 'day');
-
-    // 🏎️ Sort: Gold/Silver < 7 days old go to the top
     const sortedData = [...data].sort((a: any, b: any) => {
       const getWeight = (p: any) => {
         const t = Array.isArray(p.partner) ? p.partner[0]?.partner_tier : p.partner?.partner_tier;
         const tier = String(t || '').toLowerCase();
         const isNew = dayjs(p.created_at).isAfter(sevenDaysAgo) || (p.updated_at && dayjs(p.updated_at).isAfter(sevenDaysAgo));
-        
         if (tier === 'gold' && isNew) return 3;
         if (tier === 'gold') return 2;
         if (tier === 'silver' && isNew) return 1;
         return 0;
       };
-
       const weightA = getWeight(a);
       const weightB = getWeight(b);
-
       if (weightA !== weightB) return weightB - weightA;
-      
       return dayjs(b.created_at).valueOf() - dayjs(a.created_at).valueOf();
     }).slice(0, RECENT_DISCOVER_LIMIT);
 
-    recentLocations.value = sortedData.map(l => ({
+    return sortedData.map(l => ({
       id: l.id,
       name: l.name,
       image: l.image,
@@ -1416,123 +1368,87 @@ async function fetchRecentLocations() {
       created_at: l.created_at,
       partner_tier: Array.isArray(l.partner) ? l.partner[0]?.partner_tier : (l.partner as any)?.partner_tier
     }))
+  })
+
+  if (data) {
+    recentLocations.value = data
   }
   loadingLocations.value = false
 }
 
 async function fetchStats() {
   loadingStats.value = true
-  const { data: products } = await supabase.from('products').select('status').eq('is_archived', false)
-  if (products) {
-    totalProductCount.value = products.length
-    const statusCount = { Halal:0,'Muslim-friendly':0,Syubhah:0,Haram:0 }
-    
-    products.forEach((p) => {
-      const s = p.status as keyof typeof statusCount
-      if (statusCount[s] !== undefined) {
-        statusCount[s]++
-      }
-    })
-
-    statusChartData.value = {
-      labels: [
-        t('home.statuses.halal'),
-        t('home.statuses.muslimFriendly'),
-        t('home.statuses.syubhah'),
-        t('home.statuses.haram')
-      ],
-      datasets: [{
-        backgroundColor: ['#28a745', '#007bff', '#ffc107', '#dc3545'],
-        data: [statusCount.Halal, statusCount['Muslim-friendly'], statusCount.Syubhah, statusCount.Haram]
-      }]
-    }
-  }
-
+  const stats = await withCache('product_total_stats', async () => {
+    const { count, error } = await supabase.from('products').select('*', { count: 'exact', head: true }).eq('is_archived', false)
+    if (error) throw error
+    return { totalCount: count || 0 }
+  })
+  if (stats) totalProductCount.value = stats.totalCount
   loadingStats.value = false
 }
 
 async function fetchLocationCategoryStats() {
-  const { data, error } = await supabase
-      .from("locations")
-      .select(`
-    id,
-    location_types ( name )
-  `)
-      .eq('approved', true)
-      .eq('is_archived', false)
+  const stats = await withCache('location_total_stats', async () => {
+    const { count, error } = await supabase
+        .from("locations")
+        .select('*', { count: 'exact', head: true })
+        .eq('approved', true)
+        .eq('is_archived', false)
 
-  if (!error && data) {
-    totalLocationCount.value = data.length
-    const counts: Record<string, number> = {}
+    if (error) throw error
+    return { totalCount: count || 0 }
+  })
 
-    data?.forEach(loc => {
-      // Handle potential array or object response for location_types
-      const rawType = Array.isArray(loc.location_types) ? loc.location_types[0] : loc.location_types
-      const typeKey = rawType?.name || 'Unknown'
-      
-      // Try to translate the type, fallback to raw name
-      const typeName = te(`explore.types.${typeKey}`) ? t(`explore.types.${typeKey}`) : typeKey
-      counts[typeName] = (counts[typeName] || 0) + 1
-    })
-
-    const labels = Object.keys(counts)
-    const values = Object.values(counts)
-
-    locationChartData.value = {
-      labels,
-      datasets: [
-        {
-          backgroundColor: ['#3498db', '#2ecc71', '#e67e22', '#9b59b6', '#f1c40f', '#e74c3c', '#1abc9c'],
-          data: values
-        }
-      ]
-    }
-  }
+  if (stats) totalLocationCount.value = stats.totalCount
 }
 
 async function fetchHomePartners() {
   loadingPartners.value = true
 
-  // 1. Fetch more partners (up to 100) to ensure we can rotate fairly
-  const { data, error } = await supabase
-      .from('partners')
-      .select(`
-    id,
-    name,
-    logo_url,
-    partner_tier
-  `)
-      .eq('is_active', true)
-      .limit(100)
+  const data = await withCache('home_partners', async () => {
+    // 1. Fetch more partners (up to 100) to ensure we can rotate fairly
+    const { data, error } = await supabase
+        .from('partners')
+        .select(`
+      id,
+      name,
+      logo_url,
+      partner_tier
+    `)
+        .eq('is_active', true)
+        .limit(100)
 
-  if (error || !data) {
-    console.error('[Home Partners] fetch error:', error)
-    loadingPartners.value = false
-    return
+    if (error || !data) {
+      console.error('[Home Partners] fetch error:', error)
+      return null
+    }
+    return data
+  })
+
+  if (data) {
+    // 2. Define Tier Weights
+    const tierWeights: Record<string, number> = {
+      'gold': 3,
+      'silver': 2,
+      'bronze': 1
+    }
+
+    // 3. Map to stable format
+    halalPartnersFull.value = data.map((b: any) => ({
+      id: b.id,
+      name: b.name,
+      partner_tier: b.partner_tier,
+      logo:
+          b.logo_url ||
+          `https://placehold.co/300x300?text=${encodeURIComponent(b.name)}`,
+      _weight: tierWeights[(b.partner_tier || '').toLowerCase()] || 0
+    }))
+
+    // 4. Start the first rotation
+    updatePartnerRotation()
   }
-
-  // 2. Define Tier Weights
-  const tierWeights: Record<string, number> = {
-    'gold': 3,
-    'silver': 2,
-    'bronze': 1
-  }
-
-  // 3. Map to stable format
-  halalPartnersFull.value = data.map(b => ({
-    id: b.id,
-    name: b.name,
-    partner_tier: b.partner_tier,
-    logo:
-        b.logo_url ||
-        `https://placehold.co/300x300?text=${encodeURIComponent(b.name)}`,
-    _weight: tierWeights[(b.partner_tier || '').toLowerCase()] || 0
-  }))
 
   loadingPartners.value = false
-  
-  // 4. Start the first rotation
-  updatePartnerRotation()
 }
 
 /**
@@ -1594,54 +1510,62 @@ function updatePartnerRotation() {
 
 async function fetchTrips() {
   loadingTrips.value = true
-  const { data, error } = await supabase
-    .from('trips')
-    .select(`
-      id,
-      title,
-      title_zh,
-      duration,
-      cover_url,
-      external_url,
-      created_at,
-      view_count,
-      provider:partners (
+  const data = await withCache('recent_trips', async () => {
+    const { data, error } = await supabase
+      .from('trips')
+      .select(`
         id,
-        name,
-        partner_tier
-      )
-    `)
-    .eq('is_active', true)
-    .order('created_at', { ascending: false })
-    .limit(5)
-
-  if (!error && data) {
-    recentTrips.value = (data as any[]).map(t => ({
+        title,
+        title_zh,
+        duration,
+        cover_url,
+        external_url,
+        created_at,
+        provider:partners (
+          name,
+          partner_tier
+        )
+      `)
+      .eq('is_active', true)
+      .order('created_at', { ascending: false })
+      .limit(6)
+    
+    if (error) throw error
+    return (data as any[]).map(t => ({
       ...t,
       provider: Array.isArray(t.provider) ? t.provider[0] : t.provider
     }))
+  })
+
+  if (data) {
+    recentTrips.value = data
   }
   loadingTrips.value = false
 }
 
 async function fetchMarketplaceProducts() {
   loadingMarketplace.value = true
-  const { data, error } = await supabase
-    .from('store_products')
-    .select(`
-      id,
-      name,
-      name_zh,
-      price,
-      images,
-      created_at,
-      sale_count
-    `)
-    .eq('is_active', true)
-    .order('created_at', { ascending: false })
-    .limit(5)
+  const data = await withCache('marketplace_products', async () => {
+    const { data, error } = await supabase
+      .from('store_products')
+      .select(`
+        id,
+        name,
+        name_zh,
+        price,
+        images,
+        created_at,
+        sale_count
+      `)
+      .eq('is_active', true)
+      .order('created_at', { ascending: false })
+      .limit(6)
+    
+    if (error) throw error
+    return data
+  })
 
-  if (!error && data) {
+  if (data) {
     marketplaceProducts.value = data
   }
   loadingMarketplace.value = false
@@ -1688,27 +1612,19 @@ function localized(zh: string | null | undefined, en: string | null | undefined)
 /* ---------------- Lifecycle ---------------- */
 
 async function refreshAllData() {
-  console.log('🏠 [Home] Refreshing all data...')
+  console.log('🏠 [Home] Refreshing Priority Data...')
   
-  // Run these in parallel for speed
-  const tasks: Promise<any>[] = [
-    fetchStats(),
-    fetchLocationCategoryStats(),
+  // 🚀 PRIORITY: Load top-of-page content immediately
+  const priorityTasks = [
     fetchRecentProducts(),
-    fetchRecentLocations(),
-    fetchRecentNews(),
-    fetchCommunityReels(),
-    fetchLeaderboard(),
     fetchHomePartners(),
-    fetchTrips(),
-    fetchMarketplaceProducts(),
   ]
-
+  
   if (isAuthenticated.value) {
-    tasks.push(fetchProgress()) // Also refresh missions if logged in
+    priorityTasks.push(fetchProgress())
   }
 
-  await Promise.allSettled(tasks)
+  await Promise.allSettled(priorityTasks)
   
   if (Capacitor.isNativePlatform()) refreshSubscriptionStatus();
 }
@@ -2183,7 +2099,7 @@ function openPartner(partner: any) {
 @media (min-width: 1024px) {
   .insights-scroll {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(2, 1fr);
     overflow-x: visible;
     padding: 8px 16px; /* Match standard page margins */
   }
@@ -2194,7 +2110,7 @@ function openPartner(partner: any) {
 }
 
 .insight-card {
-  flex: 0 0 280px;
+  flex: 0 0 240px;
   scroll-snap-align: center;
   margin: 12px 10px;
   background: var(--card-bg);
@@ -2203,9 +2119,16 @@ function openPartner(partner: any) {
   box-shadow: var(--card-shadow);
   border: 1px solid var(--card-border);
   display: flex;
-  flex-direction: column;
-  height: 220px;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  align-items: center;
+  height: 90px;
+  transition: transform 0.2s ease, background 0.2s ease;
+  position: relative;
+  cursor: pointer;
+}
+
+.insight-card:active {
+  transform: scale(0.98);
+  background: var(--ion-color-step-50);
 }
 
 @media (min-width: 1024px) {
@@ -2217,11 +2140,17 @@ function openPartner(partner: any) {
 
 /* Stat Cards (Centered Icons) */
 .stat-card {
-  flex: 0 0 220px;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
   gap: 16px;
+  text-align: left;
+  justify-content: flex-start;
+}
+
+.forward-icon {
+  position: absolute;
+  right: 16px;
+  color: var(--ion-color-medium);
+  opacity: 0.5;
+  font-size: 1.1rem;
 }
 
 .stat-icon-wrapper {
@@ -2264,26 +2193,7 @@ function openPartner(partner: any) {
   color: var(--ion-color-dark);
 }
 
-/* Chart Cards */
-.chart-card {
-  flex: 0 0 320px;
-}
 
-.insight-header h3 {
-  margin: 0 0 12px;
-  font-size: 1rem;
-  font-weight: 700;
-  color: var(--ion-color-dark);
-}
-
-.chart-wrapper {
-  flex: 1;
-  width: 100%;
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
 
 /* Dark mode handled by global variables */
 

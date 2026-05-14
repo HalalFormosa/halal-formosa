@@ -1602,6 +1602,17 @@ onIonViewWillEnter(async () => {
     shouldResetSearch.value = false;
   }
 
+  // Handle status filter from Analytics
+  if (route.query.status) {
+    const status = route.query.status as string;
+    activeStatuses.value = [status];
+    
+    // Clean up URL
+    const query = { ...route.query };
+    delete query.status;
+    router.replace({ query });
+  }
+
   // Increment rotation seed for "Round Robin" feel
   rotationSeed.value = (rotationSeed.value + 1) % 1000 
   localStorage.setItem('product_rotation_seed', rotationSeed.value.toString())

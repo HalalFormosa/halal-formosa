@@ -229,6 +229,14 @@
       "isha": "Isha"
     }
   },
+  "analytics": {
+    "productTitle": "Product Analytics",
+    "productDesc": "Comprehensive breakdown of products analyzed and verified by the Halal Formosa ecosystem.",
+    "locationTitle": "Location Analytics",
+    "locationDesc": "Comprehensive breakdown of verified locations categorized by the Halal Formosa ecosystem.",
+    "seeAllProducts": "See All Products",
+    "seeAllLocations": "See All Locations"
+  },
   "scanIngredients": {
     "title": "Scan Ingredients",
     "todayScans": "Today Scans: {used} / {total}",
@@ -449,7 +457,27 @@
       "Muslim-friendly": "Muslim-friendly",
       "Syubhah": "Syubhah",
       "Haram": "Haram",
-      "Unknown": "Unknown"
+      "Unknown": "Unknown",
+      "Restaurant": "Restaurant",
+      "Halal Restaurant": "Halal Restaurant",
+      "Muslim-friendly Restaurant": "Muslim-friendly Restaurant",
+      "Butcher Shop": "Butcher Shop",
+      "Market": "Market",
+      "Store": "Store",
+      "Hotel": "Hotel",
+      "Muslim-friendly Accomodation": "Muslim-friendly Accomodation",
+      "Muslim-friendly Environment": "Muslim-friendly Environment",
+      "Masjid": "Masjid",
+      "Musholla": "Musholla",
+      "Mosque": "Mosque",
+      "Prayer Room": "Prayer Room",
+      "Vegan Restaurant": "Vegan Restaurant",
+      "Muslim-friendly Stall": "Muslim-friendly Stall",
+      "Halal Stall": "Halal Stall",
+      "Muslim-friendly Souvenirs": "Muslim-friendly Souvenirs",
+      "Halal Kitchen": "Halal Kitchen",
+      "Attraction": "Attraction",
+      "Others": "Others"
     },
     "sortNearest": "Nearest",
     "sortRecent": "Recently Added",
@@ -531,6 +559,11 @@
       "Musholla": "Musholla",
       "Mosque": "Mosque",
       "Prayer Room": "Prayer Room",
+      "Vegan Restaurant": "Vegan Restaurant",
+      "Muslim-friendly Stall": "Muslim-friendly Stall",
+      "Halal Stall": "Halal Stall",
+      "Muslim-friendly Souvenirs": "Muslim-friendly Souvenirs",
+      "Halal Kitchen": "Halal Kitchen",
       "Attraction": "Attraction",
       "Others": "Others"
     },
