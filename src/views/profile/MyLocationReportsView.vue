@@ -168,7 +168,7 @@ function setupRealtime() {
       schema: 'public', 
       table: 'location_reports',
       filter: `reported_by=eq.${currentUserId.value}`
-    }, (payload) => {
+    }, (payload: any) => {
       // Refresh list
       loadMyReports()
       

@@ -201,7 +201,7 @@ function setupRealtime() {
       event: '*', 
       schema: 'public', 
       table: 'location_reports' 
-    }, (payload) => {
+    }, (payload: any) => {
       fetchReports()
       
       // Update selected report if it matches the changed record

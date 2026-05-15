@@ -262,7 +262,7 @@ function setupRealtime() {
       table: 'product_reports',
       // We can't use filter with currentUserId directly here as it might change, 
       // but for "My" views it's generally safe once loaded.
-    }, (payload) => {
+    }, (payload: any) => {
       // Refresh list
       loadMyReports()
       
