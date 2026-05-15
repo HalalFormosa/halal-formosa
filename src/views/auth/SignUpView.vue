@@ -93,13 +93,6 @@
           <!-- hCaptcha container -->
           <div id="hcaptcha-signup" style="display: none;"></div>
 
-          <!-- hCaptcha disclosure -->
-          <p class="hcaptcha-disclosure" v-if="isCaptchaEnabled">
-            This site is protected by hCaptcha and its
-            <a href="https://www.hcaptcha.com/privacy" target="_blank">Privacy Policy</a> and
-            <a href="https://www.hcaptcha.com/terms" target="_blank">Terms of Service</a> apply.
-          </p>
-
           <!-- Error -->
           <ion-text color="danger" v-if="errorMsg" class="error-text">
             {{ errorMsg }}
@@ -129,6 +122,13 @@
           </div>
 
         </form>
+
+        <!-- hCaptcha disclosure -->
+        <p class="hcaptcha-disclosure" v-if="showDisclosure">
+          This site is protected by hCaptcha and its
+          <a href="https://www.hcaptcha.com/privacy" target="_blank">Privacy Policy</a> and
+          <a href="https://www.hcaptcha.com/terms" target="_blank">Terms of Service</a> apply.
+        </p>
 
       </div>
     </ion-content>
@@ -198,7 +198,7 @@ document.documentElement.classList.toggle(
 )
 
 const { locale, t } = useI18n()
-const { loadScript, initInvisible, execute, isCaptchaEnabled } = useHCaptcha()
+const { loadScript, initInvisible, execute, isCaptchaEnabled, showDisclosure } = useHCaptcha()
 const isDev = import.meta.env.DEV
 
 // form fields
@@ -571,6 +571,25 @@ ion-input.has-value::part(label) {
 
 .signup-link:hover {
   opacity: 0.8;
+}
+
+.hcaptcha-disclosure {
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--ion-color-medium);
+  text-align: center;
+  margin: 16px 0 0;
+  opacity: 0.7;
+}
+
+.hcaptcha-disclosure a {
+  color: var(--ion-color-medium);
+  text-decoration: underline;
+  opacity: 0.8;
+}
+
+.hcaptcha-disclosure a:hover {
+  opacity: 1;
 }
 
 html:not(.ion-palette-dark) .signup-prompt {

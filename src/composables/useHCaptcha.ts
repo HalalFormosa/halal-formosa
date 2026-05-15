@@ -27,10 +27,12 @@ export function useHCaptcha() {
   let widgetId: number | null = null;
 
   const isCaptchaEnabled = IS_HCAPTCHA_ENABLED;
+  const showDisclosure = isCaptchaEnabled || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
   // Load hCaptcha script
   const loadScript = (): Promise<void> => {
     return new Promise((resolve, reject) => {
+      // Still only load script if actually enabled
       if (!isCaptchaEnabled) {
         resolve();
         return;
@@ -171,6 +173,7 @@ export function useHCaptcha() {
   return {
     isExecuting,
     isCaptchaEnabled,
+    showDisclosure,
     token,
     error,
     loadScript,
