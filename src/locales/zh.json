@@ -807,6 +807,10 @@
     "barcodeValid": "✅ 條碼有效",
     "barcodeInvalid": "❌ 條碼無效",
     "barcodeExists": "❌ 此條碼已存在於資料庫中",
+    "verifyingBarcode": "正在驗證條碼...",
+    "offProductFound": "已找到產品資訊！",
+    "useThisInfo": "使用此資訊",
+    "skipInfo": "跳過",
     "productName": "產品名稱",
     "productNamePlaceholder": "輸入文字",
     "status": "狀態",
@@ -945,7 +949,8 @@
       "--ion-color-primary": "穆斯林友善",
       "--ion-color-warning": "疑似",
       "--ion-color-danger": "非清真"
-    }
+    },
+    "syncToOff": "同步到 Open Food Facts"
   },
   "partner": {
     "title": "我們的合作夥伴",

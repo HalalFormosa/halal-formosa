@@ -802,6 +802,10 @@
     "barcodeValid": "✅ Valid barcode",
     "barcodeInvalid": "❌ Invalid barcode",
     "barcodeExists": "❌ This barcode already exists in the database",
+    "verifyingBarcode": "Verifying barcode...",
+    "offProductFound": "Product Info Found!",
+    "useThisInfo": "Use This Info",
+    "skipInfo": "Skip",
     "productName": "Product Name",
     "productNamePlaceholder": "Enter text",
     "status": "Status",
@@ -937,10 +941,11 @@
     "backImageAlt": "Back Image",
     "colorLabels": {
       "--ion-color-success": "Halal",
-      "--ion-color-primary": "Muslim-friendly",
+      "--ion-color-primary": "Muslim Friendly",
       "--ion-color-warning": "Syubhah",
       "--ion-color-danger": "Haram"
-    }
+    },
+    "syncToOff": "Sync to Open Food Facts"
   },
   "partner": {
     "title": "Our Partner",

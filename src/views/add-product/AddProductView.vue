@@ -250,6 +250,15 @@
                 </ion-card>
               </div>
 
+              <!-- 🔄 Barcode Verification Loading -->
+              <div v-if="barcodeLoading" class="ion-text-center ion-padding">
+                <ion-spinner name="crescent" color="carrot" />
+                <p style="font-size: 13px; color: var(--ion-color-medium); margin-top: 8px;">
+                  {{ $t('addProduct.verifyingBarcode') || 'Verifying barcode...' }}
+                </p>
+              </div>
+
+
               <div v-if="scanning && cameras.length > 1" class="ion-padding">
                 <ion-item>
                   <ion-label>Camera</ion-label>
@@ -701,7 +710,6 @@ import type { Product } from '@/types/Product'
 import { useRouter, useRoute } from 'vue-router';
 import type { IngredientHighlight } from '@/types/Ingredient'
 import StoreLogoBar from "@/components/StoreLogoBar.vue";
-import { BarcodeValidator } from "@/utils/barcodeValidator";
 import { ActivityLogService } from "@/services/ActivityLogService";
 
 const { notifyEvent } = useNotifier();
@@ -718,6 +726,60 @@ const STEP_DETAILS = 2
 const currentStep = ref(STEP_BARCODE)
 const wizardStartTime = ref<number>(Date.now())
 
+/** ---------- State Variables Consistently Defined at Top ---------- */
+const barcodeValid = ref<null | boolean>(null)
+const barcodeMessage = ref<string>('') // feedback below input
+const scanning = ref(false)
+const scannedOnce = ref(false);
+const loading = ref(false)
+const showToast = ref(false)
+const showOcrToast = ref(false);
+const showErrorToast = ref(false)
+const toastMessage = ref('')
+const rawChineseOcr = ref('')
+const originalFile = ref<File | null>(null)
+const loadingReflection = ref<any>(null)
+const isResettingForm = ref(false)
+const autoStatusApplied = ref(false)
+const userTouchedDescription = ref(false)
+const programmaticDescUpdate = ref(false)
+const frontFile = ref < File | null > (null)
+const backFile = ref < File | null > (null)
+const frontPreview = ref < string | null > (null)
+const backPreview = ref < string | null > (null)
+const tagInput = ref('')
+const categories = ref<{ id: number; name: string }[]>([])
+const stores = ref<{ id: string; name: string; logo_url?: string }[]>([])
+const checkingIngredients = ref(false)
+const selectedCameraId = ref<string | null>(null)
+const cameras = ref<{ id: string; label: string }[]>([])
+const categoryRules = ref<Record<string, number>>({})
+const html5QrCodeInstance = ref<Html5Qrcode | null>(null)
+const barcodeLoading = ref(false)
+
+interface ProductForm {
+  barcode: string
+  name: string
+  status: string
+  product_category_id: number | null
+  ingredients: string
+  description: string
+  store_ids: string[]
+  tags: string[]
+}
+
+const form = ref<ProductForm>({
+  barcode: '',
+  name: '',
+  status: 'Muslim-friendly',
+  product_category_id: null,
+  ingredients: '',
+  description: '',
+  store_ids: [],
+  tags: []
+})
+
+const barcodeInput = ref<any>(null)
 const contentRef = ref<any>(null)
 
 const scrollToTop = () => {
@@ -733,6 +795,7 @@ const scrollToBottom = () => {
 }
 
 const nextStep = () => {
+  console.log("🚶 Moving to next step. Current:", currentStep.value);
   if (currentStep.value < STEP_DETAILS) {
     if (currentStep.value === STEP_BARCODE) {
       stopScanner()
@@ -902,10 +965,8 @@ function applyOtherStoreFallback() {
   }
 }
 
-const stores = ref<{ id: string; name: string; logo_url?: string }[]>([])
-const checkingIngredients = ref(false)
+// refs moved to top
 const { resizeImage } = useImageResizer();
-const barcodeInput = ref<any>(null)
 const showMuslimFriendly = ref(false)
 const quickDescriptions = {
   halal: "Halal certified by ",
@@ -1123,29 +1184,7 @@ onMounted(async () => {
   wizardStartTime.value = Date.now() // Start the timer!
 })
 
-interface ProductForm {
-  barcode: string
-  name: string
-  status: string
-  product_category_id: number | null
-  ingredients: string
-  description: string
-  store_ids: string[]   // ✅ string IDs
-  tags: string[]
-}
-
-const form = ref<ProductForm>({
-  barcode: '',
-  name: '',
-  status: 'Muslim-friendly',
-  product_category_id: null,
-  ingredients: '',
-  description: '',
-  store_ids: [],
-  tags: []
-})
-
-const tagInput = ref('')
+// refs moved to top
 
 const handleTagInput = (e: any) => {
   const val = e.target.value
@@ -1171,8 +1210,7 @@ const removeTag = (t: string) => {
   form.value.tags = form.value.tags.filter(tag => tag !== t)
 }
 
-// ✅ rules fetched from DB
-const categoryRules = ref<Record<string, number>>({})
+// categoryRules moved to top
 
 // central mapping
 const statusDescriptions: Record<string, string> = {
@@ -1253,77 +1291,99 @@ async function checkBarcodeExists(barcode: string) {
 }
 
 watch(() => form.value.barcode, async (newBarcode) => {
+  console.log("🔍 Barcode watcher triggered with:", newBarcode);
   if (!newBarcode) {
     barcodeValid.value = null;
     barcodeMessage.value = "";
-    detectedProduct.value = null
+    detectedProduct.value = null;
     return;
   }
 
-  const validation = validateBarcode(newBarcode);
-  if (!validation.isValid) {
-    barcodeValid.value = false;
-    barcodeMessage.value = validation.message;
-    return;
-  }
+  try {
+    // 🕊️ Safety: Wait a bit for the app to fully resume and auth state to settle
+    // especially when coming back from the native camera.
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    barcodeLoading.value = true;
 
-  // 🚫 Only check duplicates when creating, not editing
-  if (!props.editProduct) {
-    const existingProduct = await checkBarcodeExists(newBarcode)
+    // 🚫 Check duplicates in our own DB first (when creating)
+    if (!props.editProduct) {
+      console.log("📡 Checking for existing product in DB...");
+      const existingProduct = await checkBarcodeExists(newBarcode);
 
-    if (existingProduct) {
-      barcodeValid.value = false
-      barcodeMessage.value = "⚠️ Product already exists"
-
-      detectedProduct.value = {
-        id: existingProduct.id,
-        name: existingProduct.name,
-        status: existingProduct.status,
-        photo_front_url: existingProduct.photo_front_url,
+      if (existingProduct) {
+        console.log("⚠️ Product already exists:", existingProduct.name);
+        barcodeValid.value = false;
+        barcodeMessage.value = "⚠️ Product already exists";
+        detectedProduct.value = {
+          id: existingProduct.id,
+          name: existingProduct.name,
+          status: existingProduct.status,
+          photo_front_url: existingProduct.photo_front_url,
+        };
+        barcodeLoading.value = false;
+        return;
       }
-
-      return
+      detectedProduct.value = null;
     }
 
-    // clear preview if not exists
-    detectedProduct.value = null
+    // 🌐 Call Edge Function → Open Food Facts
+    console.log("🌐 Calling verify-barcode edge function...");
+    const { data, error } = await supabase.functions.invoke('verify-barcode', {
+      body: { barcode: newBarcode },
+    });
 
-  }
+    if (error) {
+      console.error("❌ Edge function error:", error);
+      // Fallback: accept numeric barcodes
+      if (/^\d{8,15}$/.test(newBarcode.trim())) {
+        barcodeValid.value = true;
+        barcodeMessage.value = "✅ Barcode accepted";
+      } else {
+        barcodeValid.value = false;
+        barcodeMessage.value = "❌ Could not verify barcode";
+      }
+      barcodeLoading.value = false;
+      return;
+    }
 
-  barcodeValid.value = true;
-  barcodeMessage.value = validation.message;
+    console.log("🔬 Edge function result:", data);
 
-  // Auto-advance to next step if new valid barcode found
-  if (currentStep.value === STEP_BARCODE) {
-    setTimeout(() => {
-      nextStep()
-    }, 500) // Small delay for UX so user sees the "Valid" checkmark
+    if (data.valid) {
+      barcodeValid.value = true;
+      barcodeMessage.value = data.message;
+
+      // Just use the message as feedback — no auto-fill
+      if (data.source === 'openfoodfacts' && data.product) {
+        console.log("📦 Product found on Open Food Facts:", data.product.name);
+      }
+
+      // Auto-advance to next step
+      if (currentStep.value === STEP_BARCODE) {
+        console.log("🚀 Auto-advancing to next step...");
+        setTimeout(() => { nextStep(); }, 500);
+      }
+    } else {
+      barcodeValid.value = false;
+      barcodeMessage.value = data.message;
+    }
+  } catch (err) {
+    console.error("❌ Barcode validation error:", err);
+    if (newBarcode && /^\d{8,15}$/.test(String(newBarcode).trim())) {
+      barcodeValid.value = true;
+      barcodeMessage.value = "✅ Barcode accepted";
+    } else {
+      barcodeValid.value = false;
+      barcodeMessage.value = "❌ Validation failed";
+    }
+  } finally {
+    barcodeLoading.value = false;
   }
 });
 
 
 
-const autoStatusApplied = ref(false)
-const userTouchedDescription = ref(false)
-const programmaticDescUpdate = ref(false)
-
-const frontFile = ref < File | null > (null)
-const backFile = ref < File | null > (null)
-const frontPreview = ref < string | null > (null) // For showing preview
-const backPreview = ref < string | null > (null)
-
-const loading = ref(false)
-const showToast = ref(false)
-const showOcrToast = ref(false);
-const showErrorToast = ref(false)
-const toastMessage = ref('')
-const scanning = ref(false)
-
-const rawChineseOcr = ref('')  // keep original OCR before cleaning
-const scannedOnce = ref(false);
-const isResettingForm = ref(false)
-const originalFile = ref<File | null>(null)
-const loadingReflection = ref<any>(null)
+// refs moved to top
 
 function calculateReadingTime(text: string) {
   const wordsPerMinute = 200;
@@ -1350,10 +1410,7 @@ async function fetchRandomReflection() {
   }
 }
 
-const barcodeValid = ref<null | boolean>(null)
-const barcodeMessage = ref<string>('') // feedback below input
-const html5QrCodeInstance = ref<Html5Qrcode | null>(null)
-const categories = ref<{ id: number; name: string }[]>([])
+// refs moved to top
 const emit = defineEmits(['updated', 'close'])
 
 function onProductNameInput(ev: Event) {
@@ -1442,8 +1499,7 @@ function scanIngredientsFromGallery() {
   input.click()
 }
 
-const cameras = ref<{ id: string; label: string }[]>([])
-const selectedCameraId = ref<string | null>(null)
+// refs moved to top
 
 async function loadCameras() {
   try {
@@ -1543,12 +1599,21 @@ async function startBarcodeScan() {
       }
 
       const { barcodes } = await BarcodeScanner.scan();
+      console.log("📷 Native scan result:", JSON.stringify(barcodes));
 
       if (barcodes.length > 0) {
-        const barcode = barcodes[0].rawValue;
-        if (barcode) {
+        const scannedBarcode = barcodes[0].rawValue;
+        console.log("📷 Extracted rawValue:", scannedBarcode);
+        if (scannedBarcode) {
           await Haptics.impact({ style: ImpactStyle.Medium })
-          form.value.barcode = barcode
+          
+          // Force Vue reactivity: clear first, then set after nextTick
+          form.value.barcode = ''
+          await nextTick()
+          form.value.barcode = scannedBarcode
+          scannedOnce.value = true
+          console.log("📷 form.value.barcode is now:", form.value.barcode);
+          // The watcher handles validation via the edge function
         }
       }
       scanning.value = false
@@ -1605,11 +1670,7 @@ async function startBarcodeScan() {
             await Haptics.impact({ style: ImpactStyle.Medium })
             form.value.barcode = decodedText
             scannedOnce.value = true   // ✅ mark as scanned
-            // also push into IonInput DOM
-            await nextTick()
-            if (barcodeInput.value) {
-              barcodeInput.value.$el.value = decodedText
-            }
+             // v-model handles the update
 
             // auto stop after detection
             await html5QrCode.stop()
@@ -1725,27 +1786,12 @@ function applyQuickDescription(text: string) {
   form.value.description = text;
 }
 
-function validateBarcode(barcode: string) {
-  const clean = barcode.replace(/-/g, "");
-
-  if (
-      BarcodeValidator.isValidEAN8(clean) ||
-      BarcodeValidator.isValidEAN13(clean) ||
-      BarcodeValidator.isValidEAN14(clean) ||
-      BarcodeValidator.isValidUPCA(clean) ||
-      BarcodeValidator.isValidUPCE(clean) ||
-      BarcodeValidator.isValidISBN(clean) ||
-      BarcodeValidator.isValidIMEI(clean) ||
-      BarcodeValidator.isValidGSIN(clean) ||
-      BarcodeValidator.isValidSSCC(clean) ||
-      BarcodeValidator.isValidGLN(clean) ||
-      BarcodeValidator.isValidASIN(clean)
-  ) {
-    return { isValid: true, message: "✅ Valid barcode" };
-  }
-
-  return { isValid: false, message: "❌ Invalid barcode" };
+/** Simple format check for barcode (used at submit time as a guard) */
+function isValidBarcodeFormat(barcode: string): boolean {
+  const clean = barcode.trim().replace(/[-\s]/g, "");
+  return /^\d{8,15}$/.test(clean);
 }
+
 
 async function saveProductStores(
     productId: string,
@@ -1838,9 +1884,8 @@ async function handleSubmit() {
       barcode
     } = form.value
 
-    const barcodeValidation = validateBarcode(form.value.barcode);
-    if (!barcodeValidation.isValid) {
-      setError(barcodeValidation.message);
+    if (!isValidBarcodeFormat(form.value.barcode)) {
+      setError('❌ Invalid barcode format');
       loading.value = false;
       return;
     }
