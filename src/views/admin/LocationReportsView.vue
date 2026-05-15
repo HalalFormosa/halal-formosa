@@ -100,6 +100,14 @@
                 </ion-select>
               </ion-label>
             </ion-item>
+
+            <ion-item-divider mode="md">
+              <ion-label>Conversation with Reporter</ion-label>
+            </ion-item-divider>
+
+            <div class="conversation-wrapper">
+              <report-conversation :location-report-id="selectedReport.id" :status="selectedReport.status" />
+            </div>
           </ion-list>
         </ion-content>
       </ion-modal>
@@ -108,14 +116,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, onUnmounted } from 'vue'
 import {
   IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonList, IonItem,
   IonLabel, IonNote, IonSkeletonText, IonSegment, IonSegmentButton,
-  IonModal, IonButtons, IonButton, IonSelect, IonSelectOption, IonText
+  IonModal, IonButtons, IonButton, IonSelect, IonSelectOption, IonText,
+  IonItemDivider
 } from '@ionic/vue'
 import { listOutline } from 'ionicons/icons'
 import AppHeader from '@/components/AppHeader.vue'
+import ReportConversation from '@/components/ReportConversation.vue'
 import { supabase } from '@/plugins/supabaseClient'
 import { useI18n } from 'vue-i18n'
 
@@ -182,13 +192,47 @@ async function updateStatus() {
   }
 }
 
+let subscription: any = null
+
+function setupRealtime() {
+  subscription = supabase
+    .channel('location_reports_admin')
+    .on('postgres_changes', { 
+      event: '*', 
+      schema: 'public', 
+      table: 'location_reports' 
+    }, (payload) => {
+      fetchReports()
+      
+      // Update selected report if it matches the changed record
+      if (selectedReport.value && selectedReport.value.id === payload.new?.id) {
+        selectedReport.value = { ...selectedReport.value, ...payload.new }
+      }
+    })
+    .subscribe()
+}
+
 watch(statusFilter, fetchReports)
-onMounted(fetchReports)
+
+onMounted(() => {
+  fetchReports()
+  setupRealtime()
+})
+
+onUnmounted(() => {
+  if (subscription) {
+    supabase.removeChannel(subscription)
+  }
+})
 </script>
 
 <style scoped>
 .empty-state {
   text-align: center;
   margin-top: 40px;
+}
+.conversation-wrapper {
+  padding: 16px;
+  height: 400px;
 }
 </style>

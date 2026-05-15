@@ -646,6 +646,22 @@
       "title": "My Submitted Locations",
       "noLocations": "You haven't submitted any locations yet."
     },
+    "myProductReports": {
+      "title": "My Product Reports",
+      "noReports": "You haven't submitted any product reports yet."
+    },
+    "myLocationReports": {
+      "title": "My Location Reports",
+      "noReports": "You haven't submitted any location reports yet."
+    },
+    "reportsCount": "Reports",
+    "reportDetail": "Report Detail",
+    "activeReports": "Active",
+    "historyReports": "History",
+    "reports": {
+      "noMessages": "No messages yet.",
+      "typeMessage": "Type a message..."
+    },
     "supportSuccess": "Thank you for supporting Halal Formosa ❤️",
     "donors": {
       "Free": "Free",

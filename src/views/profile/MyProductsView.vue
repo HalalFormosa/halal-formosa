@@ -2,6 +2,20 @@
   <ion-page>
     <ion-header>
       <app-header :title="$t('profile.myProducts.title')" show-back back-route="/profile" :icon="icons.bagHandleOutline" />
+      <ion-toolbar class="actions-toolbar">
+        <div class="header-main-actions">
+          <div style="flex: 1;"></div> <!-- Spacer to keep segment on right like admin views -->
+          <ion-segment v-model="viewMode" mode="ios" style="width: 200px;">
+            <ion-segment-button value="published">
+              <ion-label>{{ $t('master.published') }}</ion-label>
+            </ion-segment-button>
+            <ion-segment-button value="pending">
+              <ion-label>Pending</ion-label>
+            </ion-segment-button>
+          </ion-segment>
+        </div>
+      </ion-toolbar>
+
       <ion-toolbar class="search-row-toolbar">
         <div class="search-container">
           <ion-searchbar
@@ -23,8 +37,8 @@
 
       <template v-else>
         <div v-if="products.length === 0" class="empty-state">
-          <ion-icon :icon="icons.bagHandleOutline" class="empty-icon" />
-          <h3>{{ $t('profile.myProducts.noProducts') }}</h3>
+          <ion-icon :icon="viewMode === 'published' ? icons.bagHandleOutline : icons.timeOutline" class="empty-icon" />
+          <h3>{{ viewMode === 'published' ? $t('profile.myProducts.noProducts') : 'No pending products' }}</h3>
           <ion-button color="carrot" @click="$router.push('/add')">
             {{ $t('main.add') }}
           </ion-button>
@@ -91,7 +105,7 @@ import {
   IonPage, IonHeader, IonContent, IonSpinner, IonList, IonItem, 
   IonThumbnail, IonLabel, IonChip, IonBadge, IonIcon, IonButton,
   IonInfiniteScroll, IonInfiniteScrollContent, IonToolbar, IonSearchbar,
-  IonFab, IonFabButton
+  IonFab, IonFabButton, IonSegment, IonSegmentButton
 } from '@ionic/vue';
 import { bagHandleOutline, checkmarkCircleOutline, timeOutline, searchOutline, closeCircle, addOutline } from 'ionicons/icons';
 import AppHeader from '@/components/AppHeader.vue';
@@ -105,6 +119,7 @@ const infiniteDisabled = ref(false);
 const pageSize = 15;
 const currentPage = ref(0);
 const searchQuery = ref('');
+const viewMode = ref<'published' | 'pending'>('published');
 
 const icons = {
   bagHandleOutline,
@@ -138,6 +153,9 @@ async function loadMyProducts(reset = false) {
   if (searchQuery.value) {
     query = query.ilike('name', `%${searchQuery.value}%`);
   }
+
+  // Filter by view mode
+  query = query.eq('approved', viewMode.value === 'published');
 
   const { data, error } = await query
     .order('created_at', { ascending: false })
@@ -191,6 +209,11 @@ function formatDate(dateStr: string) {
 }
 
 onMounted(() => {
+  loadMyProducts(true);
+});
+
+import { watch } from 'vue';
+watch(viewMode, () => {
   loadMyProducts(true);
 });
 </script>
@@ -273,5 +296,21 @@ ion-thumbnail {
 
 .search-container {
   padding: 0 16px 12px;
+}
+
+/* Header Action Styles from Admin Review */
+.header-main-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 16px;
+  width: 100%;
+}
+
+.actions-toolbar {
+  --background: var(--ion-background-color);
+  --border-width: 0;
+  --min-height: auto;
 }
 </style>

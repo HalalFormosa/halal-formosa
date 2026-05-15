@@ -95,6 +95,18 @@ const routes: Array<RouteRecordRaw> = [
         component: () => import('@/views/profile/MyLocationsView.vue'),
         meta: { requiresAuth: true, noTabs: true, noAds: true }
     },
+    {
+        path: '/submissions/product-reports',
+        name: 'MyProductReports',
+        component: () => import('@/views/profile/MyProductReportsView.vue'),
+        meta: { requiresAuth: true, noTabs: true, noAds: true }
+    },
+    {
+        path: '/submissions/location-reports',
+        name: 'MyLocationReports',
+        component: () => import('@/views/profile/MyLocationReportsView.vue'),
+        meta: { requiresAuth: true, noTabs: true, noAds: true }
+    },
 
     { 
         path: '/place/:id', 

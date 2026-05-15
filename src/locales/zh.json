@@ -746,17 +746,33 @@
       "website": "網站"
     },
     "defaultName": "用戶",
-    "submittedProducts": "Submitted Products",
-    "submittedLocations": "Submitted Locations",
+    "submittedProducts": "我提交的產品",
+    "submittedLocations": "我提交的地點",
     "myProducts": {
-      "title": "My Submitted Products",
-      "noProducts": "You haven't submitted any products yet.",
-      "status": "Status",
-      "approval": "Approval"
+      "title": "我提交的產品",
+      "noProducts": "您尚未提交任何產品。",
+      "status": "狀態",
+      "approval": "審核狀態"
     },
     "myLocations": {
-      "title": "My Submitted Locations",
-      "noLocations": "You haven't submitted any locations yet."
+      "title": "我提交的地點",
+      "noLocations": "您尚未提交任何地點。"
+    },
+    "myProductReports": {
+      "title": "我的產品回報",
+      "noReports": "您尚未提交任何產品回報。"
+    },
+    "myLocationReports": {
+      "title": "我的地點回報",
+      "noReports": "您尚未提交任何地點回報。"
+    },
+    "reportsCount": "回報",
+    "reportDetail": "回報詳情",
+    "activeReports": "處理中",
+    "historyReports": "歷史紀錄",
+    "reports": {
+      "noMessages": "尚未有任何訊息。",
+      "typeMessage": "輸入訊息..."
     }
   },
   "appReview": {

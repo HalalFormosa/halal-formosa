@@ -260,6 +260,26 @@
                 <p v-if="myLocationsCount !== null">{{ myLocationsCount }} Places</p>
               </ion-label>
             </ion-item>
+
+            <ion-item button @click="$router.push('/submissions/product-reports')">
+              <div class="icon-box" slot="start">
+                <ion-icon :icon="icons.flagOutline" />
+              </div>
+              <ion-label>
+                <h3>{{ $t('profile.myProductReports.title') }}</h3>
+                <p v-if="myProductReportsCount !== null">{{ myProductReportsCount }} {{ $t('profile.reportsCount') }}</p>
+              </ion-label>
+            </ion-item>
+
+            <ion-item button @click="$router.push('/submissions/location-reports')">
+              <div class="icon-box" slot="start">
+                <ion-icon :icon="icons.flagOutline" />
+              </div>
+              <ion-label>
+                <h3>{{ $t('profile.myLocationReports.title') }}</h3>
+                <p v-if="myLocationReportsCount !== null">{{ myLocationReportsCount }} {{ $t('profile.reportsCount') }}</p>
+              </ion-label>
+            </ion-item>
           </ion-list>
         </ion-card>
 
@@ -644,6 +664,7 @@ import {
   storefrontOutline,
   timeOutline,
   closeCircleOutline,
+  flagOutline,
   refreshOutline,
   alertCircleOutline,
   keyOutline
@@ -702,7 +723,8 @@ const icons = {
   createOutline,
   refreshOutline,
   alertCircleOutline,
-  keyOutline
+  keyOutline,
+  flagOutline
 }
 
 interface RcProduct {
@@ -731,6 +753,8 @@ const merchantStore = ref<any | null>(null);
 const merchantApplication = ref<MerchantApplication | null>(null);
 const myProductsCount = ref<number | null>(null);
 const myLocationsCount = ref<number | null>(null);
+const myProductReportsCount = ref<number | null>(null);
+const myLocationReportsCount = ref<number | null>(null);
 
 const loadingProfile = ref(true)     // avatar, name, email
 const loadingAdmin = ref(false)      // admin-only data
@@ -836,7 +860,8 @@ async function fetchPendingCount() {
   const {count, error} = await supabase
       .from("products")
       .select("*", {count: "exact", head: true})
-      .eq("approved", false);
+      .eq("approved", false)
+      .eq("is_archived", false);
 
   if (!error && count !== null) {
     pendingCount.value = count;
@@ -893,13 +918,17 @@ async function fetchPendingProductReportsCount() {
 }
 
 async function fetchMyContributionsCount(userId: string) {
-  const [productsRes, locationsRes] = await Promise.all([
+  const [productsRes, locationsRes, productReportsRes, locationReportsRes] = await Promise.all([
     supabase.from('products').select('*', { count: 'exact', head: true }).eq('added_by', userId),
-    supabase.from('locations').select('*', { count: 'exact', head: true }).eq('created_by', userId)
+    supabase.from('locations').select('*', { count: 'exact', head: true }).eq('created_by', userId),
+    supabase.from('product_reports').select('*', { count: 'exact', head: true }).eq('reported_by', userId),
+    supabase.from('location_reports').select('*', { count: 'exact', head: true }).eq('reported_by', userId)
   ]);
 
   myProductsCount.value = productsRes.count;
   myLocationsCount.value = locationsRes.count;
+  myProductReportsCount.value = productReportsRes.count;
+  myLocationReportsCount.value = locationReportsRes.count;
 }
 
 const renewalMessage = computed(() => {
