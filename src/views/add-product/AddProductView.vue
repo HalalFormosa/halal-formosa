@@ -756,6 +756,8 @@ const cameras = ref<{ id: string; label: string }[]>([])
 const categoryRules = ref<Record<string, number>>({})
 const html5QrCodeInstance = ref<Html5Qrcode | null>(null)
 const barcodeLoading = ref(false)
+const derivedNameTags = ref<string[]>([]) // 🏷️ Track tags derived from name to update them dynamically
+const derivedCategoryTag = ref<string | null>(null) // 🏷️ Track tag derived from category to update dynamically
 
 interface ProductForm {
   barcode: string
@@ -816,6 +818,7 @@ const nextStep = () => {
         form.value.description = statusDescriptions[form.value.status] ?? ""
         nextTick(() => { programmaticDescUpdate.value = false })
       }
+      prefillTags() // 🏷️ Pre-fill tags based on name, category, etc.
     }
   }
 }
@@ -1264,6 +1267,116 @@ function applyAutoCategory() {
     }
   }
 }
+
+/** 🏷️ Pre-fill tags based on Name (2 words), Category (1 word), and Smart Choice */
+function prefillTags() {
+  // Only prefill if tags are empty (avoid overwriting user input or during edit)
+  if (form.value.tags.length > 0 || props.editProduct) return;
+
+  const newTags: string[] = [];
+
+  // 1. 2 words from name
+  if (form.value.name) {
+    // Split by non-alphanumeric/spaces, filter out very short words
+    const words = form.value.name.split(/[^\w\u4e00-\u9fa5]+/).filter(w => w.length >= 1);
+    if (words.length > 0) newTags.push(words[0]);
+    if (words.length > 1) newTags.push(words[1]);
+  }
+
+  // 2. 1 word from category
+  if (form.value.product_category_id) {
+    const cat = categories.value.find(c => c.id === form.value.product_category_id);
+    if (cat && cat.name) {
+      const catWord = cat.name.split(/\s+/)[0];
+      if (!newTags.includes(catWord)) {
+        newTags.push(catWord);
+        derivedCategoryTag.value = catWord; // 🏷️ Store for dynamic syncing
+      }
+    }
+  }
+
+  // 3. Smart choice
+  let smartTag = '';
+  if (ingredientHighlights.value.length > 0) {
+    // Pick the first interesting highlight keyword
+    smartTag = ingredientHighlights.value[0].keyword;
+  } else if (form.value.name) {
+    const words = form.value.name.split(/[^\w\u4e00-\u9fa5]+/).filter(w => w.length >= 1);
+    if (words.length > 2) smartTag = words[2];
+  }
+
+  if (smartTag && !newTags.includes(smartTag)) {
+    newTags.push(smartTag);
+  }
+
+  form.value.tags = [...new Set(newTags)].filter(t => !!t);
+  derivedNameTags.value = newTags.slice(0, 2); // 🏷️ Store the name-based ones
+  console.log("🏷️ Tags pre-filled:", form.value.tags);
+}
+
+/** 🏷️ Update only the tags derived from the name when the name changes */
+function syncNameTags(newName: string) {
+  if (props.editProduct || !newName) return;
+
+  // 1. Extract new candidate tags from name
+  const words = newName.split(/[^\w\u4e00-\u9fa5]+/).filter(w => w.length >= 1);
+  const newNameTags = words.slice(0, 2);
+
+  // 2. Remove tags that were previously derived from name (if they are still in form.tags)
+  const filteredTags = form.value.tags.filter(t => !derivedNameTags.value.includes(t));
+
+  // 3. Add new name-derived tags
+  const updatedTags = [...filteredTags];
+  newNameTags.forEach(nt => {
+    if (!updatedTags.includes(nt)) {
+      updatedTags.push(nt);
+    }
+  });
+
+  // 4. Update state
+  form.value.tags = updatedTags;
+  derivedNameTags.value = newNameTags;
+  console.log("🏷️ Tags synced with new name:", form.value.tags);
+}
+
+/** 🏷️ Update the tag derived from the category when it changes */
+function syncCategoryTag(newCatId: number | null) {
+  if (props.editProduct) return;
+
+  // 1. Get new candidate tag from category
+  const cat = categories.value.find(c => c.id === newCatId);
+  const newCatWord = cat?.name ? cat.name.split(/\s+/)[0] : null;
+
+  // 2. Remove old category-derived tag
+  let updatedTags = [...form.value.tags];
+  if (derivedCategoryTag.value) {
+    updatedTags = updatedTags.filter(t => t !== derivedCategoryTag.value);
+  }
+
+  // 3. Add new category tag
+  if (newCatWord && !updatedTags.includes(newCatWord)) {
+    updatedTags.push(newCatWord);
+  }
+
+  // 4. Update state
+  form.value.tags = updatedTags;
+  derivedCategoryTag.value = newCatWord;
+  console.log("🏷️ Tags synced with new category:", form.value.tags);
+}
+
+// Watch for manual name changes to update tags
+watch(() => form.value.name, (newName) => {
+  if (currentStep.value === STEP_DETAILS) {
+    syncNameTags(newName);
+  }
+});
+
+// Watch for category changes to update tags
+watch(() => form.value.product_category_id, (newCatId) => {
+  if (currentStep.value === STEP_DETAILS) {
+    syncCategoryTag(newCatId);
+  }
+});
 
 // Manual status change
 watch(() => form.value.status, (newStatus) => {
