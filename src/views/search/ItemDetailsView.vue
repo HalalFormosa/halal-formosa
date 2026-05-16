@@ -381,6 +381,9 @@
                 </ion-card>
               </div>
             </div>
+
+            <!-- Audit History Log -->
+            <AuditHistoryLog entityType="product" :entityId="item.id" :createdAt="item.created_at" />
           </div>
         </div>
 
@@ -548,6 +551,7 @@ import 'swiper/css'
 import 'swiper/css/pagination'
 import 'swiper/css/zoom'
 import AppHeader from "@/components/AppHeader.vue";
+import AuditHistoryLog from "@/components/AuditHistoryLog.vue";
 import {
   alertCircleOutline,
   bagOutline,

@@ -333,6 +333,9 @@
               </template>
 
             </div>
+
+            <!-- Audit History Log -->
+            <AuditHistoryLog entityType="location" :entityId="place.id" :createdAt="place.created_at" />
           </div>
         </div>
       </div>
@@ -414,6 +417,7 @@ import 'swiper/css'
 import 'swiper/css/pagination'
 import 'swiper/css/zoom'
 import AppHeader from '@/components/AppHeader.vue'
+import AuditHistoryLog from '@/components/AuditHistoryLog.vue'
 import {
   alertCircle, informationCircle, chevronDown,
   alertCircleOutline, callOutline, cashOutline, chatboxEllipsesOutline,
