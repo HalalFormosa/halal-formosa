@@ -58,8 +58,8 @@ dayjs.extend(relativeTime)
 
 const props = defineProps<{
   entityType: string
-  entityId: string | number
-  createdAt: string
+  entityId?: string | number
+  createdAt?: string
 }>()
 
 const logs = ref<any[]>([])
