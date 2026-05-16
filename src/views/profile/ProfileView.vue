@@ -1122,10 +1122,10 @@ async function donate() {
   }
 }
 
-async function presentPaywall(): Promise<boolean> {
+async function presentPaywall(): Promise<PAYWALL_RESULT> {
   if (!Capacitor.isNativePlatform()) {
     console.warn("[RC] Paywall can only run on native (Android/iOS).");
-    return false;
+    return PAYWALL_RESULT.ERROR;
   }
 
   try {
@@ -1135,32 +1135,11 @@ async function presentPaywall(): Promise<boolean> {
 
     console.log("[RC] Paywall Result:", result);
 
-    switch (result) {
-      case PAYWALL_RESULT.PURCHASED:
-        console.log("[RC] 🎉 User purchased subscription!");
-        return true;
-
-      case PAYWALL_RESULT.RESTORED:
-        console.log("[RC] 🔄 Subscription restored!");
-        return true;
-
-      case PAYWALL_RESULT.CANCELLED:
-        console.log("[RC] User cancelled paywall.");
-        return false;
-
-      case PAYWALL_RESULT.ERROR:
-        console.log("[RC] Paywall error.");
-        return false;
-
-      case PAYWALL_RESULT.NOT_PRESENTED:
-      default:
-        console.log("[RC] Paywall not presented.");
-        return false;
-    }
+    return result;
 
   } catch (e) {
     console.error("[RC] Paywall failed:", e);
-    return false;
+    return PAYWALL_RESULT.ERROR;
   }
 }
 
@@ -1219,8 +1198,8 @@ async function openProPaywall() {
     // 🔐 Safe to continue (native only)
     await ensureRevenueCatLoggedIn();
 
-    const purchased = await presentPaywall();
-    if (!purchased) return; // ✅ safe now
+    const paywallResult = await presentPaywall();
+    if (paywallResult !== PAYWALL_RESULT.PURCHASED && paywallResult !== PAYWALL_RESULT.RESTORED) return; // ✅ safe now
 
     // 🔄 Refresh subscription state
     await refreshCustomerInfo();
@@ -1232,31 +1211,45 @@ async function openProPaywall() {
     // 🔁 Soft app "restart"
     await router.replace('/profile'); // 👈 see note below
 
-    // ✅ Success feedback
-    const toast = await toastController.create({
-      message: t('profile.pro.purchaseSuccess'),
-      duration: 2500,
-      color: "success",
-      position: "bottom",
-    });
-    await toast.present();
+    if (paywallResult === PAYWALL_RESULT.PURCHASED) {
+      // ✅ Success feedback
+      const toast = await toastController.create({
+        message: t('profile.pro.purchaseSuccess'),
+        duration: 2500,
+        color: "success",
+        position: "bottom",
+      });
+      await toast.present();
 
-    ActivityLogService.log('pro_purchase_success', {
-      entitlement: 'Halal Formosa Pro'
-    })
+      ActivityLogService.log('pro_purchase_success', {
+        entitlement: 'Halal Formosa Pro'
+      })
 
-    await notifyEvent(
-      'pro_purchase_success',
-      '💎 New Pro Member!',
-      `User ${userEmail.value} has just subscribed to Halal Formosa Pro!`,
-      undefined,
-      {
-        source: 'profile_view',
-        email: userEmail.value,
-        user_id: user.value?.id
-      },
-      ['discord']
-    ).catch(console.error);
+      await notifyEvent(
+        'pro_purchase_success',
+        '💎 New Pro Member!',
+        `User ${userEmail.value} has just subscribed to Halal Formosa Pro!`,
+        undefined,
+        {
+          source: 'profile_view',
+          email: userEmail.value,
+          user_id: user.value?.id
+        },
+        ['discord']
+      ).catch(console.error);
+    } else if (paywallResult === PAYWALL_RESULT.RESTORED) {
+      const toast = await toastController.create({
+        message: t('profile.pro.restoreSuccess', 'Subscription successfully restored'),
+        duration: 2500,
+        color: "success",
+        position: "bottom",
+      });
+      await toast.present();
+
+      ActivityLogService.log('pro_restore_success', {
+        entitlement: 'Halal Formosa Pro'
+      })
+    }
 
   } finally {
     // 🔓 ALWAYS release the lock

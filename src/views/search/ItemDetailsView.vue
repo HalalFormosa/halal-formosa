@@ -760,7 +760,6 @@ async function presentPaywall(): Promise<boolean> {
 
     switch (result) {
       case PAYWALL_RESULT.PURCHASED:
-      case PAYWALL_RESULT.RESTORED:
         // 🔄 Refresh subscription state
         await refreshSubscriptionStatus({ syncToServer: true })
 
@@ -782,6 +781,13 @@ async function presentPaywall(): Promise<boolean> {
           ['discord']
         ).catch(console.error);
 
+        return true
+
+      case PAYWALL_RESULT.RESTORED:
+        await refreshSubscriptionStatus({ syncToServer: true })
+        await ActivityLogService.log("pro_restore_success", {
+          source: "save_item_limit"
+        })
         return true
 
       case PAYWALL_RESULT.CANCELLED:

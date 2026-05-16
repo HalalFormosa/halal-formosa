@@ -291,7 +291,7 @@ async function presentRcPaywall() {
   try {
     const { result } = await RevenueCatUI.presentPaywall();
 
-    if (result === PAYWALL_RESULT.PURCHASED || result === PAYWALL_RESULT.RESTORED) {
+    if (result === PAYWALL_RESULT.PURCHASED) {
       await refreshSubscriptionStatus({ syncToServer: true });
       ActivityLogService.log('pro_purchase_success', {
         source: 'saved_items_view'
@@ -311,6 +311,12 @@ async function presentRcPaywall() {
         ['discord']
       ).catch(console.error);
 
+      return true;
+    } else if (result === PAYWALL_RESULT.RESTORED) {
+      await refreshSubscriptionStatus({ syncToServer: true });
+      ActivityLogService.log('pro_restore_success', {
+        source: 'saved_items_view'
+      });
       return true;
     }
   } catch (err) {

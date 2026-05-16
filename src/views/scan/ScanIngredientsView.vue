@@ -997,7 +997,6 @@ async function presentPaywall(): Promise<boolean> {
     const paywallResult = resultParams.result || (resultParams as any)
     switch (paywallResult) {
       case PAYWALL_RESULT.PURCHASED:
-      case PAYWALL_RESULT.RESTORED:
         await refreshSubscriptionStatus()
         await ActivityLogService.log("pro_purchase_success", { source: "ai_summary" })
 
@@ -1015,6 +1014,10 @@ async function presentPaywall(): Promise<boolean> {
           ['discord']
         ).catch(console.error);
 
+        return true
+      case PAYWALL_RESULT.RESTORED:
+        await refreshSubscriptionStatus()
+        await ActivityLogService.log("pro_restore_success", { source: "ai_summary" })
         return true
       case PAYWALL_RESULT.CANCELLED:
         return false
