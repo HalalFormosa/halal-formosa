@@ -7,35 +7,35 @@
       </div>
     </div>
 
-    <!-- 🎁 Global Reward Popup -->
+    <!-- 🎁 Global Subtle Reward Toast -->
     <div v-if="rewardOpen" class="reward-overlay">
-      <div class="reward-float ion-text-center">
-        <h2>🎉 {{ $t('main.congratulation') }}</h2>
+      <div class="reward-toast" @click="closeReward">
+        <div class="reward-toast-left">
+          <ion-avatar class="reward-toast-avatar" v-if="rewardAvatar">
+            <img :src="rewardAvatar" alt="Avatar" />
+          </ion-avatar>
+          <div v-else class="reward-toast-icon">✨</div>
+        </div>
 
-        <!-- Avatar -->
-        <ion-avatar style="margin: 0 auto; width: 80px; height: 80px;" v-if="rewardAvatar">
-          <img :src="rewardAvatar" alt="Profile Picture" />
-        </ion-avatar>
+        <div class="reward-toast-body">
+          <div class="reward-toast-header">
+            <span class="reward-points-badge">+{{ rewardPoints }} XP</span>
+            <span class="reward-action-text">{{ rewardAction }}</span>
+          </div>
 
-        <!-- Reward points -->
-        <p style="margin-top: 1rem;">
-          {{ $t('main.increasePoint') }} <strong>+{{ rewardPoints }}</strong> {{ $t('main.point') }}
-          {{ $t('main.for') }} <em>{{ rewardAction }}</em>!
-        </p>
-
-        <!-- Animated EXP progress -->
-        <ion-progress-bar
-            :value="rewardProgress"
-            color="success"
-            style="margin-top: 10px; border-radius: 8px;"
-        ></ion-progress-bar>
-        <small>
-          Level {{ rewardLevel }} — {{ rewardDisplay }} / {{ rewardNextXp }} XP
-        </small>
-
-        <ion-button expand="block" color="success" @click="closeReward" style="margin-top: 1rem;">
-          OK
-        </ion-button>
+          <!-- Animated EXP progress -->
+          <div class="reward-toast-progress-container">
+            <ion-progress-bar
+                :value="rewardProgress"
+                color="success"
+                class="reward-progress-bar"
+            ></ion-progress-bar>
+          </div>
+          <div class="reward-toast-level-info">
+            <span>Level {{ rewardLevel }}</span>
+            <span>{{ rewardDisplay }} / {{ rewardNextXp }} XP</span>
+          </div>
+        </div>
       </div>
     </div>
 

@@ -11,6 +11,7 @@ export const rewardTotal = ref(0);   // final total
 export const rewardDisplay = ref(0); // animated total
 
 let animFrame: number | null = null;
+let dismissTimeout: ReturnType<typeof setTimeout> | null = null;
 
 export const rewardLevel = computed(() => {
     let lvl = 1;
@@ -28,11 +29,11 @@ export const rewardProgress = computed(() => {
     return (xp - rewardPrevXp.value) / (rewardNextXp.value - rewardPrevXp.value);
 });
 
-export function openReward(points: number, action: string, avatar?: string, newTotal?: number) {
+export function openReward(points: number, action: string, avatar?: string, newTotal?: number, durationMs = 4000) {
     const nextTotal = newTotal ?? (currentPoints.value ?? 0);
 
-    if (nextTotal === rewardTotal.value) {
-        // 👀 nothing changed, skip re-animation
+    if (nextTotal === rewardTotal.value && rewardOpen.value) {
+        // 👀 nothing changed, skip re-animation if already open
         return;
     }
 
@@ -40,10 +41,15 @@ export function openReward(points: number, action: string, avatar?: string, newT
     rewardAction.value = action;
     rewardAvatar.value = avatar || "";
     rewardTotal.value = nextTotal;
-    rewardDisplay.value = rewardTotal.value - points;
+    rewardDisplay.value = Math.max(0, rewardTotal.value - points);
     rewardOpen.value = true;
 
     animateReward();
+
+    if (dismissTimeout) clearTimeout(dismissTimeout);
+    dismissTimeout = setTimeout(() => {
+        closeReward();
+    }, durationMs);
 }
 
 
@@ -51,6 +57,10 @@ export function openReward(points: number, action: string, avatar?: string, newT
 export function closeReward() {
     rewardOpen.value = false;
     if (animFrame) cancelAnimationFrame(animFrame);
+    if (dismissTimeout) {
+        clearTimeout(dismissTimeout);
+        dismissTimeout = null;
+    }
 }
 
 function animateReward(duration = 1200) {

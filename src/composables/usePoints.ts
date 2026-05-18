@@ -74,10 +74,6 @@ export function usePoints() {
 
         fireConfetti();
 
-        setTimeout(() => {
-            closeReward();
-        }, autoCloseMs);
-
         // Call backend
         const res = await awardPoints(action);
 
