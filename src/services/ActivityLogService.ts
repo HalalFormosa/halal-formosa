@@ -34,6 +34,17 @@ function resolveEntity(activity: string, rawDetail: any): EntityResult {
         case 'explore_detail_open_maps':
         case 'explore_marker_click':
         case 'explore_detail_edit':
+        case 'explore_navigate_click':
+        case 'location_save_click':
+        case 'location_save_success':
+        case 'explore_detail_instagram':
+        case 'explore_detail_share':
+        case 'explore_detail_call':
+        case 'explore_detail_report':
+        case 'explore_detail_line':
+        case 'explore_detail_foodpanda':
+        case 'edit_place_success':
+        case 'add_place_success':
             return {
                 entity_type: 'place',
                 entity_id: detail.id ? String(detail.id) : null
@@ -45,10 +56,14 @@ function resolveEntity(activity: string, rawDetail: any): EntityResult {
         case 'search_product_click':
         case 'home_product_click':
         case 'product_image_open':
-        case 'related_product_click': {
+        case 'related_product_click':
+        case 'product_edit_click':
+        case 'product_report_click':
+        case 'home_scan_ingredient': {
             const raw =
                 detail.barcode ??
                 detail.clicked_barcode ??
+                detail.product_id ??
                 null
 
             return {
@@ -108,6 +123,9 @@ function resolveEntity(activity: string, rawDetail: any): EntityResult {
         case 'partner_trip_click':
         case 'partner_certified_product_click':
         case 'partner_certified_location_click':
+        case 'partner_produced_product_click':
+        case 'partner_nearby_location_click':
+        case 'partner_nearby_view_more_click':
             return {
                 entity_type: 'partner',
                 entity_id: detail.partner_id
@@ -214,6 +232,8 @@ function resolveEntity(activity: string, rawDetail: any): EntityResult {
 // ðŸŸ¢ MONETIZATION
         case 'pro_paywall_open':
         case 'pro_purchase_success':
+        case 'pro_restore_success':
+        case 'pro_paywall_trigger':
             return {
                 entity_type: 'entitlement',
                 entity_id: detail.entitlement ?? 'Halal Formosa Pro'
@@ -273,6 +293,7 @@ function resolveEntity(activity: string, rawDetail: any): EntityResult {
         case 'reels_view_original_click':
         case 'reels_restart_preview':
         case 'explore_reel_open':
+        case 'explore_reel_open_choice':
         case 'home_media_partner_open':
         case 'reels_audio_toggle':
             return {
@@ -347,6 +368,21 @@ function resolveActivityGroup(activity: string): string | null {
         case 'home_scan_barcode':
         case 'home_product_click':
         case 'home_location_click':
+        case 'announcement_click':
+        case 'home_prayer_refresh_location':
+        case 'home_leaderboard_profile':
+        case 'home_view_more_trips':
+        case 'home_view_more_marketplace':
+        case 'home_trip_click':
+        case 'home_marketplace_click':
+        case 'home_scan_ingredient':
+        case 'home_find_qibla_click':
+        case 'home_viewmore_partners':
+        case 'home_viewmore_products':
+        case 'home_viewmore_locations':
+        case 'home_viewmore_news':
+        case 'home_social_follow_click':
+        case 'smart_banner_click':
             return 'home'
 
         /* -------------------------
@@ -368,6 +404,8 @@ function resolveActivityGroup(activity: string): string | null {
         case 'product_details_open':
         case 'product_image_open':
         case 'related_product_click':
+        case 'product_edit_click':
+        case 'product_report_click':
             return 'product'
 
         /* -------------------------
@@ -388,6 +426,15 @@ function resolveActivityGroup(activity: string): string | null {
         case 'explore_detail_open_maps':
         case 'explore_detail_edit':
         case 'explore_share_place':
+        case 'explore_navigate_click':
+        case 'location_save_click':
+        case 'location_save_success':
+        case 'explore_detail_instagram':
+        case 'explore_detail_share':
+        case 'explore_detail_call':
+        case 'explore_detail_report':
+        case 'explore_detail_line':
+        case 'explore_detail_foodpanda':
             return 'place'
 
         /* -------------------------
@@ -409,8 +456,6 @@ function resolveActivityGroup(activity: string): string | null {
         /* -------------------------
            NEWS
         -------------------------- */
-        case 'home_news_click':
-        case 'home_viewmore_news':
         case 'news_page_open':
         case 'news_detail_open':
         case 'news_share':
@@ -431,6 +476,9 @@ function resolveActivityGroup(activity: string): string | null {
         case 'partner_trip_click':
         case 'partner_certified_product_click':
         case 'partner_certified_location_click':
+        case 'partner_produced_product_click':
+        case 'partner_nearby_location_click':
+        case 'partner_nearby_view_more_click':
             return 'partner'
 
 
@@ -447,6 +495,7 @@ function resolveActivityGroup(activity: string): string | null {
         -------------------------- */
         case 'pro_paywall_open':
         case 'pro_purchase_success':
+        case 'pro_restore_success':
         case 'pro_paywall_trigger':
         case 'donation_click':
         case 'donation_success':
@@ -497,6 +546,7 @@ function resolveActivityGroup(activity: string): string | null {
         case 'reels_view_original_click':
         case 'reels_restart_preview':
         case 'explore_reel_open':
+        case 'explore_reel_open_choice':
         case 'home_media_partner_open':
         case 'reels_audio_toggle':
             return 'social_reels'
@@ -530,6 +580,8 @@ function resolveActivityGroup(activity: string): string | null {
         case 'add_product_ocr_start':
         case 'add_product_success':
         case 'add_product_submit_success':
+        case 'add_place_success':
+        case 'edit_place_success':
             return 'contributions'
 
         /* -------------------------

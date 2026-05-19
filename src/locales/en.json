@@ -49,7 +49,18 @@
     "change": "Change",
     "mandatory": "Mandatory",
     "chat": "Chat",
-    "edited": "(Edited)"
+    "edited": "(Edited)",
+    "remove": "Remove",
+    "history": "History",
+    "added": "Added",
+    "lastEdited": "Last edited",
+    "noEditHistory": "No recent edits",
+    "admin": "Admin"
+  },
+  "review": {
+    "rotatePhoto": "Rotate Photo",
+    "restoreOriginal": "Original Photo",
+    "cleanBackground": "Remove Background"
   },
   "master": {
     "active": "Active",
@@ -839,6 +850,15 @@
     "descriptionPlaceholder": "Enter text",
     "frontImage": "Front Image",
     "backImage": "Back Image",
+    "photoActions": {
+      "takePhoto": "Camera",
+      "uploadPhoto": "Upload",
+      "cleanBg": "AI Clean BG",
+      "retake": "Retake",
+      "rotate": "Rotate",
+      "restoreOriginal": "Original Photo",
+      "remove": "Remove"
+    },
     "showMuslimFriendly": "Show Muslim-friendly ingredients",
     "hideMuslimFriendly": "Hide Muslim-friendly ingredients",
     "applyQuickDescription": "Apply Quick Description",

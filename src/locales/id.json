@@ -49,7 +49,18 @@
     "search": "Search",
     "noResults": "No results found",
     "chat": "Chat",
-    "edited": "(Edited)"
+    "edited": "(Edited)",
+    "remove": "Hapus",
+    "history": "Riwayat",
+    "added": "Ditambahkan",
+    "lastEdited": "Terakhir diedit",
+    "noEditHistory": "Belum ada riwayat editan",
+    "admin": "Admin"
+  },
+  "review": {
+    "rotatePhoto": "Putar Foto",
+    "restoreOriginal": "Foto Asli",
+    "cleanBackground": "Hapus Latar Belakang"
   },
   "dailyMissions": {
     "title": "Misi Harian",
@@ -760,6 +771,15 @@
     "descriptionPlaceholder": "Masukkan teks",
     "frontImage": "Gambar Depan",
     "backImage": "Gambar Belakang",
+    "photoActions": {
+      "takePhoto": "Kamera",
+      "uploadPhoto": "Unggah",
+      "cleanBg": "AI Bersih BG",
+      "retake": "Ulangi",
+      "rotate": "Putar",
+      "restoreOriginal": "Foto Asli",
+      "remove": "Hapus"
+    },
     "applyQuickDescription": "Terapkan Deskripsi Cepat",
     "nearbyStoreDetected": "Toko terdekat terdeteksi",
     "showMuslimFriendly": "Tampilkan bahan ramah muslim",

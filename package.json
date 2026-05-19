@@ -42,6 +42,7 @@
     "@google/genai": "^1.16.0",
     "@googlemaps/js-api-loader": "^1.16.10",
     "@googlemaps/markerclusterer": "^2.6.2",
+    "@imgly/background-removal": "^1.7.0",
     "@ionic/pwa-elements": "^3.3.0",
     "@ionic/vue": "^8.7.17",
     "@ionic/vue-router": "^8.7.17",

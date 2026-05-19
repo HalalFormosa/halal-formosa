@@ -22,7 +22,10 @@
               </div>
               <div class="timeline-content">
                 <div class="timeline-header">
-                  <strong>{{ getDisplayName(log) }}</strong>
+                  <div class="name-wrapper">
+                    <strong>{{ getDisplayName(log) }}</strong>
+                    <span v-if="isAdminUser(log)" class="admin-pill">{{ $t('common.admin', 'Admin') }}</span>
+                  </div>
                   <span class="timeline-date">{{ fromNowToTaipei(log.created_at) }}</span>
                 </div>
                 <div class="timeline-body">
@@ -98,7 +101,11 @@ const fetchLogs = async () => {
       new_data,
       user_profiles (
         display_name,
-        avatar_url
+        avatar_url,
+        public_profile,
+        user_roles (
+          role
+        )
       )
     `)
     .eq('entity_type', props.entityType)
@@ -120,23 +127,34 @@ watch(() => props.entityId, () => {
   fetchLogs()
 })
 
+defineExpose({ fetchLogs })
+
 function fromNowToTaipei(dateString?: string) {
   if (!dateString) return ''
   return dayjs.utc(dateString).tz('Asia/Taipei').fromNow()
 }
 
 function getDisplayName(log: any) {
-  if (log.user_profiles && log.user_profiles.display_name) {
+  if (log.user_profiles && log.user_profiles.public_profile && log.user_profiles.display_name) {
     return log.user_profiles.display_name
   }
-  return 'Contributor'
+  return 'Anonymous Contributor'
 }
 
 function getAvatar(log: any) {
-  if (log.user_profiles && log.user_profiles.avatar_url) {
+  if (log.user_profiles && log.user_profiles.public_profile && log.user_profiles.avatar_url) {
     return log.user_profiles.avatar_url
   }
   return 'https://ui-avatars.com/api/?name=Contributor&background=random'
+}
+
+function isAdminUser(log: any) {
+  if (!log.user_profiles || !log.user_profiles.user_roles) return false
+  const roles = log.user_profiles.user_roles
+  if (Array.isArray(roles)) {
+    return roles.some((r: any) => r?.role === 'admin')
+  }
+  return roles?.role === 'admin'
 }
 
 function handleImageError(e: Event) {
@@ -260,5 +278,22 @@ function getActionDescription(log: any) {
 .timeline-desc {
   color: var(--ion-text-color, #555555);
   opacity: 0.85;
+}
+
+.name-wrapper {
+  display: flex;
+  align-items: center;
+}
+
+.admin-pill {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  background: var(--ion-color-carrot, #ff9800);
+  color: white;
+  padding: 2px 6px;
+  border-radius: 12px;
+  margin-left: 6px;
+  box-shadow: 0 1px 3px rgba(255, 152, 0, 0.4);
 }
 </style>

@@ -306,10 +306,23 @@
               <div v-if="backPreview" class="ion-padding-top ion-text-center">
                 <ion-label class="preview-label">{{ $t('addProduct.capturedBackPhoto') || 'Captured Back Photo' }}</ion-label>
                 <div class="preview-container">
-                   <img :src="backPreview" class="large-preview-img" @load="scrollToBottom" />
-                   <ion-button size="small" color="danger" fill="clear" class="preview-remove-btn" @click="backPreview = null; backFile = null">
-                     <ion-icon :icon="closeCircle" />
-                   </ion-button>
+                   <img :src="backPreview" class="large-preview-img" @load="scrollToBottom" @click="openFullscreenImage(1)" style="cursor: pointer;" />
+                   <div class="preview-actions-overlay">
+                     <ion-button v-if="isBackCleaned" type="button" size="small" color="warning" fill="solid" @click="restoreOriginalImage('back')" class="preview-action-btn" :title="$t('addProduct.photoActions.restoreOriginal') || 'Original Photo'">
+                       <ion-icon :icon="refreshOutline" />
+                     </ion-button>
+                     <ion-button type="button" size="small" color="primary" fill="solid" @click="rotateImage('back')" :disabled="rotatingBack" class="preview-action-btn" :title="$t('addProduct.photoActions.rotate') || 'Rotate'">
+                       <ion-spinner v-if="rotatingBack" name="crescent"></ion-spinner>
+                       <ion-icon v-else :icon="syncOutline" />
+                     </ion-button>
+                     <ion-button type="button" size="small" color="primary" fill="solid" @click="cleanBackgroundImage('back')" :disabled="cleaningBack" class="preview-action-btn" :title="$t('addProduct.photoActions.cleanBg') || 'AI Clean BG'">
+                       <ion-spinner v-if="cleaningBack" name="crescent"></ion-spinner>
+                       <ion-icon v-else :icon="colorWandOutline" />
+                     </ion-button>
+                     <ion-button type="button" size="small" color="danger" fill="solid" @click="backPreview = null; backFile = null; originalBackPreview = null; originalBackFile = null" class="preview-action-btn" :title="$t('addProduct.photoActions.remove') || 'Remove'">
+                       <ion-icon :icon="closeCircle" />
+                     </ion-button>
+                   </div>
                 </div>
               </div>
 
@@ -537,34 +550,98 @@
                   <!-- Front Photo -->
                   <ion-card class="photo-card" :class="{ 'has-photo': frontPreview }">
                     <div class="photo-card-header">
-                       <ion-label>{{ $t('addProduct.frontImage') }}</ion-label>
-                       <ion-buttons>
-                          <ion-button @click="takeFrontPicture"><ion-icon :icon="cameraOutline" /></ion-button>
-                          <ion-button @click="uploadFrontFromGallery"><ion-icon :icon="cloudUploadOutline" /></ion-button>
-                       </ion-buttons>
+                       <ion-label class="photo-title">{{ $t('addProduct.frontImage') }}</ion-label>
                     </div>
                     <div v-if="frontPreview" class="photo-preview-wrap">
-                      <img :src="frontPreview" class="thumbnail-img" />
+                      <img :src="frontPreview" class="thumbnail-img" @click="openFullscreenImage(0)" style="cursor: pointer;" />
+                    </div>
+                    <div v-if="frontPreview" class="photo-controls">
+                      <button type="button" class="control-btn ai-btn" @click.stop="cleanBackgroundImage('front')" :disabled="cleaningFront">
+                        <div v-if="cleaningFront" class="ai-progress-container">
+                          <span class="ai-progress-text">{{ progressStatus || 'Processing AI...' }}</span>
+                          <ion-progress-bar :value="progressPercent / 100" class="ai-bar"></ion-progress-bar>
+                        </div>
+                        <template v-else>
+                          <ion-icon :icon="colorWandOutline" />
+                          <span>{{ $t('addProduct.photoActions.cleanBg') || 'AI Clean BG' }}</span>
+                        </template>
+                      </button>
+                      <div class="control-row">
+                        <button v-if="isFrontCleaned" type="button" class="control-sub-btn warning" @click.stop="restoreOriginalImage('front')" :title="$t('addProduct.photoActions.restoreOriginal') || 'Original Photo'">
+                          <ion-icon :icon="refreshOutline" />
+                        </button>
+                        <button type="button" class="control-sub-btn" @click.stop="takeFrontPicture" :title="$t('addProduct.photoActions.takePhoto') || 'Retake'">
+                          <ion-icon :icon="cameraOutline" />
+                        </button>
+                        <button type="button" class="control-sub-btn" @click.stop="rotateImage('front')" :disabled="rotatingFront" :title="$t('addProduct.photoActions.rotate') || 'Rotate'">
+                          <ion-spinner v-if="rotatingFront" name="crescent" class="btn-spinner"></ion-spinner>
+                          <ion-icon v-else :icon="syncOutline" />
+                        </button>
+                        <button type="button" class="control-sub-btn danger" @click.stop="frontPreview = null; frontFile = null; originalFrontPreview = null; originalFrontFile = null" :title="$t('addProduct.photoActions.remove') || 'Remove'">
+                          <ion-icon :icon="trashOutline" />
+                        </button>
+                      </div>
                     </div>
                     <div v-else class="photo-placeholder">
-                      <ion-icon :icon="cloudUploadOutline" />
+                      <div class="placeholder-actions">
+                        <button type="button" class="placeholder-btn" @click="takeFrontPicture">
+                          <ion-icon :icon="cameraOutline" />
+                          <span>{{ $t('addProduct.photoActions.takePhoto') || 'Camera' }}</span>
+                        </button>
+                        <button type="button" class="placeholder-btn" @click="uploadFrontFromGallery">
+                          <ion-icon :icon="cloudUploadOutline" />
+                          <span>{{ $t('addProduct.photoActions.uploadPhoto') || 'Upload' }}</span>
+                        </button>
+                      </div>
                     </div>
                   </ion-card>
 
                   <!-- Back Photo -->
                   <ion-card class="photo-card" :class="{ 'has-photo': backPreview }">
                     <div class="photo-card-header">
-                       <ion-label>{{ $t('addProduct.backImage') }}</ion-label>
-                       <ion-buttons>
-                          <ion-button @click="takeBackPicture"><ion-icon :icon="cameraOutline" /></ion-button>
-                          <ion-button @click="uploadBackFromGallery"><ion-icon :icon="cloudUploadOutline" /></ion-button>
-                       </ion-buttons>
+                       <ion-label class="photo-title">{{ $t('addProduct.backImage') }}</ion-label>
                     </div>
                     <div v-if="backPreview" class="photo-preview-wrap">
-                      <img :src="backPreview" class="thumbnail-img" />
+                      <img :src="backPreview" class="thumbnail-img" @click="openFullscreenImage(1)" style="cursor: pointer;" />
+                    </div>
+                    <div v-if="backPreview" class="photo-controls">
+                      <button type="button" class="control-btn ai-btn" @click.stop="cleanBackgroundImage('back')" :disabled="cleaningBack">
+                        <div v-if="cleaningBack" class="ai-progress-container">
+                          <span class="ai-progress-text">{{ progressStatus || 'Processing AI...' }}</span>
+                          <ion-progress-bar :value="progressPercent / 100" class="ai-bar"></ion-progress-bar>
+                        </div>
+                        <template v-else>
+                          <ion-icon :icon="colorWandOutline" />
+                          <span>{{ $t('addProduct.photoActions.cleanBg') || 'AI Clean BG' }}</span>
+                        </template>
+                      </button>
+                      <div class="control-row">
+                        <button v-if="isBackCleaned" type="button" class="control-sub-btn warning" @click.stop="restoreOriginalImage('back')" :title="$t('addProduct.photoActions.restoreOriginal') || 'Original Photo'">
+                          <ion-icon :icon="refreshOutline" />
+                        </button>
+                        <button type="button" class="control-sub-btn" @click.stop="takeBackPicture" :title="$t('addProduct.photoActions.takePhoto') || 'Retake'">
+                          <ion-icon :icon="cameraOutline" />
+                        </button>
+                        <button type="button" class="control-sub-btn" @click.stop="rotateImage('back')" :disabled="rotatingBack" :title="$t('addProduct.photoActions.rotate') || 'Rotate'">
+                          <ion-spinner v-if="rotatingBack" name="crescent" class="btn-spinner"></ion-spinner>
+                          <ion-icon v-else :icon="syncOutline" />
+                        </button>
+                        <button type="button" class="control-sub-btn danger" @click.stop="backPreview = null; backFile = null; originalBackPreview = null; originalBackFile = null" :title="$t('addProduct.photoActions.remove') || 'Remove'">
+                          <ion-icon :icon="trashOutline" />
+                        </button>
+                      </div>
                     </div>
                     <div v-else class="photo-placeholder">
-                      <ion-icon :icon="cloudUploadOutline" />
+                      <div class="placeholder-actions">
+                        <button type="button" class="placeholder-btn" @click="takeBackPicture">
+                          <ion-icon :icon="cameraOutline" />
+                          <span>{{ $t('addProduct.photoActions.takePhoto') || 'Camera' }}</span>
+                        </button>
+                        <button type="button" class="placeholder-btn" @click="uploadBackFromGallery">
+                          <ion-icon :icon="cloudUploadOutline" />
+                          <span>{{ $t('addProduct.photoActions.uploadPhoto') || 'Upload' }}</span>
+                        </button>
+                      </div>
                     </div>
                   </ion-card>
                 </div>
@@ -633,6 +710,42 @@
             @did-dismiss="errorMsg = ''"
         />
       </form>
+
+      <!-- ✅ Fullscreen Image Modal -->
+      <ion-modal :is-open="showImageModal" @didDismiss="showImageModal = false">
+        <ion-content fullscreen style="--background: black">
+          <!-- Floating Close Button -->
+          <ion-button
+              fill="solid"
+              color="carrot"
+              style="position: absolute; top: 16px; right: 16px; z-index: 9999;"
+              @click="showImageModal = false"
+          >
+            ✕
+          </ion-button>
+
+          <!-- Swiper Gallery -->
+          <Swiper
+              :modules="swiperModules"
+              :zoom="true"
+              :slides-per-view="1"
+              :pagination="{ clickable: true }"
+              :initial-slide="activeImageIndex"
+              class="fullscreen-swiper"
+          >
+            <SwiperSlide v-if="frontPreview">
+              <div class="swiper-zoom-container">
+                <img :src="frontPreview" :alt="$t('review.frontImageAlt') || 'Front Image'" />
+              </div>
+            </SwiperSlide>
+            <SwiperSlide v-if="backPreview">
+              <div class="swiper-zoom-container">
+                <img :src="backPreview" :alt="$t('review.backImageAlt') || 'Back Image'" />
+              </div>
+            </SwiperSlide>
+          </Swiper>
+        </ion-content>
+      </ion-modal>
     </ion-content>
   </ion-page>
 </template>
@@ -680,6 +793,10 @@ import {
   squareOutline,
   phonePortraitOutline,
   tabletLandscapeOutline,
+  syncOutline,
+  colorWandOutline,
+  trashOutline,
+  refreshOutline
 } from 'ionicons/icons';
 import { computed, nextTick, onMounted, onUnmounted, ref, watch} from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -695,6 +812,11 @@ import { extractIonColor, colorMeaning } from '@/utils/ingredientHelpers'
 import {Camera, CameraDirection, CameraResultType, CameraSource} from '@capacitor/camera'
 import {Cropper} from 'vue-advanced-cropper';
 import 'vue-advanced-cropper/dist/style.css';
+import { Swiper, SwiperSlide } from 'swiper/vue';
+import { Pagination, Zoom } from 'swiper/modules';
+import 'swiper/css';
+import 'swiper/css/pagination';
+import 'swiper/css/zoom';
 import AppHeader from "@/components/AppHeader.vue";
 
 import useHighlightCache from '@/composables/useHighlightCache'
@@ -705,6 +827,7 @@ import { useNotifier } from "@/composables/useNotifier"
 import { Geolocation } from '@capacitor/geolocation';
 import googleMapsLoader from '@/plugins/googleMapsLoader'
 import { useImageResizer } from "@/composables/useImageResizer";
+import { useBackgroundRemoval } from "@/composables/useBackgroundRemoval";
 import { useCropperOcr } from "@/composables/useCropperOcr"
 import type { Product } from '@/types/Product'
 import { useRouter, useRoute } from 'vue-router';
@@ -747,6 +870,112 @@ const frontFile = ref < File | null > (null)
 const backFile = ref < File | null > (null)
 const frontPreview = ref < string | null > (null)
 const backPreview = ref < string | null > (null)
+const originalFrontFile = ref<File | null>(null)
+const originalBackFile = ref<File | null>(null)
+const originalFrontPreview = ref<string | null>(null)
+const originalBackPreview = ref<string | null>(null)
+const rotatingFront = ref(false)
+const rotatingBack = ref(false)
+const cleaningFront = ref(false)
+const cleaningBack = ref(false)
+
+const isFrontCleaned = computed(() => !!frontPreview.value && !!originalFrontPreview.value && frontPreview.value !== originalFrontPreview.value)
+const isBackCleaned = computed(() => !!backPreview.value && !!originalBackPreview.value && backPreview.value !== originalBackPreview.value)
+
+function restoreOriginalImage(type: 'front' | 'back') {
+  if (type === 'front') {
+    if (originalFrontPreview.value) frontPreview.value = originalFrontPreview.value
+    if (originalFrontFile.value) frontFile.value = originalFrontFile.value
+  } else {
+    if (originalBackPreview.value) backPreview.value = originalBackPreview.value
+    if (originalBackFile.value) backFile.value = originalBackFile.value
+  }
+}
+const { removeAndAddWhiteBg, preloadAIModel, progressPercent, progressStatus } = useBackgroundRemoval()
+
+async function cleanBackgroundImage(type: 'front' | 'back') {
+  const previewRef = type === 'front' ? frontPreview : backPreview;
+  const fileRef = type === 'front' ? frontFile : backFile;
+  const cleaningProp = type === 'front' ? cleaningFront : cleaningBack;
+
+  const currentSrc = fileRef.value || previewRef.value;
+  if (!currentSrc || (typeof currentSrc === 'string' && currentSrc.includes('placehold.co'))) return;
+
+  cleaningProp.value = true;
+
+  try {
+    const { file, previewUrl } = await removeAndAddWhiteBg(currentSrc, `${type}_clean.jpg`);
+    fileRef.value = file;
+    previewRef.value = previewUrl;
+  } catch (err) {
+    console.error(`❌ Failed to remove background for ${type}:`, err);
+    alert(t('common.error') || 'Failed to remove background. Please try again.');
+  } finally {
+    cleaningProp.value = false;
+  }
+}
+
+const swiperModules = [Pagination, Zoom]
+const showImageModal = ref(false)
+const activeImageIndex = ref(0)
+
+function openFullscreenImage(index: number) {
+  activeImageIndex.value = index
+  showImageModal.value = true
+}
+
+async function rotateImage(type: 'front' | 'back') {
+  const previewRef = type === 'front' ? frontPreview : backPreview;
+  const fileRef = type === 'front' ? frontFile : backFile;
+  const rotatingProp = type === 'front' ? rotatingFront : rotatingBack;
+
+  const src = previewRef.value;
+  if (!src || src.includes('placehold.co')) return;
+
+  rotatingProp.value = true;
+
+  try {
+    const img = new Image();
+    img.crossOrigin = 'Anonymous';
+    const cleanSrc = src.startsWith('data:') ? src : `${src}${src.includes('?') ? '&' : '?'}t=${Date.now()}`;
+    img.src = cleanSrc;
+
+    await new Promise((resolve, reject) => {
+      img.onload = resolve;
+      img.onerror = () => {
+        const fallbackImg = new Image();
+        fallbackImg.src = src;
+        fallbackImg.onload = () => {
+          Object.assign(img, fallbackImg);
+          resolve(null);
+        };
+        fallbackImg.onerror = reject;
+      };
+    });
+
+    const canvas = document.createElement('canvas');
+    canvas.width = img.height;
+    canvas.height = img.width;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    ctx.translate(canvas.width / 2, canvas.height / 2);
+    ctx.rotate(90 * Math.PI / 180);
+    ctx.drawImage(img, -img.width / 2, -img.height / 2);
+
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+    previewRef.value = dataUrl;
+
+    const res = await fetch(dataUrl);
+    const blob = await res.blob();
+    const file = new File([blob], `${type}.jpg`, { type: 'image/jpeg' });
+    fileRef.value = file;
+  } catch (err) {
+    console.error(`❌ Error rotating ${type} image:`, err);
+  } finally {
+    rotatingProp.value = false;
+  }
+}
 const tagInput = ref('')
 const categories = ref<{ id: number; name: string }[]>([])
 const stores = ref<{ id: string; name: string; logo_url?: string }[]>([])
@@ -1045,6 +1274,8 @@ const {
       URL.revokeObjectURL(backPreview.value)
     }
     backPreview.value = URL.createObjectURL(file) // ✅ show preview
+    originalBackFile.value = file
+    originalBackPreview.value = backPreview.value
     scrollToBottom() // 📜 Scroll immediately when preview starts appearing
   },
   onSuccess: () => {
@@ -1111,6 +1342,8 @@ onMounted(async () => {
 
     frontPreview.value = props.editProduct.photo_front_url ?? null
     backPreview.value = props.editProduct.photo_back_url ?? null
+    originalFrontPreview.value = frontPreview.value
+    originalBackPreview.value = backPreview.value
 
     const { data: linkedStores } = await supabase
         .from('product_stores')
@@ -1156,6 +1389,8 @@ onMounted(async () => {
           const file = new File([blob], "scanned-back.jpg", { type: blob.type })
           backFile.value = file
           backPreview.value = blobUrl
+          originalBackFile.value = file
+          originalBackPreview.value = blobUrl
           console.log("✅ Scanned image recovered as Back Photo")
         })
       } catch (err) {
@@ -1827,6 +2062,8 @@ async function takeFrontPicture() {
     if (isUnmounted) return;
     frontPreview.value = image.webPath || null;
     frontFile.value = await resizeImage(image.webPath || '');
+    originalFrontPreview.value = frontPreview.value;
+    originalFrontFile.value = frontFile.value;
 
   } catch (error) {
     console.error('Error taking front photo:', error);
@@ -1848,6 +2085,8 @@ async function takeBackPicture() {
     if (isUnmounted) return;
     backPreview.value = image.webPath || null;
     backFile.value = await resizeImage(image.webPath || '');
+    originalBackPreview.value = backPreview.value;
+    originalBackFile.value = backFile.value;
 
   } catch (error) {
     console.error('Error taking back photo:', error);
@@ -1868,6 +2107,8 @@ function uploadFrontFromGallery() {
       reader.onload = async () => {
         frontPreview.value = reader.result as string;
         frontFile.value = await resizeImage(reader.result as string);
+        originalFrontPreview.value = frontPreview.value;
+        originalFrontFile.value = frontFile.value;
       };
       reader.readAsDataURL(file);
     }
@@ -1888,6 +2129,8 @@ function uploadBackFromGallery() {
       reader.onload = async () => {
         backPreview.value = reader.result as string;
         backFile.value = await resizeImage(reader.result as string);
+        originalBackPreview.value = backPreview.value;
+        originalBackFile.value = backFile.value;
       };
       reader.readAsDataURL(file);
     }
@@ -2038,7 +2281,7 @@ async function handleSubmit() {
           .from('product-images')
           .getPublicUrl(`${barcode}/front.jpg`)
 
-      frontUrl = publicUrl.publicUrl
+      frontUrl = `${publicUrl.publicUrl.split('?')[0]}?v=${Date.now()}`
       console.log('Front image uploaded:', frontUrl)
     }
 
@@ -2063,7 +2306,7 @@ async function handleSubmit() {
           .from('product-images')
           .getPublicUrl(`${barcode}/back.jpg`)
 
-      backUrl = publicUrl.publicUrl
+      backUrl = `${publicUrl.publicUrl.split('?')[0]}?v=${Date.now()}`
       console.log('Back image uploaded:', backUrl)
     }
 
@@ -2185,6 +2428,8 @@ async function handleSubmit() {
         product_category_id: null, ingredients: '', description: '', store_ids: [], tags: [] }
       frontFile.value = null; backFile.value = null
       frontPreview.value = null; backPreview.value = null
+      originalFrontFile.value = null; originalBackFile.value = null
+      originalFrontPreview.value = null; originalBackPreview.value = null
       ingredientHighlights.value = []; barcodeValid.value = null; barcodeMessage.value = ''
       
       // Reset wizard state
@@ -2209,6 +2454,10 @@ async function handleSubmit() {
     loading.value = false
   }
 }
+
+onMounted(() => {
+  preloadAIModel();
+})
 </script>
 
 <style scoped>
@@ -2315,11 +2564,21 @@ ion-item {
   box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
 
-.preview-remove-btn {
+.preview-actions-overlay {
   position: absolute;
-  top: -10px;
-  right: -10px;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  gap: 8px;
+}
+
+.preview-action-btn {
+  --padding-start: 8px;
+  --padding-end: 8px;
+  --border-radius: 20px;
+  height: 32px;
   margin: 0;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
 }
 
 
@@ -2413,7 +2672,8 @@ ion-item {
   margin: 0;
   border-radius: 16px;
   border: 1px dashed var(--ion-color-medium-shade);
-  background: var(--ion-color-light-tint);
+  background: var(--ion-item-background, var(--card-bg, #fff));
+  color: var(--ion-text-color, #000);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -2427,28 +2687,174 @@ ion-item {
 
 .photo-card-header {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
-  padding: 8px 12px;
-  background: rgba(var(--ion-color-light-rgb), 0.5);
+  padding: 10px 12px;
+  background: var(--ion-background-color, rgba(244, 245, 248, 0.7));
+  border-bottom: 1px solid var(--ion-item-border-color, rgba(0, 0, 0, 0.05));
 }
 
-.photo-card-header ion-label {
-  font-size: 12px;
+.photo-title {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--ion-text-color, var(--ion-color-dark));
+  margin: 0;
+}
+
+.placeholder-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  padding: 0 16px;
+}
+
+.placeholder-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  height: 38px;
+  border-radius: 12px;
+  border: 1px solid var(--ion-item-border-color, rgba(0, 0, 0, 0.12));
+  background: var(--ion-item-background, var(--card-inner-bg, #fff));
+  color: var(--ion-text-color, #222);
+  font-size: 13px;
   font-weight: 600;
-  color: var(--ion-color-medium);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.03);
 }
 
-.photo-card-header ion-button {
-  --padding-start: 4px;
-  --padding-end: 4px;
-  height: 28px;
-  font-size: 16px;
+.placeholder-btn:hover {
+  background: var(--ion-background-color, #eee);
+  border-color: var(--ion-color-carrot);
+  color: var(--ion-color-carrot);
+  transform: translateY(-1px);
 }
 
 .photo-preview-wrap {
-  height: 140px;
+  position: relative;
+  height: 180px;
   width: 100%;
+  overflow: hidden;
+}
+
+.photo-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 10px;
+  background: var(--ion-background-color, #f8f9fa);
+  border-top: 1px solid var(--ion-item-border-color, rgba(0, 0, 0, 0.05));
+}
+
+.control-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  height: 34px;
+  border-radius: 10px;
+  border: none;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.ai-progress-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 0 8px;
+  gap: 3px;
+}
+
+.ai-progress-text {
+  font-size: 11px;
+  font-weight: 700;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
+
+.ai-bar {
+  --background: rgba(255, 255, 255, 0.3);
+  --progress-background: white;
+  height: 4px;
+  border-radius: 4px;
+  width: 100%;
+}
+
+.control-btn.ai-btn {
+  background: var(--ion-color-carrot, #ff6b00);
+  color: white;
+  box-shadow: 0 2px 8px rgba(255, 107, 0, 0.3);
+}
+
+.control-btn.ai-btn:hover {
+  filter: brightness(1.1);
+}
+
+.control-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+
+.control-sub-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid var(--ion-item-border-color, rgba(0, 0, 0, 0.12));
+  background: var(--ion-item-background, var(--card-inner-bg, #fff));
+  color: var(--ion-text-color, #222);
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.control-sub-btn:hover {
+  background: var(--ion-background-color, #eee);
+}
+
+.control-sub-btn.danger {
+  color: var(--ion-color-danger, #ef4444);
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.control-sub-btn.danger:hover {
+  background: var(--ion-color-danger, #ef4444);
+  color: white;
+}
+
+.control-sub-btn.warning {
+  color: var(--ion-color-warning, #f59e0b);
+  background: rgba(245, 158, 11, 0.15);
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+.control-sub-btn.warning:hover {
+  background: var(--ion-color-warning, #f59e0b);
+  color: white;
+}
+
+.btn-spinner {
+  width: 18px;
+  height: 18px;
+  color: inherit;
 }
 
 .thumbnail-img {
@@ -2458,13 +2864,10 @@ ion-item {
 }
 
 .photo-placeholder {
-  height: 140px;
+  height: 160px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 32px;
-  color: var(--ion-color-medium-shade);
-  opacity: 0.5;
 }
 
 .detected-product {
@@ -2714,6 +3117,19 @@ ion-content::part(scroll) {
 /* 🔒 Lock scrolling when cropper is open */
 .modal-no-scroll {
   --overflow: hidden;
+}
+
+.fullscreen-swiper {
+  width: 100%;
+  height: 100%;
+  background: black;
+}
+
+.fullscreen-swiper img {
+  width: 100%;
+  height: auto;
+  max-height: 100%;
+  object-fit: contain;
 }
 </style>
 

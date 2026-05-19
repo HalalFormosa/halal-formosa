@@ -330,7 +330,8 @@
                   class="featured-gold-wrapper"
                   @click="openDetails(product)"
                 >
-                  <div class="modern-product-card status-halal tier-card-gold featured-inner-card">
+                  <!-- LIST MODE BANNER -->
+                  <div v-if="viewMode === 'list'" class="modern-product-card status-halal tier-card-gold featured-inner-card">
                     <div class="card-inner">
                       <!-- Left: Image -->
                       <div class="card-image-section">
@@ -382,12 +383,32 @@
                     <!-- Premium Flare for Gold -->
                     <div class="premium-flare"></div>
                   </div>
+
+                  <!-- GRID MODE 2-COLUMN CAROUSEL CARD -->
+                  <div v-else :class="['grid-product-card grid-col-span-2 featured-grid-card', getStatusClass(product.status)]">
+                    <div class="grid-card-image">
+                      <img
+                          loading="lazy"
+                          :src="product.photo_front_url || 'https://via.placeholder.com/150x150.webp?text=No+Photo'"
+                          :alt="product.name"
+                      />
+                      <div class="grid-tier-badge gold">
+                        <Sparkles :size="14" />
+                        <span>{{ $t('home.partnerTier', { tier: 'GOLD' }) }}</span>
+                      </div>
+                      <div :class="['grid-status-label', product.status.toLowerCase().replace(' ', '-')]">
+                        <component :is="getStatusIcon(product.status)" :size="14" />
+                        <span>{{ $t('search.status.' + product.status) }}</span>
+                      </div>
+                    </div>
+                    <div class="premium-flare"></div>
+                  </div>
                 </div>
               </div>
             </div>
 
             <div :class="['product-grid', viewMode + '-mode']">
-              <template v-for="product in regularProducts" :key="product.barcode">
+              <template v-for="product in displayedProducts" :key="product.barcode">
                 <!-- LIST MODE -->
                 <div
                     v-if="viewMode === 'list'"
@@ -464,7 +485,8 @@
                     :class="[
                       'grid-product-card', 
                       getStatusClass(product.status),
-                      product.partner_tier ? 'tier-card-' + product.partner_tier.toLowerCase() : ''
+                      product.partner_tier ? 'tier-card-' + product.partner_tier.toLowerCase() : '',
+                      (product.partner_tier || '').toLowerCase() === 'gold' ? 'grid-col-span-2' : ''
                     ]"
                     @click="openDetails(product)"
                 >
@@ -988,6 +1010,13 @@ const goldProducts = computed(() => {
 
 const regularProducts = computed(() => {
   return results.value.filter(p => (p.partner_tier || '').toLowerCase() !== 'gold')
+})
+
+const displayedProducts = computed(() => {
+  if (!searchQuery.value) {
+    return regularProducts.value
+  }
+  return results.value
 })
 
 /* ---------------- Gold Rotation Logic ---------------- */
@@ -2258,6 +2287,11 @@ ion-header {
   z-index: 1;
 }
 
+.grid-product-card.grid-col-span-2 {
+  grid-column: span 2;
+  aspect-ratio: 2 / 1;
+}
+
 .grid-product-card[class*="tier-card-"] {
   border: 2px solid transparent !important; /* Base for tiered items */
 }
@@ -2392,6 +2426,12 @@ ion-header {
   border: 1px solid rgba(202, 138, 4, 0.2) !important;
   background: var(--ion-card-background) !important;
   height: 160px !important; /* MATCH standard list card height */
+}
+
+.featured-grid-card {
+  margin: 8px 16px;
+  width: calc(100% - 32px);
+  aspect-ratio: 2 / 1;
 }
 
 .no-scrollbar::-webkit-scrollbar {

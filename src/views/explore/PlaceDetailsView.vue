@@ -335,7 +335,7 @@
             </div>
 
             <!-- Audit History Log -->
-            <AuditHistoryLog entityType="location" :entityId="place.id" :createdAt="place.created_at" />
+            <AuditHistoryLog ref="auditLogRef" entityType="location" :entityId="place.id" :createdAt="place.created_at" />
           </div>
         </div>
       </div>
@@ -506,6 +506,7 @@ const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const place = ref<PlaceDetail | null>(null)
+const auditLogRef = ref<InstanceType<typeof AuditHistoryLog> | null>(null)
 const canEdit = ref(false)
 const modules = [Pagination, Zoom]
 const isLoggedIn = ref(false)
@@ -920,7 +921,10 @@ async function fetchLocationCertifications(locationId: number) {
 
 // Run once and every time view re-enters
 onMounted(loadPlace)
-onIonViewWillEnter(loadPlace)
+onIonViewWillEnter(async () => {
+  await loadPlace()
+  auditLogRef.value?.fetchLogs()
+})
 
 const logInstagram = () => {
   if (!place.value) return;

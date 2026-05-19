@@ -383,7 +383,7 @@
             </div>
 
             <!-- Audit History Log -->
-            <AuditHistoryLog entityType="product" :entityId="item.id" :createdAt="item.created_at" />
+            <AuditHistoryLog ref="auditLogRef" entityType="product" :entityId="item.id" :createdAt="item.created_at" />
           </div>
         </div>
 
@@ -537,7 +537,7 @@ import {
   IonPage,
   IonContent, IonSkeletonText, IonChip, IonButton, IonHeader, IonModal,
   IonIcon, IonItem, IonLabel, IonCard, IonInput, IonList, IonListHeader, IonToast,
-  popoverController, onIonViewDidEnter
+  popoverController, onIonViewDidEnter, onIonViewWillEnter
 } from '@ionic/vue'
 import { onMounted, ref, nextTick, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -575,6 +575,7 @@ import { RevenueCatUI, PAYWALL_RESULT } from '@revenuecat/purchases-capacitor-ui
 import { useNotifier } from "@/composables/useNotifier";
 
 const showContributionPrompt = ref(false) // Added state
+const auditLogRef = ref<InstanceType<typeof AuditHistoryLog> | null>(null)
 
 const showEditModal = ref(false)
 const route = useRoute()
@@ -1077,6 +1078,7 @@ async function handleProductUpdated() {
         item.value.author = authorData
       }
     }
+    auditLogRef.value?.fetchLogs()
   }
 }
 
@@ -1181,7 +1183,7 @@ function colorToChipClass(color: string): string {
   }
 }
 
-onMounted(async () => {
+async function loadProductData() {
   loading.value = true
 
   try {
@@ -1289,6 +1291,12 @@ onMounted(async () => {
     await nextTick()
     ;(window as any).scheduleBannerUpdate?.()
   }
+}
+
+onMounted(loadProductData)
+onIonViewWillEnter(async () => {
+  await loadProductData()
+  auditLogRef.value?.fetchLogs()
 })
 
 

@@ -49,7 +49,18 @@
     "change": "更改",
     "mandatory": "必填",
     "chat": "Chat",
-    "edited": "(Edited)"
+    "edited": "(Edited)",
+    "remove": "移除",
+    "history": "歷史紀錄",
+    "added": "新增於",
+    "lastEdited": "最後修改",
+    "noEditHistory": "無修改紀錄",
+    "admin": "管理員"
+  },
+  "review": {
+    "rotatePhoto": "旋轉照片",
+    "restoreOriginal": "原始照片",
+    "cleanBackground": "去除背景"
   },
   "master": {
     "active": "啟用",
@@ -844,6 +855,15 @@
     "descriptionPlaceholder": "輸入文字",
     "frontImage": "正面圖片",
     "backImage": "背面圖片",
+    "photoActions": {
+      "takePhoto": "拍照",
+      "uploadPhoto": "上傳",
+      "cleanBg": "AI 去背",
+      "retake": "重拍",
+      "rotate": "旋轉",
+      "restoreOriginal": "原始照片",
+      "remove": "移除"
+    },
     "showMuslimFriendly": "顯示穆斯林友善成分",
     "hideMuslimFriendly": "隱藏穆斯林友善成分",
     "applyQuickDescription": "套用快速描述",

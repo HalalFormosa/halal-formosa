@@ -231,11 +231,22 @@
                       <span class="img-label">{{ $t('review.frontImageAlt') }}</span>
                     </div>
                     <div class="img-controls">
-                      <ion-button size="small" fill="clear" @click="takeFrontPicture">
+                      <ion-button v-if="isFrontCleaned" size="small" color="warning" fill="clear" @click="restoreOriginalImage('front')" :title="$t('review.restoreOriginal') || 'Original Photo'">
+                        <ion-icon slot="icon-only" :icon="refreshOutline" />
+                      </ion-button>
+                      <ion-button size="small" fill="clear" @click="takeFrontPicture" :title="$t('review.takePhoto') || 'Camera'">
                         <ion-icon slot="icon-only" :icon="cameraOutline" />
                       </ion-button>
-                      <ion-button size="small" fill="clear" @click="uploadFrontFromGallery">
+                      <ion-button size="small" fill="clear" @click="uploadFrontFromGallery" :title="$t('review.uploadPhoto') || 'Upload'">
                         <ion-icon slot="icon-only" :icon="cloudUploadOutline" />
+                      </ion-button>
+                      <ion-button size="small" fill="clear" @click="rotateImage('front')" :disabled="rotatingFront" :title="$t('review.rotatePhoto') || 'Rotate'">
+                        <ion-spinner v-if="rotatingFront" name="crescent"></ion-spinner>
+                        <ion-icon v-else slot="icon-only" :icon="syncOutline" />
+                      </ion-button>
+                      <ion-button size="small" fill="clear" @click="cleanBackgroundImage('front')" :disabled="cleaningFront" :title="$t('review.cleanBackground') || 'Remove Background'">
+                        <ion-spinner v-if="cleaningFront" name="crescent"></ion-spinner>
+                        <ion-icon v-else slot="icon-only" :icon="colorWandOutline" />
                       </ion-button>
                     </div>
                   </div>
@@ -247,11 +258,22 @@
                       <span class="img-label">{{ $t('review.backImageAlt') }}</span>
                     </div>
                     <div class="img-controls">
-                      <ion-button size="small" fill="clear" @click="takeBackPicture">
+                      <ion-button v-if="isBackCleaned" size="small" color="warning" fill="clear" @click="restoreOriginalImage('back')" :title="$t('review.restoreOriginal') || 'Original Photo'">
+                        <ion-icon slot="icon-only" :icon="refreshOutline" />
+                      </ion-button>
+                      <ion-button size="small" fill="clear" @click="takeBackPicture" :title="$t('review.takePhoto') || 'Camera'">
                         <ion-icon slot="icon-only" :icon="cameraOutline" />
                       </ion-button>
-                      <ion-button size="small" fill="clear" @click="uploadBackFromGallery">
+                      <ion-button size="small" fill="clear" @click="uploadBackFromGallery" :title="$t('review.uploadPhoto') || 'Upload'">
                         <ion-icon slot="icon-only" :icon="cloudUploadOutline" />
+                      </ion-button>
+                      <ion-button size="small" fill="clear" @click="rotateImage('back')" :disabled="rotatingBack" :title="$t('review.rotatePhoto') || 'Rotate'">
+                        <ion-spinner v-if="rotatingBack" name="crescent"></ion-spinner>
+                        <ion-icon v-else slot="icon-only" :icon="syncOutline" />
+                      </ion-button>
+                      <ion-button size="small" fill="clear" @click="cleanBackgroundImage('back')" :disabled="cleaningBack" :title="$t('review.cleanBackground') || 'Remove Background'">
+                        <ion-spinner v-if="cleaningBack" name="crescent"></ion-spinner>
+                        <ion-icon v-else slot="icon-only" :icon="colorWandOutline" />
                       </ion-button>
                     </div>
                   </div>
@@ -299,14 +321,14 @@
                 :initial-slide="activeImageIndex"
                 class="fullscreen-swiper"
             >
-              <SwiperSlide v-if="selectedProduct.photo_front_url">
+              <SwiperSlide v-if="frontPreview || selectedProduct.photo_front_url">
                 <div class="swiper-zoom-container">
-                  <img :src="selectedProduct.photo_front_url" :alt="$t('review.frontImageAlt')" />
+                  <img :src="frontPreview || selectedProduct.photo_front_url" :alt="$t('review.frontImageAlt')" />
                 </div>
               </SwiperSlide>
-              <SwiperSlide v-if="selectedProduct.photo_back_url">
+              <SwiperSlide v-if="backPreview || selectedProduct.photo_back_url">
                 <div class="swiper-zoom-container">
-                  <img :src="selectedProduct.photo_back_url" :alt="$t('review.backImageAlt')" />
+                  <img :src="backPreview || selectedProduct.photo_back_url" :alt="$t('review.backImageAlt')" />
                 </div>
               </SwiperSlide>
             </Swiper>
@@ -326,7 +348,7 @@ import {
   IonThumbnail, IonLabel, IonButton, IonText, IonModal,
   IonToolbar, IonTitle, IonButtons, IonInput, IonSelect,
   IonSelectOption, IonTextarea, IonChip, IonSkeletonText,
-  IonSearchbar, IonSegment, IonSegmentButton, IonPopover, IonIcon, IonAvatar, IonBadge, IonItemGroup
+  IonSearchbar, IonSegment, IonSegmentButton, IonPopover, IonIcon, IonAvatar, IonBadge, IonItemGroup, IonSpinner
 } from '@ionic/vue'
 
 import { ref, onMounted, computed, reactive, onUnmounted } from 'vue'
@@ -340,7 +362,10 @@ import {
   cloudUploadOutline,
   timeOutline,
   checkmarkCircle,
-  swapVerticalOutline
+  swapVerticalOutline,
+  syncOutline,
+  colorWandOutline,
+  refreshOutline
 } from 'ionicons/icons'
 import AppHeader from '@/components/AppHeader.vue'
 import StoreLogoBar from '@/components/StoreLogoBar.vue'
@@ -352,6 +377,7 @@ import 'swiper/css/zoom'
 
 import { Camera, CameraDirection, CameraResultType, CameraSource } from '@capacitor/camera'
 import { useImageResizer } from "@/composables/useImageResizer";
+import { useBackgroundRemoval } from "@/composables/useBackgroundRemoval";
 
 import { useI18n } from 'vue-i18n'
 
@@ -370,6 +396,7 @@ const maxVisible = 5
 const loadingProducts = ref(true)
 const isUnmounted = ref(false)
 const { resizeImage } = useImageResizer();
+const { removeAndAddWhiteBg, preloadAIModel } = useBackgroundRemoval();
 const stores = ref<any[]>([])
 
 // Image states
@@ -377,6 +404,55 @@ const frontFile = ref<File | null>(null)
 const backFile = ref<File | null>(null)
 const frontPreview = ref<string | null>(null)
 const backPreview = ref<string | null>(null)
+const originalFrontFile = ref<File | null>(null)
+const originalBackFile = ref<File | null>(null)
+const originalFrontPreview = ref<string | null>(null)
+const originalBackPreview = ref<string | null>(null)
+const rotatingFront = ref(false)
+const rotatingBack = ref(false)
+const cleaningFront = ref(false)
+const cleaningBack = ref(false)
+
+const isFrontCleaned = computed(() => !!frontPreview.value && !!originalFrontPreview.value && frontPreview.value !== originalFrontPreview.value)
+const isBackCleaned = computed(() => !!backPreview.value && !!originalBackPreview.value && backPreview.value !== originalBackPreview.value)
+
+function restoreOriginalImage(type: 'front' | 'back') {
+  if (type === 'front') {
+    if (originalFrontPreview.value) frontPreview.value = originalFrontPreview.value
+    if (originalFrontFile.value) frontFile.value = originalFrontFile.value
+  } else {
+    if (originalBackPreview.value) backPreview.value = originalBackPreview.value
+    if (originalBackFile.value) backFile.value = originalBackFile.value
+  }
+}
+
+async function cleanBackgroundImage(type: 'front' | 'back') {
+  if (!selectedProduct.value) return;
+  const currentSrc = type === 'front' 
+    ? (frontFile.value || frontPreview.value || selectedProduct.value.photo_front_url) 
+    : (backFile.value || backPreview.value || selectedProduct.value.photo_back_url);
+
+  if (!currentSrc || (typeof currentSrc === 'string' && currentSrc.includes('placehold.co'))) return;
+
+  const cleaningProp = type === 'front' ? cleaningFront : cleaningBack;
+  cleaningProp.value = true;
+
+  try {
+    const { file, previewUrl } = await removeAndAddWhiteBg(currentSrc, `${type}_clean.jpg`);
+    if (type === 'front') {
+      frontFile.value = file;
+      frontPreview.value = previewUrl;
+    } else {
+      backFile.value = file;
+      backPreview.value = previewUrl;
+    }
+  } catch (err) {
+    console.error(`❌ Failed to remove background for ${type}:`, err);
+    alert('Failed to remove background. Please try again.');
+  } finally {
+    cleaningProp.value = false;
+  }
+}
 
 onUnmounted(() => {
   isUnmounted.value = true
@@ -586,6 +662,8 @@ async function takeFrontPicture() {
     });
     frontPreview.value = image.webPath || null;
     frontFile.value = await resizeImage(image.webPath || '');
+    originalFrontPreview.value = frontPreview.value;
+    originalFrontFile.value = frontFile.value;
   } catch (error) {
     console.error('Error taking front photo:', error);
   }
@@ -603,6 +681,8 @@ async function takeBackPicture() {
     });
     backPreview.value = image.webPath || null;
     backFile.value = await resizeImage(image.webPath || '');
+    originalBackPreview.value = backPreview.value;
+    originalBackFile.value = backFile.value;
   } catch (error) {
     console.error('Error taking back photo:', error);
   }
@@ -620,6 +700,8 @@ function uploadFrontFromGallery() {
       reader.onload = async () => {
         frontPreview.value = reader.result as string;
         frontFile.value = await resizeImage(reader.result as string);
+        originalFrontPreview.value = frontPreview.value;
+        originalFrontFile.value = frontFile.value;
       };
       reader.readAsDataURL(file);
     }
@@ -639,11 +721,77 @@ function uploadBackFromGallery() {
       reader.onload = async () => {
         backPreview.value = reader.result as string;
         backFile.value = await resizeImage(reader.result as string);
+        originalBackPreview.value = backPreview.value;
+        originalBackFile.value = backFile.value;
       };
       reader.readAsDataURL(file);
     }
   };
   input.click();
+}
+
+async function rotateImage(type: 'front' | 'back') {
+  if (!selectedProduct.value) return;
+  const src = type === 'front' 
+    ? (frontPreview.value || selectedProduct.value.photo_front_url) 
+    : (backPreview.value || selectedProduct.value.photo_back_url);
+    
+  if (!src || src.includes('placehold.co')) return;
+
+  const rotatingProp = type === 'front' ? rotatingFront : rotatingBack;
+  rotatingProp.value = true;
+
+  try {
+    const img = new Image();
+    img.crossOrigin = 'Anonymous';
+    const cleanSrc = src.startsWith('data:') ? src : `${src}${src.includes('?') ? '&' : '?'}t=${Date.now()}`;
+    img.src = cleanSrc;
+
+    await new Promise((resolve, reject) => {
+      img.onload = resolve;
+      img.onerror = () => {
+        const fallbackImg = new Image();
+        fallbackImg.src = src;
+        fallbackImg.onload = () => {
+          Object.assign(img, fallbackImg);
+          resolve(null);
+        };
+        fallbackImg.onerror = reject;
+      };
+    });
+
+    const canvas = document.createElement('canvas');
+    canvas.width = img.height;
+    canvas.height = img.width;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    ctx.translate(canvas.width / 2, canvas.height / 2);
+    ctx.rotate(90 * Math.PI / 180);
+    ctx.drawImage(img, -img.width / 2, -img.height / 2);
+
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+
+    if (type === 'front') {
+      frontPreview.value = dataUrl;
+    } else {
+      backPreview.value = dataUrl;
+    }
+
+    const res = await fetch(dataUrl);
+    const blob = await res.blob();
+    const file = new File([blob], `${type}.jpg`, { type: 'image/jpeg' });
+
+    if (type === 'front') {
+      frontFile.value = file;
+    } else {
+      backFile.value = file;
+    }
+  } catch (err) {
+    console.error(`❌ Error rotating ${type} image:`, err);
+  } finally {
+    rotatingProp.value = false;
+  }
 }
 
 async function openProductModal(product: any) {
@@ -656,6 +804,11 @@ async function openProductModal(product: any) {
   const storeIds = linkedStores ? linkedStores.map(s => String(s.store_id)) : []
 
   // Create a reactive copy
+  frontPreview.value = product.photo_front_url || null
+  backPreview.value = product.photo_back_url || null
+  originalFrontPreview.value = product.photo_front_url || null
+  originalBackPreview.value = product.photo_back_url || null
+
   selectedProduct.value = reactive({
     ...product,
     store_ids: storeIds
@@ -669,6 +822,10 @@ function closeModal() {
   backFile.value = null
   frontPreview.value = null
   backPreview.value = null
+  originalFrontFile.value = null
+  originalBackFile.value = null
+  originalFrontPreview.value = null
+  originalBackPreview.value = null
   showModal.value = false
 }
 
@@ -692,7 +849,7 @@ async function approveProduct(product: any) {
       const { data: publicUrl } = supabase.storage
         .from('product-images')
         .getPublicUrl(`${barcode}/front.jpg`)
-      frontUrl = publicUrl.publicUrl
+      frontUrl = `${publicUrl.publicUrl.split('?')[0]}?v=${Date.now()}`
     }
   }
 
@@ -705,7 +862,7 @@ async function approveProduct(product: any) {
       const { data: publicUrl } = supabase.storage
         .from('product-images')
         .getPublicUrl(`${barcode}/back.jpg`)
-      backUrl = publicUrl.publicUrl
+      backUrl = `${publicUrl.publicUrl.split('?')[0]}?v=${Date.now()}`
     }
   }
 
@@ -819,6 +976,7 @@ async function restoreProduct(id: string) {
 }
 
 onMounted( async () => {
+  preloadAIModel(); // Non-blocking async preload
   const { data, error } = await supabase
       .from('ingredient_highlights')
       .select('keyword, color')

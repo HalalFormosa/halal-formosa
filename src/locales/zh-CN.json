@@ -49,7 +49,18 @@
     "search": "Search",
     "noResults": "No results found",
     "chat": "Chat",
-    "edited": "(Edited)"
+    "edited": "(Edited)",
+    "remove": "移除",
+    "history": "历史记录",
+    "added": "添加于",
+    "lastEdited": "最后修改",
+    "noEditHistory": "无修改记录",
+    "admin": "管理员"
+  },
+  "review": {
+    "rotatePhoto": "旋转照片",
+    "restoreOriginal": "原始照片",
+    "cleanBackground": "去除背景"
   },
   "master": {
     "active": "积极的",
@@ -813,6 +824,15 @@
     "descriptionPlaceholder": "输入文字",
     "frontImage": "正面图片",
     "backImage": "背面图片",
+    "photoActions": {
+      "takePhoto": "拍照",
+      "uploadPhoto": "上传",
+      "cleanBg": "AI 去背",
+      "retake": "重拍",
+      "rotate": "旋转",
+      "restoreOriginal": "原始照片",
+      "remove": "移除"
+    },
     "showMuslimFriendly": "显示适合穆斯林的成分",
     "hideMuslimFriendly": "隐藏穆斯林友好成分",
     "applyQuickDescription": "应用快速描述",

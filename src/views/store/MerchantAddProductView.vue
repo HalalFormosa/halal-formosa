@@ -127,6 +127,10 @@
           <div class="images-grid">
             <div v-for="(img, i) in form.images" :key="i" class="image-thumb">
               <img :src="img" :alt="`Image ${i + 1}`" />
+              <ion-button fill="clear" size="small" class="clean-img" @click="cleanImageIndex(i)" :disabled="cleaningIndex === i" title="Remove Background">
+                <ion-spinner v-if="cleaningIndex === i" name="crescent"></ion-spinner>
+                <ion-icon v-else :icon="colorWandOutline" />
+              </ion-button>
               <ion-button fill="clear" size="small" class="remove-img" @click="form.images.splice(i, 1)">
                 <ion-icon :icon="closeCircleOutline" />
               </ion-button>
@@ -216,15 +220,17 @@ import {
   addOutline, closeCircleOutline, constructOutline, bagHandleOutline, 
   languageOutline, gridOutline, cubeOutline, informationCircleOutline,
   shieldCheckmarkOutline, alertCircleOutline, starOutline, eyeOutline,
-  pricetagOutline
+  pricetagOutline, colorWandOutline
 } from 'ionicons/icons'
 import AppHeader from '@/components/AppHeader.vue'
 import { supabase } from '@/plugins/supabaseClient'
 import { useI18n } from 'vue-i18n'
 import { useImageResizer } from '@/composables/useImageResizer'
+import { useBackgroundRemoval } from '@/composables/useBackgroundRemoval'
 
 const { t, locale } = useI18n()
 const { resizeImage } = useImageResizer()
+const { removeAndAddWhiteBg, preloadAIModel } = useBackgroundRemoval()
 const route = useRoute()
 const router = useRouter()
 
@@ -234,6 +240,7 @@ const categories = ref<any[]>([])
 const submitting = ref(false)
 const tagsInput = ref('')
 const storeId = ref<string | null>(null)
+const cleaningIndex = ref<number | null>(null)
 
 const imageInput = ref<HTMLInputElement | null>(null)
 const halalInput = ref<HTMLInputElement | null>(null)
@@ -355,7 +362,35 @@ async function addHalalProof() {
   alert.present()
 }
 
-// Image Upload Logic
+// Image Upload & Processing Logic
+async function cleanImageIndex(index: number) {
+  const currentUrl = form.images[index];
+  if (!currentUrl) return;
+
+  cleaningIndex.value = index;
+  const loadingToast = await toastController.create({
+    message: 'Removing background...',
+    duration: 0,
+    position: 'bottom'
+  });
+  await loadingToast.present();
+
+  try {
+    const { file } = await removeAndAddWhiteBg(currentUrl, `merchant_clean_${Date.now()}.jpg`);
+    const newUrl = await uploadFileToSupabase(file);
+    if (newUrl) {
+      form.images[index] = newUrl;
+      showToast('✅ Background removed successfully', 'success');
+    }
+  } catch (err: any) {
+    console.error('❌ Failed to clean image:', err);
+    showToast('❌ Failed to remove background', 'danger');
+  } finally {
+    loadingToast.dismiss();
+    cleaningIndex.value = null;
+  }
+}
+
 function triggerImageUpload() {
   imageInput.value?.click()
 }
@@ -524,6 +559,7 @@ async function showToast(message: string, color: string) {
 }
 
 onMounted(async () => {
+  preloadAIModel() // Non-blocking async preload
   await fetchCategories()
   await ensureStoreExists()
   await fetchProduct()
@@ -685,6 +721,17 @@ onMounted(async () => {
   --padding-start: 2px;
   --padding-end: 2px;
   color: var(--ion-color-danger);
+  background: white;
+  border-radius: 50%;
+}
+
+.clean-img {
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  --padding-start: 2px;
+  --padding-end: 2px;
+  color: var(--ion-color-primary);
   background: white;
   border-radius: 50%;
 }
