@@ -15,6 +15,8 @@ PODS:
     - Capacitor
     - Google-Mobile-Ads-SDK (~> 12.14)
     - GoogleUserMessagingPlatform (~> 3.1)
+  - CapacitorCommunityInAppReview (8.0.0):
+    - Capacitor
   - CapacitorCordova (8.1.0)
   - CapacitorDevice (8.0.1):
     - Capacitor
@@ -38,8 +40,6 @@ PODS:
   - CapacitorShare (8.0.1):
     - Capacitor
   - CapacitorStatusBar (8.0.1):
-    - Capacitor
-  - CapawesomeCapacitorAppReview (8.0.1):
     - Capacitor
   - CapawesomeCapacitorAppUpdate (8.0.3):
     - Capacitor
@@ -172,6 +172,7 @@ DEPENDENCIES:
   - "CapacitorCamera (from `../../node_modules/@capacitor/camera`)"
   - "CapacitorClipboard (from `../../node_modules/@capacitor/clipboard`)"
   - "CapacitorCommunityAdmob (from `../../node_modules/@capacitor-community/admob`)"
+  - "CapacitorCommunityInAppReview (from `../../node_modules/@capacitor-community/in-app-review`)"
   - "CapacitorCordova (from `../../node_modules/@capacitor/ios`)"
   - "CapacitorDevice (from `../../node_modules/@capacitor/device`)"
   - "CapacitorFilesystem (from `../../node_modules/@capacitor/filesystem`)"
@@ -183,7 +184,6 @@ DEPENDENCIES:
   - "CapacitorPreferences (from `../../node_modules/@capacitor/preferences`)"
   - "CapacitorShare (from `../../node_modules/@capacitor/share`)"
   - "CapacitorStatusBar (from `../../node_modules/@capacitor/status-bar`)"
-  - "CapawesomeCapacitorAppReview (from `../../node_modules/@capawesome/capacitor-app-review`)"
   - "CapawesomeCapacitorAppUpdate (from `../../node_modules/@capawesome/capacitor-app-update`)"
   - "CapawesomeTeamCapacitorDatetimePicker (from `../../node_modules/@capawesome-team/capacitor-datetime-picker`)"
   - "CapgoCapacitorNavigationBar (from `../../node_modules/@capgo/capacitor-navigation-bar`)"
@@ -230,6 +230,8 @@ EXTERNAL SOURCES:
     :path: "../../node_modules/@capacitor/clipboard"
   CapacitorCommunityAdmob:
     :path: "../../node_modules/@capacitor-community/admob"
+  CapacitorCommunityInAppReview:
+    :path: "../../node_modules/@capacitor-community/in-app-review"
   CapacitorCordova:
     :path: "../../node_modules/@capacitor/ios"
   CapacitorDevice:
@@ -252,8 +254,6 @@ EXTERNAL SOURCES:
     :path: "../../node_modules/@capacitor/share"
   CapacitorStatusBar:
     :path: "../../node_modules/@capacitor/status-bar"
-  CapawesomeCapacitorAppReview:
-    :path: "../../node_modules/@capawesome/capacitor-app-review"
   CapawesomeCapacitorAppUpdate:
     :path: "../../node_modules/@capawesome/capacitor-app-update"
   CapawesomeTeamCapacitorDatetimePicker:
@@ -277,6 +277,7 @@ SPEC CHECKSUMS:
   CapacitorCamera: fcacb82cc319e62f8d8c93e20f3f70e2464efe5e
   CapacitorClipboard: c75fdaa6e622111119f35e7914ecfc67b05efecb
   CapacitorCommunityAdmob: 9c36b466f46da413e5c105f7484e7603178c6223
+  CapacitorCommunityInAppReview: 4492bdd34aad4d27ed87949376022cc93b294ea1
   CapacitorCordova: e8b76fd95fc1e157775abc484c59cc0de464095d
   CapacitorDevice: ff033fa0c4ec19f5e059a073769a9b2347e69f57
   CapacitorFilesystem: 2db285a1ac6e475cc27cae2e1bea999000f9e2be
@@ -288,7 +289,6 @@ SPEC CHECKSUMS:
   CapacitorPreferences: cca2021f386efb75947c850334447d9ff22b14f1
   CapacitorShare: 0c58305114538568059bfc07111f22dcb9cb2a82
   CapacitorStatusBar: 32206abd53b14f339763da26f71286deaa891e16
-  CapawesomeCapacitorAppReview: 73b307a15e5052ecbaa3126ddae25e8bfa82fad1
   CapawesomeCapacitorAppUpdate: 3a7537c6a6696837b51d06f26b2e909fd7b9226f
   CapawesomeTeamCapacitorDatetimePicker: 859adffaef2ac2f43f8c530f5b182ea13d5678d6
   CapgoCapacitorNavigationBar: b38f5c3fda336ab2e8493f8cc0c8093aa1a385c5
@@ -317,6 +317,6 @@ SPEC CHECKSUMS:
   RevenuecatPurchasesCapacitorUi: 59851dc7076d29f5f010e3dca51902898659f2d1
   RevenueCatUI: 5f7b3496a7fd7a16a254a6b78de2e221c117d9d2
 
-PODFILE CHECKSUM: 16f6270c9dab452cee9ca03f867e856d53a33e36
+PODFILE CHECKSUM: adeb87b394c7216aaa574fe26b3e17168cc0e0c4
 
 COCOAPODS: 1.16.2
