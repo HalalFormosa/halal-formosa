@@ -6,6 +6,7 @@ import router from './router'
 import { App as CapacitorApp } from '@capacitor/app'
 import { Capacitor } from '@capacitor/core'
 import { Keyboard, KeyboardResize } from '@capacitor/keyboard'
+import { Browser } from '@capacitor/browser'
 import { supabase } from '@/plugins/supabaseClient'
 import { initAdMob } from '@/lib/admob'
 import { createI18n } from 'vue-i18n'
@@ -357,6 +358,9 @@ const handleDeepLink = async (url: string, isColdBoot = false) => {
             if (access_token && refresh_token) {
                 supabase.auth.setSession({ access_token, refresh_token });
                 console.log('🔐 [DeepLink] OAuth session restored.');
+            }
+            if (Capacitor.isNativePlatform()) {
+                Browser.close().catch(e => console.warn('Failed to close browser:', e));
             }
         }
     } catch (err) {

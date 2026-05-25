@@ -166,6 +166,7 @@ import { ref, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { supabase } from '@/plugins/supabaseClient';
 import { Capacitor } from '@capacitor/core';
+import { Browser } from '@capacitor/browser';
 import { useI18n } from 'vue-i18n'
 import LanguagePicker from '@/components/LanguagePicker.vue'
 import {logoGoogle, logInOutline, moonOutline, sunnyOutline} from "ionicons/icons";
@@ -319,26 +320,33 @@ async function loginWithGoogle() {
               ? r[0] ?? '/'
               : '/';
 
-  const redirectUrl = Capacitor.isNativePlatform()
+  const isNative = Capacitor.isNativePlatform();
+  const redirectUrl = isNative
       ? 'myapp://callback'
       : window.location.origin + safeRedirect;
 
-  const { error } = await supabase.auth.signInWithOAuth({
+  const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
       redirectTo: redirectUrl,
       queryParams: { next: safeRedirect },
+      skipBrowserRedirect: isNative,
     },
   });
 
   if (error) {
     errorMsg.value = error.message;
     ActivityLogService.log('auth_login_failed', { error_message: error.message, method: 'google' })
-  } else {
-    // Note: Google success is usually handled via redirect, 
-    // but we can log the attempt start here.
-    ActivityLogService.log('auth_login_success', { method: 'google' })
+    return;
   }
+
+  if (isNative && data?.url) {
+    await Browser.open({ url: data.url });
+  }
+
+  // Note: Google success is usually handled via redirect, 
+  // but we can log the attempt start here.
+  ActivityLogService.log('auth_login_success', { method: 'google' })
 }
 
 function goHome() {
