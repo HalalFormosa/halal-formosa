@@ -1,6 +1,15 @@
 <template>
   <ion-app>
-    <div class="app-main-wrapper">
+    <!-- 🛡️ Premium Stalling Maintenance Screen for Bots -->
+    <div v-if="isBotDetected" class="bot-maintenance-overlay">
+      <div class="bot-maintenance-content">
+        <ion-spinner name="crescent" class="bot-spinner"></ion-spinner>
+        <h2 class="bot-header">Checking security status...</h2>
+        <p class="bot-subheader">Establishing a secure connection to the database. Please wait...</p>
+      </div>
+    </div>
+
+    <div v-else class="app-main-wrapper">
       <SmartAppBanner />
       <div class="app-content-wrapper">
         <ion-router-outlet />
@@ -61,8 +70,10 @@
 </template>
 
 <script setup lang="ts">
-import { IonApp, IonRouterOutlet, IonAlert, IonButton, IonProgressBar, IonAvatar, alertController } from '@ionic/vue';
+import { IonApp, IonRouterOutlet, IonAlert, IonButton, IonProgressBar, IonAvatar, IonSpinner, alertController } from '@ionic/vue';
 import { onMounted, ref } from 'vue';
+import { performBotChecks, isBotDetected } from '@/utils/botShield';
+
 import { Analytics } from "@vercel/analytics/vue";
 import { SpeedInsights } from '@vercel/speed-insights/vue';
 import { Capacitor } from '@capacitor/core'
@@ -249,6 +260,9 @@ import { useRouter } from 'vue-router';
 const router = useRouter();
 
 onMounted(async () => {
+  // 🛡️ Perform Bot Defense checks on mount
+  performBotChecks();
+
   initTheme();
   await askGeolocationPermission();
   await checkAppUpdate();
@@ -339,5 +353,69 @@ ion-router-outlet {
 /* Offset for Toasts over fixed footers */
 ion-toast.cart-toast-offset {
   transform: translateY(-64px) !important;
+}
+
+/* 🛡️ Premium Anti-Bot Stalling Screen */
+.bot-maintenance-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--ion-background-color, #fafafa);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 99999;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  padding: 24px;
+}
+
+.bot-maintenance-content {
+  text-align: center;
+  max-width: 380px;
+  background: var(--ion-card-background, #ffffff);
+  padding: 40px 32px;
+  border-radius: 24px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(var(--ion-color-dark-rgb), 0.08);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.bot-spinner {
+  width: 56px;
+  height: 56px;
+  --color: var(--ion-color-carrot, #f97316);
+  margin-bottom: 24px;
+}
+
+.bot-header {
+  font-size: 1.4rem;
+  font-weight: 800;
+  margin: 0 0 12px;
+  color: var(--ion-color-dark, #1e293b);
+  letter-spacing: -0.02em;
+}
+
+.bot-subheader {
+  font-size: 0.95rem;
+  color: var(--ion-color-medium, #64748b);
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* Dark mode adjustment */
+.ion-palette-dark .bot-maintenance-overlay {
+  background: #0f172a;
+}
+.ion-palette-dark .bot-maintenance-content {
+  background: #1e293b;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+.ion-palette-dark .bot-header {
+  color: #f1f5f9;
+}
+.ion-palette-dark .bot-subheader {
+  color: #94a3b8;
 }
 </style>

@@ -1,6 +1,8 @@
 import { createRouter, createWebHistory } from '@ionic/vue-router';
 import { RouteRecordRaw } from 'vue-router';
 import { supabase } from '@/plugins/supabaseClient';
+import { performBotChecks } from '@/utils/botShield';
+
 
 import {
     isAdmin,
@@ -348,6 +350,15 @@ const routes: Array<RouteRecordRaw> = [
         component: () => import('@/views/store/MerchantRegistrationView.vue'),
         meta: { requiresAuth: true, noAds: true }
     },
+    {
+        path: '/maintenance',
+        name: 'Maintenance',
+        component: {
+            render() { return null; }
+        },
+        meta: { noAds: true, noTabs: true }
+    }
+
     
 
 ];
@@ -359,6 +370,13 @@ const router = createRouter({
 
 // ✅ Cleaner guard
 router.beforeEach(async (to, from, next) => {
+    // 🛡️ Anti-Bot & Anti-Scraping Guard
+    if (performBotChecks()) {
+        if (to.path !== '/maintenance') {
+            return next('/maintenance');
+        }
+    }
+
     let session = null;
     try {
         const { data } = await supabase.auth.getSession()

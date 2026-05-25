@@ -408,6 +408,18 @@
             </div>
 
             <div :class="['product-grid', viewMode + '-mode']">
+              <!-- Hidden Honeypot Cards for Crawlers -->
+              <div v-if="viewMode === 'list'" class="modern-product-card honeypot-card" @click="triggerHoneypot">
+                <a href="/product/honeypot-trap" class="honeypot-link" @click.prevent="triggerHoneypot">
+                  <h3 class="name">Special Verified Catalog Product</h3>
+                </a>
+              </div>
+              <div v-else class="grid-product-card honeypot-card" @click="triggerHoneypot">
+                <a href="/product/honeypot-trap" class="honeypot-link" @click.prevent="triggerHoneypot">
+                  Special Verified Catalog Product
+                </a>
+              </div>
+
               <template v-for="product in displayedProducts" :key="product.barcode">
                 <!-- LIST MODE -->
                 <div
@@ -612,6 +624,8 @@ import utc from 'dayjs/plugin/utc'
 import timezone from 'dayjs/plugin/timezone'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
+import { flagBot } from '@/utils/botShield';
+
 import AppHeader from '@/components/AppHeader.vue'
 import FilterContent from '@/components/FilterContent.vue'
 
@@ -1557,6 +1571,11 @@ function goToAddProduct() {
   router.push('/add')
 }
 
+function triggerHoneypot() {
+  flagBot('honeypot_trap_triggered');
+}
+
+
 function getStatusClass(status: string) {
   switch (status) {
     case 'Halal':
@@ -2440,6 +2459,24 @@ ion-header {
 .no-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+
+.honeypot-card {
+  position: absolute !important;
+  width: 0px !important;
+  height: 0px !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  z-index: -999 !important;
+  overflow: hidden !important;
+}
+
+.honeypot-link {
+  display: block;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
 }
 </style>
 

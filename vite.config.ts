@@ -14,6 +14,14 @@ export default defineConfig({
         vue(),
         legacy()
     ],
+    css: {
+        modules: {
+            generateScopedName: process.env.NODE_ENV === 'production'
+                ? '[hash:base64:8]'
+                : '[name]__[local]___[hash:base64:5]'
+        }
+    },
+
     optimizeDeps: {
         include: ['vue-advanced-cropper'],
     },
