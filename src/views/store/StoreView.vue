@@ -299,6 +299,9 @@
         </div>
       </ion-content>
     </ion-modal>
+
+    <!-- Invisible hCaptcha Search Container -->
+    <div id="hcaptcha-store" style="display: none;"></div>
   </ion-page>
 </template>
 
@@ -327,11 +330,15 @@ import { isAdmin } from '@/composables/userProfile'
 import { useStoreCart } from '@/composables/useStoreCart'
 import { useStoreChat } from '@/composables/useStoreChat'
 import { ActivityLogService } from '@/services/ActivityLogService'
+import { flagBot } from '@/utils/botShield'
+import { hasOrganicInteraction, delayForHuman } from '@/utils/interactionShield'
+import { useHCaptcha } from '@/composables/useHCaptcha'
 
 const { t, locale } = useI18n()
 const router = useRouter()
 const { items: cartItems, cartCount, cartTotal, updateQty } = useStoreCart()
 const { totalUnreadCount, initGlobalUnreadSubscription } = useStoreChat()
+const { initInvisible, execute: executeHCaptcha, isCaptchaEnabled } = useHCaptcha()
 
 // State
 const isNative = ref(Capacitor.isNativePlatform())
@@ -633,8 +640,31 @@ function stopAutoScroll() {
 }
 
 // Watch filters
-watch(searchQuery, (newVal) => {
-  if (newVal.trim()) {
+watch(searchQuery, async (newVal) => {
+  const trimmed = newVal.trim()
+  if (trimmed.length > 1) {
+    // 🛡️ Level 2 Interaction & hCaptcha Attestation Guard for Store Search
+    if (!hasOrganicInteraction()) {
+      flagBot('no_organic_interaction');
+      return;
+    }
+
+    // Execute hCaptcha invisibly
+    let captchaToken = 'disabled';
+    if (isCaptchaEnabled) {
+      try {
+        captchaToken = await executeHCaptcha();
+      } catch (e) {
+        console.error('🚨 hCaptcha verification failed in store:', e);
+        flagBot('captcha_challenge_failed');
+        return;
+      }
+    }
+    (window as any)._hcaptchaToken = captchaToken;
+
+    // Organic randomized human delay
+    await delayForHuman();
+
     ActivityLogService.log('store_search', { query: newVal })
   }
   fetchProducts(true, false)
@@ -652,6 +682,13 @@ watch([sortBy, minPrice, maxPrice, stockOnly], () => {
 })
 
 onMounted(async () => {
+  // 🛡️ Initialize hCaptcha store container
+  try {
+    await initInvisible('hcaptcha-store')
+  } catch (err) {
+    console.warn('⚠️ hCaptcha init ignored/failed in store:', err)
+  }
+
   ActivityLogService.log('store_page_open')
   initGlobalUnreadSubscription()
   await Promise.all([fetchCategories(), fetchBanners(), fetchProducts(true, false)])

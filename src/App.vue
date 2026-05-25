@@ -73,6 +73,8 @@
 import { IonApp, IonRouterOutlet, IonAlert, IonButton, IonProgressBar, IonAvatar, IonSpinner, alertController } from '@ionic/vue';
 import { onMounted, ref } from 'vue';
 import { performBotChecks, isBotDetected } from '@/utils/botShield';
+import { initInteractionMonitor } from '@/utils/interactionShield';
+
 
 import { Analytics } from "@vercel/analytics/vue";
 import { SpeedInsights } from '@vercel/speed-insights/vue';
@@ -260,6 +262,9 @@ import { useRouter } from 'vue-router';
 const router = useRouter();
 
 onMounted(async () => {
+  // 🛡️ Initialize Organic Interaction Monitor
+  initInteractionMonitor();
+
   // 🛡️ Perform Bot Defense checks on mount
   performBotChecks();
 

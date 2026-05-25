@@ -625,6 +625,9 @@
         </ion-list>
       </ion-content>
     </ion-popover>
+
+    <!-- Invisible hCaptcha Explore Container -->
+    <div id="hcaptcha-explore" style="display: none;"></div>
   </ion-page>
 </template>
 
@@ -660,6 +663,10 @@ import mapsLoader from '@/plugins/googleMapsLoader'
 import {Capacitor} from '@capacitor/core'
 import {Geolocation} from '@capacitor/geolocation'
 import {supabase} from '@/plugins/supabaseClient'
+import { hasOrganicInteraction, delayForHuman } from '@/utils/interactionShield'
+import { useHCaptcha } from '@/composables/useHCaptcha'
+import { flagBot } from '@/utils/botShield'
+
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import utc from 'dayjs/plugin/utc'
@@ -787,6 +794,8 @@ const PLACEHOLDER = 'https://placehold.co/200x100'
 /* ---------------- State ---------------- */
 const router = useRouter()
 const { t } = useI18n()
+const { initInvisible, execute: executeHCaptcha, isCaptchaEnabled } = useHCaptcha()
+
 
 const isLoggedIn = ref(false)
 const isContributor = ref(false)
@@ -2216,6 +2225,28 @@ watch(searchQuery, (q) => {
   }
   
   remoteSearchTimeout = setTimeout(async () => {
+    // 🛡️ Level 2 Interaction & hCaptcha Attestation Guard for Explore Search
+    if (!hasOrganicInteraction()) {
+      flagBot('no_organic_interaction');
+      return;
+    }
+
+    // Execute hCaptcha invisibly
+    let captchaToken = 'disabled';
+    if (isCaptchaEnabled) {
+      try {
+        captchaToken = await executeHCaptcha();
+      } catch (e) {
+        console.error('🚨 hCaptcha verification failed in explore:', e);
+        flagBot('captcha_challenge_failed');
+        return;
+      }
+    }
+    (window as any)._hcaptchaToken = captchaToken;
+
+    // Organic randomized human delay
+    await delayForHuman();
+
     const { data } = await supabase
       .from('locations')
       .select('id')
@@ -2435,6 +2466,13 @@ const initCategoryBarDrag = () => {
 
 /* ---------------- Lifecycle ---------------- */
 onMounted(async () => {
+  // 🛡️ Initialize hCaptcha explore container
+  try {
+    await initInvisible('hcaptcha-explore')
+  } catch (err) {
+    console.warn('⚠️ hCaptcha init ignored/failed in explore:', err)
+  }
+
   isPageActive.value = true
 
   // START GPS WATCH IMMEDIATELY (Non-blocking)

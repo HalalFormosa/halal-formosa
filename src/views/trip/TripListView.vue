@@ -246,6 +246,8 @@
 
     </ion-content>
 
+    <!-- Invisible hCaptcha Search Container -->
+    <div id="hcaptcha-trip" style="display: none;"></div>
   </ion-page>
 </template>
 
@@ -276,6 +278,9 @@ import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import utc from 'dayjs/plugin/utc'
 import timezone from 'dayjs/plugin/timezone'
+import { flagBot } from '@/utils/botShield'
+import { hasOrganicInteraction, delayForHuman } from '@/utils/interactionShield'
+import { useHCaptcha } from '@/composables/useHCaptcha'
 
 dayjs.extend(utc)
 dayjs.extend(timezone)
@@ -290,6 +295,7 @@ const isFilterModalOpen = ref(false)
 const activeCategoryIds = ref<number[]>([])
 const sortBy = ref<'recent' | 'views'>('recent')
 const isNative = ref(Capacitor.isNativePlatform())
+const { initInvisible, execute: executeHCaptcha, isCaptchaEnabled } = useHCaptcha()
 
 onIonViewDidEnter(() => {
   scheduleBannerUpdate()
@@ -531,7 +537,29 @@ function handleSearchInput(ev: Event) {
   if (searchTimeout) clearTimeout(searchTimeout)
 
   if (q.length > 1) {
-    searchTimeout = window.setTimeout(() => {
+    searchTimeout = window.setTimeout(async () => {
+      // 🛡️ Level 2 Interaction & hCaptcha Attestation Guard for Trip Search
+      if (!hasOrganicInteraction()) {
+        flagBot('no_organic_interaction');
+        return;
+      }
+
+      // Execute hCaptcha invisibly
+      let captchaToken = 'disabled';
+      if (isCaptchaEnabled) {
+        try {
+          captchaToken = await executeHCaptcha();
+        } catch (e) {
+          console.error('🚨 hCaptcha verification failed in trip:', e);
+          flagBot('captcha_challenge_failed');
+          return;
+        }
+      }
+      (window as any)._hcaptchaToken = captchaToken;
+
+      // Organic randomized human delay
+      await delayForHuman();
+
       ActivityLogService.log("trip_search", { query: q })
     }, 800)
   }
@@ -575,7 +603,14 @@ watch(sortBy, (val) => {
   })
 })
 
-onMounted(() => {
+onMounted(async () => {
+  // 🛡️ Initialize hCaptcha trip container
+  try {
+    await initInvisible('hcaptcha-trip')
+  } catch (err) {
+    console.warn('⚠️ hCaptcha init ignored/failed in trip:', err)
+  }
+
   ActivityLogService.log("trip_page_open", {
     source: "main_navigation"
   })

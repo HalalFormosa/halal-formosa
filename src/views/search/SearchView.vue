@@ -569,6 +569,8 @@
       </div>
     </ion-footer>
 
+    <!-- Invisible hCaptcha Search Container -->
+    <div id="hcaptcha-search" style="display: none;"></div>
   </ion-page>
 </template>
 
@@ -625,6 +627,9 @@ import timezone from 'dayjs/plugin/timezone'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import { flagBot } from '@/utils/botShield';
+import { hasOrganicInteraction, delayForHuman } from '@/utils/interactionShield';
+import { useHCaptcha } from '@/composables/useHCaptcha';
+
 
 import AppHeader from '@/components/AppHeader.vue'
 import FilterContent from '@/components/FilterContent.vue'
@@ -672,6 +677,9 @@ const router = useRouter()
 const route = useRoute()
 const infiniteDisabled = ref(false)
 const isAuthenticated = ref(false)
+
+const { initInvisible, execute: executeHCaptcha, isCaptchaEnabled } = useHCaptcha()
+
 
 const totalProductsCount = ref(0)
 const allProducts = ref<Product[]>([])
@@ -1290,7 +1298,30 @@ const fetchProducts = async (reset = false) => {
        🔎 SEARCH MODE
     ========================================================= */
     if (searchQuery.value && searchQuery.value.length > 1) {
+      // 🛡️ Level 2 Interaction & hCaptcha Attestation Guard
+      if (!hasOrganicInteraction()) {
+        flagBot('no_organic_interaction');
+        return;
+      }
+
+      // Execute hCaptcha invisibly
+      let captchaToken = 'disabled';
+      if (isCaptchaEnabled) {
+        try {
+          captchaToken = await executeHCaptcha();
+        } catch (e) {
+          console.error('🚨 hCaptcha verification failed:', e);
+          flagBot('captcha_challenge_failed');
+          return;
+        }
+      }
+      (window as any)._hcaptchaToken = captchaToken;
+
+      // Organic randomized human delay
+      await delayForHuman();
+
       const q = searchQuery.value.trim()
+
       const isNumeric = /^\d+$/.test(q);
 
       // 1️⃣ PRIORITIZE EXACT BARCODE MATCH (FAST)
@@ -1616,8 +1647,16 @@ async function refreshList(event: CustomEvent) {
 
 /* ---------------- Lifecycle ---------------- */
 onMounted(async () => {
+  // 🛡️ Initialize hCaptcha search container
+  try {
+    await initInvisible('hcaptcha-search')
+  } catch (err) {
+    console.warn('⚠️ hCaptcha init ignored/failed in search:', err)
+  }
+
   // 🔹 Auth/session setup
   const {data: {session}} = await supabase.auth.getSession()
+
   isAuthenticated.value = !!session
   supabase.auth.onAuthStateChange((_event, session) => {
     isAuthenticated.value = !!session
