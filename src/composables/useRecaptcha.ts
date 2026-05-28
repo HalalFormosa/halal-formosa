@@ -3,8 +3,12 @@ import { ref, onMounted } from 'vue';
 declare global {
   interface Window {
     grecaptcha: {
-      ready: (callback: () => void) => void;
-      execute: (siteKey: string, options: { action: string }) => Promise<string>;
+      ready?: (callback: () => void) => void;
+      execute?: (siteKey: string, options: { action: string }) => Promise<string>;
+      enterprise: {
+        ready: (callback: () => void) => void;
+        execute: (siteKey: string, options: { action: string }) => Promise<string>;
+      };
     };
   }
 }
@@ -19,25 +23,25 @@ export function useRecaptcha() {
 
   const isCaptchaEnabled = IS_RECAPTCHA_ENABLED;
 
-  // Load Google reCAPTCHA v3 script dynamically
+  // Load Google reCAPTCHA Enterprise script dynamically
   const loadScript = (): Promise<void> => {
     return new Promise((resolve, reject) => {
       if (!isCaptchaEnabled) {
         resolve();
         return;
       }
-      if (window.grecaptcha) {
+      if (window.grecaptcha && window.grecaptcha.enterprise) {
         isScriptLoaded.value = true;
         resolve();
         return;
       }
 
       // Check if script is already injected by checking script tags
-      const existingScript = document.querySelector('script[src^="https://www.google.com/recaptcha/api.js"]');
+      const existingScript = document.querySelector('script[src*="/recaptcha/enterprise.js"]');
       if (existingScript) {
         const checkGrecaptcha = () => {
-          if (window.grecaptcha) {
-            window.grecaptcha.ready(() => {
+          if (window.grecaptcha && window.grecaptcha.enterprise) {
+            window.grecaptcha.enterprise.ready(() => {
               isScriptLoaded.value = true;
               resolve();
             });
@@ -50,14 +54,14 @@ export function useRecaptcha() {
       }
 
       const script = document.createElement('script');
-      script.src = `https://www.google.com/recaptcha/api.js?render=${RECAPTCHA_SITE_KEY}`;
+      script.src = `https://www.google.com/recaptcha/enterprise.js?render=${RECAPTCHA_SITE_KEY}`;
       script.async = true;
       script.defer = true;
 
       script.onload = () => {
         const checkReady = () => {
-          if (window.grecaptcha && typeof window.grecaptcha.ready === 'function') {
-            window.grecaptcha.ready(() => {
+          if (window.grecaptcha && window.grecaptcha.enterprise && typeof window.grecaptcha.enterprise.ready === 'function') {
+            window.grecaptcha.enterprise.ready(() => {
               isScriptLoaded.value = true;
               resolve();
             });
@@ -69,40 +73,40 @@ export function useRecaptcha() {
       };
 
       script.onerror = () => {
-        error.value = 'Failed to load reCAPTCHA script';
-        reject(new Error('Failed to load reCAPTCHA script'));
+        error.value = 'Failed to load reCAPTCHA Enterprise script';
+        reject(new Error('Failed to load reCAPTCHA Enterprise script'));
       };
 
       document.head.appendChild(script);
     });
   };
 
-  // Programmatic v3 token generation for a given action
+  // Programmatic Enterprise token generation for a given action
   const execute = (actionName: string): Promise<string> => {
     return new Promise((resolve, reject) => {
       if (!isCaptchaEnabled) {
         resolve('disabled');
         return;
       }
-      if (!window.grecaptcha) {
-        reject(new Error('reCAPTCHA script not loaded'));
+      if (!window.grecaptcha || !window.grecaptcha.enterprise) {
+        reject(new Error('reCAPTCHA Enterprise script not loaded'));
         return;
       }
 
       isExecuting.value = true;
       error.value = null;
 
-      window.grecaptcha.ready(async () => {
+      window.grecaptcha.enterprise.ready(async () => {
         try {
           if (!RECAPTCHA_SITE_KEY) {
             throw new Error('VITE_RECAPTCHA_SITE_KEY is not set');
           }
-          const token = await window.grecaptcha.execute(RECAPTCHA_SITE_KEY, { action: actionName });
+          const token = await window.grecaptcha.enterprise.execute(RECAPTCHA_SITE_KEY, { action: actionName });
           isExecuting.value = false;
           resolve(token);
         } catch (err: any) {
           isExecuting.value = false;
-          error.value = err.message || 'reCAPTCHA execution failed';
+          error.value = err.message || 'reCAPTCHA Enterprise execution failed';
           reject(err);
         }
       });
