@@ -1383,3 +1383,8 @@ ion-header {
   z-index: 10;
   overflow: hidden;
 }
+
+/* Hide Google reCAPTCHA invisible badge to prevent overlapping tab bar navigation and FAB elements */
+.grecaptcha-badge {
+  visibility: hidden !important;
+}
