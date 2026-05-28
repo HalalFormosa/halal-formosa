@@ -300,8 +300,7 @@
       </ion-content>
     </ion-modal>
 
-    <!-- Invisible hCaptcha Search Container -->
-    <div id="hcaptcha-store" style="display: none;"></div>
+
   </ion-page>
 </template>
 
@@ -332,13 +331,13 @@ import { useStoreChat } from '@/composables/useStoreChat'
 import { ActivityLogService } from '@/services/ActivityLogService'
 import { flagBot } from '@/utils/botShield'
 import { hasOrganicInteraction, delayForHuman } from '@/utils/interactionShield'
-import { useHCaptcha } from '@/composables/useHCaptcha'
+import { useRecaptcha } from '@/composables/useRecaptcha'
 
 const { t, locale } = useI18n()
 const router = useRouter()
 const { items: cartItems, cartCount, cartTotal, updateQty } = useStoreCart()
 const { totalUnreadCount, initGlobalUnreadSubscription } = useStoreChat()
-const { initInvisible, execute: executeHCaptcha, isCaptchaEnabled } = useHCaptcha()
+const { execute: executeRecaptcha, isCaptchaEnabled } = useRecaptcha()
 
 // State
 const isNative = ref(Capacitor.isNativePlatform())
@@ -649,18 +648,18 @@ watch(searchQuery, async (newVal) => {
       return;
     }
 
-    // Execute hCaptcha invisibly
+    // Execute reCAPTCHA invisibly
     let captchaToken = 'disabled';
     if (isCaptchaEnabled) {
       try {
-        captchaToken = await executeHCaptcha();
+        captchaToken = await executeRecaptcha('store');
       } catch (e) {
-        console.error('🚨 hCaptcha verification failed in store:', e);
+        console.error('🚨 reCAPTCHA verification failed in store:', e);
         flagBot('captcha_challenge_failed');
         return;
       }
     }
-    (window as any)._hcaptchaToken = captchaToken;
+    (window as any)._recaptchaToken = captchaToken;
 
     // Organic randomized human delay
     await delayForHuman();
@@ -682,13 +681,6 @@ watch([sortBy, minPrice, maxPrice, stockOnly], () => {
 })
 
 onMounted(async () => {
-  // 🛡️ Initialize hCaptcha store container
-  try {
-    await initInvisible('hcaptcha-store')
-  } catch (err) {
-    console.warn('⚠️ hCaptcha init ignored/failed in store:', err)
-  }
-
   ActivityLogService.log('store_page_open')
   initGlobalUnreadSubscription()
   await Promise.all([fetchCategories(), fetchBanners(), fetchProducts(true, false)])

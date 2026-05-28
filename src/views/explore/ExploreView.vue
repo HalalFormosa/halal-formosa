@@ -626,8 +626,7 @@
       </ion-content>
     </ion-popover>
 
-    <!-- Invisible hCaptcha Explore Container -->
-    <div id="hcaptcha-explore" style="display: none;"></div>
+
   </ion-page>
 </template>
 
@@ -664,7 +663,7 @@ import {Capacitor} from '@capacitor/core'
 import {Geolocation} from '@capacitor/geolocation'
 import {supabase} from '@/plugins/supabaseClient'
 import { hasOrganicInteraction, delayForHuman } from '@/utils/interactionShield'
-import { useHCaptcha } from '@/composables/useHCaptcha'
+import { useRecaptcha } from '@/composables/useRecaptcha'
 import { flagBot } from '@/utils/botShield'
 
 import dayjs from 'dayjs'
@@ -794,7 +793,7 @@ const PLACEHOLDER = 'https://placehold.co/200x100'
 /* ---------------- State ---------------- */
 const router = useRouter()
 const { t } = useI18n()
-const { initInvisible, execute: executeHCaptcha, isCaptchaEnabled } = useHCaptcha()
+const { execute: executeRecaptcha, isCaptchaEnabled } = useRecaptcha()
 
 
 const isLoggedIn = ref(false)
@@ -2231,18 +2230,18 @@ watch(searchQuery, (q) => {
       return;
     }
 
-    // Execute hCaptcha invisibly
+    // Execute reCAPTCHA invisibly
     let captchaToken = 'disabled';
     if (isCaptchaEnabled) {
       try {
-        captchaToken = await executeHCaptcha();
+        captchaToken = await executeRecaptcha('explore');
       } catch (e) {
-        console.error('🚨 hCaptcha verification failed in explore:', e);
+        console.error('🚨 reCAPTCHA verification failed in explore:', e);
         flagBot('captcha_challenge_failed');
         return;
       }
     }
-    (window as any)._hcaptchaToken = captchaToken;
+    (window as any)._recaptchaToken = captchaToken;
 
     // Organic randomized human delay
     await delayForHuman();
@@ -2466,12 +2465,7 @@ const initCategoryBarDrag = () => {
 
 /* ---------------- Lifecycle ---------------- */
 onMounted(async () => {
-  // 🛡️ Initialize hCaptcha explore container
-  try {
-    await initInvisible('hcaptcha-explore')
-  } catch (err) {
-    console.warn('⚠️ hCaptcha init ignored/failed in explore:', err)
-  }
+
 
   isPageActive.value = true
 

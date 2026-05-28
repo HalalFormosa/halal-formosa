@@ -246,8 +246,7 @@
 
     </ion-content>
 
-    <!-- Invisible hCaptcha Search Container -->
-    <div id="hcaptcha-trip" style="display: none;"></div>
+
   </ion-page>
 </template>
 
@@ -280,7 +279,7 @@ import utc from 'dayjs/plugin/utc'
 import timezone from 'dayjs/plugin/timezone'
 import { flagBot } from '@/utils/botShield'
 import { hasOrganicInteraction, delayForHuman } from '@/utils/interactionShield'
-import { useHCaptcha } from '@/composables/useHCaptcha'
+import { useRecaptcha } from '@/composables/useRecaptcha'
 
 dayjs.extend(utc)
 dayjs.extend(timezone)
@@ -295,7 +294,7 @@ const isFilterModalOpen = ref(false)
 const activeCategoryIds = ref<number[]>([])
 const sortBy = ref<'recent' | 'views'>('recent')
 const isNative = ref(Capacitor.isNativePlatform())
-const { initInvisible, execute: executeHCaptcha, isCaptchaEnabled } = useHCaptcha()
+const { execute: executeRecaptcha, isCaptchaEnabled } = useRecaptcha()
 
 onIonViewDidEnter(() => {
   scheduleBannerUpdate()
@@ -544,18 +543,18 @@ function handleSearchInput(ev: Event) {
         return;
       }
 
-      // Execute hCaptcha invisibly
+      // Execute reCAPTCHA invisibly
       let captchaToken = 'disabled';
       if (isCaptchaEnabled) {
         try {
-          captchaToken = await executeHCaptcha();
+          captchaToken = await executeRecaptcha('trip');
         } catch (e) {
-          console.error('🚨 hCaptcha verification failed in trip:', e);
+          console.error('🚨 reCAPTCHA verification failed in trip:', e);
           flagBot('captcha_challenge_failed');
           return;
         }
       }
-      (window as any)._hcaptchaToken = captchaToken;
+      (window as any)._recaptchaToken = captchaToken;
 
       // Organic randomized human delay
       await delayForHuman();
@@ -604,13 +603,6 @@ watch(sortBy, (val) => {
 })
 
 onMounted(async () => {
-  // 🛡️ Initialize hCaptcha trip container
-  try {
-    await initInvisible('hcaptcha-trip')
-  } catch (err) {
-    console.warn('⚠️ hCaptcha init ignored/failed in trip:', err)
-  }
-
   ActivityLogService.log("trip_page_open", {
     source: "main_navigation"
   })

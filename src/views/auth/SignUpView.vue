@@ -90,8 +90,7 @@
             </ion-input>
           </div>
 
-          <!-- hCaptcha container -->
-          <div id="hcaptcha-signup" style="display: none;"></div>
+
 
           <!-- Error -->
           <ion-text color="danger" v-if="errorMsg" class="error-text">
@@ -123,11 +122,11 @@
 
         </form>
 
-        <!-- hCaptcha disclosure -->
+        <!-- reCAPTCHA disclosure -->
         <p class="hcaptcha-disclosure" v-if="showDisclosure">
-          This site is protected by hCaptcha and its
-          <a href="https://www.hcaptcha.com/privacy" target="_blank">Privacy Policy</a> and
-          <a href="https://www.hcaptcha.com/terms" target="_blank">Terms of Service</a> apply.
+          This site is protected by reCAPTCHA and the Google
+          <a href="https://policies.google.com/privacy" target="_blank">Privacy Policy</a> and
+          <a href="https://policies.google.com/terms" target="_blank">Terms of Service</a> apply.
         </p>
 
       </div>
@@ -185,7 +184,7 @@ import { useI18n } from 'vue-i18n'
 import LanguagePicker from '@/components/LanguagePicker.vue'
 import { personAddOutline, moonOutline, sunnyOutline, mailOutline } from "ionicons/icons";
 import { ActivityLogService } from '@/services/ActivityLogService'
-import { useHCaptcha } from '@/composables/useHCaptcha'
+import { useRecaptcha } from '@/composables/useRecaptcha'
 
 type Theme = 'dark' | 'light'
 
@@ -198,7 +197,8 @@ document.documentElement.classList.toggle(
 )
 
 const { locale, t } = useI18n()
-const { loadScript, initInvisible, execute, isCaptchaEnabled, showDisclosure } = useHCaptcha()
+const { loadScript, execute, isCaptchaEnabled } = useRecaptcha()
+const showDisclosure = isCaptchaEnabled
 const isDev = import.meta.env.DEV
 
 // form fields
@@ -217,7 +217,6 @@ const router = useRouter();
 onMounted(async () => {
   if (isCaptchaEnabled) {
     await loadScript()
-    await initInvisible('hcaptcha-signup')
   }
 })
 
@@ -229,11 +228,11 @@ async function signup() {
 
   errorMsg.value = ''
 
-  // Step 1: Execute invisible hCaptcha
+  // Step 1: Execute invisible reCAPTCHA
   if (isCaptchaEnabled) {
     try {
       captchaLoading.value = true
-      const captchaToken = await execute()
+      const captchaToken = await execute('signup')
 
       // Step 2: Verify captcha token with Edge Function
       const { data: verifyData, error: verifyError } = await supabase.functions.invoke('verify-captcha', {

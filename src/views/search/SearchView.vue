@@ -569,8 +569,7 @@
       </div>
     </ion-footer>
 
-    <!-- Invisible hCaptcha Search Container -->
-    <div id="hcaptcha-search" style="display: none;"></div>
+
   </ion-page>
 </template>
 
@@ -628,7 +627,7 @@ import relativeTime from 'dayjs/plugin/relativeTime'
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import { flagBot } from '@/utils/botShield';
 import { hasOrganicInteraction, delayForHuman } from '@/utils/interactionShield';
-import { useHCaptcha } from '@/composables/useHCaptcha';
+import { useRecaptcha } from '@/composables/useRecaptcha';
 
 
 import AppHeader from '@/components/AppHeader.vue'
@@ -678,7 +677,7 @@ const route = useRoute()
 const infiniteDisabled = ref(false)
 const isAuthenticated = ref(false)
 
-const { initInvisible, execute: executeHCaptcha, isCaptchaEnabled } = useHCaptcha()
+const { execute: executeRecaptcha, isCaptchaEnabled } = useRecaptcha()
 
 
 const totalProductsCount = ref(0)
@@ -1304,18 +1303,18 @@ const fetchProducts = async (reset = false) => {
         return;
       }
 
-      // Execute hCaptcha invisibly
+      // Execute reCAPTCHA invisibly
       let captchaToken = 'disabled';
       if (isCaptchaEnabled) {
         try {
-          captchaToken = await executeHCaptcha();
+          captchaToken = await executeRecaptcha('search');
         } catch (e) {
-          console.error('🚨 hCaptcha verification failed:', e);
+          console.error('🚨 reCAPTCHA verification failed:', e);
           flagBot('captcha_challenge_failed');
           return;
         }
       }
-      (window as any)._hcaptchaToken = captchaToken;
+      (window as any)._recaptchaToken = captchaToken;
 
       // Organic randomized human delay
       await delayForHuman();
@@ -1647,12 +1646,6 @@ async function refreshList(event: CustomEvent) {
 
 /* ---------------- Lifecycle ---------------- */
 onMounted(async () => {
-  // 🛡️ Initialize hCaptcha search container
-  try {
-    await initInvisible('hcaptcha-search')
-  } catch (err) {
-    console.warn('⚠️ hCaptcha init ignored/failed in search:', err)
-  }
 
   // 🔹 Auth/session setup
   const {data: {session}} = await supabase.auth.getSession()

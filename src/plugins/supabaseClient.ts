@@ -27,8 +27,8 @@ export const supabase = createClient(supabaseUrl, supabaseKey, {
         headers: {
             'X-App-Client': 'halal-formosa-web',
             'X-CSRF-Token': csrfToken,
-            get 'X-HCaptcha-Token'() {
-                return (window as any)._hcaptchaToken || 'none';
+            get 'X-Recaptcha-Token'() {
+                return (window as any)._recaptchaToken || 'none';
             }
         }
     }
