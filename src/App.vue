@@ -82,6 +82,7 @@ import { Capacitor } from '@capacitor/core'
 import { Geolocation } from '@capacitor/geolocation'
 import { AppUpdate, AppUpdateAvailability } from '@capawesome/capacitor-app-update';
 import { InAppReview } from '@capacitor-community/in-app-review';
+import { Browser } from '@capacitor/browser';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import utc from 'dayjs/plugin/utc';
@@ -170,6 +171,36 @@ const checkAppUpdate = async () => {
   }
 };
 
+const openAppStore = async () => {
+  const platform = Capacitor.getPlatform();
+  let url = 'https://play.google.com/store/apps/details?id=com.rcreative.halalformosa'; // fallback default
+  
+  if (platform === 'ios') {
+    url = 'https://apps.apple.com/app/id123456789';
+  }
+  
+  try {
+    const { data } = await supabase
+      .from('app_config')
+      .select('key, value')
+      .in('key', ['android_store_url', 'ios_store_url']);
+      
+    if (data && data.length > 0) {
+      const key = platform === 'ios' ? 'ios_store_url' : 'android_store_url';
+      const dbUrl = data.find(item => item.key === key)?.value;
+      if (dbUrl) url = dbUrl;
+    }
+  } catch (err) {
+    console.warn('[Review] Dynamic URL fetch failed, using fallback', err);
+  }
+
+  try {
+    await Browser.open({ url });
+  } catch (err) {
+    window.open(url, '_blank');
+  }
+};
+
 const checkAndAskForReview = async () => {
   // 📱 Target native platforms (Android now, soon iOS)
   if (!Capacitor.isNativePlatform()) return;
@@ -232,13 +263,8 @@ const checkAndAskForReview = async () => {
             localStorage.setItem(NEVER_SHOW_REVIEW_KEY, 'true');
             setHasReviewedApp(true);
 
-            // 2. Trigger Official Native In-App Review Sheet
-            try {
-              console.log('⭐ Triggering Native Review Sheet...');
-              await InAppReview.requestReview();
-            } catch (err) {
-              console.error('❌ Native sheet failed:', err);
-            }
+            // 2. Redirect to native app store page
+            await openAppStore();
           }
         }
       ]
