@@ -1092,7 +1092,7 @@ async function watchAdForExtraScans() {
   }
 
   await showRewardedAd("ca-app-pub-9588373061537955/8695189722", async () => {
-    bonusScans.value += 5;
+    bonusScans.value += 1;
     dailyAdUses.value += 1;
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {

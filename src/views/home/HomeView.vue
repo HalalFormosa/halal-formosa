@@ -5,27 +5,6 @@
     </ion-header>
 
     <ion-content class="ion-padding">
-      <!-- === Announcement Banner === -->
-      <transition name="slide-down">
-        <div v-if="showAnnouncement && announcement" class="announcement-banner" :class="[announcement.type || 'info', { 'clickable': announcement.link_url }]">
-          <div class="announcement-content" @click="handleBannerClick">
-            <template v-if="announcement.image_url">
-              <div class="announcement-thumb-wrapper">
-                <img :src="announcement.image_url" class="announcement-thumb" alt="announcement" />
-              </div>
-            </template>
-            <ion-icon v-else :icon="sparkles" class="announcement-icon" />
-            <div class="announcement-text">
-              <span class="announcement-title">{{ announcement.title }}</span>
-              <p class="announcement-body">{{ announcement.content }}</p>
-            </div>
-          </div>
-          <ion-button fill="clear" color="dark" class="close-btn" @click.stop="dismissAnnouncement">
-            <ion-icon :icon="closeOutline" />
-          </ion-button>
-        </div>
-      </transition>
-
       <!-- === Prayer Times Horizontal === -->
       <ion-card>
         <ion-card-header>
@@ -761,6 +740,40 @@
       </ion-content>
     </ion-popover>
 
+    <!-- 📢 Bottom Sheet Announcement Modal -->
+    <ion-modal
+      :is-open="showAnnouncement && !!announcement"
+      @didDismiss="dismissAnnouncement"
+      :initial-breakpoint="0.75"
+      :breakpoints="[0, 0.5, 0.75, 0.95]"
+      class="announcement-sheet"
+    >
+      <ion-header>
+        <ion-toolbar>
+          <ion-title>{{ announcement ? announcement.title : '' }}</ion-title>
+          <ion-buttons slot="end">
+            <ion-button @click="dismissAnnouncement">
+              <ion-icon :icon="closeOutline" />
+            </ion-button>
+          </ion-buttons>
+        </ion-toolbar>
+      </ion-header>
+      <ion-content class="ion-padding">
+        <div v-if="announcement && announcement.image_url" class="announcement-hero-wrapper">
+          <img :src="announcement.image_url" class="announcement-hero-img" alt="announcement image" />
+        </div>
+        <div v-if="announcement" class="announcement-html-body" v-html="announcement.content"></div>
+        <div class="announcement-actions">
+          <ion-button v-if="announcement && announcement.link_url" expand="block" fill="outline" color="carrot" @click="handleBannerClick" class="learn-more-btn ion-margin-bottom">
+            {{ $t('home.viewMore') || 'Learn More' }}
+          </ion-button>
+          <ion-button expand="block" color="carrot" @click="dismissAnnouncement" class="got-it-btn">
+            {{ $t('scanIngredients.details.gotIt') || 'Got It' }}
+          </ion-button>
+        </div>
+      </ion-content>
+    </ion-modal>
+
   </ion-page>
 </template>
 
@@ -771,7 +784,7 @@ import { useI18n } from 'vue-i18n'
 import {
   IonPage, IonContent, IonCard, IonCardHeader, IonCardTitle,
   IonCardContent, IonButton, IonIcon, IonHeader, onIonViewWillEnter, IonLabel, IonChip, IonSkeletonText,
-    IonList, IonBadge, IonAvatar, IonItem, IonPopover
+  IonList, IonBadge, IonAvatar, IonItem, IonPopover, IonModal, IonToolbar, IonTitle, IonButtons
 } from '@ionic/vue'
 import { useRouter } from 'vue-router'
 import { supabase } from '@/plugins/supabaseClient'
@@ -2230,5 +2243,82 @@ function openPartner(partner: any) {
   margin: -4px 0 0;
   font-size: 0.75rem;
   color: var(--ion-color-medium);
+}
+
+/* === Announcement Bottom Sheet Styles === */
+.announcement-sheet {
+  --border-radius: 24px 24px 0 0;
+  --box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.announcement-hero-wrapper {
+  width: 100%;
+  max-height: 200px;
+  overflow: hidden;
+  border-radius: 16px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.announcement-hero-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.announcement-html-body {
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--ion-color-step-800);
+}
+
+.announcement-html-body h1,
+.announcement-html-body h2,
+.announcement-html-body h3 {
+  color: var(--ion-color-dark);
+  font-weight: 700;
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.announcement-html-body p {
+  margin-bottom: 1rem;
+}
+
+.announcement-html-body strong {
+  font-weight: 700;
+  color: var(--ion-color-dark);
+}
+
+.announcement-html-body a {
+  color: var(--ion-color-carrot);
+  text-decoration: underline;
+  font-weight: 600;
+}
+
+.announcement-html-body ul, 
+.announcement-html-body ol {
+  padding-left: 20px;
+  margin-bottom: 1.2rem;
+}
+
+.announcement-html-body li {
+  margin-bottom: 0.5rem;
+}
+
+.announcement-actions {
+  margin-top: 32px;
+  margin-bottom: 16px;
+}
+
+.learn-more-btn {
+  --border-width: 2px;
+  --border-radius: 12px;
+  font-weight: 600;
+}
+
+.got-it-btn {
+  --border-radius: 12px;
+  font-weight: 600;
 }
 </style>
