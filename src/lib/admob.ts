@@ -7,7 +7,21 @@ let jobId = 0 // increments to cancel in-flight updates
 
 export async function initAdMob() {
     if (!Capacitor.isNativePlatform() || initialized) return
-    try { await AdMob.initialize(); initialized = true } catch (e) { console.debug('AdMob init skip', e) }
+    try { 
+        // 📱 Request App Tracking Transparency on iOS first
+        if (Capacitor.getPlatform() === 'ios') {
+            try {
+                console.log('🔒 Requesting App Tracking Transparency authorization...');
+                await AdMob.requestTrackingAuthorization();
+            } catch (attError) {
+                console.warn('⚠️ ATT tracking request failed or was not accepted:', attError);
+            }
+        }
+        await AdMob.initialize(); 
+        initialized = true 
+    } catch (e) { 
+        console.debug('AdMob init skip', e) 
+    }
 }
 
 export async function hideBanner() {
