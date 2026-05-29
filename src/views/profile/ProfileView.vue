@@ -587,7 +587,17 @@
               <span class="social-label-premium">{{ $t('profile.social.line') }}</span>
             </a>
             
-            <a class="social-item-premium" @click.prevent="logAndOpen('web', 'https://halalformosa.com')">
+            <a class="social-item-premium" @click.prevent="logAndOpen('tiktok', 'https://www.tiktok.com/@halal_formosa')">
+              <ion-icon :icon="icons.logoTiktok" class="social-icon-btn" style="color: #000000" />
+              <span class="social-label-premium">{{ te('profile.social.tiktok') ? $t('profile.social.tiktok') : 'TikTok' }}</span>
+            </a>
+
+            <a class="social-item-premium" @click.prevent="logAndOpen('facebook', 'https://www.facebook.com/halalformosa/')">
+              <ion-icon :icon="icons.logoFacebook" class="social-icon-btn" style="color: #1877F2" />
+              <span class="social-label-premium">{{ te('profile.social.facebook') ? $t('profile.social.facebook') : 'Facebook' }}</span>
+            </a>
+
+            <a class="social-item-premium" style="grid-column: span 2;" @click.prevent="logAndOpen('web', 'https://halalformosa.com')">
               <ion-icon :icon="icons.globeOutline" class="social-icon-btn" style="color: var(--ion-color-carrot)" />
               <span class="social-label-premium">{{ $t('profile.social.website') }}</span>
             </a>
@@ -650,6 +660,8 @@ import {
   globeOutline,
   listOutline,
   logoInstagram,
+  logoTiktok,
+  logoFacebook,
   peopleOutline,
   personCircleOutline,
   settingsOutline,
@@ -697,7 +709,7 @@ import { MerchantService, MerchantApplication } from '@/services/MerchantService
 import { useI18n } from 'vue-i18n'
 import { useNotifier } from "@/composables/useNotifier";
 
-const { t } = useI18n()
+const { t, te } = useI18n()
 const { notifyEvent } = useNotifier();
 // const pendingLocationsCount = ref(0)
 
@@ -720,6 +732,8 @@ const icons = {
   logOutOutline,
   checkmarkCircle,
   logoInstagram,
+  logoTiktok,
+  logoFacebook,
   createOutline,
   refreshOutline,
   alertCircleOutline,
@@ -1517,7 +1531,7 @@ ion-item {
 /* Social Media */
 .social-grid-premium {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 12px;
   padding: 16px;
 }
