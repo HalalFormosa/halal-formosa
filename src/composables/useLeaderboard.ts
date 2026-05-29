@@ -1,6 +1,35 @@
 import { ref } from "vue";
 import { supabase } from "@/plugins/supabaseClient";
 
+function getThemedAnonymousName(userId: string, index: number): string {
+    const names = [
+        "Boba",
+        "Mochi",
+        "Tofu",
+        "Oolong",
+        "Taroko",
+        "Alishan",
+        "Formosa",
+        "Foodie",
+        "Traveler",
+        "Wanderer",
+        "Gourmet",
+        "Taipei",
+        "Kaohsiung",
+        "Jiufen",
+        "Lotus"
+    ];
+
+    if (!userId) return "Explorer";
+
+    let hash = 0;
+    for (let i = 0; i < userId.length; i++) {
+        hash = userId.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const choice = Math.abs(hash) % names.length;
+    return names[choice];
+}
+
 export function useLeaderboard() {
     const leaderboard = ref<any[]>([]);
     const loading = ref(false);
@@ -19,7 +48,7 @@ export function useLeaderboard() {
         if (!err && data) {
             leaderboard.value = data.map((u: any, idx: number) => ({
                 ...u,
-                display_name: u.public_profile ? u.display_name : `Anonymous #${idx + 1}`,
+                display_name: u.public_profile ? u.display_name : getThemedAnonymousName(u.id, idx + 1),
                 avatar_url: u.public_profile ? u.avatar_url : "https://placehold.co/64x64"
             }));
         }

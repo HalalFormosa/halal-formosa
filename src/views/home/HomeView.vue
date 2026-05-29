@@ -609,6 +609,15 @@
         </ion-card-header>
 
         <ion-card-content>
+          <!-- 💡 Public Profile Hint Banner -->
+          <div v-if="!isPublicProfile" class="leaderboard-hint-banner" @click="router.push('/settings')">
+            <ion-icon :icon="sparkles" class="hint-icon" />
+            <div class="hint-text">
+              {{ $t('home.leaderboard_privacy_hint') || 'Want your name to be shown in the leaderboard? Go to settings and make your profile public.' }}
+            </div>
+            <ion-icon :icon="chevronForwardOutline" class="hint-arrow" />
+          </div>
+
           <ion-list v-if="!loadingLeaderboard">
             <ion-item
                 v-for="(user, index) in leaderboard"
@@ -630,15 +639,18 @@
                 <!-- Avatar -->
                 <ion-avatar style="width: 40px; height: 40px; margin: 0 10px;">
                   <img
-                      :src="user.public_profile ? (user.avatar_url || 'https://placehold.co/64x64') : `https://placehold.co/64x64?text=${$t('home.unknownAvatar')}`"
+                      :src="(user.public_profile || currentUser?.id === user.id) ? (user.public_profile ? (user.avatar_url || 'https://placehold.co/64x64') : (currentUser?.user_metadata?.avatar_url || 'https://placehold.co/64x64')) : `https://placehold.co/64x64?text=${$t('home.unknownAvatar')}`"
                        :alt="$t('home.altAvatar')"
                        loading="lazy"/>
                 </ion-avatar>
 
                 <!-- Info -->
                 <ion-label style="flex: 1; min-width: 0;">
-                  <h2 style="margin: 0; font-weight: 600; font-size: 1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                    {{ user.public_profile ? user.display_name : $t('home.anonymousWithIndex', { index: index + 1 }) }}
+                  <h2 style="margin: 0; font-weight: 600; font-size: 1rem; display: flex; align-items: center; gap: 6px;">
+                    <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;">
+                      {{ currentUser?.id === user.id && !user.public_profile ? (currentUser?.user_metadata?.full_name || currentUser?.user_metadata?.display_name || 'Me') : user.display_name }}
+                    </span>
+                    <ion-badge v-if="currentUser?.id === user.id && !user.public_profile" color="medium" style="font-size: 0.65rem; padding: 2px 6px; border-radius: 4px;" @click="showPrivateInfoAlert($event)">Private</ion-badge>
                   </h2>
                   <p style="margin: 0; font-size: 0.8rem; color: var(--ion-color-medium);">
                     {{ $t('profile.level', { level: getLevelFromPoints(user.points) }) }}
@@ -671,10 +683,10 @@
       <ion-content class="ion-padding" style="text-align:center; min-width: 250px;">
         <div v-if="selectedUser">
 
-          <!-- ✅ Public profile shown -->
-          <template v-if="selectedUser.public_profile">
+          <!-- ✅ Public profile shown or is current logged-in user -->
+          <template v-if="selectedUser.public_profile || currentUser?.id === selectedUser.id">
             <ion-avatar style="width:64px;height:64px;margin:12px auto 8px; border: 2px solid var(--ion-color-primary-tint);">
-              <img :src="selectedUser.avatar_url || 'https://placehold.co/64x64?text=?'"  :alt="$t('home.altAvatar')"/>
+              <img :src="(selectedUser.public_profile ? selectedUser.avatar_url : currentUser?.user_metadata?.avatar_url) || 'https://placehold.co/64x64?text=?'"  :alt="$t('home.altAvatar')"/>
             </ion-avatar>
 
             <div v-if="selectedUser.donor_type && selectedUser.donor_type.toLowerCase().includes('pro')" style="margin-bottom: 8px;">
@@ -684,8 +696,14 @@
               </ion-badge>
             </div>
 
+            <div v-if="currentUser?.id === selectedUser.id && !selectedUser.public_profile" style="margin-bottom: 8px;">
+              <ion-badge color="medium" style="font-size: 0.7rem; padding: 4px 8px; border-radius: 12px;" @click="showPrivateInfoAlert($event)">
+                Private
+              </ion-badge>
+            </div>
+
             <h3 style="margin: 0; font-size: 1.1rem; font-weight: 700; color: var(--ion-text-color);">
-              {{ selectedUser.display_name }}
+              {{ selectedUser.public_profile ? selectedUser.display_name : (currentUser?.user_metadata?.full_name || currentUser?.user_metadata?.display_name || 'Me') }}
             </h3>
 
             <p style="margin: 4px 0 12px; font-size: 0.85rem; color: var(--ion-color-medium); font-weight: 600;">
@@ -716,7 +734,7 @@
             </ion-avatar>
 
             <h3 style="margin: 0; font-size: 1rem; font-weight: 600; color: var(--ion-color-medium);">
-              {{ $t('home.anonymous') }}
+              {{ selectedUser.display_name }}
             </h3>
 
             <p style="margin: 4px 0 12px; font-size: 0.85rem; color: var(--ion-color-medium);">
@@ -784,7 +802,8 @@ import { useI18n } from 'vue-i18n'
 import {
   IonPage, IonContent, IonCard, IonCardHeader, IonCardTitle,
   IonCardContent, IonButton, IonIcon, IonHeader, onIonViewWillEnter, IonLabel, IonChip, IonSkeletonText,
-  IonList, IonBadge, IonAvatar, IonItem, IonPopover, IonModal, IonToolbar, IonTitle, IonButtons
+  IonList, IonBadge, IonAvatar, IonItem, IonPopover, IonModal, IonToolbar, IonTitle, IonButtons,
+  alertController
 } from '@ionic/vue'
 import { useRouter } from 'vue-router'
 import { supabase } from '@/plugins/supabaseClient'
@@ -810,6 +829,7 @@ import {
 import { useLeaderboard } from "@/composables/useLeaderboard";
 import {getLevelColor} from "@/composables/useLevels";
 import {getLevelFromPoints} from "@/utils/xp";
+import { isPublicProfile, currentUser } from '@/composables/userProfile';
 import {ActivityLogService} from "@/services/ActivityLogService";
 import {SocialMediaService} from "@/services/SocialMediaService";
 import { refreshSubscriptionStatus} from "@/composables/useSubscriptionStatus";
@@ -1276,6 +1296,21 @@ function openUserProfile(user: any, ev: Event) {
 function closePopover() {
   selectedUser.value = null
   popoverEvent.value = null
+}
+
+async function showPrivateInfoAlert(ev?: Event) {
+  if (ev) {
+    ev.stopPropagation(); // prevent triggering row click / popover opening
+  }
+  const isZh = locale.value === 'zh' || locale.value?.startsWith('zh');
+  const alert = await alertController.create({
+    header: isZh ? '個人檔案已設為不公開' : 'Profile is Private',
+    message: isZh 
+      ? '您的個人檔案目前設定為不公開。您的姓名與頭像僅對您自己顯示，其他使用者將會看到您顯示為「匿名」。' 
+      : 'Your profile is set to private. Your name and details are only visible to you. Other users will see you as Anonymous.',
+    buttons: [isZh ? '我知道了' : 'Got It']
+  });
+  await alert.present();
 }
 
 /* ---------------- Data Fetching ---------------- */
@@ -2320,5 +2355,56 @@ function openPartner(partner: any) {
 .got-it-btn {
   --border-radius: 12px;
   font-weight: 600;
+}
+
+/* === Leaderboard Hint Banner === */
+.leaderboard-hint-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.08) 0%, rgba(251, 146, 60, 0.08) 100%);
+  border: 1px solid rgba(249, 115, 22, 0.15);
+  border-radius: 12px;
+  margin-bottom: 16px;
+  cursor: pointer;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.leaderboard-hint-banner:active {
+  transform: scale(0.98);
+  opacity: 0.9;
+}
+
+.hint-icon {
+  font-size: 20px;
+  color: var(--ion-color-carrot);
+  flex-shrink: 0;
+  animation: pulse 2s infinite;
+}
+
+.hint-text {
+  font-size: 0.85rem;
+  line-height: 1.4;
+  color: var(--ion-color-step-800);
+  flex: 1;
+}
+
+.hint-arrow {
+  font-size: 16px;
+  color: var(--ion-color-medium);
+  flex-shrink: 0;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+
+/* Dark mode adjustment */
+.ion-palette-dark .leaderboard-hint-banner {
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.15) 0%, rgba(251, 146, 60, 0.15) 100%);
+  border-color: rgba(249, 115, 22, 0.3);
 }
 </style>
