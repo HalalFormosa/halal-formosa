@@ -12,8 +12,18 @@ export interface LatLng {
 }
 
 // Global shared state (singleton pattern)
-const userLocation = ref<LatLng | null>(null)
-const locationAttemptFinished = ref(false)
+const getCachedLocation = (): LatLng | null => {
+  try {
+    const raw = localStorage.getItem('hf_user_location')
+    return raw ? JSON.parse(raw) : null
+  } catch (e) {
+    console.warn('[GPS] Failed to parse cached location', e)
+    return null
+  }
+}
+
+const userLocation = ref<LatLng | null>(getCachedLocation())
+const locationAttemptFinished = ref(!!userLocation.value)
 const isLocating = ref(false)
 const hasAutoCentered = ref(false)
 let locationWatchId: string | null = null
@@ -46,26 +56,29 @@ export function useLocation() {
       // Initial check to speed things up if permissions are already given
       // We don't AWAIT this because we want to start the watch ASAP
       Geolocation.getCurrentPosition({
-        enableHighAccuracy: true,
+        enableHighAccuracy: false, // ⚡ Faster network/wifi triangulation on startup
         timeout: 5000
       }).then(currentPos => {
-        if (currentPos && !userLocation.value) {
-          userLocation.value = {
+        if (currentPos) {
+          const newLoc = {
             lat: currentPos.coords.latitude,
-            lng: currentPos.coords.longitude
+            lng: currentPos.coords.longitude,
+            city: userLocation.value?.city
           }
+          userLocation.value = newLoc
+          localStorage.setItem('hf_user_location', JSON.stringify(newLoc))
           locationAttemptFinished.value = true
         }
       }).catch(err => {
          console.warn("[GPS] getCurrentPosition failed, watch will take over", err)
       })
 
-      // Continuous watching
+      // Continuous watching (relaxed to passive cellular/wifi updates instead of continuous hardware GPS blocks)
       locationWatchId = await Geolocation.watchPosition(
         {
-          enableHighAccuracy: true,
-          maximumAge: 10000, // Balanced battery/accuracy
-          timeout: 30000
+          enableHighAccuracy: false, // 🔋 Major battery save & ANR mitigation
+          maximumAge: 60000,         // Relax to 1 minute cache
+          timeout: 15000
         },
         (pos, err) => {
           if (!locationAttemptFinished.value) {
@@ -77,10 +90,13 @@ export function useLocation() {
             return
           }
 
-          userLocation.value = {
+          const newLoc = {
             lat: pos.coords.latitude,
-            lng: pos.coords.longitude
+            lng: pos.coords.longitude,
+            city: userLocation.value?.city
           }
+          userLocation.value = newLoc
+          localStorage.setItem('hf_user_location', JSON.stringify(newLoc))
           
           // Optional: resolve city name (THROTTLED)
           const now = Date.now()
@@ -116,6 +132,7 @@ export function useLocation() {
           data.address?.town ||
           data.address?.municipality ||
           data.address?.state
+        localStorage.setItem('hf_user_location', JSON.stringify(userLocation.value))
       }
     } catch (e) {
       console.warn('[GPS] Reverse geocoding failed', e)
