@@ -818,7 +818,9 @@
       "descriptionRequired": "Kinakailangan ang paglalarawan.",
       "frontImageRequired": "Kinakailangan ang larawan sa harap.",
       "backImageRequired": "Kinakailangan ang larawan sa likod."
-    }
+    },
+    "selectCategory": "Select Category",
+    "searchCategoryPlaceholder": "Search categories..."
   },
   "addPlace": {
     "title": "Magdagdag ng Bagong Lugar",

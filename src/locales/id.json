@@ -58,9 +58,36 @@
     "admin": "Admin"
   },
   "review": {
-    "rotatePhoto": "Putar Foto",
-    "restoreOriginal": "Foto Asli",
-    "cleanBackground": "Hapus Latar Belakang"
+    "title": "Tinjau Kiriman",
+    "noPending": "Tidak ada kiriman tertunda 🎉",
+    "modalTitle": "Tinjau Produk",
+    "uploadedBy": "Diunggah oleh",
+    "close": "Tutup",
+    "barcode": "Barcode",
+    "name": "Nama",
+    "status": "Status",
+    "statusHalal": "Halal",
+    "statusMuslimFriendly": "Ramah Muslim",
+    "statusSyubhah": "Syubhah",
+    "statusHaram": "Haram",
+    "category": "Kategori",
+    "ingredients": "Komposisi",
+    "viewMore": "Lihat Lebih Banyak",
+    "viewLess": "Lihat Lebih Sedikit",
+    "colorLegend": "Keterangan Warna",
+    "description": "Deskripsi",
+    "images": "Gambar",
+    "approve": "Setujui & Simpan",
+    "reject": "Tolak",
+    "imageAlt": "Gambar produk",
+    "frontImageAlt": "Gambar Depan",
+    "backImageAlt": "Gambar Belakang",
+    "colorLabels": {
+      "--ion-color-success": "Halal",
+      "--ion-color-primary": "Ramah Muslim",
+      "--ion-color-warning": "Syubhah",
+      "--ion-color-danger": "Haram"
+    }
   },
   "dailyMissions": {
     "title": "Misi Harian",
@@ -810,7 +837,9 @@
       "descriptionRequired": "Deskripsi wajib diisi.",
       "frontImageRequired": "Gambar depan wajib diisi.",
       "backImageRequired": "Gambar belakang wajib diisi."
-    }
+    },
+    "selectCategory": "Pilih Kategori",
+    "searchCategoryPlaceholder": "Cari kategori..."
   },
   "addPlace": {
     "title": "Tambah Tempat Baru",
@@ -869,38 +898,6 @@
       "high": "Sangat mungkin duplikat di sekitar",
       "medium": "Terdeteksi tempat serupa di sekitar",
       "verify": "Verifikasi apakah ini cabang, lantai, atau vendor yang berbeda."
-    }
-  },
-  "review": {
-    "title": "Tinjau Kiriman",
-    "noPending": "Tidak ada kiriman tertunda 🎉",
-    "modalTitle": "Tinjau Produk",
-    "uploadedBy": "Diunggah oleh",
-    "close": "Tutup",
-    "barcode": "Barcode",
-    "name": "Nama",
-    "status": "Status",
-    "statusHalal": "Halal",
-    "statusMuslimFriendly": "Ramah Muslim",
-    "statusSyubhah": "Syubhah",
-    "statusHaram": "Haram",
-    "category": "Kategori",
-    "ingredients": "Komposisi",
-    "viewMore": "Lihat Lebih Banyak",
-    "viewLess": "Lihat Lebih Sedikit",
-    "colorLegend": "Keterangan Warna",
-    "description": "Deskripsi",
-    "images": "Gambar",
-    "approve": "Setujui & Simpan",
-    "reject": "Tolak",
-    "imageAlt": "Gambar produk",
-    "frontImageAlt": "Gambar Depan",
-    "backImageAlt": "Gambar Belakang",
-    "colorLabels": {
-      "--ion-color-success": "Halal",
-      "--ion-color-primary": "Ramah Muslim",
-      "--ion-color-warning": "Syubhah",
-      "--ion-color-danger": "Haram"
     }
   },
   "partner": {

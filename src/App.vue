@@ -18,7 +18,14 @@
 
     <!-- 🎁 Global Subtle Reward Toast -->
     <div v-if="rewardOpen" class="reward-overlay">
-      <div class="reward-toast" @click="closeReward">
+      <div 
+        class="reward-toast" 
+        @click="closeReward"
+        @touchstart="onTouchStart"
+        @touchmove="onTouchMove"
+        @touchend="onTouchEnd"
+        :style="toastStyle"
+      >
         <div class="reward-toast-left">
           <ion-avatar class="reward-toast-avatar" v-if="rewardAvatar">
             <img :src="rewardAvatar" alt="Avatar" />
@@ -71,7 +78,7 @@
 
 <script setup lang="ts">
 import { IonApp, IonRouterOutlet, IonAlert, IonButton, IonProgressBar, IonAvatar, IonSpinner, alertController } from '@ionic/vue';
-import { onMounted, ref } from 'vue';
+import { onMounted, ref, computed } from 'vue';
 import { performBotChecks, isBotDetected } from '@/utils/botShield';
 import { initInteractionMonitor } from '@/utils/interactionShield';
 
@@ -112,6 +119,58 @@ import {
   rewardNextXp,
   rewardProgress
 } from "@/composables/useRewardOverlay";
+
+// 📱 Swipe to dismiss logic for mobile notifications
+const touchStartY = ref(0);
+const touchStartX = ref(0);
+const swipeOffsetY = ref(0);
+const swipeOffsetX = ref(0);
+const isSwiping = ref(false);
+
+const onTouchStart = (e: TouchEvent) => {
+  touchStartY.value = e.touches[0].clientY;
+  touchStartX.value = e.touches[0].clientX;
+  isSwiping.value = true;
+};
+
+const onTouchMove = (e: TouchEvent) => {
+  if (!isSwiping.value) return;
+  const currentY = e.touches[0].clientY;
+  const currentX = e.touches[0].clientX;
+  
+  const diffY = currentY - touchStartY.value;
+  const diffX = currentX - touchStartX.value;
+  
+  // Swiping up (negative Y) has no resistance; swiping down has resistance
+  swipeOffsetY.value = diffY < 0 ? diffY : diffY * 0.2;
+  swipeOffsetX.value = diffX;
+};
+
+const onTouchEnd = () => {
+  if (!isSwiping.value) return;
+  isSwiping.value = false;
+  
+  // Dismiss if swiped up > 30px or swiped horizontally > 60px
+  if (swipeOffsetY.value < -30 || Math.abs(swipeOffsetX.value) > 60) {
+    closeReward();
+  }
+  
+  // Reset offsets
+  swipeOffsetY.value = 0;
+  swipeOffsetX.value = 0;
+};
+
+const toastStyle = computed(() => {
+  if (!isSwiping.value && swipeOffsetY.value === 0 && swipeOffsetX.value === 0) {
+    return {};
+  }
+  const opacity = Math.max(0.1, 1 - Math.max(Math.abs(swipeOffsetX.value) / 180, -swipeOffsetY.value / 80));
+  return {
+    transform: `translate(${swipeOffsetX.value}px, ${swipeOffsetY.value}px)`,
+    opacity: opacity,
+    transition: isSwiping.value ? 'none' : 'transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.2s ease',
+  };
+});
 import { updateLastSeen, currentUser, hasReviewedApp, setHasReviewedApp } from '@/composables/userProfile';
 import { supabase } from '@/plugins/supabaseClient';
 const { initTheme } = useTheme();

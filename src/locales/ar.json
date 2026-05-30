@@ -818,7 +818,9 @@
       "descriptionRequired": "الوصف مطلوب.",
       "frontImageRequired": "الصورة الأمامية مطلوبة.",
       "backImageRequired": "الصورة الخلفية مطلوبة."
-    }
+    },
+    "selectCategory": "Select Category",
+    "searchCategoryPlaceholder": "Search categories..."
   },
   "addPlace": {
     "title": "أضف مكانًا جديدًا",

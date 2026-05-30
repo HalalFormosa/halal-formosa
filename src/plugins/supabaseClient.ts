@@ -34,3 +34,25 @@ export const supabase = createClient(supabaseUrl, supabaseKey, {
     }
 });
 
+// 🚀 Clean client specifically for edge functions to avoid CORS preflight failures caused by global custom headers (X-CSRF-Token / X-Recaptcha-Token)
+const supabaseFunc = createClient(supabaseUrl, supabaseKey, {
+    auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+        detectSessionInUrl: false
+    }
+});
+
+export async function invokeFunction(name: string, options: any = {}) {
+    const session = (await supabase.auth.getSession()).data.session;
+    const authHeader = session ? `Bearer ${session.access_token}` : `Bearer ${supabaseKey}`;
+    
+    return supabaseFunc.functions.invoke(name, {
+        ...options,
+        headers: {
+            Authorization: authHeader,
+            ...options.headers
+        }
+    });
+}
+

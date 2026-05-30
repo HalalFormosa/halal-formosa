@@ -1,7 +1,7 @@
 import { Ref, ref, nextTick } from 'vue'
 import type { IngredientHighlight } from '@/types/Ingredient'
 import { extractIonColor } from '@/utils/ingredientHelpers'
-import { supabase } from '@/plugins/supabaseClient'
+import { supabase, invokeFunction } from '@/plugins/supabaseClient'
 
 export interface BlacklistPattern {
     pattern: string
@@ -278,7 +278,7 @@ export default function useOcrPipeline(options: OcrPipelineOptions) {
         try {
             const base64 = await fileToBase64(file)
             const res = await withTimeout(
-                supabase.functions.invoke('google-ocr', {
+                invokeFunction('google-ocr', {
                     body: { imageBase64: base64, translate: true }
                 }),
                 20000
@@ -332,7 +332,7 @@ export default function useOcrPipeline(options: OcrPipelineOptions) {
         try {
             // 1. Try secure Edge Function first
             const { data, error } = await withTimeout(
-                supabase.functions.invoke('google-translate', {
+                invokeFunction('google-translate', {
                     body: { text, target: 'en' }
                 }),
                 12000

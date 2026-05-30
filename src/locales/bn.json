@@ -818,7 +818,9 @@
       "descriptionRequired": "বর্ণনা প্রয়োজন.",
       "frontImageRequired": "সামনের ছবি প্রয়োজন।",
       "backImageRequired": "পিছনের ছবি প্রয়োজন।"
-    }
+    },
+    "selectCategory": "Select Category",
+    "searchCategoryPlaceholder": "Search categories..."
   },
   "addPlace": {
     "title": "নতুন স্থান যোগ করুন",

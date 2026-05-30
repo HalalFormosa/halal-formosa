@@ -58,9 +58,37 @@
     "admin": "管理員"
   },
   "review": {
-    "rotatePhoto": "旋轉照片",
-    "restoreOriginal": "原始照片",
-    "cleanBackground": "去除背景"
+    "title": "審核提交",
+    "noPending": "沒有待處理的提交 🎉",
+    "modalTitle": "審核產品",
+    "uploadedBy": "上傳者",
+    "close": "關閉",
+    "barcode": "條碼",
+    "name": "名稱",
+    "status": "狀態",
+    "statusHalal": "清真",
+    "statusMuslimFriendly": "穆斯林友善",
+    "statusSyubhah": "疑似",
+    "statusHaram": "非清真",
+    "category": "類別",
+    "ingredients": "成分",
+    "viewMore": "查看更多",
+    "viewLess": "收起",
+    "colorLegend": "顏色說明",
+    "description": "描述",
+    "images": "圖片",
+    "approve": "批准並儲存",
+    "reject": "拒絕",
+    "imageAlt": "產品圖片",
+    "frontImageAlt": "正面圖片",
+    "backImageAlt": "背面圖片",
+    "colorLabels": {
+      "--ion-color-success": "清真",
+      "--ion-color-primary": "穆斯林友善",
+      "--ion-color-warning": "疑似",
+      "--ion-color-danger": "非清真"
+    },
+    "syncToOff": "同步到 Open Food Facts"
   },
   "master": {
     "active": "啟用",
@@ -895,7 +923,9 @@
       "descriptionRequired": "描述為必填。",
       "frontImageRequired": "正面圖片為必填。",
       "backImageRequired": "背面圖片為必填。"
-    }
+    },
+    "selectCategory": "選擇分類",
+    "searchCategoryPlaceholder": "搜尋分類..."
   },
   "addPlace": {
     "title": "新增地點",
@@ -955,39 +985,6 @@
       "medium": "檢測到附近有相似地點",
       "verify": "請確認這是否為不同的分店、樓層或攤位。"
     }
-  },
-  "review": {
-    "title": "審核提交",
-    "noPending": "沒有待處理的提交 🎉",
-    "modalTitle": "審核產品",
-    "uploadedBy": "上傳者",
-    "close": "關閉",
-    "barcode": "條碼",
-    "name": "名稱",
-    "status": "狀態",
-    "statusHalal": "清真",
-    "statusMuslimFriendly": "穆斯林友善",
-    "statusSyubhah": "疑似",
-    "statusHaram": "非清真",
-    "category": "類別",
-    "ingredients": "成分",
-    "viewMore": "查看更多",
-    "viewLess": "收起",
-    "colorLegend": "顏色說明",
-    "description": "描述",
-    "images": "圖片",
-    "approve": "批准並儲存",
-    "reject": "拒絕",
-    "imageAlt": "產品圖片",
-    "frontImageAlt": "正面圖片",
-    "backImageAlt": "背面圖片",
-    "colorLabels": {
-      "--ion-color-success": "清真",
-      "--ion-color-primary": "穆斯林友善",
-      "--ion-color-warning": "疑似",
-      "--ion-color-danger": "非清真"
-    },
-    "syncToOff": "同步到 Open Food Facts"
   },
   "partner": {
     "title": "我們的合作夥伴",

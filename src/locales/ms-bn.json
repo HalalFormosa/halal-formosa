@@ -818,7 +818,9 @@
       "descriptionRequired": "Penerangan diperlukan.",
       "frontImageRequired": "Imej hadapan diperlukan.",
       "backImageRequired": "Imej belakang diperlukan."
-    }
+    },
+    "selectCategory": "Pilih Kategori",
+    "searchCategoryPlaceholder": "Cari kategori..."
   },
   "addPlace": {
     "title": "Tambah Tempat Baharu",

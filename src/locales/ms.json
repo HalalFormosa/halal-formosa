@@ -790,7 +790,9 @@
     "scanBarcodeTitle": "Find Product",
     "scanBarcodeDesc": "Scan the barcode on the product packaging to get started.",
     "applyQuickDescription": "Apply Quick Description",
-    "nearbyStoreDetected": "Nearby store detected"
+    "nearbyStoreDetected": "Nearby store detected",
+    "selectCategory": "Pilih Kategori",
+    "searchCategoryPlaceholder": "Cari kategori..."
   },
   "addPlace": {
     "title": "Tambah Tempat Baru",

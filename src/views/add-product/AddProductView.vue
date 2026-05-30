@@ -455,13 +455,16 @@
                       </ion-input>
                     </ion-item>
 
-                    <ion-item lines="none">
-                      <ion-select v-model.number="form.product_category_id" interface="alert" required class="full-width-select">
-                        <div slot="label">{{ $t('addProduct.category') }} <ion-text color="danger">*</ion-text></div>
-                        <ion-select-option v-for="cat in categories" :key="cat.id" :value="cat.id">
-                          {{ cat.name }}
-                        </ion-select-option>
-                      </ion-select>
+                    <ion-item lines="none" button @click="categoryModalOpen = true">
+                      <ion-label>
+                        <div style="font-size: 13px; color: var(--ion-color-medium); margin-bottom: 2px;">
+                          {{ $t('addProduct.category') }} <ion-text color="danger">*</ion-text>
+                        </div>
+                        <div style="font-size: 16px; color: var(--ion-color-dark); font-weight: 500;">
+                          {{ selectedCategoryName || 'Select a Category...' }}
+                        </div>
+                      </ion-label>
+                      <ion-icon :icon="chevronForwardOutline" slot="end" style="color: var(--ion-color-medium); font-size: 18px;" />
                     </ion-item>
                   </ion-card-content>
                 </ion-card>
@@ -746,6 +749,50 @@
           </Swiper>
         </ion-content>
       </ion-modal>
+
+      <!-- 📂 Category Search & Select Modal -->
+      <ion-modal :is-open="categoryModalOpen" @didDismiss="categoryModalOpen = false">
+        <ion-header>
+          <ion-toolbar color="light">
+            <ion-title>{{ $t('addProduct.selectCategory') || 'Select Category' }}</ion-title>
+            <ion-buttons slot="end">
+              <ion-button @click="categoryModalOpen = false">{{ $t('common.cancel') || 'Cancel' }}</ion-button>
+            </ion-buttons>
+          </ion-toolbar>
+          <ion-toolbar color="light">
+            <ion-searchbar
+              v-model="categoryQuery"
+              :placeholder="$t('addProduct.searchCategoryPlaceholder') || 'Search categories...'"
+              animated
+            />
+          </ion-toolbar>
+        </ion-header>
+        <ion-content>
+          <ion-list lines="full">
+            <ion-item 
+              v-for="cat in filteredCategories" 
+              :key="cat.id" 
+              button 
+              detail="false"
+              @click="selectCategory(cat)"
+              :class="{ 'selected-category-item': form.product_category_id === cat.id }"
+            >
+              <ion-label style="font-weight: 600;">
+                {{ cat.name }}
+              </ion-label>
+              <ion-icon 
+                v-if="form.product_category_id === cat.id" 
+                slot="end" 
+                :icon="checkmarkCircle" 
+                color="success" 
+              />
+            </ion-item>
+            <ion-item v-if="filteredCategories.length === 0" lines="none" class="ion-text-center">
+              <ion-label color="medium">No categories found</ion-label>
+            </ion-item>
+          </ion-list>
+        </ion-content>
+      </ion-modal>
     </ion-content>
   </ion-page>
 </template>
@@ -775,7 +822,8 @@ import {
   IonToolbar,
   IonAccordion,
   IonAccordionGroup, IonNote, IonImg, IonThumbnail,
-  IonSegment, IonSegmentButton, IonCard, IonCardHeader, IonCardContent, IonListHeader, IonFooter
+  IonSegment, IonSegmentButton, IonCard, IonCardHeader, IonCardContent, IonListHeader, IonFooter,
+  IonSearchbar
 } from '@ionic/vue';
 import {
   addOutline,
@@ -796,11 +844,12 @@ import {
   syncOutline,
   colorWandOutline,
   trashOutline,
-  refreshOutline
+  refreshOutline,
+  chevronForwardOutline
 } from 'ionicons/icons';
 import { computed, nextTick, onMounted, onUnmounted, ref, watch} from 'vue'
 import { useI18n } from 'vue-i18n'
-import {supabase} from '@/plugins/supabaseClient'
+import {supabase, invokeFunction} from '@/plugins/supabaseClient'
 
 import { Capacitor } from '@capacitor/core'
 import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
@@ -978,6 +1027,25 @@ async function rotateImage(type: 'front' | 'back') {
 }
 const tagInput = ref('')
 const categories = ref<{ id: number; name: string }[]>([])
+const categoryModalOpen = ref(false)
+const categoryQuery = ref('')
+
+const filteredCategories = computed(() => {
+  const q = categoryQuery.value.trim().toLowerCase()
+  if (!q) return categories.value
+  return categories.value.filter(cat => cat.name.toLowerCase().includes(q))
+})
+
+const selectedCategoryName = computed(() => {
+  const matched = categories.value.find(cat => cat.id === form.value.product_category_id)
+  return matched ? matched.name : ''
+})
+
+function selectCategory(cat: { id: number; name: string }) {
+  form.value.product_category_id = cat.id
+  categoryModalOpen.value = false
+  categoryQuery.value = ''
+}
 const stores = ref<{ id: string; name: string; logo_url?: string }[]>([])
 const checkingIngredients = ref(false)
 const selectedCameraId = ref<string | null>(null)
@@ -1677,7 +1745,7 @@ watch(() => form.value.barcode, async (newBarcode) => {
 
     // 🌐 Call Edge Function → Open Food Facts
     console.log("🌐 Calling verify-barcode edge function...");
-    const { data, error } = await supabase.functions.invoke('verify-barcode', {
+    const { data, error } = await invokeFunction('verify-barcode', {
       body: { barcode: newBarcode },
     });
 
@@ -1818,18 +1886,27 @@ const fetchCategoryRules = async () => {
 
 
 async function scanIngredientsWithCamera() {
-  const image = await Camera.getPhoto({
-    quality: 90,
-    allowEditing: false,
-    resultType: CameraResultType.Uri,
-    source: CameraSource.Camera,
-    direction: CameraDirection.Rear,
-  })
-  const blob = await fetch(image.webPath!).then(r => r.blob())
-  const file = new File([blob], `ingredients-${Date.now()}.jpg`, { type: 'image/jpeg' })
-  originalFile.value = file
-  ActivityLogService.log('add_product_ocr_start', { method: 'camera' })
-  openCropper(file)
+  try {
+    const image = await Camera.getPhoto({
+      quality: 90,
+      allowEditing: false,
+      resultType: CameraResultType.Uri,
+      source: CameraSource.Camera,
+      direction: CameraDirection.Rear,
+    })
+    const blob = await fetch(image.webPath!).then(r => r.blob())
+    const file = new File([blob], `ingredients-${Date.now()}.jpg`, { type: 'image/jpeg' })
+    originalFile.value = file
+    ActivityLogService.log('add_product_ocr_start', { method: 'camera' })
+    openCropper(file)
+  } catch (err: any) {
+    if (err?.message?.includes('cancel') || String(err).includes('cancel') || String(err).includes('cancelled')) {
+      console.log('📷 Camera capture was cancelled by the user.');
+      return;
+    }
+    console.error('❌ Camera capture failed:', err);
+    setError(t('addProduct.cameraError') || 'Failed to capture image.');
+  }
 }
 
 function scanIngredientsFromGallery() {
@@ -2065,7 +2142,11 @@ async function takeFrontPicture() {
     originalFrontPreview.value = frontPreview.value;
     originalFrontFile.value = frontFile.value;
 
-  } catch (error) {
+  } catch (error: any) {
+    if (error?.message?.includes('cancel') || String(error).includes('cancel') || String(error).includes('cancelled')) {
+      console.log('📷 Front photo capture was cancelled by the user.');
+      return;
+    }
     console.error('Error taking front photo:', error);
     setError('❌ Failed to capture front image.');
   }
@@ -2088,7 +2169,11 @@ async function takeBackPicture() {
     originalBackPreview.value = backPreview.value;
     originalBackFile.value = backFile.value;
 
-  } catch (error) {
+  } catch (error: any) {
+    if (error?.message?.includes('cancel') || String(error).includes('cancel') || String(error).includes('cancelled')) {
+      console.log('📷 Back photo capture was cancelled by the user.');
+      return;
+    }
     console.error('Error taking back photo:', error);
     setError('❌ Failed to capture back image.');
   }

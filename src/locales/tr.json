@@ -818,7 +818,9 @@
       "descriptionRequired": "Açıklama gerekli.",
       "frontImageRequired": "Ön resim gereklidir.",
       "backImageRequired": "Arka resim gereklidir."
-    }
+    },
+    "selectCategory": "Select Category",
+    "searchCategoryPlaceholder": "Search categories..."
   },
   "addPlace": {
     "title": "Yeni Yer Ekle",

@@ -58,9 +58,37 @@
     "admin": "Admin"
   },
   "review": {
-    "rotatePhoto": "Rotate Photo",
-    "restoreOriginal": "Original Photo",
-    "cleanBackground": "Remove Background"
+    "title": "Review Submissions",
+    "noPending": "No pending submissions 🎉",
+    "modalTitle": "Review Product",
+    "uploadedBy": "Uploaded by",
+    "close": "Close",
+    "barcode": "Barcode",
+    "name": "Name",
+    "status": "Status",
+    "statusHalal": "Halal",
+    "statusMuslimFriendly": "Muslim-friendly",
+    "statusSyubhah": "Syubhah",
+    "statusHaram": "Haram",
+    "category": "Category",
+    "ingredients": "Ingredients",
+    "viewMore": "View More",
+    "viewLess": "View Less",
+    "colorLegend": "Color Legend",
+    "description": "Description",
+    "images": "Images",
+    "approve": "Approve & Save",
+    "reject": "Reject",
+    "imageAlt": "Product image",
+    "frontImageAlt": "Front Image",
+    "backImageAlt": "Back Image",
+    "colorLabels": {
+      "--ion-color-success": "Halal",
+      "--ion-color-primary": "Muslim Friendly",
+      "--ion-color-warning": "Syubhah",
+      "--ion-color-danger": "Haram"
+    },
+    "syncToOff": "Sync to Open Food Facts"
   },
   "master": {
     "active": "Active",
@@ -890,7 +918,9 @@
       "descriptionRequired": "Description is required.",
       "frontImageRequired": "Front image is required.",
       "backImageRequired": "Back image is required."
-    }
+    },
+    "selectCategory": "Select Category",
+    "searchCategoryPlaceholder": "Search categories..."
   },
   "addPlace": {
     "title": "Add New Place",
@@ -950,39 +980,6 @@
       "medium": "Similar place nearby detected",
       "verify": "Verify if this is a different branch, floor, or vendor."
     }
-  },
-  "review": {
-    "title": "Review Submissions",
-    "noPending": "No pending submissions 🎉",
-    "modalTitle": "Review Product",
-    "uploadedBy": "Uploaded by",
-    "close": "Close",
-    "barcode": "Barcode",
-    "name": "Name",
-    "status": "Status",
-    "statusHalal": "Halal",
-    "statusMuslimFriendly": "Muslim-friendly",
-    "statusSyubhah": "Syubhah",
-    "statusHaram": "Haram",
-    "category": "Category",
-    "ingredients": "Ingredients",
-    "viewMore": "View More",
-    "viewLess": "View Less",
-    "colorLegend": "Color Legend",
-    "description": "Description",
-    "images": "Images",
-    "approve": "Approve & Save",
-    "reject": "Reject",
-    "imageAlt": "Product image",
-    "frontImageAlt": "Front Image",
-    "backImageAlt": "Back Image",
-    "colorLabels": {
-      "--ion-color-success": "Halal",
-      "--ion-color-primary": "Muslim Friendly",
-      "--ion-color-warning": "Syubhah",
-      "--ion-color-danger": "Haram"
-    },
-    "syncToOff": "Sync to Open Food Facts"
   },
   "partner": {
     "title": "Our Partner",

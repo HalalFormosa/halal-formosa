@@ -818,7 +818,9 @@
       "descriptionRequired": "จำเป็นต้องมีคำอธิบาย",
       "frontImageRequired": "จำเป็นต้องมีภาพด้านหน้า",
       "backImageRequired": "จำเป็นต้องมีภาพด้านหลัง"
-    }
+    },
+    "selectCategory": "Select Category",
+    "searchCategoryPlaceholder": "Search categories..."
   },
   "addPlace": {
     "title": "เพิ่มสถานที่ใหม่",

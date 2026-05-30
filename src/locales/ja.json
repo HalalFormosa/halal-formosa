@@ -818,7 +818,9 @@
       "descriptionRequired": "説明は必須です。",
       "frontImageRequired": "正面画像は必須です。",
       "backImageRequired": "背面画像は必須です。"
-    }
+    },
+    "selectCategory": "Select Category",
+    "searchCategoryPlaceholder": "Search categories..."
   },
   "addPlace": {
     "title": "新しい場所を追加",

@@ -818,7 +818,9 @@
       "descriptionRequired": "Mô tả là bắt buộc.",
       "frontImageRequired": "Hình ảnh phía trước là bắt buộc.",
       "backImageRequired": "Hình ảnh quay lại là bắt buộc."
-    }
+    },
+    "selectCategory": "Select Category",
+    "searchCategoryPlaceholder": "Search categories..."
   },
   "addPlace": {
     "title": "Thêm địa điểm mới",

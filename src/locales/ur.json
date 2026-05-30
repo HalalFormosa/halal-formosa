@@ -818,7 +818,9 @@
       "descriptionRequired": "تفصیل درکار ہے۔",
       "frontImageRequired": "سامنے کی تصویر درکار ہے۔",
       "backImageRequired": "پیچھے کی تصویر درکار ہے۔"
-    }
+    },
+    "selectCategory": "Select Category",
+    "searchCategoryPlaceholder": "Search categories..."
   },
   "addPlace": {
     "title": "نئی جگہ شامل کریں۔",

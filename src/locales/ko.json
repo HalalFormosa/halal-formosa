@@ -818,7 +818,9 @@
       "descriptionRequired": "설명은 필수입니다.",
       "frontImageRequired": "전면 이미지가 필요합니다.",
       "backImageRequired": "뒷면 이미지가 필요합니다."
-    }
+    },
+    "selectCategory": "Select Category",
+    "searchCategoryPlaceholder": "Search categories..."
   },
   "addPlace": {
     "title": "새 장소 추가",

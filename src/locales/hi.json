@@ -818,7 +818,9 @@
       "descriptionRequired": "विवरण आवश्यक है.",
       "frontImageRequired": "सामने की छवि आवश्यक है.",
       "backImageRequired": "पिछली छवि आवश्यक है."
-    }
+    },
+    "selectCategory": "Select Category",
+    "searchCategoryPlaceholder": "Search categories..."
   },
   "addPlace": {
     "title": "नया स्थान जोड़ें",

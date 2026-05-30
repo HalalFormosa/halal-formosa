@@ -58,9 +58,36 @@
     "admin": "管理员"
   },
   "review": {
-    "rotatePhoto": "旋转照片",
-    "restoreOriginal": "原始照片",
-    "cleanBackground": "去除背景"
+    "title": "审核提交内容",
+    "noPending": "没有待提交的内容🎉",
+    "modalTitle": "评论产品",
+    "uploadedBy": "上传者：",
+    "close": "关闭",
+    "barcode": "条码",
+    "name": "姓名",
+    "status": "地位",
+    "statusHalal": "清真",
+    "statusMuslimFriendly": "穆斯林友好",
+    "statusSyubhah": "黄昏",
+    "statusHaram": "哈拉姆",
+    "category": "类别",
+    "ingredients": "原料",
+    "viewMore": "查看更多",
+    "viewLess": "查看更少",
+    "colorLegend": "颜色图例",
+    "description": "描述",
+    "images": "图片",
+    "approve": "批准并保存",
+    "reject": "拒绝",
+    "imageAlt": "产品图片",
+    "frontImageAlt": "正面图片",
+    "backImageAlt": "背面图片",
+    "colorLabels": {
+      "--ion-color-success": "清真",
+      "--ion-color-primary": "穆斯林友好",
+      "--ion-color-warning": "黄昏",
+      "--ion-color-danger": "哈拉姆"
+    }
   },
   "master": {
     "active": "积极的",
@@ -863,7 +890,9 @@
       "descriptionRequired": "需要描述。",
       "frontImageRequired": "需要正面图像。",
       "backImageRequired": "需要背面图片。"
-    }
+    },
+    "selectCategory": "选择分类",
+    "searchCategoryPlaceholder": "搜索分类..."
   },
   "addPlace": {
     "title": "添加新地点",
@@ -922,38 +951,6 @@
       "high": "很可能在附近重复",
       "medium": "检测到附近的类似地点",
       "verify": "验证这是否是不同的分支机构、楼层或供应商。"
-    }
-  },
-  "review": {
-    "title": "审核提交内容",
-    "noPending": "没有待提交的内容🎉",
-    "modalTitle": "评论产品",
-    "uploadedBy": "上传者：",
-    "close": "关闭",
-    "barcode": "条码",
-    "name": "姓名",
-    "status": "地位",
-    "statusHalal": "清真",
-    "statusMuslimFriendly": "穆斯林友好",
-    "statusSyubhah": "黄昏",
-    "statusHaram": "哈拉姆",
-    "category": "类别",
-    "ingredients": "原料",
-    "viewMore": "查看更多",
-    "viewLess": "查看更少",
-    "colorLegend": "颜色图例",
-    "description": "描述",
-    "images": "图片",
-    "approve": "批准并保存",
-    "reject": "拒绝",
-    "imageAlt": "产品图片",
-    "frontImageAlt": "正面图片",
-    "backImageAlt": "背面图片",
-    "colorLabels": {
-      "--ion-color-success": "清真",
-      "--ion-color-primary": "穆斯林友好",
-      "--ion-color-warning": "黄昏",
-      "--ion-color-danger": "哈拉姆"
     }
   },
   "partner": {
