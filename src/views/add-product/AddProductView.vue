@@ -823,7 +823,7 @@ import {
   IonAccordion,
   IonAccordionGroup, IonNote, IonImg, IonThumbnail,
   IonSegment, IonSegmentButton, IonCard, IonCardHeader, IonCardContent, IonListHeader, IonFooter,
-  IonSearchbar
+  IonSearchbar, IonList
 } from '@ionic/vue';
 import {
   addOutline,
