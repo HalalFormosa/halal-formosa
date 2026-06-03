@@ -773,7 +773,7 @@
               v-for="cat in filteredCategories" 
               :key="cat.id" 
               button 
-              detail="false"
+              :detail="false"
               @click="selectCategory(cat)"
               :class="{ 'selected-category-item': form.product_category_id === cat.id }"
             >

@@ -163,7 +163,10 @@
                 <span class="level-num">{{ level }}</span>
               </div>
               <div class="xp-total">
-                <span class="xp-val">{{ currentPoints || 0 }} XP</span>
+                <div style="display: flex; align-items: center; justify-content: flex-end; gap: 4px;">
+                  <span class="xp-val">{{ currentPoints || 0 }} XP</span>
+                  <ion-icon :icon="icons.helpCircleOutline" style="font-size: 1.1rem; color: var(--ion-color-carrot); cursor: pointer;" @click="showXpInfo" />
+                </div>
                 <span class="xp-next">{{ nextLevelXp }} {{ $t('profile.xp.toNextLevel') }}</span>
               </div>
             </div>
@@ -649,7 +652,8 @@ import {
   IonTitle,
   IonToolbar,
   onIonViewWillEnter,
-  onIonViewDidEnter
+  onIonViewDidEnter,
+  alertController
 } from "@ionic/vue";
 import AppHeader from "@/components/AppHeader.vue";
 
@@ -679,7 +683,8 @@ import {
   flagOutline,
   refreshOutline,
   alertCircleOutline,
-  keyOutline
+  keyOutline,
+  helpCircleOutline
 } from "ionicons/icons";
 
 // ✅ Composables
@@ -738,7 +743,8 @@ const icons = {
   refreshOutline,
   alertCircleOutline,
   keyOutline,
-  flagOutline
+  flagOutline,
+  helpCircleOutline
 }
 
 interface RcProduct {
@@ -832,6 +838,15 @@ const progressPercent = computed(() => {
   const points = currentPoints.value || 0
   return ((points - prevLevelXp.value) / (nextLevelXp.value - prevLevelXp.value)) * 100
 })
+
+async function showXpInfo() {
+  const alert = await alertController.create({
+    header: t('profile.xp.infoTitle', 'About Experience (XP)'),
+    message: t('profile.xp.infoMessage', 'XP points represent credits given to you by Halal Formosa for your actions and contributions (like scanning products, submitting items, and reporting), which will also grade you on the leaderboard. In the future, these points can be traded for various conveniences, such as partner discounts, exclusive promos, and other customization options!'),
+    buttons: [t('common.ok', 'OK')]
+  });
+  await alert.present();
+}
 
 const countriesList = ref<any[]>([]);
 const resolvedNationality = ref<string | null>(null);

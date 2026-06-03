@@ -801,7 +801,9 @@
     },
     "xp": {
       "levelLabel": "LEVEL",
-      "toNextLevel": "XP TO NEXT LEVEL"
+      "toNextLevel": "XP TO NEXT LEVEL",
+      "infoTitle": "About Experience (XP)",
+      "infoMessage": "XP points represent credits given to you by Halal Formosa for your actions and contributions (like scanning products, submitting items, and reporting), which will also grade you on the leaderboard. In the future, these points can be traded for various conveniences, such as partner discounts, exclusive promos, and other customization options!"
     },
     "social": {
       "instagram": "Instagram",

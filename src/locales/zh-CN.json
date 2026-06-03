@@ -765,7 +765,9 @@
     },
     "xp": {
       "levelLabel": "等级",
-      "toNextLevel": "XP 更上一层楼"
+      "toNextLevel": "XP 更上一层楼",
+      "infoTitle": "关于经验值 (XP)",
+      "infoMessage": "经验值 (XP) 代表 Halal Formosa 因您的行动与贡献（如扫描产品、提交商品和汇报问题）而给予您的点数，这些点数也会决定您在排行榜上的排名。在未来，这些点数将可用于兑换各种便利优惠，例如合作伙伴的折扣、专属促销活动以及其他自订选项！"
     },
     "social": {
       "instagram": "Instagram",
