@@ -872,9 +872,7 @@ import useHighlightCache from '@/composables/useHighlightCache'
 import useError from '@/composables/useError'
 import { userRole, setUserRole } from '@/composables/userProfile'
 import { usePoints } from "@/composables/usePoints";
-import { useNotifier } from "@/composables/useNotifier"
-import { Geolocation } from '@capacitor/geolocation';
-import googleMapsLoader from '@/plugins/googleMapsLoader'
+import { useNotifier } from "@/composables/useNotifier";
 import { useImageResizer } from "@/composables/useImageResizer";
 import { useBackgroundRemoval } from "@/composables/useBackgroundRemoval";
 import { useCropperOcr } from "@/composables/useCropperOcr"
@@ -1102,10 +1100,9 @@ const nextStep = () => {
     currentStep.value++
     scrollToTop()
     
-    // Start detecting store early in background (Step 2)
-    // to have it ready by Step 3
+    // Default to fallback store if none selected
     if (currentStep.value === STEP_OCR || currentStep.value === STEP_DETAILS) {
-      detectNearbyStore()
+      applyOtherStoreFallback()
     }
 
     // Auto-sync description based on status when entering Step 3
@@ -1123,133 +1120,6 @@ const prevStep = () => {
   if (currentStep.value > STEP_BARCODE) {
     currentStep.value--
     scrollToTop()
-  }
-}
-
-/** ---------- Nearby Store Detection ---------- */
-const BRAND_ALIASES: Record<string, string[]> = {
-  'Family Mart': ['Family Mart', 'FamilyMart', '全家'],
-  'PX Mart': ['PX Mart', 'PXMart', '全聯'],
-  '7-11': ['7-11', '7-Eleven', '7Eleven', '統一超商'],
-  'Poya': ['Poya', '寶雅'],
-  'Carrefour': ['Carrefour', '家樂福'],
-  'Mia C\'bon': ['Mia C\'bon', 'Jasons'],
-  'OK Mart': ['OK Mart', 'OKMart', 'OK超商'],
-  'Hi-Life': ['Hi-Life', 'HiLife', '萊爾富'],
-  'Simple Mart': ['Simple Mart', '美廉社'],
-  'RT Mart': ['RT Mart', '大潤發'],
-  'Watsons': ['Watsons', '屈臣氏'],
-  'Costco': ['Costco', '好市多'],
-  'Don Don Donki': ['Don Don Donki', '唐吉訶德'],
-}
-
-const detectNearbyStore = async () => {
-  try {
-    const perm = await Geolocation.checkPermissions()
-    if (perm.location !== 'granted') {
-      const req = await Geolocation.requestPermissions()
-      if (req.location !== 'granted') return
-    }
-
-    const pos = await Geolocation.getCurrentPosition({
-      enableHighAccuracy: true
-    })
-    const { coords } = pos
-
-    // 1. Try Google Maps Places (New API)
-    try {
-      await googleMapsLoader.load()
-      const { Place } = await google.maps.importLibrary("places") as google.maps.PlacesLibrary;
-
-      const { places } = await Place.searchNearby({
-        fields: ['displayName', 'location'],
-        locationRestriction: {
-          center: { lat: coords.latitude, lng: coords.longitude },
-          radius: 50,
-        },
-        includedPrimaryTypes: ['convenience_store', 'supermarket', 'store', 'department_store'],
-        maxResultCount: 20
-      });
-
-      if (places && places.length > 0) {
-        console.log('📍 Google Places (New) found:', places.map(r => r.displayName))
-        
-        for (const place of places) {
-          const placeName = place.displayName || ''
-          
-          // Match place name against our brand aliases
-          const brandName = Object.keys(BRAND_ALIASES).find(brand => 
-            BRAND_ALIASES[brand].some(alias => 
-              placeName.toLowerCase().includes(alias.toLowerCase())
-            )
-          )
-
-          if (brandName) {
-            const match = stores.value.find(s => s.name === brandName)
-            if (match && !form.value.store_ids.includes(match.id)) {
-              form.value.store_ids.push(match.id)
-              return // Found!
-            }
-          }
-        }
-      }
-    } catch (googleErr) {
-      console.warn('Google Places search failed, falling back to DB', googleErr)
-    }
-
-    // 2. Fallback to local DB if Google found nothing or failed
-    const range = 0.01; // Approx 1.1km
-    const { data: nearLoc, error: locError } = await supabase
-        .from('locations')
-        .select('name, lat, lng')
-        .gt('lat', coords.latitude - range)
-        .lt('lat', coords.latitude + range)
-        .gt('lng', coords.longitude - range)
-        .lt('lng', coords.longitude + range)
-        .limit(20)
-
-    if (locError || !nearLoc) {
-      applyOtherStoreFallback()
-      return
-    }
-
-    const getDist = (lat1: number, lon1: number, lat2: number, lon2: number) => {
-      const R = 6371e3; 
-      const dLat = (lat2-lat1) * Math.PI/180;
-      const dLon = (lon2-lon1) * Math.PI/180;
-      const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-          Math.cos(lat1 * Math.PI/180) * Math.cos(lat2 * Math.PI/180) *
-          Math.sin(dLon/2) * Math.sin(dLon/2);
-      return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
-    };
-
-    let closest = null;
-    let minDist = 150; // Use a more generous radius for DB fallback
-
-    for (const loc of nearLoc) {
-      const d = getDist(coords.latitude, coords.longitude, loc.lat, loc.lng);
-      if (d < minDist) {
-        minDist = d;
-        closest = loc;
-      }
-    }
-
-    if (closest) {
-      const match = stores.value.find(s => 
-        closest.name.toLowerCase().includes(s.name.toLowerCase()) ||
-        s.name.toLowerCase().includes(closest.name.toLowerCase())
-      );
-
-      if (match && !form.value.store_ids.includes(match.id)) {
-        form.value.store_ids.push(match.id);
-      }
-    }
-
-    applyOtherStoreFallback()
-
-  } catch (e) {
-    console.warn('Geolocation failed', e);
-    applyOtherStoreFallback()
   }
 }
 
@@ -1483,7 +1353,7 @@ onMounted(async () => {
 
     scannedOnce.value = true // Enable post-scan logic
     applyAutoCategory()      // Match category based on name (now rules are loaded!)
-    detectNearbyStore()     // Detect closest store
+    applyOtherStoreFallback() // Default to fallback store
   }
 
   ActivityLogService.log('add_product_start')
