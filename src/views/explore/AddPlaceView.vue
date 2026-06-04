@@ -21,29 +21,21 @@
         <div class="step-line" :class="{ active: currentStep >= 1 }"></div>
         <div class="step-item" :class="{ active: currentStep >= 1 }">
           <div class="step-dot">
-            <ion-icon :icon="shieldCheckmarkOutline" v-if="currentStep <= 1" />
-            <ion-icon :icon="checkmarkCircle" v-else />
-          </div>
-          <span class="step-label">Source</span>
-        </div>
-        <div class="step-line" :class="{ active: currentStep >= 2 }"></div>
-        <div class="step-item" :class="{ active: currentStep >= 2 }">
-          <div class="step-dot">
-            <ion-icon :icon="cameraOutline" v-if="currentStep <= 2" />
+            <ion-icon :icon="cameraOutline" v-if="currentStep <= 1" />
             <ion-icon :icon="checkmarkCircle" v-else />
           </div>
           <span class="step-label">Photos</span>
         </div>
-        <div class="step-line" :class="{ active: currentStep >= 3 }"></div>
-        <div class="step-item" :class="{ active: currentStep >= 3 }">
+        <div class="step-line" :class="{ active: currentStep >= 2 }"></div>
+        <div class="step-item" :class="{ active: currentStep >= 2 }">
           <div class="step-dot">
-            <ion-icon :icon="sparklesOutline" v-if="currentStep <= 3" />
+            <ion-icon :icon="sparklesOutline" v-if="currentStep <= 2" />
             <ion-icon :icon="checkmarkCircle" v-else />
           </div>
           <span class="step-label">Details</span>
         </div>
-        <div class="step-line" :class="{ active: currentStep >= 4 }"></div>
-        <div class="step-item" :class="{ active: currentStep >= 4 }">
+        <div class="step-line" :class="{ active: currentStep >= 3 }"></div>
+        <div class="step-item" :class="{ active: currentStep >= 3 }">
           <div class="step-dot">
             <ion-icon :icon="checkmarkCircle" />
           </div>
@@ -65,232 +57,6 @@
       <form v-else @submit.prevent="submitPlace" class="form">
         <div class="form-container">
 
-          <!-- 📍 STEP 0: LOCATION CONTEXT -->
-          <div v-show="currentStep === STEP_CONTEXT">
-            <div class="ion-padding-vertical ion-text-center">
-              <div style="font-size: 48px; margin-bottom: 12px;">📍</div>
-              <h2 style="font-weight: 700; margin-bottom: 8px;">Where are you?</h2>
-              <p style="color: var(--ion-color-medium); font-size: 14px; margin-bottom: 32px;">
-                Choose how you want to add this place.
-              </p>
-
-              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 0 12px;">
-                <!-- Nearby Option -->
-                <ion-card
-                  @click="selectLocationContext('nearby')"
-                  style="margin: 0; cursor: pointer; transition: transform 0.2s;"
-                  @mouseover="($event.currentTarget as HTMLElement).style.transform = 'translateY(-4px)'"
-                  @mouseout="($event.currentTarget as HTMLElement).style.transform = 'translateY(0)'"
-                >
-                  <ion-card-content style="text-align: center; padding: 24px 16px;">
-                    <div style="font-size: 40px; margin-bottom: 12px;">🏪</div>
-                    <h3 style="font-weight: 700; margin: 0 0 8px; font-size: 16px;">I'm at/near the store</h3>
-                    <p style="color: var(--ion-color-medium); font-size: 13px; margin: 0;">
-                      Use GPS to find nearby places
-                    </p>
-                  </ion-card-content>
-                </ion-card>
-
-                <!-- Remote Option -->
-                <ion-card
-                  @click="selectLocationContext('remote')"
-                  style="margin: 0; cursor: pointer; transition: transform 0.2s;"
-                  @mouseover="($event.currentTarget as HTMLElement).style.transform = 'translateY(-4px)'"
-                  @mouseout="($event.currentTarget as HTMLElement).style.transform = 'translateY(0)'"
-                >
-                  <ion-card-content style="text-align: center; padding: 24px 16px;">
-                    <div style="font-size: 40px; margin-bottom: 12px;">🏠</div>
-                    <h3 style="font-weight: 700; margin: 0 0 8px; font-size: 16px;">I'm entering from elsewhere</h3>
-                    <p style="color: var(--ion-color-medium); font-size: 13px; margin: 0;">
-                      Search by name or address
-                    </p>
-                  </ion-card-content>
-                </ion-card>
-              </div>
-            </div>
-          </div>
-
-          <!-- 🔍 STEP 1: SEARCH PLACE -->
-          <div v-show="currentStep === STEP_SOURCE">
-            <div class="ion-padding-vertical ion-text-center">
-              <div style="font-size: 48px; margin-bottom: 12px;">📍</div>
-              <h2 style="font-weight: 700; margin-bottom: 8px;">Find Location</h2>
-              <p style="color: var(--ion-color-medium); font-size: 14px; margin-bottom: 24px;">
-                {{ locationContext === 'nearby' ? 'Select a nearby place or add a new one.' : 'Search for a place by name or address.' }}
-              </p>
-
-              <!-- Search input (only for remote mode) -->
-              <div v-if="locationContext === 'remote'" style="padding: 0 12px; margin-bottom: 16px; position: relative;">
-                <input
-                  ref="searchInputRef"
-                  v-model="searchQuery"
-                  type="text"
-                  placeholder="Search by name or address..."
-                  :disabled="autocompleteLoading"
-                  style="
-                    width: 100%;
-                    padding: 16px 40px 16px 16px;
-                    font-size: 16px;
-                    border: 2px solid var(--ion-color-step-200, #333);
-                    border-radius: 14px;
-                    background: var(--ion-card-background, #1e1e1e);
-                    color: var(--ion-text-color, #fff);
-                    outline: none;
-                    box-sizing: border-box;
-                    transition: border-color 0.2s;
-                  "
-                  @focus="($event.target as HTMLInputElement).style.borderColor = 'var(--ion-color-carrot, #d8620d)'"
-                  @blur="($event.target as HTMLInputElement).style.borderColor = 'var(--ion-color-step-200, #333)'"
-                  @input="handleSearchInput"
-                />
-                <!-- Clear button -->
-                <ion-button
-                  v-if="searchQuery || selectedPlacePreview"
-                  fill="clear"
-                  size="small"
-                  style="
-                    position: absolute;
-                    right: 18px;
-                    top: 50%;
-                    transform: translateY(-50%);
-                    margin: 0;
-                    --padding-start: 8px;
-                    --padding-end: 8px;
-                  "
-                  @click="clearPlaceSelection"
-                >
-                  <ion-icon :icon="closeCircle" color="medium" />
-                </ion-button>
-                <!-- Loading spinner -->
-                <ion-spinner
-                  v-if="autocompleteLoading"
-                  name="crescent"
-                  style="
-                    position: absolute;
-                    right: 18px;
-                    top: 50%;
-                    transform: translateY(-50%);
-                    width: 20px;
-                    height: 20px;
-                  "
-                />
-
-                <!-- Custom dropdown -->
-                <div
-                  v-if="searchResults.length > 0"
-                  style="
-                    position: absolute;
-                    top: 100%;
-                    left: 0;
-                    right: 0;
-                    margin-top: 8px;
-                    background: var(--ion-card-background, #1e1e1e);
-                    border: 1px solid var(--ion-color-step-200, #333);
-                    border-radius: 12px;
-                    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
-                    max-height: 300px;
-                    overflow-y: auto;
-                    z-index: 99999;
-                  "
-                >
-                  <div
-                    v-for="(result, index) in searchResults"
-                    :key="index"
-                    @click="selectPlace(result)"
-                    style="
-                      padding: 12px 16px;
-                      cursor: pointer;
-                      border-bottom: 1px solid var(--ion-color-step-200, #333);
-                      transition: background-color 0.2s;
-                    "
-                    @mouseover="($event.currentTarget as HTMLElement).style.backgroundColor = 'var(--ion-color-step-100, #333)'"
-                    @mouseout="($event.currentTarget as HTMLElement).style.backgroundColor = 'transparent'"
-                  >
-                    <div style="font-weight: 600; color: var(--ion-text-color, #fff);">{{ result.name }}</div>
-                    <div style="font-size: 13px; color: var(--ion-color-medium, #888); margin-top: 4px;">{{ result.address }}</div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Selected place preview -->
-              <ion-card v-if="selectedPlacePreview" class="input-card" style="text-align: left;">
-                <ion-card-content>
-                  <div style="display: flex; align-items: flex-start; gap: 12px;">
-                    <ion-icon :icon="checkmarkCircleOutline" color="success" style="font-size: 24px; margin-top: 2px; flex-shrink: 0;" />
-                    <div>
-                      <h3 style="font-weight: 700; margin: 0 0 4px;">{{ selectedPlacePreview.name }}</h3>
-                      <p style="color: var(--ion-color-medium); font-size: 13px; margin: 0;">{{ selectedPlacePreview.address }}</p>
-                    </div>
-                  </div>
-                </ion-card-content>
-              </ion-card>
-
-              <!-- Nearby places list (when using GPS) -->
-              <div v-if="locationContext === 'nearby'" style="padding: 0 12px; margin-top: 24px;">
-                <!-- Loading nearby places -->
-                <div v-if="checkingNearby" style="text-align: center;">
-                  <ion-spinner name="crescent" />
-                  <p style="color: var(--ion-color-medium); font-size: 14px; margin-top: 12px;">Finding nearby places...</p>
-                </div>
-
-                <!-- Nearby places found -->
-                <div v-else-if="nearbyMatches.length > 0">
-                  <h3 style="font-weight: 700; margin: 0 0 12px; font-size: 16px;">Nearby Places</h3>
-                  <ion-card v-for="place in nearbyMatches" :key="place.place_id" style="margin: 0 0 12px; cursor: pointer;" @click="selectNearbyPlace(place)">
-                    <ion-card-content>
-                      <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;">
-                        <div style="flex: 1;">
-                          <h4 style="font-weight: 600; margin: 0 0 4px; font-size: 15px;">{{ place.name }}</h4>
-                          <p style="color: var(--ion-color-medium); font-size: 13px; margin: 0 0 8px;">
-                            {{ place.distance_meters < 1000 ? `${place.distance_meters}m` : `${(place.distance_meters / 1000).toFixed(1)}km` }} away
-                          </p>
-                        </div>
-                        <ion-icon :icon="chevronForwardOutline" color="medium" />
-                      </div>
-                    </ion-card-content>
-                  </ion-card>
-
-                  <!-- Add new place button -->
-                  <ion-button
-                    expand="block"
-                    fill="outline"
-                    @click="addAtCurrentLocation"
-                    style="margin-top: 16px;"
-                  >
-                    <ion-icon :icon="addCircleOutline" slot="start" />
-                    Not listed, add new place here
-                  </ion-button>
-                </div>
-
-                <!-- No nearby places found -->
-                <div v-else style="text-align: center;">
-                  <p style="color: var(--ion-color-medium); font-size: 14px; margin: 0 0 16px;">
-                    No places found nearby. Add a new place at your current location.
-                  </p>
-                  <ion-button
-                    expand="block"
-                    @click="addAtCurrentLocation"
-                  >
-                    <ion-icon :icon="addCircleOutline" slot="start" />
-                    Add New Place Here
-                  </ion-button>
-                </div>
-              </div>
-
-              <ion-button
-                v-if="locationContext === 'remote' || (locationContext === 'nearby' && selectedPlacePreview)"
-                expand="block"
-                color="carrot"
-                style="height: 56px; font-weight: 700; --border-radius: 12px; margin-top: 16px; margin: 16px 12px 0;"
-                @click="currentStep = STEP_IDENTITY"
-                :disabled="!selectedPlacePreview"
-              >
-                Continue
-                <ion-icon slot="end" :icon="chevronForwardOutline" />
-              </ion-button>
-            </div>
-          </div>
-
           <!-- 🏷️ STEP 1: IDENTITY & MAP -->
           <div v-show="currentStep === STEP_IDENTITY">
             <div class="form-section">
@@ -298,7 +64,7 @@
                 <ion-label>{{ $t('addPlace.nameLabel') }} & {{ $t('addPlace.typeLabel') }}</ion-label>
               </ion-list-header>
 
-              <ion-card class="input-card">
+              <ion-card class="input-card" style="overflow: visible;">
                 <ion-item lines="full">
                   <ion-input
                       v-model="form.name"
@@ -314,26 +80,21 @@
                 </ion-item>
 
                 <ion-item lines="none">
-                  <ion-select
-                      v-model.number="form.type_id"
+                  <ion-input
+                      :value="selectedTypeName"
                       label-placement="stacked"
-                      interface="alert"
-                      :placeholder="$t('addPlace.typePlaceholder')"
+                      readonly
                       required
-                      class="full-width-select"
+                      :placeholder="$t('addPlace.typePlaceholder')"
+                      @click="showTypeModal = true"
+                      style="cursor: pointer;"
                   >
                     <div slot="label">
                       {{ $t('addPlace.typeLabel') }}
                       <ion-text color="danger">*</ion-text>
                     </div>
-                    <ion-select-option
-                        v-for="lt in locationTypes"
-                        :key="lt.id"
-                        :value="lt.id"
-                    >
-                      {{ lt.name }}
-                    </ion-select-option>
-                  </ion-select>
+                    <ion-icon :icon="chevronForwardOutline" slot="end" color="medium" style="margin-top: 10px; margin-right: 0;" />
+                  </ion-input>
                 </ion-item>
               </ion-card>
             </div>
@@ -350,7 +111,7 @@
                       label-placement="stacked"
                       :placeholder="$t('addPlace.addressPlaceholder')"
                       required
-                      :rows="2"
+                      :rows="4"
                   >
                     <div slot="label">
                       {{ $t('addPlace.addressLabel') }}
@@ -606,6 +367,46 @@
         </div>
       </form>
 
+      <!-- 🏷️ Category Selection Modal -->
+      <ion-modal :is-open="showTypeModal" @didDismiss="showTypeModal = false" style="--height: 70%; --border-radius: 16px;">
+        <ion-header>
+          <ion-toolbar>
+            <ion-title>{{ $t('addPlace.typeLabel') }}</ion-title>
+            <ion-buttons slot="end">
+              <ion-button @click="showTypeModal = false">{{ $t('common.close') || 'Close' }}</ion-button>
+            </ion-buttons>
+          </ion-toolbar>
+          <ion-toolbar>
+            <ion-searchbar
+              v-model="modalSearchQuery"
+              :placeholder="$t('addPlace.typePlaceholder')"
+              animated
+            />
+          </ion-toolbar>
+        </ion-header>
+        <ion-content class="ion-padding">
+          <ion-list lines="full">
+            <ion-item
+              v-for="lt in filteredModalLocationTypes"
+              :key="lt.id"
+              button
+              @click="selectModalLocationType(lt)"
+            >
+              <ion-label>{{ lt.name }}</ion-label>
+              <ion-icon
+                v-if="form.type_id === lt.id"
+                :icon="checkmarkCircle"
+                slot="end"
+                color="success"
+              />
+            </ion-item>
+            <ion-item v-if="filteredModalLocationTypes.length === 0" lines="none">
+              <ion-label class="ion-text-center" color="medium">No types found</ion-label>
+            </ion-item>
+          </ion-list>
+        </ion-content>
+      </ion-modal>
+
       <!-- Review Notice for non-privileged users -->
       <div v-if="checkedRole && myRole && !isPrivileged(myRole) && currentStep === STEP_DETAILS" class="ion-padding-horizontal">
         <ion-card
@@ -640,8 +441,6 @@ import {
   IonContent,
   IonItem,
   IonInput,
-  IonSelect,
-  IonSelectOption,
   IonButton,
   IonToast,
   IonSpinner,
@@ -658,7 +457,9 @@ import {
     IonTextarea,
     IonChip,
     IonToggle,
-    IonListHeader
+    IonListHeader,
+    IonModal,
+    IonSearchbar
 } from '@ionic/vue'
 import AppHeader from '@/components/AppHeader.vue'
 import {ref, onMounted, onBeforeUnmount, computed} from 'vue'
@@ -697,13 +498,10 @@ const isEditing = computed(() => !!route.params.id)
 const coordUpdateSource = ref<'address' | 'map' | 'manual' | null>(null)
 
 /* -------------------- Multi-Step Logic -------------------- */
-const STEP_CONTEXT = 0
-const STEP_SOURCE = 1
-const STEP_IDENTITY = 2
-const STEP_PHOTOS = 3
-const STEP_DETAILS = 4
-const currentStep = ref(isEditing.value ? STEP_IDENTITY : STEP_CONTEXT)
-const locationContext = ref<'nearby' | 'remote' | null>(null)
+const STEP_IDENTITY = 0
+const STEP_PHOTOS = 1
+const STEP_DETAILS = 2
+const currentStep = ref(STEP_IDENTITY)
 
 /* -------------------- Constants -------------------- */
 const MAP_ID = 'a40f1ec0ad0afbbb12694f19'
@@ -725,7 +523,7 @@ const dayLabels = {
   sun: "Sun",
 };
 const showMoreOptions = ref(false)
-const openingHoursTouched = ref(false)
+const openingHoursTouched = ref(true)
 
 
 /* -------------------- Router -------------------- */
@@ -772,6 +570,26 @@ const fetchLocationTypes = async () => {
   if (!error && data) locationTypes.value = data
 }
 
+const showTypeModal = ref(false)
+const modalSearchQuery = ref('')
+
+const selectedTypeName = computed(() => {
+  const matched = locationTypes.value.find(t => t.id === form.value.type_id)
+  return matched ? matched.name : ''
+})
+
+const filteredModalLocationTypes = computed(() => {
+  const q = modalSearchQuery.value.toLowerCase().trim()
+  if (!q) return locationTypes.value
+  return locationTypes.value.filter(lt => lt.name.toLowerCase().includes(q))
+})
+
+function selectModalLocationType(lt: { id: number; name: string }) {
+  form.value.type_id = lt.id
+  showTypeModal.value = false
+  modalSearchQuery.value = ''
+}
+
 /* -------------------- Form State -------------------- */
 const form = ref<{
   name: string
@@ -804,23 +622,76 @@ const form = ref<{
   approved: false,
 
   opening_hours: {
-    mon: {active: false, open: "09:00", close: "18:00"},
-    tue: {active: false, open: "09:00", close: "18:00"},
-    wed: {active: false, open: "09:00", close: "18:00"},
-    thu: {active: false, open: "09:00", close: "18:00"},
-    fri: {active: false, open: "09:00", close: "18:00"},
-    sat: {active: false, open: "09:00", close: "18:00"},
-    sun: {active: false, open: "09:00", close: "18:00"},
+    mon: {active: true, open: "09:00", close: "18:00"},
+    tue: {active: true, open: "09:00", close: "18:00"},
+    wed: {active: true, open: "09:00", close: "18:00"},
+    thu: {active: true, open: "09:00", close: "18:00"},
+    fri: {active: true, open: "09:00", close: "18:00"},
+    sat: {active: true, open: "09:00", close: "18:00"},
+    sun: {active: true, open: "09:00", close: "18:00"},
   },
 })
 
 const tagInput = ref('')
+const isTagsManuallyEdited = ref(false)
+
+function extractTagsFromName(name: string): string[] {
+  if (!name) return []
+  const stopWords = new Set([
+    'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for',
+    'of', 'with', 'by', 'from', 'up', 'about', 'into', 'through', 'during',
+    'before', 'after', 'above', 'below', 'between', 'among', 'within',
+    'taiwan', 'taipei', 'taichung', 'kaohsiung', 'taitung', 'hualien',
+    'yilan', 'hsinchu', 'miaoli', 'changhua', 'nantou', 'yunlin',
+    'chiayi', 'pingtung', 'keelung', 'new', 'city', 'road', 'street',
+    'avenue', 'lane', 'district', 'no', 'number', 'floor', 'building'
+  ])
+  const cleaned = name
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s]/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+  const words = cleaned.split(' ')
+  const meaningfulWords = words.filter(word =>
+    word.length >= 2 &&
+    !stopWords.has(word) &&
+    !/^\d+$/.test(word)
+  )
+  const uniqueWords: string[] = []
+  const seen = new Set<string>()
+  for (const word of meaningfulWords) {
+    if (!seen.has(word)) {
+      seen.add(word)
+      uniqueWords.push(word)
+    }
+  }
+  return uniqueWords
+}
+
+watch(
+  () => [form.value.name, form.value.type_id],
+  () => {
+    if (isEditing.value) return // Don't overwrite existing place tags
+    if (isTagsManuallyEdited.value) return
+
+    const nameTags = extractTagsFromName(form.value.name)
+    const typeTags = selectedTypeName.value
+      ? selectedTypeName.value.toLowerCase().split(/[/\s-_]+/).filter(t => t.length >= 2)
+      : []
+
+    // Merge uniquely
+    const merged = Array.from(new Set([...nameTags, ...typeTags]))
+    form.value.tags = merged
+  },
+  { deep: true }
+)
 
 const handleTagInput = (e: any) => {
   const val = e.target.value
   if (val.endsWith(',')) {
     const tag = val.slice(0, -1).trim()
     if (tag && !form.value.tags.includes(tag)) {
+      isTagsManuallyEdited.value = true
       form.value.tags.push(tag)
     }
     tagInput.value = ''
@@ -831,304 +702,18 @@ const addTag = (e?: any) => {
   if (e) e.preventDefault()
   const val = tagInput.value.trim().replace(/,/g, '')
   if (val && !form.value.tags.includes(val)) {
+    isTagsManuallyEdited.value = true
     form.value.tags.push(val)
   }
   tagInput.value = ''
 }
 const removeTag = (tag: string) => {
+  isTagsManuallyEdited.value = true
   form.value.tags = form.value.tags.filter(t => t !== tag)
 }
 
-/* -------------------- Place Autocomplete -------------------- */
-const searchInputRef = ref<HTMLInputElement | null>(null)
-const searchQuery = ref('')
-const searchResults = ref<{ name: string; address: string; placeId: string }[]>([])
-const selectedPlacePreview = ref<{ name: string; address: string } | null>(null)
-const autocompleteLoading = ref(false)
-let autocompleteService: any = null
-let debounceTimer: number | undefined
-
-function clearPlaceSelection() {
-  searchQuery.value = ''
-  searchResults.value = []
-  selectedPlacePreview.value = null
-  form.value.name = ''
-  form.value.address = ''
-  form.value.phone = ''
-  form.value.lat = DEFAULT_CENTER.lat
-  form.value.lng = DEFAULT_CENTER.lng
-  form.value.tags = [] // Clear tags too
-  // Reset opening hours to default
-  form.value.opening_hours = {
-    mon: {active: false, open: "09:00", close: "18:00"},
-    tue: {active: false, open: "09:00", close: "18:00"},
-    wed: {active: false, open: "09:00", close: "18:00"},
-    thu: {active: false, open: "09:00", close: "18:00"},
-    fri: {active: false, open: "09:00", close: "18:00"},
-    sat: {active: false, open: "09:00", close: "18:00"},
-    sun: {active: false, open: "09:00", close: "18:00"},
-  }
-  openingHoursTouched.value = false
-  // Focus back on input
-  setTimeout(() => {
-    searchInputRef.value?.focus()
-  }, 100)
-}
-
-// Handle search input with debouncing
-function handleSearchInput() {
-  clearTimeout(debounceTimer)
-  if (!searchQuery.value || searchQuery.value.length < 2) {
-    searchResults.value = []
-    return
-  }
-
-  debounceTimer = window.setTimeout(async () => {
-    await performSearch(searchQuery.value)
-  }, 300)
-}
-
-// Perform search using AutocompleteService
-async function performSearch(query: string) {
-  if (!autocompleteService) {
-    const placesLib = await mapsLoader.importLibrary('places') as any
-    autocompleteService = new placesLib.AutocompleteService()
-  }
-
-  autocompleteLoading.value = true
-
-  try {
-    const response = await autocompleteService.getPlacePredictions({
-      input: query,
-      componentRestrictions: { country: 'tw' }
-    })
-
-    if (response?.predictions) {
-      // Strict filter: only allow business types, exclude ANY geographic type
-      const geographicTypes = [
-        'locality',
-        'administrative_area_level_1',
-        'administrative_area_level_2',
-        'administrative_area_level_3',
-        'administrative_area_level_4',
-        'administrative_area_level_5',
-        'country',
-        'postal_code',
-        'postal_code_prefix',
-        'postal_code_suffix',
-        'route',
-        'street_address',
-        'intersection',
-        'sublocality',
-        'sublocality_level_1',
-        'sublocality_level_2',
-        'sublocality_level_3',
-        'sublocality_level_4',
-        'sublocality_level_5',
-        'neighborhood',
-        'premise',
-        'subpremise',
-        'natural_feature',
-        'airport',
-        'park',
-        'geocode',
-        'political'
-      ]
-      const filteredPredictions = response.predictions.filter((pred: any) => {
-        const types = pred.types || []
-        // Exclude if ANY geographic type is present
-        if (types.some((t: string) => geographicTypes.includes(t))) {
-          return false
-        }
-        // Must have at least one business-related type
-        const businessTypes = ['establishment', 'store', 'restaurant', 'food', 'cafe', 'bakery', 'bar', 'night_club', 'shopping_mall', 'department_store', 'supermarket', 'convenience_store', 'pharmacy', 'doctor', 'hospital', 'lodging', 'hotel', 'mosque', 'church', 'synagogue', 'hindu_temple', 'place_of_worship', 'tourist_attraction', 'museum', 'art_gallery', 'zoo', 'aquarium', 'amusement_park']
-        return types.some((t: string) => businessTypes.includes(t))
-      })
-
-      searchResults.value = filteredPredictions.map((pred: any) => ({
-        name: pred.structured_formatting.main_text,
-        address: pred.structured_formatting.secondary_text || pred.description,
-        placeId: pred.place_id
-      }))
-    } else {
-      searchResults.value = []
-    }
-  } catch (err) {
-    console.error('Search error:', err)
-    searchResults.value = []
-  } finally {
-    autocompleteLoading.value = false
-  }
-}
-
-// Select a place from the dropdown
-async function selectPlace(result: { name: string; address: string; placeId: string }) {
-  searchResults.value = []
-  searchQuery.value = result.name
-
-  autocompleteLoading.value = true
-
-  try {
-    const placesLib = await mapsLoader.importLibrary('places') as any
-    const placesService = new placesLib.PlacesService(map as any)
-
-    placesService.getDetails(
-      {
-        placeId: result.placeId,
-        fields: ['name', 'formatted_address', 'geometry', 'types', 'international_phone_number', 'opening_hours']
-      },
-      (place: any, status: string) => {
-        if (status === 'OK' && place) {
-          console.log('Selected place:', place.name, place.formatted_address, place.types)
-
-          // Populate form
-          form.value.name = place.name || ''
-          form.value.address = place.formatted_address || ''
-
-          if (place.geometry?.location) {
-            form.value.lat = place.geometry.location.lat()
-            form.value.lng = place.geometry.location.lng()
-          }
-
-          if (place.international_phone_number) {
-            form.value.phone = place.international_phone_number
-          }
-
-          // Auto-map category
-          if (place.types && locationTypes.value.length > 0) {
-            const typeMapping: Record<string, number> = {
-              'mosque': 4,
-              'place_of_worship': 4,
-              'church': 4,
-              'temple': 4,
-              'hindu_temple': 4,
-            }
-
-            for (const [type, id] of Object.entries(typeMapping)) {
-              if (place.types.includes(type)) {
-                form.value.type_id = id
-                break
-              }
-            }
-
-            if (!form.value.type_id) {
-              const matchedType = locationTypes.value.find((c: any) =>
-                place.types.some((t: string) => t.toLowerCase().includes(c.name.toLowerCase()) ||
-                  c.name.toLowerCase().includes(t.toLowerCase().replace(/_/g, ' ')))
-              )
-              if (matchedType) {
-                form.value.type_id = matchedType.id
-              } else if (place.types.includes('restaurant') || place.types.includes('food')) {
-                const restType = locationTypes.value.find((c: any) => c.name.toLowerCase().includes('restaurant'))
-                if (restType) form.value.type_id = restType.id
-              } else if (place.types.includes('store') || place.types.includes('grocery')) {
-                const storeType = locationTypes.value.find((c: any) =>
-                  c.name.toLowerCase().includes('store') || c.name.toLowerCase().includes('shop')
-                )
-                if (storeType) form.value.type_id = storeType.id
-              }
-            }
-          }
-
-          // Map opening hours
-          if (place.opening_hours?.periods) {
-            const daysMap: Record<number, string> = { 1: 'mon', 2: 'tue', 3: 'wed', 4: 'thu', 5: 'fri', 6: 'sat', 0: 'sun' }
-            const hours = { ...form.value.opening_hours }
-            place.opening_hours.periods.forEach((period: any) => {
-              const dayKey = daysMap[period.open?.day]
-              if (dayKey && hours[dayKey]) {
-                hours[dayKey].active = true
-                if (period.open) {
-                  hours[dayKey].open = `${String(period.open.hours).padStart(2,'0')}:${String(period.open.minutes).padStart(2,'0')}`
-                }
-                if (period.close) {
-                  hours[dayKey].close = `${String(period.close.hours).padStart(2,'0')}:${String(period.close.minutes).padStart(2,'0')}`
-                }
-              }
-            })
-            form.value.opening_hours = hours
-            openingHoursTouched.value = true
-          }
-
-          // Auto-generate 2-3 tags from place name
-          const autoTags = extractTagsFromName(place.name || '')
-          if (autoTags.length > 0 && form.value.tags.length === 0) {
-            form.value.tags = autoTags
-          }
-
-          // Show preview card
-          selectedPlacePreview.value = {
-            name: form.value.name,
-            address: form.value.address || ''
-          }
-
-          toast.value = { open: true, message: 'Place found! Click Continue to proceed.', color: 'success' }
-
-          // If map is ready, update marker position
-          if (map && clickMarker) {
-            const pos = { lat: form.value.lat, lng: form.value.lng }
-            clickMarker.position = pos
-            map.panTo(pos)
-            map.setZoom(16)
-          }
-        }
-        autocompleteLoading.value = false
-      }
-    )
-  } catch (err) {
-    console.error('Error fetching place details:', err)
-    toast.value = { open: true, message: 'Error processing place data.', color: 'danger' }
-    autocompleteLoading.value = false
-  }
-}
-
-// Extract 2-3 meaningful tags from place name
-function extractTagsFromName(name: string): string[] {
-  if (!name) return []
-
-  // Common words to skip (stop words)
-  const stopWords = new Set([
-    'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for',
-    'of', 'with', 'by', 'from', 'up', 'about', 'into', 'through', 'during',
-    'before', 'after', 'above', 'below', 'between', 'among', 'within',
-    'taiwan', 'taipei', 'taichung', 'kaohsiung', 'taitung', 'hualien',
-    'yilan', 'hsinchu', 'miaoli', 'changhua', 'nantou', 'yunlin',
-    'chiayi', 'pingtung', 'keelung', 'new', 'city', 'road', 'street',
-    'avenue', 'lane', 'district', 'no', 'number', 'floor', 'building'
-  ])
-
-  // Clean and split the name
-  const cleaned = name
-    .toLowerCase()
-    .replace(/[^\w\s]/g, ' ') // Remove punctuation
-    .replace(/\s+/g, ' ')     // Normalize spaces
-    .trim()
-
-  const words = cleaned.split(' ')
-
-  // Filter out stop words and short words, get unique meaningful words
-  const meaningfulWords = words.filter(word =>
-    word.length >= 2 &&
-    !stopWords.has(word) &&
-    !/^\d+$/.test(word) // Exclude pure numbers
-  )
-
-  // Get unique words (preserve order of appearance)
-  const uniqueWords: string[] = []
-  const seen = new Set<string>()
-  for (const word of meaningfulWords) {
-    if (!seen.has(word)) {
-      seen.add(word)
-      uniqueWords.push(word)
-    }
-  }
-
-  // Return top 3 most meaningful tags
-  return uniqueWords.slice(0, 3)
-}
-
 function handleBack() {
-  if (currentStep.value > STEP_CONTEXT && !isEditing.value) {
+  if (currentStep.value > STEP_IDENTITY && !isEditing.value) {
     currentStep.value--
   } else {
     router.back()
@@ -1280,223 +865,7 @@ const warningLevel = computed(() => {
   return 'low'
 })
 
-// Fetch nearby places from Google Places API (for Step 0 nearby flow)
-const fetchNearbyPlaces = async (lat: number, lng: number, radiusMeters: number = 500) => {
-  checkingNearby.value = true
-  try {
-    const placesLib = await mapsLoader.importLibrary('places') as any
-    const service = new placesLib.PlacesService(new google.maps.Map(document.createElement('div')))
-
-    service.nearbySearch(
-      {
-        location: { lat, lng },
-        radius: radiusMeters,
-        type: 'establishment'
-      },
-      (results: any[], status: string) => {
-        if (status === google.maps.places.PlacesServiceStatus.OK && results) {
-          // Filter out geographic types
-          const geographicTypes = [
-            'locality',
-            'administrative_area_level_1',
-            'administrative_area_level_2',
-            'administrative_area_level_3',
-            'administrative_area_level_4',
-            'administrative_area_level_5',
-            'country',
-            'postal_code',
-            'postal_code_prefix',
-            'postal_code_suffix',
-            'route',
-            'street_address',
-            'intersection',
-            'sublocality',
-            'sublocality_level_1',
-            'sublocality_level_2',
-            'sublocality_level_3',
-            'sublocality_level_4',
-            'sublocality_level_5',
-            'neighborhood',
-            'premise',
-            'subpremise',
-            'natural_feature',
-            'airport',
-            'park',
-            'geocode',
-            'political'
-          ]
-
-          const filteredResults = results.filter((place: any) => {
-            const types = place.types || []
-            // Exclude if ANY geographic type is present
-            if (types.some((t: string) => geographicTypes.includes(t))) {
-              return false
-            }
-            // Must have at least one business-related type
-            const businessTypes = ['establishment', 'store', 'restaurant', 'food', 'cafe', 'bakery', 'bar', 'night_club', 'shopping_mall', 'department_store', 'supermarket', 'convenience_store', 'pharmacy', 'doctor', 'hospital', 'lodging', 'hotel', 'mosque', 'church', 'synagogue', 'hindu_temple', 'place_of_worship', 'tourist_attraction', 'museum', 'art_gallery', 'zoo', 'aquarium', 'amusement_park']
-            return types.some((t: string) => businessTypes.includes(t))
-          })
-
-          // Limit to 5 results and add distance
-          const placesWithDistance = filteredResults.slice(0, 5).map((place: any) => {
-            const distance = calculateDistance(lat, lng, place.geometry.location.lat(), place.geometry.location.lng())
-            return {
-              id: place.place_id, // Use Google's place_id as id
-              name: place.name,
-              address: place.vicinity || '',
-              lat: place.geometry.location.lat(),
-              lng: place.geometry.location.lng(),
-              distance_meters: Math.round(distance),
-              name_similarity: 0,
-              place_id: place.place_id // Store for selection
-            }
-          }).sort((a: any, b: any) => a.distance_meters - b.distance_meters)
-
-          nearbyMatches.value = placesWithDistance
-        } else {
-          console.warn('Nearby search failed:', status)
-          nearbyMatches.value = []
-        }
-        checkingNearby.value = false
-      }
-    )
-  } catch (err) {
-    console.error('Error fetching nearby places:', err)
-    nearbyMatches.value = []
-    checkingNearby.value = false
-  }
-}
-
-// Calculate distance between two coordinates in meters (Haversine formula)
-const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
-  const R = 6371000 // Earth's radius in meters
-  const dLat = (lat2 - lat1) * Math.PI / 180
-  const dLng = (lng2 - lng1) * Math.PI / 180
-  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-    Math.sin(dLng / 2) * Math.sin(dLng / 2)
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-  return R * c
-}
-
-// Handle location context selection
-const selectLocationContext = async (context: 'nearby' | 'remote') => {
-  locationContext.value = context
-
-  if (context === 'nearby') {
-    // Get GPS location
-    const coords = await getLocation()
-    if (coords) {
-      form.value.lat = coords.lat
-      form.value.lng = coords.lng
-      // Fetch nearby places
-      await fetchNearbyPlaces(coords.lat, coords.lng)
-      // Move to Step 1 (source) to show nearby places
-      currentStep.value = STEP_SOURCE
-    } else {
-      toast.value = { open: true, message: 'Could not get your location. Please try remote entry.', color: 'warning' }
-    }
-  } else {
-    // Remote entry - proceed to search flow
-    currentStep.value = STEP_SOURCE
-  }
-}
-
-// Select a nearby Google place to populate the form
-const selectNearbyPlace = async (place: any) => {
-  try {
-    const placesLib = await mapsLoader.importLibrary('places') as any
-    const service = new placesLib.PlacesService(new google.maps.Map(document.createElement('div')))
-
-    service.getDetails(
-      { placeId: place.place_id },
-      (details: any, status: string) => {
-        if (status === google.maps.places.PlacesServiceStatus.OK && details) {
-          // Populate form with Google place details
-          form.value.name = details.name || ''
-          form.value.address = details.formatted_address || details.vicinity || ''
-
-          if (details.geometry?.location) {
-            form.value.lat = details.geometry.location.lat()
-            form.value.lng = details.geometry.location.lng()
-          }
-
-          if (details.international_phone_number) {
-            form.value.phone = details.international_phone_number
-          }
-
-          // Auto-map category
-          if (details.types && locationTypes.value.length > 0) {
-            const matchedType = locationTypes.value.find((c: any) =>
-              details.types.some((t: string) => t.toLowerCase().includes(c.name.toLowerCase()))
-            )
-            if (matchedType) {
-              form.value.type_id = matchedType.id
-            } else if (details.types.includes('mosque') || details.types.includes('place_of_worship')) {
-              form.value.type_id = 4
-            } else if (details.types.includes('restaurant') || details.types.includes('food')) {
-              const restType = locationTypes.value.find((c: any) => c.name.toLowerCase().includes('restaurant'))
-              if (restType) form.value.type_id = restType.id
-            }
-          }
-
-          // Map opening hours
-          if (details.opening_hours?.periods) {
-            const daysMap: Record<number, string> = { 1: 'mon', 2: 'tue', 3: 'wed', 4: 'thu', 5: 'fri', 6: 'sat', 0: 'sun' }
-            const hours = { ...form.value.opening_hours }
-            details.opening_hours.periods.forEach((period: any) => {
-              const dayKey = daysMap[period.open?.day]
-              if (dayKey && hours[dayKey]) {
-                hours[dayKey].active = true
-                if (period.open) {
-                  hours[dayKey].open = `${String(period.open.hours).padStart(2,'0')}:${String(period.open.minutes).padStart(2,'0')}`
-                }
-                if (period.close) {
-                  hours[dayKey].close = `${String(period.close.hours).padStart(2,'0')}:${String(period.close.minutes).padStart(2,'0')}`
-                }
-              }
-            })
-            form.value.opening_hours = hours
-            openingHoursTouched.value = true
-          }
-
-          // Auto-generate tags
-          const autoTags = extractTagsFromName(details.name || '')
-          if (autoTags.length > 0 && form.value.tags.length === 0) {
-            form.value.tags = autoTags
-          }
-
-          // Show preview
-          selectedPlacePreview.value = {
-            name: form.value.name,
-            address: form.value.address || ''
-          }
-
-          // Clear nearby matches to show the selected place
-          nearbyMatches.value = []
-        } else {
-          console.warn('Place details failed:', status)
-        }
-      }
-    )
-  } catch (err) {
-    console.error('Error fetching place details:', err)
-  }
-}
-
-// Add new place at current GPS location
-const addAtCurrentLocation = () => {
-  nearbyMatches.value = []
-  // Move to Step 1 with GPS coordinates pre-filled
-  currentStep.value = STEP_SOURCE
-  // Focus on search input
-  setTimeout(() => {
-    searchInputRef.value?.focus()
-  }, 100)
-}
-
-
-
+// Make safe base file name
 const makeSafeBase = () => {
   const base = form.value.name?.trim()
       .replace(/\s+/g, '-')            // spaces → dash
