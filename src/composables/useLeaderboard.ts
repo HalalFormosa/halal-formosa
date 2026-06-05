@@ -1,7 +1,7 @@
 import { ref } from "vue";
 import { supabase } from "@/plugins/supabaseClient";
 
-function getThemedAnonymousName(userId: string, index: number): string {
+export function getThemedAnonymousName(userId: string, index: number): string {
     const names = [
         "Boba",
         "Mochi",
@@ -30,17 +30,43 @@ function getThemedAnonymousName(userId: string, index: number): string {
     return names[choice];
 }
 
+export interface LeaderboardUser {
+    id: string
+    display_name: string
+    avatar_url: string
+    points: number
+    total_points?: number
+    donor_type: string
+    public_profile: boolean
+    bio?: string
+    product_count?: number
+    location_count?: number
+    equipped_cosmetics?: Array<{
+        slug: string
+        category: string
+        css_value: Record<string, any>
+        tier: string
+    }> | null
+}
+
 export function useLeaderboard() {
-    const leaderboard = ref<any[]>([]);
+    const leaderboard = ref<LeaderboardUser[]>([]);
     const loading = ref(false);
     const error = ref<string | null>(null);
 
-    async function fetchLeaderboard(limit = 10) {
+    async function fetchLeaderboard(type: 'daily' | 'monthly' | 'all_time' = 'daily', limit = 10) {
         loading.value = true;
         error.value = null;
 
+        let table = 'leaderboard_view';
+        if (type === 'daily') {
+            table = 'leaderboard_daily_view';
+        } else if (type === 'monthly') {
+            table = 'leaderboard_monthly_view';
+        }
+
         const { data, error: err } = await supabase
-            .from("leaderboard_view")
+            .from(table)
             .select("*")
             .order("points", { ascending: false })
             .limit(limit);
@@ -49,7 +75,9 @@ export function useLeaderboard() {
             leaderboard.value = data.map((u: any, idx: number) => ({
                 ...u,
                 display_name: u.public_profile ? u.display_name : getThemedAnonymousName(u.id, idx + 1),
-                avatar_url: u.public_profile ? u.avatar_url : "https://placehold.co/64x64"
+                avatar_url: u.public_profile ? u.avatar_url : "https://placehold.co/64x64",
+                equipped_cosmetics: u.equipped_cosmetics || null,
+                total_points: u.total_points ?? u.points
             }));
         }
 

@@ -218,6 +218,9 @@
     "marketplace": "商城",
     "locationCategories": "地點狀態",
     "ourPartners": "合作夥伴",
+    "leaderboardDaily": "今日",
+    "leaderboardMonthly": "本月",
+    "leaderboardAllTime": "所有時間",
     "premiumPartner": "高級合作夥伴",
     "latestNews": "最新消息",
     "totalProducts": "產品總數",
@@ -780,12 +783,57 @@
       "levelLabel": "等級",
       "toNextLevel": "經驗值才可升級",
       "infoTitle": "關於經驗值 (XP)",
-      "infoMessage": "經驗值 (XP) 代表 Halal Formosa 因您的行動與貢獻（如掃描產品、提交商品和回報問題）而給予您的點數，這些點數也會決定您在排行榜上的排名。在未來，這些點數將可用於兌換各種便利優惠，例如合作夥伴的折扣、專屬促銷活動以及其他自訂選項！"
+      "infoMessage": "經驗值 (XP) 代表 Halal Formosa 因您的行動與貢獻（如掃描產品、提交商品和回報問題）而給予您的點數，這些點數也會決定您在排行榜上的排名。在未來，這些點數將可用於兌換各種便利優惠，例如合作夥伴的折扣、專屬促銷活動以及其他自訂選項！",
+      "spendable": "可消費經驗值",
+      "spent": "已消費經驗值"
     },
     "social": {
       "instagram": "Instagram",
       "line": "LINE",
       "website": "網站"
+    },
+    "badgeShop": {
+      "title": "徽章商店",
+      "subtitle": "在排行榜上脫穎而出！",
+      "available": "可用",
+      "menuSubtitle": "用 XP 購買光暈、光環等",
+      "confirmTitle": "確認購買",
+      "confirmPurchase": "花費 {cost} XP 購買「{name}」？",
+      "confirmFree": "免費獲取「{name}」？",
+      "categories": {
+        "glow": "光暈",
+        "aura": "光環",
+        "outline": "邊框",
+        "background": "背景",
+        "nameplate": "名牌",
+        "frame": "頭像框"
+      },
+      "tiers": {
+        "free": "免費",
+        "xp": "{cost} XP",
+        "pro": "僅 Pro"
+      },
+      "owned": "已擁有",
+      "equipped": "已裝備",
+      "purchase": "購買",
+      "equip": "裝備",
+      "unequip": "卸下",
+      "insufficientXp": "XP 不足",
+      "purchaseSuccess": "🎉 你獲得了「{name}」！",
+      "proRequired": "升級至 Pro 以解鎖此物品",
+      "preview": "預覽",
+      "reset": "重置預覽"
+    },
+    "badgeCustomize": {
+      "title": "自訂徽章",
+      "subtitle": "光暈、光環、邊框等",
+      "livePreview": "即時預覽",
+      "ownedItems": "你的物品",
+      "noItems": "尚無裝飾品。前往商店！",
+      "noEffects": "尚未裝備任何效果。點擊物品來裝備！",
+      "goToShop": "前往商店",
+      "saved": "已儲存！",
+      "unsaved": "未儲存"
     },
     "defaultName": "用戶",
     "submittedProducts": "我提交的產品",

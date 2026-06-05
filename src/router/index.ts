@@ -109,6 +109,24 @@ const routes: Array<RouteRecordRaw> = [
         component: () => import('@/views/profile/MyLocationReportsView.vue'),
         meta: { requiresAuth: true, noTabs: true, noAds: true }
     },
+    {
+        path: '/profile/badge-shop',
+        name: 'BadgeShop',
+        component: () => import('@/views/profile/BadgeShopView.vue'),
+        meta: { requiresAuth: true, noTabs: true, noAds: true }
+    },
+    {
+        path: '/profile/badge-customize',
+        name: 'BadgeCustomize',
+        component: () => import('@/views/profile/BadgeCustomizeView.vue'),
+        meta: { requiresAuth: true, noTabs: true, noAds: true }
+    },
+    {
+        path: '/leaderboard',
+        name: 'Leaderboard',
+        component: () => import('@/views/leaderboard/LeaderboardView.vue'),
+        meta: { noTabs: true, noAds: true }
+    },
 
     { 
         path: '/place/:id', 

@@ -26,6 +26,12 @@ allprojects {
             dirs project(':capacitor-cordova-android-plugins').file('src/main/libs')
         }
     }
+
+    tasks.withType(JavaCompile).configureEach {
+        javaCompiler = javaToolchains.compilerFor {
+            languageVersion = JavaLanguageVersion.of(21)
+        }
+    }
 }
 
 task clean(type: Delete) {

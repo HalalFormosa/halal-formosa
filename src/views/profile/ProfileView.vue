@@ -35,9 +35,13 @@
         <!-- Profile Header Card -->
         <ion-card>
           <div class="profile-header-premium">
-            <div class="avatar-container">
-              <img v-if="userAvatar" :src="userAvatar" class="avatar-premium" />
-              <ion-icon v-else :icon="icons.personCircleOutline" class="avatar-premium" style="font-size: 120px; color: var(--ion-color-step-600)" />
+            <div class="avatar-container" :class="{ 'default-avatar-border': !hasFrameOrOutline }">
+              <CosmeticBadge
+                :cosmetics="equippedCosmetics"
+                :avatar-url="userAvatar"
+                :show-avatar="true"
+                size="xl"
+              />
             </div>
 
             <div class="profile-info text-center" v-if="userEmail">
@@ -174,6 +178,17 @@
             <div class="progress-container">
               <div class="progress-bar-fill" :style="{ width: progressPercent + '%' }"></div>
             </div>
+
+            <div class="xp-details-row" style="display: flex; justify-content: space-between; margin-top: 12px; font-size: 0.85rem; color: var(--ion-color-medium);">
+              <div>
+                <span>{{ $t('profile.xp.spendable') }}: </span>
+                <span style="font-weight: 600; color: var(--ion-color-carrot);">{{ spendablePoints || 0 }} XP</span>
+              </div>
+              <div>
+                <span>{{ $t('profile.xp.spent') }}: </span>
+                <span style="font-weight: 600; color: var(--ion-color-medium);">{{ spentPoints }} XP</span>
+              </div>
+            </div>
           </div>
         </ion-card>
 
@@ -200,6 +215,26 @@
                 <ion-icon :icon="icons.settingsOutline" />
               </div>
               <ion-label>{{ $t('profile.settings') }}</ion-label>
+            </ion-item>
+
+            <ion-item v-if="userEmail" button @click="$router.push('/profile/badge-customize')">
+              <div class="icon-box icon-box-cosmetic" slot="start">
+                <ion-icon :icon="icons.colorPaletteOutline" />
+              </div>
+              <ion-label>
+                <h3>{{ $t('profile.badgeCustomize.title') }}</h3>
+                <p>{{ $t('profile.badgeCustomize.subtitle') }}</p>
+              </ion-label>
+            </ion-item>
+
+            <ion-item v-if="userEmail" button @click="$router.push('/profile/badge-shop')">
+              <div class="icon-box icon-box-shop" slot="start">
+                <ion-icon :icon="icons.storefrontOutline" />
+              </div>
+              <ion-label>
+                <h3>{{ $t('profile.badgeShop.title') }}</h3>
+                <p>{{ $t('profile.badgeShop.menuSubtitle') }}</p>
+              </ion-label>
             </ion-item>
           </ion-list>
         </ion-card>
@@ -656,6 +691,8 @@ import {
   alertController
 } from "@ionic/vue";
 import AppHeader from "@/components/AppHeader.vue";
+import CosmeticBadge from "@/components/CosmeticBadge.vue";
+import { useBadgeCosmetics } from "@/composables/useBadgeCosmetics";
 
 import {
   constructOutline,
@@ -684,12 +721,14 @@ import {
   refreshOutline,
   alertCircleOutline,
   keyOutline,
-  helpCircleOutline
+  helpCircleOutline,
+  colorPaletteOutline
 } from "ionicons/icons";
 
 // ✅ Composables
 import {
   donorBadge, 
+  donorType,
   isAdmin, 
   loadUserProfile, 
   resetUserProfileState, 
@@ -744,7 +783,8 @@ const icons = {
   alertCircleOutline,
   keyOutline,
   flagOutline,
-  helpCircleOutline
+  helpCircleOutline,
+  colorPaletteOutline
 }
 
 interface RcProduct {
@@ -791,13 +831,30 @@ const showBenefits = ref(false);
 // ✅ Points composable
 const {currentPoints, fetchCurrentPoints} = usePoints();
 
+// 🎨 Cosmetics composable
+const { equippedCosmetics, fetchOwnedCosmetics, spendablePoints, fetchSpendablePoints } = useBadgeCosmetics();
+const spentPoints = computed(() => {
+  const total = currentPoints.value || 0;
+  const spendable = spendablePoints.value || 0;
+  return Math.max(0, total - spendable);
+});
+const hasFrameOrOutline = computed(() =>
+  equippedCosmetics.value.some(c => c?.category === 'frame' || c?.category === 'outline')
+);
+
 const customerInfo = ref<CustomerInfo | null>(null)
 
 const entitlement = computed(() =>
     customerInfo.value?.entitlements?.active?.['Halal Formosa Pro'] ?? null
 )
 
-const isSubscribed = computed(() => Boolean(entitlement.value))
+const isSubscribed = computed(() => {
+  if (Boolean(entitlement.value)) return true;
+  if (!Capacitor.isNativePlatform()) {
+    return donorType.value === "Pro" || donorType.value?.toLowerCase().includes("pro");
+  }
+  return false;
+})
 
 const willRenew = computed(() => entitlement.value?.willRenew ?? false)
 
@@ -995,6 +1052,8 @@ async function refreshAllData(userId: string) {
     await Promise.all([
       loadUserProfile(userId),
       fetchCurrentPoints(userId),
+      fetchSpendablePoints(userId),
+      fetchOwnedCosmetics(userId),
       fetchMerchantStore(userId),
       (async () => {
         merchantApplication.value = await MerchantService.getUserApplication()
@@ -2068,5 +2127,24 @@ ion-header {
   font-size: 0.75rem;
   font-weight: 600;
   margin-top: 4px;
+}
+
+.icon-box-cosmetic {
+  background: rgba(156, 39, 176, 0.1) !important;
+}
+.icon-box-cosmetic ion-icon {
+  color: #9C27B0 !important;
+}
+
+.icon-box-shop {
+  background: rgba(255, 152, 0, 0.1) !important;
+}
+.icon-box-shop ion-icon {
+  color: #FF9800 !important;
+}
+
+.default-avatar-border :deep(.cosmetic-avatar-wrapper) {
+  border: 4px solid var(--ion-color-carrot);
+  box-shadow: 0 4px 12px rgba(var(--ion-color-carrot-rgb), 0.3);
 }
 </style>

@@ -139,7 +139,7 @@ export function usePoints() {
     async function fetchCurrentPoints(userId: string) {
         const { data, error } = await supabase
             .from("user_profiles")
-            .select("points")
+            .select("points, spendable_points")
             .eq("id", userId)
             .single();
 

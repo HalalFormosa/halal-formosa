@@ -183,6 +183,9 @@
     "marketplace": "Toko",
     "locationCategories": "Status Lokasi",
     "ourPartners": "Mitra Kami",
+    "leaderboardDaily": "Hari Ini",
+    "leaderboardMonthly": "Bulan Ini",
+    "leaderboardAllTime": "Semua",
     "premiumPartner": "Mitra Premium",
     "latestNews": "Berita Terbaru",
     "totalProducts": "Total Produk",
@@ -714,7 +717,9 @@
       "levelLabel": "LEVEL",
       "toNextLevel": "XP UNTUK LEVEL BERIKUTNYA",
       "infoTitle": "Tentang Poin Pengalaman (XP)",
-      "infoMessage": "Poin XP mewakili kredit yang diberikan kepada Anda oleh Halal Formosa atas tindakan dan kontribusi Anda (seperti memindai produk, mengirimkan item, dan melaporkan), yang juga akan menentukan peringkat Anda di papan peringkat. Di masa depan, poin ini dapat ditukar dengan berbagai kemudahan, seperti diskon mitra, promo eksklusif, dan opsi kustomisasi lainnya!"
+      "infoMessage": "Poin XP mewakili kredit yang diberikan kepada Anda oleh Halal Formosa atas tindakan dan kontribusi Anda (seperti memindai produk, mengirimkan item, dan melaporkan), yang juga akan menentukan peringkat Anda di papan peringkat. Di masa depan, poin ini dapat ditukar dengan berbagai kemudahan, seperti diskon mitra, promo eksklusif, dan opsi kustomisasi lainnya!",
+      "spendable": "Tersedia untuk Dibelanjakan",
+      "spent": "XP Dibelanjakan"
     },
     "social": {
       "instagram": "Instagram",

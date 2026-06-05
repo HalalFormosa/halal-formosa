@@ -215,6 +215,9 @@
     "marketplace": "Store",
     "locationCategories": "Locations Status",
     "ourPartners": "Our Partners",
+    "leaderboardDaily": "Today",
+    "leaderboardMonthly": "Month",
+    "leaderboardAllTime": "All Time",
     "premiumPartner": "Premium Partner",
     "latestNews": "Latest News",
     "totalProducts": "Total Products",
@@ -803,12 +806,57 @@
       "levelLabel": "LEVEL",
       "toNextLevel": "XP TO NEXT LEVEL",
       "infoTitle": "About Experience (XP)",
-      "infoMessage": "XP points represent credits given to you by Halal Formosa for your actions and contributions (like scanning products, submitting items, and reporting), which will also grade you on the leaderboard. In the future, these points can be traded for various conveniences, such as partner discounts, exclusive promos, and other customization options!"
+      "infoMessage": "XP points represent credits given to you by Halal Formosa for your actions and contributions (like scanning products, submitting items, and reporting), which will also grade you on the leaderboard. In the future, these points can be traded for various conveniences, such as partner discounts, exclusive promos, and other customization options!",
+      "spendable": "Available to Spend",
+      "spent": "XP Spent"
     },
     "social": {
       "instagram": "Instagram",
       "line": "LINE",
       "website": "Website"
+    },
+    "badgeShop": {
+      "title": "Badge Shop",
+      "subtitle": "Stand out on the leaderboard!",
+      "available": "available",
+      "menuSubtitle": "Spend XP on glows, auras & more",
+      "confirmTitle": "Confirm Purchase",
+      "confirmPurchase": "Spend {cost} XP on \"{name}\"?",
+      "confirmFree": "Claim \"{name}\" for free?",
+      "categories": {
+        "glow": "Glow",
+        "aura": "Aura",
+        "outline": "Outline",
+        "background": "Background",
+        "nameplate": "Nameplate",
+        "frame": "Frame"
+      },
+      "tiers": {
+        "free": "Free",
+        "xp": "{cost} XP",
+        "pro": "Pro Only"
+      },
+      "owned": "Owned",
+      "equipped": "Equipped",
+      "purchase": "Purchase",
+      "equip": "Equip",
+      "unequip": "Unequip",
+      "insufficientXp": "Not enough XP",
+      "purchaseSuccess": "🎉 You got \"{name}\"!",
+      "proRequired": "Upgrade to Pro to unlock this item",
+      "preview": "Preview",
+      "reset": "Reset Preview"
+    },
+    "badgeCustomize": {
+      "title": "Customize Badge",
+      "subtitle": "Glow, aura, outline & more",
+      "livePreview": "Live Preview",
+      "ownedItems": "Your Items",
+      "noItems": "No cosmetics yet. Visit the shop!",
+      "noEffects": "No effects equipped. Tap an item to equip it!",
+      "goToShop": "Go to Shop",
+      "saved": "Changes saved!",
+      "unsaved": "Unsaved"
     },
     "defaultName": "User"
   },

@@ -915,6 +915,7 @@ let isProgrammaticScroll = false
 
 /* Google Maps runtime objects */
 let mapInstance: google.maps.Map | null = null
+const mapReady = ref(false)
 let advancedMarkerLib: typeof google.maps.marker | null = null
 let infoWindow: google.maps.InfoWindow | null = null
 const markerMap = new Map<number, google.maps.marker.AdvancedMarkerElement>()
@@ -954,6 +955,21 @@ const distanceInMeters = (a: LatLng, b: LatLng) => {
 
   return Math.sqrt(x * x + y * y) * R
 }
+
+watch(userLocation, (newLoc) => {
+  if (newLoc && newLoc.lat !== undefined && newLoc.lng !== undefined) {
+    const loc: LatLng = { lat: Number(newLoc.lat), lng: Number(newLoc.lng) }
+    if (isNaN(loc.lat) || isNaN(loc.lng)) return
+    if (!lastCalcLocation.value) {
+      lastCalcLocation.value = loc
+    } else {
+      const dist = distanceInMeters(lastCalcLocation.value, loc)
+      if (dist > 20) {
+        lastCalcLocation.value = loc
+      }
+    }
+  }
+}, { immediate: true })
 
 // Check if a place is currently open based on opening hours
 const isOpenNow = (place: Place): boolean => {
@@ -1018,15 +1034,15 @@ watch(locationAttemptFinished, (finished) => {
 }, { immediate: true })
 
 // Center map & Update User Marker (Blue Dot) Reactively
-watch([userLocation, () => mapInstance], ([newLoc, newMap]) => {
-  if (!newLoc || !newMap || !advancedMarkerLib) return
+watch([userLocation, mapReady], ([newLoc, isReady]) => {
+  if (!newLoc || !isReady || !mapInstance || !advancedMarkerLib) return
 
   const userLoc = { lat: newLoc.lat, lng: newLoc.lng }
 
   // 1. 🔥 CENTER MAP ON FIRST FIX
   if (!hasAutoCentered.value) {
-    newMap.panTo(userLoc)
-    newMap.setZoom(15)
+    mapInstance.panTo(userLoc)
+    mapInstance.setZoom(15)
     hasAutoCentered.value = true
   }
 
@@ -1056,65 +1072,16 @@ watch([userLocation, () => mapInstance], ([newLoc, newMap]) => {
     const dot = document.createElement('div')
     dot.className = 'user-location-dot'
 
-    const cone = document.createElement('div')
-    cone.className = 'user-heading-cone'
-    dot.prepend(cone)
-    userArrowEl.value = cone
-
     userMarker.value = new advancedMarkerLib.AdvancedMarkerElement({
       position: userLoc,
-      map: newMap,
+      map: mapInstance,
       content: dot,
       title: t('explore.userLocationTitle')
     })
-    
-    initHeadingTracking()
   }
 
-  // 3. 🎯 Update lastCalcLocation for distance sorting (Throttled to 20m)
-  if (newLoc) {
-    const loc: LatLng = { lat: newLoc.lat, lng: newLoc.lng }
-    if (!lastCalcLocation.value) {
-      lastCalcLocation.value = loc
-    } else {
-      const dist = distanceInMeters(lastCalcLocation.value, loc)
-      if (dist > 20) {
-        lastCalcLocation.value = loc
-      }
-    }
-  }
 }, { immediate: true })
 
-const initHeadingTracking = async () => {
-  if (!userArrowEl.value) return
-
-  // iOS 13+ permission 
-  if (typeof (DeviceOrientationEvent as any).requestPermission === 'function') {
-    try {
-      const permission = await (DeviceOrientationEvent as any).requestPermission()
-      if (permission !== 'granted') return
-    } catch (e) {
-      console.warn('[Orientation] Permission failed', e)
-      return
-    }
-  }
-
-  try {
-    await Motion.addListener('orientation', (event) => {
-      const now = Date.now()
-      if (now - lastRotationUpdate < ROTATION_THROTTLE_MS) return
-      lastRotationUpdate = now
-
-      if (userArrowEl.value) {
-        // alpha is heading (0-360)
-        const heading = (event as any).webkitCompassHeading || event.alpha || 0
-        userArrowEl.value.style.transform = `rotate(${heading}deg)`
-      }
-    })
-  } catch (e) {
-    console.warn('[Orientation] Motion listener failed', e)
-  }
-}
 
 const fetchLocationTypes = async () => {
   loadingCategories.value = true
@@ -1390,13 +1357,20 @@ const formatKm = (n: number) => (Number.isFinite(n) ? n.toFixed(2) : '–')
 
 const getDistanceInKm = (locPos: LatLng) => {
   const refLoc = lastCalcLocation.value
-  if (!refLoc) return Number.POSITIVE_INFINITY
+  if (!refLoc || refLoc.lat === undefined || refLoc.lng === undefined) return Number.POSITIVE_INFINITY
+  const lat1 = Number(refLoc.lat)
+  const lng1 = Number(refLoc.lng)
+  const lat2 = Number(locPos.lat)
+  const lng2 = Number(locPos.lng)
+  
+  if (isNaN(lat1) || isNaN(lng1) || isNaN(lat2) || isNaN(lng2)) return Number.POSITIVE_INFINITY
+
   const R = 6371
-  const dLat = (locPos.lat - refLoc.lat) * Math.PI / 180
-  const dLon = (locPos.lng - refLoc.lng) * Math.PI / 180
+  const dLat = (lat2 - lat1) * Math.PI / 180
+  const dLon = (lng2 - lng1) * Math.PI / 180
   const a = Math.sin(dLat / 2) ** 2 +
-      Math.cos(refLoc.lat * Math.PI / 180) *
-      Math.cos(locPos.lat * Math.PI / 180) *
+      Math.cos(lat1 * Math.PI / 180) *
+      Math.cos(lat2 * Math.PI / 180) *
       Math.sin(dLon / 2) ** 2
   return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)))
 }
@@ -1776,18 +1750,14 @@ const initMap = async () => {
     zoom: initialZoom,
     disableDefaultUI: true,
     mapId: MAP_ID,
-    clickableIcons: false
+    clickableIcons: false,
+    gestureHandling: 'greedy'
   })
 
   // 🟦 IMMEDIATELY create user marker if loc is ready
   if (userLocation.value) {
     const dot = document.createElement('div')
     dot.className = 'user-location-dot'
-    const cone = document.createElement('div')
-    cone.className = 'user-heading-cone'
-    dot.prepend(cone)
-    userArrowEl.value = cone
-
     userMarker.value = new marker.AdvancedMarkerElement({
       position: initialCenter,
       map: mapInstance,
@@ -1796,7 +1766,6 @@ const initMap = async () => {
     })
     
     hasAutoCentered.value = true
-    initHeadingTracking()
   }
 
   infoWindow = new google.maps.InfoWindow()
@@ -1826,6 +1795,7 @@ const initMap = async () => {
   });
 
   loading.value = false
+  mapReady.value = true
 }
 
 /**
@@ -2406,10 +2376,18 @@ const displayedIdsSet = computed(() => {
   return ids.join(',');
 });
 
-watch(displayedIdsSet, () => {
+watch([displayedIdsSet, viewMode], () => {
   if (viewMode.value === 'map') {
+    if (infiniteObserver) {
+      infiniteObserver.disconnect()
+      infiniteObserver = null
+    }
     initCardObserver()
   } else {
+    if (cardObserver) {
+      cardObserver.disconnect()
+      cardObserver = null
+    }
     if (infiniteObserver) infiniteObserver.disconnect()
     nextTick(() => initInfiniteObserver())
   }
@@ -2860,7 +2838,6 @@ button.gm-ui-hover-effect > span {
   border: 4px solid white;
   z-index: 10;
   will-change: transform;
-  contain: layout paint;
 }
 
 .user-location-dot::after {

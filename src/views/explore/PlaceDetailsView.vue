@@ -40,7 +40,6 @@
       <div v-if="!loading && place">
         <!-- 🖼️ Image carousel (Swiper) -->
         <Swiper
-            v-if="place.image"
             :modules="modules"
             :zoom="true"
             :slides-per-view="1"
@@ -49,7 +48,7 @@
         >
           <SwiperSlide>
             <img
-                :src="place?.image || 'https://placehold.co/100x100'"
+                :src="place?.image || 'https://placehold.co/600x300?text=No+Image'"
                 alt="Place image"
                 style="width: 100%; height: 100%; object-fit: cover; cursor: pointer;"
                 @click="openImageModal"
@@ -237,7 +236,7 @@
 
             <!-- 🗺️ Interactive Map -->
             <div class="rounded-xl overflow-hidden ion-margin-vertical shadow-md detail-map-container">
-              <div id="detail-map" class="detail-map"></div>
+              <div ref="detailMapRef" class="detail-map"></div>
             </div>
 
             <!-- ⭐ Additional Details -->
@@ -405,7 +404,7 @@ import {
 import { Capacitor } from '@capacitor/core'
 import { isDonor } from "@/composables/useSubscriptionStatus"
 import { scheduleBannerUpdate } from '@/plugins/admob'
-import {ref, onMounted, computed, nextTick} from 'vue'
+import {ref, onMounted, computed, nextTick, watch} from 'vue'
 import {useI18n} from 'vue-i18n'
 import {onIonViewWillEnter} from '@ionic/vue'
 import {useRoute, useRouter} from 'vue-router'
@@ -561,20 +560,13 @@ let placeMarker: google.maps.marker.AdvancedMarkerElement | null = null
 let userMarker: google.maps.marker.AdvancedMarkerElement | null = null
 let advancedMarkerLib: typeof google.maps.marker | null = null
 const { userLocation } = useLocation()
+const detailMapRef = ref<HTMLElement | null>(null)
 
 const MAP_ID = '6d203f1adb514723' // Same as ExploreView
 
 const initMap = async () => {
-  if (!place.value) return
-  
-  await nextTick()
-  
-  const el = document.getElementById('detail-map')
-  if (!el) {
-    console.warn('[Map] #detail-map not ready yet, retrying...')
-    requestAnimationFrame(initMap)
-    return
-  }
+  const el = detailMapRef.value
+  if (!el || !place.value) return
   
   const [{Map}, marker] = await Promise.all([
     mapsLoader.importLibrary('maps'),
@@ -589,7 +581,8 @@ const initMap = async () => {
     zoom: 16,
     disableDefaultUI: true,
     mapId: MAP_ID,
-    clickableIcons: false
+    clickableIcons: false,
+    gestureHandling: 'greedy'
   })
   
   // Create place marker with custom pin element
@@ -622,6 +615,12 @@ const initMap = async () => {
   }
 }
 
+watch([place, detailMapRef], ([newPlace, el]) => {
+  if (newPlace && el) {
+    initMap()
+  }
+})
+
 const formattedOpeningHours = computed(() => {
   if (!place.value?.opening_hours) return {}
 
@@ -648,9 +647,13 @@ const formattedOpeningHours = computed(() => {
 
     // Process periods
     hours.periods.forEach((period: any) => {
+      if (!period?.open) return
+      
       const dayKey = dayMap[period.open.day] as keyof typeof labels
-      const openTime = period.open.time.replace(':', '')
-      const closeTime = period.close.time.replace(':', '')
+      if (!dayKey) return
+      
+      const openTime = period.open.time ? period.open.time.replace(':', '') : ''
+      const closeTime = period.close?.time ? period.close.time.replace(':', '') : (period.open.time === '0000' ? '2400' : '')
       
       // Format time from HHMM to HH:MM
       const formatTime = (time: string) => {
@@ -663,7 +666,7 @@ const formattedOpeningHours = computed(() => {
       result[labels[dayKey]] = {
         active: true,
         open: formatTime(openTime),
-        close: formatTime(closeTime)
+        close: closeTime ? formatTime(closeTime) : t('explore.details.open24Hours') || '24h'
       }
     })
 
@@ -871,9 +874,6 @@ const loadPlace = async () => {
   }
 
   loading.value = false
-  
-  // Initialize map after data is loaded
-  initMap()
 }
 
 async function fetchLocationCertifications(locationId: number) {
