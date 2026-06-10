@@ -189,6 +189,7 @@ DEPENDENCIES:
   - "CapgoCapacitorNavigationBar (from `../../node_modules/@capgo/capacitor-navigation-bar`)"
   - "CapgoNativePurchases (from `../../node_modules/@capgo/native-purchases`)"
   - CordovaPluginsStatic (from `../capacitor-cordova-ios-plugins`)
+  - OneSignalXCFramework (= 5.4.1)
   - "RevenuecatPurchasesCapacitor (from `../../node_modules/@revenuecat/purchases-capacitor`)"
   - "RevenuecatPurchasesCapacitorUi (from `../../node_modules/@revenuecat/purchases-capacitor-ui`)"
 
@@ -317,6 +318,6 @@ SPEC CHECKSUMS:
   RevenuecatPurchasesCapacitorUi: 59851dc7076d29f5f010e3dca51902898659f2d1
   RevenueCatUI: 5f7b3496a7fd7a16a254a6b78de2e221c117d9d2
 
-PODFILE CHECKSUM: adeb87b394c7216aaa574fe26b3e17168cc0e0c4
+PODFILE CHECKSUM: e16c9a9c6f1d6908e35111034180a31d5c3e1a1f
 
 COCOAPODS: 1.16.2
