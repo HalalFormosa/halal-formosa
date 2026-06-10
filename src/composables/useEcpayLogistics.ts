@@ -18,6 +18,20 @@ export function useEcpayLogistics() {
   const logisticsLoading = ref(false)
   const selectedStore = ref<CvsStoreSelection | null>(null)
 
+  async function handleInvokeError(error: any) {
+    let errorMsg = error.message
+    if (error && typeof error === 'object' && 'context' in error) {
+      const httpError = error as any
+      if (httpError.context && typeof httpError.context.json === 'function') {
+        try {
+          const body = await httpError.context.json()
+          if (body?.error) errorMsg = body.error
+        } catch (_) {}
+      }
+    }
+    throw new Error(errorMsg)
+  }
+
   /**
    * Open the ECPay CVS Map picker in a popup window.
    * Listens for postMessage from the callback page with store data.
@@ -45,6 +59,7 @@ export function useEcpayLogistics() {
 
       if (error || !data?.mapUrl) {
         console.error('[LOGISTICS] Failed to get map URL:', error || data?.error)
+        if (error) await handleInvokeError(error)
         throw new Error(data?.error || 'Failed to get map URL')
       }
 
@@ -135,7 +150,7 @@ export function useEcpayLogistics() {
         body: { action: 'create_order', orderId },
       })
 
-      if (error) throw new Error(error.message)
+      if (error) await handleInvokeError(error)
       if (data?.error) throw new Error(data.error)
 
       console.log('[LOGISTICS] Order created:', data)
@@ -156,7 +171,7 @@ export function useEcpayLogistics() {
         body: { action: 'create_home_order', orderId, courierSubType },
       })
 
-      if (error) throw new Error(error.message)
+      if (error) await handleInvokeError(error)
       if (data?.error) throw new Error(data.error)
 
       console.log('[LOGISTICS] Home delivery order created:', data)
@@ -177,7 +192,7 @@ export function useEcpayLogistics() {
         body: { action: 'print_label', orderId },
       })
 
-      if (error) throw new Error(error.message)
+      if (error) await handleInvokeError(error)
       if (data?.error) throw new Error(data.error)
 
       // Open print label in new window via form POST

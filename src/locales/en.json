@@ -1540,9 +1540,9 @@
         "in_person": "Meet in person/Cash on delivery"
       },
       "senderAddress": "Sender Address",
-      "senderAddressPlaceholder": "Sender Address Placeholder",
+      "senderAddressPlaceholder": "Full sender address (for home delivery)",
       "senderInfo": "Sender Info",
-      "senderInfoHint": "Sender Info Hint",
+      "senderInfoHint": "This information is used for home delivery pickup and returned shipments.",
       "senderName": "Sender Name",
       "shippingStoreTitle": "Shipping Store",
       "selectStore": "Select Store",

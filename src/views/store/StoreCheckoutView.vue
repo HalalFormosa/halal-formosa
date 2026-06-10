@@ -206,8 +206,7 @@ const ALL_DELIVERY_METHODS = [
   { key: 'home_delivery', label: 'Home Delivery (Black Cat)', labelZh: '宅配到府 (黑貓)', icon: homeOutline, fee: 150 },
   { key: '7eleven', label: '7-Eleven Pickup', labelZh: '7-ELEVEN 取貨', icon: storefrontOutline, fee: 65 },
   { key: 'family_mart', label: 'FamilyMart Pickup', labelZh: '全家取貨', icon: cartOutline, fee: 65 },
-  { key: 'hi_life', label: 'Hi-Life Pickup', labelZh: '萊爾富取貨', icon: businessOutline, fee: 65 },
-  { key: 'ok_mart', label: 'OK Mart Pickup', labelZh: 'OK超商取貨', icon: bagHandleOutline, fee: 65 }
+  { key: 'hi_life', label: 'Hi-Life Pickup', labelZh: '萊爾富取貨', icon: businessOutline, fee: 65 }
 ]
 
 const { t } = useI18n()
@@ -239,7 +238,7 @@ const currentShippingFee = computed(() => {
 const availableDelivery = ref<any[]>([])
 const loadingDelivery = ref(true)
 
-const CVS_METHODS = ['7eleven', 'family_mart', 'hi_life', 'ok_mart']
+const CVS_METHODS = ['7eleven', 'family_mart', 'hi_life']
 const isCvsDelivery = computed(() => CVS_METHODS.includes(selectedDelivery.value))
 
 async function pickCvsStore() {

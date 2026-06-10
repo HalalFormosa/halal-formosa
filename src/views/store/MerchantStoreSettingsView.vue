@@ -235,6 +235,18 @@
               <label>{{ $t('store.settings.senderPhone') }}</label>
               <ion-input v-model="store.sender_phone" type="tel" placeholder="09xx-xxx-xxx" class="premium-input" />
             </div>
+
+            <!-- Sender Zipcode (For Logistics) -->
+            <div class="field-group" style="border-top: 1px solid rgba(0,0,0,0.05);">
+              <label>{{ $t('store.settings.senderZipcode') }}</label>
+              <ion-input v-model="store.sender_zipcode" placeholder="106" class="premium-input" />
+            </div>
+
+            <!-- Sender Address (For Logistics) -->
+            <div class="field-group" style="border-top: 1px solid rgba(0,0,0,0.05);">
+              <label>{{ $t('store.settings.senderAddress') }}</label>
+              <ion-input v-model="store.sender_address" :placeholder="$t('store.settings.senderAddressPlaceholder')" class="premium-input" />
+            </div>
           </div>
         </section>
         
@@ -271,7 +283,6 @@ const deliveryMethods = [
   { key: '7eleven', icon: storefrontOutline },
   { key: 'family_mart', icon: cartOutline },
   { key: 'hi_life', icon: businessOutline },
-  { key: 'ok_mart', icon: bagHandleOutline },
   { key: 'cod_meetup', icon: peopleOutline },
 ]
 
@@ -288,7 +299,7 @@ const { openCvsMapPicker, logisticsLoading } = useEcpayLogistics()
 
 const hasCvsEnabled = computed(() => {
   if (!store.value?.delivery_options) return false
-  const cvsMethods = ['7eleven', 'family_mart', 'hi_life', 'ok_mart']
+  const cvsMethods = ['7eleven', 'family_mart', 'hi_life']
   return store.value.delivery_options.some((m: string) => cvsMethods.includes(m))
 })
 
@@ -462,6 +473,8 @@ async function saveSettings() {
       delivery_options: store.value.delivery_options,
       sender_name: store.value.sender_name || null,
       sender_phone: store.value.sender_phone || null,
+      sender_zipcode: store.value.sender_zipcode || null,
+      sender_address: store.value.sender_address || null,
       city_id: store.value.city_id || null,
       ecpay_7eleven_store_id: store.value.ecpay_7eleven_store_id || null,
       ecpay_7eleven_store_name: store.value.ecpay_7eleven_store_name || null,
