@@ -22,6 +22,15 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>GADApplicationIdentifier</key>
 	<string>ca-app-pub-9588373061537955~6845513245</string>
+	<key>GADIsAdManagerApp</key>
+	<true/>
+	<key>SKAdNetworkItems</key>
+	<array>
+		<dict>
+			<key>SKAdNetworkIdentifier</key>
+			<string>cstr6suwn9.skadnetwork</string>
+		</dict>
+	</array>
 	<key>NSUserTrackingUsageDescription</key>
 	<string>We need your permission to deliver personalized advertisements and offer a better, ad-supported free experience.</string>
 	<key>LSRequiresIPhoneOS</key>

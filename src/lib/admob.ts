@@ -10,6 +10,8 @@ export async function initAdMob() {
     try { 
         // 📱 Request App Tracking Transparency on iOS first
         if (Capacitor.getPlatform() === 'ios') {
+            // Wait for app to be active and UI to mount
+            await delay(1000)
             try {
                 console.log('🔒 Requesting App Tracking Transparency authorization...');
                 await AdMob.requestTrackingAuthorization();

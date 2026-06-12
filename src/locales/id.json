@@ -363,7 +363,7 @@
     },
     "limit": {
       "reached": "Daily scan limit reached ({limit}/day)",
-      "bonus": "Watch Ad +5 Scans",
+      "bonus": "Watch Ad +1 Scan",
       "adLimit": "You can only watch {count} ads per day."
     },
     "progress": {
