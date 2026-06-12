@@ -219,6 +219,7 @@
     "locationCategories": "地點狀態",
     "ourPartners": "合作夥伴",
     "leaderboardDaily": "今日",
+    "leaderboardWeekly": "本週",
     "leaderboardMonthly": "本月",
     "leaderboardAllTime": "所有時間",
     "premiumPartner": "高級合作夥伴",
@@ -771,7 +772,9 @@
       "consentContentStats": "出生日期、國籍和性別僅用於匿名統計，絕不公開分享。",
       "consentContentBio": "如果在設定中開啟「在排行榜上顯示我的名稱」，我的簡介可能會被公開。",
       "save": "儲存",
-      "completeToContinue": "完成個人資料以繼續"
+      "completeToContinue": "完成個人資料以繼續",
+      "clickToChange": "點擊頭像以更換",
+      "avatarOptionsTitle": "更換個人頭像"
     },
     "merchant": {
       "startSelling": "開始經營",

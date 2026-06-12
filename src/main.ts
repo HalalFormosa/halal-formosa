@@ -240,6 +240,10 @@ supabase.auth.onAuthStateChange(async (event, session) => {
         return
     }
 
+    if (session?.user) {
+        currentUser.value = session.user
+    }
+
     if (event === 'SIGNED_IN' && session?.user) {
         // ✅ always set immediately
         currentUser.value = session.user

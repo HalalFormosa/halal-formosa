@@ -24,10 +24,13 @@
         animated
         class="ion-margin-bottom"
       />
-      <!-- Segment control to toggle Daily / Monthly / All Time -->
+      <!-- Segment control to toggle Daily / Weekly / Monthly / All Time -->
       <ion-segment :value="leaderboardType" @ionChange="changeLeaderboardType($event)" mode="ios" class="ion-margin-bottom" style="margin: 0 auto 16px; width: fit-content; display: flex;">
         <ion-segment-button value="daily">
           <ion-label>{{ $t('home.leaderboardDaily') }}</ion-label>
+        </ion-segment-button>
+        <ion-segment-button value="weekly">
+          <ion-label>{{ $t('home.leaderboardWeekly') }}</ion-label>
         </ion-segment-button>
         <ion-segment-button value="monthly">
           <ion-label>{{ $t('home.leaderboardMonthly') }}</ion-label>
@@ -260,13 +263,13 @@ const searchQuery = ref('')
 const page = ref(0)
 const pageSize = 20
 const isInfiniteScrollDisabled = ref(false)
-const leaderboardType = ref<'daily' | 'monthly' | 'all_time'>('daily')
+const leaderboardType = ref<'daily' | 'weekly' | 'monthly' | 'all_time'>('daily')
 
 const selectedUser = ref<any | null>(null)
 const popoverEvent = ref<Event | null>(null)
 
 function changeLeaderboardType(ev: any) {
-  leaderboardType.value = ev.detail.value as 'daily' | 'monthly' | 'all_time'
+  leaderboardType.value = ev.detail.value as 'daily' | 'weekly' | 'monthly' | 'all_time'
   resetAndFetch()
 }
 
@@ -283,6 +286,8 @@ async function resolveRanks(usersList: any[]) {
   let table = 'leaderboard_view'
   if (leaderboardType.value === 'daily') {
     table = 'leaderboard_daily_view'
+  } else if (leaderboardType.value === 'weekly') {
+    table = 'leaderboard_weekly_view'
   } else if (leaderboardType.value === 'monthly') {
     table = 'leaderboard_monthly_view'
   }
@@ -314,6 +319,8 @@ async function fetchUsersPage(isAppend = false) {
     let table = 'leaderboard_view'
     if (leaderboardType.value === 'daily') {
       table = 'leaderboard_daily_view'
+    } else if (leaderboardType.value === 'weekly') {
+      table = 'leaderboard_weekly_view'
     } else if (leaderboardType.value === 'monthly') {
       table = 'leaderboard_monthly_view'
     }

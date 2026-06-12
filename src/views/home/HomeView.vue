@@ -619,10 +619,13 @@
         </ion-card-header>
 
         <ion-card-content>
-          <!-- Segment control to toggle Daily / Monthly / All Time -->
+          <!-- Segment control to toggle Daily / Weekly / Monthly / All Time -->
           <ion-segment :value="leaderboardType" @ionChange="changeLeaderboardType($event)" @click.stop mode="ios" class="ion-margin-bottom" style="margin: 0 auto 16px; width: fit-content; display: flex;">
             <ion-segment-button value="daily">
               <ion-label>{{ $t('home.leaderboardDaily') }}</ion-label>
+            </ion-segment-button>
+            <ion-segment-button value="weekly">
+              <ion-label>{{ $t('home.leaderboardWeekly') }}</ion-label>
             </ion-segment-button>
             <ion-segment-button value="monthly">
               <ion-label>{{ $t('home.leaderboardMonthly') }}</ion-label>
@@ -1167,7 +1170,7 @@ const userLocation = computed(() => sharedLocation.value)
 
 
 const { leaderboard, loading: loadingLeaderboard, fetchLeaderboard } = useLeaderboard();
-const leaderboardType = ref<'daily' | 'monthly' | 'all_time'>('daily')
+const leaderboardType = ref<'daily' | 'weekly' | 'monthly' | 'all_time'>('daily')
 
 function changeLeaderboardType(ev: any) {
   leaderboardType.value = ev.detail.value

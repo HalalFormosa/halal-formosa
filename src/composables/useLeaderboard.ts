@@ -54,13 +54,15 @@ export function useLeaderboard() {
     const loading = ref(false);
     const error = ref<string | null>(null);
 
-    async function fetchLeaderboard(type: 'daily' | 'monthly' | 'all_time' = 'daily', limit = 10) {
+    async function fetchLeaderboard(type: 'daily' | 'weekly' | 'monthly' | 'all_time' = 'daily', limit = 10) {
         loading.value = true;
         error.value = null;
 
         let table = 'leaderboard_view';
         if (type === 'daily') {
             table = 'leaderboard_daily_view';
+        } else if (type === 'weekly') {
+            table = 'leaderboard_weekly_view';
         } else if (type === 'monthly') {
             table = 'leaderboard_monthly_view';
         }

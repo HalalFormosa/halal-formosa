@@ -736,7 +736,8 @@ import {
   editBio, 
   editDOB, 
   editGender, 
-  editNationality
+  editNationality,
+  editAvatarUrl
 } from "@/composables/userProfile";
 import {Subscription} from "@supabase/supabase-js";
 import {usePoints} from "@/composables/usePoints";
@@ -934,6 +935,10 @@ watch(countriesList, () => {
       resolvedFlag.value = match.flags.png;
     }
   }
+}, { immediate: true });
+
+watch([editAvatarUrl, () => user.value], ([newAvatar, newUser]) => {
+  userAvatar.value = newAvatar || newUser?.user_metadata?.avatar_url || "";
 }, { immediate: true });
 
 

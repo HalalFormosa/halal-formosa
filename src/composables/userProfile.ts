@@ -22,6 +22,7 @@ export const editNationality = ref<string | null>(null);
 export const editGender = ref<string | null>(null);
 export const editBio = ref<string | null>(null);
 export const editPhone = ref<string | null>(null);
+export const editAvatarUrl = ref<string | null>(null);
 
 export const selectedCountry = ref<any | null>(null); // for display
 export const acknowledged = ref(false);
@@ -52,6 +53,7 @@ type UserProfileRow = {
     show_last_seen: boolean;
     has_reviewed_app: boolean;
     consent_acknowledged: boolean;
+    avatar_url: string | null;
     user_roles: {
         role: string;
     } | null;
@@ -171,6 +173,7 @@ export async function loadUserProfile(userId: string) {
           show_last_seen,
           has_reviewed_app,
           consent_acknowledged,
+          avatar_url,
           user_roles (
             role
           )
@@ -190,6 +193,7 @@ export async function loadUserProfile(userId: string) {
         editGender.value = data.gender;
         editBio.value = data.bio;
         editPhone.value = data.phone;
+        editAvatarUrl.value = data.avatar_url;
         showLastSeen.value = data.show_last_seen ?? true;
         hasReviewedApp.value = data.has_reviewed_app ?? false;
         acknowledged.value = data.consent_acknowledged ?? false;
@@ -207,6 +211,7 @@ export async function loadUserProfile(userId: string) {
         editGender.value = null;
         editBio.value = null;
         editPhone.value = null;
+        editAvatarUrl.value = null;
     }
 
     profileLoaded.value = true // ⬅️ NEW (end)
@@ -242,6 +247,7 @@ export function resetUserProfileState() {
     editGender.value = null
     editBio.value = null
     editPhone.value = null
+    editAvatarUrl.value = null
 
     selectedCountry.value = null
     hasReviewedApp.value = false

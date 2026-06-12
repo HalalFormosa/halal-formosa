@@ -216,6 +216,7 @@
     "locationCategories": "Locations Status",
     "ourPartners": "Our Partners",
     "leaderboardDaily": "Today",
+    "leaderboardWeekly": "Week",
     "leaderboardMonthly": "Month",
     "leaderboardAllTime": "All Time",
     "premiumPartner": "Premium Partner",
@@ -794,7 +795,9 @@
       "consentContentStats": "Date of birth, nationality, and gender are used for anonymous statistics and are never shared publicly.",
       "consentContentBio": "My Bio may be visible publicly if I enable \"Show my name on leaderboard\" in Settings.",
       "save": "Save",
-      "completeToContinue": "Complete Profile to Continue"
+      "completeToContinue": "Complete Profile to Continue",
+      "clickToChange": "Tap avatar to change",
+      "avatarOptionsTitle": "Change Profile Picture"
     },
     "merchant": {
       "startSelling": "Start Selling",

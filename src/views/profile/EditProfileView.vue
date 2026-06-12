@@ -19,6 +19,23 @@
         </ion-card-content>
       </ion-card>
 
+      <!-- 👤 Beautiful Avatar Upload Section -->
+      <div class="avatar-edit-container ion-text-center fade-in">
+        <div class="avatar-wrapper" @click="presentUploadOptions">
+          <img 
+            :src="editAvatarUrl || currentUser?.user_metadata?.avatar_url || '/favicon-32x32.png'" 
+            class="profile-avatar-img" 
+            alt="Profile Avatar"
+          />
+          <div class="camera-badge">
+            <ion-icon :icon="cameraOutline" />
+          </div>
+          <div v-if="uploadingAvatar" class="avatar-loading-overlay">
+            <ion-spinner name="crescent" color="carrot" />
+          </div>
+        </div>
+        <p class="click-hint">{{ $t('profile.editProfile.clickToChange') }}</p>
+      </div>
 
       <ion-card class="fade-in">
         <div style="padding: 16px 16px 0; font-size: 0.8rem; color: var(--ion-color-medium);">
@@ -208,7 +225,8 @@ import {
   IonBackButton, IonList, IonItem, IonLabel, IonDatetime,
   IonSelect, IonSelectOption, IonTextarea, IonButton, IonModal,
   IonNote, IonSearchbar, IonDatetimeButton, IonText, IonCheckbox,
-  IonSkeletonText, IonCard, IonCardContent, IonIcon, IonInput, IonToggle
+  IonSkeletonText, IonCard, IonCardContent, IonIcon, IonInput, IonToggle,
+  actionSheetController, IonSpinner
 } from "@ionic/vue";
 import AppHeader from "@/components/AppHeader.vue";
 
@@ -218,6 +236,7 @@ import {
   editGender,
   editBio,
   editPhone,
+  editAvatarUrl,
   acknowledged,
   isProfileComplete,
   isPublicProfile,
@@ -232,8 +251,12 @@ import {
   globeOutline,
   personOutline,
   callOutline,
-  trophyOutline
+  trophyOutline,
+  cameraOutline
 } from "ionicons/icons";
+import { Camera, CameraResultType, CameraSource } from "@capacitor/camera";
+import { useImageResizer } from "@/composables/useImageResizer";
+import { useI18n } from "vue-i18n";
 
 import { countries, loadCountries } from "@/composables/useCountries"
 import { onBeforeMount, ref, computed } from "vue";
@@ -242,9 +265,106 @@ import { useRouter, onBeforeRouteLeave } from "vue-router";
 import { useNotifier } from "@/composables/useNotifier";
 
 const { notifyEvent } = useNotifier();
+const { t } = useI18n();
+const { resizeImage } = useImageResizer();
 
 const router = useRouter();
 const mustCompleteProfile = computed(() => !isProfileComplete.value)
+
+const uploadingAvatar = ref(false);
+
+async function presentUploadOptions() {
+  const actionSheet = await actionSheetController.create({
+    header: t("profile.editProfile.avatarOptionsTitle"),
+    buttons: [
+      {
+        text: t("addProduct.photoActions.takePhoto"),
+        handler: () => {
+          captureImage(CameraSource.Camera);
+        }
+      },
+      {
+        text: t("addProduct.photoActions.uploadPhoto"),
+        handler: () => {
+          captureImage(CameraSource.Photos);
+        }
+      },
+      {
+        text: t("common.cancel"),
+        role: "cancel"
+      }
+    ]
+  });
+  await actionSheet.present();
+}
+
+async function captureImage(source: CameraSource) {
+  try {
+    const image = await Camera.getPhoto({
+      quality: 90,
+      allowEditing: false,
+      resultType: CameraResultType.Uri,
+      source
+    });
+
+    if (image.webPath) {
+      uploadingAvatar.value = true;
+      try {
+        const resizedFile = await resizeImage(image.webPath, 500, 0.8);
+        const url = await uploadAvatarToSupabase(resizedFile);
+        if (url) {
+          editAvatarUrl.value = url;
+        }
+      } catch (err) {
+        console.error("❌ Failed to process/upload image:", err);
+      } finally {
+        uploadingAvatar.value = false;
+      }
+    }
+  } catch (error) {
+    console.error("Error capturing photo:", error);
+  }
+}
+
+async function uploadAvatarToSupabase(file: File): Promise<string | null> {
+  if (!userId) return null;
+
+  // 🧹 Clean up the old avatar if it exists in Supabase Storage
+  const oldUrl = editAvatarUrl.value;
+  if (oldUrl && oldUrl.includes("/storage/v1/object/public/avatars/")) {
+    const oldPath = oldUrl.split("/storage/v1/object/public/avatars/")[1];
+    if (oldPath) {
+      try {
+        await supabase.storage.from("avatars").remove([oldPath]);
+        console.log("🧹 Cleaned up old avatar:", oldPath);
+      } catch (err) {
+        console.warn("⚠️ Failed to clean up old avatar:", err);
+      }
+    }
+  }
+
+  try {
+    const fileExt = "jpg";
+    const fileName = `${userId}/${Date.now()}.${fileExt}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("avatars")
+      .upload(fileName, file, {
+        upsert: true
+      });
+
+    if (uploadError) throw uploadError;
+
+    const { data } = supabase.storage
+      .from("avatars")
+      .getPublicUrl(fileName);
+
+    return data.publicUrl;
+  } catch (error: any) {
+    console.error("❌ uploadAvatarToSupabase failed:", error);
+    return null;
+  }
+}
 
 interface Country {
   cca2: string;
@@ -313,6 +433,16 @@ async function saveProfile() {
 
   /* 1️⃣ Save profile fields */
   await updateUserProfile(userId);
+
+  /* Update auth metadata for avatar */
+  const { error: authUpdateError } = await supabase.auth.updateUser({
+    data: {
+      avatar_url: editAvatarUrl.value
+    }
+  });
+  if (authUpdateError) {
+    console.error('Failed to update auth metadata for avatar_url', authUpdateError);
+  }
 
   /* 2️⃣ Re-fetch profile (authoritative state after save) */
   const { data: profile, error } = await supabase
@@ -438,6 +568,70 @@ ion-toolbar {
 .required-star {
   color: var(--ion-color-danger);
   margin-left: 4px;
+}
+
+/* Avatar edit styling */
+.avatar-edit-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin: 24px 0 16px;
+}
+
+.avatar-wrapper {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.profile-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 4px solid var(--ion-card-background, #fff);
+  background: var(--ion-color-step-100);
+}
+
+.camera-badge {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--ion-color-carrot);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(var(--ion-color-carrot-rgb), 0.35);
+  border: 2px solid var(--ion-card-background, #fff);
+}
+
+.camera-badge ion-icon {
+  font-size: 18px;
+}
+
+.avatar-loading-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(var(--ion-card-background-rgb, 255, 255, 255), 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.click-hint {
+  font-size: 0.85rem;
+  color: var(--ion-color-medium);
+  margin-top: 8px;
+  margin-bottom: 0;
 }
 </style>
 

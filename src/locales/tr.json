@@ -692,7 +692,9 @@
       "phoneHint": "Used for store delivery notifications, never shared publicly.",
       "consentContentPhone": "Phone number is used for order fulfillment (e.g. Store delivery) and will never be shared publicly.",
       "consentContentStats": "Date of birth, nationality, and gender are used for anonymous statistics and are never shared publicly.",
-      "consentContentBio": "My Bio may be visible publicly if I enable \"Show my name on leaderboard\" in Settings."
+      "consentContentBio": "My Bio may be visible publicly if I enable \"Show my name on leaderboard\" in Settings.",
+      "clickToChange": "Değiştirmek için avatara dokunun",
+      "avatarOptionsTitle": "Profil Resmini Değiştir"
     },
     "merchant": {
       "startSelling": "Satışa Başla",
