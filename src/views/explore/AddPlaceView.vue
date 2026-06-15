@@ -112,6 +112,7 @@
                       :placeholder="$t('addPlace.addressPlaceholder')"
                       required
                       :rows="4"
+                      @ionBlur="onAddressConfirm"
                   >
                     <div slot="label">
                       {{ $t('addPlace.addressLabel') }}
@@ -495,7 +496,7 @@ import {ActivityLogService} from "@/services/ActivityLogService";
 
 const route = useRoute()
 const isEditing = computed(() => !!route.params.id)
-const coordUpdateSource = ref<'address' | 'map' | 'manual' | null>(null)
+const coordUpdateSource = ref<'address' | 'map' | 'manual' | 'init' | null>('init')
 
 /* -------------------- Multi-Step Logic -------------------- */
 const STEP_IDENTITY = 0
@@ -809,6 +810,7 @@ const nearbyMatches = ref<NearbyMatch[]>([])
 const checkingNearby = ref(false)
 
 let nearbyDebounceTimer: number | undefined
+let addressDebounceTimer: number | undefined
 
 watch(
     () => ({
@@ -846,6 +848,18 @@ watch(
       }, 600)
     },
     { deep: false }
+)
+
+watch(
+  () => form.value.address,
+  () => {
+    if (coordUpdateSource.value) return
+
+    clearTimeout(addressDebounceTimer)
+    addressDebounceTimer = window.setTimeout(async () => {
+      await onAddressConfirm()
+    }, 1200)
+  }
 )
 
 
@@ -1063,27 +1077,31 @@ const updatePinColor = () => {
 const geocoder = ref<google.maps.Geocoder | null>(null)
 
 const onAddressConfirm = async () => {
+  if (coordUpdateSource.value) return
   const addr = form.value.address?.trim()
   if (!addr || addr.length < 8) return
 
   coordUpdateSource.value = 'address'
+  try {
+    const result = await geocodeAddress(addr)
+    if (!result) return
 
-  const result = await geocodeAddress(addr)
-  if (!result) return
+    const { lat, lng } = result
 
-  const { lat, lng } = result
+    form.value.lat = lat
+    form.value.lng = lng
 
-  form.value.lat = lat
-  form.value.lng = lng
+    map?.panTo({ lat, lng })
+    map?.setZoom(16)
 
-  map?.panTo({ lat, lng })
-  map?.setZoom(16)
-
-  if (clickMarker) {
-    clickMarker.position = { lat, lng }
+    if (clickMarker) {
+      clickMarker.position = { lat, lng }
+    }
+  } catch (err) {
+    console.error('Failed to geocode address:', err)
+  } finally {
+    coordUpdateSource.value = null
   }
-
-  coordUpdateSource.value = null
 }
 
 
@@ -1573,6 +1591,13 @@ onMounted(async () => {
     attributes: true,
     attributeFilter: ['class'],
   })
+
+  // 8️⃣ Clear initialization flag after mount finishes
+  setTimeout(() => {
+    if (coordUpdateSource.value === 'init') {
+      coordUpdateSource.value = null
+    }
+  }, 400)
 })
 
 
@@ -1586,6 +1611,8 @@ onBeforeUnmount(() => {
     themeObserver.disconnect();
     themeObserver = null
   }
+  clearTimeout(nearbyDebounceTimer)
+  clearTimeout(addressDebounceTimer)
   clickMarker = null
   pinEl = null
   map = null
