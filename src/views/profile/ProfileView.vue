@@ -743,6 +743,7 @@ import {Subscription} from "@supabase/supabase-js";
 import {usePoints} from "@/composables/usePoints";
 import {xpForLevel} from "@/utils/xp"
 import {Capacitor} from "@capacitor/core";
+import fallbackCountries from "@/composables/countries.json";
 
 // Services
 import {CustomerInfo, Purchases} from "@revenuecat/purchases-capacitor";
@@ -916,14 +917,7 @@ const refreshCustomerInfo = async () => {
 }
 
 async function fetchCountries() {
-  if (countriesList.value.length > 0) return; // ✅ Cache check
-  try {
-    const response = await fetch("https://restcountries.com/v3.1/all?fields=name,cca2,flags");
-    if (!response.ok) throw new Error("Failed to fetch countries");
-    countriesList.value = await response.json();
-  } catch (err) {
-    console.error("fetchCountries failed:", err);
-  }
+  countriesList.value = fallbackCountries;
 }
 
 // ✅ Resolve flag when countries list arrives
