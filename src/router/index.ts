@@ -2,6 +2,10 @@ import { createRouter, createWebHistory } from '@ionic/vue-router';
 import { RouteRecordRaw } from 'vue-router';
 import { supabase } from '@/plugins/supabaseClient';
 import { performBotChecks } from '@/utils/botShield';
+import { Capacitor } from '@capacitor/core';
+
+const isIos = Capacitor.getPlatform() === 'ios';
+const getAdId = (iosId: string, androidId: string) => isIos ? iosId : androidId;
 
 
 import {
@@ -32,15 +36,15 @@ const routes: Array<RouteRecordRaw> = [
         children: [
             { path: '', redirect: '/home' },
             { path: 'home', component: () => import('@/views/home/HomeView.vue') },
-            { path: 'search', component: SearchView, meta: { adSpaceId: 'ad-space-search', adId: import.meta.env.VITE_ADMOB_SEARCH_BANNER_ID } },
-            { path: 'explore', component: ExploreView, meta: { adSpaceId: 'ad-space-explore', adId: import.meta.env.VITE_ADMOB_EXPLORE_BANNER_ID } },
+            { path: 'search', component: SearchView, meta: { adSpaceId: 'ad-space-search', adId: getAdId(import.meta.env.VITE_ADMOB_IOS_SEARCH_BANNER_ID, import.meta.env.VITE_ADMOB_ANDROID_SEARCH_BANNER_ID) } },
+            { path: 'explore', component: ExploreView, meta: { adSpaceId: 'ad-space-explore', adId: getAdId(import.meta.env.VITE_ADMOB_IOS_EXPLORE_BANNER_ID, import.meta.env.VITE_ADMOB_ANDROID_EXPLORE_BANNER_ID) } },
             { path: 'explore/add', name: 'ExploreAdd', component: () => import('@/views/explore/AddPlaceView.vue'), meta: { requiresAuth: true } },
             {
                 path: 'trip',
                 component: () => import('@/views/trip/TripListView.vue'),
                 meta: { 
                     adSpaceId: 'ad-space-trip',
-                    adId: import.meta.env.VITE_ADMOB_TRIP_BANNER_ID
+                    adId: getAdId(import.meta.env.VITE_ADMOB_IOS_TRIP_BANNER_ID, import.meta.env.VITE_ADMOB_ANDROID_TRIP_BANNER_ID)
                 }
             },
             {
@@ -48,7 +52,7 @@ const routes: Array<RouteRecordRaw> = [
                 component: () => import('@/views/store/StoreView.vue'),
                 meta: { 
                     adSpaceId: 'ad-space-store',
-                    adId: import.meta.env.VITE_ADMOB_STORE_BANNER_ID
+                    adId: getAdId(import.meta.env.VITE_ADMOB_IOS_STORE_BANNER_ID, import.meta.env.VITE_ADMOB_ANDROID_STORE_BANNER_ID)
                 }
             },
             { path: 'add', component: () => import('@/views/add-product/AddProductView.vue'), meta: { requiresAuth: true } },
@@ -135,13 +139,13 @@ const routes: Array<RouteRecordRaw> = [
         props: true, 
         meta: { 
             adSpaceId: 'ad-space-place-detail',
-            adId: import.meta.env.VITE_ADMOB_PLACE_DETAIL_BANNER_ID
+            adId: getAdId(import.meta.env.VITE_ADMOB_IOS_PLACE_DETAIL_BANNER_ID, import.meta.env.VITE_ADMOB_ANDROID_PLACE_DETAIL_BANNER_ID)
         } 
     },
     { path: '/place/:id/edit', name: 'EditPlace', component: () => import('@/views/explore/AddPlaceView.vue'), },
     { path: '/place/:id/report', name: 'ReportPlaceView', component: () => import('@/views/explore/ReportPlaceView.vue'), props: true },
 
-    { path: '/item/:barcode', name: 'item-details', component: () => import('@/views/search/ItemDetailsView.vue'), meta: { adSpaceId: 'ad-space-item-details', adId: import.meta.env.VITE_ADMOB_ITEM_DETAILS_BANNER_ID } },
+    { path: '/item/:barcode', name: 'item-details', component: () => import('@/views/search/ItemDetailsView.vue'), meta: { adSpaceId: 'ad-space-item-details', adId: getAdId(import.meta.env.VITE_ADMOB_IOS_ITEM_DETAILS_BANNER_ID, import.meta.env.VITE_ADMOB_ANDROID_ITEM_DETAILS_BANNER_ID) } },
 
     {
         path: '/partners',
@@ -169,13 +173,13 @@ const routes: Array<RouteRecordRaw> = [
       meta: { 
         requiresAuth: true, 
         adSpaceId: 'ad-space-scan-results', 
-        adId: import.meta.env.VITE_ADMOB_SCAN_RESULTS_BANNER_ID 
+        adId: getAdId(import.meta.env.VITE_ADMOB_IOS_SCAN_RESULTS_BANNER_ID, import.meta.env.VITE_ADMOB_ANDROID_SCAN_RESULTS_BANNER_ID)
       } 
     },
     { path: '/scan/auto', component: () => import('@/views/scan/AutoScanView.vue'), meta: { requiresAuth: true, noAds: true, noTabs: true } },
 
     { path: '/news', component: () => import('@/views/news/NewsListView.vue') },
-    { path: '/news/:id', name: 'news-detail', component: () => import('@/views/news/NewsDetailView.vue'), props: true, meta: { adSpaceId: 'ad-space-news-detail', adId: import.meta.env.VITE_ADMOB_NEWS_BANNER_ID } },
+    { path: '/news/:id', name: 'news-detail', component: () => import('@/views/news/NewsDetailView.vue'), props: true, meta: { adSpaceId: 'ad-space-news-detail', adId: getAdId(import.meta.env.VITE_ADMOB_IOS_NEWS_BANNER_ID, import.meta.env.VITE_ADMOB_ANDROID_NEWS_BANNER_ID) } },
     { path: '/news/add', component: () => import('@/views/news/AddNewsView.vue'), meta: { requiresAuth: true, requiresAdmin: true } },
     { path: '/news/edit/:id', component: () => import('@/views/news/AddNewsView.vue'), meta: { requiresAuth: true, requiresAdmin: true } },
 
@@ -267,7 +271,7 @@ const routes: Array<RouteRecordRaw> = [
         props: true,
         meta: { 
             adSpaceId: 'ad-space-store-detail',
-            adId: import.meta.env.VITE_ADMOB_STORE_DETAIL_BANNER_ID
+            adId: getAdId(import.meta.env.VITE_ADMOB_IOS_STORE_DETAIL_BANNER_ID, import.meta.env.VITE_ADMOB_ANDROID_STORE_DETAIL_BANNER_ID)
         }
     },
     {

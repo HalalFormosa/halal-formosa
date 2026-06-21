@@ -1091,7 +1091,11 @@ async function watchAdForExtraScans() {
     return;
   }
 
-  await showRewardedAd("ca-app-pub-9588373061537955/8695189722", async () => {
+  const rewardAdId = Capacitor.getPlatform() === 'ios'
+    ? import.meta.env.VITE_ADMOB_IOS_REWARDED_AD_ID
+    : import.meta.env.VITE_ADMOB_ANDROID_REWARDED_AD_ID;
+
+  await showRewardedAd(rewardAdId, async () => {
     bonusScans.value += 1;
     dailyAdUses.value += 1;
     const { data: { user } } = await supabase.auth.getUser();
