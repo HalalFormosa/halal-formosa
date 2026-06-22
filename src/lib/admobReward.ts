@@ -11,10 +11,16 @@ export async function showRewardedAd(adUnitId: string, onReward: () => void) {
         console.log("📌 Loading Rewarded Ad…");
 
         const isTesting = import.meta.env.VITE_ADMOB_TESTING === 'true';
+        let finalAdId = adUnitId;
+        if (isTesting) {
+            finalAdId = Capacitor.getPlatform() === 'ios'
+                ? 'ca-app-pub-3940256099942544/1712485313'  // Google iOS demo rewarded ID
+                : 'ca-app-pub-3940256099942544/5224354917'; // Google Android demo rewarded ID
+        }
 
         // 1️⃣ Load the ad
         await AdMob.prepareRewardVideoAd({
-            adId: adUnitId,
+            adId: finalAdId,
             isTesting
         });
 

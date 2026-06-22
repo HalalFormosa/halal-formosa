@@ -643,7 +643,7 @@
             <ion-icon :icon="chevronForwardOutline" class="hint-arrow" />
           </div>
 
-          <ion-list class="leaderboard-list" :style="{ opacity: loadingLeaderboard ? 0.5 : 1, transition: 'opacity 0.2s ease', pointerEvents: loadingLeaderboard ? 'none' : 'auto' }">
+          <ion-list v-if="leaderboard.length > 0" class="leaderboard-list" :style="{ opacity: loadingLeaderboard ? 0.5 : 1, transition: 'opacity 0.2s ease', pointerEvents: loadingLeaderboard ? 'none' : 'auto' }">
             <ion-item
                 v-for="(user, index) in leaderboard"
                 :key="user.id"
@@ -697,6 +697,15 @@
               </div>
             </ion-item>
           </ion-list>
+
+          <!-- 📭 Empty state for Home Leaderboard -->
+          <div v-if="!loadingLeaderboard && leaderboard.length === 0" class="home-leaderboard-empty">
+            <p>{{ leaderboardType === 'daily' ? $t('home.leaderboardHomeEmptyDaily') : leaderboardType === 'weekly' ? $t('home.leaderboardHomeEmptyWeekly') : $t('search.noResults') }}</p>
+            <ion-button size="small" fill="outline" color="carrot" @click="router.push('/scan')">
+              <ion-icon :icon="scanOutline" slot="start" />
+              {{ $t('home.leaderboardCtaScanShort') }}
+            </ion-button>
+          </div>
         </ion-card-content>
       </ion-card>
       </LazySection>
@@ -2774,8 +2783,24 @@ ion-segment-button {
   100% { background-position: 0% 50%; }
 }
 
-@keyframes gold-shimmer {
-  0%, 100% { filter: brightness(1); }
-  50% { filter: brightness(1.3); }
+.home-leaderboard-empty {
+  text-align: center;
+  padding: 24px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.home-leaderboard-empty p {
+  margin: 0 0 12px;
+  font-size: 0.9rem;
+  color: var(--ion-color-medium);
+  line-height: 1.4;
+  max-width: 280px;
+}
+.home-leaderboard-empty ion-button {
+  --border-radius: 8px;
+  font-weight: 600;
+  margin: 0;
 }
 </style>

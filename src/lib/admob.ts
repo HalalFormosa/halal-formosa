@@ -65,11 +65,19 @@ export async function moveBanner(adId: string, spaceId: string, isTesting: boole
     // We want the position relative to the viewport at this moment.
     const topOffset = Math.max(0, Math.round(rect.top))
 
+    const testing = isTesting === true || isTesting === 'true'
+    let finalAdId = adId
+    if (testing) {
+        finalAdId = Capacitor.getPlatform() === 'ios'
+            ? 'ca-app-pub-3940256099942544/2934735716'  // Google iOS demo banner ID
+            : 'ca-app-pub-3940256099942544/6300978111'; // Google Android demo banner ID
+    }
+
     await AdMob.showBanner({
-        adId,
+        adId: finalAdId,
         adSize: BannerAdSize.ADAPTIVE_BANNER,
         position: BannerAdPosition.TOP_CENTER,
         margin: topOffset,
-        isTesting: isTesting === true || isTesting === 'true',
+        isTesting: testing,
     })
 }

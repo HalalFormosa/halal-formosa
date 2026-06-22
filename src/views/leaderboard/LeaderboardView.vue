@@ -114,8 +114,22 @@
       </ion-list>
 
       <!-- 📭 Empty state -->
-      <div v-if="!loading && users.length === 0" class="empty-state">
-        <p>{{ $t('search.noResults') || 'No users found.' }}</p>
+      <div v-if="!loading && users.length === 0" class="empty-state-container">
+        <div v-if="leaderboardType === 'daily' || leaderboardType === 'weekly'" class="empty-state-card">
+          <div class="trophy-badge-container">
+            <ion-icon :icon="medalOutline" class="gold-trophy-icon" />
+            <ion-icon :icon="sparkles" class="sparkle-icon" />
+          </div>
+          <h2>{{ leaderboardType === 'daily' ? $t('home.leaderboardEmptyDailyTitle') : $t('home.leaderboardEmptyWeeklyTitle') }}</h2>
+          <p>{{ leaderboardType === 'daily' ? $t('home.leaderboardEmptyDailyDesc') : $t('home.leaderboardEmptyWeeklyDesc') }}</p>
+          <ion-button color="carrot" class="cta-button" @click="router.push('/scan')">
+            <ion-icon :icon="scanOutline" slot="start" />
+            {{ $t('home.leaderboardCtaScan') }}
+          </ion-button>
+        </div>
+        <div v-else class="empty-state">
+          <p>{{ $t('search.noResults') || 'No users found.' }}</p>
+        </div>
       </div>
 
       <!-- 🔄 Infinite Scroll -->
@@ -238,13 +252,14 @@ import { useI18n } from 'vue-i18n'
 import {
   IonPage, IonContent, IonHeader, IonSearchbar, IonList, IonItem, IonAvatar, IonLabel, IonBadge,
   IonIcon, IonPopover, IonInfiniteScroll, IonInfiniteScrollContent, IonSkeletonText,
-  IonSegment, IonSegmentButton, alertController
+  IonSegment, IonSegmentButton, alertController, IonButton
 } from '@ionic/vue'
 import AppHeader from '@/components/AppHeader.vue'
 import {
   medalOutline,
   sparkles,
-  chevronForwardOutline
+  chevronForwardOutline,
+  scanOutline
 } from 'ionicons/icons'
 import { supabase } from '@/plugins/supabaseClient'
 import { getThemedAnonymousName } from '@/composables/useLeaderboard'
@@ -821,6 +836,90 @@ ion-segment-button {
   opacity: 0.15;
   z-index: 0;
   pointer-events: none;
+}
+
+.empty-state-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  padding: 32px 16px;
+}
+
+.empty-state-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  background: var(--ion-card-background, var(--ion-color-step-50));
+  border: 1px solid var(--ion-color-step-150);
+  border-radius: 16px;
+  padding: 32px 24px;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.04);
+}
+
+.trophy-badge-container {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(var(--ion-color-carrot-rgb, 249, 115, 22), 0.12);
+  border-radius: 50%;
+  margin-bottom: 16px;
+}
+
+.gold-trophy-icon {
+  font-size: 36px;
+  color: #FFD700;
+  animation: bounce 2s infinite;
+}
+
+.sparkle-icon {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  font-size: 16px;
+  color: #FFD700;
+  animation: spin-glow 3s infinite linear;
+}
+
+.empty-state-card h2 {
+  margin: 0 0 8px;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--ion-text-color, #ffffff);
+}
+
+.empty-state-card p {
+  margin: 0 0 20px;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: var(--ion-color-medium);
+}
+
+.cta-button {
+  --border-radius: 10px;
+  --padding-top: 12px;
+  --padding-bottom: 12px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  width: 100%;
+  margin: 0;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+@keyframes spin-glow {
+  0% { transform: rotate(0deg) scale(1); opacity: 0.8; }
+  50% { transform: rotate(180deg) scale(1.2); opacity: 1; }
+  100% { transform: rotate(360deg) scale(1); opacity: 0.8; }
 }
 
 .empty-state {
