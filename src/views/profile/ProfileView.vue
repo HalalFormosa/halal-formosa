@@ -1338,6 +1338,15 @@ async function openProPaywall() {
       })
     }
 
+  } catch (err: any) {
+    console.error("[RC] Error opening paywall:", err);
+    const toast = await toastController.create({
+      message: t('profile.pro.errorOpening', 'Failed to load subscription options. Please try again.'),
+      duration: 3000,
+      color: "danger",
+      position: "bottom",
+    });
+    await toast.present();
   } finally {
     // 🔓 ALWAYS release the lock
     paywallOpening.value = false;
