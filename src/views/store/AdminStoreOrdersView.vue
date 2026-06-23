@@ -257,7 +257,7 @@ const CVS_METHODS = ['7eleven', 'family_mart', 'hi_life', 'ok_mart']
 function isCvsMethod(method: string) { return CVS_METHODS.includes(method) }
 function isHomeDelivery(method: string) { return method === 'home_delivery' }
 
-const isUnderConstruction = computed(() => import.meta.env.VITE_STORE_UNDER_CONSTRUCTION === 'true')
+const isUnderConstruction = false
 const loading = ref(true)
 const updating = ref(false)
 const orders = ref<any[]>([])

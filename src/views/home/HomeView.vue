@@ -429,12 +429,9 @@
       <!-- === Store === -->
       <LazySection placeholderHeight="200px" @load="fetchMarketplaceProducts">
       <ion-card style="position: relative;">
-        <div v-if="isUnderConstruction" class="under-construction-overlay">
-          <div class="construction-card">
-            <ion-icon :icon="constructOutline" class="construction-icon" />
-            <h2>{{ $t('common.underConstruction') || 'Under Construction' }}</h2>
-            <p>Halal Formosa Store is coming soon.</p>
-          </div>
+        <div v-if="isUnderConstruction" class="test-phase-banner" style="margin: 12px 16px 0;">
+          <ion-icon :icon="warningOutline" class="test-phase-icon" />
+          <span style="font-size: 0.82rem;">{{ $t('store.testPhaseDisclaimer') }}</span>
         </div>
         <ion-card-header>
           <div class="card-header-row">
@@ -882,7 +879,8 @@ import {
   locateOutline,
   cartOutline,
   constructOutline,
-  chevronForwardOutline
+  chevronForwardOutline,
+  warningOutline
 } from "ionicons/icons"
 import { useLeaderboard } from "@/composables/useLeaderboard";
 import {getLevelColor} from "@/composables/useLevels";

@@ -1366,6 +1366,7 @@
     "button": "立即更新"
   },
   "store": {
+    "testPhaseDisclaimer": "⚠️ 商店目前正處於測試階段，請勿進行實際購買。開發完成後我們將正式公告！",
     "underConstructionDesc": "我們正在籌備精彩內容！商店很快就會回來。",
     "title": "Halal Formosa 商店",
     "searchPlaceholder": "搜尋商品...",

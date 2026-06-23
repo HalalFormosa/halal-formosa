@@ -5,15 +5,12 @@
     </ion-header>
 
     <ion-content :fullscreen="true">
-      <div v-if="isUnderConstruction" slot="fixed" class="under-construction-overlay">
-        <div class="construction-card">
-          <ion-icon :icon="constructOutline" class="construction-icon" />
-          <h2>{{ $t('common.underConstruction') || 'Under Construction' }}</h2>
-          <p>Checkout is currently disabled during maintenance. We'll be back soon!</p>
-        </div>
-      </div>
-
       <div class="checkout-wrapper" style="position: relative; min-height: 100%;">
+        <!-- Test Phase Disclaimer Banner -->
+        <div v-if="isUnderConstruction" class="test-phase-banner" style="margin-bottom: 0;">
+          <ion-icon :icon="warningOutline" class="test-phase-icon" />
+          <span>{{ $t('store.testPhaseDisclaimer') }}</span>
+        </div>
 
 
         <!-- Buyer Info -->
@@ -171,7 +168,7 @@
           color="carrot"
           class="place-order-btn"
           @click="placeOrder"
-          :disabled="submitting || cartItems.length === 0 || isUnderConstruction"
+          :disabled="submitting || cartItems.length === 0"
         >
           <ion-spinner v-if="submitting" name="crescent" slot="start" />
           {{ submitting ? $t('store.saving') : $t('store.placeOrder') }}
@@ -189,7 +186,7 @@ import {
   IonList, IonItem, IonLabel, IonThumbnail, IonNote, IonInput, IonTextarea,
   IonSpinner, IonIcon, toastController, IonRadio, IonRadioGroup, IonToggle
 } from '@ionic/vue'
-import { constructOutline, mapOutline, cashOutline } from 'ionicons/icons'
+import { constructOutline, mapOutline, cashOutline, warningOutline } from 'ionicons/icons'
 import AppHeader from '@/components/AppHeader.vue'
 import { supabase } from '@/plugins/supabaseClient'
 import { useStoreCart } from '@/composables/useStoreCart'

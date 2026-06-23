@@ -1313,6 +1313,7 @@
     "button": "立即更新"
   },
   "store": {
+    "testPhaseDisclaimer": "⚠️ 商店目前正处于测试阶段，请勿进行实际购买。开发完成后我们将正式公告！",
     "underConstructionDesc": "我们正在酝酿一些神奇的东西！ 商店很快就会回来。",
     "title": "清真福尔摩沙店",
     "searchPlaceholder": "搜索产品...",

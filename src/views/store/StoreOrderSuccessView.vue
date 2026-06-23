@@ -50,7 +50,7 @@ import AppHeader from '@/components/AppHeader.vue'
 import { ActivityLogService } from '@/services/ActivityLogService'
 
 const route = useRoute()
-const isUnderConstruction = computed(() => import.meta.env.VITE_STORE_UNDER_CONSTRUCTION === 'true')
+const isUnderConstruction = false
 const orderId = ref('')
 const invoiceNo = ref('')
 

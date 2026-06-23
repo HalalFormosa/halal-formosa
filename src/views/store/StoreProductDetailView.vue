@@ -11,12 +11,12 @@
           :contrast="!isScrolled"
       >
         <template #actions>
-          <ion-item button lines="none" @click="handleChat" :disabled="isUnderConstruction">
+          <ion-item button lines="none" @click="handleChat">
             <ion-icon :icon="chatbubbleOutline" slot="start" />
             <ion-label>{{ $t('common.chat') || 'Chat' }}</ion-label>
             <ion-badge v-if="totalUnreadCount > 0" color="danger" slot="end">{{ totalUnreadCount }}</ion-badge>
           </ion-item>
-          <ion-item button lines="none" @click="openCart" :disabled="isUnderConstruction">
+          <ion-item button lines="none" @click="openCart">
             <ion-icon :icon="cartOutline" slot="start" />
             <ion-label>{{ $t('store.cart') || 'Cart' }}</ion-label>
             <ion-badge v-if="cartCount > 0" color="danger" slot="end">{{ cartCount }}</ion-badge>
@@ -26,16 +26,13 @@
     </ion-header>
 
     <ion-content :scroll-events="true" @ionScroll="handleScroll" fullscreen>
-      <div v-if="isUnderConstruction" slot="fixed" class="under-construction-overlay">
-        <div class="construction-card">
-          <ion-icon :icon="constructOutline" class="construction-icon" />
-          <h2>{{ $t('common.underConstruction') || 'Under Construction' }}</h2>
-          <p>This product is currently being prepared. Check back soon!</p>
-        </div>
-      </div>
-
       <div class="product-detail-wrapper" style="position: relative; min-height: 100%; background: var(--ion-background-color);">
         <div class="product-container">
+          <!-- Test Phase Disclaimer Banner -->
+          <div v-if="isUnderConstruction" class="test-phase-banner" style="margin-bottom: 0;">
+            <ion-icon :icon="warningOutline" class="test-phase-icon" />
+            <span>{{ $t('store.testPhaseDisclaimer') }}</span>
+          </div>
 
         <!-- Skeleton while loading -->
         <div v-if="loading" class="detail-skeleton">
@@ -221,7 +218,7 @@
   </ion-content>
 
     <!-- Action bar -->
-    <ion-footer v-if="product && !isUnderConstruction">
+    <ion-footer v-if="product">
       <ion-toolbar class="action-toolbar">
         <!-- Owner Actions -->
         <div v-if="isOwner" class="action-buttons">
@@ -241,22 +238,6 @@
             {{ $t('store.addToCart') }}
           </ion-button>
           <ion-button v-if="product.stock_quantity > 0" fill="solid" color="carrot" class="action-btn" @click="handleBuyNow">
-            {{ $t('store.buyNow') }}
-          </ion-button>
-        </div>
-      </ion-toolbar>
-    </ion-footer>
-    <ion-footer v-else-if="isUnderConstruction">
-      <ion-toolbar class="action-toolbar">
-        <div class="action-buttons">
-          <ion-button disabled fill="clear" color="medium" class="chat-btn">
-            <ion-icon :icon="chatbubbleOutline" />
-          </ion-button>
-          <ion-button disabled fill="outline" color="carrot" class="action-btn">
-            <ion-icon :icon="cartOutline" slot="start" />
-            {{ $t('store.addToCart') }}
-          </ion-button>
-          <ion-button disabled fill="solid" color="carrot" class="action-btn">
             {{ $t('store.buyNow') }}
           </ion-button>
         </div>
@@ -402,7 +383,7 @@ import {
   imageOutline, cartOutline, bagHandleOutline, removeOutline, addOutline,
   checkmarkCircleOutline, closeCircleOutline, chatbubbleOutline, constructOutline,
   storefrontOutline, createOutline, closeOutline, removeCircleOutline, addCircleOutline,
-  chevronBackOutline, chevronForwardOutline
+  chevronBackOutline, chevronForwardOutline, warningOutline
 } from 'ionicons/icons'
 import AppHeader from '@/components/AppHeader.vue'
 import { supabase } from '@/plugins/supabaseClient'

@@ -128,7 +128,7 @@ const { t, locale } = useI18n()
 const route = useRoute()
 const router = useRouter()
 
-const isUnderConstruction = computed(() => import.meta.env.VITE_STORE_UNDER_CONSTRUCTION === 'true')
+const isUnderConstruction = false
 const {
   messages, loading, sending,
   fetchMessages, sendMessage, subscribeToMessages, markAsRead, unsubscribe

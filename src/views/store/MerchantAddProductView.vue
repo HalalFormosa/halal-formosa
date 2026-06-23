@@ -234,7 +234,7 @@ const { removeAndAddWhiteBg, preloadAIModel } = useBackgroundRemoval()
 const route = useRoute()
 const router = useRouter()
 
-const isUnderConstruction = computed(() => import.meta.env.VITE_STORE_UNDER_CONSTRUCTION === 'true')
+const isUnderConstruction = false
 const isEdit = computed(() => !!route.params.id)
 const categories = ref<any[]>([])
 const submitting = ref(false)

@@ -98,7 +98,7 @@ import { onUnmounted } from 'vue'
 const { t, locale } = useI18n()
 const router = useRouter()
 
-const isUnderConstruction = computed(() => import.meta.env.VITE_STORE_UNDER_CONSTRUCTION === 'true')
+const isUnderConstruction = false
 const loading = ref(true)
 const conversations = ref<any[]>([])
 

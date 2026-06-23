@@ -7,25 +7,21 @@
       <app-header :title="$t('store.title')" :icon="bagHandleOutline" :showProfile="true" />
 
       <!-- Actions toolbar: search input + chats + cart -->
-      <ion-toolbar class="actions-toolbar" :disabled="isUnderConstruction">
+      <ion-toolbar class="actions-toolbar">
         <ion-searchbar
-          v-if="!isUnderConstruction"
           v-model="searchQuery"
           :placeholder="$t('store.searchPlaceholder')"
           :debounce="400"
           show-clear-button="focus"
           class="compact-searchbar"
         />
-        <div v-else class="search-skeleton-placeholder" style="padding: 0 8px;">
-          <ion-skeleton-text animated style="width: 100%; height: 38px; border-radius: 12px; margin: 0;" />
-        </div>
 
         <ion-buttons slot="end">
-          <ion-button @click="openChats" class="header-action-button" :disabled="isUnderConstruction">
+          <ion-button @click="openChats" class="header-action-button">
             <ion-icon :icon="chatbubblesOutline" />
             <ion-badge v-if="totalUnreadCount > 0" color="danger" class="header-badge">{{ totalUnreadCount }}</ion-badge>
           </ion-button>
-          <ion-button @click="openCart" class="header-action-button cart-button" :disabled="isUnderConstruction">
+          <ion-button @click="openCart" class="header-action-button cart-button">
             <ion-icon :icon="cartOutline" />
             <ion-badge v-if="cartCount > 0" color="danger" class="header-badge">{{ cartCount }}</ion-badge>
           </ion-button>
@@ -34,16 +30,13 @@
     </ion-header>
 
     <ion-content :fullscreen="true">
-      <div v-if="isUnderConstruction" slot="fixed" class="under-construction-overlay">
-        <div class="construction-card">
-          <ion-icon :icon="constructOutline" class="construction-icon" />
-          <h2>{{ $t('store.construction.title') }}</h2>
-          <p>{{ $t('store.construction.message') }}</p>
-        </div>
-      </div>
-
       <div class="store-view-wrapper" style="position: relative; min-height: 100%;">
         <div class="store-container">
+          <!-- Test Phase Disclaimer Banner -->
+          <div v-if="isUnderConstruction" class="test-phase-banner" style="margin-bottom: 0;">
+            <ion-icon :icon="warningOutline" class="test-phase-icon" />
+            <span>{{ $t('store.testPhaseDisclaimer') }}</span>
+          </div>
           <ion-refresher slot="fixed" @ionRefresh="doRefresh($event)">
             <ion-refresher-content />
           </ion-refresher>
@@ -321,7 +314,8 @@ import { scheduleBannerUpdate } from '@/plugins/admob'
 import {
   bagHandleOutline, chatbubblesOutline, cartOutline, constructOutline,
   chevronDownOutline, checkmarkOutline, filterOutline, imageOutline,
-  closeOutline, storefrontOutline, addOutline, removeCircleOutline, addCircleOutline
+  closeOutline, storefrontOutline, addOutline, removeCircleOutline, addCircleOutline,
+  warningOutline
 } from 'ionicons/icons'
 import AppHeader from '@/components/AppHeader.vue'
 import { supabase } from '@/plugins/supabaseClient'

@@ -221,7 +221,7 @@ const route = useRoute()
 const { isDark, toggleDarkPalette } = useTheme()
 const { initiatePayment, submittingOrderId: submittingId } = useEcpayPayment()
 
-const isUnderConstruction = computed(() => import.meta.env.VITE_STORE_UNDER_CONSTRUCTION === 'true')
+const isUnderConstruction = false
 const loading = ref(true)
 const orders = ref<any[]>([])
 const expandedId = ref<string | null>(null)
