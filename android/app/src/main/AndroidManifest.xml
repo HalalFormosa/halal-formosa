@@ -3,6 +3,15 @@
     <!-- ⭐ REQUIRED for Google Play Billing -->
     <uses-permission android:name="com.android.vending.BILLING" />
 
+    <!-- Package visibility queries for opening web links in browser -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <category android:name="android.intent.category.BROWSABLE" />
+            <data android:scheme="https" />
+        </intent>
+    </queries>
+
     <!-- Permissions -->
     <uses-feature android:name="android.hardware.camera" android:required="false" />
 
