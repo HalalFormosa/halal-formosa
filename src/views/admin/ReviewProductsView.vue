@@ -378,6 +378,7 @@ import 'swiper/css/zoom'
 import { Camera, CameraDirection, CameraResultType, CameraSource } from '@capacitor/camera'
 import { useImageResizer } from "@/composables/useImageResizer";
 import { useBackgroundRemoval } from "@/composables/useBackgroundRemoval";
+import { highlightIngredients } from "@/utils/useIngredientHighlighter";
 
 import { useI18n } from 'vue-i18n'
 
@@ -475,31 +476,15 @@ const highlightedIngredients = computed<IngredientEntry[]>(() => {
         .filter((p: IngredientEntry) => p.html.length > 0)
   }
 
-  const parts: string[] = selectedProduct.value.ingredients
-      .split(',')
-      .map((p: string) => p.trim())
-      .filter((p: string) => p.length > 0)
-
-  const sortedKeys: string[] = Object.keys(ingredientDictionary.value)
-      .sort((a: string, b: string) => b.length - a.length)
-
-  const processed: IngredientEntry[] = parts.map((part: string): IngredientEntry => {
-    const lower = part.toLowerCase()
-    const key = sortedKeys.find((k: string) => lower.includes(k.toLowerCase()))
-    if (key) {
-      const color = ingredientDictionary.value[key]
-      return {
-        html: `<span style="font-weight:600;color:var(${color});">${part}</span>`,
-        highlighted: true
-      }
-    }
-    return { html: part, highlighted: false }
-  })
+  // ✅ use standard highlighter (which also handles downgrades automatically)
+  const processed = highlightIngredients(
+    selectedProduct.value.ingredients,
+    ingredientDictionary.value,
+    selectedProduct.value.status
+  )
 
   // ✅ sort so highlighted ones appear first
-  processed.sort((a: IngredientEntry, b: IngredientEntry) => Number(b.highlighted) - Number(a.highlighted))
-
-  return processed
+  return [...processed].sort((a: any, b: any) => Number(b.highlighted) - Number(a.highlighted))
 })
 
 const visibleIngredients = computed<IngredientEntry[]>(() => {

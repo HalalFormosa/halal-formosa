@@ -122,6 +122,7 @@
     "password": "Kata Sandi",
     "loggingIn": "Sedang masuk...",
     "continueWithGoogle": "Lanjutkan dengan Google",
+    "continueWithApple": "Lanjutkan dengan Apple",
     "forgotPassword": "Lupa Kata Sandi?",
     "resetEmailSent": "Email reset kata sandi telah dikirim! Silakan periksa kotak masuk Anda.",
     "noAccount": "Belum punya akun?",
@@ -606,7 +607,12 @@
     "publicProfileNote": "Tampilkan nama dan bio saya di papan peringkat serta pada konten yang saya kontribusikan (produk, lokasi, dll.). Jika dinonaktifkan, Anda akan tampil sebagai 'Pengguna' anonim dan tidak akan terlihat di peringkat papan peringkat publik.",
     "language": "Bahasa (Eksperimental)",
     "showLastSeen": "Tampilkan Status Terakhir Aktif",
-    "showLastSeenNote": "Izinkan orang lain melihat kapan Anda terakhir aktif di chat."
+    "showLastSeenNote": "Izinkan orang lain melihat kapan Anda terakhir aktif di chat.",
+    "deleteAccount": "Hapus Akun",
+    "deleteAccountConfirmTitle": "Hapus Akun?",
+    "deleteAccountConfirmMessage": "Apakah Anda yakin ingin menghapus akun Anda secara permanen? Tindakan ini tidak dapat dibatalkan dan semua item yang disimpan, folder, dan detail profil Anda akan dihapus secara permanen.",
+    "deleteAccountConfirmBtn": "Hapus Akun Saya",
+    "deleteAccountSuccess": "Akun Anda telah berhasil dihapus."
   },
   "profile": {
     "sections": {
@@ -996,7 +1002,12 @@
     "moveToFolder": "Pindahkan ke folder...",
     "itemAlreadyInFolder": "Item sudah ada di folder tersebut!",
     "moveSuccess": "Dipindahkan ke {name}",
-    "moveFailed": "Gagal memindahkan item."
+    "moveFailed": "Gagal memindahkan item.",
+    "renameFolder": "Ubah Nama Folder",
+    "deleteFolder": "Hapus Folder",
+    "deleteConfirm": "Apakah Anda yakin ingin menghapus folder ini? Semua item yang disimpan di dalamnya akan dihapus.",
+    "renameSuccess": "Nama folder berhasil diubah",
+    "deleteSuccess": "Folder berhasil dihapus"
   },
   "admin": {
     "scanDetails": "Detail Pemindaian",
@@ -1626,6 +1637,11 @@
     "noCollections": "No Collections Yet",
     "noCollectionsDesc": "Create a folder to start organizing your saved locations!",
     "createFolder": "Create Folder",
+    "renameFolder": "Ubah Nama Folder",
+    "deleteFolder": "Hapus Folder",
+    "deleteConfirm": "Apakah Anda yakin ingin menghapus folder ini? Semua lokasi yang disimpan di dalamnya akan dihapus.",
+    "renameSuccess": "Nama folder berhasil diubah",
+    "deleteSuccess": "Folder berhasil dihapus",
     "myCollections": "My Collections",
     "locationsCount": "{count} locations",
     "noLocations": "No locations saved here.",

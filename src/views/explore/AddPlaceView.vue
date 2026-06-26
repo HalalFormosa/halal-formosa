@@ -748,36 +748,22 @@ async function resizeImageFromWebPath(
   const res = await fetch(webPath)
   const blob = await res.blob()
 
-  // Try createImageBitmap first (fast), fallback to HTMLImageElement
-  const loadBitmap = async () => {
-    try {
-      return await createImageBitmap(blob)
-    } catch {
-      return new Promise<ImageBitmap>((resolve, reject) => {
-        const img = new Image()
-        img.onload = () => {
-          // draw to canvas to produce a bitmap-like object
-          const c = document.createElement('canvas')
-          c.width = img.naturalWidth
-          c.height = img.naturalHeight
-          const ctx = c.getContext('2d')!
-          ctx.drawImage(img, 0, 0)
-          c.toBlob(b => {
-            if (!b) return reject(new Error('toBlob failed'))
-            createImageBitmap(b).then(resolve).catch(reject)
-          })
-        }
-        img.onerror = reject
-        img.src = URL.createObjectURL(blob)
-      })
+  const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+    const tempImg = new Image()
+    const url = URL.createObjectURL(blob)
+    tempImg.onload = () => resolve(tempImg)
+    tempImg.onerror = (err) => {
+      URL.revokeObjectURL(url)
+      reject(new Error('Failed to load image element'))
     }
-  }
+    tempImg.src = url
+  })
 
-  const bmp = await loadBitmap()
+  const objectUrl = img.src
 
   // Resize keeping aspect ratio by the longest edge
-  const w = bmp.width
-  const h = bmp.height
+  const w = img.naturalWidth || img.width
+  const h = img.naturalHeight || img.height
   const scale = Math.min(1, maxSize / Math.max(w, h))
   const outW = Math.round(w * scale)
   const outH = Math.round(h * scale)
@@ -786,11 +772,13 @@ async function resizeImageFromWebPath(
   canvas.width = outW
   canvas.height = outH
   const ctx = canvas.getContext('2d')!
-  ctx.drawImage(bmp, 0, 0, outW, outH)
+  ctx.drawImage(img, 0, 0, outW, outH)
 
   const outBlob = await new Promise<Blob>((resolve, reject) =>
       canvas.toBlob(b => (b ? resolve(b) : reject(new Error('Compression failed'))), 'image/jpeg', quality)
   )
+
+  URL.revokeObjectURL(objectUrl)
 
   return new File([outBlob], filename, {type: 'image/jpeg'})
 }

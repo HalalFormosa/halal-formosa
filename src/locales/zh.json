@@ -154,6 +154,7 @@
     "password": "密碼",
     "loggingIn": "登入中...",
     "continueWithGoogle": "使用 Google 帳號繼續",
+    "continueWithApple": "使用 Apple 帳號繼續",
     "forgotPassword": "忘記密碼？",
     "resetEmailSent": "重置密碼郵件已發送！請檢查您的收件箱。",
     "noAccount": "還沒有帳戶？",
@@ -674,7 +675,12 @@
     "publicProfileNote": "開啟後，您的名稱將顯示在排行榜以及您新增的內容（產品、地點、新聞等）中。",
     "showLastSeen": "顯示上次在線時間",
     "showLastSeenNote": "允許他人在商店聊天中查看您上次活動的時間。這僅用於商店聊天功能。",
-    "language": "語言 (實驗功能)"
+    "language": "語言 (實驗功能)",
+    "deleteAccount": "刪除帳戶",
+    "deleteAccountConfirmTitle": "刪除帳戶？",
+    "deleteAccountConfirmMessage": "您確定要永久刪除您的帳戶嗎？此操作無法撤銷，您所有已儲存的項目、資料夾及個人資料將被永久刪除。",
+    "deleteAccountConfirmBtn": "刪除我的帳戶",
+    "deleteAccountSuccess": "您的帳戶已成功刪除。"
   },
   "profile": {
     "sections": {

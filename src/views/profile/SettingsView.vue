@@ -64,6 +64,10 @@
           <ion-icon :icon="keyOutline" slot="start" style="margin-right: 12px; color: var(--ion-color-carrot)" />
           <ion-label>{{ isSocialLogin ? $t('updatePassword.title') : $t('updatePassword.change') }}</ion-label>
         </ion-item>
+        <ion-item button lines="full" @click="confirmDeleteAccount" style="--border-radius: 12px; --color: var(--ion-color-danger)">
+          <ion-icon :icon="trashOutline" slot="start" style="margin-right: 12px; color: var(--ion-color-danger)" />
+          <ion-label style="color: var(--ion-color-danger); font-weight: 500;">{{ $t('settings.deleteAccount') }}</ion-label>
+        </ion-item>
       </ion-list>
 
       <!-- 🌐 Language -->
@@ -99,7 +103,8 @@ import {
   IonPage,
   IonNote,
   IonLabel,
-  IonIcon
+  IonIcon,
+  alertController
 } from '@ionic/vue'
 import { ref, onMounted, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -109,13 +114,15 @@ import {
   isPublicProfile,
   setPublicProfile,
   showLastSeen,
-  setShowLastSeen
+  setShowLastSeen,
+  resetUserProfileState
 } from '@/composables/userProfile'
 import { useTheme } from '@/composables/useTheme'
-import { keyOutline } from 'ionicons/icons'
+import { keyOutline, trashOutline } from 'ionicons/icons'
 import { useRouter } from 'vue-router'
+import { supabase } from '@/plugins/supabaseClient'
 
-const { locale } = useI18n()
+const { locale, t } = useI18n()
 const lang = ref(locale.value)
 const router = useRouter()
 
@@ -136,4 +143,51 @@ const { isDark: paletteToggle, toggleDarkPalette, initTheme } = useTheme()
 onMounted(() => {
   initTheme()
 })
+
+const confirmDeleteAccount = async () => {
+  const alert = await alertController.create({
+    header: t('settings.deleteAccountConfirmTitle'),
+    message: t('settings.deleteAccountConfirmMessage'),
+    buttons: [
+      {
+        text: t('common.cancel'),
+        role: 'cancel',
+      },
+      {
+        text: t('settings.deleteAccountConfirmBtn'),
+        role: 'destructive',
+        handler: async () => {
+          await executeDeleteAccount()
+        }
+      }
+    ]
+  })
+  await alert.present()
+}
+
+const executeDeleteAccount = async () => {
+  try {
+    const { error } = await supabase.rpc('delete_user_account')
+    if (error) throw error
+
+    await supabase.auth.signOut()
+    resetUserProfileState()
+
+    const alert = await alertController.create({
+      header: t('settings.deleteAccount'),
+      message: t('settings.deleteAccountSuccess') || 'Your account has been successfully deleted.',
+      buttons: ['OK']
+    })
+    await alert.present()
+
+    router.push('/')
+  } catch (err: any) {
+    const alert = await alertController.create({
+      header: 'Error',
+      message: err.message || 'Failed to delete account. Please try again.',
+      buttons: ['OK']
+    })
+    await alert.present()
+  }
+}
 </script>

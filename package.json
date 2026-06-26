@@ -36,6 +36,7 @@
     "@capacitor/status-bar": "^8.0.0",
     "@capawesome-team/capacitor-datetime-picker": "^8.0.1",
     "@capawesome/capacitor-app-update": "^8.0.3",
+    "@capawesome/capacitor-apple-sign-in": "^0.1.1",
     "@capgo/capacitor-navigation-bar": "^8.0.22",
     "@capgo/native-purchases": "^8.1.1",
     "@google-cloud/translate": "^9.2.0",

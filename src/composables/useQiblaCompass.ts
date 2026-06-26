@@ -118,8 +118,8 @@ export function useQiblaCompass() {
 
     function cleanup() {
         if (listener) {
-            window.removeEventListener('deviceorientation', listener);
-            window.removeEventListener('deviceorientationabsolute', listener);
+            window.removeEventListener('deviceorientation', listener, true);
+            window.removeEventListener('deviceorientationabsolute', listener, true);
             listener = null;
         }
     }

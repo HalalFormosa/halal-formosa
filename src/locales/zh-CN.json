@@ -153,6 +153,7 @@
     "password": "密码",
     "loggingIn": "正在登录...",
     "continueWithGoogle": "继续使用谷歌",
+    "continueWithApple": "继续使用 Apple",
     "forgotPassword": "忘记密码？",
     "resetEmailSent": "密码重置电子邮件已发送！ 请检查您的收件箱。",
     "noAccount": "没有帐户？",
@@ -166,6 +167,7 @@
     "signUpSuccessMessage": "登录前请检查您的电子邮件以确认您的帐户。"
   },
   "updatePassword": {
+    "title": "设置新密码",
     "subtitle": "请输入强密码以保护您的帐户。",
     "oldPassword": "当前密码",
     "newPassword": "新密码",
@@ -655,7 +657,12 @@
     "publicProfileNote": "您的名字将显示在排行榜和您贡献的内容（产品、位置、新闻等）上。",
     "showLastSeen": "显示最后的活动状态",
     "showLastSeenNote": "让其他人看到您上次活跃聊天的时间。",
-    "language": "语言（实验）"
+    "language": "语言（实验）",
+    "deleteAccount": "删除帐户",
+    "deleteAccountConfirmTitle": "删除帐户？",
+    "deleteAccountConfirmMessage": "您确定要永久删除您的帐户吗？此操作无法撤销，您所有已保存的条目、文件夹及个人资料将被永久删除。",
+    "deleteAccountConfirmBtn": "删除我的帐户",
+    "deleteAccountSuccess": "您的帐户已成功删除。"
   },
   "profile": {
     "sections": {

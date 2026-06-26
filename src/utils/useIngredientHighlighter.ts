@@ -32,8 +32,8 @@ export function highlightIngredients(
 
         if (matchedKey) {
             let color = dictionary[matchedKey]
-            // 🔄 downgrade Syubhah → Muslim-friendly
-            if (productStatus === 'Muslim-friendly' && color === '--ion-color-warning') {
+            // 🔄 downgrade Syubhah & Haram → Muslim-friendly if the product status is Muslim-friendly
+            if (productStatus === 'Muslim-friendly') {
                 color = '--ion-color-primary'
             }
 

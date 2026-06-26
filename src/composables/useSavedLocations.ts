@@ -292,6 +292,21 @@ export function useSavedLocations() {
     return isSaved;
   }
 
+  async function renameFolder(folderId: string, newName: string): Promise<boolean> {
+    const { error } = await supabase
+      .from('saved_location_folders')
+      .update({ name: newName })
+      .eq('id', folderId);
+
+    if (error) {
+      console.error('Error renaming folder:', error);
+      return false;
+    }
+
+    await loadFoldersAndSavedLocations();
+    return true;
+  }
+
   async function deleteFolder(folderId: string): Promise<boolean> {
     const { error } = await supabase
       .from('saved_location_folders')
@@ -320,6 +335,7 @@ export function useSavedLocations() {
     moveLocation,
     isLocationSaved,
     checkSavedState,
+    renameFolder,
     deleteFolder
   };
 }

@@ -84,6 +84,7 @@
     "password": "Kata Laluan",
     "loggingIn": "Sedang log masuk...",
     "continueWithGoogle": "Teruskan dengan Google",
+    "continueWithApple": "Teruskan dengan Apple",
     "forgotPassword": "Lupa Kata Laluan?",
     "resetEmailSent": "Emel set semula kata laluan telah dihantar! Sila semak peti masuk anda.",
     "noAccount": "Belum mempunyai akaun?",
@@ -556,7 +557,12 @@
     "publicProfileNote": "Nama anda akan dipaparkan di papan pendahulu dan pada kandungan yang anda sumbangkan (produk, lokasi, berita, dll.).",
     "language": "Bahasa (Eksperimen)",
     "showLastSeen": "Papar Status Terakhir Aktif",
-    "showLastSeenNote": "Benarkan orang lain melihat bila anda kali terakhir aktif dalam sembang."
+    "showLastSeenNote": "Benarkan orang lain melihat bila anda kali terakhir aktif dalam sembang.",
+    "deleteAccount": "Padam Akaun",
+    "deleteAccountConfirmTitle": "Padam Akaun?",
+    "deleteAccountConfirmMessage": "Adakah anda pasti mahu memadamkan akaun anda secara kekal? Tindakan ini tidak boleh dibatalkan dan semua item yang disimpan, folder, dan butiran profil anda akan dipadamkan secara kekal.",
+    "deleteAccountConfirmBtn": "Padam Akaun Saya",
+    "deleteAccountSuccess": "Akaun anda telah berjaya dipadamkan."
   },
   "profile": {
     "sections": {

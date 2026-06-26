@@ -108,6 +108,19 @@
             {{ $t('auth.continueWithGoogle') }}
           </ion-button>
 
+          <!-- Apple (iOS only) -->
+          <ion-button
+              v-if="showAppleSignIn"
+              expand="block"
+              fill="outline"
+              color="carrot"
+              style="margin-top: 12px;"
+              @click="loginWithApple"
+          >
+            <ion-icon :icon="logoApple" slot="start"></ion-icon>
+            {{ $t('auth.continueWithApple') }}
+          </ion-button>
+
 
           <!-- Back -->
           <div class="back-divider" @click="goHome">
@@ -161,14 +174,15 @@ export default defineComponent({
 </script>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { supabase } from '@/plugins/supabaseClient';
 import { Capacitor } from '@capacitor/core';
 import { Browser } from '@capacitor/browser';
 import { useI18n } from 'vue-i18n'
 import LanguagePicker from '@/components/LanguagePicker.vue'
-import {logoGoogle, logInOutline, moonOutline, sunnyOutline} from "ionicons/icons";
+import {logoGoogle, logoApple, logInOutline, moonOutline, sunnyOutline} from "ionicons/icons";
+import { AppleSignIn, SignInScope } from '@capawesome/capacitor-apple-sign-in';
 import { ActivityLogService } from '@/services/ActivityLogService'
 import { useRecaptcha } from '@/composables/useRecaptcha'
 
@@ -193,6 +207,9 @@ const password = ref('');
 const errorMsg = ref('');
 const loading = ref(false);
 const captchaLoading = ref(false);
+const showAppleSignIn = computed(() => {
+  return Capacitor.getPlatform() === 'ios';
+});
 
 // router helpers
 const router = useRouter();
@@ -346,6 +363,43 @@ async function loginWithGoogle() {
   // Note: Google success is usually handled via redirect, 
   // but we can log the attempt start here.
   ActivityLogService.log('auth_login_success', { method: 'google' })
+}
+
+async function loginWithApple() {
+  errorMsg.value = '';
+  loading.value = true;
+
+  try {
+    const result = await AppleSignIn.signIn({
+      scopes: [SignInScope.Email, SignInScope.FullName],
+    });
+
+    if (!result.idToken) {
+      throw new Error('Apple authorization did not return an identity token.');
+    }
+
+    const { data, error } = await supabase.auth.signInWithIdToken({
+      provider: 'apple',
+      token: result.idToken,
+    });
+
+    if (error) throw error;
+
+    ActivityLogService.log('auth_login_success', { method: 'apple' });
+    
+    const r = route.query.redirect;
+    const safeRedirect = typeof r === 'string' ? r : '/';
+    router.push(safeRedirect);
+  } catch (err: any) {
+    // If the user cancelled, do not show error message
+    if (err.message && err.message.includes('SIGN_IN_CANCELED')) {
+      return;
+    }
+    errorMsg.value = err.message || 'Apple sign-in failed.';
+    ActivityLogService.log('auth_login_failed', { error_message: err.message, method: 'apple' });
+  } finally {
+    loading.value = false;
+  }
 }
 
 function goHome() {

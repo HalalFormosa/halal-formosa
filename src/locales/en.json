@@ -154,6 +154,7 @@
     "password": "Password",
     "loggingIn": "Logging in...",
     "continueWithGoogle": "Continue with Google",
+    "continueWithApple": "Continue with Apple",
     "forgotPassword": "Forgot Password?",
     "resetEmailSent": "Password reset email sent! Please check your inbox.",
     "noAccount": "Don't have an account?",
@@ -167,6 +168,7 @@
     "signUpSuccessMessage": "Please check your email to confirm your account before logging in."
   },
   "updatePassword": {
+    "title": "Set New Password",
     "subtitle": "Please enter a strong password to secure your account.",
     "oldPassword": "Current Password",
     "newPassword": "New Password",
@@ -669,7 +671,12 @@
     "publicProfileNote": "Show my name and bio on the leaderboard and on content I contributed (products, locations, etc.). If disabled, you will appear as an anonymous 'User' and will not be visible on the public leaderboard rankings.",
     "showLastSeen": "Show Last Active Status",
     "showLastSeenNote": "Allow others to see when you were last active in store chat. This is only used for the chat feature.",
-    "language": "Language (Experimental)"
+    "language": "Language (Experimental)",
+    "deleteAccount": "Delete Account",
+    "deleteAccountConfirmTitle": "Delete Account?",
+    "deleteAccountConfirmMessage": "Are you sure you want to permanently delete your account? This action is irreversible and all your saved items, folders, and profile details will be permanently removed.",
+    "deleteAccountConfirmBtn": "Delete My Account",
+    "deleteAccountSuccess": "Your account has been successfully deleted."
   },
   "profile": {
     "sections": {
@@ -1120,7 +1127,12 @@
     "moveToFolder": "Move to folder...",
     "itemAlreadyInFolder": "Item already exists in that folder!",
     "moveSuccess": "Moved to {name}",
-    "moveFailed": "Failed to move item."
+    "moveFailed": "Failed to move item.",
+    "renameFolder": "Rename Folder",
+    "deleteFolder": "Delete Folder",
+    "deleteConfirm": "Are you sure you want to delete this folder? All saved items inside it will be lost.",
+    "renameSuccess": "Folder renamed successfully",
+    "deleteSuccess": "Folder deleted successfully"
   },
   "savedLocations": {
     "title": "Saved Locations",
@@ -1132,6 +1144,11 @@
     "noCollections": "No Collections Yet",
     "noCollectionsDesc": "Create a folder to start organizing your saved locations!",
     "createFolder": "Create Folder",
+    "renameFolder": "Rename Folder",
+    "deleteFolder": "Delete Folder",
+    "deleteConfirm": "Are you sure you want to delete this folder? All saved locations inside it will be lost.",
+    "renameSuccess": "Folder renamed successfully",
+    "deleteSuccess": "Folder deleted successfully",
     "myCollections": "My Collections",
     "locationsCount": "{count} locations",
     "noLocations": "No locations saved here.",

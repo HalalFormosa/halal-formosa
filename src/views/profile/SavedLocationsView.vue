@@ -81,6 +81,15 @@
                 class="folder-card"
                 @click="openFolder(folder)"
               >
+                <!-- Folder Option Button -->
+                <ion-button
+                  fill="clear"
+                  color="medium"
+                  class="folder-option-btn"
+                  @click.stop="presentFolderOptions(folder)"
+                >
+                  <ion-icon :icon="ellipsisVerticalOutline" />
+                </ion-button>
                 <div class="folder-icon-wrapper">
                   <ion-icon :icon="folderOutline" class="folder-icon" />
                 </div>
@@ -106,6 +115,14 @@
                   <h3>{{ folder.name }}</h3>
                   <p class="folder-list-count">{{ $t('savedLocations.locationsCount', { count: folder.saved_locations?.length || 0 }) }}</p>
                 </ion-label>
+                <ion-button
+                  fill="clear"
+                  color="medium"
+                  slot="end"
+                  @click.stop="presentFolderOptions(folder)"
+                >
+                  <ion-icon :icon="ellipsisVerticalOutline" />
+                </ion-button>
               </ion-item>
             </ion-list>
           </div>
@@ -114,10 +131,15 @@
           <div v-else>
             <!-- Back button & View Toggle Header -->
             <div class="view-header">
-              <ion-button fill="clear" @click="closeFolder" class="back-btn">
-                <ion-icon :icon="arrowBackOutline" slot="start" />
-                <span>{{ activeFolder.name }}</span>
-              </ion-button>
+              <div style="display: flex; align-items: center;">
+                <ion-button fill="clear" @click="closeFolder" class="back-btn">
+                  <ion-icon :icon="arrowBackOutline" slot="start" />
+                  <span>{{ activeFolder.name }}</span>
+                </ion-button>
+                <ion-button fill="clear" color="medium" @click="presentFolderOptions(activeFolder)" style="--padding-start: 4px; --padding-end: 4px; margin-left: -4px;">
+                  <ion-icon :icon="ellipsisVerticalOutline" />
+                </ion-button>
+              </div>
               <div class="view-toggle">
                 <ion-button 
                   fill="clear" 
@@ -249,7 +271,8 @@ import {
 } from '@ionic/vue';
 import { 
   locationOutline, folderOutline, trashOutline, gridOutline, 
-  listOutline, arrowBackOutline, addOutline, folderOpenOutline 
+  listOutline, arrowBackOutline, addOutline, folderOpenOutline,
+  ellipsisVerticalOutline, createOutline
 } from 'ionicons/icons';
 import AppHeader from '@/components/AppHeader.vue';
 import { useI18n } from 'vue-i18n';
@@ -264,7 +287,17 @@ import { ActivityLogService } from '@/services/ActivityLogService';
 
 const router = useRouter();
 const { t } = useI18n();
-const { folders, loading, totalSavedCount, loadFoldersAndSavedLocations, createFolder, unsaveLocation, moveLocation } = useSavedLocations();
+const { 
+  folders, 
+  loading, 
+  totalSavedCount, 
+  loadFoldersAndSavedLocations, 
+  createFolder, 
+  unsaveLocation, 
+  moveLocation,
+  renameFolder,
+  deleteFolder
+} = useSavedLocations();
 
 const viewMode = ref<'grid' | 'list'>('grid');
 const activeFolderId = ref<string | null>(null);
@@ -418,6 +451,103 @@ async function moveLocationPrompt(savedId: string, currentFolderId: string, loca
   
   await actionSheet.present();
 }
+
+async function presentFolderOptions(folder: SavedLocationFolder) {
+  const actionSheet = await actionSheetController.create({
+    header: folder.name,
+    buttons: [
+      {
+        text: t('savedLocations.renameFolder') || 'Rename Folder',
+        icon: createOutline,
+        handler: () => {
+          promptRenameFolder(folder);
+        }
+      },
+      {
+        text: t('savedLocations.deleteFolder') || 'Delete Folder',
+        icon: trashOutline,
+        role: 'destructive',
+        handler: () => {
+          promptDeleteFolder(folder);
+        }
+      },
+      {
+        text: t('common.cancel'),
+        role: 'cancel',
+        icon: 'close'
+      } as any
+    ]
+  });
+  await actionSheet.present();
+}
+
+async function promptRenameFolder(folder: SavedLocationFolder) {
+  const alert = await alertController.create({
+    header: t('savedLocations.renameFolder') || 'Rename Folder',
+    inputs: [
+      {
+        name: 'folderName',
+        type: 'text',
+        value: folder.name,
+        placeholder: t('savedLocations.folderName')
+      }
+    ],
+    buttons: [
+      {
+        text: t('common.cancel'),
+        role: 'cancel'
+      },
+      {
+        text: t('common.save') || 'Save',
+        handler: async (data) => {
+          if (data.folderName && data.folderName.trim() !== '') {
+            const success = await renameFolder(folder.id, data.folderName.trim());
+            if (success) {
+              const toast = await toastController.create({
+                message: t('savedLocations.renameSuccess') || 'Folder renamed successfully',
+                duration: 2000,
+                color: 'success',
+                position: 'bottom'
+              });
+              await toast.present();
+            }
+          }
+        }
+      }
+    ]
+  });
+  await alert.present();
+}
+
+async function promptDeleteFolder(folder: SavedLocationFolder) {
+  const alert = await alertController.create({
+    header: t('savedLocations.deleteFolder') || 'Delete Folder',
+    message: t('savedLocations.deleteConfirm') || `Are you sure you want to delete "${folder.name}"? This will also remove all saved items in it.`,
+    buttons: [
+      { text: t('common.cancel'), role: 'cancel' },
+      {
+        text: t('common.delete') || 'Delete',
+        role: 'destructive',
+        handler: async () => {
+          const success = await deleteFolder(folder.id);
+          if (success) {
+            if (activeFolderId.value === folder.id) {
+              activeFolderId.value = null;
+            }
+            const toast = await toastController.create({
+              message: t('savedLocations.deleteSuccess') || 'Folder deleted successfully',
+              duration: 2000,
+              color: 'success',
+              position: 'bottom'
+            });
+            await toast.present();
+          }
+        }
+      }
+    ]
+  });
+  await alert.present();
+}
 </script>
 
 <style scoped>
@@ -547,10 +677,23 @@ async function moveLocationPrompt(savedId: string, currentFolderId: string, loca
   cursor: pointer;
   box-shadow: 0 4px 6px rgba(0,0,0,0.02);
   transition: transform 0.2s ease;
+  position: relative;
 }
 
 .folder-card:active {
   transform: scale(0.96);
+}
+
+.folder-option-btn {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  margin: 0;
+  --padding-start: 4px;
+  --padding-end: 4px;
+  width: 32px;
+  height: 32px;
+  z-index: 2;
 }
 
 .folder-icon-wrapper {

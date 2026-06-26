@@ -18,14 +18,30 @@
         <div class="info">
           <h2>{{ $t('qibla.direction') }}</h2>
 
-          <p v-if="hasCompass && !loading" class="bearing">
-            {{ qiblaBearing.toFixed(0) }}° • {{ bearingLabel }} {{ $t('qibla.fromNorth') }}
-          </p>
-
-          <div v-else class="loading-row">
+          <div v-if="loading" class="loading-row">
             <ion-spinner name="crescent" />
             <span>{{ $t('qibla.preparing') }}</span>
           </div>
+
+          <template v-else>
+            <!-- If compass has successfully initialized -->
+            <p v-if="hasCompass" class="bearing">
+              {{ qiblaBearing.toFixed(0) }}° • {{ bearingLabel }} {{ $t('qibla.fromNorth') }}
+            </p>
+
+            <!-- If iOS permission is required but not yet granted -->
+            <div v-else-if="permissionPromptRequired" class="permission-prompt">
+              <p class="prompt-text">{{ $t('qibla.needsPermission') || 'Compass access is required to show direction.' }}</p>
+              <ion-button expand="block" color="carrot" class="ion-margin-top" @click="enableCompass">
+                {{ $t('qibla.enableButton') || 'Enable Compass' }}
+              </ion-button>
+            </div>
+
+            <!-- Generic placeholder/error state if neither loading nor has compass (e.g. GPS or permission failed) -->
+            <div v-else class="loading-row">
+              <span>{{ $t('qibla.error') || 'Unable to initialize compass.' }}</span>
+            </div>
+          </template>
 
 
           <p v-if="aligned && hasCompass" class="aligned-text">
@@ -39,12 +55,13 @@
 </template>
 
 <script setup lang="ts">
-import {computed} from 'vue'
+import {computed, ref} from 'vue'
 import {
   IonHeader,
   IonPage,
   IonContent,
   IonSpinner,
+  IonButton,
   onIonViewWillEnter
 } from '@ionic/vue'
 
@@ -63,6 +80,11 @@ const {
   start
 } = useQiblaCompass()
 
+const userCoords = ref<{ lat: number; lng: number } | null>(null)
+
+const permissionPromptRequired = computed(() => {
+  return typeof (window as any).DeviceOrientationEvent?.requestPermission === 'function' && !hasCompass.value
+})
 
 const bearingLabel = computed(() => {
   const deg = qiblaBearing.value
@@ -80,6 +102,15 @@ const bearingLabel = computed(() => {
   if (d === 270) return '270° W'
   return `${360 - d}° NW`
 })
+
+async function enableCompass() {
+  if (userCoords.value) {
+    loading.value = true
+    await start(userCoords.value.lat, userCoords.value.lng)
+    loading.value = false
+  }
+}
+
 /* ---------------- Lifecycle ---------------- */
 onIonViewWillEnter(() => {
   ActivityLogService.log('utility_qibla_open')
@@ -88,7 +119,17 @@ onIonViewWillEnter(() => {
 
   navigator.geolocation.getCurrentPosition(
       pos => {
-        start(pos.coords.latitude, pos.coords.longitude)
+        const lat = pos.coords.latitude
+        const lng = pos.coords.longitude
+        userCoords.value = { lat, lng }
+
+        if (typeof (window as any).DeviceOrientationEvent?.requestPermission !== 'function') {
+          // No iOS permission required, auto-start!
+          start(lat, lng)
+        } else {
+          // iOS/Safari: Wait for user gesture
+          loading.value = false;
+        }
       },
       (err) => {
         console.error("GPS Error:", err);

@@ -109,14 +109,28 @@ export function useBackgroundRemoval() {
 
       progressStatus.value = 'Applying white background...';
       progressPercent.value = 90;
-      const img = await createImageBitmap(transparentBlob);
+      const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+        const tempImg = new Image();
+        const url = URL.createObjectURL(transparentBlob);
+        tempImg.onload = () => resolve(tempImg);
+        tempImg.onerror = (err) => {
+          URL.revokeObjectURL(url);
+          reject(new Error('Failed to load transparent image'));
+        };
+        tempImg.src = url;
+      });
+
+      const objectUrl = img.src;
 
       const canvas = document.createElement('canvas');
-      canvas.width = img.width;
-      canvas.height = img.height;
+      canvas.width = img.naturalWidth || img.width;
+      canvas.height = img.naturalHeight || img.height;
 
       const ctx = canvas.getContext('2d');
-      if (!ctx) throw new Error('Failed to get 2d canvas context');
+      if (!ctx) {
+        URL.revokeObjectURL(objectUrl);
+        throw new Error('Failed to get 2d canvas context');
+      }
 
       // 1. Fill solid white background
       ctx.fillStyle = '#FFFFFF';
@@ -124,6 +138,8 @@ export function useBackgroundRemoval() {
 
       // 2. Draw the transparent product image on top
       ctx.drawImage(img, 0, 0);
+
+      URL.revokeObjectURL(objectUrl);
 
       // 3. Export to JPEG Blob
       const jpegBlob: Blob = await new Promise((resolve, reject) => {
