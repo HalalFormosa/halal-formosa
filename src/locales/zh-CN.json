@@ -154,6 +154,7 @@
     "loggingIn": "正在登录...",
     "continueWithGoogle": "继续使用谷歌",
     "continueWithApple": "继续使用 Apple",
+    "appleDeviceRequired": "要使用 Apple 帐号登录，您必须使用 iOS 设备。",
     "forgotPassword": "忘记密码？",
     "resetEmailSent": "密码重置电子邮件已发送！ 请检查您的收件箱。",
     "noAccount": "没有帐户？",

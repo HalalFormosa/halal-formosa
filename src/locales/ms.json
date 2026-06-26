@@ -85,6 +85,7 @@
     "loggingIn": "Sedang log masuk...",
     "continueWithGoogle": "Teruskan dengan Google",
     "continueWithApple": "Teruskan dengan Apple",
+    "appleDeviceRequired": "Untuk log masuk dengan Apple, anda mesti menggunakan peranti iOS.",
     "forgotPassword": "Lupa Kata Laluan?",
     "resetEmailSent": "Emel set semula kata laluan telah dihantar! Sila semak peti masuk anda.",
     "noAccount": "Belum mempunyai akaun?",

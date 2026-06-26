@@ -123,6 +123,7 @@
     "loggingIn": "Sedang masuk...",
     "continueWithGoogle": "Lanjutkan dengan Google",
     "continueWithApple": "Lanjutkan dengan Apple",
+    "appleDeviceRequired": "Untuk masuk dengan Apple, Anda harus menggunakan perangkat iOS.",
     "forgotPassword": "Lupa Kata Sandi?",
     "resetEmailSent": "Email reset kata sandi telah dikirim! Silakan periksa kotak masuk Anda.",
     "noAccount": "Belum punya akun?",

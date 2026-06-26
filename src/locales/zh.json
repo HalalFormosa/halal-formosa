@@ -155,6 +155,7 @@
     "loggingIn": "登入中...",
     "continueWithGoogle": "使用 Google 帳號繼續",
     "continueWithApple": "使用 Apple 帳號繼續",
+    "appleDeviceRequired": "要使用 Apple 帳號登入，您必須使用 iOS 裝置。",
     "forgotPassword": "忘記密碼？",
     "resetEmailSent": "重置密碼郵件已發送！請檢查您的收件箱。",
     "noAccount": "還沒有帳戶？",

@@ -155,6 +155,7 @@
     "loggingIn": "Logging in...",
     "continueWithGoogle": "Continue with Google",
     "continueWithApple": "Continue with Apple",
+    "appleDeviceRequired": "To sign in with Apple, you must use an iOS device.",
     "forgotPassword": "Forgot Password?",
     "resetEmailSent": "Password reset email sent! Please check your inbox.",
     "noAccount": "Don't have an account?",
