@@ -269,13 +269,40 @@ async function login() {
 }
 
 async function handleForgotPassword() {
+  if (loading.value || captchaLoading.value) return;
+
   if (!email.value) {
     errorMsg.value = 'Please enter your email address first.';
     return;
   }
 
-  loading.value = true;
   errorMsg.value = '';
+
+  // Step 1: Execute invisible reCAPTCHA
+  if (isCaptchaEnabled) {
+    try {
+      captchaLoading.value = true;
+      const captchaToken = await execute('forgot_password');
+
+      // Step 2: Verify captcha token with Edge Function
+      const { data: verifyData, error: verifyError } = await supabase.functions.invoke('verify-captcha', {
+        body: { token: captchaToken }
+      });
+
+      if (verifyError || !verifyData?.success) {
+        errorMsg.value = 'Verification failed. Please try again.';
+        captchaLoading.value = false;
+        return;
+      }
+    } catch (err) {
+      errorMsg.value = 'Captcha verification failed. Please try again.';
+      captchaLoading.value = false;
+      return;
+    }
+  }
+
+  captchaLoading.value = false;
+  loading.value = true;
 
   const { error } = await supabase.auth.resetPasswordForEmail(email.value, {
     redirectTo: window.location.origin + '/update-password',
