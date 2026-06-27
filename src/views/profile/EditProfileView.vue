@@ -587,7 +587,7 @@ async function skipOnboarding() {
     ].join('\n');
 
     notifyEvent(
-        'onboarding_skipped',
+        'registration',
         '⏭️ Onboarding Skipped',
         message,
         undefined,
@@ -715,7 +715,7 @@ async function saveProfile() {
     ].join('\n');
 
     notifyEvent(
-        'user_activated',
+        'registration',
         '🎉 User Completed Onboarding',
         message,
         undefined,
