@@ -68,6 +68,37 @@
           </div>
         </ion-card>
 
+        <!-- 💡 Optional profile completion notice banner -->
+        <ion-card
+            v-if="userEmail && isAboutMeIncomplete"
+            color="light"
+            class="ion-margin-bottom fade-in"
+            style="border-left: 4px solid var(--ion-color-carrot); border-radius: 12px; margin: 16px;"
+        >
+          <ion-card-content style="padding: 16px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+              <div>
+                <strong style="font-size: 0.95rem; color: var(--ion-color-dark);">
+                  {{ $t('profile.incompleteNoticeTitle') }}
+                </strong>
+                <p style="margin: 4px 0 0; font-size: 0.82rem; color: var(--ion-color-step-600); line-height: 1.3;">
+                  {{ $t('profile.incompleteNoticeDesc') }}
+                </p>
+              </div>
+              <ion-button
+                  size="small"
+                  color="carrot"
+                  fill="outline"
+                  shape="round"
+                  @click="goToEditProfile"
+                  style="flex-shrink: 0;"
+              >
+                {{ $t('profile.incompleteNoticeBtn') }}
+              </ion-button>
+            </div>
+          </ion-card-content>
+        </ion-card>
+
         <!-- Pro Status / Support Card -->
         <ion-card v-if="userEmail && isNative" :class="{ 'tier-card-gold': !isSubscribed }">
           <div v-if="!isSubscribed" class="gold-glow"></div>
@@ -718,7 +749,8 @@ import {
   editDOB, 
   editGender, 
   editNationality,
-  editAvatarUrl
+  editAvatarUrl,
+  isProfileComplete
 } from "@/composables/userProfile";
 import {Subscription} from "@supabase/supabase-js";
 import {usePoints} from "@/composables/usePoints";
@@ -825,6 +857,10 @@ const hasFrameOrOutline = computed(() =>
   equippedCosmetics.value.some(c => c?.category === 'frame' || c?.category === 'outline')
 );
 
+const isAboutMeIncomplete = computed(() => {
+  return !editDOB.value || !editNationality.value || !editGender.value || !editBio.value;
+});
+
 const customerInfo = ref<CustomerInfo | null>(null)
 
 const entitlement = computed(() =>
@@ -849,13 +885,7 @@ const expirationDate = computed(() => {
   )
 })
 
-const needsProfileCompletion = ref(false)
 
-watch(needsProfileCompletion, (v) => {
-  if (!v) return
-
-  router.replace({ name: 'EditProfile' })
-})
 
 
 let authSubscription: Subscription | null = null;
@@ -1052,10 +1082,7 @@ async function refreshAllData(userId: string) {
       fetchMyContributionsCount(userId)
     ]);
 
-    // Check for profile completion
-    if (!editDOB.value || !editNationality.value || !editGender.value) {
-      needsProfileCompletion.value = true;
-    }
+
   } finally {
     isSyncing.value = false;
     loadingProfile.value = false;

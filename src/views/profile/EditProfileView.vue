@@ -1,139 +1,378 @@
 <template>
   <ion-page>
     <ion-header class="ion-no-border">
-      <app-header :title="$t('profile.editProfile.title')" icon="none" :showBack="true" backRoute="/profile" />
+      <app-header :title="!wasComplete ? $t('profile.editProfile.mustCompleteTitle') : $t('profile.editProfile.title')" icon="none" :showBack="wasComplete" backRoute="/profile" />
     </ion-header>
 
     <ion-content class="ion-padding">
-      <!-- 🔔 Mandatory profile completion notice -->
-      <ion-card
-          v-if="mustCompleteProfile"
-          color="warning"
-          class="ion-margin-bottom"
-      >
-        <ion-card-content>
-          <strong>{{ $t('profile.editProfile.mustCompleteTitle') }}</strong>
-          <p style="margin-top: 6px;">
-            {{ $t('profile.editProfile.mustCompleteDesc') }}
-          </p>
-        </ion-card-content>
-      </ion-card>
-
-      <!-- 👤 Beautiful Avatar Upload Section -->
-      <div class="avatar-edit-container ion-text-center fade-in">
-        <div class="avatar-wrapper" @click="presentUploadOptions">
-          <img 
-            :src="editAvatarUrl || currentUser?.user_metadata?.avatar_url || '/favicon-32x32.png'" 
-            class="profile-avatar-img" 
-            alt="Profile Avatar"
-          />
-          <div class="camera-badge">
-            <ion-icon :icon="cameraOutline" />
+      <!-- ================= ONBOARDING WIZARD MODE ================= -->
+      <template v-if="!wasComplete">
+        <!-- Step Indicators / Progress bar -->
+        <div class="step-progress-container ion-margin-bottom">
+          <div class="step-progress-bar">
+            <div class="step-progress-fill" :style="{ width: ((currentStep - 1) / 2 * 100) + '%' }"></div>
           </div>
-          <div v-if="uploadingAvatar" class="avatar-loading-overlay">
-            <ion-spinner name="crescent" color="carrot" />
+          <div class="step-badges">
+            <span :class="['step-badge', { 'active': currentStep >= 1 }]">1</span>
+            <span :class="['step-badge', { 'active': currentStep >= 2 }]">2</span>
+            <span :class="['step-badge', { 'active': currentStep >= 3 }]">3</span>
+          </div>
+          <div class="step-label text-center ion-margin-top">
+            <span v-if="currentStep === 1">{{ $t('profile.editProfile.step1Label') || 'Step 1: Profile Picture & Bio' }}</span>
+            <span v-else-if="currentStep === 2">{{ $t('profile.editProfile.step2Label') || 'Step 2: About Me (Optional)' }}</span>
+            <span v-else-if="currentStep === 3">{{ $t('profile.editProfile.step3Label') || 'Step 3: Consent & Privacy' }}</span>
           </div>
         </div>
-        <p class="click-hint">{{ $t('profile.editProfile.clickToChange') }}</p>
-      </div>
 
-      <ion-card class="fade-in">
-        <ion-list lines="inset">
-          <ion-item>
-            <div class="icon-box" slot="start">
-              <ion-icon :icon="calendarOutline" />
+        <!-- STEP 1: Avatar & Bio -->
+        <div v-if="currentStep === 1" class="fade-in">
+          <!-- 👤 Beautiful Avatar Upload Section -->
+          <div class="avatar-edit-container ion-text-center fade-in">
+            <div class="avatar-wrapper" @click="presentUploadOptions">
+              <img 
+                :src="editAvatarUrl || currentUser?.user_metadata?.avatar_url || '/favicon-32x32.png'" 
+                class="profile-avatar-img" 
+                alt="Profile Avatar"
+              />
+              <div class="camera-badge">
+                <ion-icon :icon="cameraOutline" />
+              </div>
+              <div v-if="uploadingAvatar" class="avatar-loading-overlay">
+                <ion-spinner name="crescent" color="carrot" />
+              </div>
             </div>
-            <ion-label>
-              {{ $t('profile.editProfile.dob') }}
-            </ion-label>
-            <ion-note slot="end">
-              <ion-datetime-button datetime="dobPicker" />
-            </ion-note>
-          </ion-item>
+            <p class="click-hint">{{ $t('profile.editProfile.clickToChange') }}</p>
+          </div>
 
-          <ion-item button @click="showCountryModal = true">
-            <div class="icon-box" slot="start">
-              <ion-icon :icon="globeOutline" />
+          <ion-card class="fade-in">
+            <ion-list lines="inset">
+              <ion-item>
+                <div class="icon-box" slot="start" style="align-self: flex-start; margin-top: 12px;">
+                  <ion-icon :icon="createOutline" />
+                </div>
+                <ion-textarea
+                    v-model="editBio"
+                    auto-grow
+                    label-placement="stacked"
+                    :label="$t('profile.editProfile.bio')"
+                    :placeholder="$t('profile.editProfile.bioPlaceholder')"
+                ></ion-textarea>
+              </ion-item>
+            </ion-list>
+            
+            <div class="button-row-onboarding ion-padding">
+              <ion-button expand="block" fill="clear" color="medium" @click="skipOnboarding">
+                {{ $t('common.skip') || 'Skip' }}
+              </ion-button>
+              <ion-button expand="block" color="carrot" shape="round" @click="currentStep = 2">
+                {{ $t('common.next') || 'Next' }}
+              </ion-button>
             </div>
-            <ion-label>
-              {{ $t('profile.editProfile.nationality') }}
-            </ion-label>
-            <ion-text slot="end" style="color: var(--ion-color-dark)">
-              <template v-if="!countries.length">
-                <ion-skeleton-text animated style="width:100px;height:16px;" />
-              </template>
-              <template v-else-if="selectedCountry">
-                <img :src="selectedCountry.flags.png" style="width:24px; height:16px; margin-right:8px; border-radius: 2px;" alt="Country Flag" />
-                {{ selectedCountry.name.common }}
-              </template>
-              <template v-else>
-                {{ $t('profile.editProfile.selectCountry') }}
-              </template>
-            </ion-text>
-          </ion-item>
+          </ion-card>
+        </div>
 
-          <ion-item>
-            <div class="icon-box" slot="start">
-              <ion-icon :icon="personOutline" />
-            </div>
-            <ion-label>
-              {{ $t('profile.editProfile.gender') }}
-            </ion-label>
-            <ion-select v-model="editGender" interface="popover" slot="end" :placeholder="$t('profile.editProfile.selectGender')">
-              <ion-select-option :value="null">{{ $t('common.clear') || 'Clear' }}</ion-select-option>
-              <ion-select-option value="Male">{{ $t('profile.editProfile.genderMale') }}</ion-select-option>
-              <ion-select-option value="Female">{{ $t('profile.editProfile.genderFemale') }}</ion-select-option>
-              <ion-select-option value="Other">{{ $t('profile.editProfile.genderOther') }}</ion-select-option>
-            </ion-select>
-          </ion-item>
+        <!-- STEP 2: Optional Details (DOB, Nationality, Gender, Phone) -->
+        <div v-if="currentStep === 2" class="fade-in">
+          <ion-card class="fade-in">
+            <ion-card-content class="ion-no-padding">
+              <ion-list lines="inset">
+                <ion-item>
+                  <div class="icon-box" slot="start">
+                    <ion-icon :icon="calendarOutline" />
+                  </div>
+                  <ion-label>
+                    {{ $t('profile.editProfile.dob') }}
+                  </ion-label>
+                  <ion-note slot="end">
+                    <ion-datetime-button datetime="dobPicker" />
+                  </ion-note>
+                </ion-item>
 
-          <ion-item>
-            <div class="icon-box" slot="start">
-              <ion-icon :icon="callOutline" />
-            </div>
-            <ion-input
-                v-model="editPhone"
-                type="tel"
-                label-placement="stacked"
-                :label="$t('profile.editProfile.phone') || 'Phone Number'"
-                :placeholder="$t('profile.editProfile.phonePlaceholder') || '09xxxxxxxx'"
-                :helper-text="$t('profile.editProfile.phoneHint') || 'Used for store delivery notifications, never shared publicly.'"
-            ></ion-input>
-          </ion-item>
+                <ion-item button @click="showCountryModal = true">
+                  <div class="icon-box" slot="start">
+                    <ion-icon :icon="globeOutline" />
+                  </div>
+                  <ion-label>
+                    {{ $t('profile.editProfile.nationality') }}
+                  </ion-label>
+                  <ion-text slot="end" style="color: var(--ion-color-dark)">
+                    <template v-if="!countries.length">
+                      <ion-skeleton-text animated style="width:100px;height:16px;" />
+                    </template>
+                    <template v-else-if="selectedCountry">
+                      <img :src="selectedCountry.flags.png" style="width:24px; height:16px; margin-right:8px; border-radius: 2px;" alt="Country Flag" />
+                      {{ selectedCountry.name.common }}
+                    </template>
+                    <template v-else>
+                      {{ $t('profile.editProfile.selectCountry') }}
+                    </template>
+                  </ion-text>
+                </ion-item>
 
-          <ion-item>
-            <div class="icon-box" slot="start" style="align-self: flex-start; margin-top: 12px;">
-              <ion-icon :icon="createOutline" />
-            </div>
-            <ion-textarea
-                v-model="editBio"
-                auto-grow
-                label-placement="stacked"
-                :label="$t('profile.editProfile.bio')"
-                :placeholder="$t('profile.editProfile.bioPlaceholder')"
-            ></ion-textarea>
-          </ion-item>
+                <ion-item>
+                  <div class="icon-box" slot="start">
+                    <ion-icon :icon="personOutline" />
+                  </div>
+                  <ion-label>
+                    {{ $t('profile.editProfile.gender') }}
+                  </ion-label>
+                  <ion-select v-model="editGender" interface="popover" slot="end" :placeholder="$t('profile.editProfile.selectGender')">
+                    <ion-select-option :value="null">{{ $t('common.clear') || 'Clear' }}</ion-select-option>
+                    <ion-select-option value="Male">{{ $t('profile.editProfile.genderMale') }}</ion-select-option>
+                    <ion-select-option value="Female">{{ $t('profile.editProfile.genderFemale') }}</ion-select-option>
+                    <ion-select-option value="Other">{{ $t('profile.editProfile.genderOther') }}</ion-select-option>
+                  </ion-select>
+                </ion-item>
 
-          <ion-item>
-            <div class="icon-box" slot="start">
-              <ion-icon :icon="trophyOutline" />
+                <ion-item>
+                  <div class="icon-box" slot="start">
+                    <ion-icon :icon="callOutline" />
+                  </div>
+                  <ion-input
+                      v-model="editPhone"
+                      type="tel"
+                      label-placement="stacked"
+                      :label="$t('profile.editProfile.phone') || 'Phone Number'"
+                      :placeholder="$t('profile.editProfile.phonePlaceholder') || '09xxxxxxxx'"
+                      :helper-text="$t('profile.editProfile.phoneHint') || 'Used for store delivery notifications, never shared publicly.'"
+                  ></ion-input>
+                </ion-item>
+              </ion-list>
+            </ion-card-content>
+            
+            <div class="button-row-onboarding ion-padding">
+              <ion-button fill="outline" color="carrot" shape="round" @click="currentStep = 1">
+                {{ $t('common.back') || 'Back' }}
+              </ion-button>
+              <ion-button color="carrot" shape="round" @click="currentStep = 3">
+                {{ $t('common.next') || 'Next' }}
+              </ion-button>
             </div>
-            <ion-label class="ion-text-wrap" style="font-size: 0.85rem;">
-              {{ $t('settings.publicProfile') }}
-              <p style="margin: 4px 0 0; font-size: 0.8rem; color: var(--ion-color-medium);">
-                {{ $t('settings.publicProfileNote') }}
+          </ion-card>
+        </div>
+
+        <!-- STEP 3: Consent & Privacy -->
+        <div v-if="currentStep === 3" class="fade-in">
+          <!-- 🔔 Optional profile completion notice (Info banner) -->
+          <ion-card
+              v-if="mustCompleteProfile"
+              color="primary"
+              class="ion-margin-bottom"
+          >
+            <ion-card-content>
+              <strong>{{ $t('profile.editProfile.mustCompleteTitle') }}</strong>
+              <p style="margin-top: 6px;">
+                {{ $t('profile.editProfile.mustCompleteDesc') }}
               </p>
-            </ion-label>
-            <ion-toggle
-                slot="end"
-                :checked="isPublicProfile ?? false"
-                @ionChange="setPublicProfile($event.detail.checked)"
-                color="carrot"
-            ></ion-toggle>
-          </ion-item>
-        </ion-list>
-      </ion-card>
+            </ion-card-content>
+          </ion-card>
 
+          <ion-card class="fade-in ion-padding-bottom">
+            <ion-list lines="inset">
+              <ion-item>
+                <div class="icon-box" slot="start">
+                  <ion-icon :icon="trophyOutline" />
+                </div>
+                <ion-label class="ion-text-wrap" style="font-size: 0.85rem;">
+                  {{ $t('settings.publicProfile') }}
+                  <p style="margin: 4px 0 0; font-size: 0.8rem; color: var(--ion-color-medium);">
+                    {{ $t('settings.publicProfileNote') }}
+                  </p>
+                </ion-label>
+                <ion-toggle
+                    slot="end"
+                    :checked="isPublicProfile ?? false"
+                    @ionChange="setPublicProfile($event.detail.checked)"
+                    color="carrot"
+                ></ion-toggle>
+              </ion-item>
+            </ion-list>
+
+            <ion-item lines="none" class="consent-item ion-margin-top">
+              <ion-checkbox
+                  :checked="acknowledged"
+                  @ionChange="acknowledged = $event.detail.checked"
+                  slot="start"
+                  color="carrot"
+              />
+              <ion-label class="ion-text-wrap" style="font-size: 0.85rem;">
+                {{ $t('profile.editProfile.consentTitle') }}
+                <ul style="margin: 8px 0 0; padding-left: 1.2rem; font-size: 0.8rem; color: var(--ion-color-medium);">
+                  <li>{{ $t('profile.editProfile.consentContentPhone') }}</li>
+                  <li>{{ $t('profile.editProfile.consentContentStats') }}</li>
+                  <li>{{ $t('profile.editProfile.consentContentBio') }}</li>
+                </ul>
+              </ion-label>
+            </ion-item>
+
+            <div class="button-row-onboarding ion-padding ion-margin-top">
+              <ion-button fill="outline" color="carrot" shape="round" @click="currentStep = 2">
+                {{ $t('common.back') || 'Back' }}
+              </ion-button>
+              <ion-button
+                  color="carrot"
+                  shape="round"
+                  @click="saveProfile"
+                  :disabled="!acknowledged"
+              >
+                {{ $t('profile.editProfile.completeToContinue') || 'Get Started' }}
+              </ion-button>
+            </div>
+          </ion-card>
+        </div>
+      </template>
+
+      <!-- ================= STANDARD REGULAR EDIT MODE ================= -->
+      <template v-else>
+        <!-- 👤 Beautiful Avatar Upload Section -->
+        <div class="avatar-edit-container ion-text-center fade-in">
+          <div class="avatar-wrapper" @click="presentUploadOptions">
+            <img 
+              :src="editAvatarUrl || currentUser?.user_metadata?.avatar_url || '/favicon-32x32.png'" 
+              class="profile-avatar-img" 
+              alt="Profile Avatar"
+            />
+            <div class="camera-badge">
+              <ion-icon :icon="cameraOutline" />
+            </div>
+            <div v-if="uploadingAvatar" class="avatar-loading-overlay">
+              <ion-spinner name="crescent" color="carrot" />
+            </div>
+          </div>
+          <p class="click-hint">{{ $t('profile.editProfile.clickToChange') }}</p>
+        </div>
+
+        <ion-card class="fade-in">
+          <ion-list lines="inset">
+            <ion-item>
+              <div class="icon-box" slot="start">
+                <ion-icon :icon="calendarOutline" />
+              </div>
+              <ion-label>
+                {{ $t('profile.editProfile.dob') }}
+              </ion-label>
+              <ion-note slot="end">
+                <ion-datetime-button datetime="dobPicker" />
+              </ion-note>
+            </ion-item>
+
+            <ion-item button @click="showCountryModal = true">
+              <div class="icon-box" slot="start">
+                <ion-icon :icon="globeOutline" />
+              </div>
+              <ion-label>
+                {{ $t('profile.editProfile.nationality') }}
+              </ion-label>
+              <ion-text slot="end" style="color: var(--ion-color-dark)">
+                <template v-if="!countries.length">
+                  <ion-skeleton-text animated style="width:100px;height:16px;" />
+                </template>
+                <template v-else-if="selectedCountry">
+                  <img :src="selectedCountry.flags.png" style="width:24px; height:16px; margin-right:8px; border-radius: 2px;" alt="Country Flag" />
+                  {{ selectedCountry.name.common }}
+                </template>
+                <template v-else>
+                  {{ $t('profile.editProfile.selectCountry') }}
+                </template>
+              </ion-text>
+            </ion-item>
+
+            <ion-item>
+              <div class="icon-box" slot="start">
+                <ion-icon :icon="personOutline" />
+              </div>
+              <ion-label>
+                {{ $t('profile.editProfile.gender') }}
+              </ion-label>
+              <ion-select v-model="editGender" interface="popover" slot="end" :placeholder="$t('profile.editProfile.selectGender')">
+                <ion-select-option :value="null">{{ $t('common.clear') || 'Clear' }}</ion-select-option>
+                <ion-select-option value="Male">{{ $t('profile.editProfile.genderMale') }}</ion-select-option>
+                <ion-select-option value="Female">{{ $t('profile.editProfile.genderFemale') }}</ion-select-option>
+                <ion-select-option value="Other">{{ $t('profile.editProfile.genderOther') }}</ion-select-option>
+              </ion-select>
+            </ion-item>
+
+            <ion-item>
+              <div class="icon-box" slot="start">
+                <ion-icon :icon="callOutline" />
+              </div>
+              <ion-input
+                  v-model="editPhone"
+                  type="tel"
+                  label-placement="stacked"
+                  :label="$t('profile.editProfile.phone') || 'Phone Number'"
+                  :placeholder="$t('profile.editProfile.phonePlaceholder') || '09xxxxxxxx'"
+                  :helper-text="$t('profile.editProfile.phoneHint') || 'Used for store delivery notifications, never shared publicly.'"
+              ></ion-input>
+            </ion-item>
+
+            <ion-item>
+              <div class="icon-box" slot="start" style="align-self: flex-start; margin-top: 12px;">
+                <ion-icon :icon="createOutline" />
+              </div>
+              <ion-textarea
+                  v-model="editBio"
+                  auto-grow
+                  label-placement="stacked"
+                  :label="$t('profile.editProfile.bio')"
+                  :placeholder="$t('profile.editProfile.bioPlaceholder')"
+              ></ion-textarea>
+            </ion-item>
+
+            <ion-item>
+              <div class="icon-box" slot="start">
+                <ion-icon :icon="trophyOutline" />
+              </div>
+              <ion-label class="ion-text-wrap" style="font-size: 0.85rem;">
+                {{ $t('settings.publicProfile') }}
+                <p style="margin: 4px 0 0; font-size: 0.8rem; color: var(--ion-color-medium);">
+                  {{ $t('settings.publicProfileNote') }}
+                </p>
+              </ion-label>
+              <ion-toggle
+                  slot="end"
+                  :checked="isPublicProfile ?? false"
+                  @ionChange="setPublicProfile($event.detail.checked)"
+                  color="carrot"
+              ></ion-toggle>
+            </ion-item>
+          </ion-list>
+        </ion-card>
+
+        <ion-card class="fade-in ion-padding-bottom">
+          <ion-item lines="none" class="consent-item">
+            <ion-checkbox
+                :checked="acknowledged"
+                @ionChange="acknowledged = $event.detail.checked"
+                slot="start"
+                color="carrot"
+            />
+            <ion-label class="ion-text-wrap" style="font-size: 0.85rem;">
+              {{ $t('profile.editProfile.consentTitle') }}
+              <ul style="margin: 8px 0 0; padding-left: 1.2rem; font-size: 0.8rem; color: var(--ion-color-medium);">
+                <li>{{ $t('profile.editProfile.consentContentPhone') }}</li>
+                <li>{{ $t('profile.editProfile.consentContentStats') }}</li>
+                <li>{{ $t('profile.editProfile.consentContentBio') }}</li>
+              </ul>
+            </ion-label>
+          </ion-item>
+
+          <div style="padding: 16px;">
+            <ion-button
+                expand="block"
+                color="carrot"
+                shape="round"
+                @click="saveProfile"
+                :disabled="!acknowledged"
+                style="--box-shadow: 0 4px 12px rgba(var(--ion-color-carrot-rgb), 0.3);"
+            >
+              {{ $t('profile.editProfile.save') }}
+            </ion-button>
+          </div>
+        </ion-card>
+      </template>
+
+      <!-- Country Selection Modal (Used in both modes) -->
       <ion-modal :is-open="showCountryModal" @didDismiss="showCountryModal = false">
         <ion-header class="ion-no-border">
           <ion-toolbar>
@@ -167,7 +406,7 @@
         </ion-content>
       </ion-modal>
 
-      <!-- DOB Date Picker Modal -->
+      <!-- DOB Date Picker Modal (Used in both modes) -->
       <ion-modal :keep-contents-mounted="true" class="dob-modal">
         <ion-datetime
             id="dobPicker"
@@ -180,41 +419,6 @@
             :cancel-text="$t('common.cancel')"
         ></ion-datetime>
       </ion-modal>
-
-
-      <ion-card class="fade-in ion-padding-bottom">
-        <ion-item lines="none" class="consent-item">
-          <ion-checkbox
-              :checked="acknowledged"
-              @ionChange="acknowledged = $event.detail.checked"
-              slot="start"
-              color="carrot"
-          />
-          <ion-label class="ion-text-wrap" style="font-size: 0.85rem;">
-            {{ $t('profile.editProfile.consentTitle') }}
-            <ul style="margin: 8px 0 0; padding-left: 1.2rem; font-size: 0.8rem; color: var(--ion-color-medium);">
-              <li>{{ $t('profile.editProfile.consentContentPhone') }}</li>
-              <li>{{ $t('profile.editProfile.consentContentStats') }}</li>
-              <li>{{ $t('profile.editProfile.consentContentBio') }}</li>
-            </ul>
-          </ion-label>
-        </ion-item>
-
-        <div style="padding: 16px;">
-          <ion-button
-              expand="block"
-              color="carrot"
-              shape="round"
-              @click="saveProfile"
-              :disabled="!isProfileComplete"
-              style="--box-shadow: 0 4px 12px rgba(var(--ion-color-carrot-rgb), 0.3);"
-          >
-            {{ mustCompleteProfile ? $t('profile.editProfile.completeToContinue') : $t('profile.editProfile.save') }}
-          </ion-button>
-        </div>
-      </ion-card>
-
-
     </ion-content>
   </ion-page>
 </template>
@@ -242,7 +446,8 @@ import {
   isPublicProfile,
   setPublicProfile,
   loadUserProfile,
-  updateUserProfile, currentUser
+  updateUserProfile, currentUser,
+  profileSkipped
 } from "@/composables/userProfile";
 
 import {
@@ -382,6 +587,12 @@ const showCountryModal = ref(false);
 const searchQuery = ref("");
 const selectedCountry = ref<Country | null>(null);
 const loadingProfile = ref(true);
+const currentStep = ref(1);
+
+function skipOnboarding() {
+  profileSkipped.value = true;
+  router.replace('/profile');
+}
 
 
 
@@ -430,12 +641,10 @@ onBeforeMount(async () => {
 })
 
 onBeforeRouteLeave((to, from, next) => {
-  if (!wasComplete.value && !isProfileComplete.value) {
-    next(false);
-  } else {
-    next();
-  }
-});
+  profileSkipped.value = true;
+  next();
+})
+
 
 async function saveProfile() {
   if (!userId) return;
@@ -641,6 +850,82 @@ ion-toolbar {
   color: var(--ion-color-medium);
   margin-top: 8px;
   margin-bottom: 0;
+}
+
+/* Onboarding wizard styling */
+.step-progress-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 16px 24px;
+}
+
+.step-progress-bar {
+  width: 100%;
+  height: 6px;
+  background: var(--ion-color-step-200, #e0e0e0);
+  border-radius: 3px;
+  position: relative;
+  overflow: hidden;
+  margin-bottom: -15px;
+  margin-top: 15px;
+}
+
+.step-progress-fill {
+  height: 100%;
+  background: var(--ion-color-carrot);
+  transition: width 0.3s ease;
+  width: 0%;
+}
+
+.step-badges {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  z-index: 2;
+}
+
+.step-badge {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--ion-card-background, #fff);
+  border: 2px solid var(--ion-color-step-300, #ccc);
+  color: var(--ion-color-step-600, #666);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.step-badge.active {
+  background: var(--ion-color-carrot);
+  border-color: var(--ion-color-carrot);
+  color: #fff;
+  box-shadow: 0 4px 10px rgba(var(--ion-color-carrot-rgb), 0.3);
+}
+
+.step-label {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--ion-text-color);
+  margin-top: 12px;
+}
+
+.button-row-onboarding {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.button-row-onboarding ion-button {
+  flex: 1;
+  margin: 0;
+  height: 44px;
 }
 </style>
 

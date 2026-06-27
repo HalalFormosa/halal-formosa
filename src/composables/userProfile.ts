@@ -19,13 +19,14 @@ export const hasReviewedApp = ref<boolean>(false);
 export const donorType = ref("Free");
 export const editDOB = ref<string | null>(null);
 export const editNationality = ref<string | null>(null);
-export const editGender = ref<string | null>(null);
+export const editGender = ref<string | null>('Other');
 export const editBio = ref<string | null>(null);
 export const editPhone = ref<string | null>(null);
 export const editAvatarUrl = ref<string | null>(null);
 
 export const selectedCountry = ref<any | null>(null); // for display
 export const acknowledged = ref(false);
+export const profileSkipped = ref(false);
 
 export const isProfileComplete = computed(() => {
     return (
@@ -187,7 +188,7 @@ export async function loadUserProfile(userId: string) {
 
         editDOB.value = data.date_of_birth;
         editNationality.value = data.nationality;
-        editGender.value = data.gender;
+        editGender.value = data.gender ?? 'Other';
         editBio.value = data.bio;
         editPhone.value = data.phone;
         editAvatarUrl.value = data.avatar_url;
@@ -205,7 +206,7 @@ export async function loadUserProfile(userId: string) {
 
         editDOB.value = null;
         editNationality.value = null;
-        editGender.value = null;
+        editGender.value = 'Other';
         editBio.value = null;
         editPhone.value = null;
         editAvatarUrl.value = null;
@@ -241,7 +242,7 @@ export function resetUserProfileState() {
 
     editDOB.value = null
     editNationality.value = null
-    editGender.value = null
+    editGender.value = 'Other'
     editBio.value = null
     editPhone.value = null
     editAvatarUrl.value = null
@@ -249,4 +250,5 @@ export function resetUserProfileState() {
     selectedCountry.value = null
     hasReviewedApp.value = false
     acknowledged.value = false
+    profileSkipped.value = false
 }

@@ -12,7 +12,8 @@ import {
     isAdmin,
     isContributor,
     isProfileComplete,
-    profileLoaded
+    profileLoaded,
+    profileSkipped
 } from '@/composables/userProfile'
 
 
@@ -429,13 +430,16 @@ router.beforeEach(async (to, from, next) => {
     if (
         session?.user &&
         !isProfileComplete.value &&
-        !ALLOWED_WHEN_PROFILE_INCOMPLETE.includes(to.path)
+        !profileSkipped.value
     ) {
-        return next({
-            path: '/profile/edit',
-            replace: true,
-            query: { redirect: to.fullPath }
-        })
+        const allowedWithoutCompletion = ['/profile/edit', '/logout'];
+        if (!allowedWithoutCompletion.includes(to.path)) {
+            return next({
+                path: '/profile/edit',
+                replace: true,
+                query: { redirect: to.fullPath }
+            })
+        }
     }
 
     next()
