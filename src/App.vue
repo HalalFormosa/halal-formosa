@@ -171,7 +171,7 @@ const toastStyle = computed(() => {
     transition: isSwiping.value ? 'none' : 'transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.2s ease',
   };
 });
-import { updateLastSeen, currentUser, hasReviewedApp, setHasReviewedApp } from '@/composables/userProfile';
+import { updateLastSeen, currentUser, hasReviewedApp, setHasReviewedApp, profileLoaded, isProfileComplete, profileSkipped } from '@/composables/userProfile';
 import { supabase } from '@/plugins/supabaseClient';
 const { initTheme } = useTheme();
 const { t } = useI18n();
@@ -345,6 +345,24 @@ import { App as CapApp } from '@capacitor/app';
 import { useRouter } from 'vue-router';
 
 const router = useRouter();
+
+// 🚨 Redirect users with incomplete profiles to the onboarding wizard once the profile loads
+watch(
+  [profileLoaded, isProfileComplete, profileSkipped, currentUser],
+  ([loaded, complete, skipped, user]) => {
+    if (loaded && user && !complete && !skipped) {
+      const currentPath = router.currentRoute.value.path;
+      const allowedWithoutCompletion = ['/profile/edit', '/logout'];
+      if (!allowedWithoutCompletion.includes(currentPath)) {
+        router.replace({
+          path: '/profile/edit',
+          query: { redirect: router.currentRoute.value.fullPath }
+        });
+      }
+    }
+  },
+  { immediate: true }
+);
 
 onMounted(async () => {
   // 🛡️ Initialize Organic Interaction Monitor
