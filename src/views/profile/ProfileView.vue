@@ -579,36 +579,17 @@
         </ion-card>
 
         <!-- Support Section -->
-        <ion-card>
-          <div class="xp-section" style="text-align: center; padding-top: 10px;">
+        <ion-card v-if="donationProduct">
+          <div class="xp-section" style="text-align: center; padding-top: 10px; padding-bottom: 10px;">
             <h3 style="font-weight: 700; margin-bottom: 12px;">{{ $t('profile.support') }}</h3>
-            
-            <template v-if="donationProduct">
-              <ion-item button style="text-align: left;" @click="donate">
-                <ion-label>
-                  <strong>{{ donationProduct.title }}</strong>
-                  <br/>
-                  <small>{{ donationProduct.description }}</small>
-                </ion-label>
-                <ion-note slot="end">{{ donationProduct.priceString }}</ion-note>
-              </ion-item>
-            </template>
-            
-            <template v-else>
-              <p style="font-size: 0.85rem; color: var(--ion-color-medium); margin-bottom: 16px;">
-                {{ $t('profile.supportDescription') }}
-              </p>
-              <a href="https://halalformosa.bobaboba.me" target="_blank" class="boba-button" style="margin: 0 auto 16px;">
-                <img
-                    src="https://s3.ap-southeast-1.amazonaws.com/media.anyonelab.com/images/boba/boba-embed-icon.png"
-                    alt="boba-icon"
-                    class="boba-img-premium"
-                />
-                <span class="boba-text-premium">{{ $t('profile.bobaMe') }}</span>
-              </a>
-              <p class="support-thank" style="font-size: 0.8rem;">{{ $t('profile.supportThank') }}</p>
-              <p style="margin-top: 4px;"><small>{{ $t('profile.voluntary') }}</small></p>
-            </template>
+            <ion-item button style="text-align: left;" @click="donate">
+              <ion-label>
+                <strong>{{ donationProduct.title }}</strong>
+                <br/>
+                <small>{{ donationProduct.description }}</small>
+              </ion-label>
+              <ion-note slot="end">{{ donationProduct.priceString }}</ion-note>
+            </ion-item>
           </div>
         </ion-card>
 

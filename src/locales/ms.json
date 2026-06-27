@@ -673,7 +673,10 @@
       "consentContentStats": "Date of birth, nationality, and gender are used for anonymous statistics and are never shared publicly.",
       "consentContentBio": "My Bio may be visible publicly if I enable \"Show my name on leaderboard\" in Settings.",
       "clickToChange": "Ketik avatar untuk mengubah",
-      "avatarOptionsTitle": "Ubah Foto Profil"
+      "avatarOptionsTitle": "Ubah Foto Profil",
+      "selectDate": "Pilih tarikh",
+      "selectDob": "Pilih Tarikh Lahir",
+      "clearNationality": "Padam Kewarganegaraan"
     },
     "merchant": {
       "startSelling": "Mula Menjual",

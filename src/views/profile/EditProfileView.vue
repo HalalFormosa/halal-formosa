@@ -38,9 +38,6 @@
       </div>
 
       <ion-card class="fade-in">
-        <div style="padding: 16px 16px 0; font-size: 0.8rem; color: var(--ion-color-medium);">
-          <span class="required-star">*</span> {{ $t('common.mandatory') || 'Mandatory fields' }}
-        </div>
         <ion-list lines="inset">
           <ion-item>
             <div class="icon-box" slot="start">
@@ -48,26 +45,10 @@
             </div>
             <ion-label>
               {{ $t('profile.editProfile.dob') }}
-              <span class="required-star">*</span>
             </ion-label>
             <ion-note slot="end">
-              <ion-datetime-button
-                  datetime="dobPicker"
-              />
+              <ion-datetime-button datetime="dobPicker" />
             </ion-note>
-
-            <!-- Hidden datetime controlled by the button -->
-            <ion-modal keep-contents-mounted="true">
-              <ion-datetime
-                  id="dobPicker"
-                  color="carrot"
-                  v-model="editDOB"
-                  presentation="date"
-                  :show-default-buttons="true"
-                  :done-text="$t('common.ok')"
-                  :cancel-text="$t('common.cancel')"
-              ></ion-datetime>
-            </ion-modal>
           </ion-item>
 
           <ion-item button @click="showCountryModal = true">
@@ -76,7 +57,6 @@
             </div>
             <ion-label>
               {{ $t('profile.editProfile.nationality') }}
-              <span class="required-star">*</span>
             </ion-label>
             <ion-text slot="end" style="color: var(--ion-color-dark)">
               <template v-if="!countries.length">
@@ -98,9 +78,9 @@
             </div>
             <ion-label>
               {{ $t('profile.editProfile.gender') }}
-              <span class="required-star">*</span>
             </ion-label>
             <ion-select v-model="editGender" interface="popover" slot="end" :placeholder="$t('profile.editProfile.selectGender')">
+              <ion-select-option :value="null">{{ $t('common.clear') || 'Clear' }}</ion-select-option>
               <ion-select-option value="Male">{{ $t('profile.editProfile.genderMale') }}</ion-select-option>
               <ion-select-option value="Female">{{ $t('profile.editProfile.genderFemale') }}</ion-select-option>
               <ion-select-option value="Other">{{ $t('profile.editProfile.genderOther') }}</ion-select-option>
@@ -169,6 +149,11 @@
 
         <ion-content>
           <ion-list lines="inset">
+            <ion-item button @click="clearNationality">
+              <ion-label style="color: var(--ion-color-medium)">
+                {{ $t('profile.editProfile.clearNationality') || 'Clear Nationality' }}
+              </ion-label>
+            </ion-item>
             <ion-item
                 v-for="c in filteredCountries"
                 :key="c.cca2"
@@ -181,6 +166,21 @@
           </ion-list>
         </ion-content>
       </ion-modal>
+
+      <!-- DOB Date Picker Modal -->
+      <ion-modal :keep-contents-mounted="true" class="dob-modal">
+        <ion-datetime
+            id="dobPicker"
+            color="carrot"
+            v-model="editDOB"
+            presentation="date"
+            :prefer-wheel="true"
+            :show-default-buttons="true"
+            :done-text="$t('common.ok')"
+            :cancel-text="$t('common.cancel')"
+        ></ion-datetime>
+      </ion-modal>
+
 
       <ion-card class="fade-in ion-padding-bottom">
         <ion-item lines="none" class="consent-item">
@@ -383,6 +383,8 @@ const searchQuery = ref("");
 const selectedCountry = ref<Country | null>(null);
 const loadingProfile = ref(true);
 
+
+
 const filteredCountries = computed(() =>
     countries.value.filter(c =>
         c.name.common.toLowerCase().includes(searchQuery.value.toLowerCase())
@@ -392,6 +394,12 @@ const filteredCountries = computed(() =>
 function selectCountry(c: Country) {
   editNationality.value = c.cca2;
   selectedCountry.value = c;
+  showCountryModal.value = false;
+}
+
+function clearNationality() {
+  editNationality.value = null;
+  selectedCountry.value = null;
   showCountryModal.value = false;
 }
 
@@ -406,6 +414,7 @@ onBeforeMount(async () => {
 
   userId = userData.user.id
   await loadUserProfile(userId)
+  wasComplete.value = isProfileComplete.value
 
   // If countries already in memory, skip fetch
   if (!countries.value.length) {

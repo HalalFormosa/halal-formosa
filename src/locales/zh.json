@@ -789,7 +789,10 @@
       "save": "儲存",
       "completeToContinue": "完成個人資料以繼續",
       "clickToChange": "點擊頭像以更換",
-      "avatarOptionsTitle": "更換個人頭像"
+      "avatarOptionsTitle": "更換個人頭像",
+      "selectDate": "選擇日期",
+      "selectDob": "選擇出生日期",
+      "clearNationality": "清除國籍"
     },
     "merchant": {
       "startSelling": "開始經營",

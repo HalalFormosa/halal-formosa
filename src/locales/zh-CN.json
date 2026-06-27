@@ -773,7 +773,10 @@
       "consentContentStats": "Date of birth, nationality, and gender are used for anonymous statistics and are never shared publicly.",
       "consentContentBio": "My Bio may be visible publicly if I enable \"Show my name on leaderboard\" in Settings.",
       "clickToChange": "点击头像以更换",
-      "avatarOptionsTitle": "更换个人头像"
+      "avatarOptionsTitle": "更换个人头像",
+      "selectDate": "选择日期",
+      "selectDob": "选择出生日期",
+      "clearNationality": "清除国籍"
     },
     "merchant": {
       "startSelling": "开始销售",

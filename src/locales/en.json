@@ -813,7 +813,10 @@
       "save": "Save",
       "completeToContinue": "Complete Profile to Continue",
       "clickToChange": "Tap avatar to change",
-      "avatarOptionsTitle": "Change Profile Picture"
+      "avatarOptionsTitle": "Change Profile Picture",
+      "selectDate": "Select date",
+      "selectDob": "Select Date of Birth",
+      "clearNationality": "Clear Nationality"
     },
     "merchant": {
       "startSelling": "Start Selling",

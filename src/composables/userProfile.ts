@@ -29,9 +29,6 @@ export const acknowledged = ref(false);
 
 export const isProfileComplete = computed(() => {
     return (
-        !!editDOB.value &&
-        !!editNationality.value &&
-        !!editGender.value &&
         acknowledged.value
     );
 });
