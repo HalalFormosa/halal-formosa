@@ -30,7 +30,7 @@
           <div class="avatar-edit-container ion-text-center fade-in">
             <div class="avatar-wrapper" @click="presentUploadOptions">
               <img 
-                :src="editAvatarUrl || currentUser?.user_metadata?.avatar_url || '/favicon-32x32.png'" 
+                :src="editAvatarUrl || currentUser?.user_metadata?.avatar_url || DEFAULT_AVATAR_PLACEHOLDER" 
                 class="profile-avatar-img" 
                 alt="Profile Avatar"
               />
@@ -117,7 +117,6 @@
                     {{ $t('profile.editProfile.gender') }}
                   </ion-label>
                   <ion-select v-model="editGender" interface="popover" slot="end" :placeholder="$t('profile.editProfile.selectGender')">
-                    <ion-select-option :value="null">{{ $t('common.clear') || 'Clear' }}</ion-select-option>
                     <ion-select-option value="Male">{{ $t('profile.editProfile.genderMale') }}</ion-select-option>
                     <ion-select-option value="Female">{{ $t('profile.editProfile.genderFemale') }}</ion-select-option>
                     <ion-select-option value="Other">{{ $t('profile.editProfile.genderOther') }}</ion-select-option>
@@ -153,20 +152,6 @@
 
         <!-- STEP 3: Consent & Privacy -->
         <div v-if="currentStep === 3" class="fade-in">
-          <!-- 🔔 Optional profile completion notice (Info banner) -->
-          <ion-card
-              v-if="mustCompleteProfile"
-              color="primary"
-              class="ion-margin-bottom"
-          >
-            <ion-card-content>
-              <strong>{{ $t('profile.editProfile.mustCompleteTitle') }}</strong>
-              <p style="margin-top: 6px;">
-                {{ $t('profile.editProfile.mustCompleteDesc') }}
-              </p>
-            </ion-card-content>
-          </ion-card>
-
           <ion-card class="fade-in ion-padding-bottom">
             <ion-list lines="inset">
               <ion-item>
@@ -215,7 +200,7 @@
                   @click="saveProfile"
                   :disabled="!acknowledged"
               >
-                {{ $t('profile.editProfile.completeToContinue') || 'Get Started' }}
+                {{ $t('common.complete') }}
               </ion-button>
             </div>
           </ion-card>
@@ -228,7 +213,7 @@
         <div class="avatar-edit-container ion-text-center fade-in">
           <div class="avatar-wrapper" @click="presentUploadOptions">
             <img 
-              :src="editAvatarUrl || currentUser?.user_metadata?.avatar_url || '/favicon-32x32.png'" 
+              :src="editAvatarUrl || currentUser?.user_metadata?.avatar_url || DEFAULT_AVATAR_PLACEHOLDER" 
               class="profile-avatar-img" 
               alt="Profile Avatar"
             />
@@ -285,7 +270,6 @@
                 {{ $t('profile.editProfile.gender') }}
               </ion-label>
               <ion-select v-model="editGender" interface="popover" slot="end" :placeholder="$t('profile.editProfile.selectGender')">
-                <ion-select-option :value="null">{{ $t('common.clear') || 'Clear' }}</ion-select-option>
                 <ion-select-option value="Male">{{ $t('profile.editProfile.genderMale') }}</ion-select-option>
                 <ion-select-option value="Female">{{ $t('profile.editProfile.genderFemale') }}</ion-select-option>
                 <ion-select-option value="Other">{{ $t('profile.editProfile.genderOther') }}</ion-select-option>
@@ -588,9 +572,39 @@ const searchQuery = ref("");
 const selectedCountry = ref<Country | null>(null);
 const loadingProfile = ref(true);
 const currentStep = ref(1);
+const DEFAULT_AVATAR_PLACEHOLDER = "https://placehold.co/150x150/e0e0e0/666666.png?text=No+Avatar";
 
-function skipOnboarding() {
+async function skipOnboarding() {
   profileSkipped.value = true;
+
+  // 🔔 Send skipped notification to Discord
+  if (userId) {
+    const message = [
+      '⏭️ User Skipped Onboarding',
+      '',
+      `📧 Email: ${currentUser.value?.email ?? 'unknown'}`,
+      `👤 Name: ${currentUser.value?.user_metadata?.display_name || currentUser.value?.user_metadata?.full_name || 'Not provided'}`,
+    ].join('\n');
+
+    notifyEvent(
+        'onboarding_skipped',
+        '⏭️ Onboarding Skipped',
+        message,
+        undefined,
+        {
+          user_id: userId,
+          email: currentUser.value?.email,
+        },
+        ['discord']
+    ).catch(console.error);
+
+    // Mark as completed/skipped so they don't trigger completion notifications later
+    await supabase
+        .from('user_profiles')
+        .update({ profile_completed_notified: true })
+        .eq('id', userId);
+  }
+
   router.replace('/profile');
 }
 
@@ -670,6 +684,8 @@ async function saveProfile() {
       bio,
       date_of_birth,
       nationality,
+      gender,
+      phone,
       profile_completed_notified
     `)
       .eq('id', userId)
@@ -681,32 +697,26 @@ async function saveProfile() {
     return;
   }
 
-  /* 3️⃣ Check completion state */
-  const isProfileCompleteNow =
-      !!profile.bio &&
-      !!profile.date_of_birth &&
-      !!profile.nationality;
-
-  /* 4️⃣ Fire Option 2 notification (ONCE) */
-  if (isProfileCompleteNow && !profile.profile_completed_notified) {
-
-    // 🌍 Convert nationality code → country name
-    const countryName =
-        countries.value.find(c => c.cca2 === profile.nationality)?.name.common
-        ?? profile.nationality;
+  /* 3️⃣ Check completion state & Notify (ONCE) */
+  if (!wasComplete.value && !profile.profile_completed_notified) {
+    const genderName = editGender.value === 'Other' ? 'Prefer not to say' : (editGender.value || 'Not provided');
+    const countryName = selectedCountry.value?.name.common || 'Not provided';
 
     const message = [
-      'A user has completed their profile and is now active.',
+      '🎉 User Completed Onboarding',
       '',
       `📧 Email: ${currentUser.value?.email ?? 'unknown'}`,
       `👤 Name: ${profile.display_name || 'Not provided'}`,
-      `🎂 Date of Birth: ${profile.date_of_birth}`,
+      `🎂 Date of Birth: ${profile.date_of_birth || 'Not provided'}`,
       `🌍 Nationality: ${countryName}`,
+      `👤 Gender: ${genderName}`,
+      `📞 Phone: ${profile.phone || 'Not provided'}`,
+      `📝 Bio: ${profile.bio || 'Not provided'}`,
     ].join('\n');
 
     notifyEvent(
         'user_activated',
-        '🎉 User Activated',
+        '🎉 User Completed Onboarding',
         message,
         undefined,
         {
@@ -715,18 +725,20 @@ async function saveProfile() {
           name: profile.display_name,
           date_of_birth: profile.date_of_birth,
           nationality: countryName,
+          gender: genderName,
+          bio: profile.bio,
         },
         ['discord']
     ).catch(console.error);
 
-    /* 5️⃣ Mark as notified (CRITICAL) */
+    /* 4️⃣ Mark as notified (CRITICAL) */
     await supabase
         .from('user_profiles')
         .update({ profile_completed_notified: true })
         .eq('id', userId);
   }
 
-  /* 6️⃣ Leave edit page (explicit navigation for native) */
+  /* 5️⃣ Leave edit page (explicit navigation for native) */
   router.replace('/profile');
 }
 </script>
