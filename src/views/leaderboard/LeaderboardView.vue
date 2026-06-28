@@ -74,9 +74,9 @@
 
             <!-- Info -->
             <ion-label style="flex: 1; min-width: 0;">
-              <h2 style="margin: 0; font-weight: 600; font-size: 1rem; display: flex; align-items: center; gap: 6px; color: inherit;">
+              <h2 style="margin: 0; font-weight: 600; font-size: 1rem; display: flex; align-items: center; gap: 6px; color: inherit; min-width: 0;">
                 <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; color: inherit;">
-                  {{ currentUser?.id === user.id && !user.public_profile ? (currentUser?.user_metadata?.full_name || currentUser?.user_metadata?.display_name || 'Me') : user.display_name }}
+                  {{ formatDisplayName(currentUser?.id === user.id && !user.public_profile ? (currentUser?.user_metadata?.full_name || currentUser?.user_metadata?.display_name || 'Me') : user.display_name) }}
                 </span>
                 <ion-badge v-if="currentUser?.id === user.id && !user.public_profile" color="medium" style="font-size: 0.65rem; padding: 2px 6px; border-radius: 4px;" @click="showPrivateInfoAlert($event)">Private</ion-badge>
               </h2>
@@ -89,6 +89,7 @@
             <ion-badge
               :color="getLevelColor(user.points)"
               class="leaderboard-points-badge"
+              style="flex-shrink: 0;"
             >
               {{ $t('home.pointsCount', { points: user.points }) }}
             </ion-badge>
@@ -265,6 +266,7 @@ import { supabase } from '@/plugins/supabaseClient'
 import { getThemedAnonymousName } from '@/composables/useLeaderboard'
 import { getLevelColor } from '@/composables/useLevels'
 import { getLevelFromPoints } from '@/utils/xp'
+import { formatDisplayName } from '@/utils/nameHelpers'
 import { isPublicProfile, currentUser } from '@/composables/userProfile'
 import { ActivityLogService } from '@/services/ActivityLogService'
 

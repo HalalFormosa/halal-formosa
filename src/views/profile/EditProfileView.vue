@@ -691,14 +691,16 @@ async function saveProfile() {
   /* 1️⃣ Save profile fields */
   await updateUserProfile(userId);
 
-  /* Update auth metadata for avatar */
+  /* Update auth metadata for avatar and name */
   const { error: authUpdateError } = await supabase.auth.updateUser({
     data: {
-      avatar_url: editAvatarUrl.value
+      avatar_url: editAvatarUrl.value,
+      display_name: editDisplayName.value,
+      full_name: editDisplayName.value
     }
   });
   if (authUpdateError) {
-    console.error('Failed to update auth metadata for avatar_url', authUpdateError);
+    console.error('Failed to update auth metadata for avatar/name', authUpdateError);
   }
 
   /* 2️⃣ Re-fetch profile (authoritative state after save) */

@@ -183,7 +183,8 @@
     "error": "Failed to update password.",
     "mismatchError": "Passwords do not match",
     "change": "Change Password",
-    "changePassword": "Change Password"
+    "changePassword": "Change Password",
+    "backToProfile": "Back to Profile"
   },
   "main": {
     "title": "Halal Formosa",

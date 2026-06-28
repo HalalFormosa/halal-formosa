@@ -151,7 +151,8 @@
     "error": "Gagal memperbarui kata sandi.",
     "mismatchError": "Kata sandi tidak cocok",
     "change": "Ubah Kata Sandi",
-    "changePassword": "Change Password"
+    "changePassword": "Change Password",
+    "backToProfile": "Kembali ke Profil"
   },
   "main": {
     "title": "Halal Formosa",

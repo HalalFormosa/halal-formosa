@@ -182,7 +182,8 @@
     "error": "更新密码失败。",
     "mismatchError": "密码不匹配",
     "change": "更改密码",
-    "changePassword": "更改密码"
+    "changePassword": "更改密码",
+    "backToProfile": "返回个人资料"
   },
   "main": {
     "title": "清真福尔摩沙",

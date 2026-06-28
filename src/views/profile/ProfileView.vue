@@ -45,7 +45,14 @@
             </div>
 
             <div class="profile-info text-center" v-if="userEmail">
-              <h2 class="profile-name-main">{{ userDisplayName || $t('profile.defaultName') }}</h2>
+              <h2 class="profile-name-main" style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+                {{ userDisplayName || $t('profile.defaultName') }}
+                <ion-icon 
+                  :icon="icons.createOutline" 
+                  style="font-size: 1.1rem; color: var(--ion-color-carrot); cursor: pointer;" 
+                  @click="goToEditProfile" 
+                />
+              </h2>
               <p class="profile-email-sub">{{ userEmail }}</p>
               
               <div class="badge-row">
@@ -235,7 +242,7 @@
                 <ion-icon :icon="icons.createOutline" />
               </div>
               <ion-label>
-                <h3>{{ $t('profile.aboutMe') }}</h3>
+                <h3>{{ $t('profile.editProfile.title') }}</h3>
                 <p>{{ userBio || $t('profile.noBio') }}</p>
               </ion-label>
               <ion-icon :icon="icons.settingsOutline" slot="end" size="small" style="opacity: 0.3" />
@@ -750,6 +757,7 @@ import {
   editGender, 
   editNationality,
   editAvatarUrl,
+  editDisplayName,
   isProfileComplete
 } from "@/composables/userProfile";
 import {Subscription} from "@supabase/supabase-js";
@@ -944,6 +952,10 @@ watch(countriesList, () => {
 
 watch([editAvatarUrl, () => user.value], ([newAvatar, newUser]) => {
   userAvatar.value = newAvatar || newUser?.user_metadata?.avatar_url || "";
+}, { immediate: true });
+
+watch([editDisplayName, () => user.value], ([newName, newUser]) => {
+  userDisplayName.value = newName || newUser?.user_metadata?.full_name || newUser?.user_metadata?.display_name || "";
 }, { immediate: true });
 
 
