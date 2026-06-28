@@ -771,6 +771,8 @@
     "appVersion": "版本",
     "editProfile": {
       "title": "編輯個人資料",
+      "name": "顯示名稱",
+      "namePlaceholder": "請輸入顯示名稱...",
       "step1Label": "步驟 1: 個人頭像與簡介",
       "step2Label": "步驟 2: 關於我（選填）",
       "step3Label": "步驟 3: 同意與隱私權",

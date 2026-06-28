@@ -23,6 +23,7 @@ export const editGender = ref<string | null>('Other');
 export const editBio = ref<string | null>(null);
 export const editPhone = ref<string | null>(null);
 export const editAvatarUrl = ref<string | null>(null);
+export const editDisplayName = ref<string | null>(null);
 
 export const selectedCountry = ref<any | null>(null); // for display
 export const acknowledged = ref(false);
@@ -163,6 +164,7 @@ export async function loadUserProfile(userId: string) {
         .select(`
           donor_type,
           public_profile,
+          display_name,
           date_of_birth,
           nationality,
           gender,
@@ -177,7 +179,7 @@ export async function loadUserProfile(userId: string) {
           )
         `)
         .eq("id", userId)
-        .maybeSingle<UserProfileRow>();
+        .maybeSingle<UserProfileRow & { display_name: string | null }>();
 
     if (!error && data) {
         setDonorType(userId, data.donor_type || "Free")
@@ -192,6 +194,7 @@ export async function loadUserProfile(userId: string) {
         editBio.value = data.bio;
         editPhone.value = data.phone;
         editAvatarUrl.value = data.avatar_url;
+        editDisplayName.value = data.display_name;
         showLastSeen.value = data.show_last_seen ?? true;
         hasReviewedApp.value = data.has_reviewed_app ?? false;
         acknowledged.value = data.consent_acknowledged ?? false;
@@ -210,6 +213,7 @@ export async function loadUserProfile(userId: string) {
         editBio.value = null;
         editPhone.value = null;
         editAvatarUrl.value = null;
+        editDisplayName.value = null;
     }
 
     profileLoaded.value = true // ⬅️ NEW (end)
@@ -219,6 +223,7 @@ export async function updateUserProfile(userId: string) {
     const { error } = await supabase
         .from("user_profiles")
         .update({
+            display_name: editDisplayName.value,
             date_of_birth: editDOB.value,
             nationality: editNationality.value,
             gender: editGender.value,
@@ -246,6 +251,7 @@ export function resetUserProfileState() {
     editBio.value = null
     editPhone.value = null
     editAvatarUrl.value = null
+    editDisplayName.value = null
 
     selectedCountry.value = null
     hasReviewedApp.value = false

@@ -795,6 +795,8 @@
     "appVersion": "Version",
     "editProfile": {
       "title": "Edit Profile",
+      "name": "Display Name",
+      "namePlaceholder": "Enter your display name...",
       "step1Label": "Step 1: Profile Picture & Bio",
       "step2Label": "Step 2: About Me (Optional)",
       "step3Label": "Step 3: Consent & Privacy",

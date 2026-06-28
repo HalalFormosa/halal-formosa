@@ -47,6 +47,18 @@
           <ion-card class="fade-in">
             <ion-list lines="inset">
               <ion-item>
+                <div class="icon-box" slot="start">
+                  <ion-icon :icon="personOutline" />
+                </div>
+                <ion-input
+                    v-model="editDisplayName"
+                    label-placement="stacked"
+                    :label="$t('profile.editProfile.name') || 'Display Name'"
+                    :placeholder="$t('profile.editProfile.namePlaceholder') || 'Enter your display name...'"
+                ></ion-input>
+              </ion-item>
+
+              <ion-item>
                 <div class="icon-box" slot="start" style="align-self: flex-start; margin-top: 12px;">
                   <ion-icon :icon="createOutline" />
                 </div>
@@ -291,6 +303,18 @@
             </ion-item>
 
             <ion-item>
+              <div class="icon-box" slot="start">
+                <ion-icon :icon="personOutline" />
+              </div>
+              <ion-input
+                  v-model="editDisplayName"
+                  label-placement="stacked"
+                  :label="$t('profile.editProfile.name') || 'Display Name'"
+                  :placeholder="$t('profile.editProfile.namePlaceholder') || 'Enter your display name...'"
+              ></ion-input>
+            </ion-item>
+
+            <ion-item>
               <div class="icon-box" slot="start" style="align-self: flex-start; margin-top: 12px;">
                 <ion-icon :icon="createOutline" />
               </div>
@@ -425,6 +449,7 @@ import {
   editBio,
   editPhone,
   editAvatarUrl,
+  editDisplayName,
   acknowledged,
   isProfileComplete,
   isPublicProfile,

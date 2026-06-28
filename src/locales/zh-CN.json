@@ -753,6 +753,8 @@
     "appVersion": "版本",
     "editProfile": {
       "title": "编辑个人资料",
+      "name": "显示名称",
+      "namePlaceholder": "请输入显示名称...",
       "step1Label": "步骤 1: 个人头像与简介",
       "step2Label": "步骤 2: 关于我（选填）",
       "step3Label": "步骤 3: 同意与隐私权",

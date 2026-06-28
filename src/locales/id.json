@@ -703,6 +703,8 @@
     "appVersion": "Versi",
     "editProfile": {
       "title": "Ubah Profil",
+      "name": "Nama Tampilan",
+      "namePlaceholder": "Masukkan nama tampilan Anda...",
       "step1Label": "Langkah 1: Foto Profil & Bio",
       "step2Label": "Langkah 2: Tentang Saya (Opsional)",
       "step3Label": "Langkah 3: Persetujuan & Privasi",
