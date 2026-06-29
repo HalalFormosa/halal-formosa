@@ -1717,12 +1717,13 @@ onIonViewWillEnter(async () => {
 
   startGoldRotation()
 
-  // Refresh products and count every time the view enters
-  // This triggers the server-side random() shuffle for Gold partners
-  await Promise.all([
-    fetchProducts(true),
-    fetchTotalCount(),
-  ])
+  // Refresh products and count on entry if we don't have results yet
+  if (results.value.length === 0) {
+    await Promise.all([
+      fetchProducts(true),
+      fetchTotalCount(),
+    ])
+  }
 })
 
 

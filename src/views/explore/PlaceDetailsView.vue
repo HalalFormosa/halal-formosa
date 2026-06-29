@@ -919,8 +919,6 @@ async function fetchLocationCertifications(locationId: number) {
   loadingCertifications.value = false
 }
 
-// Run once and every time view re-enters
-onMounted(loadPlace)
 onIonViewWillEnter(async () => {
   await loadPlace()
   auditLogRef.value?.fetchLogs()

@@ -1293,7 +1293,6 @@ async function loadProductData() {
   }
 }
 
-onMounted(loadProductData)
 onIonViewWillEnter(async () => {
   await loadProductData()
   auditLogRef.value?.fetchLogs()
