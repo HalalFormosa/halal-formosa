@@ -8,8 +8,8 @@ android {
         applicationId = "com.rcreative.halalformosa"
         minSdkVersion = rootProject.ext.minSdkVersion
         targetSdkVersion = rootProject.ext.targetSdkVersion
-        versionCode = 121
-        versionName = '1.7.1'
+        versionCode = 122
+        versionName = '1.7.2'
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
