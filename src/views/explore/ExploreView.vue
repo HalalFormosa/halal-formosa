@@ -2730,7 +2730,9 @@ button.gm-ui-hover-effect > span {
 }
 
 .quick-filter-chip.active {
+  background: var(--cat-bg, var(--ion-color-carrot)) !important;
   --background: var(--cat-bg, var(--ion-color-carrot));
+  color: white !important;
   --color: white;
   border-color: var(--cat-bg, var(--ion-color-carrot));
 }
@@ -2916,7 +2918,7 @@ button.gm-ui-hover-effect > span {
   background: transparent !important;
   box-shadow: none !important;
   transition: background 0.2s ease, border-bottom 0.2s ease;
-  padding-top: var(--ion-safe-area-top, 0);
+  padding-top: calc(var(--ion-safe-area-top, 0px) + 16px);
 }
 
 .explore-header.solid-bg {
@@ -2950,21 +2952,61 @@ button.gm-ui-hover-effect > span {
 }
 
 .compact-searchbar {
-  --background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  --border-radius: 24px;
-  --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  --padding-start: 12px;
+  --background: rgba(255, 255, 255, 0.85) !important;
+  --box-shadow: none !important;
+  --border-radius: 16px !important;
+  border-radius: 16px !important;
+  --padding-start: 30px;
   --padding-end: 12px;
   padding: 0;
-  height: 48px;
-  --height: 48px;
+  height: 44px !important;
+  min-height: 44px !important;
+  max-height: 44px !important;
+  --height: 44px;
   margin: 0;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
 
 .ion-palette-dark .compact-searchbar {
-  --background: rgba(45, 45, 45, 0.85);
+  --background: rgba(45, 45, 45, 0.85) !important;
+}
+
+.compact-searchbar::part(container) {
+  background: transparent !important;
+  border-radius: 16px !important;
+  height: 44px !important;
+  min-height: 44px !important;
+  max-height: 44px !important;
+  width: 100% !important;
+  border: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.compact-searchbar::part(input) {
+  height: 100% !important;
+  width: 100% !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border-radius: 16px !important;
+  padding-inline-start: 30px !important;
+  padding-inline-end: 12px !important;
+  border: none !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+  font-size: 0.78rem !important;
+}
+
+.compact-searchbar::part(input)::placeholder {
+  font-size: 0.78rem !important;
+}
+
+.compact-searchbar::part(input)::-webkit-input-placeholder {
+  font-size: 0.78rem !important;
 }
 
 .header-actions {
@@ -2976,8 +3018,12 @@ button.gm-ui-hover-effect > span {
 
 .header-btn {
   --border-radius: 50%;
-  height: 44px; /* Slightly smaller for better fit */
-  width: 44px;
+  height: 44px !important;
+  width: 44px !important;
+  min-height: 44px !important;
+  max-height: 44px !important;
+  min-width: 44px !important;
+  max-width: 44px !important;
   margin: 0;
   --padding-start: 0;
   --padding-end: 0;

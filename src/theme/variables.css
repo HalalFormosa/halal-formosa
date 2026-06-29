@@ -1096,6 +1096,8 @@ ion-popover::part(content) {
     animation: var(--leaderboard-popover-animation) !important;
     border-radius: 20px !important;
     box-shadow: 0 12px 48px rgba(0, 0, 0, 0.25);
+    min-width: 280px !important;
+    width: 280px !important;
 }
 
 .ion-palette-dark .leaderboard-popover::part(content) {
@@ -1338,7 +1340,7 @@ ion-header {
     border-radius: 12px;
     margin: 16px;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 12px;
     font-size: 0.88rem;
     font-weight: 500;

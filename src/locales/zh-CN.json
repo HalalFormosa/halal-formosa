@@ -245,6 +245,7 @@
     "watchFull": "观看完整视频",
     "viewOriginal": "查看原件",
     "leaderboard": "排行榜",
+    "leaderboardShowing": "显示 {count} 位会员，共 {total} 位",
     "leaderboardEmptyDailyTitle": "今天还没有人上榜！",
     "leaderboardEmptyWeeklyTitle": "本周还没有人上榜！",
     "leaderboardEmptyDailyDesc": "快来扫描成分、条码，或新增地点来赚取积分，抢占今日榜首！",

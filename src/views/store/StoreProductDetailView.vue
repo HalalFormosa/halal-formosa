@@ -28,11 +28,6 @@
     <ion-content :scroll-events="true" @ionScroll="handleScroll" fullscreen>
       <div class="product-detail-wrapper" style="position: relative; min-height: 100%; background: var(--ion-background-color);">
         <div class="product-container">
-          <!-- Test Phase Disclaimer Banner -->
-          <div v-if="isUnderConstruction" class="test-phase-banner" style="margin-bottom: 0;">
-            <ion-icon :icon="warningOutline" class="test-phase-icon" />
-            <span>{{ $t('store.testPhaseDisclaimer') }}</span>
-          </div>
 
         <!-- Skeleton while loading -->
         <div v-if="loading" class="detail-skeleton">
@@ -218,7 +213,13 @@
   </ion-content>
 
     <!-- Action bar -->
-    <ion-footer v-if="product">
+    <ion-footer v-if="product" style="background: var(--ion-background-color); box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.06);">
+      <!-- Test Phase Disclaimer Banner -->
+      <div v-if="isUnderConstruction" class="test-phase-banner" style="margin: 10px 16px 2px; font-size: 0.8rem; padding: 10px 12px; gap: 8px; border-radius: 8px; line-height: 1.35;">
+        <ion-icon :icon="warningOutline" class="test-phase-icon" style="font-size: 18px;" />
+        <span>{{ $t('store.testPhaseDisclaimer') }}</span>
+      </div>
+
       <ion-toolbar class="action-toolbar">
         <!-- Owner Actions -->
         <div v-if="isOwner" class="action-buttons">

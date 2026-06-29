@@ -698,11 +698,23 @@
 
           <!-- 📭 Empty state for Home Leaderboard -->
           <div v-if="!loadingLeaderboard && leaderboard.length === 0" class="home-leaderboard-empty">
-            <p>{{ leaderboardType === 'daily' ? $t('home.leaderboardHomeEmptyDaily') : leaderboardType === 'weekly' ? $t('home.leaderboardHomeEmptyWeekly') : $t('search.noResults') }}</p>
-            <ion-button size="small" fill="outline" color="carrot" @click="router.push('/scan')">
-              <ion-icon :icon="scanOutline" slot="start" />
-              {{ $t('home.leaderboardCtaScanShort') }}
-            </ion-button>
+            <p class="empty-title">{{ leaderboardType === 'daily' ? $t('home.leaderboardHomeEmptyDaily') : leaderboardType === 'weekly' ? $t('home.leaderboardHomeEmptyWeekly') : $t('search.noResults') }}</p>
+            <p class="empty-tip">{{ $t('home.leaderboardEmptyDailyDesc') }}</p>
+            
+            <div class="empty-actions-grid">
+              <ion-button size="small" fill="outline" color="carrot" @click="router.push('/scan')">
+                <ion-icon :icon="scanOutline" slot="start" />
+                {{ locale.startsWith('zh') ? '掃描' : 'Scan' }}
+              </ion-button>
+              <ion-button size="small" fill="outline" color="carrot" @click="router.push('/add')">
+                <ion-icon :icon="addOutline" slot="start" />
+                {{ locale.startsWith('zh') ? '新增產品' : 'Add Product' }}
+              </ion-button>
+              <ion-button size="small" fill="outline" color="carrot" @click="router.push('/explore/add')">
+                <ion-icon :icon="locationOutline" slot="start" />
+                {{ locale.startsWith('zh') ? '新增地點' : 'Add Place' }}
+              </ion-button>
+            </div>
           </div>
         </ion-card-content>
       </ion-card>
@@ -881,7 +893,8 @@ import {
   cartOutline,
   constructOutline,
   chevronForwardOutline,
-  warningOutline
+  warningOutline,
+  addOutline
 } from "ionicons/icons"
 import { useLeaderboard } from "@/composables/useLeaderboard";
 import {getLevelColor} from "@/composables/useLevels";
@@ -2658,6 +2671,10 @@ ion-segment-button {
   border-radius: 20px;
   overflow: hidden;
   --border-radius: 20px;
+  --padding-start: 20px !important;
+  --padding-end: 20px !important;
+  --padding-top: 20px !important;
+  --padding-bottom: 16px !important;
 }
 
 .mock-popover-pro-badge {
@@ -2785,21 +2802,34 @@ ion-segment-button {
 
 .home-leaderboard-empty {
   text-align: center;
-  padding: 24px 16px;
+  padding: 24px 12px 16px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
 }
-.home-leaderboard-empty p {
-  margin: 0 0 12px;
-  font-size: 0.9rem;
-  color: var(--ion-color-medium);
-  line-height: 1.4;
-  max-width: 280px;
+.home-leaderboard-empty .empty-title {
+  margin: 0 0 6px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--ion-color-dark);
 }
-.home-leaderboard-empty ion-button {
-  --border-radius: 8px;
+.home-leaderboard-empty .empty-tip {
+  margin: 0 0 16px;
+  font-size: 0.78rem;
+  color: var(--ion-color-medium);
+  line-height: 1.45;
+  max-width: 320px;
+}
+.empty-actions-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  width: 100%;
+}
+.empty-actions-grid ion-button {
+  --border-radius: 20px;
   font-weight: 600;
   margin: 0;
 }

@@ -251,6 +251,7 @@
     "viewOriginal": "View Original",
     "leaderboard_privacy_hint": "Want your name to be shown in the leaderboard? Go to Settings and make your profile public.",
     "leaderboard": "Leaderboard",
+    "leaderboardShowing": "Showing {count} of {total} members",
     "leaderboardEmptyDailyTitle": "No one is ranked today!",
     "leaderboardEmptyWeeklyTitle": "No one is ranked this week!",
     "leaderboardEmptyDailyDesc": "Be the first to scan ingredients, scan barcodes, or add places to earn points and claim the top spot!",

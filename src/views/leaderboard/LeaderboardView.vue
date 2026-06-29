@@ -40,14 +40,32 @@
         </ion-segment-button>
       </ion-segment>
 
+      <!-- 📊 Floating Leaderboard Summary Statistics Bar -->
+      <div v-if="users.length > 0" class="leaderboard-summary-bar" slot="fixed">
+        <span class="summary-text">{{ $t('home.leaderboardShowing', { count: users.length, total: totalUsers }) }}</span>
+        <button 
+          v-if="currentUser" 
+          class="my-rank-btn" 
+          :class="{ 'is-loading': rankingLoading }"
+          :disabled="rankingLoading" 
+          @click="scrollToMyRank"
+        >
+          <ion-spinner v-if="rankingLoading" name="crescent" class="btn-spinner" />
+          <ion-icon v-else :icon="personOutline" style="margin-right: 4px; font-size: 0.9rem;" />
+          <span>{{ rankingLoading ? (locale.startsWith('zh') ? '載入中...' : 'Loading...') : (locale.startsWith('zh') ? '我的排名' : 'My Rank') }}</span>
+        </button>
+      </div>
+
       <!-- 🏆 Leaderboard List -->
       <ion-list v-if="users.length > 0" class="leaderboard-list">
         <ion-item
           v-for="(user, index) in users"
           :key="user.id"
+          :id="'leaderboard-user-' + user.id"
           lines="none"
           button
           class="leaderboard-item"
+          :class="{ 'highlighted-row': highlightedUserId === user.id }"
           :style="getLeaderboardRowStyle(user)"
           @click="openUserProfile(user, $event)"
         >
@@ -123,10 +141,21 @@
           </div>
           <h2>{{ leaderboardType === 'daily' ? $t('home.leaderboardEmptyDailyTitle') : $t('home.leaderboardEmptyWeeklyTitle') }}</h2>
           <p>{{ leaderboardType === 'daily' ? $t('home.leaderboardEmptyDailyDesc') : $t('home.leaderboardEmptyWeeklyDesc') }}</p>
-          <ion-button color="carrot" class="cta-button" @click="router.push('/scan')">
-            <ion-icon :icon="scanOutline" slot="start" />
-            {{ $t('home.leaderboardCtaScan') }}
-          </ion-button>
+          
+          <div class="empty-actions-grid">
+            <ion-button color="carrot" class="cta-button" @click="router.push('/scan')">
+              <ion-icon :icon="scanOutline" slot="start" />
+              {{ locale.startsWith('zh') ? '掃描' : 'Scan' }}
+            </ion-button>
+            <ion-button color="carrot" class="cta-button" @click="router.push('/add')">
+              <ion-icon :icon="addOutline" slot="start" />
+              {{ locale.startsWith('zh') ? '新增產品' : 'Add Product' }}
+            </ion-button>
+            <ion-button color="carrot" class="cta-button" @click="router.push('/explore/add')">
+              <ion-icon :icon="locationOutline" slot="start" />
+              {{ locale.startsWith('zh') ? '新增地點' : 'Add Place' }}
+            </ion-button>
+          </div>
         </div>
         <div v-else class="empty-state">
           <p>{{ $t('search.noResults') || 'No users found.' }}</p>
@@ -134,7 +163,7 @@
       </div>
 
       <!-- 🔄 Infinite Scroll -->
-      <ion-infinite-scroll @ionInfinite="loadNextPage" :disabled="isInfiniteScrollDisabled">
+      <ion-infinite-scroll :key="infiniteScrollKey" @ionInfinite="loadNextPage" :disabled="isInfiniteScrollDisabled">
         <ion-infinite-scroll-content loading-spinner="bubbles" :loading-text="$t('common.loading') || 'Loading more players...'" />
       </ion-infinite-scroll>
     </ion-content>
@@ -247,20 +276,23 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import {
   IonPage, IonContent, IonHeader, IonSearchbar, IonList, IonItem, IonAvatar, IonLabel, IonBadge,
   IonIcon, IonPopover, IonInfiniteScroll, IonInfiniteScrollContent, IonSkeletonText,
-  IonSegment, IonSegmentButton, alertController, IonButton
+  IonSegment, IonSegmentButton, alertController, IonButton, IonSpinner
 } from '@ionic/vue'
 import AppHeader from '@/components/AppHeader.vue'
 import {
   medalOutline,
   sparkles,
   chevronForwardOutline,
-  scanOutline
+  scanOutline,
+  personOutline,
+  addOutline,
+  locationOutline
 } from 'ionicons/icons'
 import { supabase } from '@/plugins/supabaseClient'
 import { getThemedAnonymousName } from '@/composables/useLeaderboard'
@@ -280,6 +312,11 @@ const searchQuery = ref('')
 const page = ref(0)
 const pageSize = 20
 const isInfiniteScrollDisabled = ref(false)
+const infiniteScrollKey = ref(0)
+const totalUsers = ref(0)
+const currentUserRank = ref<number | null>(null)
+const highlightedUserId = ref<string | null>(null)
+const rankingLoading = ref(false)
 const leaderboardType = ref<'daily' | 'weekly' | 'monthly' | 'all_time'>('daily')
 
 const selectedUser = ref<any | null>(null)
@@ -343,7 +380,7 @@ async function fetchUsersPage(isAppend = false) {
     }
     let queryBuilder = supabase
       .from(table)
-      .select('*')
+      .select('*', { count: 'exact' })
       .order('points', { ascending: false })
       .range(from, to)
 
@@ -353,7 +390,7 @@ async function fetchUsersPage(isAppend = false) {
         .eq('public_profile', true)
     }
 
-    const { data, error } = await queryBuilder
+    const { data, error, count } = await queryBuilder
 
     if (error) {
       console.error('Error fetching leaderboard pages:', error)
@@ -361,6 +398,7 @@ async function fetchUsersPage(isAppend = false) {
     }
 
     if (data) {
+      totalUsers.value = count ?? 0
       const mapped = data.map((u: any, idx: number) => {
         const absRank = searchQuery.value ? null : from + idx + 1
         return {
@@ -393,10 +431,169 @@ async function fetchUsersPage(isAppend = false) {
   }
 }
 
+async function fetchCurrentUserRank() {
+  if (!currentUser.value?.id) return
+  
+  let table = 'leaderboard_view'
+  if (leaderboardType.value === 'daily') {
+    table = 'leaderboard_daily_view'
+  } else if (leaderboardType.value === 'weekly') {
+    table = 'leaderboard_weekly_view'
+  } else if (leaderboardType.value === 'monthly') {
+    table = 'leaderboard_monthly_view'
+  }
+  
+  try {
+    const { data: userData, error: userError } = await supabase
+      .from(table)
+      .select('points')
+      .eq('id', currentUser.value.id)
+      .maybeSingle()
+      
+    if (userError || !userData) {
+      currentUserRank.value = null
+      return
+    }
+    
+    const { count, error: countError } = await supabase
+      .from(table)
+      .select('*', { count: 'exact', head: true })
+      .gt('points', userData.points)
+      
+    if (!countError && count !== null) {
+      currentUserRank.value = count + 1
+    }
+  } catch (e) {
+    console.warn('Failed to fetch current user rank:', e)
+  }
+}
+
+async function fetchUsersUpToPage(targetPage: number) {
+  loading.value = true
+  try {
+    let table = 'leaderboard_view'
+    if (leaderboardType.value === 'daily') {
+      table = 'leaderboard_daily_view'
+    } else if (leaderboardType.value === 'weekly') {
+      table = 'leaderboard_weekly_view'
+    } else if (leaderboardType.value === 'monthly') {
+      table = 'leaderboard_monthly_view'
+    }
+
+    // Fetch pages concurrently in parallel
+    const pagePromises = Array.from({ length: targetPage + 1 }, (_, p) => {
+      const from = p * pageSize
+      const to = from + pageSize - 1
+      return supabase
+        .from(table)
+        .select('*')
+        .order('points', { ascending: false })
+        .range(from, to)
+    })
+
+    const results = await Promise.all(pagePromises)
+    
+    const allFetchedData: any[] = []
+    let hasReachedEnd = false
+    
+    for (const res of results) {
+      if (res.error) {
+        console.error('Error fetching page in parallel:', res.error)
+        continue
+      }
+      if (res.data) {
+        allFetchedData.push(...res.data)
+        if (res.data.length < pageSize) {
+          hasReachedEnd = true
+        }
+      }
+    }
+
+    // Map the ranks correctly
+    const mapped = allFetchedData.map((u: any, idx: number) => {
+      const absRank = searchQuery.value ? null : idx + 1
+      return {
+        ...u,
+        display_name: u.public_profile ? u.display_name : getThemedAnonymousName(u.id, absRank || 1),
+        avatar_url: u.public_profile ? u.avatar_url : 'https://placehold.co/64x64',
+        rank: absRank,
+        total_points: u.total_points ?? u.points
+      }
+    })
+
+    if (searchQuery.value && mapped.length > 0) {
+      await resolveRanks(mapped)
+    }
+
+    users.value = mapped
+    page.value = targetPage
+    if (hasReachedEnd) {
+      isInfiniteScrollDisabled.value = true
+    }
+  } catch (err) {
+    console.error('Exception in fetchUsersUpToPage:', err)
+  } finally {
+    loading.value = false
+  }
+}
+
+async function scrollToMyRank() {
+  if (!currentUser.value?.id) return
+
+  const idx = users.value.findIndex(u => u.id === currentUser.value?.id)
+  if (idx !== -1) {
+    const el = document.getElementById(`leaderboard-user-${currentUser.value.id}`)
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      highlightedUserId.value = currentUser.value.id
+      setTimeout(() => {
+        highlightedUserId.value = null
+      }, 2500)
+    }
+    return
+  }
+
+  if (currentUserRank.value) {
+    const targetPage = Math.floor((currentUserRank.value - 1) / pageSize)
+    
+    rankingLoading.value = true
+    try {
+      await fetchUsersUpToPage(targetPage)
+      
+      await nextTick()
+      
+      setTimeout(() => {
+        const el = document.getElementById(`leaderboard-user-${currentUser.value.id}`)
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+          highlightedUserId.value = currentUser.value.id
+          setTimeout(() => {
+            highlightedUserId.value = null
+          }, 2500)
+        }
+      }, 100)
+    } finally {
+      rankingLoading.value = false
+    }
+  } else {
+    const isZh = locale.value === 'zh' || locale.value?.startsWith('zh')
+    const alert = await alertController.create({
+      header: isZh ? '個人排名' : 'My Rank',
+      message: isZh 
+        ? '在此排行榜中未找到您的紀錄。開始進行貢獻以獲得積分吧！' 
+        : 'No points record found for you on this leaderboard. Start contributing to earn points!',
+      buttons: [isZh ? '確定' : 'OK']
+    })
+    await alert.present()
+  }
+}
+
 function resetAndFetch() {
   page.value = 0
   isInfiniteScrollDisabled.value = false
+  infiniteScrollKey.value++
   fetchUsersPage(false)
+  fetchCurrentUserRank()
 }
 
 let searchTimeout: any = null
@@ -579,6 +776,7 @@ function isBackgroundLight(cosmetic?: any | null): boolean {
 /* ---------------- Lifecycle ---------------- */
 onMounted(() => {
   fetchUsersPage(false)
+  fetchCurrentUserRank()
 })
 </script>
 
@@ -840,6 +1038,94 @@ ion-segment-button {
   pointer-events: none;
 }
 
+.leaderboard-summary-bar {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--ion-color-step-150, rgba(30, 30, 30, 0.85));
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  padding: 6px 8px 6px 16px;
+  border-radius: 30px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--ion-color-step-200, rgba(255, 255, 255, 0.1));
+}
+
+.summary-text {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--ion-color-medium);
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.my-rank-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--ion-color-carrot);
+  color: var(--ion-color-carrot-contrast, #fff);
+  border: none;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.my-rank-btn:active {
+  transform: scale(0.95);
+  opacity: 0.9;
+}
+
+.my-rank-btn.is-loading {
+  opacity: 0.85;
+  background: var(--ion-color-step-300, rgba(128, 128, 128, 0.3));
+  color: var(--ion-color-medium, #aaa);
+  cursor: not-allowed;
+}
+
+.btn-spinner {
+  width: 14px;
+  height: 14px;
+  margin-right: 4px;
+  --color: currentColor;
+}
+
+.highlighted-row {
+  animation: highlight-pulse 2.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+
+@keyframes highlight-pulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 rgba(230, 126, 34, 0);
+  }
+  15% {
+    transform: scale(1.025);
+    box-shadow: 0 0 20px rgba(230, 126, 34, 0.75);
+    background: rgba(230, 126, 34, 0.22) !important;
+  }
+  80% {
+    transform: scale(1.025);
+    box-shadow: 0 0 20px rgba(230, 126, 34, 0.75);
+    background: rgba(230, 126, 34, 0.22) !important;
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 rgba(230, 126, 34, 0);
+  }
+}
+
 .empty-state-container {
   display: flex;
   justify-content: center;
@@ -911,6 +1197,13 @@ ion-segment-button {
   font-size: 0.9rem;
   width: 100%;
   margin: 0;
+}
+
+.empty-actions-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
 }
 
 @keyframes bounce {

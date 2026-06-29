@@ -525,6 +525,8 @@ onIonViewWillEnter(() => {
   flex-direction: column;
   align-items: center;
   text-align: center;
+  position: relative;
+  z-index: 2;
 }
 
 @media (min-width: 768px) {

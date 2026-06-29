@@ -254,6 +254,7 @@
     "viewOriginal": "查看原始連結",
     "leaderboard_privacy_hint": "想要在排行榜上顯示您的名字嗎？請至設定中將您的個人資料設為公開。",
     "leaderboard": "排行榜",
+    "leaderboardShowing": "顯示 {count} 位會員，共 {total} 位",
     "leaderboardEmptyDailyTitle": "今天還沒有人上榜！",
     "leaderboardEmptyWeeklyTitle": "本週還沒有人上榜！",
     "leaderboardEmptyDailyDesc": "快來掃描成分、條碼，或新增地點來賺取積分，搶占今日榜首！",

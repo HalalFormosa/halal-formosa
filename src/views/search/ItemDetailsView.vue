@@ -1252,13 +1252,37 @@ async function loadProductData() {
       }
 
 
-      // ✅ TS now knows this is non-null
-      await ActivityLogService.log("product_details_open", {
-        barcode: product.barcode,
-        product_name: product.name,
-        status: product.status,
-        category: product.product_categories?.name || null,
-      })
+      // Only log if the user hasn't viewed this product before (unique view count)
+      let hasViewed = false
+      const viewedKey = `viewed_prod_${product.barcode}`
+      if (localStorage.getItem(viewedKey)) {
+        hasViewed = true
+      } else {
+        if (userId.value) {
+          const { data: existingLogs, error: logError } = await supabase
+            .from('activity_log')
+            .select('id')
+            .eq('user_id', userId.value)
+            .eq('activity_type', 'product_details_open')
+            .eq('entity_id', product.barcode)
+            .limit(1)
+
+          if (!logError && existingLogs && existingLogs.length > 0) {
+            hasViewed = true
+            localStorage.setItem(viewedKey, 'true')
+          }
+        }
+      }
+
+      if (!hasViewed) {
+        await ActivityLogService.log("product_details_open", {
+          barcode: product.barcode,
+          product_name: product.name,
+          status: product.status,
+          category: product.product_categories?.name || null,
+        })
+        localStorage.setItem(viewedKey, 'true')
+      }
 
       await fetchRelatedProducts()
       await loadFoldersAndSavedState()
