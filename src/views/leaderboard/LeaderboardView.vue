@@ -69,49 +69,47 @@
           :style="getLeaderboardRowStyle(user)"
           @click="openUserProfile(user, $event)"
         >
-          <div style="display: flex; align-items: center; width: 100%;">
-            <!-- Rank -->
-            <div style="width: 28px; text-align: center; font-weight: 600; display: flex; align-items: center; justify-content: center; color: inherit;">
-              <ion-icon v-if="getDisplayRank(user, index) === 1" :icon="medalOutline" style="color: #FFD700; font-size: 1.2rem;" />
-              <ion-icon v-else-if="getDisplayRank(user, index) === 2" :icon="medalOutline" style="color: #C0C0C0; font-size: 1.2rem;" />
-              <ion-icon v-else-if="getDisplayRank(user, index) === 3" :icon="medalOutline" style="color: #CD7F32; font-size: 1.2rem;" />
-              <span v-else>{{ getDisplayRank(user, index) }}</span>
-            </div>
-
-            <!-- Avatar with Cosmetics -->
-            <div class="leaderboard-avatar-cell" :style="getLeaderboardGlowStyle(user)">
-              <ion-avatar style="width: 40px; height: 40px;" :style="getLeaderboardFrameStyle(user)">
-                <img
-                  :src="(user.public_profile || currentUser?.id === user.id) ? (user.public_profile ? (user.avatar_url || 'https://placehold.co/64x64') : (currentUser?.user_metadata?.avatar_url || 'https://placehold.co/64x64')) : `https://placehold.co/64x64?text=${$t('home.unknownAvatar')}`"
-                  :alt="$t('home.altAvatar')"
-                  loading="lazy"
-                  @error="handleImgError"
-                />
-              </ion-avatar>
-            </div>
-
-            <!-- Info -->
-            <ion-label style="flex: 1; min-width: 0;">
-              <h2 style="margin: 0; font-weight: 600; font-size: 1rem; display: flex; align-items: center; gap: 6px; color: inherit; min-width: 0;">
-                <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; color: inherit;">
-                  {{ formatDisplayName(currentUser?.id === user.id && !user.public_profile ? (currentUser?.user_metadata?.full_name || currentUser?.user_metadata?.display_name || 'Me') : user.display_name) }}
-                </span>
-                <ion-badge v-if="currentUser?.id === user.id && !user.public_profile" color="medium" style="font-size: 0.65rem; padding: 2px 6px; border-radius: 4px;" @click="showPrivateInfoAlert($event)">Private</ion-badge>
-              </h2>
-              <p style="margin: 0; font-size: 0.8rem; color: var(--sub-color, var(--ion-color-medium));">
-                {{ $t('profile.level', { level: getLevelFromPoints(user.total_points || user.points) }) }}
-              </p>
-            </ion-label>
-
-            <!-- Points Badge -->
-            <ion-badge
-              :color="getLevelColor(user.points)"
-              class="leaderboard-points-badge"
-              style="flex-shrink: 0;"
-            >
-              {{ $t('home.pointsCount', { points: user.points }) }}
-            </ion-badge>
+          <!-- Rank -->
+          <div slot="start" style="width: 24px; text-align: center; font-weight: 600; display: flex; align-items: center; justify-content: center; color: inherit; margin-right: 8px;">
+            <ion-icon v-if="getDisplayRank(user, index) === 1" :icon="medalOutline" style="color: #FFD700; font-size: 1.2rem;" />
+            <ion-icon v-else-if="getDisplayRank(user, index) === 2" :icon="medalOutline" style="color: #C0C0C0; font-size: 1.2rem;" />
+            <ion-icon v-else-if="getDisplayRank(user, index) === 3" :icon="medalOutline" style="color: #CD7F32; font-size: 1.2rem;" />
+            <span v-else>{{ getDisplayRank(user, index) }}</span>
           </div>
+
+          <!-- Avatar with Cosmetics -->
+          <div slot="start" class="leaderboard-avatar-cell" :style="getLeaderboardGlowStyle(user)" style="margin-right: 12px;">
+            <ion-avatar style="width: 40px; height: 40px;" :style="getLeaderboardFrameStyle(user)">
+              <img
+                :src="(user.public_profile || currentUser?.id === user.id) ? (user.public_profile ? (user.avatar_url || 'https://placehold.co/64x64') : (currentUser?.user_metadata?.avatar_url || 'https://placehold.co/64x64')) : `https://placehold.co/64x64?text=${$t('home.unknownAvatar')}`"
+                :alt="$t('home.altAvatar')"
+                loading="lazy"
+                @error="handleImgError"
+              />
+            </ion-avatar>
+          </div>
+
+          <!-- Info -->
+          <ion-label style="min-width: 0; flex: 1; overflow: hidden;">
+            <h2 style="margin: 0; font-weight: 600; font-size: 1rem; display: flex; align-items: center; gap: 6px; color: inherit; min-width: 0; overflow: hidden; width: 100%;">
+              <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0; color: inherit;">
+                {{ formatDisplayName(currentUser?.id === user.id && !user.public_profile ? (currentUser?.user_metadata?.full_name || currentUser?.user_metadata?.display_name || 'Me') : user.display_name) }}
+              </span>
+              <ion-badge v-if="currentUser?.id === user.id && !user.public_profile" color="medium" style="font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; flex-shrink: 0;" @click="showPrivateInfoAlert($event)">Private</ion-badge>
+            </h2>
+            <p style="margin: 0; font-size: 0.8rem; color: var(--sub-color, var(--ion-color-medium));">
+              {{ $t('profile.level', { level: getLevelFromPoints(user.total_points || user.points) }) }}
+            </p>
+          </ion-label>
+
+          <!-- Points Badge -->
+          <ion-badge
+            slot="end"
+            :color="getLevelColor(user.points)"
+            class="leaderboard-points-badge"
+          >
+            {{ $t('home.pointsCount', { points: user.points }) }}
+          </ion-badge>
         </ion-item>
       </ion-list>
 
@@ -880,6 +878,8 @@ ion-segment-button {
   border-radius: 8px;
   transition: all 0.3s ease;
 }
+
+
 
 .popover-cosmetic-wrapper {
   display: flex;
