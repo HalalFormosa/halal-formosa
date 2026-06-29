@@ -73,11 +73,24 @@ export async function moveBanner(adId: string, spaceId: string, isTesting: boole
             : 'ca-app-pub-3940256099942544/6300978111'; // Google Android demo banner ID
     }
 
+    let marginValue = topOffset
+    if (Capacitor.getPlatform() === 'ios') {
+        const safeAreaTop = parseFloat(
+            getComputedStyle(document.documentElement).getPropertyValue('--safe-area-inset-top') || '0'
+        ) || 0
+        // ⚠️ @capacitor-community/admob iOS Layout Bug:
+        // The plugin multiplies the passed Margin by -1 internally.
+        // It sets: bannerView.top = safeAreaLayoutGuide.top - Margin.
+        // To place the banner top exactly at rect.top, we need:
+        // rect.top = safeAreaTop - Margin => Margin = safeAreaTop - rect.top.
+        marginValue = Math.round(safeAreaTop - rect.top)
+    }
+
     await AdMob.showBanner({
         adId: finalAdId,
         adSize: BannerAdSize.ADAPTIVE_BANNER,
         position: BannerAdPosition.TOP_CENTER,
-        margin: topOffset,
+        margin: marginValue,
         isTesting: testing,
     })
 }
