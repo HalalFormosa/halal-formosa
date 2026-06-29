@@ -1144,7 +1144,7 @@ ion-popover ion-item ion-label {
 
 /* Specialized width class if needed */
 .width-190 {
-    --width: 190px;
+    --width: 220px;
 }
 
 .ion-palette-dark ion-popover ion-item ion-label {

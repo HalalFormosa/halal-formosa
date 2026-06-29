@@ -16,13 +16,13 @@
 
           <ion-popover trigger="sort-trigger" trigger-action="click" :dismiss-on-select="true" class="width-190">
             <ion-list lines="none">
-              <ion-item button @click="sortBy = 'recent'">
+              <ion-item button :detail="false" @click="sortBy = 'recent'">
                 <ion-icon :icon="timeOutline" slot="start" />
                 <ion-label>{{ $t('admin.sortRecent') }}</ion-label>
                 <ion-icon v-if="sortBy === 'recent'" :icon="checkmarkCircle" slot="end" color="success" style="font-size: 14px;" />
               </ion-item>
               
-              <ion-item button @click="sortBy = 'alpha'">
+              <ion-item button :detail="false" @click="sortBy = 'alpha'">
                 <ion-icon :icon="listOutline" slot="start" />
                 <ion-label>{{ $t('admin.sortAlpha') }}</ion-label>
                 <ion-icon v-if="sortBy === 'alpha'" :icon="checkmarkCircle" slot="end" color="success" style="font-size: 14px;" />

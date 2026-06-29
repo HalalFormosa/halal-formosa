@@ -78,7 +78,7 @@
             <ion-popover trigger="store-sort-trigger" size="auto" dismiss-on-select class="width-190">
               <ion-content>
                 <ion-list lines="none">
-                  <ion-item v-for="s in sortOptions" :key="s.value" button @click="sortBy = s.value"
+                  <ion-item v-for="s in sortOptions" :key="s.value" button :detail="false" @click="sortBy = s.value"
                     :class="{ 'active-sort': sortBy === s.value }">
                     <ion-label>{{ s.label }}</ion-label>
                     <ion-icon v-if="sortBy === s.value" :icon="checkmarkOutline" slot="end" color="carrot" />

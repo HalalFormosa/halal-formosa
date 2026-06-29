@@ -193,31 +193,31 @@
               
               <ion-popover trigger="sort-trigger-explore" trigger-action="click" :dismiss-on-select="true" class="width-190">
                 <ion-list lines="none">
-                  <ion-item button @click="sortBy = 'nearest'">
+                  <ion-item button :detail="false" @click="sortBy = 'nearest'">
                     <ion-icon :icon="locationOutline" slot="start" />
                     <ion-label>{{ $t('search.sortNearest') }}</ion-label>
                     <ion-icon v-if="sortBy === 'nearest'" :icon="checkmarkCircle" slot="end" color="success" style="font-size: 14px;" />
                   </ion-item>
                   
-                  <ion-item button @click="sortBy = 'recent'">
+                  <ion-item button :detail="false" @click="sortBy = 'recent'">
                     <ion-icon :icon="timeOutline" slot="start" />
                     <ion-label>{{ $t('search.sortRecent') }}</ion-label>
                     <ion-icon v-if="sortBy === 'recent'" :icon="checkmarkCircle" slot="end" color="success" style="font-size: 14px;" />
                   </ion-item>
                   
-                  <ion-item button @click="sortBy = 'trending'">
+                  <ion-item button :detail="false" @click="sortBy = 'trending'">
                     <ion-icon :icon="trendingUpOutline" slot="start" />
                     <ion-label>{{ $t('search.sortTrending') }}</ion-label>
                     <ion-icon v-if="sortBy === 'trending'" :icon="checkmarkCircle" slot="end" color="success" style="font-size: 14px;" />
                   </ion-item>
 
-                  <ion-item button @click="sortBy = 'popular'">
+                  <ion-item button :detail="false" @click="sortBy = 'popular'">
                     <ion-icon :icon="flameOutline" slot="start" />
                     <ion-label>{{ $t('search.sortViews') }}</ion-label>
                     <ion-icon v-if="sortBy === 'popular'" :icon="checkmarkCircle" slot="end" color="success" style="font-size: 14px;" />
                   </ion-item>
 
-                  <ion-item v-if="canShowForYouSort" button @click="sortBy = 'for_you'">
+                  <ion-item v-if="canShowForYouSort" button :detail="false" @click="sortBy = 'for_you'">
                     <ion-icon :icon="sparklesOutline" slot="start" />
                     <ion-label>{{ $t('search.sortForYou') }}</ion-label>
                     <ion-icon v-if="sortBy === 'for_you'" :icon="checkmarkCircle" slot="end" color="success" style="font-size: 14px;" />
@@ -2916,6 +2916,7 @@ button.gm-ui-hover-effect > span {
   background: transparent !important;
   box-shadow: none !important;
   transition: background 0.2s ease, border-bottom 0.2s ease;
+  padding-top: var(--ion-safe-area-top, 0);
 }
 
 .explore-header.solid-bg {
@@ -2958,6 +2959,8 @@ button.gm-ui-hover-effect > span {
   --padding-end: 12px;
   padding: 0;
   height: 48px;
+  --height: 48px;
+  margin: 0;
 }
 
 .ion-palette-dark .compact-searchbar {

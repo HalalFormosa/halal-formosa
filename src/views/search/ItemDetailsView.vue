@@ -13,22 +13,22 @@
         :contrast="!isScrolled"
       >
         <template #actions>
-          <ion-item v-if="userId" button @click="openSaveModal" lines="none">
+          <ion-item v-if="userId" button :detail="false" @click="openSaveModal" lines="none">
             <ion-icon :icon="isItemSaved ? bookmark : bookmarkOutline" slot="start" />
             <ion-label>{{ $t('search.details.save') }}</ion-label>
           </ion-item>
 
-          <ion-item v-if="canEdit" button @click="editItem" lines="none">
+          <ion-item v-if="canEdit" button :detail="false" @click="editItem" lines="none">
             <ion-icon :icon="createOutline" slot="start" />
             <ion-label>{{ $t('search.details.edit') }}</ion-label>
           </ion-item>
 
-          <ion-item button @click="share" lines="none">
+          <ion-item button :detail="false" @click="share" lines="none">
             <ion-icon :icon="shareSocialOutline" slot="start" />
             <ion-label>{{ $t('search.details.share') }}</ion-label>
           </ion-item>
 
-          <ion-item button @click="reportItem" lines="none">
+          <ion-item button :detail="false" @click="reportItem" lines="none">
             <ion-icon :icon="alertCircleOutline" slot="start" />
             <ion-label>{{ $t('search.details.report') }}</ion-label>
           </ion-item>

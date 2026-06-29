@@ -11,12 +11,12 @@
           :contrast="!isScrolled"
       >
         <template #actions>
-          <ion-item button lines="none" @click="handleChat">
+          <ion-item button :detail="false" lines="none" @click="handleChat">
             <ion-icon :icon="chatbubbleOutline" slot="start" />
             <ion-label>{{ $t('common.chat') || 'Chat' }}</ion-label>
             <ion-badge v-if="totalUnreadCount > 0" color="danger" slot="end">{{ totalUnreadCount }}</ion-badge>
           </ion-item>
-          <ion-item button lines="none" @click="openCart">
+          <ion-item button :detail="false" lines="none" @click="openCart">
             <ion-icon :icon="cartOutline" slot="start" />
             <ion-label>{{ $t('store.cart') || 'Cart' }}</ion-label>
             <ion-badge v-if="cartCount > 0" color="danger" slot="end">{{ cartCount }}</ion-badge>

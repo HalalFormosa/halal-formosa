@@ -13,6 +13,7 @@
         <template #actions>
           <ion-item
               button
+              :detail="false"
               lines="none"
               @click="showDetailedDisclaimer = true"
           >

@@ -24,13 +24,13 @@
 
           <ion-popover trigger="sort-trigger-trip" trigger-action="click" :dismiss-on-select="true" class="width-190">
             <ion-list lines="none">
-              <ion-item button @click="sortBy = 'recent'">
+              <ion-item button :detail="false" @click="sortBy = 'recent'">
                 <ion-icon :icon="timeOutline" slot="start" />
                 <ion-label>{{ $t('trip.sortRecentShort') }}</ion-label>
                 <ion-icon v-if="sortBy === 'recent'" :icon="checkmarkCircle" slot="end" color="success" style="font-size: 14px;" />
               </ion-item>
               
-              <ion-item button @click="sortBy = 'views'">
+              <ion-item button :detail="false" @click="sortBy = 'views'">
                 <ion-icon :icon="flameOutline" slot="start" />
                 <ion-label>{{ $t('trip.sortViewsShort') }}</ion-label>
                 <ion-icon v-if="sortBy === 'views'" :icon="checkmarkCircle" slot="end" color="success" style="font-size: 14px;" />
