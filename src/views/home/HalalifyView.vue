@@ -167,7 +167,7 @@ import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import {
   IonPage, IonHeader,
-  IonContent, IonSearchbar, IonSelect, IonSelectOption, IonButton, IonIcon, toastController
+  IonContent, IonSearchbar, IonSelect, IonSelectOption, IonButton, IonIcon, toastController, alertController
 } from '@ionic/vue'
 import {
   volumeMediumOutline, copyOutline, playCircleOutline, pauseCircleOutline, bookOutline, star, starOutline, lockClosed, createOutline, languageOutline,
@@ -780,11 +780,26 @@ function selectCategory(catId: string) {
 
 async function presentRcPaywall() {
   if (!Capacitor.isNativePlatform()) {
-    console.warn("[RC] Paywall can only run on native apps.");
-    const confirmUnlock = confirm("[DEV] Unlock Pro for testing?")
-    if (confirmUnlock) {
-      isDonor.value = true
-      localStorage.setItem("user_pro_status", "true")
+    if (import.meta.env.DEV) {
+      console.warn("[RC] Paywall can only run on native apps.");
+      const confirmUnlock = confirm("[DEV] Unlock Pro for testing?")
+      if (confirmUnlock) {
+        isDonor.value = true
+        localStorage.setItem("user_pro_status", "true")
+      }
+    } else {
+      const isZh = (locale.value || '').startsWith('zh')
+      const headerText = isZh ? 'Halalify Pro 功能' : 'Halalify Pro Feature'
+      const messageText = isZh 
+        ? '單字翻譯、拼音發音拆解及語音播放功能僅在行動應用程式中提供。請在 iOS 或 Android 下載 Halal Formosa 以解鎖 Pro 專業版。' 
+        : 'Word-by-word translations, pronunciation breakdowns, and audio playback are only available in our mobile app. Please download Halal Formosa on iOS or Android to unlock Pro.'
+      
+      const alert = await alertController.create({
+        header: headerText,
+        message: messageText,
+        buttons: ['OK']
+      })
+      await alert.present()
     }
     return;
   }
