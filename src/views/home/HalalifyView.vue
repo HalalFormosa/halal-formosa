@@ -607,57 +607,30 @@ const filteredPhrases = computed(() => {
 
 function getFriendlyVoiceName(voice: SpeechSynthesisVoice): string {
   const nameLower = voice.name.toLowerCase()
-  const langLower = voice.lang.toLowerCase()
-  
   if (nameLower.includes('meijia') || nameLower.includes('mei-jia')) {
     return 'Meijia (Taiwan Female)'
   }
   if (nameLower.includes('tingting') || nameLower.includes('ting-ting')) {
     return 'Tingting (Mainland Female)'
   }
-  if (nameLower.includes('yunjhe')) return 'Yunjhe (Taiwan Male)'
-  if (nameLower.includes('liao')) return 'Liao (Taiwan Male)'
-  if (nameLower.includes('yunxi')) return 'Yunxi (Mainland Male)'
-  if (nameLower.includes('yunjian')) return 'Yunjian (Mainland Male)'
-  if (nameLower.includes('yunyang')) return 'Yunyang (Mainland Male)'
-  if (nameLower.includes('kangkang')) return 'Kangkang (Mainland Male)'
-  
-  const isTaiwan = langLower.includes('tw') || langLower.includes('hant')
-  const isHongKong = langLower.includes('hk') || langLower.includes('yue') || langLower.includes('hong')
-  const isMainland = langLower.includes('cn') || langLower.includes('hans')
-  
-  // Try to guess gender from voice name
-  let gender = ''
-  if (nameLower.includes('male') || nameLower.includes('man') || nameLower.includes('yunjhe') || nameLower.includes('yunxi') || nameLower.includes('yunjian') || nameLower.includes('yunyang') || nameLower.includes('kangkang')) {
-    gender = 'Male'
-  } else if (nameLower.includes('female') || nameLower.includes('woman') || nameLower.includes('meijia') || nameLower.includes('tingting') || nameLower.includes('yating') || nameLower.includes('sinji') || nameLower.includes('lili') || nameLower.includes('lilian') || nameLower.includes('hsaio')) {
-    gender = 'Female'
-  }
-  
-  const genderLabel = gender ? ` ${gender}` : ''
-  const cleanName = voice.name.replace(/Microsoft/g, '').replace(/Google/g, '').replace(/Apple/g, '').replace(/Siri/g, '').replace(/[\(\)]/g, '').trim()
-  
-  if (isTaiwan) {
-    return `${cleanName || 'System'} (Taiwan${genderLabel})`
-  }
-  if (isHongKong) {
-    return `${cleanName || 'System'} (Hong Kong${genderLabel})`
-  }
-  if (isMainland) {
-    return `${cleanName || 'System'} (Mainland${genderLabel})`
-  }
-  
-  return `${cleanName || 'System'} (${voice.lang}${genderLabel})`
+  return voice.name.split('(')[0].replace('Microsoft', '').replace('Google', '').trim() + ' (' + voice.lang + ')'
 }
 
 function loadVoices() {
   if ('speechSynthesis' in window) {
     const voices = window.speechSynthesis.getVoices()
     
-    // Filter to retain all Chinese language voices
+    // Filter to retain only Meijia and Tingting
     const rawFiltered = voices.filter(v => {
+      const nameLower = v.name.toLowerCase()
       const langLower = v.lang.toLowerCase()
-      return langLower.startsWith('zh')
+      
+      if (!langLower.startsWith('zh')) return false
+      
+      const isMeijia = nameLower.includes('meijia') || nameLower.includes('mei-jia')
+      const isTingting = nameLower.includes('tingting') || nameLower.includes('ting-ting')
+      
+      return isMeijia || isTingting
     })
     
     const seen = new Set<string>()
