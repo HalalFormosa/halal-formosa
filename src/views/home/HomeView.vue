@@ -590,6 +590,7 @@
                 v-for="(p, index) in displayedHomePhrases"
                 :key="'phrase-' + index"
                 :class="['phrase-card', 'animate__animated', 'animate__fadeIn', { 'locked-card': isPhrasePremium(p) && !isDonor }]"
+                style="width: 100%; min-width: 100%; box-sizing: border-box;"
             >
               <div class="phrase-header">
                 <span class="phrase-tag">Phrase {{ index + 1 }}</span>
@@ -3333,7 +3334,6 @@ ion-segment-button {
 
 .halal-phrases-scroller {
   display: flex;
-  align-items: flex-start; /* Prevent vertical stretching and empty space */
   overflow-x: auto;
   gap: 14px;
   scroll-snap-type: x mandatory;
@@ -3469,7 +3469,6 @@ ion-segment-button {
   font-size: 0.95rem;
   font-weight: 700;
   color: var(--ion-text-color);
-  flex: 1;
 }
 
 .language-sub-section {
