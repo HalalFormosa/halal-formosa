@@ -245,6 +245,10 @@ export function resetUserProfileState() {
     isPublicProfile.value = false
     currentUser.value = null
 
+    // Reset donor status and clear cached pro entitlement
+    isDonor.value = false
+    localStorage.removeItem("user_pro_status")
+
     editDOB.value = null
     editNationality.value = null
     editGender.value = 'Other'
