@@ -782,11 +782,21 @@ async function presentRcPaywall() {
   if (!Capacitor.isNativePlatform()) {
     if (import.meta.env.DEV) {
       console.warn("[RC] Paywall can only run on native apps.");
-      const confirmUnlock = confirm("[DEV] Unlock Pro for testing?")
-      if (confirmUnlock) {
-        isDonor.value = true
-        localStorage.setItem("user_pro_status", "true")
-      }
+      const alert = await alertController.create({
+        header: 'DEV Bypass',
+        message: 'Unlock Pro features for local testing?',
+        buttons: [
+          { text: 'Cancel', role: 'cancel' },
+          {
+            text: 'Unlock',
+            handler: () => {
+              isDonor.value = true
+              localStorage.setItem("user_pro_status", "true")
+            }
+          }
+        ]
+      })
+      await alert.present()
     } else {
       const isZh = (locale.value || '').startsWith('zh')
       const headerText = isZh ? 'Halalify Pro 功能' : 'Halalify Pro Feature'

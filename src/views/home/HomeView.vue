@@ -1315,11 +1315,21 @@ async function presentRcPaywall() {
   if (!Capacitor.isNativePlatform()) {
     if (import.meta.env.DEV) {
       console.warn("[RC] Paywall can only run on native apps.");
-      const confirmUnlock = confirm("[DEV] Unlock Pro for testing?")
-      if (confirmUnlock) {
-        isDonor.value = true
-        localStorage.setItem("user_pro_status", "true")
-      }
+      const alert = await alertController.create({
+        header: 'DEV Bypass',
+        message: 'Unlock Pro features for local testing?',
+        buttons: [
+          { text: 'Cancel', role: 'cancel' },
+          {
+            text: 'Unlock',
+            handler: () => {
+              isDonor.value = true
+              localStorage.setItem("user_pro_status", "true")
+            }
+          }
+        ]
+      })
+      await alert.present()
     } else {
       const isZh = (locale.value || '').startsWith('zh')
       const headerText = isZh ? 'Halalify Pro 功能' : 'Halalify Pro Feature'
@@ -3323,6 +3333,7 @@ ion-segment-button {
 
 .halal-phrases-scroller {
   display: flex;
+  align-items: flex-start; /* Prevent vertical stretching and empty space */
   overflow-x: auto;
   gap: 14px;
   scroll-snap-type: x mandatory;
@@ -3346,8 +3357,10 @@ ion-segment-button {
 }
 
 .phrase-card {
-  flex: 0 0 85%;
-  min-width: 0;
+  width: 100%;
+  min-width: 100%;
+  flex: 0 0 100%;
+  box-sizing: border-box;
   scroll-snap-align: start;
   background: var(--ion-color-step-50, #f8f9fa);
   border: 1px solid var(--ion-color-step-150, #e2e8f0);
