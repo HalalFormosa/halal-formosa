@@ -1150,7 +1150,7 @@ const displayedHomePhrases = computed(() => {
       return latest || fav
     })
   }
-  return phrases.value.slice(0, 6)
+  return phrases.value.slice(0, 5)
 })
 
 function getFriendlyVoiceName(voice: SpeechSynthesisVoice): string {

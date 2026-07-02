@@ -48,6 +48,7 @@
           class="category-btn"
           @click="selectCategory(cat.id)"
         >
+          <ion-icon :icon="cat.icon" style="margin-right: 6px; font-size: 16px;" />
           {{ cat.name }}
         </ion-button>
       </div>
@@ -169,7 +170,8 @@ import {
   IonContent, IonSearchbar, IonSelect, IonSelectOption, IonButton, IonIcon, toastController
 } from '@ionic/vue'
 import {
-  volumeMediumOutline, copyOutline, playCircleOutline, pauseCircleOutline, bookOutline, star, starOutline, lockClosed, createOutline, languageOutline
+  volumeMediumOutline, copyOutline, playCircleOutline, pauseCircleOutline, bookOutline, star, starOutline, lockClosed, createOutline, languageOutline,
+  appsOutline, restaurantOutline, cartOutline, bedOutline, alertCircleOutline
 } from 'ionicons/icons'
 import AppHeader from '@/components/AppHeader.vue'
 import { useHalalifyFavorites } from '@/composables/useHalalifyFavorites'
@@ -184,12 +186,12 @@ import { supabase } from '@/plugins/supabaseClient'
 
 // Categories list
 const categories = [
-  { id: 'all', name: 'All' },
-  { id: 'favorites', name: 'Favorites' },
-  { id: 'dining', name: 'Dietary & Dining' },
-  { id: 'shopping', name: 'Shopping & Ingredients' },
-  { id: 'travel', name: 'Hotel & Travel' },
-  { id: 'emergency', name: 'Emergency & Help' }
+  { id: 'all', name: 'All', icon: appsOutline },
+  { id: 'favorites', name: 'Favorites', icon: starOutline },
+  { id: 'dining', name: 'Dietary & Dining', icon: restaurantOutline },
+  { id: 'shopping', name: 'Shopping & Ingredients', icon: cartOutline },
+  { id: 'travel', name: 'Hotel & Travel', icon: bedOutline },
+  { id: 'emergency', name: 'Emergency & Help', icon: alertCircleOutline }
 ]
 
 const router = useRouter()

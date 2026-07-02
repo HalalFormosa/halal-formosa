@@ -67,12 +67,15 @@
                   </ion-chip>
                   
                   <ion-badge 
-                    :color="product.approved ? 'success' : 'warning'"
+                    :color="product.approved ? 'success' : (product.is_rejected ? 'danger' : 'warning')"
                     class="approval-badge"
                   >
-                    {{ product.approved ? $t('master.published') : 'Pending' }}
+                    {{ product.approved ? $t('master.published') : (product.is_rejected ? 'Rejected' : 'Pending') }}
                   </ion-badge>
                 </div>
+                <p v-if="product.is_rejected && product.rejection_reason" class="rejection-reason-text" style="color: var(--ion-color-danger); font-size: 0.85rem; margin-top: 4px; margin-bottom: 4px; font-weight: 500;">
+                  <strong>Reason:</strong> {{ product.rejection_reason }}
+                </p>
                 <p class="date-text">{{ formatDate(product.created_at) }}</p>
               </ion-label>
             </ion-item>
@@ -147,7 +150,7 @@ async function loadMyProducts(reset = false) {
 
   let query = supabase
     .from('products')
-    .select('id, name, status, photo_front_url, approved, barcode, created_at')
+    .select('id, name, status, photo_front_url, approved, barcode, created_at, is_rejected, rejection_reason')
     .eq('added_by', user.id);
 
   if (searchQuery.value) {

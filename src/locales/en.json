@@ -81,6 +81,7 @@
     "description": "Description",
     "images": "Images",
     "approve": "Approve & Save",
+    "publish": "Publish",
     "reject": "Reject",
     "imageAlt": "Product image",
     "frontImageAlt": "Front Image",

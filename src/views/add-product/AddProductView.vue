@@ -876,6 +876,7 @@ import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import { extractIonColor, colorMeaning } from '@/utils/ingredientHelpers'
+import { BarcodeValidator } from '@/utils/barcodeValidator'
 
 // Import Camera plugin and types
 import {Camera, CameraDirection, CameraResultType, CameraSource} from '@capacitor/camera'
@@ -1591,6 +1592,30 @@ watch(() => form.value.status, (newStatus) => {
   }
 })
 
+// Sync and restrict other stores option when regular stores are selected
+watch(() => [...form.value.store_ids], (newVal, oldVal) => {
+  const OTHER_STORES_ID = '2a013308-190c-4684-a607-3bc3d7817115'
+  
+  // Case 1: All stores deselected -> default back to Other Stores
+  if (newVal.length === 0) {
+    form.value.store_ids = [OTHER_STORES_ID]
+    return
+  }
+
+  // Case 2: Other Stores is selected along with specific stores
+  if (newVal.includes(OTHER_STORES_ID) && newVal.length > 1) {
+    const added = newVal.filter(id => !oldVal.includes(id))
+    
+    if (added.includes(OTHER_STORES_ID)) {
+      // User explicitly clicked Other Stores -> clear all specific stores
+      form.value.store_ids = [OTHER_STORES_ID]
+    } else {
+      // User selected a specific store -> remove Other Stores
+      form.value.store_ids = newVal.filter(id => id !== OTHER_STORES_ID)
+    }
+  }
+})
+
 
 async function checkBarcodeExists(barcode: string) {
   const { data } = await supabase
@@ -1618,7 +1643,16 @@ watch(() => form.value.barcode, async (newBarcode) => {
     
     barcodeLoading.value = true;
 
-    // 🚫 Check duplicates in our own DB first (when creating)
+    // 1️⃣ Validate the barcode format/checksum offline first
+    if (!isValidBarcodeFormat(newBarcode)) {
+      barcodeValid.value = false;
+      barcodeMessage.value = "❌ Invalid barcode format";
+      detectedProduct.value = null;
+      barcodeLoading.value = false;
+      return;
+    }
+
+    // 2️⃣ Check duplicates in our own DB next (only when creating)
     if (!props.editProduct) {
       console.log("📡 Checking for existing product in DB...");
       const existingProduct = await checkBarcodeExists(newBarcode);
@@ -1639,49 +1673,19 @@ watch(() => form.value.barcode, async (newBarcode) => {
       detectedProduct.value = null;
     }
 
-    // 🌐 Call Edge Function → Open Food Facts
-    console.log("🌐 Calling verify-barcode edge function...");
-    const { data, error } = await invokeFunction('verify-barcode', {
-      body: { barcode: newBarcode },
-    });
+    // 3️⃣ If format is valid and it doesn't exist in our DB, mark it as valid!
+    barcodeValid.value = true;
+    barcodeMessage.value = "✅ Valid barcode";
 
-    if (error) {
-      console.error("❌ Edge function error:", error);
-      // Fallback: accept numeric barcodes
-      if (/^\d{8,15}$/.test(newBarcode.trim())) {
-        barcodeValid.value = true;
-        barcodeMessage.value = "✅ Barcode accepted";
-      } else {
-        barcodeValid.value = false;
-        barcodeMessage.value = "❌ Could not verify barcode";
-      }
-      barcodeLoading.value = false;
-      return;
-    }
-
-    console.log("🔬 Edge function result:", data);
-
-    if (data.valid) {
-      barcodeValid.value = true;
-      barcodeMessage.value = data.message;
-
-      // Just use the message as feedback — no auto-fill
-      if (data.source === 'openfoodfacts' && data.product) {
-        console.log("📦 Product found on Open Food Facts:", data.product.name);
-      }
-
-      // Auto-advance to next step
-      if (currentStep.value === STEP_BARCODE) {
-        console.log("🚀 Auto-advancing to next step...");
-        setTimeout(() => { nextStep(); }, 500);
-      }
-    } else {
-      barcodeValid.value = false;
-      barcodeMessage.value = data.message;
+    // Auto-advance to next step
+    if (currentStep.value === STEP_BARCODE) {
+      console.log("🚀 Auto-advancing to next step...");
+      setTimeout(() => { nextStep(); }, 500);
     }
   } catch (err) {
     console.error("❌ Barcode validation error:", err);
-    if (newBarcode && /^\d{8,15}$/.test(String(newBarcode).trim())) {
+    // Fallback: check format offline
+    if (isValidBarcodeFormat(newBarcode)) {
       barcodeValid.value = true;
       barcodeMessage.value = "✅ Barcode accepted";
     } else {
@@ -2123,10 +2127,22 @@ function applyQuickDescription(text: string) {
   form.value.description = text;
 }
 
-/** Simple format check for barcode (used at submit time as a guard) */
+/** Offline check for barcode format and checksum (used at validation & submit time) */
 function isValidBarcodeFormat(barcode: string): boolean {
   const clean = barcode.trim().replace(/[-\s]/g, "");
-  return /^\d{8,15}$/.test(clean);
+  return (
+      BarcodeValidator.isValidEAN8(clean) ||
+      BarcodeValidator.isValidEAN13(clean) ||
+      BarcodeValidator.isValidEAN14(clean) ||
+      BarcodeValidator.isValidUPCA(clean) ||
+      BarcodeValidator.isValidUPCE(clean) ||
+      BarcodeValidator.isValidISBN(clean) ||
+      BarcodeValidator.isValidIMEI(clean) ||
+      BarcodeValidator.isValidGSIN(clean) ||
+      BarcodeValidator.isValidSSCC(clean) ||
+      BarcodeValidator.isValidGLN(clean) ||
+      BarcodeValidator.isValidASIN(clean)
+  );
 }
 
 
@@ -2303,6 +2319,8 @@ async function handleSubmit() {
         approved: autoApprove ? true : false,
         approved_by: autoApprove ? user.id : null,
         approved_at: autoApprove ? new Date().toISOString() : null,
+        is_rejected: false,
+        rejection_reason: null
       }).eq("id", props.editProduct.id)
 
       // 🟢 Always replace stores

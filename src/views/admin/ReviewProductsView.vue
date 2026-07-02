@@ -88,7 +88,10 @@
             <img :src="product.photo_front_url" :alt="$t('review.imageAlt')" />
           </ion-thumbnail>
           <ion-label>
-            <h2>{{ product.name }}</h2>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <h2 style="margin: 0;">{{ product.name }}</h2>
+              <ion-badge v-if="product.is_rejected" color="danger" style="font-size: 10px; padding: 3px 6px; border-radius: 4px;">Rejected</ion-badge>
+            </div>
             <p>{{ product.barcode }}</p>
           </ion-label>
         </ion-item>
@@ -112,17 +115,22 @@
               </ion-button>
             </ion-buttons>
             <ion-title>{{ $t('review.modalTitle') }}</ion-title>
-            <ion-buttons slot="end">
-              <ion-button @click="approveProduct(selectedProduct)">
-                <ion-icon slot="start" :icon="checkmarkOutline" />
-                {{ $t('review.approve') }}
-              </ion-button>
-            </ion-buttons>
           </ion-toolbar>
         </ion-header>
 
         <ion-content class="ion-padding">
           <div v-if="selectedProduct" class="form-container">
+            <!-- 🚨 Rejection Notice Banner -->
+            <div v-if="selectedProduct.is_rejected" class="rejection-banner ion-padding ion-margin-bottom animate__animated animate__fadeIn" style="background: rgba(var(--ion-color-danger-rgb), 0.1); border: 1px solid var(--ion-color-danger); border-radius: 12px; color: var(--ion-color-danger); margin-bottom: 16px;">
+              <h4 style="margin: 0 0 6px 0; font-weight: 700; display: flex; align-items: center; gap: 6px; font-size: 15px;">
+                <ion-icon :icon="closeCircle" style="font-size: 18px;" />
+                Rejected Submission
+              </h4>
+              <p style="margin: 0; font-size: 13.5px; opacity: 0.95;">
+                <strong>Reason:</strong> {{ selectedProduct.rejection_reason || 'No reason provided.' }}
+              </p>
+            </div>
+
             <!-- 👤 Uploader Attribution -->
             <ion-item lines="none" class="uploader-info ion-margin-bottom">
               <ion-avatar slot="start">
@@ -292,19 +300,26 @@
               </div>
             </ion-item-group>
 
-            <div class="ion-padding-top ion-margin-top" style="border-top: 1px solid var(--ion-color-step-150); display: flex; gap: 8px;">
-              <ion-button v-if="!selectedProduct.is_archived" @click="archiveProduct(selectedProduct.id)" color="warning" style="flex: 1;">
-                <ion-icon slot="start" :icon="trashOutline" />
-                {{ $t('admin.archive') }}
+            <div class="ion-padding-top ion-margin-top" style="border-top: 1px solid var(--ion-color-step-150); display: flex; flex-direction: column; gap: 12px;">
+              <ion-button @click="approveProduct(selectedProduct)" color="carrot" expand="block" style="font-weight: 700; height: 48px;">
+                <ion-icon slot="start" :icon="checkmarkOutline" />
+                {{ $t('review.publish', 'Publish') }}
               </ion-button>
-              <ion-button v-else @click="restoreProduct(selectedProduct.id)" color="success" style="flex: 1;">
-                <ion-icon slot="start" :icon="swapVerticalOutline" />
-                {{ $t('admin.restore') }}
-              </ion-button>
-              <ion-button @click="rejectProduct(selectedProduct)" color="danger" fill="outline" style="flex: 1;">
-                <ion-icon slot="start" :icon="trashOutline" />
-                {{ $t('review.reject') }}
-              </ion-button>
+
+              <div style="display: flex; gap: 8px;">
+                <ion-button v-if="!selectedProduct.is_archived" @click="archiveProduct(selectedProduct.id)" color="warning" style="flex: 1;">
+                  <ion-icon slot="start" :icon="trashOutline" />
+                  {{ $t('admin.archive') }}
+                </ion-button>
+                <ion-button v-else @click="restoreProduct(selectedProduct.id)" color="success" style="flex: 1;">
+                  <ion-icon slot="start" :icon="swapVerticalOutline" />
+                  {{ $t('admin.restore') }}
+                </ion-button>
+                <ion-button @click="rejectProduct(selectedProduct)" color="danger" fill="outline" style="flex: 1;">
+                  <ion-icon slot="start" :icon="trashOutline" />
+                  {{ $t('review.reject') }}
+                </ion-button>
+              </div>
             </div>
           </div>
         </ion-content>
@@ -398,14 +413,15 @@ import {
   IonThumbnail, IonLabel, IonButton, IonText, IonModal,
   IonToolbar, IonTitle, IonButtons, IonInput, IonSelect,
   IonSelectOption, IonTextarea, IonChip, IonSkeletonText,
-  IonSearchbar, IonSegment, IonSegmentButton, IonPopover, IonIcon, IonAvatar, IonBadge, IonItemGroup, IonSpinner
+  IonSearchbar, IonSegment, IonSegmentButton, IonPopover, IonIcon, IonAvatar, IonBadge, IonItemGroup, IonSpinner, alertController
 } from '@ionic/vue'
 
-import { ref, onMounted, computed, reactive, onUnmounted } from 'vue'
+import { ref, onMounted, computed, reactive, onUnmounted, watch } from 'vue'
 import { supabase } from '@/plugins/supabaseClient'
 import {
   checkmarkOutline,
   closeOutline,
+  closeCircle,
   listOutline,
   trashOutline,
   cameraOutline,
@@ -639,6 +655,35 @@ function closeImageModal() {
 const searchQuery = ref('')
 const viewMode = ref<'pending' | 'archived'>('pending')
 const sortBy = ref<'recent' | 'alpha'>('recent')
+
+// Sync and restrict other stores option when regular stores are selected for the product under review
+watch(
+  () => selectedProduct.value?.store_ids ? [...selectedProduct.value.store_ids] : null,
+  (newVal, oldVal) => {
+    if (!selectedProduct.value || !newVal) return
+    const OTHER_STORES_ID = '2a013308-190c-4684-a607-3bc3d7817115'
+
+    // Case 1: All stores deselected -> default back to Other Stores
+    if (newVal.length === 0) {
+      selectedProduct.value.store_ids = [OTHER_STORES_ID]
+      return
+    }
+
+    // Case 2: Other Stores is selected along with specific stores
+    if (newVal.includes(OTHER_STORES_ID) && newVal.length > 1) {
+      const oldValSafe = oldVal || []
+      const added = newVal.filter(id => !oldValSafe.includes(id))
+
+      if (added.includes(OTHER_STORES_ID)) {
+        // User explicitly clicked Other Stores -> clear all specific stores
+        selectedProduct.value.store_ids = [OTHER_STORES_ID]
+      } else {
+        // User selected a specific store -> remove Other Stores
+        selectedProduct.value.store_ids = newVal.filter(id => id !== OTHER_STORES_ID)
+      }
+    }
+  }
+)
 
 const sortIcon = computed(() => {
   return sortBy.value === 'recent' ? timeOutline : listOutline
@@ -951,7 +996,9 @@ async function approveProduct(product: any) {
         photo_back_url: backUrl,
         approved: true,
         approved_by: user.id,
-        approved_at: new Date().toISOString()
+        approved_at: new Date().toISOString(),
+        is_rejected: false,
+        rejection_reason: null
       })
       .eq("id", product.id)
 
@@ -982,40 +1029,47 @@ async function saveProductStores(productId: string, storeIds: string[], userId: 
 }
 
 async function rejectProduct(product: any) {
-  const barcode = product.barcode
-  const productId = product.id
-
-  // 1. Delete images from storage if they exist
-  try {
-    const filesToDelete = []
-    if (product.photo_front_url) filesToDelete.push(`${barcode}/front.jpg`)
-    if (product.photo_back_url) filesToDelete.push(`${barcode}/back.jpg`)
-
-    if (filesToDelete.length > 0) {
-      const { error: storageError } = await supabase.storage
-          .from('product-images')
-          .remove(filesToDelete)
-      
-      if (storageError) {
-        console.warn("⚠️ Photo deletion warning (might not exist):", storageError)
+  const alert = await alertController.create({
+    header: t('review.confirmRejectHeader', 'Reject Submission'),
+    message: t('review.confirmRejectMsg', 'Please provide a reason for rejecting this submission:'),
+    inputs: [
+      {
+        name: 'reason',
+        type: 'textarea',
+        placeholder: t('review.reasonPlaceholder', 'e.g. Blurry photo, incorrect barcode, incomplete ingredients...')
       }
-    }
-  } catch (err) {
-    console.error("❌ Storage deletion error:", err)
-  }
+    ],
+    buttons: [
+      { text: t('common.cancel', 'Cancel'), role: 'cancel' },
+      {
+        text: t('review.reject', 'Reject'),
+        handler: async (data) => {
+          if (!data.reason || !data.reason.trim()) {
+            alert.message = t('review.reasonRequired', 'A reason is required to reject the submission.');
+            return false // Keep alert open
+          }
 
-  // 2. Delete the record (cascading store links should be handled by DB or manually)
-  // Since we have a manual saveProductStores, let's be safe and clear links first if needed, 
-  // but usually a product delete in our schema handles it.
-  const { error } = await supabase
-      .from('products')
-      .delete()
-      .eq('id', productId)
+          const productId = product.id
 
-  if (!error) {
-    loadPendingProducts()
-    closeModal()
-  }
+          const { error } = await supabase
+              .from('products')
+              .update({
+                is_rejected: true,
+                rejection_reason: data.reason.trim()
+              })
+              .eq('id', productId)
+
+          if (!error) {
+            loadPendingProducts()
+            closeModal()
+          } else {
+            console.error("Error rejecting product:", error)
+          }
+        }
+      }
+    ]
+  })
+  await alert.present()
 }
 
 async function archiveProduct(id: string) {
