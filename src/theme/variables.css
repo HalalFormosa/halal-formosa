@@ -1186,8 +1186,8 @@ ion-popover ion-item ion-label {
     color: var(--ion-text-color) !important;
 }
 
-.ion-palette-dark .premium-header .header-action-button,
-.ion-palette-dark .premium-header .custom-back-button {
+.ion-palette-dark .premium-header .header-action-button:not(.contrast),
+.ion-palette-dark .premium-header .custom-back-button:not(.contrast) {
     --color: var(--ion-text-color) !important;
 }
 
@@ -1259,22 +1259,29 @@ ion-header {
 
 .premium-header .header-action-button,
 .premium-header .custom-back-button {
-    --color: white !important;
-    --icon-color: white !important;
-    color: white !important;
+    --color: var(--ion-text-color, inherit) !important;
+    --icon-color: var(--ion-text-color, inherit) !important;
+    color: var(--ion-text-color, inherit) !important;
     font-size: 22px;
     z-index: 101;
-    background: rgba(0, 0, 0, 0.25);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    border-radius: 50%;
     margin: 4px;
     width: 36px;
     height: 36px;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: transform 0.2s ease;
+    transition: transform 0.2s ease, background-color 0.3s ease;
+}
+
+.premium-header .header-action-button.contrast,
+.premium-header .custom-back-button.contrast {
+    --color: white !important;
+    --icon-color: white !important;
+    color: white !important;
+    background: rgba(0, 0, 0, 0.25);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-radius: 50%;
 }
 
 .premium-header .header-action-button:active,

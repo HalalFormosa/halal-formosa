@@ -38,8 +38,25 @@
     </ion-header>
 
     <ion-content ref="contentRef" class="ion-padding" >
-      <!-- 🔹 OCR Loading Overlay (WOW Factor) -->
-      <div v-if="ocrLoading && !showCropper" class="ocr-overlay" style="position: fixed; z-index: 3000;">
+      <!-- Limit Reached Block Card -->
+      <div v-if="limitReached && !props.editProduct" class="limit-reached-container animate__animated animate__fadeIn" style="display: flex; align-items: center; justify-content: center; height: 100%; min-height: 350px;">
+        <ion-card style="margin: 0; box-shadow: none; border: 1px solid var(--ion-color-light); border-radius: 12px; text-align: center; max-width: 400px; width: 100%;" class="ion-padding">
+          <div class="lock-icon-wrapper" style="margin: 16px auto;">
+            <ion-icon :icon="lockClosedOutline" style="font-size: 56px; color: var(--ion-color-carrot);" />
+          </div>
+          <h2 style="font-weight: 700; font-size: 1.35rem; margin-top: 0; margin-bottom: 12px;">Daily Limit Reached</h2>
+          <p style="color: var(--ion-color-medium); line-height: 1.5; font-size: 0.95rem; margin-bottom: 24px; padding: 0 8px;">
+            You have reached your daily limit of 3 contributed products. To maintain database quality, you can submit more products tomorrow. Thank you for helping the community!
+          </p>
+          <ion-button expand="block" color="carrot" @click="router.back()">
+            Go Back
+          </ion-button>
+        </ion-card>
+      </div>
+
+      <div v-else>
+        <!-- 🔹 OCR Loading Overlay (WOW Factor) -->
+        <div v-if="ocrLoading && !showCropper" class="ocr-overlay" style="position: fixed; z-index: 3000;">
         <ion-progress-bar
             :value="progress"
             color="carrot"
@@ -793,6 +810,7 @@
           </ion-list>
         </ion-content>
       </ion-modal>
+      </div>
     </ion-content>
   </ion-page>
 </template>
@@ -823,7 +841,7 @@ import {
   IonAccordion,
   IonAccordionGroup, IonNote, IonImg, IonThumbnail,
   IonSegment, IonSegmentButton, IonCard, IonCardHeader, IonCardContent, IonListHeader, IonFooter,
-  IonSearchbar, IonList
+  IonSearchbar, IonList, onIonViewWillEnter
 } from '@ionic/vue';
 import {
   addOutline,
@@ -845,11 +863,13 @@ import {
   colorWandOutline,
   trashOutline,
   refreshOutline,
-  chevronForwardOutline
+  chevronForwardOutline,
+  lockClosedOutline
 } from 'ionicons/icons';
 import { computed, nextTick, onMounted, onUnmounted, ref, watch} from 'vue'
 import { useI18n } from 'vue-i18n'
 import {supabase, invokeFunction} from '@/plugins/supabaseClient'
+import { awardScanBonus, isContributionLimitReached } from '@/composables/useScanQuotaReward';
 
 import { Capacitor } from '@capacitor/core'
 import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
@@ -895,6 +915,12 @@ const STEP_OCR = 1
 const STEP_DETAILS = 2
 const currentStep = ref(STEP_BARCODE)
 const wizardStartTime = ref<number>(Date.now())
+
+const limitReached = ref(false)
+
+onIonViewWillEnter(async () => {
+  limitReached.value = await isContributionLimitReached()
+})
 
 /** ---------- State Variables Consistently Defined at Top ---------- */
 const barcodeValid = ref<null | boolean>(null)
@@ -2274,9 +2300,9 @@ async function handleSubmit() {
         photo_back_url: backUrl,
         updated_at: new Date().toISOString(),
         updated_by: user.id,
-        approved: autoApprove ? true : props.editProduct.approved,
-        approved_by: autoApprove ? user.id : props.editProduct.approved_by,
-        approved_at: autoApprove ? new Date().toISOString() : props.editProduct.approved_at,
+        approved: autoApprove ? true : false,
+        approved_by: autoApprove ? user.id : null,
+        approved_at: autoApprove ? new Date().toISOString() : null,
       }).eq("id", props.editProduct.id)
 
       // 🟢 Always replace stores
@@ -2325,6 +2351,9 @@ async function handleSubmit() {
 
       // 🟢 Insert stores fresh
       await saveProductStores(newProduct.id, store_ids, user.id)
+
+      // 🎁 Award scan bonus quota for contributing a product
+      await awardScanBonus(1);
 
       // ✅ Toast logic (already correct)
       toastMessage.value = autoApprove

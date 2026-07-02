@@ -46,7 +46,24 @@
 
     <ion-content class="ion-padding">
 
-      <!-- Not logged in -->
+      <!-- Limit Reached Block Card -->
+      <div v-if="limitReached && !isEditing" class="limit-reached-container animate__animated animate__fadeIn" style="display: flex; align-items: center; justify-content: center; height: 100%; min-height: 350px;">
+        <ion-card style="margin: 0; box-shadow: none; border: 1px solid var(--ion-color-light); border-radius: 12px; text-align: center; max-width: 400px; width: 100%;" class="ion-padding">
+          <div class="lock-icon-wrapper" style="margin: 16px auto;">
+            <ion-icon :icon="lockClosedOutline" style="font-size: 56px; color: var(--ion-color-carrot);" />
+          </div>
+          <h2 style="font-weight: 700; font-size: 1.35rem; margin-top: 0; margin-bottom: 12px;">Daily Limit Reached</h2>
+          <p style="color: var(--ion-color-medium); line-height: 1.5; font-size: 0.95rem; margin-bottom: 24px; padding: 0 8px;">
+            You have reached your daily limit of 3 contributed locations. To maintain database quality, you can submit more locations tomorrow. Thank you for helping the community!
+          </p>
+          <ion-button expand="block" color="carrot" @click="router.back()">
+            Go Back
+          </ion-button>
+        </ion-card>
+      </div>
+
+      <div v-else>
+        <!-- Not logged in -->
       <ion-card v-if="checkedRole && !myRole">
         <ion-card-content>
           {{ $t('addPlace.loginToSubmit') }}
@@ -429,6 +446,7 @@
           @didDismiss="toast.open = false"
       />
 
+      </div>
     </ion-content>
   </ion-page>
 </template>
@@ -460,7 +478,8 @@ import {
     IonToggle,
     IonListHeader,
     IonModal,
-    IonSearchbar
+    IonSearchbar,
+    onIonViewWillEnter
 } from '@ionic/vue'
 import AppHeader from '@/components/AppHeader.vue'
 import {ref, onMounted, onBeforeUnmount, computed} from 'vue'
@@ -484,7 +503,8 @@ import {
     barcodeOutline,
     addCircleOutline,
     alertCircleOutline,
-    warningOutline
+    warningOutline,
+    lockClosedOutline
 } from 'ionicons/icons'
 import {Capacitor} from '@capacitor/core'
 import {Geolocation} from '@capacitor/geolocation'
@@ -493,10 +513,17 @@ import {useNotifier} from "@/composables/useNotifier"
 import {watch} from 'vue'
 import {useRoute} from 'vue-router'
 import {ActivityLogService} from "@/services/ActivityLogService";
+import { awardScanBonus, isContributionLimitReached } from '@/composables/useScanQuotaReward';
 
 const route = useRoute()
 const isEditing = computed(() => !!route.params.id)
 const coordUpdateSource = ref<'address' | 'map' | 'manual' | 'init' | null>('init')
+
+const limitReached = ref(false)
+
+onIonViewWillEnter(async () => {
+  limitReached.value = await isContributionLimitReached()
+})
 
 /* -------------------- Multi-Step Logic -------------------- */
 const STEP_IDENTITY = 0
@@ -1337,12 +1364,19 @@ const submitPlace = async () => {
         payload.approved_by = null
         payload.approved_at = null
       }
-    } else if (!isEditing.value) {
-      // New places for non-admins use auto-approve logic
-      payload.approved = autoApprove
-      payload.approved_by = autoApprove ? user.id : null
-      payload.approved_at = autoApprove ? new Date().toISOString() : null
-      payload.created_by = user.id
+    } else {
+      // For non-admins, new places use auto-approve logic, edits are always unapproved
+      if (!isEditing.value) {
+        payload.approved = autoApprove
+        payload.approved_by = autoApprove ? user.id : null
+        payload.approved_at = autoApprove ? new Date().toISOString() : null
+        payload.created_by = user.id
+      } else {
+        // Non-admin edits require new review
+        payload.approved = false
+        payload.approved_by = null
+        payload.approved_at = null
+      }
     }
 
     if (isEditing.value) {
@@ -1372,6 +1406,9 @@ const submitPlace = async () => {
           .single()
 
       if (error) throw error
+
+      // 🎁 Award scan bonus quota for contributing a place
+      await awardScanBonus(1)
 
       toast.value = {
         open: true,

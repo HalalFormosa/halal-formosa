@@ -343,7 +343,7 @@
                       
                       <span class="meta">
                         <ion-icon :icon="calendarOutline" style="font-size: 14px; vertical-align: middle;" />
-                        {{ fromNowToTaipei(place.created_at) }}
+                        {{ place.createdFromNow }}
                       </span>
 
                       <span v-if="userLocation && (place as any).distance !== undefined" class="distance">
@@ -369,14 +369,14 @@
               </div>
             </div>
             
-            <div v-if="displayedLocations.length === 0 && !loading" class="empty-state">
+            <div v-if="boundsFilteredLocations.length === 0 && !loading" class="empty-state">
               <ion-icon :icon="informationCircleOutline" />
               <p>{{ $t('explore.noResults') }}</p>
             </div>
 
             <!-- Infinite Scroll Sentinel -->
             <div 
-              v-if="listLocations.length < displayedLocations.length" 
+              v-if="listLocations.length < boundsFilteredLocations.length" 
               ref="infiniteSentinel" 
               class="infinite-scroll-sentinel"
             >
@@ -401,7 +401,7 @@
 
     <!-- 6. Bottom Results Slider (Map Only) -->
     <div 
-      v-if="viewMode === 'map' && (displayedLocations.length > 0 || !locationAttemptFinished || loadingPlaces)"
+      v-if="viewMode === 'map' && (boundsFilteredLocations.length > 0 || !locationAttemptFinished || loadingPlaces)"
       class="floating-results-bar"
     >
       <!-- Locating Status Badge (Floating above cards) -->
@@ -455,7 +455,7 @@
           <!-- Real data after loaded -->
           <template v-else>
             <div
-                v-for="place in displayedLocations"
+                v-for="place in visibleMapLocations"
                 :key="place.id"
                 :data-id="place.id"
                 :ref="setCardRef(place.id)"
@@ -501,7 +501,7 @@
                       
                       <span class="meta">
                         <ion-icon :icon="calendarOutline" style="font-size: 14px; vertical-align: middle;" />
-                        {{ fromNowToTaipei(place.created_at) }}
+                        {{ place.createdFromNow }}
                       </span>
 
                       <span v-if="userLocation && (place as any).distance !== undefined" class="distance">
@@ -567,7 +567,7 @@
     <ion-footer v-if="viewMode === 'list'" style="position: absolute; bottom: 0; left: 0; right: 0; width: 100%; z-index: 1001; background: var(--ion-background-color); border-top: 1px solid rgba(var(--ion-color-dark-rgb), 0.05);">
       <div class="footer-count">
         <small>
-          {{ $t('explore.showingResults', {count: listLocations.length, total: displayedLocations.length}) }}
+          {{ $t('explore.showingResults', {count: listLocations.length, total: boundsFilteredLocations.length}) }}
         </small>
       </div>
     </ion-footer>
@@ -746,6 +746,8 @@ type Place = {
   created_at?: string
   tags?: string[]
   description?: string | null
+  isOpen?: boolean
+  createdFromNow?: string
   opening_hours?: {
     periods?: Array<{ open: { day: number; time: string }; close: { day: number; time: string } }>
     weekday_text?: string[]
@@ -833,8 +835,29 @@ const listPaddingTop = computed(() => {
   return `${base}px`;
 });
 
+const boundsFilteredLocations = computed(() => {
+  const bounds = currentMapBounds.value
+  if (!bounds) {
+    return displayedLocations.value
+  }
+
+  // Filter by map bounds (with a 10% buffer for smooth scrolling feel)
+  const ne = bounds.getNorthEast()
+  const sw = bounds.getSouthWest()
+  const latDiff = Math.abs(ne.lat() - sw.lat())
+  const lngDiff = Math.abs(ne.lng() - sw.lng())
+  const buffer = 0.10 // 10% buffer
+
+  const extendedBounds = new google.maps.LatLngBounds(
+    { lat: sw.lat() - latDiff * buffer, lng: sw.lng() - lngDiff * buffer },
+    { lat: ne.lat() + latDiff * buffer, lng: ne.lng() + lngDiff * buffer }
+  )
+
+  return displayedLocations.value.filter(p => extendedBounds.contains(p.position))
+})
+
 const listLocations = computed(() => {
-  return displayedLocations.value.slice(0, listLimit.value)
+  return boundsFilteredLocations.value.slice(0, listLimit.value)
 })
 
 const handleInfinite = () => {
@@ -918,6 +941,7 @@ let mapInstance: google.maps.Map | null = null
 const mapReady = ref(false)
 let advancedMarkerLib: typeof google.maps.marker | null = null
 let infoWindow: google.maps.InfoWindow | null = null
+let geocoder: google.maps.Geocoder | null = null
 const markerMap = new Map<number, google.maps.marker.AdvancedMarkerElement>()
 const userMarker = ref<google.maps.marker.AdvancedMarkerElement | null>(null)
 const userArrowEl = ref<HTMLElement | null>(null)
@@ -929,6 +953,7 @@ const pendingInfoWindowPlaceId = ref<number | null>(null)
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t
 const hasAutoSelected = ref(false)
 let clusterer: MarkerClusterer | null = null
+const currentMapBounds = ref<google.maps.LatLngBounds | null>(null)
 let locationWatchId: string | null = null
 
 // Saved Locations State
@@ -972,7 +997,7 @@ watch(userLocation, (newLoc) => {
 }, { immediate: true })
 
 // Check if a place is currently open based on opening hours
-const isOpenNow = (place: Place): boolean => {
+const calculateIsOpenStatus = (place: Place): boolean => {
   if (!place.opening_hours) return false
   
   const now = dayjs().tz('Asia/Taipei')
@@ -1022,6 +1047,10 @@ const isOpenNow = (place: Place): boolean => {
   
   const currentTimeFormatted = now.format('HH:mm')
   return currentTimeFormatted >= todayHours.open && currentTimeFormatted <= todayHours.close
+}
+
+const isOpenNow = (place: Place): boolean => {
+  return place.isOpen ?? false
 }
 
 // Sorting logic: if GPS succeeded, default to 'nearest'
@@ -1084,6 +1113,7 @@ watch([userLocation, mapReady], ([newLoc, isReady]) => {
 
 
 const fetchLocationTypes = async () => {
+  if (locationTypes.value.length > 0) return
   loadingCategories.value = true
 
   const {data, error} = await supabase
@@ -1099,6 +1129,7 @@ const fetchLocationTypes = async () => {
 }
 
 const fetchCampusPartners = async () => {
+  if (campusPartners.value.length > 0) return
   const { data, error } = await supabase
     .from('partners')
     .select('id, name, slug')
@@ -1123,6 +1154,12 @@ const onSearchCommit = async () => {
 
   const q = searchQuery.value.trim()
   if (!q) return
+
+  // Log the committed search query
+  ActivityLogService.log("explore_search_query", {
+    query: q,
+    committed: true
+  });
 
   // 1️⃣ Local DB match FIRST
   const hasLocalMatch = sortedLocations.value.length > 0
@@ -1192,9 +1229,9 @@ const showAddressToast = async () => {
 const geocodeAddress = async (query: string) => {
   await showAddressToast()
   try {
-    const geocoder = new google.maps.Geocoder()
+    const geocoderInstance = geocoder || new google.maps.Geocoder()
 
-    const res = await geocoder.geocode({
+    const res = await geocoderInstance.geocode({
       address: query,
       region: 'TW',
       bounds: mapInstance?.getBounds() ?? undefined
@@ -1391,6 +1428,45 @@ const displayedLocations = computed(() => {
     return sortedLocations.value.filter(l => l.id === focusedPlaceId.value)
   }
   return sortedLocations.value
+})
+
+const visibleMapLocations = computed(() => {
+  if (viewMode.value !== 'map' || !mapInstance) {
+    return displayedLocations.value
+  }
+  const bounds = currentMapBounds.value
+  if (!bounds) {
+    return displayedLocations.value.slice(0, 25)
+  }
+
+  const ne = bounds.getNorthEast()
+  const sw = bounds.getSouthWest()
+  const latDiff = Math.abs(ne.lat() - sw.lat())
+  const lngDiff = Math.abs(ne.lng() - sw.lng())
+  const buffer = 0.15 // 15% buffer
+
+  const extendedBounds = new google.maps.LatLngBounds(
+    { lat: sw.lat() - latDiff * buffer, lng: sw.lng() - lngDiff * buffer },
+    { lat: ne.lat() + latDiff * buffer, lng: ne.lng() + lngDiff * buffer }
+  )
+
+  let filtered = displayedLocations.value.filter(p => extendedBounds.contains(p.position))
+
+  // Limit to max 25 cards to keep DOM lightweight
+  const maxCards = 25
+
+  // Always include the selectedPlace if it exists, so the highlighted card doesn't disappear
+  if (selectedPlace.value) {
+    const isSelectedVisible = filtered.some(p => p.id === selectedPlace.value!.id)
+    if (!isSelectedVisible) {
+      const selPlace = displayedLocations.value.find(p => p.id === selectedPlace.value!.id)
+      if (selPlace) {
+        filtered = [selPlace, ...filtered]
+      }
+    }
+  }
+
+  return filtered.slice(0, maxCards)
 })
 
 
@@ -1621,7 +1697,34 @@ const loadRole = async () => {
 }
 
 /* ---------------- Data ---------------- */
-const fetchLocations = async () => {
+const lastFetchedBounds = ref<google.maps.LatLngBounds | null>(null)
+const wasLocationsCacheHit = ref(false)
+
+const fetchLocations = async (mapBounds?: google.maps.LatLngBounds | null, force = false) => {
+  if (!mapInstance) return
+
+  const boundsToUse = mapBounds || mapInstance.getBounds()
+  if (!boundsToUse) {
+    loadingPlaces.value = false
+    return
+  }
+
+  const ne = boundsToUse.getNorthEast()
+  const sw = boundsToUse.getSouthWest()
+  const latDiff = Math.abs(ne.lat() - sw.lat())
+  const lngDiff = Math.abs(ne.lng() - sw.lng())
+  const buffer = 0.50 // 50% buffer
+
+  const paddedSw = { lat: sw.lat() - latDiff * buffer, lng: sw.lng() - lngDiff * buffer }
+  const paddedNe = { lat: ne.lat() + latDiff * buffer, lng: ne.lng() + lngDiff * buffer }
+  const paddedBounds = new google.maps.LatLngBounds(paddedSw, paddedNe)
+
+  // Cache check: if not forcing, and new bounds are fully contained within lastFetchedBounds
+  if (!force && lastFetchedBounds.value && lastFetchedBounds.value.contains(ne) && lastFetchedBounds.value.contains(sw)) {
+    wasLocationsCacheHit.value = true
+    return
+  }
+  wasLocationsCacheHit.value = false
   loadingPlaces.value = true
 
   const { data, error } = await supabase
@@ -1637,34 +1740,55 @@ const fetchLocations = async () => {
     view_count,
     created_at,
     tags,
-    description,
     opening_hours,
     location_types(name),
     partner:partners(partner_tier)
   `)
       .eq('approved', true)
       .eq('is_archived', false)
+      .gte('lat', paddedSw.lat)
+      .lte('lat', paddedNe.lat)
+      .gte('lng', paddedSw.lng)
+      .lte('lng', paddedNe.lng)
 
 
   if (!error && data) {
     //@ts-expect-error LocationRow
     const typedData = data as LocationRow[]
 
-    locations.value = typedData.map((loc: any) => ({
-      id: loc.id,
-      name: loc.name,
-      address: loc.address ?? null,
-      position: {lat: loc.lat, lng: loc.lng},
-      image: loc.image,
-      typeId: loc.type_id,
-      type: loc.location_types?.name ?? '',
-      view_count: loc.view_count ?? 0,
-      partner_tier: Array.isArray(loc.partner) ? loc.partner[0]?.partner_tier : loc.partner?.partner_tier,
-      created_at: loc.created_at,
-      tags: loc.tags || [],
-      description: loc.description,
-      opening_hours: loc.opening_hours
-    }))
+    const mapped = typedData.map((loc: any) => {
+      const p: Place = {
+        id: loc.id,
+        name: loc.name,
+        address: loc.address ?? null,
+        position: {lat: loc.lat, lng: loc.lng},
+        image: loc.image,
+        typeId: loc.type_id,
+        type: loc.location_types?.name ?? '',
+        view_count: loc.view_count ?? 0,
+        partner_tier: Array.isArray(loc.partner) ? loc.partner[0]?.partner_tier : loc.partner?.partner_tier,
+        created_at: loc.created_at,
+        tags: loc.tags || [],
+        opening_hours: loc.opening_hours
+      }
+      p.isOpen = calculateIsOpenStatus(p)
+      p.createdFromNow = fromNowToTaipei(loc.created_at)
+      return p
+    })
+
+    // If selectedPlace is not in the new results, preserve it in locations.value
+    if (selectedPlace.value) {
+      const isSelectedPresent = mapped.some(p => p.id === selectedPlace.value!.id)
+      if (!isSelectedPresent) {
+        const existingSelected = locations.value.find(p => p.id === selectedPlace.value!.id)
+        if (existingSelected) {
+          mapped.push(existingSelected)
+        }
+      }
+    }
+
+    locations.value = mapped
+    lastFetchedBounds.value = paddedBounds
   }
 
   initMarkers()
@@ -1769,6 +1893,15 @@ const initMap = async () => {
   }
 
   infoWindow = new google.maps.InfoWindow()
+  geocoder = new google.maps.Geocoder()
+
+  // Create MarkerClusterer once
+  clusterer = new MarkerClusterer({
+    map: mapInstance,
+    markers: [],
+    renderer: carrotRippleClusterRenderer,
+    algorithm: new SuperClusterAlgorithm({ radius: 80, maxZoom: 15 })
+  })
 
   window.addEventListener('resize', handleResize)
   
@@ -1784,18 +1917,28 @@ const initMap = async () => {
     currentZoom.value = mapInstance?.getZoom() || 14
   })
 
-  // ✅ Debounced idle listener (150ms) to prevent spamming updates
+  // ✅ Debounced idle listener (200ms) to update map viewport bounds reactive ref and trigger bounds-based fetching
   let idleTimeout: any = null;
   mapInstance.addListener('idle', () => {
     if (idleTimeout) clearTimeout(idleTimeout);
     idleTimeout = setTimeout(() => {
-      initMarkers(sortedLocations.value);
+      if (mapInstance) {
+        const bounds = mapInstance.getBounds()
+        currentMapBounds.value = bounds || null
+        if (bounds) {
+          fetchLocations(bounds)
+        }
+      }
       isUserPanningMap.value = false // User finished manual interaction
-    }, 300);
+    }, 200);
   });
 
   loading.value = false
   mapReady.value = true
+
+  if (mapInstance) {
+    fetchLocations(mapInstance.getBounds())
+  }
 }
 
 /**
@@ -1883,52 +2026,37 @@ const markerCache = new Map<number, google.maps.marker.AdvancedMarkerElement>()
 const initMarkers = (places: Place[] = sortedLocations.value) => {
   if (!mapInstance || !advancedMarkerLib) return
 
-  // 1. Get Viewport Bounds with Buffer
-  const bounds = mapInstance.getBounds();
-  let visiblePlaces = places;
+  // 1. Clear out markers no longer present in the updated places list
+  const placesIds = new Set(places.map(p => p.id))
+  const idsToRemove: number[] = []
   
-  if (bounds) {
-    const ne = bounds.getNorthEast();
-    const sw = bounds.getSouthWest();
-    const latDiff = Math.abs(ne.lat() - sw.lat());
-    const lngDiff = Math.abs(ne.lng() - sw.lng());
-    const buffer = 0.25; // 25% buffer
-
-    const extendedBounds = new google.maps.LatLngBounds(
-      { lat: sw.lat() - latDiff * buffer, lng: sw.lng() - lngDiff * buffer },
-      { lat: ne.lat() + latDiff * buffer, lng: ne.lng() + lngDiff * buffer }
-    );
-
-    visiblePlaces = places.filter(p => extendedBounds.contains(p.position));
-  }
-
-  // 2. Marker Recycling Logic
-  const newMarkerArray: google.maps.marker.AdvancedMarkerElement[] = []
-  const visibleIds = new Set(visiblePlaces.map(p => p.id));
-
-  // Remove markers no longer in viewport from the map (but keep in cache)
-  const idsToRemove = [] as number[];
   markerMap.forEach((_, id) => {
-    if (!visibleIds.has(id)) idsToRemove.push(id);
-  });
-  
-  idsToRemove.forEach(id => {
-    const marker = markerMap.get(id);
-    if (marker) marker.map = null;
-    markerMap.delete(id);
-  });
+    if (!placesIds.has(id)) {
+      idsToRemove.push(id)
+    }
+  })
 
-  visiblePlaces.forEach((loc) => {
-    let marker = markerCache.get(loc.id);
+  idsToRemove.forEach(id => {
+    const marker = markerMap.get(id)
+    if (marker) {
+      marker.map = null
+    }
+    markerMap.delete(id)
+  })
+
+  // 2. Add or reuse markers for the updated places list
+  const markersToCluster: google.maps.marker.AdvancedMarkerElement[] = []
+
+  places.forEach((loc) => {
+    let marker = markerCache.get(loc.id)
 
     if (!marker) {
-      // Create only if not in cache
-      const iconHTML = createPinElement(loc);
+      const iconHTML = createPinElement(loc)
       marker = new advancedMarkerLib!.AdvancedMarkerElement({
         position: loc.position,
         content: iconHTML,
         title: `${loc.type}: ${loc.name}`
-      });
+      })
 
       marker.addListener('click', () => {
         ActivityLogService.log("explore_marker_click", {
@@ -1937,69 +2065,47 @@ const initMarkers = (places: Place[] = sortedLocations.value) => {
           type: loc.type,
           lat: loc.position.lat,
           lng: loc.position.lng
-        });
+        })
         if (searchQuery.value && !loc.name.toLowerCase().includes(searchQuery.value.toLowerCase())) {
-          searchQuery.value = '';
+          searchQuery.value = ''
         }
-        selectPlace(loc);
-      });
+        selectPlace(loc)
+      })
 
-      markerCache.set(loc.id, marker);
+      markerCache.set(loc.id, marker)
     }
 
-    markerMap.set(loc.id, marker);
-    newMarkerArray.push(marker);
+    markerMap.set(loc.id, marker)
+    markersToCluster.push(marker)
 
-    // ✅ CHECK FOR PENDING INFO WINDOW (Reliability fix)
+    // Check for pending info window (reliability fix)
     if (loc.id === pendingInfoWindowPlaceId.value && infoWindow && mapInstance) {
-      infoWindow.setContent(buildInfoHtml(loc));
-      infoWindow.open(mapInstance, marker);
-      setTimeout(applyInfoWindowDarkClass, 50);
-      pendingInfoWindowPlaceId.value = null;
+      infoWindow.setContent(buildInfoHtml(loc))
+      infoWindow.open(mapInstance, marker)
+      setTimeout(applyInfoWindowDarkClass, 50)
+      pendingInfoWindowPlaceId.value = null
     }
-  });
+  })
 
-  // 3. Update Clusterer - only cluster when zoomed out (zoom <= 12)
-  const shouldCluster = currentZoom.value <= 12;
-
-  if (shouldCluster) {
-    if (!clusterer) {
-      clusterer = new MarkerClusterer({
-        map: mapInstance,
-        markers: newMarkerArray,
-        renderer: carrotRippleClusterRenderer,
-        algorithm: new SuperClusterAlgorithm({ radius: 80 })
-      });
-    } else {
-      clusterer.clearMarkers();
-      clusterer.addMarkers(newMarkerArray);
-    }
-  } else {
-    // Remove clustering at higher zoom levels - show individual markers
-    if (clusterer) {
-      clusterer.clearMarkers();
-      clusterer.setMap(null);
-      clusterer = null;
-    }
-    // Ensure all markers are directly on the map
-    newMarkerArray.forEach(marker => {
-      marker.map = mapInstance;
-    });
+  // 3. Update the clusterer's markers natively
+  if (clusterer) {
+    clusterer.clearMarkers()
+    clusterer.addMarkers(markersToCluster)
   }
 
   // 4. Fit bounds ONLY IF specifically filtered by user (tag/category/search)
   const isFiltered = activeCategoryIds.value.length > 0 || !!activeTag.value || !!searchQuery.value.trim()
-  if (isFiltered && visiblePlaces.length > 0 && !hasCenteredInitiallyVisible) {
+  if (isFiltered && places.length > 0 && !hasCenteredInitiallyVisible) {
     const fitBounds = new google.maps.LatLngBounds()
-    visiblePlaces.forEach(p => fitBounds.extend(p.position))
+    places.forEach(p => fitBounds.extend(p.position))
     if (fitBounds && mapInstance) {
       mapInstance.fitBounds(fitBounds)
     }
 
     google.maps.event.addListenerOnce(mapInstance, 'idle', () => {
       if (mapInstance!.getZoom()! > 17) mapInstance!.setZoom(17)
-    });
-    hasCenteredInitiallyVisible = true;
+    })
+    hasCenteredInitiallyVisible = true
   }
 }
 
@@ -2176,10 +2282,6 @@ const centerOnUser = async () => {
 
 const onSearchInput = (event: CustomEvent) => {
   searchQuery.value = (event.detail?.value ?? '') as string
-
-  ActivityLogService.log("explore_search_query", {
-    query: searchQuery.value
-  });
 }
 
 /* ---------------- Derived ---------------- */
@@ -2194,6 +2296,11 @@ watch(searchQuery, (q) => {
   }
   
   remoteSearchTimeout = setTimeout(async () => {
+    // Log the search query once typing stops
+    ActivityLogService.log("explore_search_query", {
+      query: q
+    });
+
     // 🛡️ Level 2 Interaction & hCaptcha Attestation Guard for Explore Search
     if (!hasOrganicInteraction()) {
       flagBot('no_organic_interaction');
@@ -2216,12 +2323,55 @@ watch(searchQuery, (q) => {
     // Organic randomized human delay
     await delayForHuman();
 
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('locations')
-      .select('id')
+      .select(`
+        id,
+        name,
+        lat,
+        lng,
+        image,
+        type_id,
+        address,
+        view_count,
+        created_at,
+        tags,
+        opening_hours,
+        location_types(name),
+        partner:partners(partner_tier)
+      `)
+      .eq('approved', true)
+      .eq('is_archived', false)
       .textSearch('search_vector', q, { type: 'websearch' })
       
-    if (data) {
+    if (!error && data) {
+      const existingIds = new Set(locations.value.map(l => l.id))
+      //@ts-expect-error LocationRow
+      const typedData = data as LocationRow[]
+      const mapped = typedData.map((loc: any) => {
+        const p: Place = {
+          id: loc.id,
+          name: loc.name,
+          address: loc.address ?? null,
+          position: {lat: loc.lat, lng: loc.lng},
+          image: loc.image,
+          typeId: loc.type_id,
+          type: loc.location_types?.name ?? '',
+          view_count: loc.view_count ?? 0,
+          partner_tier: Array.isArray(loc.partner) ? loc.partner[0]?.partner_tier : loc.partner?.partner_tier,
+          created_at: loc.created_at,
+          tags: loc.tags || [],
+          opening_hours: loc.opening_hours
+        }
+        p.isOpen = calculateIsOpenStatus(p)
+        p.createdFromNow = fromNowToTaipei(loc.created_at)
+        return p
+      })
+
+      locations.value = [
+        ...locations.value,
+        ...mapped.filter(m => !existingIds.has(m.id))
+      ]
       remoteSearchIds.value = data.map(d => d.id)
     }
   }, 500) // 500ms debounce
@@ -2371,9 +2521,15 @@ watch(activeTag, () => {
 
 // Only re-init observer if IDs change (ignoring simple re-ordering)
 const displayedIdsSet = computed(() => {
-  const ids = displayedLocations.value.map(l => l.id);
-  ids.sort((a, b) => a - b);
-  return ids.join(',');
+  if (viewMode.value === 'map') {
+    const ids = visibleMapLocations.value.map(l => l.id);
+    ids.sort((a, b) => a - b);
+    return ids.join(',');
+  } else {
+    const ids = listLocations.value.map(l => l.id);
+    ids.sort((a, b) => a - b);
+    return ids.join(',');
+  }
 });
 
 watch([displayedIdsSet, viewMode], () => {
@@ -2460,8 +2616,7 @@ onMounted(async () => {
   // These are more critical for the list, but let's fire them 
   fetchCampusPartners()
   
-  // Await the heavy locations fetch
-  await fetchLocations()
+  // Viewport bounds fetching will trigger automatically once map is initialized
   
   // Await secondary data
   await Promise.allSettled([
@@ -2533,7 +2688,9 @@ onIonViewWillEnter(async () => {
     return
   }
 
-  await fetchLocations()
+  if (mapInstance) {
+    fetchLocations(mapInstance.getBounds())
+  }
   await fetchLocationTypes()
   await fetchCampusPartners()
   await nextTick()
@@ -2558,6 +2715,7 @@ onIonViewWillLeave(() => {
 
 
 async function refreshViewCounts() {
+  if (wasLocationsCacheHit.value) return;
   if (locations.value.length === 0) return;
 
   const ids = locations.value.map(l => l.id);
@@ -3365,6 +3523,7 @@ button.gm-ui-hover-effect > span {
   display: flex;
   padding: 0 16px;
   gap: 12px;
+  will-change: transform;
 }
 
 .modern-location-card {
@@ -3383,6 +3542,7 @@ button.gm-ui-hover-effect > span {
   cursor: pointer;
   position: relative;
   scroll-snap-align: center;
+  will-change: transform;
   scroll-snap-stop: always;
 }
 

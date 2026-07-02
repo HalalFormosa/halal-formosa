@@ -91,6 +91,12 @@ const routes: Array<RouteRecordRaw> = [
         meta: { requiresAuth: true, noTabs: true, noAds: true }
     },
     {
+        path: '/profile/scan-history',
+        name: 'ScanHistory',
+        component: () => import('@/views/profile/ScanHistoryView.vue'),
+        meta: { requiresAuth: true, noTabs: true, noAds: true }
+    },
+    {
         path: '/submissions/products',
         name: 'MyProducts',
         component: () => import('@/views/profile/MyProductsView.vue'),
@@ -166,6 +172,11 @@ const routes: Array<RouteRecordRaw> = [
         name: 'Qibla',
         component: () => import('@/views/utilities/QiblaFinderView.vue')
     },
+    {
+        path: '/halalify',
+        name: 'Halalify',
+        component: () => import('@/views/home/HalalifyView.vue')
+    },
 
 
     { 
@@ -232,6 +243,12 @@ const routes: Array<RouteRecordRaw> = [
         path: '/admin/master-data/:table',
         component: () => import('@/views/admin/AdminMasterDataEditor.vue'),
         meta: { requiresAdmin: true }
+    },
+    {
+        path: '/admin/halalify-phrases',
+        name: 'HalalifyPhrasesEditor',
+        component: () => import('@/views/admin/HalalifyPhrasesEditorView.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true, noAds: true }
     },
     {
         path: '/admin/users',

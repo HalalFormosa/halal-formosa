@@ -16,12 +16,12 @@
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
               <span style="font-size: 14px; font-weight: 600; color: var(--ion-color-medium);">{{ $t('savedItems.freeTier') }}</span>
               <span style="font-size: 14px; font-weight: bold; color: var(--ion-color-carrot);">
-                {{ totalSavedItems }} / 10
+                {{ totalSavedItems }} / 5
               </span>
             </div>
-            <ion-progress-bar :value="totalSavedItems / 10" color="carrot" style="border-radius: 4px; height: 8px;"></ion-progress-bar>
+            <ion-progress-bar :value="totalSavedItems / 5" color="carrot" style="border-radius: 4px; height: 8px;"></ion-progress-bar>
             
-            <p v-if="totalSavedItems >= 10" style="font-size: 12px; color: var(--ion-color-danger); margin-top: 12px; margin-bottom: 0;">
+            <p v-if="totalSavedItems >= 5" style="font-size: 12px; color: var(--ion-color-danger); margin-top: 12px; margin-bottom: 0;">
               {{ $t('savedItems.freeLimitReached') }}
             </p>
             <p v-else style="font-size: 12px; color: var(--ion-color-medium); margin-top: 12px; margin-bottom: 0;">

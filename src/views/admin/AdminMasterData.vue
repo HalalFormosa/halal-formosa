@@ -32,6 +32,10 @@
         <ion-item button @click="go('category_rules')">
           <ion-label>{{ $t('admin.categoryRules') }}</ion-label>
         </ion-item>
+
+        <ion-item button @click="goPhrases">
+          <ion-label>Translation Word Alignments</ion-label>
+        </ion-item>
       </ion-list>
     </ion-content>
   </ion-page>
@@ -56,5 +60,9 @@ const router = useRouter()
 
 const go = (table: string) => {
   router.push(`/admin/master-data/${table}`)
+}
+
+const goPhrases = () => {
+  router.push('/admin/halalify-phrases')
 }
 </script>

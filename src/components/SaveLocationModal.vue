@@ -179,7 +179,7 @@ async function saveToFolder(folderId: string) {
   }
 
   // Check free tier limit
-  if (!isDonor.value && totalSavedCount.value >= 10) {
+  if (!isDonor.value && totalSavedCount.value >= 5) {
     await ActivityLogService.log("pro_paywall_trigger", {
       source: "save_location_limit",
       location_id: props.locationId,

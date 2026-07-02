@@ -95,6 +95,10 @@
               <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0; color: inherit;">
                 {{ formatDisplayName(currentUser?.id === user.id && !user.public_profile ? (currentUser?.user_metadata?.full_name || currentUser?.user_metadata?.display_name || 'Me') : user.display_name) }}
               </span>
+              <span v-if="user.donor_type && user.donor_type.toLowerCase().includes('pro')" class="list-pro-badge">
+                <ion-icon :icon="sparkles" style="font-size: 0.7rem; margin-right: 2px;" />
+                PRO
+              </span>
               <ion-badge v-if="currentUser?.id === user.id && !user.public_profile" color="medium" style="font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; flex-shrink: 0;" @click="showPrivateInfoAlert($event)">Private</ion-badge>
             </h2>
             <p style="margin: 0; font-size: 0.8rem; color: var(--sub-color, var(--ion-color-medium));">
@@ -877,6 +881,20 @@ ion-segment-button {
 .leaderboard-points-badge {
   border-radius: 8px;
   transition: all 0.3s ease;
+}
+
+.list-pro-badge {
+  display: inline-flex;
+  align-items: center;
+  background: #ffd700;
+  color: #111;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 0.65rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  flex-shrink: 0;
+  box-shadow: 0 0 5px rgba(250, 204, 21, 0.4);
 }
 
 

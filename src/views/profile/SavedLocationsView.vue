@@ -16,12 +16,12 @@
             <div class="limit-header">
               <span class="limit-label">{{ $t('savedLocations.freeTier') }}</span>
               <span class="limit-value">
-                {{ totalSavedCount }} / 10
+                {{ totalSavedCount }} / 5
               </span>
             </div>
-            <ion-progress-bar :value="totalSavedCount / 10" color="carrot" class="limit-progress"></ion-progress-bar>
+            <ion-progress-bar :value="totalSavedCount / 5" color="carrot" class="limit-progress"></ion-progress-bar>
             
-            <p v-if="totalSavedCount >= 10" class="limit-message limit-reached">
+            <p v-if="totalSavedCount >= 5" class="limit-message limit-reached">
               {{ $t('savedLocations.freeLimitReached') }}
             </p>
             <p v-else class="limit-message">

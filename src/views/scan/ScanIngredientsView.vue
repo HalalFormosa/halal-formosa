@@ -10,6 +10,11 @@
           :showBack="true"
           backRoute="/home"
       >
+        <template #end>
+          <ion-button @click="$router.push('/profile/scan-history')">
+            <ion-icon slot="icon-only" :icon="timeOutline" />
+          </ion-button>
+        </template>
         <template #actions>
           <ion-item
               button
@@ -184,9 +189,11 @@
               expand="block"
               size="small"
               class="ion-margin-top"
+              :disabled="loadingAd"
               @click="watchAdForExtraScans"
           >
-            🎁 {{ $t('scanIngredients.limit.bonus') }}
+            <ion-spinner v-if="loadingAd" name="crescent" style="zoom: 0.6; margin-right: 8px;"></ion-spinner>
+            <span>🎁 {{ loadingAd ? 'Loading Ad...' : $t('scanIngredients.limit.bonus') }}</span>
           </ion-button>
         </div>
 
@@ -584,7 +591,8 @@ import {
   tabletLandscapeOutline,
   stopCircle,
   eyeOutline,
-  addCircleOutline
+  addCircleOutline,
+  timeOutline
 } from 'ionicons/icons'
 import AppHeader from '@/components/AppHeader.vue'
 import {ref, onUnmounted, computed, nextTick} from 'vue'
@@ -629,7 +637,7 @@ import { useI18n } from 'vue-i18n'
 const { t } = useI18n()
 
 /** ---------- Constants ---------- */
-const DAILY_SCAN_LIMIT = 10
+const DAILY_SCAN_LIMIT = 5
 
 /** ---------- Wizard Steps ---------- */
 const STEP_CAPTURE = 0
@@ -687,6 +695,7 @@ const showLimitToast = ref(false);
 const bonusScans = ref(0)
 const isNative = ref(Capacitor.isNativePlatform())
 const dailyAdUses = ref(0);
+const loadingAd = ref(false);
 
 const originalFile = ref<File | null>(null)
 const croppedFile = ref<File | null>(null)
@@ -1096,22 +1105,30 @@ async function watchAdForExtraScans() {
     ? import.meta.env.VITE_ADMOB_IOS_REWARDED_AD_ID
     : import.meta.env.VITE_ADMOB_ANDROID_REWARDED_AD_ID;
 
-  await showRewardedAd(rewardAdId, async () => {
-    bonusScans.value += 1;
-    dailyAdUses.value += 1;
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      await supabase
-          .from("user_scan_bonus")
-          .upsert({
-            user_id: user.id,
-            bonus_scans: bonusScans.value,
-            daily_ad_uses: dailyAdUses.value,
-            last_updated: new Date().toISOString().split("T")[0]
-          });
-    }
-    await loadTodayScanCount();
-  });
+  loadingAd.value = true;
+  try {
+    await showRewardedAd(rewardAdId, async () => {
+      bonusScans.value += 1;
+      dailyAdUses.value += 1;
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase
+            .from("user_scan_bonus")
+            .upsert({
+              user_id: user.id,
+              bonus_scans: bonusScans.value,
+              daily_ad_uses: dailyAdUses.value,
+              last_updated: new Date().toISOString().split("T")[0]
+            });
+      }
+      await loadTodayScanCount();
+    });
+  } catch (error) {
+    console.error("AdMob Error in watchAdForExtraScans:", error);
+    setError(t('scanIngredients.errors.adFailed') || 'Could not load rewarded ad. Please try again.');
+  } finally {
+    loadingAd.value = false;
+  }
 }
 /** ---------- Share card ------------*/
 const { shareResult } = useShareCard(

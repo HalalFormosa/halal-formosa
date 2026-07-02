@@ -165,12 +165,15 @@
               </ion-item>
 
               <!-- Category -->
-              <ion-item>
-                <ion-select v-model="selectedProduct.product_category_id" interface="alert" :label="$t('review.category')" label-placement="floating">
-                  <ion-select-option v-for="cat in categories" :key="cat.id" :value="cat.id">
-                    {{ cat.name }}
-                  </ion-select-option>
-                </ion-select>
+              <ion-item lines="none" button @click="categoryModalOpen = true">
+                <ion-label>
+                  <h3 style="font-size: 13px; color: var(--ion-color-medium); margin-bottom: 4px;">
+                    {{ $t('review.category') }} <ion-text color="danger">*</ion-text>
+                  </h3>
+                  <p style="font-size: 15px; color: var(--ion-text-color); margin-top: 4px;">
+                    {{ selectedCategoryName || 'Select a Category...' }}
+                  </p>
+                </ion-label>
               </ion-item>
 
               <!-- Ingredients -->
@@ -217,6 +220,14 @@
                   auto-grow
                 ></ion-textarea>
               </ion-item>
+
+              <!-- Quick Insert Buttons -->
+              <div class="quick-scroll-container ion-padding-horizontal ion-padding-bottom">
+                <ion-button size="small" fill="outline" color="success" @click="applyQuickDescription(quickDescriptions.halal)" class="quick-btn">Halal by</ion-button>
+                <ion-button size="small" fill="outline" color="carrot" @click="applyQuickDescription(quickDescriptions.muslimFriendly)" class="quick-btn">Friendly OK</ion-button>
+                <ion-button size="small" fill="outline" color="warning" @click="applyQuickDescription(quickDescriptions.syubhah)" class="quick-btn">Syubhah found</ion-button>
+                <ion-button size="small" fill="outline" color="danger" @click="applyQuickDescription(quickDescriptions.haram)" class="quick-btn">Haram found</ion-button>
+              </div>
 
               <!-- Images Preview -->
               <div class="ion-margin-top ion-padding-horizontal">
@@ -335,6 +346,45 @@
           </ion-content>
         </ion-modal>
 
+        <!-- 📂 Category Search & Select Modal -->
+        <ion-modal :is-open="categoryModalOpen" @didDismiss="categoryModalOpen = false" style="--height: 80%; --border-radius: 16px;">
+          <ion-header>
+            <ion-toolbar color="carrot">
+              <ion-title>{{ $t('addProduct.selectCategory') || 'Select Category' }}</ion-title>
+              <ion-buttons slot="end">
+                <ion-button @click="categoryModalOpen = false">{{ $t('common.cancel') || 'Cancel' }}</ion-button>
+              </ion-buttons>
+            </ion-toolbar>
+            <ion-toolbar>
+              <ion-searchbar
+                v-model="categoryQuery"
+                :placeholder="$t('addProduct.searchCategoryPlaceholder') || 'Search categories...'"
+                animated
+              ></ion-searchbar>
+            </ion-toolbar>
+          </ion-header>
+
+          <ion-content>
+            <ion-list>
+              <ion-item
+                v-for="cat in filteredCategories"
+                :key="cat.id"
+                button
+                @click="selectCategory(cat)"
+                :class="{ 'selected-category-item': selectedProduct?.product_category_id === cat.id }"
+              >
+                <ion-label>{{ cat.name }}</ion-label>
+                <ion-icon 
+                  v-if="selectedProduct?.product_category_id === cat.id" 
+                  :icon="checkmarkCircle" 
+                  slot="end" 
+                  color="success" 
+                />
+              </ion-item>
+            </ion-list>
+          </ion-content>
+        </ion-modal>
+
       </ion-modal>
     </ion-content>
   </ion-page>
@@ -390,6 +440,42 @@ const pendingProducts = ref<any[]>([])
 const showModal = ref(false)
 const selectedProduct = ref<any | null>(null)
 const showImageModal = ref(false)
+
+const categoryModalOpen = ref(false)
+const categoryQuery = ref('')
+
+const filteredCategories = computed(() => {
+  const q = categoryQuery.value.trim().toLowerCase()
+  if (!q) return categories.value
+  return categories.value.filter(cat => cat.name.toLowerCase().includes(q))
+})
+
+const selectedCategoryName = computed(() => {
+  if (!selectedProduct.value) return ''
+  const matched = categories.value.find(cat => cat.id === selectedProduct.value.product_category_id)
+  return matched ? matched.name : ''
+})
+
+function selectCategory(cat: { id: number; name: string }) {
+  if (selectedProduct.value) {
+    selectedProduct.value.product_category_id = cat.id
+  }
+  categoryModalOpen.value = false
+  categoryQuery.value = ''
+}
+
+const quickDescriptions = {
+  halal: "Halal certified by ",
+  muslimFriendly: "Muslim-friendly ingredients, OK.",
+  syubhah: "Syubhah ingredients found.",
+  haram: "Haram ingredients found."
+}
+
+function applyQuickDescription(text: string) {
+  if (selectedProduct.value) {
+    selectedProduct.value.description = text
+  }
+}
 const activeImageIndex = ref(0)
 const ingredientDictionary = ref<Record<string, string>>({})
 const showAllIngredients = ref(false)
@@ -1198,13 +1284,31 @@ ion-header {
 }
 
 .uploader-info {
-  --background: var(--ion-color-step-50);
+  --background: var(--background-step-50, var(--ion-color-step-50));
   border-radius: 12px;
   margin-bottom: 20px;
 }
 
 .review-modal {
   --border-radius: 16px;
+}
+
+.quick-scroll-container {
+  display: flex;
+  overflow-x: auto;
+  gap: 8px;
+  padding-bottom: 8px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none; /* Firefox */
+}
+
+.quick-scroll-container::-webkit-scrollbar {
+  display: none; /* Chrome/Safari */
+}
+
+.quick-btn {
+  flex-shrink: 0;
+  --border-radius: 8px;
 }
 </style>
 

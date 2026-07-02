@@ -87,26 +87,38 @@
 
             <!-- 🏷️ Location Tags -->
             <div v-if="place.tags?.length" class="hashtag-row">
-              <span v-for="tag in place.tags" :key="tag" class="location-hashtag">
-                #{{ tag }}
-              </span>
+              <template v-if="showAllTags">
+                <span v-for="tag in place.tags" :key="tag" class="location-hashtag">
+                  #{{ tag }}
+                </span>
+                <span class="location-hashtag-more" @click="showAllTags = false">
+                  less
+                </span>
+              </template>
+              <template v-else>
+                <span v-for="tag in place.tags.slice(0, 3)" :key="tag" class="location-hashtag">
+                  #{{ tag }}
+                </span>
+                <span v-if="place.tags.length > 3" class="location-hashtag-more" @click="showAllTags = true">
+                  ... more
+                </span>
+              </template>
             </div>
 
-            <!-- 📢 Important Notice (Read Description) -->
+            <!-- ⚠️ Combined Muslim-friendly Disclaimer Banner -->
             <div
-                v-if="place.description && isMuslimFriendly"
-                class="description-notice-banner"
-                :class="{ 'is-muslim-friendly': isMuslimFriendly }"
-                @click="scrollToDescription"
+                v-if="isMuslimFriendly"
+                class="muslim-friendly-disclaimer-card animate__animated animate__fadeIn"
+                :class="{ 'clickable': !!place.description }"
+                @click="place.description ? scrollToDescription() : null"
             >
-              <div class="notice-icon-wrapper">
-                <ion-icon :icon="isMuslimFriendly ? alertCircle : informationCircle" />
+              <div class="disclaimer-content">
+                <ion-icon :icon="alertCircleOutline" class="disclaimer-icon" />
+                <div class="disclaimer-text">
+                  <strong>If in doubt:</strong> {{ combinedDisclaimer }}
+                </div>
               </div>
-              <div class="notice-text-content">
-                <div class="notice-title">{{ $t('explore.details.noticeTitle') }}</div>
-                <div class="notice-message">{{ $t('explore.details.readDescriptionNotice') }}</div>
-              </div>
-              <ion-icon :icon="chevronDown" class="notice-arrow" />
+              <ion-icon v-if="place.description" :icon="chevronDown" class="disclaimer-arrow" />
             </div>
 
             <p v-if="place?.author?.public_profile" class="attribution-text">
@@ -506,6 +518,7 @@ const route = useRoute()
 const router = useRouter()
 const place = ref<PlaceDetail | null>(null)
 const auditLogRef = ref<InstanceType<typeof AuditHistoryLog> | null>(null)
+const showAllTags = ref(false)
 const canEdit = ref(false)
 const modules = [Pagination, Zoom]
 const isLoggedIn = ref(false)
@@ -1035,6 +1048,25 @@ const isMuslimFriendly = computed(() => {
   return place.value.type.toLowerCase().includes('muslim-friendly')
 })
 
+const combinedDisclaimer = computed(() => {
+  if (!place.value?.type) return ''
+  const typeLower = place.value.type.toLowerCase()
+  let actionText = ''
+
+  if (typeLower.includes('restaurant') || typeLower.includes('stall') || typeLower.includes('bakery') || typeLower.includes('kitchen')) {
+    actionText = `ask the staff for a Muslim-friendly menu`
+  } else if (typeLower.includes('accomodation') || typeLower.includes('hotel')) {
+    actionText = `ask the staff for Muslim-friendly room and dining options`
+  } else {
+    actionText = `confirm with the staff or store owner`
+  }
+
+  if (place.value?.description) {
+    return `This is a ${place.value.type}. Please review the handling details below, ${actionText}, or ask for further clarification.`
+  }
+  return `This is a ${place.value.type}. Please ${actionText}, or ask for further clarification.`
+})
+
 const scrollToDescription = () => {
   if (!place.value?.description) return
   const el = document.getElementById('place-description-section')
@@ -1399,5 +1431,77 @@ iframe {
   border-radius: 4px;
 }
 
+.text-gray-500 {
+  color: var(--ion-color-step-400, #718096) !important;
+}
 
+ion-item ion-label p:not(.text-gray-500) {
+  color: var(--ion-text-color, #2d3748) !important;
+}
+
+.ion-palette-dark .text-gray-500 {
+  color: #cbd5e0 !important; /* Whiter light-grey for label headers */
+}
+
+.ion-palette-dark ion-item ion-label p:not(.text-gray-500) {
+  color: #ffffff !important; /* Pure white for content text */
+}
+
+/* ⚠️ Combined Muslim-friendly Disclaimer Card styling */
+.muslim-friendly-disclaimer-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: rgba(var(--ion-color-warning-rgb, 255, 196, 9), 0.12);
+  border: 1px solid var(--ion-color-warning, #ffc409);
+  padding: 12px 16px;
+  border-radius: 12px;
+  margin: 16px 0;
+  transition: all 0.2s ease;
+}
+
+.muslim-friendly-disclaimer-card.clickable {
+  cursor: pointer;
+}
+
+.muslim-friendly-disclaimer-card.clickable:active {
+  transform: scale(0.98);
+  background: rgba(var(--ion-color-warning-rgb, 255, 196, 9), 0.18);
+}
+
+.disclaimer-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  flex: 1;
+}
+
+.disclaimer-icon {
+  font-size: 24px;
+  color: var(--ion-color-warning, #ffc409);
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.disclaimer-text {
+  font-size: 0.85rem;
+  line-height: 1.45;
+  color: var(--ion-text-color);
+}
+
+.disclaimer-arrow {
+  font-size: 20px;
+  color: var(--ion-color-warning, #ffc409);
+  flex-shrink: 0;
+}
+
+.location-hashtag-more {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ion-color-medium);
+  cursor: pointer;
+  text-decoration: underline;
+  user-select: none;
+}
 </style>

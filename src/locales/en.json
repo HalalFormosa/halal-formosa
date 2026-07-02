@@ -702,6 +702,7 @@
     "noBio": "No bio added yet",
     "level": "Level {level}",
     "savedItems": "Saved Items",
+    "scanHistory": "Scan History",
     "submittedProducts": "Submitted Products",
     "submittedLocations": "Submitted Locations",
     "myProducts": {

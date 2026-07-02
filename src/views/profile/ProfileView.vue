@@ -298,6 +298,16 @@
               <ion-label>{{ $t('savedLocations.title') }}</ion-label>
             </ion-item>
 
+            <ion-item v-if="userEmail" button @click="$router.push('/profile/scan-history')">
+              <div class="icon-box" slot="start">
+                <ion-icon :icon="icons.timeOutline" />
+              </div>
+              <ion-label style="display: flex; align-items: center; gap: 8px;">
+                <span>{{ $t('profile.scanHistory') }}</span>
+                <span class="activity-pro-badge">PRO</span>
+              </ion-label>
+            </ion-item>
+
             <ion-item v-if="userEmail" button @click="$router.push('/store/my-orders')" :disabled="isStoreUnderConstruction">
               <div class="icon-box" slot="start">
                 <ion-icon :icon="icons.bagHandleOutline" />
@@ -2174,5 +2184,19 @@ ion-header {
 .default-avatar-border :deep(.cosmetic-avatar-wrapper) {
   border: 4px solid var(--ion-color-carrot);
   box-shadow: 0 4px 12px rgba(var(--ion-color-carrot-rgb), 0.3);
+}
+
+.activity-pro-badge {
+  display: inline-flex;
+  align-items: center;
+  background: #ffd700;
+  color: #111;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 0.65rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  flex-shrink: 0;
+  box-shadow: 0 0 5px rgba(250, 204, 21, 0.4);
 }
 </style>

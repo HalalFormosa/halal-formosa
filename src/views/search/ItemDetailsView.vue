@@ -808,7 +808,7 @@ async function presentPaywall(): Promise<boolean> {
 async function openSaveModal() {
   await popoverController.dismiss();
   
-  if (!isItemSaved.value && !isDonor.value && totalSavedItems.value >= 10) {
+  if (!isItemSaved.value && !isDonor.value && totalSavedItems.value >= 5) {
     await ActivityLogService.log("pro_paywall_trigger", {
       source: "save_item_limit"
     });

@@ -145,6 +145,7 @@
         </div>
       </ion-card>
 
+
       <!-- === Our Partner=== -->
       <ion-card>
         <ion-card-header>
@@ -566,6 +567,114 @@
       </ion-card>
       </LazySection>
 
+      <!-- === Halal Card Feature === -->
+      <ion-card>
+        <ion-card-header>
+          <div class="card-header-row">
+            <ion-card-title>Halalify</ion-card-title>
+
+            <ion-button
+                fill="clear"
+                size="small"
+                color="carrot"
+                @click="viewMorePhrases"
+            >
+              {{ $t('home.viewMore') }}
+            </ion-button>
+          </div>
+        </ion-card-header>
+
+        <ion-card-content>
+          <div class="halal-phrases-scroller">
+            <div
+                v-for="(p, index) in displayedHomePhrases"
+                :key="'phrase-' + index"
+                :class="['phrase-card', 'animate__animated', 'animate__fadeIn', { 'locked-card': isPhrasePremium(p) && !isDonor }]"
+            >
+              <div class="phrase-header">
+                <span class="phrase-tag">Phrase {{ index + 1 }}</span>
+                <div class="phrase-actions">
+                  <ion-button
+                      fill="clear"
+                      size="small"
+                      color="carrot"
+                      class="phrase-action-btn"
+                      @click="isPhrasePremium(p) && !isDonor ? presentRcPaywall() : toggleFavorite(p)"
+                  >
+                    <ion-icon slot="icon-only" :icon="isPhrasePremium(p) && !isDonor ? lockClosed : (isFavorite(p.chinese) ? star : starOutline)" />
+                  </ion-button>
+                  <ion-button
+                      fill="clear"
+                      size="small"
+                      color="carrot"
+                      class="phrase-action-btn"
+                      @click="isPhrasePremium(p) && !isDonor ? presentRcPaywall() : copyPhrase(p.chinese)"
+                  >
+                    <ion-icon slot="icon-only" :icon="copyOutline" />
+                  </ion-button>
+                </div>
+              </div>
+
+              <div class="phrase-body">
+                <h4 class="phrase-english">{{ getLocalizedExplanation(p) }}</h4>
+                <template v-if="isPhrasePremium(p) && !isDonor">
+                  <div class="locked-content-placeholder" @click="presentRcPaywall">
+                    <ion-icon :icon="lockClosed" class="lock-placeholder-icon" />
+                    <span class="lock-placeholder-text">Unlock Pro to see translation & pronunciation</span>
+                  </div>
+                </template>
+                <template v-else>
+                  <div class="phrase-chinese-row">
+                    <div class="phrase-chinese-box">
+                      <div class="phrase-chinese-segments">
+                        <div
+                            v-for="(seg, segIdx) in segmentPhrase(p)"
+                            :key="segIdx"
+                            class="chinese-segment"
+                        >
+                          <div class="chinese-segment-chars">
+                            <span
+                                v-for="(char, charIdx) in seg.text.split('')"
+                                :key="charIdx"
+                                :class="{ 'highlight-active': isCharHighlighted(p, seg.start + charIdx) }"
+                                class="align-char"
+                            >{{ char }}</span>
+                          </div>
+                          <span v-if="seg.gloss" class="segment-gloss">{{ seg.gloss }}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <ion-button
+                        fill="solid"
+                        color="carrot"
+                        class="play-btn"
+                        :class="{ 'speaking': activeSpeechText === p.chinese }"
+                        @click="playPhrase(p.chinese)"
+                    >
+                      <ion-icon slot="icon-only" :icon="activeSpeechText === p.chinese ? pauseCircleOutline : playCircleOutline" />
+                    </ion-button>
+                  </div>
+                  <p class="phrase-pinyin">
+                    <span class="label">Pinyin:</span>
+                    <span
+                        v-for="(word, wordIdx) in p.pinyin.split(' ')"
+                        :key="wordIdx"
+                        :class="{ 'highlight-active': isPinyinWordHighlighted(p, wordIdx) }"
+                        style="margin-right: 4px;"
+                    >{{ word.replace(/-/g, '') }}</span>
+                  </p>
+                  <p class="phrase-pronunciation">
+                    <span class="label">Pronounce:</span> "{{ p.pronunciation }}"
+                  </p>
+                </template>
+              </div>
+            </div>
+            <!-- Spacer to prevent the last card from being cropped -->
+            <div class="scroller-spacer"></div>
+          </div>
+        </ion-card-content>
+      </ion-card>
+
 
       <!-- === Insights Horizontal Scroll === -->
       <LazySection placeholderHeight="120px" @load="() => { fetchStats(); fetchLocationCategoryStats(); }">
@@ -673,6 +782,10 @@
                 <h2 style="margin: 0; font-weight: 600; font-size: 1rem; display: flex; align-items: center; gap: 6px; color: inherit; min-width: 0; overflow: hidden; width: 100%;">
                   <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0; color: inherit;">
                     {{ formatDisplayName(currentUser?.id === user.id && !user.public_profile ? (currentUser?.user_metadata?.full_name || currentUser?.user_metadata?.display_name || 'Me') : user.display_name) }}
+                  </span>
+                  <span v-if="user.donor_type && user.donor_type.toLowerCase().includes('pro')" class="list-pro-badge">
+                    <ion-icon :icon="sparkles" style="font-size: 0.7rem; margin-right: 2px;" />
+                    PRO
                   </span>
                   <ion-badge v-if="currentUser?.id === user.id && !user.public_profile" color="medium" style="font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; flex-shrink: 0;" @click="showPrivateInfoAlert($event)">Private</ion-badge>
                 </h2>
@@ -867,7 +980,7 @@ import {
   IonPage, IonContent, IonCard, IonCardHeader, IonCardTitle,
   IonCardContent, IonButton, IonIcon, IonHeader, onIonViewWillEnter, IonLabel, IonChip, IonSkeletonText,
   IonList, IonBadge, IonAvatar, IonItem, IonPopover, IonModal, IonToolbar, IonTitle, IonButtons,
-  IonSegment, IonSegmentButton, alertController
+  IonSegment, IonSegmentButton, alertController, toastController, IonSelect, IonSelectOption
 } from '@ionic/vue'
 import { useRouter } from 'vue-router'
 import { supabase } from '@/plugins/supabaseClient'
@@ -890,7 +1003,15 @@ import {
   constructOutline,
   chevronForwardOutline,
   warningOutline,
-  addOutline
+  addOutline,
+  copyOutline,
+  bookOutline,
+  volumeMediumOutline,
+  star,
+  starOutline,
+  playCircleOutline,
+  pauseCircleOutline,
+  lockClosed
 } from "ionicons/icons"
 import { useLeaderboard } from "@/composables/useLeaderboard";
 import {getLevelColor} from "@/composables/useLevels";
@@ -899,7 +1020,8 @@ import {formatDisplayName} from "@/utils/nameHelpers";
 import { isPublicProfile, currentUser } from '@/composables/userProfile';
 import {ActivityLogService} from "@/services/ActivityLogService";
 import {SocialMediaService} from "@/services/SocialMediaService";
-import { refreshSubscriptionStatus} from "@/composables/useSubscriptionStatus";
+import { isDonor, refreshSubscriptionStatus } from "@/composables/useSubscriptionStatus";
+import { RevenueCatUI, PAYWALL_RESULT } from '@revenuecat/purchases-capacitor-ui';
 import {Capacitor} from "@capacitor/core";
 import { Geolocation } from '@capacitor/geolocation'
 import { Browser } from '@capacitor/browser'
@@ -912,6 +1034,321 @@ import { useDailyMissions } from '@/composables/useDailyMissions'
 
 const { withCache } = useHomeData()
 const { userLocation: sharedLocation, startWatching } = useLocation()
+const { t, te, locale } = useI18n()
+
+/* ---------------- Halal Card Feature ---------------- */
+const activeSpeechText = ref<string | null>(null)
+const availableVoices = ref<SpeechSynthesisVoice[]>([])
+const selectedVoiceName = ref<string>('')
+
+const currentSpeechCharIndex = ref(-1)
+const currentSpeechCharLength = ref(0)
+
+function segmentPhrase(phrase: HalalifyPhrase): Array<{ text: string; gloss: string; start: number }> {
+  if (!phrase.alignments || phrase.alignments.length === 0) {
+    return phrase.chinese.split('').map((char, idx) => ({ text: char, gloss: '', start: idx }))
+  }
+
+  const currentLang = (locale.value || 'en').split('-')[0].toLowerCase()
+  const segments: Array<{ text: string; gloss: string; start: number }> = []
+  const matchedRanges: Array<{ start: number; end: number }> = []
+  const sortedAlignments = [...phrase.alignments].sort((a, b) => (b.zh?.length || 0) - (a.zh?.length || 0))
+  
+  for (const align of sortedAlignments) {
+    if (!align.zh) continue
+    let pos = phrase.chinese.indexOf(align.zh)
+    while (pos !== -1) {
+      const end = pos + align.zh.length
+      const overlap = matchedRanges.some(r => (pos >= r.start && pos < r.end) || (end > r.start && end <= r.end))
+      if (!overlap) {
+        matchedRanges.push({ start: pos, end })
+        const glossWord = align[currentLang] || align['en'] || ''
+        segments.push({
+          text: align.zh,
+          gloss: glossWord,
+          start: pos
+        })
+      }
+      pos = phrase.chinese.indexOf(align.zh, pos + 1)
+    }
+  }
+  
+  for (let i = 0; i < phrase.chinese.length; i++) {
+    const isMapped = matchedRanges.some(r => i >= r.start && i < r.end)
+    if (!isMapped) {
+      segments.push({
+        text: phrase.chinese[i],
+        gloss: '',
+        start: i
+      })
+    }
+  }
+  
+  segments.sort((a, b) => a.start - b.start)
+  return segments
+}
+
+function isCharHighlighted(phrase: HalalifyPhrase, charIdx: number): boolean {
+  if (activeSpeechText.value !== phrase.chinese) return false
+  return charIdx >= currentSpeechCharIndex.value && 
+         charIdx < (currentSpeechCharIndex.value + currentSpeechCharLength.value)
+}
+
+function getCleanIndex(text: string, rawCharIdx: number): number {
+  let cleanIdx = 0
+  for (let i = 0; i < rawCharIdx; i++) {
+    const char = text[i]
+    if (char && !/[，。？、！；：()[\]{}""'',.!?／]/.test(char)) {
+      cleanIdx++
+    }
+  }
+  return cleanIdx
+}
+
+function isPinyinWordHighlighted(phrase: any, wordIdx: number): boolean {
+  if (activeSpeechText.value !== phrase.chinese) return false
+  
+  const pinyinWords = phrase.pinyin.split(' ')
+  let charStart = 0
+  for (let i = 0; i < wordIdx; i++) {
+    const word = pinyinWords[i]
+    const syllableCount = word.split('-').length
+    charStart += syllableCount
+  }
+  
+  const currentWord = pinyinWords[wordIdx]
+  const syllableCount = currentWord.split('-').length
+  const charEnd = charStart + syllableCount
+  
+  const cleanSpeakStart = getCleanIndex(phrase.chinese, currentSpeechCharIndex.value)
+  const cleanSpeakEnd = cleanSpeakStart + currentSpeechCharLength.value
+  
+  return cleanSpeakStart < charEnd && cleanSpeakEnd > charStart
+}
+
+
+function getLocalizedExplanation(p: any): string {
+  const currentLang = (locale.value || 'en').split('-')[0].toLowerCase()
+  if (p && p.translations) {
+    if (p.translations[locale.value]) return p.translations[locale.value]
+    if (p.translations[currentLang]) return p.translations[currentLang]
+  }
+  return p ? p.english : ''
+}
+
+import { useHalalifyFavorites } from '@/composables/useHalalifyFavorites'
+import { useHalalifyPhrases } from '@/composables/useHalalifyPhrases'
+import type { HalalifyPhrase } from '@/data/halalifyPhrases'
+
+const { phrases, initPhrases } = useHalalifyPhrases()
+const { favorites, loadFavorites, toggleFavorite, isFavorite } = useHalalifyFavorites()
+
+const displayedHomePhrases = computed(() => {
+  if (favorites.value.length > 0) {
+    return favorites.value.map(fav => {
+      const latest = phrases.value.find(p => p.chinese === fav.chinese)
+      return latest || fav
+    })
+  }
+  return phrases.value.slice(0, 6)
+})
+
+function getFriendlyVoiceName(voice: SpeechSynthesisVoice): string {
+  const nameLower = voice.name.toLowerCase()
+  const langLower = voice.lang.toLowerCase()
+  
+  if (nameLower.includes('meijia') || nameLower.includes('mei-jia')) {
+    return 'Meijia (Taiwan Female)'
+  }
+  if (nameLower.includes('tingting') || nameLower.includes('ting-ting')) {
+    return 'Tingting (Mainland Female)'
+  }
+  if (nameLower.includes('yunjhe')) return 'Yunjhe (Taiwan Male)'
+  if (nameLower.includes('liao')) return 'Liao (Taiwan Male)'
+  if (nameLower.includes('yunxi')) return 'Yunxi (Mainland Male)'
+  if (nameLower.includes('yunjian')) return 'Yunjian (Mainland Male)'
+  if (nameLower.includes('yunyang')) return 'Yunyang (Mainland Male)'
+  if (nameLower.includes('kangkang')) return 'Kangkang (Mainland Male)'
+  
+  const isTaiwan = langLower.includes('tw') || langLower.includes('hant')
+  const isHongKong = langLower.includes('hk') || langLower.includes('yue') || langLower.includes('hong')
+  const isMainland = langLower.includes('cn') || langLower.includes('hans')
+  
+  // Try to guess gender from voice name
+  let gender = ''
+  if (nameLower.includes('male') || nameLower.includes('man') || nameLower.includes('yunjhe') || nameLower.includes('yunxi') || nameLower.includes('yunjian') || nameLower.includes('yunyang') || nameLower.includes('kangkang')) {
+    gender = 'Male'
+  } else if (nameLower.includes('female') || nameLower.includes('woman') || nameLower.includes('meijia') || nameLower.includes('tingting') || nameLower.includes('yating') || nameLower.includes('sinji') || nameLower.includes('lili') || nameLower.includes('lilian') || nameLower.includes('hsaio')) {
+    gender = 'Female'
+  }
+  
+  const genderLabel = gender ? ` ${gender}` : ''
+  const cleanName = voice.name.replace(/Microsoft/g, '').replace(/Google/g, '').replace(/Apple/g, '').replace(/Siri/g, '').replace(/[\(\)]/g, '').trim()
+  
+  if (isTaiwan) {
+    return `${cleanName || 'System'} (Taiwan${genderLabel})`
+  }
+  if (isHongKong) {
+    return `${cleanName || 'System'} (Hong Kong${genderLabel})`
+  }
+  if (isMainland) {
+    return `${cleanName || 'System'} (Mainland${genderLabel})`
+  }
+  
+  return `${cleanName || 'System'} (${voice.lang}${genderLabel})`
+}
+
+function loadVoices() {
+  if ('speechSynthesis' in window) {
+    const voices = window.speechSynthesis.getVoices()
+    
+    // Filter to retain all Chinese language voices
+    const rawFiltered = voices.filter(v => {
+      const langLower = v.lang.toLowerCase()
+      return langLower.startsWith('zh')
+    })
+    
+    // De-duplicate voices by name
+    const seen = new Set<string>()
+    const uniqueVoices = rawFiltered.filter(v => {
+      if (seen.has(v.name)) return false
+      seen.add(v.name)
+      return true
+    })
+    
+    // Always guarantee we have at least one fallback if somehow the filter was too aggressive
+    availableVoices.value = uniqueVoices.length > 0 ? uniqueVoices : voices.filter(v => v.lang.toLowerCase().startsWith('zh'))
+    
+    if (availableVoices.value.length > 0) {
+      if (!selectedVoiceName.value) {
+        // Pre-select Meijia, default or first
+        const preferred = availableVoices.value.find(v => v.name.toLowerCase().includes('meijia')) 
+                       || availableVoices.value.find(v => v.default) 
+                       || availableVoices.value[0]
+        selectedVoiceName.value = preferred.name
+      }
+    }
+  }
+}
+
+function getWordLengthAt(phrase: any, cleanIdx: number): number {
+  const pinyinWords = phrase.pinyin.split(' ')
+  let charStart = 0
+  for (let i = 0; i < pinyinWords.length; i++) {
+    const word = pinyinWords[i]
+    const syllableCount = word.split('-').length
+    const charEnd = charStart + syllableCount
+    if (cleanIdx >= charStart && cleanIdx < charEnd) {
+      return syllableCount
+    }
+    charStart = charEnd
+  }
+  return 1
+}
+
+function playPhrase(text: string) {
+  if ('speechSynthesis' in window) {
+    if (activeSpeechText.value === text) {
+      window.speechSynthesis.cancel()
+      activeSpeechText.value = null
+      currentSpeechCharIndex.value = -1
+      currentSpeechCharLength.value = 0
+      return
+    }
+    window.speechSynthesis.cancel()
+    const utterance = new SpeechSynthesisUtterance(text)
+    
+    const chosenVoice = availableVoices.value.find(v => v.name === selectedVoiceName.value)
+    if (chosenVoice) {
+      utterance.voice = chosenVoice
+      utterance.lang = chosenVoice.lang
+    } else {
+      utterance.lang = 'zh-TW'
+    }
+    
+    utterance.rate = 0.75 // Slightly slower for maximum legibility and clarity
+    utterance.onstart = () => {
+      activeSpeechText.value = text
+      currentSpeechCharIndex.value = -1
+      currentSpeechCharLength.value = 0
+    }
+    utterance.onboundary = (event) => {
+      if (event.name === 'word') {
+        currentSpeechCharIndex.value = event.charIndex
+        const phraseObj = phrases.value.find(pr => pr.chinese === text)
+        if (phraseObj) {
+          const cleanIdx = getCleanIndex(text, event.charIndex)
+          currentSpeechCharLength.value = getWordLengthAt(phraseObj, cleanIdx)
+        } else {
+          currentSpeechCharLength.value = event.charLength || 1
+        }
+      }
+    }
+    utterance.onend = () => {
+      setTimeout(() => {
+        if (activeSpeechText.value === text) {
+          activeSpeechText.value = null
+          currentSpeechCharIndex.value = -1
+          currentSpeechCharLength.value = 0
+        }
+      }, 500)
+    }
+    utterance.onerror = () => {
+      activeSpeechText.value = null
+      currentSpeechCharIndex.value = -1
+      currentSpeechCharLength.value = 0
+    }
+    window.speechSynthesis.speak(utterance)
+  }
+}
+
+function isCategoryPremium(catId: string): boolean {
+  return catId !== 'all' && catId !== 'favorites' && catId !== 'dining'
+}
+
+function isPhrasePremium(p: HalalifyPhrase): boolean {
+  if (p.catId !== 'dining') return true
+  return p.id ? (p.id > 5) : false
+}
+
+async function presentRcPaywall() {
+  if (!Capacitor.isNativePlatform()) {
+    console.warn("[RC] Paywall can only run on native apps.");
+    const confirmUnlock = confirm("[DEV] Unlock Pro for testing?")
+    if (confirmUnlock) {
+      isDonor.value = true
+      localStorage.setItem("user_pro_status", "true")
+    }
+    return;
+  }
+
+  try {
+    const { result } = await RevenueCatUI.presentPaywall();
+    if (result === PAYWALL_RESULT.PURCHASED || result === PAYWALL_RESULT.RESTORED) {
+      await refreshSubscriptionStatus({ syncToServer: true });
+      ActivityLogService.log('pro_purchase_success', {
+        source: 'home_view_halalify'
+      });
+    }
+  } catch (err) {
+    console.error("Paywall failed:", err);
+  }
+}
+
+async function copyPhrase(text: string) {
+  try {
+    await navigator.clipboard.writeText(text)
+    const toast = await toastController.create({
+      message: 'Copied Chinese phrase to clipboard!',
+      duration: 2000,
+      position: 'bottom',
+      color: 'success'
+    })
+    await toast.present()
+  } catch (err) {
+    console.error('Failed to copy', err)
+  }
+}
 
 /* ---------------- Community Reels (Instagram & TikTok) ---------------- */
 const communityReels = ref<any[]>([])
@@ -1120,7 +1557,6 @@ const popoverEvent = ref<Event | null>(null)
 
 /* ---------------- State ---------------- */
 const router = useRouter()
-const { t, te, locale } = useI18n()
 const { fetchProgress } = useDailyMissions()
 const RECENT_DISCOVER_LIMIT = 15
 const loadingStats = ref(true)
@@ -1199,8 +1635,16 @@ const isAuthenticated = ref(false)
 const isDark = ref(document.documentElement.classList.contains('ion-palette-dark'))
 
 onMounted(() => {
+  loadFavorites()
+  initPhrases()
   startWatching()
   fetchLatestAnnouncement()
+  
+  loadVoices()
+  if ('speechSynthesis' in window) {
+    window.speechSynthesis.onvoiceschanged = loadVoices
+  }
+  
   const observer = new MutationObserver(() => {
     isDark.value = document.documentElement.classList.contains('ion-palette-dark')
   })
@@ -1524,12 +1968,13 @@ async function fetchRecentProducts() {
           status, 
           photo_front_url, 
           created_at, 
+          approved_at, 
           updated_at, 
           product_categories(name),
           partner:partners(partner_tier)
         `)
         .eq("approved", true)
-        .order("created_at", { ascending: false })
+        .order("approved_at", { ascending: false })
         .limit(100)
 
     if (error) throw error
@@ -1879,6 +2324,7 @@ async function refreshAllData() {
 
 
 onIonViewWillEnter(async () => {
+  loadFavorites()
   ActivityLogService.log("home_page_open");
   
   const { data } = await supabase.auth.getSession()
@@ -1941,6 +2387,11 @@ function viewMoreLocations() {
 function viewMoreNews() {
   ActivityLogService.log("home_viewmore_news")
   router.push('/news')
+}
+
+function viewMorePhrases() {
+  ActivityLogService.log("home_viewmore_phrases")
+  router.push('/halalify')
 }
 
 function openNews(news: any) {
@@ -2653,6 +3104,20 @@ ion-segment-button {
   transition: all 0.3s ease;
 }
 
+.list-pro-badge {
+  display: inline-flex;
+  align-items: center;
+  background: #ffd700;
+  color: #111;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 0.65rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  flex-shrink: 0;
+  box-shadow: 0 0 5px rgba(250, 204, 21, 0.4);
+}
+
 
 
 .popover-cosmetic-wrapper {
@@ -2830,5 +3295,404 @@ ion-segment-button {
   --border-radius: 20px;
   font-weight: 600;
   margin: 0;
+}
+
+/* === Halal Card styling === */
+
+.halal-card-subtitle {
+  font-size: 0.85rem;
+  color: var(--ion-color-medium);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.halal-phrases-scroller {
+  display: flex;
+  overflow-x: auto;
+  gap: 14px;
+  scroll-snap-type: x mandatory;
+  padding: 4px 0 12px 0;
+  -webkit-overflow-scrolling: touch;
+}
+
+.scroller-spacer {
+  flex: 0 0 15%;
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.halal-phrases-scroller::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+.halal-phrases-scroller {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.phrase-card {
+  flex: 0 0 85%;
+  min-width: 0;
+  scroll-snap-align: start;
+  background: var(--ion-color-step-50, #f8f9fa);
+  border: 1px solid var(--ion-color-step-150, #e2e8f0);
+  border-radius: 16px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.03);
+}
+
+.ion-palette-dark .phrase-card {
+  background: var(--ion-color-step-100, #1e1e1e);
+  border-color: var(--ion-color-step-200, #2d2d2d);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+.phrase-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.phrase-tag {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ion-color-carrot);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: rgba(var(--ion-color-carrot-rgb, 255, 159, 64), 0.1);
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.phrase-action-btn {
+  --padding-start: 6px;
+  --padding-end: 6px;
+  height: 32px;
+  margin: 0;
+}
+
+.phrase-chinese-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+.play-btn {
+  --background: var(--ion-color-carrot);
+  --color: #ffffff;
+  --border-radius: 50%;
+  --box-shadow: 0 4px 10px rgba(217, 119, 6, 0.3);
+  width: 46px;
+  height: 46px;
+  min-height: 46px;
+  min-width: 46px;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  --padding-start: 0;
+  --padding-end: 0;
+}
+
+.play-btn ion-icon {
+  font-size: 24px;
+}
+
+.play-btn.speaking {
+  --background: var(--ion-color-success, #2dd36f);
+  --box-shadow: 0 4px 12px rgba(45, 211, 111, 0.4);
+  animation: pulse-speaker 1.5s infinite;
+}
+
+@keyframes pulse-speaker {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.15);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.phrase-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.phrase-english {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--ion-text-color);
+  flex: 1;
+}
+
+.language-sub-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 4px;
+}
+
+.language-sub-section.border-top {
+  border-top: 1px dashed var(--ion-color-step-200, #e2e8f0);
+  padding-top: 12px;
+  margin-top: 4px;
+}
+
+.sub-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sub-lang-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.sub-lang-label.Mandarin {
+  color: var(--ion-color-carrot);
+}
+
+.sub-lang-label.Taiwanese {
+  color: var(--ion-color-success);
+}
+
+.sub-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.mini-btn {
+  --padding-start: 4px;
+  --padding-end: 4px;
+  height: 24px;
+  margin: 0;
+  font-size: 16px;
+}
+
+.phrase-chinese-box {
+  flex: 1;
+  min-width: 0;
+  background: rgba(var(--ion-color-carrot-rgb, 255, 159, 64), 0.05);
+  border-left: 3px solid var(--ion-color-carrot);
+  padding: 8px 12px;
+  border-radius: 0 8px 8px 0;
+  margin: 4px 0;
+}
+
+.phrase-chinese-box.Taiwanese {
+  border-left-color: var(--ion-color-success, #2dd36f);
+  background: rgba(var(--ion-color-success-rgb, 45, 211, 111), 0.05);
+}
+
+.phrase-chinese {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--ion-text-color);
+  letter-spacing: 0.5px;
+}
+
+.phrase-chinese span {
+  transition: background-color 0.1s ease, color 0.1s ease;
+  border-radius: 4px;
+  padding: 0 1px;
+}
+
+.phrase-chinese span.highlight-active {
+  background-color: rgba(var(--ion-color-carrot-rgb, 255, 159, 64), 0.25);
+  color: var(--ion-color-carrot);
+  font-weight: 900;
+}
+
+.phrase-pinyin,
+.phrase-pronunciation {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--ion-color-step-600, #718096);
+  line-height: 1.4;
+}
+
+.phrase-pinyin span {
+  transition: background-color 0.1s ease, color 0.1s ease;
+  border-radius: 4px;
+  padding: 0 2px;
+}
+
+.phrase-pinyin span.highlight-active {
+  background-color: rgba(var(--ion-color-carrot-rgb, 255, 159, 64), 0.25);
+  color: var(--ion-color-carrot);
+  font-weight: 700;
+}
+
+.ion-palette-dark .phrase-pinyin,
+.ion-palette-dark .phrase-pronunciation {
+  color: var(--ion-color-step-400, #a0aec0);
+}
+
+.phrase-pinyin .label,
+.phrase-pronunciation .label {
+  font-weight: 700;
+  color: var(--ion-text-color);
+  margin-right: 4px;
+}
+
+.phrase-pronunciation {
+  font-style: italic;
+}
+
+.voice-selector-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--ion-color-step-100, #edf2f7);
+  padding: 2px 10px;
+  border-radius: 20px;
+  max-width: 210px;
+}
+
+.ion-palette-dark .voice-selector-wrapper {
+  background: var(--ion-color-step-150, #2d3748);
+}
+
+.voice-icon {
+  font-size: 16px;
+  color: var(--ion-color-carrot);
+  flex-shrink: 0;
+}
+
+.voice-select {
+  --padding-top: 0;
+  --padding-bottom: 0;
+  --padding-start: 0;
+  --padding-end: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--ion-color-carrot, #e67e22);
+  --color: var(--ion-color-carrot, #e67e22);
+  min-height: 24px;
+}
+
+.phrase-card.locked-card {
+  opacity: 0.85;
+  border: 1px dashed var(--ion-color-medium, #92949c);
+  background: var(--ion-color-step-50, #f8f9fa);
+}
+
+.ion-palette-dark .phrase-card.locked-card {
+  background: var(--ion-color-step-100, #1e1e1e);
+}
+
+.play-btn.locked-play {
+  --background: var(--ion-color-medium, #92949c);
+  --box-shadow: none;
+}
+
+.locked-content-placeholder {
+  background: var(--ion-color-step-100, #edf2f7);
+  border: 1px dashed var(--ion-color-medium, #92949c);
+  border-radius: 12px;
+  padding: 20px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  margin-top: 10px;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.locked-content-placeholder:active {
+  transform: scale(0.98);
+  background: var(--ion-color-step-150, #e2e8f0);
+}
+
+.lock-placeholder-icon {
+  font-size: 28px;
+  color: var(--ion-color-carrot, #e67e22);
+}
+
+.lock-placeholder-text {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ion-color-step-700, #4a5568);
+  text-align: center;
+}
+
+.ion-palette-dark .locked-content-placeholder {
+  background: var(--ion-color-step-150, #2d3748);
+}
+
+.ion-palette-dark .locked-content-placeholder:active {
+  background: var(--ion-color-step-200, #4a5568);
+}
+
+.ion-palette-dark .lock-placeholder-text {
+  color: var(--ion-color-step-400, #cbd5e0);
+}
+
+.phrase-chinese-segments {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px 12px;
+  line-height: 1.2;
+}
+
+.chinese-segment {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.chinese-segment-chars {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.chinese-segment .align-char {
+  font-size: 1.7rem;
+  font-weight: 600;
+  color: var(--ion-text-color, #2d3748);
+  transition: background-color 0.15s ease, color 0.15s ease;
+  border-radius: 4px;
+  padding: 0 1px;
+}
+
+.chinese-segment .align-char.highlight-active {
+  background-color: rgba(var(--ion-color-carrot-rgb, 255, 159, 64), 0.25);
+  color: var(--ion-color-carrot);
+}
+
+.segment-gloss {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--ion-color-medium, #718096);
+  margin-top: 5px;
+  text-transform: lowercase;
+  opacity: 0.85;
 }
 </style>
