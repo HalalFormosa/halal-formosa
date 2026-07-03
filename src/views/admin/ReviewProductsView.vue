@@ -232,7 +232,7 @@
               <!-- Quick Insert Buttons -->
               <div class="quick-scroll-container ion-padding-horizontal ion-padding-bottom">
                 <ion-button size="small" fill="outline" color="success" @click="applyQuickDescription(quickDescriptions.halal)" class="quick-btn">Halal by</ion-button>
-                <ion-button size="small" fill="outline" color="carrot" @click="applyQuickDescription(quickDescriptions.muslimFriendly)" class="quick-btn">Friendly OK</ion-button>
+                <ion-button size="small" fill="outline" color="primary" @click="applyQuickDescription(quickDescriptions.muslimFriendly)" class="quick-btn">Friendly OK</ion-button>
                 <ion-button size="small" fill="outline" color="warning" @click="applyQuickDescription(quickDescriptions.syubhah)" class="quick-btn">Syubhah found</ion-button>
                 <ion-button size="small" fill="outline" color="danger" @click="applyQuickDescription(quickDescriptions.haram)" class="quick-btn">Haram found</ion-button>
               </div>
@@ -362,7 +362,14 @@
         </ion-modal>
 
         <!-- 📂 Category Search & Select Modal -->
-        <ion-modal :is-open="categoryModalOpen" @didDismiss="categoryModalOpen = false" style="--height: 80%; --border-radius: 16px;">
+        <ion-modal
+          :is-open="categoryModalOpen"
+          @didDismiss="categoryModalOpen = false"
+          :breakpoints="[0, 0.5, 0.9]"
+          :initial-breakpoint="0.9"
+          :handle="true"
+          style="--border-radius: 16px;"
+        >
           <ion-header>
             <ion-toolbar color="carrot">
               <ion-title>{{ $t('addProduct.selectCategory') || 'Select Category' }}</ion-title>

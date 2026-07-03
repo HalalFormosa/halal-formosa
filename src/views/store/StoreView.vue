@@ -29,7 +29,7 @@
       </ion-toolbar>
     </ion-header>
 
-    <ion-content :fullscreen="true">
+    <ion-content>
       <div class="store-view-wrapper" style="position: relative; min-height: 100%;">
         <div class="store-container">
           <!-- Test Phase Disclaimer Banner -->

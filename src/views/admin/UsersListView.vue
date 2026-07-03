@@ -45,8 +45,16 @@
                 </div>
               </div>
               
-              <p class="email-text">{{ user.email }}</p>
-              
+              <div class="sub-row">
+                <p class="email-text">{{ user.email }}</p>
+                <span
+                  class="tier-badge"
+                  :class="user.is_donor ? 'tier-pro' : 'tier-free'"
+                >
+                  {{ user.donor_type || 'Free' }}
+                </span>
+              </div>
+
               <div class="metadata-row">
                 <div class="last-active">
                   <ion-icon :icon="timeOutline" class="meta-icon" />
@@ -254,13 +262,46 @@ onMounted(() => fetchUsers(true))
   flex: 1;
 }
 
+.sub-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  min-width: 0;
+}
+
 .email-text {
-  margin: 0 0 8px 0;
+  margin: 0;
   font-size: 0.85rem;
   color: var(--ion-color-medium);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.tier-badge {
+  flex-shrink: 0;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.tier-free {
+  background: var(--ion-color-step-150);
+  color: var(--ion-color-step-600);
+  border: 1px solid var(--ion-color-step-250);
+}
+
+.tier-pro {
+  background: var(--ion-color-carrot);
+  color: #fff;
+  border: 1px solid var(--ion-color-carrot);
+  box-shadow: 0 0 0 1px rgba(var(--ion-color-carrot-rgb), 0.25),
+              0 2px 8px rgba(var(--ion-color-carrot-rgb), 0.45);
 }
 
 .activity-badge {
@@ -322,5 +363,20 @@ onMounted(() => fetchUsers(true))
 .ion-palette-dark .badge-hot {
   background: rgba(var(--ion-color-carrot-rgb), 0.2);
   border-color: rgba(var(--ion-color-carrot-rgb), 0.4);
+}
+
+/* Tier badges — high contrast against the dark card */
+.ion-palette-dark .tier-free {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--ion-color-step-650);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.ion-palette-dark .tier-pro {
+  background: var(--ion-color-carrot);
+  color: #1a1a1a;
+  border-color: var(--ion-color-carrot-tint, #ffb380);
+  box-shadow: 0 0 0 1px rgba(var(--ion-color-carrot-rgb), 0.35),
+              0 2px 10px rgba(var(--ion-color-carrot-rgb), 0.55);
 }
 </style>

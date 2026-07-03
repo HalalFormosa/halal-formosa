@@ -3076,7 +3076,10 @@ button.gm-ui-hover-effect > span {
   background: transparent !important;
   box-shadow: none !important;
   transition: background 0.2s ease, border-bottom 0.2s ease;
-  padding-top: calc(var(--ion-safe-area-top, 0px) + 16px);
+  /* Status-bar clearance is already handled by Ionic's
+     `ion-header ion-toolbar:first-of-type` safe-area padding.
+     Only add a small gap here so the search bar sits just under it. */
+  padding-top: 8px;
 }
 
 .explore-header.solid-bg {
