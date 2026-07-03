@@ -62,9 +62,6 @@ project(':capawesome-capacitor-apple-sign-in').projectDir = new File('../node_mo
 include ':capgo-capacitor-navigation-bar'
 project(':capgo-capacitor-navigation-bar').projectDir = new File('../node_modules/@capgo/capacitor-navigation-bar/android')
 
-include ':capgo-native-purchases'
-project(':capgo-native-purchases').projectDir = new File('../node_modules/@capgo/native-purchases/android')
-
 include ':revenuecat-purchases-capacitor'
 project(':revenuecat-purchases-capacitor').projectDir = new File('../node_modules/@revenuecat/purchases-capacitor/android')
 

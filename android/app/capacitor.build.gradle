@@ -29,7 +29,6 @@ dependencies {
     implementation project(':capawesome-capacitor-app-update')
     implementation project(':capawesome-capacitor-apple-sign-in')
     implementation project(':capgo-capacitor-navigation-bar')
-    implementation project(':capgo-native-purchases')
     implementation project(':revenuecat-purchases-capacitor')
     implementation project(':revenuecat-purchases-capacitor-ui')
     implementation project(':capacitor-plugin-safe-area')
