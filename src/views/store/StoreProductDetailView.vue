@@ -380,6 +380,7 @@ import {
 import { Capacitor } from '@capacitor/core'
 import { isDonor } from "@/composables/useSubscriptionStatus"
 import { scheduleBannerUpdate } from '@/plugins/admob'
+import { hideBanner } from '@/lib/admob'
 import {
   imageOutline, cartOutline, bagHandleOutline, removeOutline, addOutline,
   checkmarkCircleOutline, closeCircleOutline, chatbubbleOutline, constructOutline,
@@ -453,10 +454,15 @@ function scrollToImage(index: number) {
 function openImageModal(index: number) {
   activeImageIndex.value = index
   showImageModal.value = true
+  // The native AdMob banner floats above the WebView, so it would cover the
+  // fullscreen viewer's close button (and the top of the zoomed image). Hide it
+  // while the viewer is open; restore it on close.
+  hideBanner().catch(() => {})
 }
 
 function closeImageModal() {
   showImageModal.value = false
+  scheduleBannerUpdate()
 }
 
 const handleScroll = (ev: any) => {

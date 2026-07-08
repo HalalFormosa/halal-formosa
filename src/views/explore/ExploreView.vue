@@ -335,6 +335,7 @@
                     <h5 class="title-text">
                       {{ place.name }}
                       <ion-icon v-if="place.partner_tier" :icon="checkmarkCircle" class="verified-badge" />
+                      <ion-icon v-else-if="place.is_claimed" :icon="checkmarkCircle" class="claimed-badge" />
                     </h5>
                     <div class="metas">
                       <span class="meta type-badge">{{ place.type }}</span>
@@ -493,6 +494,7 @@
                     <h5 class="title-text">
                       {{ place.name }}
                       <ion-icon v-if="place.partner_tier" :icon="checkmarkCircle" class="verified-badge" />
+                      <ion-icon v-else-if="place.is_claimed" :icon="checkmarkCircle" class="claimed-badge" />
                     </h5>
                     <div class="metas">
                       
@@ -661,6 +663,7 @@ import ExploreFilterContent from '@/components/ExploreFilterContent.vue'
 import mapsLoader from '@/plugins/googleMapsLoader'
 import {Capacitor} from '@capacitor/core'
 import {Geolocation} from '@capacitor/geolocation'
+import { StatusBar, Style } from '@capacitor/status-bar'
 import {supabase} from '@/plugins/supabaseClient'
 import { hasOrganicInteraction, delayForHuman } from '@/utils/interactionShield'
 import { useRecaptcha } from '@/composables/useRecaptcha'
@@ -680,6 +683,7 @@ import { useLocation } from '@/composables/useLocation'
 import {ActivityLogService} from "@/services/ActivityLogService";
 
 import {isDonor} from "@/composables/useSubscriptionStatus";
+import { isDark } from "@/composables/useTheme";
 import { useSavedLocations } from '@/composables/useSavedLocations';
 import SaveLocationModal from '@/components/SaveLocationModal.vue';
 
@@ -743,6 +747,7 @@ type Place = {
   type: string
   view_count?: number
   partner_tier?: 'Gold' | 'Silver' | 'Bronze'
+  is_claimed?: boolean
   created_at?: string
   tags?: string[]
   description?: string | null
@@ -859,6 +864,29 @@ const boundsFilteredLocations = computed(() => {
 const listLocations = computed(() => {
   return boundsFilteredLocations.value.slice(0, listLimit.value)
 })
+
+// 📊 Impression tracking (powers the business dashboard funnel + "search terms you
+// appear in"). Deduped per place per session; captures the active search query.
+const impressedThisSession = new Set<number>()
+let impressionTimer: ReturnType<typeof setTimeout> | null = null
+function scheduleImpressionLog() {
+  if (impressionTimer) clearTimeout(impressionTimer)
+  impressionTimer = setTimeout(() => {
+    const q = searchQuery.value?.trim() || null
+    let logged = 0
+    for (const p of listLocations.value) {
+      if (impressedThisSession.has(p.id)) continue
+      impressedThisSession.add(p.id)
+      ActivityLogService.log('explore_place_impression', { id: p.id, q })
+      if (++logged >= 30) break // cap burst size
+    }
+  }, 1500)
+}
+// NOTE: watch(listLocations, ...) is registered in onMounted (see below), not here.
+// Registering it during setup would eagerly evaluate listLocations ->
+// boundsFilteredLocations -> currentMapBounds/displayedLocations, which are declared
+// further down, triggering a temporal-dead-zone ReferenceError that crashes setup.
+onMounted(() => watch(listLocations, scheduleImpressionLog))
 
 const handleInfinite = () => {
   if (isFetching.value) return
@@ -1741,6 +1769,7 @@ const fetchLocations = async (mapBounds?: google.maps.LatLngBounds | null, force
     created_at,
     tags,
     opening_hours,
+    is_claimed,
     location_types(name),
     partner:partners(partner_tier)
   `)
@@ -1767,6 +1796,7 @@ const fetchLocations = async (mapBounds?: google.maps.LatLngBounds | null, force
         type: loc.location_types?.name ?? '',
         view_count: loc.view_count ?? 0,
         partner_tier: Array.isArray(loc.partner) ? loc.partner[0]?.partner_tier : loc.partner?.partner_tier,
+        is_claimed: loc.is_claimed ?? false,
         created_at: loc.created_at,
         tags: loc.tags || [],
         opening_hours: loc.opening_hours
@@ -2678,11 +2708,45 @@ onUnmounted(() => {
 
 let firstEnter = true
 
+// 🔆 Status-bar contrast for Explore.
+// The header floats transparently over the content, so the native status bar
+// overlays the map/list instead of an opaque strip. The icons therefore need to
+// contrast with whatever is actually behind them, not with the app theme.
+// Capacitor Style semantics (as observed on device):
+//   Style.Light => DARK icons  (for light backgrounds)
+//   Style.Dark  => WHITE icons (for dark backgrounds)
+async function applyExploreStatusBar() {
+  if (!Capacitor.isNativePlatform()) return
+  try {
+    // Map mode: the Google map is always light -> dark icons regardless of theme.
+    // List mode: the overlay uses the app background -> follow the theme.
+    const wantDarkIcons = viewMode.value === 'map' ? true : !isDark.value
+    await StatusBar.setStyle({ style: wantDarkIcons ? Style.Light : Style.Dark })
+  } catch (e) {
+    console.warn('[Explore] status bar style failed', e)
+  }
+}
+
+// Restore the app's global (theme-based) status-bar style when leaving Explore.
+// Mirrors the choices in useTheme.ts: light theme -> Style.Light, dark -> Style.Dark.
+async function restoreThemeStatusBar() {
+  if (!Capacitor.isNativePlatform()) return
+  try {
+    await StatusBar.setStyle({ style: isDark.value ? Style.Dark : Style.Light })
+  } catch (e) {
+    console.warn('[Explore] status bar restore failed', e)
+  }
+}
+
+// Re-evaluate whenever the user toggles map/list.
+watch(viewMode, () => { if (isPageActive.value) applyExploreStatusBar() })
+
 onIonViewWillEnter(async () => {
   isPageActive.value = true
+  applyExploreStatusBar()
   hasAutoSelected.value = false; // allow re-highlighting when returning
   hasCenteredInitiallyVisible = false;
-  
+
   if (firstEnter) {
     firstEnter = false
     return
@@ -2709,6 +2773,7 @@ onIonViewDidEnter(async () => {
 
 onIonViewWillLeave(() => {
   isPageActive.value = false
+  restoreThemeStatusBar()
   clearCampusOverlays()
   lastStableLoc.value = null   // REQUIRED
 })
@@ -3634,6 +3699,12 @@ button.gm-ui-hover-effect > span {
   color: #3897f0; /* Instagram Blue */
   font-size: 1rem;
   filter: drop-shadow(0 0 2px rgba(56, 151, 240, 0.3));
+  flex-shrink: 0;
+  vertical-align: middle;
+}
+.claimed-badge {
+  color: var(--ion-color-success);
+  font-size: 1rem;
   flex-shrink: 0;
   vertical-align: middle;
 }

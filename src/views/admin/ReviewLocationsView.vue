@@ -350,7 +350,7 @@ import {
   IonModal, IonToolbar, IonTitle, IonButtons, IonAvatar, IonBadge, IonItemGroup,
   IonButton, IonInput, IonTextarea, IonSkeletonText, IonSelect, IonSelectOption,
   IonSearchbar, IonSegment, IonSegmentButton, IonPopover, IonIcon,
-  IonItemDivider, IonChip, IonCheckbox
+  IonItemDivider, IonChip, IonCheckbox, toastController
 } from '@ionic/vue'
 
 import { ref, onMounted, reactive, computed } from 'vue'
@@ -365,8 +365,10 @@ import AppHeader from '@/components/AppHeader.vue'
 import { useI18n } from 'vue-i18n'
 import { Camera, CameraDirection, CameraResultType, CameraSource } from '@capacitor/camera'
 import { useImageResizer } from "@/composables/useImageResizer"
+import { useNotifier } from "@/composables/useNotifier"
 
 const { t } = useI18n()
+const { notifyEvent } = useNotifier()
 
 const pendingLocations = ref<any[]>([])
 const loadingLocations = ref(true)
@@ -549,6 +551,11 @@ function closeModal() {
   showModal.value = false
 }
 
+async function showToast(message: string, color: string) {
+  const toast = await toastController.create({ message, duration: 2000, color, position: 'bottom' })
+  await toast.present()
+}
+
 async function takePicture() {
   if (isUnmounted.value) return
   try {
@@ -588,7 +595,10 @@ function uploadFromGallery() {
 async function approveLocation(loc: any) {
   const { data } = await supabase.auth.getUser()
   const user = data?.user
-  if (!user) return
+  if (!user) {
+    showToast(t('common.sessionExpired'), 'danger')
+    return
+  }
 
   let imageUrl = loc.image
 
@@ -630,10 +640,24 @@ async function approveLocation(loc: any) {
       .eq('id', loc.id)
 
   if (!error) {
-    await loadPendingLocations()
+    // 🔔 Announce the published place (shared cooldown with new_place adds)
+    const selectedType = locationTypes.value.find(ty => ty.id === loc.type_id)
+    const placeTypeName = selectedType?.name || 'Halal Place'
+
+    await notifyEvent(
+        'new_place',
+        `🕌 New ${placeTypeName} Added!`,
+        `${loc.name} (${placeTypeName})\nAddress: ${loc.address || 'N/A'}\nAdded by: ${loc.uploader?.display_name || t('home.anonymous')}`,
+        imageUrl ?? undefined,
+        { id: loc.id, lat: loc.lat, lng: loc.lng, isNative: true, user_id: loc.created_by }
+    )
+
     closeModal()
+    showToast(t('review.publishSuccess'), 'success')
+    await loadPendingLocations()
   } else {
     console.error("❌ Error approving location:", error)
+    showToast(t('review.approveFailed'), 'danger')
   }
 }
 
@@ -645,8 +669,8 @@ async function archiveLocation(id: number) {
       .update({ is_archived: true })
       .eq('id', id)
 
-  await loadPendingLocations()
   closeModal()
+  await loadPendingLocations()
 }
 
 async function restoreLocation(id: number) {
@@ -657,8 +681,8 @@ async function restoreLocation(id: number) {
       .update({ is_archived: false })
       .eq('id', id)
 
-  await loadPendingLocations()
   closeModal()
+  await loadPendingLocations()
 }
 
 async function rejectLocation(id: number) {
@@ -669,8 +693,8 @@ async function rejectLocation(id: number) {
       .delete()
       .eq('id', id)
 
-  await loadPendingLocations()
   closeModal()
+  await loadPendingLocations()
 }
 
 onMounted(() => {

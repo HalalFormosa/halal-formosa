@@ -152,6 +152,11 @@ const routes: Array<RouteRecordRaw> = [
     { path: '/place/:id/edit', name: 'EditPlace', component: () => import('@/views/explore/AddPlaceView.vue'), },
     { path: '/place/:id/report', name: 'ReportPlaceView', component: () => import('@/views/explore/ReportPlaceView.vue'), props: true },
 
+    // Business claim & dashboard
+    { path: '/place/:id/claim', name: 'ClaimBusiness', component: () => import('@/views/business/ClaimBusinessView.vue'), meta: { requiresAuth: true, noTabs: true, noAds: true } },
+    { path: '/business', name: 'BusinessDashboard', component: () => import('@/views/business/BusinessDashboardView.vue'), meta: { requiresAuth: true, noAds: true } },
+    { path: '/business/:locationId', name: 'BusinessManage', component: () => import('@/views/business/BusinessManageView.vue'), props: true, meta: { requiresAuth: true, noTabs: true, noAds: true } },
+
     { path: '/item/:barcode', name: 'item-details', component: () => import('@/views/search/ItemDetailsView.vue'), meta: { adSpaceId: 'ad-space-item-details', adId: getAdId(import.meta.env.VITE_ADMOB_IOS_ITEM_DETAILS_BANNER_ID, import.meta.env.VITE_ADMOB_ANDROID_ITEM_DETAILS_BANNER_ID) } },
 
     {
@@ -271,6 +276,18 @@ const routes: Array<RouteRecordRaw> = [
         path: '/admin/location-reports',
         name: 'LocationReports',
         component: () => import('@/views/admin/LocationReportsView.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true, noAds: true }
+    },
+    {
+        path: '/admin/location-claims',
+        name: 'AdminLocationClaims',
+        component: () => import('@/views/admin/LocationClaimsView.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true, noAds: true }
+    },
+    {
+        path: '/admin/location-edit-requests',
+        name: 'AdminLocationEditRequests',
+        component: () => import('@/views/admin/LocationEditRequestsView.vue'),
         meta: { requiresAuth: true, requiresAdmin: true, noAds: true }
     },
     {

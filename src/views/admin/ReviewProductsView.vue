@@ -77,24 +77,38 @@
 
       <!-- Product list -->
       <ion-list v-else-if="filteredProducts.length">
-        <ion-item
+        <ion-item-sliding
             v-for="product in filteredProducts"
             :key="product.id"
-            button
-            detail
-            @click="openProductModal(product)"
         >
-          <ion-thumbnail slot="start">
-            <img :src="product.photo_front_url" :alt="$t('review.imageAlt')" />
-          </ion-thumbnail>
-          <ion-label>
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <h2 style="margin: 0;">{{ product.name }}</h2>
-              <ion-badge v-if="product.is_rejected" color="danger" style="font-size: 10px; padding: 3px 6px; border-radius: 4px;">Rejected</ion-badge>
-            </div>
-            <p>{{ product.barcode }}</p>
-          </ion-label>
-        </ion-item>
+          <ion-item
+              button
+              detail
+              @click="openProductModal(product)"
+          >
+            <ion-thumbnail slot="start">
+              <img :src="product.photo_front_url" :alt="$t('review.imageAlt')" />
+            </ion-thumbnail>
+            <ion-label>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <h2 style="margin: 0;">{{ product.name }}</h2>
+                <ion-badge v-if="product.is_rejected" color="danger" style="font-size: 10px; padding: 3px 6px; border-radius: 4px;">Rejected</ion-badge>
+              </div>
+              <p>{{ product.barcode }}</p>
+            </ion-label>
+          </ion-item>
+
+          <ion-item-options side="end">
+            <ion-item-option v-if="!product.is_archived" color="warning" @click="archiveProduct(product.id, $event)">
+              <ion-icon slot="start" :icon="trashOutline" />
+              {{ $t('admin.archive') }}
+            </ion-item-option>
+            <ion-item-option v-else color="success" @click="restoreProduct(product.id, $event)">
+              <ion-icon slot="start" :icon="swapVerticalOutline" />
+              {{ $t('admin.restore') }}
+            </ion-item-option>
+          </ion-item-options>
+        </ion-item-sliding>
       </ion-list>
 
       <!-- No pending products -->
@@ -213,7 +227,7 @@
               <ion-item lines="none" class="ion-margin-top">
                 <ion-label position="stacked">{{ $t('addProduct.stores') }}</ion-label>
                 <StoreLogoBar
-                    :stores="stores"
+                    :stores="sortedStores"
                     mode="select"
                     v-model:modelValue="selectedProduct.store_ids"
                 />
@@ -301,21 +315,22 @@
             </ion-item-group>
 
             <div class="ion-padding-top ion-margin-top" style="border-top: 1px solid var(--ion-color-step-150); display: flex; flex-direction: column; gap: 12px;">
-              <ion-button @click="approveProduct(selectedProduct)" color="carrot" expand="block" style="font-weight: 700; height: 48px;">
-                <ion-icon slot="start" :icon="checkmarkOutline" />
-                {{ $t('review.publish', 'Publish') }}
+              <ion-button @click="approveProduct(selectedProduct)" :disabled="publishing" color="carrot" expand="block" style="font-weight: 700; height: 48px;">
+                <ion-spinner v-if="publishing" slot="start" name="crescent"></ion-spinner>
+                <ion-icon v-else slot="start" :icon="checkmarkOutline" />
+                {{ publishing ? $t('review.publishing', 'Publishing...') : $t('review.publish', 'Publish') }}
               </ion-button>
 
               <div style="display: flex; gap: 8px;">
-                <ion-button v-if="!selectedProduct.is_archived" @click="archiveProduct(selectedProduct.id)" color="warning" style="flex: 1;">
+                <ion-button v-if="!selectedProduct.is_archived" @click="archiveProduct(selectedProduct.id)" :disabled="publishing" color="warning" style="flex: 1;">
                   <ion-icon slot="start" :icon="trashOutline" />
                   {{ $t('admin.archive') }}
                 </ion-button>
-                <ion-button v-else @click="restoreProduct(selectedProduct.id)" color="success" style="flex: 1;">
+                <ion-button v-else @click="restoreProduct(selectedProduct.id)" :disabled="publishing" color="success" style="flex: 1;">
                   <ion-icon slot="start" :icon="swapVerticalOutline" />
                   {{ $t('admin.restore') }}
                 </ion-button>
-                <ion-button @click="rejectProduct(selectedProduct)" color="danger" fill="outline" style="flex: 1;">
+                <ion-button @click="rejectProduct(selectedProduct)" :disabled="publishing" color="danger" fill="outline" style="flex: 1;">
                   <ion-icon slot="start" :icon="trashOutline" />
                   {{ $t('review.reject') }}
                 </ion-button>
@@ -331,7 +346,7 @@
             <ion-button
                 fill="solid"
                 color="carrot"
-                style="position: absolute; top: 16px; right: 16px; z-index: 9999;"
+                style="position: absolute; top: calc(env(safe-area-inset-top, 0px) + 16px); right: 16px; z-index: 9999;"
                 @click="showImageModal = false"
             >
               ✕
@@ -420,7 +435,8 @@ import {
   IonThumbnail, IonLabel, IonButton, IonText, IonModal,
   IonToolbar, IonTitle, IonButtons, IonInput, IonSelect,
   IonSelectOption, IonTextarea, IonChip, IonSkeletonText,
-  IonSearchbar, IonSegment, IonSegmentButton, IonPopover, IonIcon, IonAvatar, IonBadge, IonItemGroup, IonSpinner, alertController
+  IonSearchbar, IonSegment, IonSegmentButton, IonPopover, IonIcon, IonAvatar, IonBadge, IonItemGroup, IonSpinner,
+  IonItemSliding, IonItemOptions, IonItemOption, alertController, toastController
 } from '@ionic/vue'
 
 import { ref, onMounted, computed, reactive, onUnmounted, watch } from 'vue'
@@ -452,10 +468,12 @@ import { Camera, CameraDirection, CameraResultType, CameraSource } from '@capaci
 import { useImageResizer } from "@/composables/useImageResizer";
 import { useBackgroundRemoval } from "@/composables/useBackgroundRemoval";
 import { highlightIngredients } from "@/utils/useIngredientHighlighter";
+import { useNotifier } from "@/composables/useNotifier";
 
 import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
+const { notifyEvent } = useNotifier()
 
 const categories = ref<{ id:number; name:string }[]>([])
 const modules = [Pagination, Zoom]
@@ -463,6 +481,7 @@ const pendingProducts = ref<any[]>([])
 const showModal = ref(false)
 const selectedProduct = ref<any | null>(null)
 const showImageModal = ref(false)
+const publishing = ref(false)
 
 const categoryModalOpen = ref(false)
 const categoryQuery = ref('')
@@ -691,6 +710,16 @@ watch(
     }
   }
 )
+
+// Show selected stores first so they're visible without scrolling right,
+// preserving original sort_order within the selected/unselected groups.
+const sortedStores = computed(() => {
+  const selectedIds: string[] = selectedProduct.value?.store_ids || []
+  if (!selectedIds.length) return stores.value
+  const selected = stores.value.filter(s => selectedIds.includes(s.id))
+  const unselected = stores.value.filter(s => !selectedIds.includes(s.id))
+  return [...selected, ...unselected]
+})
 
 const sortIcon = computed(() => {
   return sortBy.value === 'recent' ? timeOutline : listOutline
@@ -952,11 +981,22 @@ function closeModal() {
   showModal.value = false
 }
 
+async function showToast(message: string, color: string) {
+  const toast = await toastController.create({ message, duration: 2000, color, position: 'bottom' })
+  await toast.present()
+}
+
 
 async function approveProduct(product: any) {
+  if (publishing.value) return
+  publishing.value = true
+  try {
   const { data } = await supabase.auth.getUser()
   const user = data?.user
-  if (!user) return
+  if (!user) {
+    showToast(t('common.sessionExpired'), 'danger')
+    return
+  }
 
   let frontUrl = product.photo_front_url
   let backUrl = product.photo_back_url
@@ -1012,8 +1052,30 @@ async function approveProduct(product: any) {
   if (!error) {
     // Sync stores
     await saveProductStores(product.id, product.store_ids || [], user.id)
-    loadPendingProducts()
+
+    // 🔔 Announce the published product (shared cooldown with new_product adds)
+    await notifyEvent(
+        "new_product",
+        "🆕 New Product Published!",
+        `${product.name} (${product.status})\nBarcode: ${product.barcode}\nAdded by: ${product.uploader?.display_name || t('admin.anonymousUser')}`,
+        frontUrl || backUrl,
+        {
+          barcode: product.barcode,
+          status: product.status,
+          isNative: true,
+          user_id: product.added_by
+        }
+    )
+
     closeModal()
+    showToast(t('review.publishSuccess'), 'success')
+    loadPendingProducts()
+  } else {
+    console.error("❌ Error approving product:", error)
+    showToast(t('review.approveFailed'), 'danger')
+  }
+  } finally {
+    publishing.value = false
   }
 }
 
@@ -1079,7 +1141,13 @@ async function rejectProduct(product: any) {
   await alert.present()
 }
 
-async function archiveProduct(id: string) {
+function closeSlidingItem(ev?: Event) {
+  const el = (ev?.target as HTMLElement | undefined)?.closest('ion-item-sliding') as any
+  el?.close?.()
+}
+
+async function archiveProduct(id: string, ev?: Event) {
+  closeSlidingItem(ev)
   if (!confirm(t('admin.confirmArchive'))) return
 
   const { error } = await supabase
@@ -1090,10 +1158,14 @@ async function archiveProduct(id: string) {
   if (!error) {
     loadPendingProducts()
     closeModal()
+  } else {
+    console.error("❌ Error archiving product:", error)
+    showToast(t('review.actionFailed'), 'danger')
   }
 }
 
-async function restoreProduct(id: string) {
+async function restoreProduct(id: string, ev?: Event) {
+  closeSlidingItem(ev)
   if (!confirm(t('admin.confirmRestore'))) return
 
   const { error } = await supabase
@@ -1104,6 +1176,9 @@ async function restoreProduct(id: string) {
   if (!error) {
     loadPendingProducts()
     closeModal()
+  } else {
+    console.error("❌ Error restoring product:", error)
+    showToast(t('review.actionFailed'), 'danger')
   }
 }
 

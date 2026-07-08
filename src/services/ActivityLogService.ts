@@ -43,6 +43,9 @@ function resolveEntity(activity: string, rawDetail: any): EntityResult {
         case 'explore_detail_report':
         case 'explore_detail_line':
         case 'explore_detail_foodpanda':
+        case 'explore_detail_ubereats':
+        case 'explore_place_impression':
+        case 'explore_place_search_hit':
         case 'edit_place_success':
         case 'add_place_success':
             return {

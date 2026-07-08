@@ -55,6 +55,11 @@
                     label-placement="stacked"
                     :label="$t('profile.editProfile.name') || 'Display Name'"
                     :placeholder="$t('profile.editProfile.namePlaceholder') || 'Enter your display name...'"
+                    :maxlength="40"
+                    :helper-text="$t('profile.editProfile.nameRequiredHint') || 'Required — at least 1 character.'"
+                    :class="{ 'ion-invalid': fieldErrors.displayName, 'ion-touched': fieldErrors.displayName }"
+                    :error-text="fieldErrors.displayName"
+                    @ionInput="clearFieldError('displayName')"
                 ></ion-input>
               </ion-item>
 
@@ -66,8 +71,12 @@
                     v-model="editBio"
                     auto-grow
                     label-placement="stacked"
+                    :maxlength="300"
                     :label="$t('profile.editProfile.bio')"
                     :placeholder="$t('profile.editProfile.bioPlaceholder')"
+                    :class="{ 'ion-invalid': fieldErrors.bio, 'ion-touched': fieldErrors.bio }"
+                    :error-text="fieldErrors.bio"
+                    @ionInput="clearFieldError('bio')"
                 ></ion-textarea>
               </ion-item>
             </ion-list>
@@ -76,7 +85,7 @@
               <ion-button expand="block" fill="clear" color="medium" @click="skipOnboarding">
                 {{ $t('common.skip') || 'Skip' }}
               </ion-button>
-              <ion-button expand="block" color="carrot" shape="round" @click="currentStep = 2">
+              <ion-button expand="block" color="carrot" shape="round" :disabled="!hasValidDisplayName" @click="currentStep = 2">
                 {{ $t('common.next') || 'Next' }}
               </ion-button>
             </div>
@@ -99,6 +108,9 @@
                     <ion-datetime-button datetime="dobPicker" />
                   </ion-note>
                 </ion-item>
+                <ion-text v-if="fieldErrors.dob" color="danger" class="field-error-text">
+                  {{ fieldErrors.dob }}
+                </ion-text>
 
                 <ion-item button @click="showCountryModal = true">
                   <div class="icon-box" slot="start">
@@ -146,6 +158,9 @@
                       :label="$t('profile.editProfile.phone') || 'Phone Number'"
                       :placeholder="$t('profile.editProfile.phonePlaceholder') || '09xxxxxxxx'"
                       :helper-text="$t('profile.editProfile.phoneHint') || 'Used for store delivery notifications, never shared publicly.'"
+                      :class="{ 'ion-invalid': fieldErrors.phone, 'ion-touched': fieldErrors.phone }"
+                      :error-text="fieldErrors.phone"
+                      @ionInput="clearFieldError('phone')"
                   ></ion-input>
                 </ion-item>
               </ion-list>
@@ -210,7 +225,7 @@
                   color="carrot"
                   shape="round"
                   @click="saveProfile"
-                  :disabled="!acknowledged"
+                  :disabled="!acknowledged || !hasValidDisplayName"
               >
                 {{ $t('common.complete') }}
               </ion-button>
@@ -252,6 +267,9 @@
                 <ion-datetime-button datetime="dobPicker" />
               </ion-note>
             </ion-item>
+            <ion-text v-if="fieldErrors.dob" color="danger" class="field-error-text">
+              {{ fieldErrors.dob }}
+            </ion-text>
 
             <ion-item button @click="showCountryModal = true">
               <div class="icon-box" slot="start">
@@ -299,6 +317,9 @@
                   :label="$t('profile.editProfile.phone') || 'Phone Number'"
                   :placeholder="$t('profile.editProfile.phonePlaceholder') || '09xxxxxxxx'"
                   :helper-text="$t('profile.editProfile.phoneHint') || 'Used for store delivery notifications, never shared publicly.'"
+                  :class="{ 'ion-invalid': fieldErrors.phone, 'ion-touched': fieldErrors.phone }"
+                  :error-text="fieldErrors.phone"
+                  @ionInput="clearFieldError('phone')"
               ></ion-input>
             </ion-item>
 
@@ -311,6 +332,11 @@
                   label-placement="stacked"
                   :label="$t('profile.editProfile.name') || 'Display Name'"
                   :placeholder="$t('profile.editProfile.namePlaceholder') || 'Enter your display name...'"
+                  :maxlength="40"
+                  :helper-text="$t('profile.editProfile.nameRequiredHint') || 'Required — at least 1 character.'"
+                  :class="{ 'ion-invalid': fieldErrors.displayName, 'ion-touched': fieldErrors.displayName }"
+                  :error-text="fieldErrors.displayName"
+                  @ionInput="clearFieldError('displayName')"
               ></ion-input>
             </ion-item>
 
@@ -322,8 +348,12 @@
                   v-model="editBio"
                   auto-grow
                   label-placement="stacked"
+                  :maxlength="300"
                   :label="$t('profile.editProfile.bio')"
                   :placeholder="$t('profile.editProfile.bioPlaceholder')"
+                  :class="{ 'ion-invalid': fieldErrors.bio, 'ion-touched': fieldErrors.bio }"
+                  :error-text="fieldErrors.bio"
+                  @ionInput="clearFieldError('bio')"
               ></ion-textarea>
             </ion-item>
 
@@ -371,7 +401,7 @@
                 color="carrot"
                 shape="round"
                 @click="saveProfile"
-                :disabled="!acknowledged"
+                :disabled="!acknowledged || !hasValidDisplayName"
                 style="--box-shadow: 0 4px 12px rgba(var(--ion-color-carrot-rgb), 0.3);"
             >
               {{ $t('profile.editProfile.save') }}
@@ -422,9 +452,11 @@
             v-model="editDOB"
             presentation="date"
             :prefer-wheel="true"
+            :max="todayISO"
             :show-default-buttons="true"
             :done-text="$t('common.ok')"
             :cancel-text="$t('common.cancel')"
+            @ionChange="clearFieldError('dob')"
         ></ion-datetime>
       </ion-modal>
     </ion-content>
@@ -438,7 +470,7 @@ import {
   IonSelect, IonSelectOption, IonTextarea, IonButton, IonModal,
   IonNote, IonSearchbar, IonDatetimeButton, IonText, IonCheckbox,
   IonSkeletonText, IonCard, IonCardContent, IonIcon, IonInput, IonToggle,
-  actionSheetController, IonSpinner
+  actionSheetController, IonSpinner, toastController
 } from "@ionic/vue";
 import AppHeader from "@/components/AppHeader.vue";
 
@@ -452,6 +484,7 @@ import {
   editDisplayName,
   acknowledged,
   isProfileComplete,
+  hasValidDisplayName,
   isPublicProfile,
   setPublicProfile,
   loadUserProfile,
@@ -486,6 +519,73 @@ const router = useRouter();
 const mustCompleteProfile = computed(() => !isProfileComplete.value)
 
 const uploadingAvatar = ref(false);
+
+/* ---------------- Field validation ----------------
+ * Onboarding fields are optional and skippable, so each optional field is only
+ * validated IF the user actually filled it. Errors are surfaced inline under the
+ * field, and (in the wizard) we jump to the step holding the first error. */
+type ProfileField = 'displayName' | 'bio' | 'dob' | 'phone';
+const fieldErrors = ref<Partial<Record<ProfileField, string>>>({});
+
+// Which wizard step each field lives on (used to jump to the first error).
+const fieldStep: Record<ProfileField, number> = {
+  displayName: 1,
+  bio: 1,
+  dob: 2,
+  phone: 2,
+};
+
+// Latest selectable DOB (today) — also fed to the date picker's :max.
+const todayISO = computed(() => new Date().toISOString().split('T')[0]);
+
+function clearFieldError(field: ProfileField) {
+  if (fieldErrors.value[field]) {
+    const next = { ...fieldErrors.value };
+    delete next[field];
+    fieldErrors.value = next;
+  }
+}
+
+function validateProfileFields(): boolean {
+  const errors: Partial<Record<ProfileField, string>> = {};
+
+  // Display name — REQUIRED (at least one non-whitespace character)
+  const name = (editDisplayName.value ?? '').trim();
+  if (name.length < 1) {
+    errors.displayName = t('profile.editProfile.nameRequired') || 'Please enter a display name.';
+  } else if (name.length > 40) {
+    errors.displayName = t('profile.editProfile.nameTooLong') || 'Display name must be 40 characters or fewer.';
+  }
+
+  // Bio — optional; only validate if filled
+  const bio = (editBio.value ?? '').trim();
+  if (bio.length > 300) {
+    errors.bio = t('profile.editProfile.bioTooLong') || 'Bio must be 300 characters or fewer.';
+  }
+
+  // Phone — optional; only validate if filled
+  const rawPhone = (editPhone.value ?? '').trim();
+  if (rawPhone.length > 0) {
+    const normalized = rawPhone.replace(/[\s\-()]/g, '');
+    if (!/^\+?\d{7,15}$/.test(normalized)) {
+      errors.phone = t('profile.editProfile.phoneInvalid') || 'Enter a valid phone number (7–15 digits).';
+    }
+  }
+
+  // Date of birth — optional; only validate if filled
+  const dob = editDOB.value;
+  if (dob) {
+    const dobDate = new Date(dob);
+    if (isNaN(dobDate.getTime())) {
+      errors.dob = t('profile.editProfile.dobInvalid') || 'Please enter a valid date of birth.';
+    } else if (dobDate > new Date()) {
+      errors.dob = t('profile.editProfile.dobFuture') || 'Date of birth cannot be in the future.';
+    }
+  }
+
+  fieldErrors.value = errors;
+  return Object.keys(errors).length === 0;
+}
 
 async function presentUploadOptions() {
   const actionSheet = await actionSheetController.create({
@@ -688,8 +788,45 @@ onBeforeRouteLeave((to, from, next) => {
 async function saveProfile() {
   if (!userId) return;
 
+  // Normalize to the trimmed value so " R " is stored as "R"
+  editDisplayName.value = (editDisplayName.value ?? '').trim();
+
+  /* 0️⃣ Validate all fields; tell the user exactly which one is wrong */
+  if (!validateProfileFields()) {
+    const firstField = (Object.keys(fieldErrors.value) as ProfileField[])
+      .sort((a, b) => fieldStep[a] - fieldStep[b])[0];
+
+    // In the wizard, jump to the step that holds the first invalid field
+    if (mustCompleteProfile.value && firstField) {
+      currentStep.value = fieldStep[firstField];
+    }
+
+    const messages = Object.values(fieldErrors.value);
+    const toast = await toastController.create({
+      message: messages.length === 1
+        ? messages[0]
+        : (t('profile.editProfile.fixErrors') || 'Please fix the highlighted fields.'),
+      duration: 3000,
+      position: 'bottom',
+      color: 'danger'
+    });
+    await toast.present();
+    return;
+  }
+
   /* 1️⃣ Save profile fields */
-  await updateUserProfile(userId);
+  const saveError = await updateUserProfile(userId);
+  if (saveError) {
+    const toast = await toastController.create({
+      message: (t('profile.editProfile.saveFailed') || 'Could not save your profile.')
+        + (saveError.message ? `: ${saveError.message}` : ''),
+      duration: 4000,
+      position: 'bottom',
+      color: 'danger'
+    });
+    await toast.present();
+    return;
+  }
 
   /* Update auth metadata for avatar and name */
   const { error: authUpdateError } = await supabase.auth.updateUser({
@@ -776,6 +913,12 @@ ion-card {
   border-radius: 20px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
   overflow: hidden;
+}
+
+.field-error-text {
+  display: block;
+  font-size: 0.78rem;
+  padding: 4px 16px 8px;
 }
 
 .icon-box {

@@ -1,0 +1,1295 @@
+<template>
+  <ion-page>
+    <ion-header class="ion-no-border">
+      <app-header :title="locationName || $t('business.manage')" show-back back-route="/business" icon="none" />
+    </ion-header>
+
+    <ion-content>
+      <div v-if="loading" class="ion-text-center ion-padding">
+        <ion-spinner name="crescent" color="carrot" />
+      </div>
+
+      <template v-else>
+        <!-- Plan banner -->
+        <div class="plan-banner" :class="tier">
+          <div>
+            <span class="plan-label">{{ $t('business.plan.current') }}</span>
+            <span class="plan-tier">{{ tier }}</span>
+          </div>
+          <!-- Admins can assign a plan tier + preview the paywall -->
+          <div v-if="isAdmin" class="admin-plan-controls">
+            <ion-button fill="clear" size="small" color="carrot" @click="openUpgrade(true)">
+              {{ $t('business.plan.previewPaywall') }}
+            </ion-button>
+            <ion-select
+              :value="tier"
+              interface="popover"
+              class="admin-tier-select"
+              @ionChange="assignTier($event.detail.value)"
+            >
+              <ion-select-option value="free">free</ion-select-option>
+              <ion-select-option value="bronze">bronze</ion-select-option>
+              <ion-select-option value="silver">silver</ion-select-option>
+              <ion-select-option value="gold">gold</ion-select-option>
+            </ion-select>
+          </div>
+          <ion-button v-else-if="tier !== 'gold'" size="small" fill="solid" color="carrot" class="plan-upgrade-btn" @click="openUpgrade(false)">
+            {{ $t('business.plan.upgrade') }}
+          </ion-button>
+        </div>
+
+        <!-- Segment tabs -->
+        <div class="seg-scroll">
+          <ion-segment v-model="tab" scrollable mode="md" color="carrot">
+            <ion-segment-button value="info"><ion-label>{{ $t('business.tabs.info') }}</ion-label></ion-segment-button>
+            <ion-segment-button value="photos"><ion-label>{{ $t('business.tabs.photos') }}</ion-label></ion-segment-button>
+            <ion-segment-button value="menu"><ion-label>{{ $t('business.tabs.menu') }}</ion-label></ion-segment-button>
+            <ion-segment-button value="halal"><ion-label>{{ $t('business.tabs.halal') }}</ion-label></ion-segment-button>
+            <ion-segment-button value="promos"><ion-label>{{ $t('business.tabs.promos') }}</ion-label></ion-segment-button>
+            <ion-segment-button value="analytics"><ion-label>{{ $t('business.tabs.analytics') }}</ion-label></ion-segment-button>
+            <ion-segment-button value="reports"><ion-label>{{ $t('business.tabs.reports') }}</ion-label></ion-segment-button>
+          </ion-segment>
+        </div>
+
+        <div class="ion-padding tab-body">
+          <!-- INFO -->
+          <section v-if="tab === 'info'" class="fade-in">
+            <div v-if="hasUnpublished" class="draft-banner">
+              <ion-icon :icon="createOutline" />
+              <span>{{ $t('business.draft.unpublished') }}</span>
+            </div>
+            <div class="review-legend">
+              <span class="legend-item"><span class="review-badge"><ion-icon :icon="shieldCheckmarkOutline" />{{ $t('business.info.reviewBadge') }}</span>{{ $t('business.info.legendReview') }}</span>
+              <span class="legend-item"><ion-icon :icon="flashOutline" class="instant-icon" />{{ $t('business.info.legendInstant') }}</span>
+            </div>
+            <ion-list class="edit-list">
+              <ion-item>
+                <ion-input v-model="info.name" :label="$t('business.info.name')" label-placement="stacked" />
+                <span slot="end" class="review-badge field-badge"><ion-icon :icon="shieldCheckmarkOutline" />{{ $t('business.info.reviewBadge') }}</span>
+                <ion-note slot="helper">{{ $t('business.info.reviewNeeded') }}</ion-note>
+              </ion-item>
+              <ion-item>
+                <ion-input v-model="info.address" :label="$t('business.info.address')" label-placement="stacked" />
+                <span slot="end" class="review-badge field-badge"><ion-icon :icon="shieldCheckmarkOutline" />{{ $t('business.info.reviewBadge') }}</span>
+                <ion-note slot="helper">{{ $t('business.info.reviewNeeded') }}</ion-note>
+              </ion-item>
+              <ion-item>
+                <ion-input v-model="info.phone" :label="$t('business.info.phone')" label-placement="stacked" placeholder="02-2321-9445" />
+              </ion-item>
+              <ion-item>
+                <ion-input v-model="info.instagram" :label="$t('business.info.instagram')" label-placement="stacked" placeholder="@yourbusiness" />
+              </ion-item>
+              <ion-item>
+                <ion-input v-model="info.facebook" :label="$t('business.info.facebook')" label-placement="stacked" placeholder="https://facebook.com/yourbusiness" />
+              </ion-item>
+              <ion-item>
+                <ion-input v-model="info.tiktok" :label="$t('business.info.tiktok')" label-placement="stacked" placeholder="@yourbusiness" />
+              </ion-item>
+              <ion-item>
+                <ion-input v-model="info.website" :label="$t('business.info.website')" label-placement="stacked" placeholder="https://yourbusiness.com" />
+              </ion-item>
+              <ion-item>
+                <ion-input v-model="info.line_id" :label="$t('business.info.lineId')" label-placement="stacked" />
+              </ion-item>
+              <ion-item>
+                <ion-input v-model="info.foodpanda_url" :label="$t('business.info.foodpanda')" label-placement="stacked" placeholder="https://foodpanda.go.link/" />
+              </ion-item>
+              <ion-item>
+                <ion-input v-model="info.ubereats_url" :label="$t('business.info.ubereats')" label-placement="stacked" placeholder="https://www.ubereats.com/store-browse-uuid/" />
+              </ion-item>
+              <ion-item>
+                <ion-select v-model="info.price_range" :label="$t('business.info.priceRange')" label-placement="stacked" interface="popover" :placeholder="$t('business.info.priceRangePlaceholder')">
+                  <ion-select-option v-for="r in priceRanges" :key="r.value" :value="r.value">{{ r.label }}</ion-select-option>
+                </ion-select>
+              </ion-item>
+              <ion-item>
+                <ion-textarea v-model="info.description" :label="$t('business.info.description')" label-placement="stacked" :rows="4" />
+              </ion-item>
+            </ion-list>
+
+            <!-- Opening hours -->
+            <div class="edit-block">
+              <p class="block-title">{{ $t('business.info.openingHours') }}</p>
+              <div v-for="d in DAYS" :key="d" class="hours-row">
+                <ion-toggle :checked="hours[d].active" @ionChange="hours[d].active = $event.detail.checked" />
+                <span class="day-label">{{ $t('business.days.' + d) }}</span>
+                <template v-if="hours[d].active">
+                  <ion-input type="time" v-model="hours[d].open" class="time-in" />
+                  <span class="time-dash">–</span>
+                  <ion-input type="time" v-model="hours[d].close" class="time-in" />
+                </template>
+                <span v-else class="closed-lbl">{{ $t('business.info.closed') }}</span>
+              </div>
+            </div>
+
+            <!-- Tags -->
+            <div class="edit-block">
+              <p class="block-title">{{ $t('business.info.tags') }}</p>
+              <div v-if="tagsList.length" class="tags-wrap">
+                <span v-for="(tag, i) in tagsList" :key="i" class="tag-chip">
+                  #{{ tag }}<ion-icon :icon="closeCircle" @click="tagsList.splice(i, 1)" />
+                </span>
+              </div>
+              <div class="tag-add">
+                <ion-input v-model="newTag" :placeholder="$t('business.info.addTag')" @keyup.enter="addTag" />
+                <ion-button size="small" color="carrot" :disabled="!newTag.trim()" @click="addTag">{{ $t('common.add') }}</ion-button>
+              </div>
+            </div>
+          </section>
+
+          <!-- PHOTOS -->
+          <section v-else-if="tab === 'photos'" class="fade-in">
+            <p class="section-hint">{{ $t('business.photos.hint', { max: features.maxPhotos === -1 ? '∞' : features.maxPhotos }) }}</p>
+            <div class="photo-grid">
+              <div v-if="heroImage" class="photo-thumb main-thumb">
+                <img :src="heroImage" />
+                <span class="main-badge">{{ $t('business.photos.main') }}</span>
+              </div>
+              <div v-for="p in photos" :key="p.id" class="photo-thumb">
+                <img :src="p.url" />
+                <ion-icon :icon="trashOutline" class="photo-remove" @click="deletePhoto(p.id)" />
+              </div>
+              <label v-if="canAddPhoto" class="photo-add">
+                <ion-icon :icon="cameraOutline" />
+                <input type="file" accept="image/*" hidden @change="onPhotoSelected" />
+              </label>
+            </div>
+            <div v-if="!canAddPhoto" class="locked-note">
+              <ion-icon :icon="lockClosedOutline" />
+              <span>{{ $t('business.photos.limitReached') }}</span>
+            </div>
+          </section>
+
+          <!-- MENU -->
+          <section v-else-if="tab === 'menu'" class="fade-in">
+            <div v-if="!features.menu" class="upgrade-lock">
+              <ion-icon :icon="lockClosedOutline" />
+              <h3>{{ $t('business.locked.title') }}</h3>
+              <p>{{ $t('business.menu.locked') }}</p>
+            </div>
+            <template v-else>
+              <div v-for="m in menu" :key="m.id" class="menu-row">
+                <img v-if="m.photo_url" :src="m.photo_url" class="menu-photo" />
+                <div class="menu-info">
+                  <strong>{{ m.name }}</strong>
+                  <span v-if="m.price != null" class="menu-price">${{ m.price }}</span>
+                  <p v-if="m.description">{{ m.description }}</p>
+                </div>
+                <ion-icon :icon="trashOutline" @click="deleteMenuItem(m.id)" />
+              </div>
+
+              <!-- Add item -->
+              <div class="menu-add-card">
+                <label class="menu-photo-picker">
+                  <img v-if="newMenu.photoPreview" :src="newMenu.photoPreview" />
+                  <template v-else>
+                    <ion-icon :icon="cameraOutline" />
+                    <span>{{ $t('business.menu.addPhoto') }}</span>
+                  </template>
+                  <input type="file" accept="image/*" hidden @change="onMenuPhotoSelected" />
+                </label>
+                <div class="menu-add-fields">
+                  <div class="add-inline">
+                    <ion-input v-model="newMenu.name" :placeholder="$t('business.menu.itemName')" />
+                    <ion-input v-model.number="newMenu.price" type="number" :placeholder="$t('business.menu.price')" class="price-in" />
+                  </div>
+                  <ion-textarea v-model="newMenu.description" :rows="2" :placeholder="$t('business.menu.itemDescription')" />
+                  <ion-button expand="block" color="carrot" size="small" :disabled="!newMenu.name || addingMenu" @click="addMenu">
+                    <ion-spinner v-if="addingMenu" name="crescent" slot="start" />
+                    {{ $t('common.add') }}
+                  </ion-button>
+                </div>
+              </div>
+            </template>
+          </section>
+
+          <!-- HALAL -->
+          <section v-else-if="tab === 'halal'" class="fade-in">
+            <div v-if="hasUnpublished" class="draft-banner">
+              <ion-icon :icon="createOutline" />
+              <span>{{ $t('business.draft.unpublished') }}</span>
+            </div>
+            <div class="review-legend">
+              <span class="legend-item"><span class="review-badge"><ion-icon :icon="shieldCheckmarkOutline" />{{ $t('business.info.reviewBadge') }}</span>{{ $t('business.info.legendReview') }}</span>
+              <span class="legend-item"><ion-icon :icon="flashOutline" class="instant-icon" />{{ $t('business.info.legendInstant') }}</span>
+            </div>
+            <ion-list class="edit-list">
+              <ion-item>
+                <ion-select v-model="halal.halal_status" :label="$t('business.halal.status')" label-placement="stacked" interface="popover">
+                  <ion-select-option value="certified">{{ $t('business.halal.certified') }}</ion-select-option>
+                  <ion-select-option value="self_reported">{{ $t('business.halal.selfReported') }}</ion-select-option>
+                  <ion-select-option value="muslim_friendly">{{ $t('business.halal.muslimFriendly') }}</ion-select-option>
+                </ion-select>
+                <span slot="end" class="review-badge field-badge"><ion-icon :icon="shieldCheckmarkOutline" />{{ $t('business.info.reviewBadge') }}</span>
+                <ion-note slot="helper">{{ $t('business.info.reviewNeeded') }}</ion-note>
+              </ion-item>
+
+              <!-- Certified → certificate proof (single) -->
+              <div v-if="halal.halal_status === 'certified'" class="proof-block">
+                <p class="proof-title">{{ $t('business.halal.certProofTitle') }}</p>
+                <p class="proof-sub">{{ $t('business.halal.certProofHint') }}</p>
+                <div class="photo-grid">
+                  <div v-if="halalCertUrl" class="photo-thumb">
+                    <img :src="halalCertUrl" />
+                    <ion-icon :icon="trashOutline" class="photo-remove" @click="halalCertUrl = ''" />
+                  </div>
+                  <label v-else class="photo-add">
+                    <ion-spinner v-if="uploadingHalal" name="crescent" />
+                    <ion-icon v-else :icon="cameraOutline" />
+                    <input type="file" accept="image/*" hidden @change="onCertSelected" />
+                  </label>
+                </div>
+              </div>
+
+              <!-- Self-reported / Muslim-friendly → raw material photos (multiple) -->
+              <div v-else-if="halal.halal_status === 'self_reported' || halal.halal_status === 'muslim_friendly'" class="proof-block">
+                <p class="proof-title">{{ $t('business.halal.materialsTitle') }}</p>
+                <p class="proof-sub">{{ $t('business.halal.materialsHint') }}</p>
+                <div class="photo-grid">
+                  <div v-for="(url, i) in halalMaterials" :key="i" class="photo-thumb">
+                    <img :src="url" />
+                    <ion-icon :icon="trashOutline" class="photo-remove" @click="halalMaterials.splice(i, 1)" />
+                  </div>
+                  <label class="photo-add">
+                    <ion-spinner v-if="uploadingHalal" name="crescent" />
+                    <ion-icon v-else :icon="cameraOutline" />
+                    <input type="file" accept="image/*" multiple hidden @change="onMaterialsSelected" />
+                  </label>
+                </div>
+              </div>
+
+              <ion-item>
+                <ion-toggle v-model="halal.has_prayer_room">{{ $t('business.halal.prayerRoom') }}</ion-toggle>
+              </ion-item>
+              <ion-item>
+                <ion-toggle v-model="halal.has_wudu">{{ $t('business.halal.wudu') }}</ion-toggle>
+              </ion-item>
+              <ion-item>
+                <ion-toggle v-model="halal.is_alcohol_free">{{ $t('business.halal.alcoholFree') }}</ion-toggle>
+              </ion-item>
+            </ion-list>
+          </section>
+
+          <!-- PROMOTIONS -->
+          <section v-else-if="tab === 'promos'" class="fade-in">
+            <div v-if="features.maxPromotions === 0" class="upgrade-lock">
+              <ion-icon :icon="lockClosedOutline" />
+              <h3>{{ $t('business.locked.title') }}</h3>
+              <p>{{ $t('business.promos.locked') }}</p>
+            </div>
+            <template v-else>
+              <div v-for="promo in promotions" :key="promo.id" class="promo-row">
+                <div>
+                  <strong>{{ promo.title }}</strong>
+                  <p v-if="promo.body">{{ promo.body }}</p>
+                </div>
+                <div class="promo-actions">
+                  <ion-toggle :checked="promo.is_active" @ionChange="togglePromo(promo)" />
+                  <ion-icon :icon="trashOutline" @click="deletePromo(promo.id)" />
+                </div>
+              </div>
+              <div class="add-inline column">
+                <ion-input v-model="newPromo.title" :placeholder="$t('business.promos.titleField')" />
+                <ion-textarea v-model="newPromo.body" :placeholder="$t('business.promos.bodyField')" :rows="2" />
+                <ion-button color="carrot" size="small" :disabled="!newPromo.title" @click="addPromo">{{ $t('common.add') }}</ion-button>
+              </div>
+            </template>
+          </section>
+
+          <!-- ANALYTICS -->
+          <section v-else-if="tab === 'analytics'" class="fade-in">
+            <div v-if="analytics.level === 'pro'" class="export-row">
+              <span class="digest-note">📧 {{ $t('business.analytics.digestOn') }}</span>
+              <ion-button fill="outline" size="small" color="carrot" @click="exportCsv">
+                <ion-icon :icon="downloadOutline" slot="start" />
+                {{ $t('business.analytics.exportCsv') }}
+              </ion-button>
+            </div>
+
+            <!-- Overview (all tiers) -->
+            <div class="stat-grid">
+              <div class="stat-card"><span class="stat-num">{{ analytics.total_views }}</span><span class="stat-label">{{ $t('business.analytics.views') }}</span></div>
+              <div class="stat-card"><span class="stat-num">{{ analytics.detail_opens_30d }}</span><span class="stat-label">{{ $t('business.analytics.opens30') }}</span></div>
+              <div class="stat-card"><span class="stat-num">{{ analytics.unique_viewers_30d }}</span><span class="stat-label">{{ $t('business.analytics.uniqueViewers') }}</span></div>
+              <div class="stat-card"><span class="stat-num">{{ analytics.card_clicks_30d + analytics.marker_clicks_30d }}</span><span class="stat-label">{{ $t('business.analytics.impressions') }}</span></div>
+            </div>
+
+            <!-- Intent actions (standard+) -->
+            <template v-if="analytics.intents">
+              <p class="an-section-title">{{ $t('business.analytics.actions30') }}</p>
+              <div class="intent-grid">
+                <div v-for="r in intentRows" :key="r.key" class="intent-cell">
+                  <span class="intent-val">{{ r.value }}</span>
+                  <span class="intent-lbl">{{ r.label }}</span>
+                </div>
+                <div class="intent-cell"><span class="intent-val">{{ analytics.saves ?? 0 }}</span><span class="intent-lbl">{{ $t('business.analytics.saves') }}</span></div>
+              </div>
+            </template>
+
+            <!-- Audience (advanced) -->
+            <template v-if="analytics.nationalities">
+              <p class="an-section-title">{{ $t('business.analytics.audience') }}</p>
+              <div v-if="analytics.nationalities.length" class="nat-list">
+                <div v-for="n in analytics.nationalities" :key="n.code" class="nat-row">
+                  <span class="nat-flag">{{ countryFlag(n.code) }}</span>
+                  <span class="nat-name">{{ countryName(n.code) }}</span>
+                  <div class="nat-bar-track"><div class="nat-bar" :style="{ width: barPct(n.count, audienceMax) }"></div></div>
+                  <span class="nat-count">{{ n.count }}</span>
+                </div>
+              </div>
+              <p v-else class="an-empty">{{ $t('business.analytics.noAudience') }}</p>
+
+              <div v-if="analytics.gender?.length" class="gender-row">
+                <span v-for="g in analytics.gender" :key="g.gender" class="gender-chip">{{ g.gender }}: {{ g.count }}</span>
+              </div>
+
+              <!-- Peak days -->
+              <p class="an-section-title">{{ $t('business.analytics.peakDays') }}</p>
+              <div class="peak-bars">
+                <div v-for="d in dowBars" :key="d.label" class="peak-col">
+                  <div class="peak-bar" :style="{ height: barPct(d.count, maxDow) }"></div>
+                  <span class="peak-lbl">{{ d.label }}</span>
+                </div>
+              </div>
+
+              <!-- Peak hours -->
+              <p class="an-section-title">{{ $t('business.analytics.peakHours') }}</p>
+              <div class="peak-bars hours">
+                <div v-for="h in hourBars" :key="h.h" class="peak-col">
+                  <div class="peak-bar" :style="{ height: barPct(h.count, maxHour) }" :title="`${h.h}:00 — ${h.count}`"></div>
+                  <span v-if="h.h % 6 === 0" class="peak-lbl">{{ h.h }}</span>
+                </div>
+              </div>
+
+              <!-- Views trend -->
+              <template v-if="analytics.timeseries?.length">
+                <p class="an-section-title">{{ $t('business.analytics.viewsTrend') }}</p>
+                <div class="spark">
+                  <div v-for="d in analytics.timeseries" :key="d.date" class="spark-bar"
+                       :style="{ height: sparkHeight(d.count) }" :title="`${d.date}: ${d.count}`"></div>
+                </div>
+              </template>
+            </template>
+
+            <!-- PRO (Gold): funnel + benchmark + search terms -->
+            <template v-if="analytics.funnel">
+              <p class="an-section-title">{{ $t('business.analytics.funnel') }}</p>
+              <div class="funnel">
+                <div class="funnel-step"><span class="funnel-num">{{ analytics.funnel.impressions }}</span><span class="funnel-lbl">{{ $t('business.analytics.fImpressions') }}</span></div>
+                <div class="funnel-arrow"><small>{{ analytics.funnel.open_rate }}%</small>→</div>
+                <div class="funnel-step"><span class="funnel-num">{{ analytics.funnel.opens }}</span><span class="funnel-lbl">{{ $t('business.analytics.fOpens') }}</span></div>
+                <div class="funnel-arrow"><small>{{ analytics.funnel.action_rate }}%</small>→</div>
+                <div class="funnel-step"><span class="funnel-num">{{ analytics.funnel.actions }}</span><span class="funnel-lbl">{{ $t('business.analytics.fActions') }}</span></div>
+              </div>
+            </template>
+
+            <template v-if="analytics.benchmark && analytics.benchmark.category_total > 1">
+              <p class="an-section-title">{{ $t('business.analytics.benchmark') }}</p>
+              <div class="bench-card">
+                <div class="bench-rank">
+                  <span class="bench-hash">#{{ analytics.benchmark.rank }}</span>
+                  <span class="bench-of">{{ $t('business.analytics.ofCategory', { total: analytics.benchmark.category_total, category: analytics.benchmark.category }) }}</span>
+                </div>
+                <div class="bench-pct">{{ $t('business.analytics.topPercent', { pct: 100 - analytics.benchmark.percentile }) }}</div>
+                <div class="bench-compare">
+                  <span>{{ $t('business.analytics.yourOpens', { n: analytics.benchmark.my_opens_30d }) }}</span>
+                  <span class="bench-vs">{{ $t('business.analytics.categoryAvg', { n: analytics.benchmark.category_avg_30d }) }}</span>
+                </div>
+              </div>
+            </template>
+
+            <template v-if="analytics.search_terms">
+              <p class="an-section-title">{{ $t('business.analytics.searchTerms') }}</p>
+              <div v-if="analytics.search_terms.length" class="term-wrap">
+                <span v-for="s in analytics.search_terms" :key="s.q" class="term-chip">{{ s.q }} <b>{{ s.count }}</b></span>
+              </div>
+              <p v-else class="an-empty">{{ $t('business.analytics.noTerms') }}</p>
+            </template>
+
+            <!-- Upgrade prompt -->
+            <div v-if="analytics.level !== 'pro'" class="locked-note">
+              <ion-icon :icon="lockClosedOutline" />
+              <span>{{ upgradeMsg }}</span>
+            </div>
+          </section>
+
+          <!-- REPORTS -->
+          <section v-else-if="tab === 'reports'" class="fade-in">
+            <div v-if="reports.length === 0" class="empty-inline">
+              <ion-icon :icon="checkmarkCircleOutline" color="success" />
+              <p>{{ $t('business.reports.none') }}</p>
+            </div>
+            <div v-for="r in reports" :key="r.id" class="report-row">
+              <ion-badge :color="r.status === 'pending' ? 'warning' : 'medium'">{{ r.status }}</ion-badge>
+              <p>{{ r.description }}</p>
+              <span class="report-date">{{ formatDate(r.created_at) }}</span>
+            </div>
+          </section>
+        </div>
+      </template>
+    </ion-content>
+
+    <!-- Draft / Preview / Publish action bar (listing-info tabs only) -->
+    <ion-footer v-if="!loading && (tab === 'info' || tab === 'halal')" class="ion-no-border action-footer">
+      <div class="action-bar">
+        <ion-button fill="clear" color="medium" class="act-preview" @click="openPreview">
+          <ion-icon :icon="eyeOutline" slot="start" />
+          {{ $t('business.draft.preview') }}
+        </ion-button>
+        <ion-button fill="outline" color="carrot" class="act-draft" :disabled="saving" @click="saveDraft">
+          {{ $t('business.draft.save') }}
+        </ion-button>
+        <ion-button color="carrot" class="act-publish" :disabled="saving" @click="publish">
+          <ion-spinner v-if="saving" name="crescent" slot="start" />
+          {{ $t('business.draft.publish') }}
+        </ion-button>
+      </div>
+    </ion-footer>
+
+    <!-- Public preview -->
+    <ion-modal :is-open="showPreview" @didDismiss="showPreview = false">
+      <ion-header class="ion-no-border">
+        <ion-toolbar>
+          <ion-title>{{ $t('business.draft.previewTitle') }}</ion-title>
+          <ion-buttons slot="end">
+            <ion-button @click="showPreview = false">{{ $t('common.close') }}</ion-button>
+          </ion-buttons>
+        </ion-toolbar>
+        <div class="preview-hint">{{ $t('business.draft.previewHint') }}</div>
+      </ion-header>
+      <ion-content>
+        <div class="pv-hero">
+          <img :src="heroImage || 'https://placehold.co/600x300?text=No+Image'" />
+        </div>
+        <div class="pv-body">
+          <h1 class="pv-name">{{ info.name || '—' }}</h1>
+          <div class="pv-chips">
+            <span class="pv-type">{{ typeName }}</span>
+            <span v-if="halal.halal_status" class="pv-halal" :class="halal.halal_status">{{ halalLabel }}</span>
+          </div>
+          <div class="pv-attrs" v-if="halal.has_prayer_room || halal.has_wudu || halal.is_alcohol_free">
+            <span v-if="halal.has_prayer_room">🕌 {{ $t('business.halal.prayerRoom') }}</span>
+            <span v-if="halal.has_wudu">🚰 {{ $t('business.halal.wudu') }}</span>
+            <span v-if="halal.is_alcohol_free">🚫🍺 {{ $t('business.halal.alcoholFree') }}</span>
+          </div>
+          <div v-if="halalCertUrl || halalMaterials.length" class="pv-proof">
+            <p class="pv-proof-label">{{ halal.halal_status === 'certified' ? $t('business.halal.certProofTitle') : $t('business.halal.materialsTitle') }}</p>
+            <div class="pv-proof-imgs">
+              <img v-if="halalCertUrl" :src="halalCertUrl" />
+              <img v-for="(u, i) in halalMaterials" :key="i" :src="u" />
+            </div>
+          </div>
+          <p v-if="info.description" class="pv-desc">{{ info.description }}</p>
+          <div class="pv-rows">
+            <div v-if="info.address" class="pv-row"><ion-icon :icon="navigateOutline" /><span>{{ info.address }}</span></div>
+            <div v-if="info.phone" class="pv-row"><ion-icon :icon="callOutline" /><span>{{ info.phone }}</span></div>
+            <div v-if="info.instagram" class="pv-row"><ion-icon :icon="logoInstagram" /><span>@{{ info.instagram.replace('@','') }}</span></div>
+            <div v-if="info.price_range" class="pv-row"><ion-icon :icon="pricetagOutline" /><span>{{ info.price_range }}</span></div>
+          </div>
+        </div>
+      </ion-content>
+    </ion-modal>
+
+    <!-- Business plan upgrade (RevenueCat) -->
+    <ion-modal :is-open="showUpgrade" @didDismiss="showUpgrade = false" :initial-breakpoint="0.8" :breakpoints="[0, 0.8, 1]">
+      <ion-content class="ion-padding">
+        <h2 class="up-title">{{ $t('business.plan.upgradeTitle') }}</h2>
+        <p class="up-sub">{{ $t('business.plan.upgradeSub') }}</p>
+
+        <!-- Admin preview mode: mock plan cards (real prices come from the store) -->
+        <template v-if="previewMode">
+          <div class="up-preview-note">{{ $t('business.plan.previewNote') }}</div>
+          <div v-for="p in previewPlans" :key="p.tier" class="up-plan" :class="'tier-' + p.tier">
+            <div class="up-plan-info">
+              <strong>{{ p.name }}</strong>
+              <p>{{ p.perks.join(' · ') }}</p>
+            </div>
+            <div class="up-plan-price"><span>{{ p.price }}</span></div>
+          </div>
+        </template>
+
+        <div v-else-if="upgradeLoading" class="ion-text-center ion-padding"><ion-spinner name="crescent" color="carrot" /></div>
+
+        <template v-else-if="businessPackages.length">
+          <div v-for="pkg in businessPackages" :key="pkg.identifier" class="up-plan" @click="buyPackage(pkg)">
+            <div class="up-plan-info">
+              <strong>{{ pkg.product.title }}</strong>
+              <p>{{ pkg.product.description }}</p>
+            </div>
+            <div class="up-plan-price">
+              <span>{{ pkg.product.priceString }}</span>
+              <ion-spinner v-if="purchasingId === pkg.identifier" name="crescent" />
+            </div>
+          </div>
+          <ion-button fill="clear" size="small" color="medium" expand="block" class="ion-margin-top" @click="restorePurchases">
+            {{ $t('business.plan.restore') }}
+          </ion-button>
+        </template>
+
+        <div v-else class="up-empty">
+          <ion-icon :icon="lockClosedOutline" />
+          <p>{{ $t('business.plan.upgradeUnavailable') }}</p>
+        </div>
+      </ion-content>
+    </ion-modal>
+  </ion-page>
+</template>
+
+<script setup lang="ts">
+import { ref, computed } from 'vue'
+import {
+  IonPage, IonHeader, IonContent, IonSpinner, IonSegment, IonSegmentButton,
+  IonLabel, IonList, IonItem, IonInput, IonTextarea, IonButton, IonIcon,
+  IonSelect, IonSelectOption, IonToggle, IonNote, IonBadge, IonFooter,
+  IonModal, IonToolbar, IonTitle, IonButtons,
+  toastController, onIonViewWillEnter
+} from '@ionic/vue'
+import {
+  trashOutline, cameraOutline, lockClosedOutline, checkmarkCircleOutline,
+  createOutline, eyeOutline, navigateOutline, callOutline, logoInstagram, pricetagOutline,
+  closeCircle, downloadOutline, shieldCheckmarkOutline, flashOutline
+} from 'ionicons/icons'
+import { Capacitor } from '@capacitor/core'
+import { Filesystem, Directory, Encoding } from '@capacitor/filesystem'
+import { Share } from '@capacitor/share'
+import AppHeader from '@/components/AppHeader.vue'
+import { useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
+import { supabase } from '@/plugins/supabaseClient'
+import { useBusinessListings } from '@/composables/useBusinessListings'
+import { useLocationEntitlements } from '@/composables/useLocationEntitlements'
+import { useLocationAnalytics, type BusinessAnalytics } from '@/composables/useLocationAnalytics'
+import { isAdmin } from '@/composables/userProfile'
+import { ActivityLogService } from '@/services/ActivityLogService'
+import { useBusinessSubscription } from '@/composables/useBusinessSubscription'
+import type { PurchasesPackage } from '@revenuecat/purchases-capacitor'
+import type { PlanFeatures, PlanTier, LocationPhoto, LocationMenuItem, LocationPromotion } from '@/types/Business'
+
+const route = useRoute()
+const { t } = useI18n()
+const locationId = Number(route.params.locationId)
+
+const biz = useBusinessListings()
+const { getFeatures } = useLocationEntitlements()
+const { getAnalytics } = useLocationAnalytics()
+
+const loading = ref(true)
+const saving = ref(false)
+const tab = ref('info')
+const tier = ref<PlanTier>('free')
+const features = ref<PlanFeatures>({ maxPhotos: 1, menu: false, maxPromotions: 0, analytics: 'basic' })
+const locationName = ref('')
+
+// Draft / preview
+const hasUnpublished = ref(false)
+const showPreview = ref(false)
+const heroImage = ref<string | null>(null)
+const typeName = ref('')
+
+const halalLabel = computed(() => {
+  const map: Record<string, string> = {
+    certified: t('business.halal.certified'),
+    self_reported: t('business.halal.selfReported'),
+    muslim_friendly: t('business.halal.muslimFriendly'),
+  }
+  return map[halal.value.halal_status] ?? ''
+})
+
+const info = ref({ name: '', address: '', phone: '', instagram: '', facebook: '', tiktok: '', website: '', line_id: '', foodpanda_url: '', ubereats_url: '', price_range: '', description: '' })
+
+// Price range as actual NT$ tiers (value stays the $ symbol for compatibility)
+const priceRanges = [
+  { value: '$', label: '$ · Under NT$150' },
+  { value: '$$', label: '$$ · NT$150–350' },
+  { value: '$$$', label: '$$$ · NT$350–650' },
+  { value: '$$$$', label: '$$$$ · Over NT$650' },
+]
+const halal = ref({ halal_status: '' as string, has_prayer_room: false, has_wudu: false, is_alcohol_free: false })
+const halalCertUrl = ref('')
+const halalMaterials = ref<string[]>([])
+const uploadingHalal = ref(false)
+
+// Opening hours (day-by-day, matches AddPlaceView's custom format) + tags
+const DAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const
+type DayHours = { active: boolean; open: string; close: string }
+function defaultHours(): Record<string, DayHours> {
+  return Object.fromEntries(DAYS.map(d => [d, { active: d !== 'sun', open: '09:00', close: '18:00' }]))
+}
+const hours = ref<Record<string, DayHours>>(defaultHours())
+const tagsList = ref<string[]>([])
+const newTag = ref('')
+
+function addTag() {
+  const v = newTag.value.trim().replace(/^#/, '')
+  if (v && !tagsList.value.includes(v)) tagsList.value.push(v)
+  newTag.value = ''
+}
+
+// Normalize DB opening_hours (custom day keys or Google `periods`) into day format
+function normalizeHours(dbHours: any): Record<string, DayHours> {
+  const out = defaultHours()
+  if (!dbHours) return out
+  if (dbHours.mon || dbHours.tue || dbHours.wed || dbHours.thu || dbHours.fri || dbHours.sat || dbHours.sun) {
+    for (const d of DAYS) if (dbHours[d]) out[d] = { active: !!dbHours[d].active, open: dbHours[d].open || '09:00', close: dbHours[d].close || '18:00' }
+    return out
+  }
+  if (Array.isArray(dbHours.periods)) {
+    const map: Record<number, string> = { 0: 'sun', 1: 'mon', 2: 'tue', 3: 'wed', 4: 'thu', 5: 'fri', 6: 'sat' }
+    for (const d of DAYS) out[d].active = false
+    for (const p of dbHours.periods) {
+      const d = map[p?.open?.day]
+      if (!d) continue
+      const fmt = (t: string) => (t && t.length === 4 ? `${t.slice(0, 2)}:${t.slice(2)}` : t)
+      out[d] = { active: true, open: fmt(p.open?.time) || '09:00', close: fmt(p.close?.time) || '18:00' }
+    }
+    return out
+  }
+  return out
+}
+
+const photos = ref<LocationPhoto[]>([])
+const menu = ref<LocationMenuItem[]>([])
+const addingMenu = ref(false)
+const newMenu = ref<{ name: string; price: number | null; description: string; photoFile: File | null; photoPreview: string }>(
+  { name: '', price: null, description: '', photoFile: null, photoPreview: '' }
+)
+const promotions = ref<LocationPromotion[]>([])
+const newPromo = ref({ title: '', body: '' })
+const analytics = ref<BusinessAnalytics>({ level: 'basic', total_views: 0, detail_opens_30d: 0, unique_viewers_30d: 0, card_clicks_30d: 0, marker_clicks_30d: 0 })
+const reports = ref<any[]>([])
+
+const canAddPhoto = computed(() => features.value.maxPhotos === -1 || photos.value.length < features.value.maxPhotos)
+
+onIonViewWillEnter(async () => {
+  loading.value = true
+  const { data: loc } = await supabase
+    .from('locations')
+    .select('name, address, phone, instagram, facebook, tiktok, website, line_id, foodpanda_url, ubereats_url, price_range, description, image, opening_hours, tags, halal_status, has_prayer_room, has_wudu, is_alcohol_free, halal_cert_url, halal_material_photos, location_types(name)')
+    .eq('id', locationId)
+    .maybeSingle()
+
+  if (loc) {
+    locationName.value = loc.name
+    heroImage.value = loc.image ?? null
+    const lt: any = Array.isArray(loc.location_types) ? loc.location_types[0] : loc.location_types
+    typeName.value = lt?.name ?? ''
+    info.value = {
+      name: loc.name ?? '', address: loc.address ?? '', phone: loc.phone ?? '',
+      instagram: loc.instagram ?? '', facebook: loc.facebook ?? '', tiktok: loc.tiktok ?? '', website: loc.website ?? '',
+      line_id: loc.line_id ?? '', foodpanda_url: loc.foodpanda_url ?? '',
+      ubereats_url: loc.ubereats_url ?? '',
+      price_range: loc.price_range ?? '', description: loc.description ?? '',
+    }
+    halal.value = {
+      halal_status: loc.halal_status ?? '',
+      has_prayer_room: loc.has_prayer_room ?? false,
+      has_wudu: loc.has_wudu ?? false,
+      is_alcohol_free: loc.is_alcohol_free ?? false,
+    }
+    halalCertUrl.value = loc.halal_cert_url ?? ''
+    halalMaterials.value = Array.isArray(loc.halal_material_photos) ? (loc.halal_material_photos as string[]) : []
+    hours.value = normalizeHours(loc.opening_hours)
+    tagsList.value = Array.isArray(loc.tags) ? (loc.tags as string[]) : []
+  }
+
+  // Overlay any unpublished draft on top of the live values so the owner keeps editing their draft
+  const draft = await biz.getDraft(locationId)
+  hasUnpublished.value = Object.keys(draft).length > 0
+  applyDraft(draft)
+
+  const ent = await getFeatures(locationId)
+  tier.value = ent.tier
+  features.value = ent.features
+
+  await Promise.all([loadPhotos(), loadMenu(), loadPromotions(), loadAnalytics(), loadReports()])
+  loading.value = false
+})
+
+function applyDraft(draft: Record<string, unknown>) {
+  const i = info.value, h = halal.value
+  if ('name' in draft) i.name = String(draft.name ?? '')
+  if ('address' in draft) i.address = String(draft.address ?? '')
+  if ('phone' in draft) i.phone = String(draft.phone ?? '')
+  if ('instagram' in draft) i.instagram = String(draft.instagram ?? '')
+  if ('facebook' in draft) i.facebook = String(draft.facebook ?? '')
+  if ('tiktok' in draft) i.tiktok = String(draft.tiktok ?? '')
+  if ('website' in draft) i.website = String(draft.website ?? '')
+  if ('line_id' in draft) i.line_id = String(draft.line_id ?? '')
+  if ('foodpanda_url' in draft) i.foodpanda_url = String(draft.foodpanda_url ?? '')
+  if ('ubereats_url' in draft) i.ubereats_url = String(draft.ubereats_url ?? '')
+  if ('price_range' in draft) i.price_range = String(draft.price_range ?? '')
+  if ('description' in draft) i.description = String(draft.description ?? '')
+  if ('halal_status' in draft) h.halal_status = String(draft.halal_status ?? '')
+  if ('has_prayer_room' in draft) h.has_prayer_room = !!draft.has_prayer_room
+  if ('has_wudu' in draft) h.has_wudu = !!draft.has_wudu
+  if ('is_alcohol_free' in draft) h.is_alcohol_free = !!draft.is_alcohol_free
+  if ('halal_cert_url' in draft) halalCertUrl.value = String(draft.halal_cert_url ?? '')
+  if ('halal_material_photos' in draft) halalMaterials.value = Array.isArray(draft.halal_material_photos) ? draft.halal_material_photos as string[] : []
+  if ('opening_hours' in draft) hours.value = normalizeHours(draft.opening_hours)
+  if ('tags' in draft) tagsList.value = Array.isArray(draft.tags) ? draft.tags as string[] : []
+}
+
+/** All editable listing fields as a patch (info + halal). */
+function buildPatch(): Record<string, unknown> {
+  return {
+    name: info.value.name, address: info.value.address, phone: info.value.phone,
+    instagram: info.value.instagram, facebook: info.value.facebook,
+    tiktok: info.value.tiktok, website: info.value.website, line_id: info.value.line_id,
+    foodpanda_url: info.value.foodpanda_url, ubereats_url: info.value.ubereats_url,
+    price_range: info.value.price_range,
+    description: info.value.description,
+    halal_status: halal.value.halal_status || null,
+    has_prayer_room: halal.value.has_prayer_room,
+    has_wudu: halal.value.has_wudu,
+    is_alcohol_free: halal.value.is_alcohol_free,
+    halal_cert_url: halalCertUrl.value || null,
+    halal_material_photos: halalMaterials.value,
+    opening_hours: hours.value,
+    tags: tagsList.value,
+  }
+}
+
+/** Certified requires a certificate; self-reported / muslim-friendly require material photos. */
+function halalProofMissing(): string | null {
+  if (halal.value.halal_status === 'certified' && !halalCertUrl.value) return t('business.halal.certRequired')
+  if ((halal.value.halal_status === 'self_reported' || halal.value.halal_status === 'muslim_friendly') && halalMaterials.value.length === 0) {
+    return t('business.halal.materialsRequired')
+  }
+  return null
+}
+
+async function uploadHalalFile(file: File): Promise<string | null> {
+  const ext = file.name.split('.').pop() || 'jpg'
+  const path = `halal/${locationId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+  const { error } = await supabase.storage.from('location-image').upload(path, file, { upsert: false })
+  if (error) { console.error('[halal proof]', error); return null }
+  const { data: pub } = supabase.storage.from('location-image').getPublicUrl(path)
+  return pub?.publicUrl ?? null
+}
+
+async function onCertSelected(e: Event) {
+  const input = e.target as HTMLInputElement
+  const file = input.files?.[0]
+  input.value = ''
+  if (!file) return
+  uploadingHalal.value = true
+  try {
+    const url = await uploadHalalFile(file)
+    if (url) halalCertUrl.value = url
+  } finally { uploadingHalal.value = false }
+}
+
+async function onMaterialsSelected(e: Event) {
+  const input = e.target as HTMLInputElement
+  if (!input.files) return
+  const files = Array.from(input.files)
+  input.value = ''
+  uploadingHalal.value = true
+  try {
+    for (const file of files) {
+      const url = await uploadHalalFile(file)
+      if (url) halalMaterials.value.push(url)
+    }
+  } finally { uploadingHalal.value = false }
+}
+
+function openPreview() { showPreview.value = true }
+
+async function saveDraft() {
+  saving.value = true
+  try {
+    await biz.saveDraft(locationId, buildPatch())
+    hasUnpublished.value = true
+    await toast(t('business.draft.saved'), 'success')
+  } catch (e: any) {
+    await toast(e?.message || t('common.error'), 'danger')
+  } finally { saving.value = false }
+}
+
+async function publish() {
+  const missing = halalProofMissing()
+  if (missing) { await toast(missing, 'warning'); tab.value = 'halal'; return }
+  saving.value = true
+  try {
+    const res = await biz.publishDraft(locationId, buildPatch())
+    hasUnpublished.value = false
+    const queued = Object.keys(res?.queued ?? {})
+    await toast(queued.length ? t('business.draft.publishedQueued', { fields: queued.join(', ') }) : t('business.draft.published'), 'success')
+  } catch (e: any) {
+    await toast(e?.message || t('common.error'), 'danger')
+  } finally { saving.value = false }
+}
+
+async function loadPhotos() { photos.value = await biz.getPhotos(locationId) }
+async function loadMenu() { menu.value = await biz.getMenu(locationId) }
+async function loadPromotions() { promotions.value = await biz.getPromotions(locationId) }
+async function loadAnalytics() { analytics.value = await getAnalytics(locationId) }
+async function loadReports() {
+  const { data } = await supabase.from('location_reports').select('*').eq('location_id', locationId).order('created_at', { ascending: false })
+  reports.value = data ?? []
+}
+
+async function onPhotoSelected(e: Event) {
+  const input = e.target as HTMLInputElement
+  const file = input.files?.[0]
+  input.value = ''
+  if (!file) return
+  try {
+    const ext = file.name.split('.').pop() || 'jpg'
+    const path = `gallery/${locationId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+    const { error } = await supabase.storage.from('location-image').upload(path, file, { upsert: false })
+    if (error) throw error
+    const { data: pub } = supabase.storage.from('location-image').getPublicUrl(path)
+    await biz.addPhoto(locationId, pub.publicUrl)
+    await loadPhotos()
+  } catch (e: any) {
+    await toast(e?.message || t('common.error'), 'danger')
+  }
+}
+
+async function deletePhoto(id: string) { try { await biz.removePhoto(id); await loadPhotos() } catch (e: any) { await toast(e?.message || t('common.error'), 'danger') } }
+
+function onMenuPhotoSelected(e: Event) {
+  const input = e.target as HTMLInputElement
+  const file = input.files?.[0]
+  input.value = ''
+  if (!file) return
+  newMenu.value.photoFile = file
+  newMenu.value.photoPreview = URL.createObjectURL(file)
+}
+
+async function uploadMenuPhoto(file: File): Promise<string | null> {
+  const ext = file.name.split('.').pop() || 'jpg'
+  const path = `menu/${locationId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+  const { error } = await supabase.storage.from('location-image').upload(path, file, { upsert: false })
+  if (error) { console.error('[menu photo]', error); return null }
+  const { data: pub } = supabase.storage.from('location-image').getPublicUrl(path)
+  return pub?.publicUrl ?? null
+}
+
+async function addMenu() {
+  addingMenu.value = true
+  try {
+    let photoUrl: string | null = null
+    if (newMenu.value.photoFile) photoUrl = await uploadMenuPhoto(newMenu.value.photoFile)
+    await biz.addMenuItem({
+      location_id: locationId,
+      name: newMenu.value.name,
+      price: newMenu.value.price,
+      description: newMenu.value.description || null,
+      photo_url: photoUrl,
+    })
+    newMenu.value = { name: '', price: null, description: '', photoFile: null, photoPreview: '' }
+    await loadMenu()
+  } catch (e: any) { await toast(e?.message || t('common.error'), 'danger') }
+  finally { addingMenu.value = false }
+}
+async function deleteMenuItem(id: string) { try { await biz.removeMenuItem(id); await loadMenu() } catch (e: any) { await toast(e?.message || t('common.error'), 'danger') } }
+
+async function addPromo() {
+  try {
+    await biz.addPromotion({ location_id: locationId, title: newPromo.value.title, body: newPromo.value.body || null })
+    newPromo.value = { title: '', body: '' }
+    await loadPromotions()
+  } catch (e: any) { await toast(e?.message || t('common.error'), 'danger') }
+}
+async function togglePromo(promo: LocationPromotion) { try { await biz.setPromotionActive(promo.id, !promo.is_active); await loadPromotions() } catch (e: any) { await toast(e?.message || t('common.error'), 'danger') } }
+async function deletePromo(id: string) { try { await biz.removePromotion(id); await loadPromotions() } catch (e: any) { await toast(e?.message || t('common.error'), 'danger') } }
+
+// Admin: set the tier for this location's owner — fans out to ALL their businesses.
+async function assignTier(newTier: PlanTier) {
+  if (newTier === tier.value) return
+  try {
+    const { error } = await supabase.rpc('admin_set_business_tier_for_location', { p_location_id: locationId, p_tier: newTier })
+    if (error) throw error
+    const ent = await getFeatures(locationId)
+    tier.value = ent.tier
+    features.value = ent.features
+    await loadAnalytics()
+    await toast(t('business.plan.tierUpdated', { tier: newTier }), 'success')
+  } catch (e: any) {
+    await toast(e?.message || t('common.error'), 'danger')
+  }
+}
+
+// Owner: RevenueCat upgrade flow (account-level — applies to all their businesses).
+const bizSub = useBusinessSubscription()
+const showUpgrade = ref(false)
+const upgradeLoading = ref(false)
+const previewMode = ref(false)
+const businessPackages = ref<PurchasesPackage[]>([])
+const purchasingId = ref<string | null>(null)
+
+// Mock cards for the admin "Preview paywall" (real prices come from the store)
+const previewPlans = [
+  { tier: 'bronze', name: 'Bronze', price: 'NT$99/mo', perks: ['5 photos', '1 offer', 'Order & direction insights'] },
+  { tier: 'silver', name: 'Silver', price: 'NT$299/mo', perks: ['10 photos', 'Menu', '3 offers', 'Audience & peak times'] },
+  { tier: 'gold', name: 'Gold', price: 'NT$599/mo', perks: ['Unlimited photos', 'Menu', 'Unlimited offers', 'Funnel, benchmarking, search terms', 'Weekly email + CSV export'] },
+]
+
+async function openUpgrade(preview = false) {
+  previewMode.value = preview
+  showUpgrade.value = true
+  if (preview) return
+  upgradeLoading.value = true
+  try {
+    const offering = await bizSub.getBusinessOffering()
+    businessPackages.value = offering?.availablePackages ?? []
+  } finally {
+    upgradeLoading.value = false
+  }
+}
+
+async function buyPackage(pkg: PurchasesPackage) {
+  purchasingId.value = pkg.identifier
+  try {
+    await bizSub.purchasePackage(pkg)
+    // Authoritative tier is written by the revenuecat-webhook; give it a moment,
+    // then refresh from the DB.
+    await new Promise(r => setTimeout(r, 1500))
+    const ent = await getFeatures(locationId)
+    tier.value = ent.tier
+    features.value = ent.features
+    await loadAnalytics()
+    showUpgrade.value = false
+    await toast(t('business.plan.upgradeSuccess'), 'success')
+  } catch (e: any) {
+    if (!/cancel/i.test(e?.message || '')) await toast(e?.message || t('common.error'), 'danger')
+  } finally {
+    purchasingId.value = null
+  }
+}
+
+async function restorePurchases() {
+  try {
+    await bizSub.restore()
+    const ent = await getFeatures(locationId)
+    tier.value = ent.tier
+    features.value = ent.features
+    await toast(t('business.plan.restored'), 'success')
+  } catch (e: any) {
+    await toast(e?.message || t('common.error'), 'danger')
+  }
+}
+
+function sparkHeight(count: number): string {
+  const max = Math.max(1, ...(analytics.value.timeseries ?? []).map(d => d.count))
+  return `${Math.round((count / max) * 100)}%`
+}
+function formatDate(d: string) { return new Date(d).toLocaleDateString() }
+
+// ---- Analytics display helpers ----
+const COUNTRY_NAMES: Record<string, string> = {
+  ID: 'Indonesia', MY: 'Malaysia', TW: 'Taiwan', PK: 'Pakistan', SG: 'Singapore',
+  IN: 'India', BD: 'Bangladesh', BN: 'Brunei', TR: 'Türkiye', TH: 'Thailand',
+  PH: 'Philippines', VN: 'Vietnam', US: 'United States', JP: 'Japan', KR: 'South Korea',
+  SA: 'Saudi Arabia', EG: 'Egypt', FR: 'France', GB: 'United Kingdom', AU: 'Australia',
+  HK: 'Hong Kong', CN: 'China', AE: 'UAE', NG: 'Nigeria', DE: 'Germany',
+}
+function countryFlag(code: string): string {
+  if (!code || code.length !== 2) return '🏳️'
+  return code.toUpperCase().replace(/./g, c => String.fromCodePoint(127397 + c.charCodeAt(0)))
+}
+function countryName(code: string): string { return COUNTRY_NAMES[code?.toUpperCase()] ?? code }
+
+const DOW_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+const dowBars = computed(() => DOW_LABELS.map((label, i) => ({ label, count: analytics.value.peak_dow?.[String(i)] ?? 0 })))
+const hourBars = computed(() => Array.from({ length: 24 }, (_, h) => ({ h, count: analytics.value.peak_hour?.[String(h)] ?? 0 })))
+
+const intentRows = computed(() => {
+  const it = analytics.value.intents
+  if (!it) return []
+  return [
+    { key: 'directions', label: t('business.analytics.directions'), value: it.directions },
+    { key: 'call', label: t('business.analytics.callTaps'), value: it.call },
+    { key: 'foodpanda', label: 'Foodpanda', value: it.foodpanda },
+    { key: 'ubereats', label: 'Uber Eats', value: it.ubereats },
+    { key: 'instagram', label: 'Instagram', value: it.instagram },
+    { key: 'share', label: t('business.analytics.shares'), value: it.share },
+    { key: 'photo_views', label: t('business.analytics.photoViews'), value: it.photo_views },
+  ]
+})
+const audienceMax = computed(() => Math.max(1, ...(analytics.value.nationalities ?? []).map(n => n.count)))
+function barPct(count: number, max: number): string { return `${Math.round((count / max) * 100)}%` }
+const maxDow = computed(() => Math.max(1, ...dowBars.value.map(d => d.count)))
+const maxHour = computed(() => Math.max(1, ...hourBars.value.map(d => d.count)))
+
+// ---- CSV export (Gold) ----
+function csvCell(v: unknown): string {
+  const s = String(v ?? '')
+  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
+}
+function buildCsv(): string {
+  const a = analytics.value
+  const rows: (string | number)[][] = [['Section', 'Metric', 'Value']]
+  rows.push(['Overview', 'Total views', a.total_views])
+  rows.push(['Overview', 'Opens (30d)', a.detail_opens_30d])
+  rows.push(['Overview', 'Unique viewers (30d)', a.unique_viewers_30d])
+  rows.push(['Overview', 'Impressions (30d)', a.card_clicks_30d + a.marker_clicks_30d])
+  if (a.saves != null) rows.push(['Overview', 'Saves', a.saves])
+  if (a.intents) {
+    for (const [k, v] of Object.entries(a.intents)) rows.push(['Actions (30d)', k, v])
+  }
+  a.nationalities?.forEach(n => rows.push(['Audience nationality', countryName(n.code), n.count]))
+  a.gender?.forEach(g => rows.push(['Audience gender', g.gender, g.count]))
+  a.timeseries?.forEach(d => rows.push(['Views by day', d.date, d.count]))
+  if (a.funnel) {
+    rows.push(['Funnel', 'Impressions', a.funnel.impressions])
+    rows.push(['Funnel', 'Opens', a.funnel.opens])
+    rows.push(['Funnel', 'Actions', a.funnel.actions])
+    rows.push(['Funnel', 'Open rate %', a.funnel.open_rate])
+    rows.push(['Funnel', 'Action rate %', a.funnel.action_rate])
+  }
+  if (a.benchmark) {
+    rows.push(['Benchmark', 'Category', a.benchmark.category])
+    rows.push(['Benchmark', 'Rank', `${a.benchmark.rank} of ${a.benchmark.category_total}`])
+    rows.push(['Benchmark', 'Your opens (30d)', a.benchmark.my_opens_30d])
+    rows.push(['Benchmark', 'Category avg (30d)', a.benchmark.category_avg_30d])
+  }
+  a.search_terms?.forEach(s => rows.push(['Search terms', s.q, s.count]))
+  return rows.map(r => r.map(csvCell).join(',')).join('\n')
+}
+async function exportCsv() {
+  const csv = buildCsv()
+  const filename = `${(locationName.value || 'business').replace(/[^\w]+/g, '_')}_analytics_${new Date().toISOString().slice(0, 10)}.csv`
+  try {
+    if (Capacitor.isNativePlatform()) {
+      const res = await Filesystem.writeFile({ path: filename, data: csv, directory: Directory.Cache, encoding: Encoding.UTF8 })
+      await Share.share({ title: filename, url: res.uri })
+    } else {
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = filename
+      link.click()
+      URL.revokeObjectURL(url)
+    }
+    ActivityLogService.log('business_analytics_export', { location_id: locationId })
+  } catch (e: any) {
+    await toast(e?.message || t('common.error'), 'danger')
+  }
+}
+
+const upgradeMsg = computed(() => {
+  switch (analytics.value.level) {
+    case 'basic': return t('business.analytics.upgradeStandard')
+    case 'standard': return t('business.analytics.upgradeAdvanced')
+    default: return t('business.analytics.upgradePro') // 'advanced' → gold
+  }
+})
+
+async function toast(message: string, color: string) {
+  const t = await toastController.create({ message, duration: 2500, color, position: 'bottom' })
+  await t.present()
+}
+</script>
+
+<style scoped>
+.plan-banner {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 16px; background: var(--ion-color-light);
+}
+.plan-banner.bronze { background: rgba(205,127,50,.12); }
+.plan-banner.silver { background: rgba(148,163,184,.16); }
+.plan-banner.gold { background: rgba(202,138,4,.14); }
+.plan-label { font-size: .65rem; text-transform: uppercase; letter-spacing: 1px; font-weight: 800; color: var(--ion-color-medium); margin-right: 8px; }
+.plan-tier { font-size: 1rem; font-weight: 800; text-transform: uppercase; color: var(--ion-color-dark); }
+.plan-upgrade { font-size: .75rem; font-weight: 700; color: var(--ion-color-carrot); }
+.admin-tier-select { --padding-start: 8px; border: 1px solid var(--ion-color-medium); border-radius: 10px; font-weight: 800; text-transform: uppercase; font-size: .8rem; min-width: 110px; }
+.plan-upgrade-btn { --border-radius: 10px; font-weight: 800; text-transform: none; }
+
+.up-title { font-size: 1.4rem; font-weight: 900; margin: 4px 0 4px; color: var(--ion-color-dark); }
+.up-sub { color: var(--ion-color-medium); margin: 0 0 20px; font-size: .9rem; }
+.up-plan { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px; border: 1.5px solid var(--ion-color-light-shade); border-radius: 16px; margin-bottom: 12px; cursor: pointer; transition: border-color .2s, transform .1s; }
+.up-plan:active { transform: scale(.99); }
+.up-plan:hover { border-color: var(--ion-color-carrot); }
+.up-plan-info strong { font-size: 1.05rem; color: var(--ion-color-dark); }
+.up-plan-info p { margin: 2px 0 0; font-size: .82rem; color: var(--ion-color-medium); }
+.up-plan-price { display: flex; align-items: center; gap: 8px; font-weight: 800; color: var(--ion-color-carrot); white-space: nowrap; }
+.up-empty { text-align: center; padding: 40px 20px; color: var(--ion-color-medium); }
+.up-empty ion-icon { font-size: 44px; }
+
+.admin-plan-controls { display: flex; align-items: center; gap: 6px; }
+.up-preview-note { background: rgba(var(--ion-color-warning-rgb), .14); border-radius: 10px; padding: 8px 12px; font-size: .78rem; font-weight: 600; color: var(--ion-color-dark); margin-bottom: 14px; }
+.up-plan.tier-bronze { border-color: rgba(205,127,50,.5); }
+.up-plan.tier-silver { border-color: rgba(148,163,184,.7); }
+.up-plan.tier-gold { border-color: rgba(202,138,4,.7); }
+
+.seg-scroll { border-bottom: 1px solid var(--ion-color-light-shade); }
+.tab-body { max-width: 720px; margin: 0 auto; }
+
+.edit-list { background: transparent; }
+.edit-list ion-item { --background: transparent; --padding-start: 0; margin-bottom: 4px; }
+
+.edit-block { margin-top: 22px; }
+.block-title { font-size: .75rem; font-weight: 800; text-transform: uppercase; letter-spacing: .5px; color: var(--ion-color-medium); margin: 0 0 12px; }
+.hours-row { display: flex; align-items: center; gap: 10px; padding: 6px 0; }
+.hours-row .day-label { width: 40px; font-weight: 700; font-size: .85rem; color: var(--ion-color-dark); }
+.hours-row .time-in { max-width: 108px; --padding-start: 8px; border: 1px solid var(--ion-color-light-shade); border-radius: 8px; }
+.hours-row .time-dash { color: var(--ion-color-medium); }
+.hours-row .closed-lbl { color: var(--ion-color-medium); font-size: .82rem; font-style: italic; }
+.tags-wrap { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.tag-chip { display: inline-flex; align-items: center; gap: 4px; background: rgba(var(--ion-color-carrot-rgb), .1); color: var(--ion-color-carrot); font-weight: 700; font-size: .82rem; padding: 4px 10px; border-radius: 999px; }
+.tag-chip ion-icon { font-size: 15px; cursor: pointer; }
+.tag-add { display: flex; align-items: center; gap: 8px; }
+.tag-add ion-input { border: 1px solid var(--ion-color-light-shade); border-radius: 10px; --padding-start: 10px; }
+.save-btn { --border-radius: 14px; height: 52px; font-weight: 700; margin-top: 20px; }
+
+.section-hint { font-size: .85rem; color: var(--ion-color-medium); margin: 0 0 14px; }
+
+/* Legend explaining which edits are reviewed vs. instant */
+.review-legend { display: flex; flex-direction: column; gap: 8px; background: var(--ion-color-light); border-radius: 12px; padding: 12px 14px; margin-bottom: 16px; }
+.legend-item { display: flex; align-items: center; gap: 8px; font-size: .8rem; color: var(--ion-color-medium-shade); line-height: 1.3; }
+.legend-item .instant-icon { color: var(--ion-color-success); font-size: 1.1rem; flex-shrink: 0; }
+.review-badge {
+  display: inline-flex; align-items: center; gap: 3px; flex-shrink: 0;
+  background: rgba(var(--ion-color-warning-rgb), .16); color: var(--ion-color-warning-shade);
+  font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .02em;
+  padding: 3px 8px; border-radius: 999px;
+}
+.review-badge ion-icon { font-size: .85rem; }
+.field-badge { align-self: center; }
+.photo-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.photo-thumb { position: relative; aspect-ratio: 1; border-radius: 14px; overflow: hidden; }
+.photo-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.photo-remove { position: absolute; top: 6px; right: 6px; font-size: 22px; color: #fff; background: rgba(0,0,0,.55); border-radius: 50%; padding: 3px; }
+.main-thumb { border: 2px solid var(--ion-color-carrot); }
+.main-badge { position: absolute; bottom: 6px; left: 6px; background: var(--ion-color-carrot); color: #fff; font-size: .6rem; font-weight: 800; text-transform: uppercase; letter-spacing: .5px; padding: 2px 7px; border-radius: 999px; }
+.photo-add { aspect-ratio: 1; border: 2px dashed var(--ion-color-medium); border-radius: 14px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+.photo-add ion-icon { font-size: 30px; color: var(--ion-color-carrot); }
+
+.proof-block { padding: 14px 0 4px; }
+.proof-title { font-size: .8rem; font-weight: 800; text-transform: uppercase; letter-spacing: .5px; color: var(--ion-color-dark); margin: 0 0 2px; }
+.proof-sub { font-size: .8rem; color: var(--ion-color-medium); margin: 0 0 12px; line-height: 1.35; }
+
+.pv-proof { margin: 16px 0 4px; }
+.pv-proof-label { font-size: .7rem; font-weight: 800; text-transform: uppercase; letter-spacing: .5px; color: var(--ion-color-medium); margin: 0 0 8px; }
+.pv-proof-imgs { display: flex; gap: 8px; flex-wrap: wrap; }
+.pv-proof-imgs img { width: 72px; height: 72px; object-fit: cover; border-radius: 10px; border: 1px solid var(--ion-color-light-shade); }
+
+.locked-note { display: flex; align-items: center; gap: 8px; margin-top: 16px; padding: 12px; border-radius: 12px; background: var(--ion-color-light); color: var(--ion-color-medium); font-size: .85rem; font-weight: 600; }
+.upgrade-lock { text-align: center; padding: 50px 20px; }
+.upgrade-lock ion-icon { font-size: 52px; color: var(--ion-color-medium); }
+.upgrade-lock h3 { font-weight: 800; margin: 14px 0 6px; }
+.upgrade-lock p { color: var(--ion-color-medium); margin: 0; }
+
+.menu-row, .promo-row, .report-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--ion-color-light-shade); }
+.menu-info { flex: 1; min-width: 0; }
+.menu-info p { margin: 2px 0 0; font-size: .82rem; color: var(--ion-color-medium); }
+.menu-price { margin-left: 8px; color: var(--ion-color-carrot); font-weight: 700; }
+.menu-photo { width: 52px; height: 52px; border-radius: 10px; object-fit: cover; flex-shrink: 0; }
+
+.menu-add-card { display: flex; gap: 12px; margin-top: 18px; padding-top: 16px; border-top: 1px dashed var(--ion-color-light-shade); }
+.menu-photo-picker {
+  width: 84px; height: 84px; flex-shrink: 0; border: 2px dashed var(--ion-color-medium);
+  border-radius: 14px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 4px; cursor: pointer; overflow: hidden; color: var(--ion-color-medium); font-size: .68rem; font-weight: 700; text-align: center;
+}
+.menu-photo-picker img { width: 100%; height: 100%; object-fit: cover; }
+.menu-photo-picker ion-icon { font-size: 24px; color: var(--ion-color-carrot); }
+.menu-add-fields { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.add-inline { display: flex; align-items: center; gap: 8px; margin-top: 16px; }
+.add-inline.column { flex-direction: column; align-items: stretch; }
+.price-in { max-width: 90px; }
+.promo-actions { display: flex; align-items: center; gap: 12px; }
+.promo-actions ion-icon, .menu-row ion-icon { font-size: 20px; color: var(--ion-color-danger); }
+
+.stat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+.stat-card { background: var(--ion-color-light); border-radius: 16px; padding: 18px; text-align: center; }
+.stat-num { display: block; font-size: 1.8rem; font-weight: 900; color: var(--ion-color-dark); }
+.stat-label { font-size: .75rem; color: var(--ion-color-medium); font-weight: 700; }
+.spark { display: flex; align-items: flex-end; gap: 3px; height: 80px; margin-top: 12px; }
+.spark-bar { flex: 1; background: var(--ion-color-carrot); border-radius: 3px 3px 0 0; min-height: 2px; }
+
+.an-section-title { font-size: .78rem; font-weight: 800; text-transform: uppercase; letter-spacing: .5px; color: var(--ion-color-medium); margin: 26px 0 12px; }
+.an-empty { color: var(--ion-color-medium); font-size: .85rem; }
+
+.intent-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.intent-cell { background: var(--ion-color-light); border-radius: 12px; padding: 12px 6px; text-align: center; }
+.intent-val { display: block; font-size: 1.25rem; font-weight: 900; color: var(--ion-color-dark); }
+.intent-lbl { font-size: .66rem; color: var(--ion-color-medium); font-weight: 600; }
+
+.nat-list { display: flex; flex-direction: column; gap: 10px; }
+.nat-row { display: flex; align-items: center; gap: 10px; }
+.nat-flag { font-size: 1.2rem; width: 24px; text-align: center; }
+.nat-name { width: 96px; font-size: .82rem; font-weight: 600; color: var(--ion-color-dark); flex-shrink: 0; }
+.nat-bar-track { flex: 1; height: 8px; background: var(--ion-color-light); border-radius: 999px; overflow: hidden; }
+.nat-bar { height: 100%; background: var(--ion-color-carrot); border-radius: 999px; }
+.nat-count { width: 32px; text-align: right; font-weight: 800; font-size: .82rem; color: var(--ion-color-dark); }
+
+.gender-row { display: flex; gap: 8px; margin-top: 12px; }
+.gender-chip { background: var(--ion-color-light); border-radius: 999px; padding: 4px 12px; font-size: .78rem; font-weight: 700; color: var(--ion-color-medium); }
+
+.peak-bars { display: flex; align-items: flex-end; gap: 4px; height: 90px; }
+.peak-bars.hours { gap: 2px; }
+.peak-col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; gap: 4px; }
+.peak-bar { width: 100%; background: var(--ion-color-carrot); border-radius: 3px 3px 0 0; min-height: 2px; }
+.peak-lbl { font-size: .6rem; color: var(--ion-color-medium); font-weight: 700; }
+
+.funnel { display: flex; align-items: stretch; gap: 4px; }
+.funnel-step { flex: 1; background: var(--ion-color-light); border-radius: 12px; padding: 12px 4px; text-align: center; }
+.funnel-num { display: block; font-size: 1.3rem; font-weight: 900; color: var(--ion-color-dark); }
+.funnel-lbl { font-size: .62rem; color: var(--ion-color-medium); font-weight: 700; }
+.funnel-arrow { display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--ion-color-medium); font-weight: 800; }
+.funnel-arrow small { font-size: .6rem; color: var(--ion-color-carrot); }
+
+.bench-card { background: rgba(var(--ion-color-carrot-rgb), .07); border: 1px solid rgba(var(--ion-color-carrot-rgb), .25); border-radius: 16px; padding: 16px; }
+.bench-rank { display: flex; align-items: baseline; gap: 8px; }
+.bench-hash { font-size: 1.7rem; font-weight: 900; color: var(--ion-color-carrot); }
+.bench-of { font-size: .85rem; color: var(--ion-color-dark); font-weight: 600; }
+.bench-pct { font-size: .95rem; font-weight: 800; color: var(--ion-color-dark); margin-top: 4px; }
+.bench-compare { display: flex; justify-content: space-between; margin-top: 10px; font-size: .8rem; color: var(--ion-color-medium); font-weight: 600; }
+.bench-vs { color: var(--ion-color-medium); }
+
+.term-wrap { display: flex; flex-wrap: wrap; gap: 8px; }
+.term-chip { background: var(--ion-color-light); border-radius: 999px; padding: 5px 12px; font-size: .82rem; font-weight: 600; color: var(--ion-color-dark); }
+.term-chip b { color: var(--ion-color-carrot); margin-left: 4px; }
+
+.export-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+.digest-note { font-size: .72rem; color: var(--ion-color-medium); font-weight: 600; }
+
+.empty-inline { text-align: center; padding: 40px 20px; color: var(--ion-color-medium); }
+.empty-inline ion-icon { font-size: 44px; }
+.report-row { flex-direction: column; align-items: flex-start; gap: 6px; }
+.report-row p { margin: 0; }
+.report-date { font-size: .72rem; color: var(--ion-color-medium); }
+
+/* Draft / publish */
+.draft-banner {
+  display: flex; align-items: center; gap: 8px;
+  background: rgba(var(--ion-color-warning-rgb), .14);
+  border: 1px solid rgba(var(--ion-color-warning-rgb), .35);
+  color: var(--ion-color-dark);
+  border-radius: 12px; padding: 10px 12px; margin-bottom: 16px;
+  font-size: .82rem; font-weight: 600; line-height: 1.3;
+}
+.draft-banner ion-icon { font-size: 18px; color: var(--ion-color-warning-shade); flex-shrink: 0; }
+
+.action-footer { background: var(--ion-background-color); border-top: 1px solid var(--ion-color-light-shade); }
+.action-bar { display: flex; align-items: center; gap: 8px; padding: 10px 14px calc(10px + env(safe-area-inset-bottom, 0px)); max-width: 720px; margin: 0 auto; }
+.act-preview { --padding-start: 6px; --padding-end: 6px; font-weight: 700; }
+.act-draft { flex: 1; --border-radius: 12px; font-weight: 700; }
+.act-publish { flex: 1; --border-radius: 12px; font-weight: 800; }
+
+/* Public preview modal */
+.preview-hint { padding: 0 16px 10px; font-size: .8rem; color: var(--ion-color-medium); }
+.pv-hero { width: 100%; height: 200px; overflow: hidden; }
+.pv-hero img { width: 100%; height: 100%; object-fit: cover; }
+.pv-body { padding: 18px 16px 40px; max-width: 620px; margin: 0 auto; }
+.pv-name { font-size: 1.6rem; font-weight: 900; margin: 0 0 10px; color: var(--ion-color-dark); }
+.pv-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.pv-type { background: rgba(var(--ion-color-carrot-rgb), .12); color: var(--ion-color-carrot); font-weight: 700; font-size: .8rem; padding: 4px 12px; border-radius: 999px; }
+.pv-halal { font-weight: 800; font-size: .8rem; padding: 4px 12px; border-radius: 999px; }
+.pv-halal.certified { background: rgba(var(--ion-color-success-rgb), .15); color: var(--ion-color-success); }
+.pv-halal.self_reported { background: rgba(var(--ion-color-warning-rgb), .18); color: var(--ion-color-warning-shade); }
+.pv-halal.muslim_friendly { background: var(--ion-color-light); color: var(--ion-color-medium); }
+.pv-attrs { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; font-size: .82rem; color: var(--ion-color-medium); font-weight: 600; }
+.pv-desc { font-size: .95rem; line-height: 1.5; color: var(--ion-color-dark); margin: 0 0 18px; white-space: pre-wrap; }
+.pv-rows { display: flex; flex-direction: column; gap: 12px; }
+.pv-row { display: flex; align-items: center; gap: 12px; font-size: .92rem; color: var(--ion-color-dark); }
+.pv-row ion-icon { font-size: 20px; color: var(--ion-color-carrot); flex-shrink: 0; }
+
+.fade-in { animation: fadeIn .3s ease-out; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+</style>

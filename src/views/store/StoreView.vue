@@ -696,8 +696,13 @@ onBeforeUnmount(() => {
 .actions-toolbar {
   --background: var(--ion-background-color);
   --border-width: 0;
-  --padding-start: 4px;
-  --padding-end: 4px;
+  /* Align the search field + trailing icons to the same 16px gutter used by the
+     category pills, filter row and product grid. The ion-searchbar host adds ~7px
+     of inner padding, so 8px here lands the field edge at ~15px (matching the pills). */
+  --padding-start: 8px;
+  --padding-end: 8px;
+  --padding-top: 4px;
+  --padding-bottom: 6px;
 }
 
 

@@ -274,6 +274,16 @@
                 <p>{{ $t('profile.badgeShop.menuSubtitle') }}</p>
               </ion-label>
             </ion-item>
+
+            <ion-item v-if="userEmail && hasOwnedBusinesses" button @click="$router.push('/business')">
+              <div class="icon-box icon-box-shop" slot="start">
+                <ion-icon :icon="icons.briefcaseOutline" />
+              </div>
+              <ion-label>
+                <h3>{{ $t('business.dashboard.title') }}</h3>
+                <p>{{ $t('business.dashboard.manageCta') }}</p>
+              </ion-label>
+            </ion-item>
           </ion-list>
         </ion-card>
 
@@ -569,6 +579,22 @@
               <ion-badge v-if="pendingMerchantAppsCount > 0" color="danger" slot="end" style="border-radius: 8px;">{{ pendingMerchantAppsCount }}</ion-badge>
             </ion-item>
 
+            <ion-item button @click="$router.push('/admin/location-claims')">
+              <div class="icon-box" slot="start">
+                <ion-icon :icon="icons.ribbonOutline" />
+              </div>
+              <ion-label>{{ $t('admin.claims.title') }}</ion-label>
+              <ion-badge v-if="pendingClaimsCount > 0" color="danger" slot="end" style="border-radius: 8px;">{{ pendingClaimsCount }}</ion-badge>
+            </ion-item>
+
+            <ion-item button @click="$router.push('/admin/location-edit-requests')">
+              <div class="icon-box" slot="start">
+                <ion-icon :icon="icons.createOutline" />
+              </div>
+              <ion-label>{{ $t('admin.editRequests.title') }}</ion-label>
+              <ion-badge v-if="pendingEditRequestsCount > 0" color="danger" slot="end" style="border-radius: 8px;">{{ pendingEditRequestsCount }}</ion-badge>
+            </ion-item>
+
             <ion-item button @click="goToMasterData">
               <div class="icon-box" slot="start">
                 <ion-icon :icon="icons.constructOutline" />
@@ -728,6 +754,8 @@ import {
   createOutline,
   documentTextOutline,
   globeOutline,
+  briefcaseOutline,
+  ribbonOutline,
   listOutline,
   logoInstagram,
   logoTiktok,
@@ -783,6 +811,7 @@ import {refreshSubscriptionStatus} from "@/composables/useSubscriptionStatus";
 import {toastController} from "@ionic/vue";
 import { ActivityLogService } from '@/services/ActivityLogService'
 import { MerchantService, MerchantApplication } from '@/services/MerchantService'
+import { ClaimService } from '@/services/ClaimService'
 import { useI18n } from 'vue-i18n'
 import { useNotifier } from "@/composables/useNotifier";
 
@@ -806,6 +835,8 @@ const icons = {
   bookmarkOutline,
   locationOutline,
   globeOutline,
+  briefcaseOutline,
+  ribbonOutline,
   logOutOutline,
   checkmarkCircle,
   logoInstagram,
@@ -842,6 +873,9 @@ const pendingLocationsCount = ref(0);
 const pendingLocationReportsCount = ref(0);
 const pendingProductReportsCount = ref(0);
 const pendingMerchantAppsCount = ref(0);
+const pendingClaimsCount = ref(0);
+const pendingEditRequestsCount = ref(0);
+const hasOwnedBusinesses = ref(false);
 const merchantStore = ref<any | null>(null);
 const merchantApplication = ref<MerchantApplication | null>(null);
 const myProductsCount = ref<number | null>(null);
@@ -1017,6 +1051,24 @@ async function fetchPendingMerchantAppsCount() {
   pendingMerchantAppsCount.value = await MerchantService.getPendingApplicationsCount()
 }
 
+async function fetchPendingClaimsCount() {
+  if (!isAdmin.value) return
+  pendingClaimsCount.value = await ClaimService.getPendingClaimsCount()
+}
+
+async function fetchPendingEditRequestsCount() {
+  if (!isAdmin.value) return
+  pendingEditRequestsCount.value = await ClaimService.getPendingEditRequestsCount()
+}
+
+async function fetchHasOwnedBusinesses(userId: string) {
+  const { count } = await supabase
+    .from('location_owners')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', userId)
+  hasOwnedBusinesses.value = (count ?? 0) > 0
+}
+
 async function fetchPendingLocationReportsCount() {
   if (!isAdmin.value) return
   const { count } = await supabase
@@ -1096,11 +1148,14 @@ async function refreshAllData(userId: string) {
             fetchPendingCount(),
             fetchPendingLocationsCount(),
             fetchPendingMerchantAppsCount(),
+            fetchPendingClaimsCount(),
+            fetchPendingEditRequestsCount(),
             fetchPendingLocationReportsCount(),
             fetchPendingProductReportsCount()
           ])
         }
       })(),
+      fetchHasOwnedBusinesses(userId),
       fetchMyContributionsCount(userId)
     ]);
 

@@ -18,6 +18,16 @@
              <ion-label>{{ $t('search.details.edit') }}</ion-label>
            </ion-item>
 
+           <ion-item v-if="isOwner" button :detail="false" @click="manageBusiness" lines="none">
+             <ion-icon :icon="briefcaseOutline" slot="start"/>
+             <ion-label>{{ $t('business.manage') }}</ion-label>
+           </ion-item>
+
+           <ion-item v-else-if="isLoggedIn && !place?.is_claimed && claimStatus !== 'pending'" button :detail="false" @click="claimBusiness" lines="none">
+             <ion-icon :icon="ribbonOutline" slot="start"/>
+             <ion-label>{{ $t('business.claim.action') }}</ion-label>
+           </ion-item>
+
            <ion-item button :detail="false" @click="reportItem" lines="none">
              <ion-icon :icon="alertCircleOutline" slot="start"/>
              <ion-label>{{ $t('search.details.report') }}</ion-label>
@@ -83,6 +93,25 @@
                 <ion-icon :icon="shieldCheckmarkOutline" />
                 <span>{{ $t('explore.details.officialPartner') }}</span>
               </div>
+              <div v-else-if="place?.is_claimed" class="claimed-verified-tag">
+                <ion-icon :icon="checkmarkCircle" />
+                <span>{{ $t('business.claimedBadge') }}</span>
+              </div>
+            </div>
+
+            <!-- Verified owner attribution -->
+            <p v-if="place?.is_claimed && ownerName" class="owned-by-line">
+              <ion-icon :icon="checkmarkCircle" />
+              {{ $t('business.ownedBy', { name: ownerName }) }}
+            </p>
+
+            <!-- Pending claim banner — only shown to the user who submitted the claim -->
+            <div v-if="claimStatus === 'pending'" class="claim-review-banner">
+              <ion-icon :icon="informationCircle" />
+              <div class="claim-review-text">
+                <strong>{{ $t('business.claim.reviewBannerTitle') }}</strong>
+                <p>{{ $t('business.claim.reviewBannerText') }}</p>
+              </div>
             </div>
 
             <!-- 🏷️ Location Tags -->
@@ -128,12 +157,12 @@
               {{ $t('home.added') }} {{ fromNowToTaipei(place.created_at) }}
             </p>
 
-            <!-- Order Via Foodpanda -->
-            <div v-if="place.foodpanda_url" class="ion-margin-top ion-margin-bottom">
+            <!-- Order Via delivery apps -->
+            <div v-if="place.foodpanda_url || place.ubereats_url" class="ion-margin-top ion-margin-bottom">
               <p class="section-title">
                 <strong><small>{{ $t('explore.details.orderVia') }}</small></strong>
               </p>
-              <div class="foodpanda-card" @click="logFoodpanda">
+              <div v-if="place.foodpanda_url" class="foodpanda-card" @click="logFoodpanda">
                 <img
                   src="https://ph-test-11.slatic.net/p/9a66c3f38bcbb5940d790d9fd58855ee.png"
                   alt="Foodpanda"
@@ -144,6 +173,17 @@
                     color="carrot"
                     size="small"
                     :href="place.foodpanda_url"
+                    target="_blank">
+                  {{ $t('explore.details.orderNow') }}
+                </ion-button>
+              </div>
+              <div v-if="place.ubereats_url" class="ubereats-card" @click="logUberEats">
+                <span class="ubereats-logo">Uber<b>Eats</b></span>
+                <ion-button
+                    fill="solid"
+                    color="carrot"
+                    size="small"
+                    :href="place.ubereats_url"
                     target="_blank">
                   {{ $t('explore.details.orderNow') }}
                 </ion-button>
@@ -276,7 +316,7 @@
               </template>
 
               <!-- 📞 Contact Info -->
-              <template v-if="place.phone || place.instagram || place.line_id">
+              <template v-if="place.phone || place.instagram || place.facebook || place.tiktok || place.website || place.line_id">
                 <h3 class="font-bold text-lg ion-margin-top">{{ $t('explore.details.additionalDetails') }}</h3>
 
                 <ion-item lines="none" v-if="place.phone">
@@ -309,6 +349,39 @@
                       @click="logInstagram"
                       :href="`https://instagram.com/${place.instagram.replace('@','')}`"
                       target="_blank">
+                    {{ $t('common.open') }}
+                  </ion-button>
+                </ion-item>
+
+                <ion-item lines="none" v-if="place.facebook">
+                  <ion-icon :icon="logoFacebook" slot="start" color="carrot"/>
+                  <ion-label>
+                    <p class="text-sm text-gray-500">{{ $t('business.info.facebook') }}</p>
+                    <p>Facebook</p>
+                  </ion-label>
+                  <ion-button fill="clear" size="small" :href="place.facebook" target="_blank">
+                    {{ $t('common.open') }}
+                  </ion-button>
+                </ion-item>
+
+                <ion-item lines="none" v-if="place.tiktok">
+                  <ion-icon :icon="logoTiktok" slot="start" color="carrot"/>
+                  <ion-label>
+                    <p class="text-sm text-gray-500">{{ $t('business.info.tiktok') }}</p>
+                    <p>@{{ place.tiktok.replace('@', '') }}</p>
+                  </ion-label>
+                  <ion-button fill="clear" size="small" :href="`https://tiktok.com/@${place.tiktok.replace('@','')}`" target="_blank">
+                    {{ $t('common.open') }}
+                  </ion-button>
+                </ion-item>
+
+                <ion-item lines="none" v-if="place.website">
+                  <ion-icon :icon="globeOutline" slot="start" color="carrot"/>
+                  <ion-label>
+                    <p class="text-sm text-gray-500">{{ $t('business.info.website') }}</p>
+                    <p>{{ place.website.replace(/^https?:\/\//, '') }}</p>
+                  </ion-label>
+                  <ion-button fill="clear" size="small" :href="place.website" target="_blank">
                     {{ $t('common.open') }}
                   </ion-button>
                 </ion-item>
@@ -439,7 +512,13 @@ import {
   sparkles,
   shieldCheckmarkOutline,
   bookmarkOutline,
-  bookmark
+  bookmark,
+  briefcaseOutline,
+  ribbonOutline,
+  checkmarkCircle,
+  logoFacebook,
+  logoTiktok,
+  globeOutline
 } from 'ionicons/icons'
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
@@ -456,6 +535,7 @@ function fromNowToTaipei(dateString?: string) {
 }
 
 import {ActivityLogService} from "@/services/ActivityLogService";
+import {ClaimService} from "@/services/ClaimService";
 import { useSavedLocations } from '@/composables/useSavedLocations';
 import SaveLocationModal from '@/components/SaveLocationModal.vue';
 import mapsLoader from '@/plugins/googleMapsLoader'
@@ -483,8 +563,12 @@ type PlaceDetail = {
   location_types: { name: string } | null
   phone?: string | null
   instagram?: string | null
+  facebook?: string | null
+  tiktok?: string | null
+  website?: string | null
   line_id?: string | null
   foodpanda_url?: string | null
+  ubereats_url?: string | null
   price_range?: string | null
   opening_hours?: OpeningHours | null
   created_at?: string
@@ -495,6 +579,7 @@ type PlaceDetail = {
   partner_tier?: 'Gold' | 'Silver' | 'Bronze' | null;
   approved?: boolean;
   tags?: string[] | null;
+  is_claimed?: boolean;
 }
 
 type LocationCertification = {
@@ -520,6 +605,9 @@ const place = ref<PlaceDetail | null>(null)
 const auditLogRef = ref<InstanceType<typeof AuditHistoryLog> | null>(null)
 const showAllTags = ref(false)
 const canEdit = ref(false)
+const isOwner = ref(false)
+const ownerName = ref<string | null>(null)
+const claimStatus = ref<'pending' | 'approved' | 'rejected' | null>(null)
 const modules = [Pagination, Zoom]
 const isLoggedIn = ref(false)
 const isNative = ref(Capacitor.isNativePlatform())
@@ -797,13 +885,18 @@ const loadPlace = async () => {
     created_by,
     phone,
     instagram,
+    facebook,
+    tiktok,
+    website,
     line_id,
     foodpanda_url,
+    ubereats_url,
     price_range,
     opening_hours,
     created_at,
     approved,
     tags,
+    is_claimed,
     location_types(name),
     partner:partners(partner_tier)
   `)
@@ -831,12 +924,17 @@ const loadPlace = async () => {
       description: data.description,
       phone: data.phone,
       instagram: data.instagram,
+      facebook: data.facebook,
+      tiktok: data.tiktok,
+      website: data.website,
       line_id: data.line_id,
       foodpanda_url: data.foodpanda_url,
+      ubereats_url: data.ubereats_url,
       price_range: data.price_range,
       opening_hours: data.opening_hours,
       created_at: data.created_at,
       approved: data.approved,
+      is_claimed: data.is_claimed ?? false,
       author: null,
       location_types: locationType ?? null,
       tags: data.tags ?? [],
@@ -858,6 +956,12 @@ const loadPlace = async () => {
 
     await fetchLocationCertifications(data.id)
 
+    // 🔹 If this listing is claimed, resolve the verified owner's display name
+    if (data.is_claimed) {
+      const { data: name } = await supabase.rpc('location_owner_name', { p_location_id: data.id })
+      ownerName.value = (name as string | null) || null
+    }
+
 
     // 🔹 Check if the current user can edit
     const {data: {user}} = await supabase.auth.getUser()
@@ -870,12 +974,28 @@ const loadPlace = async () => {
           .eq('user_id', user.id)
           .single()
 
+      // Is the current user a verified owner/manager of this location?
+      const { data: ownerRow } = await supabase
+          .from('location_owners')
+          .select('role')
+          .eq('location_id', data.id)
+          .eq('user_id', user.id)
+          .maybeSingle()
+      isOwner.value = !!ownerRow
+
       if (
           user.id === data.created_by ||
           roleData?.role === 'admin' ||
-          roleData?.role === 'contributor'
+          roleData?.role === 'contributor' ||
+          isOwner.value
       ) {
         canEdit.value = true
+      }
+
+      // If not already an owner, look up any existing claim to reflect its status
+      if (!isOwner.value) {
+        const claim = await ClaimService.getUserClaimForLocation(data.id)
+        claimStatus.value = claim?.status ?? null
       }
     }
 
@@ -1004,6 +1124,19 @@ const editItem = async () => {
   router.push(`/place/${place.value.id}/edit`);
 };
 
+const claimBusiness = async () => {
+  if (!place.value) return;
+  try { await popoverController.dismiss(); } catch { /* no popover */ }
+  ActivityLogService.log("business_claim_start", { id: place.value.id });
+  router.push(`/place/${place.value.id}/claim`);
+};
+
+const manageBusiness = async () => {
+  if (!place.value) return;
+  try { await popoverController.dismiss(); } catch { /* no popover */ }
+  router.push(`/business/${place.value.id}`);
+};
+
 const reportItem = async () => {
   if (!place.value) return;
 
@@ -1034,6 +1167,14 @@ const logFoodpanda = () => {
   ActivityLogService.log("explore_detail_foodpanda", {
     id: place.value.id,
     foodpanda_url: place.value.foodpanda_url
+  });
+};
+
+const logUberEats = () => {
+  if (!place.value) return;
+  ActivityLogService.log("explore_detail_ubereats", {
+    id: place.value.id,
+    ubereats_url: place.value.ubereats_url
   });
 };
 
@@ -1148,6 +1289,37 @@ const scrollToDescription = () => {
 .foodpanda-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.ubereats-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--ion-card-background, #ffffff);
+  border-radius: 12px;
+  padding: 16px;
+  margin-top: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--ion-color-light, #f0f0f0);
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.ubereats-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.ubereats-logo {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #06c167; /* Uber Eats green */
+  letter-spacing: -0.5px;
+}
+
+.ubereats-logo b {
+  color: var(--ion-color-dark);
+  font-weight: 800;
 }
 
 .foodpanda-card-logo {
@@ -1365,6 +1537,68 @@ const scrollToDescription = () => {
   font-weight: 700;
   font-size: 10px;
   letter-spacing: 0.5px;
+}
+
+.claimed-verified-tag {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--ion-color-success);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.5px;
+}
+
+.claimed-verified-tag ion-icon {
+  font-size: 14px;
+}
+
+.claim-review-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-top: 14px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: rgba(var(--ion-color-carrot-rgb), 0.08);
+  border: 1px solid rgba(var(--ion-color-carrot-rgb), 0.3);
+}
+
+.claim-review-banner ion-icon {
+  font-size: 22px;
+  color: var(--ion-color-carrot);
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.owned-by-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 10px 0 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--ion-color-dark);
+}
+
+.owned-by-line ion-icon {
+  font-size: 16px;
+  color: var(--ion-color-success);
+}
+
+.claim-review-text strong {
+  display: block;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--ion-color-dark);
+  margin-bottom: 2px;
+}
+
+.claim-review-text p {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--ion-color-medium);
+  line-height: 1.35;
 }
 
 .hashtag-row {

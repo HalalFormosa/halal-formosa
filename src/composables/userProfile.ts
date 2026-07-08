@@ -29,9 +29,14 @@ export const selectedCountry = ref<any | null>(null); // for display
 export const acknowledged = ref(false);
 export const profileSkipped = ref(false);
 
+/** A display name is required: at least one non-whitespace character. */
+export const hasValidDisplayName = computed(
+    () => (editDisplayName.value?.trim().length ?? 0) >= 1
+);
+
 export const isProfileComplete = computed(() => {
     return (
-        acknowledged.value
+        acknowledged.value && hasValidDisplayName.value
     );
 });
 
@@ -223,7 +228,7 @@ export async function updateUserProfile(userId: string) {
     const { error } = await supabase
         .from("user_profiles")
         .update({
-            display_name: editDisplayName.value,
+            display_name: editDisplayName.value?.trim() || null,
             date_of_birth: editDOB.value,
             nationality: editNationality.value,
             gender: editGender.value,
@@ -237,6 +242,7 @@ export async function updateUserProfile(userId: string) {
     if (error) {
         console.error("❌ updateUserProfile failed", error);
     }
+    return error;
 }
 
 export function resetUserProfileState() {

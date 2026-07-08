@@ -181,6 +181,7 @@ import { isDonor, refreshSubscriptionStatus } from '@/composables/useSubscriptio
 import { isAdmin } from '@/composables/userProfile'
 import { RevenueCatUI, PAYWALL_RESULT } from '@revenuecat/purchases-capacitor-ui'
 import { Capacitor } from '@capacitor/core'
+import { TextToSpeech } from '@capacitor-community/text-to-speech'
 import { ActivityLogService } from '@/services/ActivityLogService'
 import { supabase } from '@/plugins/supabaseClient'
 
@@ -667,7 +668,73 @@ function getWordLengthAt(phrase: any, cleanIdx: number): number {
   return 1
 }
 
+// The Android System WebView does not support the Web Speech API (no Chinese
+// voices), so on Android we use the native TextToSpeech plugin instead. iOS's
+// WKWebView supports speechSynthesis (incl. word-boundary highlighting), so it
+// keeps the web path below.
+let cachedTtsLang: string | null | undefined
+async function pickChineseTtsLang(): Promise<string | null> {
+  if (cachedTtsLang !== undefined) return cachedTtsLang
+  try {
+    const { languages } = await TextToSpeech.getSupportedLanguages()
+    const lower = languages.map(l => l.toLowerCase())
+    const preferred = ['zh-tw', 'zh-hant-tw', 'cmn-hant-tw', 'zh-hant', 'zh', 'zh-cn', 'zh-hans', 'cmn-hans-cn']
+    let idx = -1
+    for (const p of preferred) {
+      idx = lower.indexOf(p)
+      if (idx !== -1) break
+    }
+    if (idx === -1) idx = lower.findIndex(l => l.startsWith('zh') || l.startsWith('cmn'))
+    cachedTtsLang = idx !== -1 ? languages[idx] : null
+  } catch {
+    cachedTtsLang = 'zh-TW'
+  }
+  return cachedTtsLang
+}
+
+async function playPhraseNative(text: string) {
+  // Tap again to stop
+  if (activeSpeechText.value === text) {
+    try { await TextToSpeech.stop() } catch { /* ignore */ }
+    activeSpeechText.value = null
+    return
+  }
+  try { await TextToSpeech.stop() } catch { /* ignore */ }
+
+  const lang = await pickChineseTtsLang()
+  if (!lang) {
+    const toast = await toastController.create({
+      message: 'Chinese text-to-speech is not installed on this device. Enable it in Settings → System → Languages & input → Text-to-speech output.',
+      duration: 4000,
+      position: 'bottom',
+      color: 'warning'
+    })
+    await toast.present()
+    return
+  }
+
+  activeSpeechText.value = text
+  try {
+    await TextToSpeech.speak({
+      text,
+      lang,
+      rate: 1.0,
+      pitch: 1.0,
+      volume: 1.0,
+      category: 'playback'
+    })
+  } catch (err) {
+    console.error('Native TTS failed:', err)
+  } finally {
+    if (activeSpeechText.value === text) activeSpeechText.value = null
+  }
+}
+
 function playPhrase(text: string) {
+  if (Capacitor.getPlatform() === 'android') {
+    playPhraseNative(text)
+    return
+  }
   if ('speechSynthesis' in window) {
     if (activeSpeechText.value === text) {
       window.speechSynthesis.cancel()
