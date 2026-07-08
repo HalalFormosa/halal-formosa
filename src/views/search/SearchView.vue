@@ -386,19 +386,71 @@
 
                   <!-- GRID MODE 2-COLUMN CAROUSEL CARD -->
                   <div v-else :class="['grid-product-card grid-col-span-2 featured-grid-card', getStatusClass(product.status)]">
-                    <div class="grid-card-image">
-                      <img
-                          loading="lazy"
-                          :src="product.photo_front_url || 'https://via.placeholder.com/150x150.webp?text=No+Photo'"
-                          :alt="product.name"
-                      />
-                      <div class="grid-tier-badge gold">
-                        <Sparkles :size="14" />
-                        <span>{{ $t('home.partnerTier', { tier: 'GOLD' }) }}</span>
+                    <div class="featured-grid-inner">
+                      <!-- Left: Image Section -->
+                      <div class="featured-image-section">
+                        <!-- Blurred background -->
+                        <img
+                            loading="lazy"
+                            :src="product.photo_front_url || 'https://via.placeholder.com/150x150.webp?text=No+Photo'"
+                            :alt="product.name"
+                            class="featured-bg-blur"
+                        />
+                        <!-- Product photo -->
+                        <img
+                            loading="lazy"
+                            :src="product.photo_front_url || 'https://via.placeholder.com/150x150.webp?text=No+Photo'"
+                            :alt="product.name"
+                            class="featured-fg-image"
+                        />
+                        <!-- Mobile-only status/tier badges -->
+                        <div class="grid-tier-badge gold mobile-only">
+                          <Sparkles :size="14" />
+                          <span>{{ $t('home.partnerTier', { tier: 'GOLD' }) }}</span>
+                        </div>
+                        <div :class="['grid-status-label mobile-only', product.status.toLowerCase().replace(' ', '-')]">
+                          <component :is="getStatusIcon(product.status)" :size="14" />
+                          <span>{{ $t('search.status.' + product.status) }}</span>
+                        </div>
                       </div>
-                      <div :class="['grid-status-label', product.status.toLowerCase().replace(' ', '-')]">
-                        <component :is="getStatusIcon(product.status)" :size="14" />
-                        <span>{{ $t('search.status.' + product.status) }}</span>
+
+                      <!-- Right: Details Section (Desktop/Tablet only) -->
+                      <div class="featured-details-section">
+                        <div class="details-header">
+                          <div class="grid-tier-badge gold">
+                            <Sparkles :size="14" />
+                            <span>{{ $t('home.partnerTier', { tier: 'GOLD' }) }}</span>
+                          </div>
+                          <div :class="['status-badge-pill', product.status.toLowerCase().replace(' ', '-')]">
+                            <component :is="getStatusIcon(product.status)" :size="12" />
+                            <span>{{ $t('search.status.' + product.status) }}</span>
+                          </div>
+                        </div>
+
+                        <h3 class="product-title">{{ product.name }}</h3>
+
+                        <div class="product-category" v-if="product.product_categories?.name">
+                          {{ $te('search.categoriesList.' + product.product_categories.name) ? $t('search.categoriesList.' + product.product_categories.name) : product.product_categories.name }}
+                        </div>
+
+                        <div class="product-meta">
+                          <span class="meta-item">
+                            <Eye :size="14" /> {{ product.view_count || 0 }} views
+                          </span>
+                          <span class="meta-item">
+                            <Clock :size="14" /> {{ fromNowToTaipei(product.created_at) }}
+                          </span>
+                        </div>
+
+                        <div class="details-footer">
+                          <div class="official-partner-label">
+                            <ShieldCheck :size="14" />
+                            <span class="verified-label">{{ $t('search.officialPartner') }}</span>
+                          </div>
+                          <span class="action-link-btn">
+                            {{ $t('common.details') }} →
+                          </span>
+                        </div>
                       </div>
                     </div>
                     <div class="premium-flare"></div>
@@ -2442,6 +2494,13 @@ ion-header {
   overflow: hidden;
 }
 
+@media (min-width: 768px) {
+  .featured-partners-container {
+    max-width: 100%;
+    margin: 0;
+  }
+}
+
 .featured-header {
   display: flex;
   align-items: center;
@@ -2481,9 +2540,181 @@ ion-header {
 }
 
 .featured-grid-card {
-  margin: 8px 16px;
-  width: calc(100% - 32px);
+  margin: 8px;
+  width: calc(100% - 16px);
   aspect-ratio: 2 / 1;
+}
+
+/* Featured split inner grid layout */
+.featured-grid-inner {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.featured-image-section {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: #000;
+}
+
+.featured-bg-blur {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: blur(12px) brightness(0.4);
+  transform: scale(1.15); /* Prevents transparent blur margins */
+  z-index: 1;
+}
+
+.featured-fg-image {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 2;
+}
+
+.featured-details-section {
+  display: none; /* Hidden on mobile */
+}
+
+/* Badges for mobile view, placed over image */
+.featured-image-section .grid-tier-badge,
+.featured-image-section .grid-status-label {
+  z-index: 3;
+}
+
+@media (min-width: 768px) {
+  .featured-grid-card {
+    width: calc(100% - 16px) !important;
+    margin: 12px 8px !important;
+    aspect-ratio: auto !important;
+    height: 280px !important;
+  }
+
+  .featured-image-section {
+    width: 42%;
+    height: 100%;
+  }
+
+  .featured-fg-image {
+    object-fit: contain; /* Contained on desktop to prevent packaging crop */
+    padding: 12px;
+  }
+
+  .featured-details-section {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    width: 58%;
+    height: 100%;
+    padding: 24px;
+    background: var(--ion-card-background, #1e1e1e);
+    color: var(--ion-text-color, #ffffff);
+    text-align: left;
+    box-sizing: border-box;
+    border-left: 1px solid rgba(var(--ion-color-dark-rgb), 0.08);
+  }
+
+  .mobile-only {
+    display: none !important;
+  }
+}
+
+/* Details Section Styling */
+.details-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.status-badge-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #fff;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.status-badge-pill.halal { background: rgba(var(--ion-color-success-rgb), 0.9); }
+.status-badge-pill.muslim-friendly { background: rgba(var(--ion-color-primary-rgb), 0.95); }
+.status-badge-pill.syubhah { background: rgba(var(--ion-color-warning-rgb), 0.95); color: var(--ion-color-warning-contrast); }
+.status-badge-pill.haram { background: rgba(var(--ion-color-danger-rgb), 0.9); }
+
+.product-title {
+  margin: 12px 0 6px 0;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--ion-text-color, #ffffff);
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.product-category {
+  font-size: 0.85rem;
+  color: var(--ion-color-carrot);
+  font-weight: 600;
+}
+
+.product-meta {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid rgba(var(--ion-color-dark-rgb), 0.08);
+}
+
+.meta-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  color: var(--ion-color-medium, #8e8e93);
+}
+
+.details-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 16px;
+}
+
+.official-partner-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #ca8a04;
+}
+
+.action-link-btn {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--ion-color-carrot);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: transform 0.2s ease;
+}
+
+.featured-grid-card:hover .action-link-btn {
+  transform: translateX(4px);
 }
 
 .no-scrollbar::-webkit-scrollbar {
