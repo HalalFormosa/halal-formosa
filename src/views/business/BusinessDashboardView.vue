@@ -46,6 +46,19 @@
               </ion-card>
             </div>
 
+            <!-- Account-level plan: one package covers ALL the owner's businesses -->
+            <div v-if="locations.length" class="account-plan fade-in" :class="accountTier">
+              <div class="ap-info">
+                <span class="ap-label">{{ $t('business.plan.yourPlanLabel') }}</span>
+                <span class="ap-tier">{{ accountTier }}</span>
+                <span class="ap-note">{{ $t('business.plan.accountWide') }}</span>
+              </div>
+              <ion-button v-if="accountTier !== 'gold'" size="small" color="carrot" class="ap-btn" @click="showUpgrade = true">
+                {{ $t('business.plan.upgrade') }}
+              </ion-button>
+              <ion-icon v-else :icon="checkmarkCircle" color="success" class="ap-max" />
+            </div>
+
             <!-- Owned businesses -->
             <div v-if="locations.length" class="section-block">
               <p v-if="pendingClaims.length" class="section-label">{{ $t('business.dashboard.yourBusinesses') }}</p>
@@ -76,37 +89,50 @@
           </template>
         </template>
       </div>
+
+      <!-- Account-level upgrade paywall (applies to all businesses) -->
+      <BusinessUpgradeModal v-model:open="showUpgrade" :current-tier="accountTier" @purchased="reload" />
     </ion-content>
   </ion-page>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import {
   IonPage, IonHeader, IonContent, IonSpinner, IonCard, IonButton, IonIcon,
   IonBadge, onIonViewWillEnter
 } from '@ionic/vue'
-import { storefrontOutline, chevronForward } from 'ionicons/icons'
+import { storefrontOutline, chevronForward, checkmarkCircle } from 'ionicons/icons'
 import AppHeader from '@/components/AppHeader.vue'
+import BusinessUpgradeModal from '@/components/BusinessUpgradeModal.vue'
 import router from '@/router'
 import { useBusinessListings, type OwnedLocation } from '@/composables/useBusinessListings'
 import { ClaimService } from '@/services/ClaimService'
 import { ActivityLogService } from '@/services/ActivityLogService'
-import type { LocationClaim } from '@/types/Business'
+import type { LocationClaim, PlanTier } from '@/types/Business'
 
 const { getMyLocations } = useBusinessListings()
 const loading = ref(true)
 const locations = ref<OwnedLocation[]>([])
 const pendingClaims = ref<LocationClaim[]>([])
+const showUpgrade = ref(false)
 
-onIonViewWillEnter(async () => {
+// The tier is account-level, so every owned business shares it — read it once.
+const accountTier = computed<PlanTier>(() => (locations.value[0]?.tier as PlanTier) ?? 'free')
+
+async function load() {
   loading.value = true
   const [owned, pending] = await Promise.all([getMyLocations(), ClaimService.getMyPendingClaims()])
   locations.value = owned
   pendingClaims.value = pending
   loading.value = false
   ActivityLogService.log('business_dashboard_open', { count: locations.value.length, pending: pending.length })
-})
+}
+
+// Re-fetch after an upgrade so the plan card + tier pills reflect the new tier.
+async function reload() { await load() }
+
+onIonViewWillEnter(load)
 </script>
 
 <style scoped>
@@ -138,6 +164,17 @@ onIonViewWillEnter(async () => {
 .tier-pill.bronze { background: rgba(205,127,50,.15); color: #b06a2c; }
 .tier-pill.silver { background: rgba(148,163,184,.2); color: #64748b; }
 .tier-pill.gold   { background: rgba(202,138,4,.15); color: #ca8a04; }
+
+.account-plan { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 18px; border-radius: 18px; margin: 0 0 18px; background: var(--ion-color-light); border: 1px solid var(--ion-color-light-shade); }
+.account-plan.bronze { background: rgba(205,127,50,.1); border-color: rgba(205,127,50,.3); }
+.account-plan.silver { background: rgba(148,163,184,.12); border-color: rgba(148,163,184,.35); }
+.account-plan.gold   { background: rgba(202,138,4,.1); border-color: rgba(202,138,4,.3); }
+.ap-info { display: flex; flex-direction: column; min-width: 0; }
+.ap-label { font-size: .64rem; text-transform: uppercase; letter-spacing: .5px; font-weight: 800; color: var(--ion-color-medium); }
+.ap-tier { font-size: 1.15rem; font-weight: 900; text-transform: uppercase; color: var(--ion-color-dark); line-height: 1.2; }
+.ap-note { font-size: .72rem; color: var(--ion-color-medium); margin-top: 2px; }
+.ap-btn { --border-radius: 10px; font-weight: 800; flex-shrink: 0; }
+.ap-max { font-size: 26px; flex-shrink: 0; }
 
 .fade-in { animation: fadeIn .4s ease-out; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }

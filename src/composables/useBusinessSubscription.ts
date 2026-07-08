@@ -2,10 +2,13 @@ import { Purchases, type PurchasesPackage } from '@revenuecat/purchases-capacito
 import { Capacitor } from '@capacitor/core'
 import type { PlanTier } from '@/types/Business'
 
-// The RevenueCat offering that holds the Bronze/Silver/Gold business products,
-// and the per-tier entitlement identifiers. Configure these in the RevenueCat
-// dashboard to match.
-export const BUSINESS_OFFERING_ID = 'business'
+// Mapping of plan tiers to the corresponding RevenueCat offering IDs.
+export const TIER_OFFERINGS: Record<Exclude<PlanTier, 'free'>, string> = {
+  bronze: 'business-bronze',
+  silver: 'business-silver',
+  gold: 'business-gold',
+}
+
 const TIER_ENTITLEMENTS: Record<PlanTier, string> = {
   free: '',
   bronze: 'business_bronze',
@@ -22,15 +25,41 @@ const TIER_ENTITLEMENTS: Record<PlanTier, string> = {
 export function useBusinessSubscription() {
   const isNative = Capacitor.isNativePlatform()
 
-  /** The RevenueCat offering with the business packages (null on web / if unconfigured). */
-  async function getBusinessOffering() {
-    if (!isNative) return null
+  /** Fetches and merges packages from all business offerings (bronze, silver, gold) to show live prices. */
+  async function getBusinessPackages(): Promise<PurchasesPackage[]> {
+    if (!isNative) return []
     try {
       const offerings = await Purchases.getOfferings()
-      return offerings.all[BUSINESS_OFFERING_ID] ?? null
+      const packages: PurchasesPackage[] = []
+
+      for (const tier of ['bronze', 'silver', 'gold'] as const) {
+        const offeringId = TIER_OFFERINGS[tier]
+        const offering = offerings.all[offeringId]
+        if (offering?.availablePackages?.[0]) {
+          packages.push(offering.availablePackages[0])
+        }
+      }
+      return packages
     } catch (e) {
-      console.error('[useBusinessSubscription] getOfferings', e)
-      return null
+      console.error('[useBusinessSubscription] getBusinessPackages', e)
+      return []
+    }
+  }
+
+  /** Present the beautiful RevenueCat Paywall UI for a specific tier. */
+  async function presentPaywallForTier(tier: Exclude<PlanTier, 'free'>) {
+    if (!isNative) return { result: 'ERROR' }
+    try {
+      const offerings = await Purchases.getOfferings()
+      const offering = offerings.all[TIER_OFFERINGS[tier]]
+      if (offering) {
+        const { RevenueCatUI } = await import('@revenuecat/purchases-capacitor-ui')
+        return await RevenueCatUI.presentPaywall({ offering })
+      }
+      return { result: 'ERROR' }
+    } catch (e) {
+      console.error('[useBusinessSubscription] presentPaywallForTier', e)
+      return { result: 'ERROR' }
     }
   }
 
@@ -61,5 +90,12 @@ export function useBusinessSubscription() {
     return getActiveTier()
   }
 
-  return { isNative, getBusinessOffering, purchasePackage, getActiveTier, restore }
+  return {
+    isNative,
+    getBusinessPackages,
+    presentPaywallForTier,
+    purchasePackage,
+    getActiveTier,
+    restore,
+  }
 }

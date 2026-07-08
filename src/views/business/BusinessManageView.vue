@@ -10,11 +10,13 @@
       </div>
 
       <template v-else>
-        <!-- Plan banner -->
+        <!-- Plan banner. The tier is account-level, so owners manage/upgrade it from
+             the Business overview — here it's read-only (admins keep per-location tools). -->
         <div class="plan-banner" :class="tier">
           <div>
             <span class="plan-label">{{ $t('business.plan.current') }}</span>
             <span class="plan-tier">{{ tier }}</span>
+            <span class="plan-accountwide">{{ $t('business.plan.accountWide') }}</span>
           </div>
           <!-- Admins can assign a plan tier + preview the paywall -->
           <div v-if="isAdmin" class="admin-plan-controls">
@@ -33,9 +35,6 @@
               <ion-select-option value="gold">gold</ion-select-option>
             </ion-select>
           </div>
-          <ion-button v-else-if="tier !== 'gold'" size="small" fill="solid" color="carrot" class="plan-upgrade-btn" @click="openUpgrade(false)">
-            {{ $t('business.plan.upgrade') }}
-          </ion-button>
         </div>
 
         <!-- Segment tabs -->
@@ -69,10 +68,21 @@
                 <ion-note slot="helper">{{ $t('business.info.reviewNeeded') }}</ion-note>
               </ion-item>
               <ion-item>
-                <ion-input v-model="info.address" :label="$t('business.info.address')" label-placement="stacked" />
+                <ion-input v-model="info.address" :label="$t('business.info.address')" label-placement="stacked" @ionBlur="onAddressConfirm" />
                 <span slot="end" class="review-badge field-badge"><ion-icon :icon="shieldCheckmarkOutline" />{{ $t('business.info.reviewBadge') }}</span>
                 <ion-note slot="helper">{{ $t('business.info.reviewNeeded') }}</ion-note>
               </ion-item>
+              <div class="biz-map-block">
+                <div class="biz-map-hint">{{ $t('business.info.mapHint') }}</div>
+                <div class="biz-map-holder">
+                  <div id="biz-map" :class="{ 'fade-in': mapReady }"></div>
+                  <div v-if="mapLoading" class="biz-map-loading"><ion-spinner name="crescent" color="carrot" /></div>
+                </div>
+                <div class="biz-coords">
+                  <ion-icon :icon="navigateOutline" />
+                  <span>{{ $t('business.info.coordinates') }}: {{ coords.lat.toFixed(6) }}, {{ coords.lng.toFixed(6) }}</span>
+                </div>
+              </div>
               <ion-item>
                 <ion-input v-model="info.phone" :label="$t('business.info.phone')" label-placement="stacked" placeholder="02-2321-9445" />
               </ion-item>
@@ -490,53 +500,14 @@
       </ion-content>
     </ion-modal>
 
-    <!-- Business plan upgrade (RevenueCat) -->
-    <ion-modal :is-open="showUpgrade" @didDismiss="showUpgrade = false" :initial-breakpoint="0.8" :breakpoints="[0, 0.8, 1]">
-      <ion-content class="ion-padding">
-        <h2 class="up-title">{{ $t('business.plan.upgradeTitle') }}</h2>
-        <p class="up-sub">{{ $t('business.plan.upgradeSub') }}</p>
-
-        <!-- Admin preview mode: mock plan cards (real prices come from the store) -->
-        <template v-if="previewMode">
-          <div class="up-preview-note">{{ $t('business.plan.previewNote') }}</div>
-          <div v-for="p in previewPlans" :key="p.tier" class="up-plan" :class="'tier-' + p.tier">
-            <div class="up-plan-info">
-              <strong>{{ p.name }}</strong>
-              <p>{{ p.perks.join(' · ') }}</p>
-            </div>
-            <div class="up-plan-price"><span>{{ p.price }}</span></div>
-          </div>
-        </template>
-
-        <div v-else-if="upgradeLoading" class="ion-text-center ion-padding"><ion-spinner name="crescent" color="carrot" /></div>
-
-        <template v-else-if="businessPackages.length">
-          <div v-for="pkg in businessPackages" :key="pkg.identifier" class="up-plan" @click="buyPackage(pkg)">
-            <div class="up-plan-info">
-              <strong>{{ pkg.product.title }}</strong>
-              <p>{{ pkg.product.description }}</p>
-            </div>
-            <div class="up-plan-price">
-              <span>{{ pkg.product.priceString }}</span>
-              <ion-spinner v-if="purchasingId === pkg.identifier" name="crescent" />
-            </div>
-          </div>
-          <ion-button fill="clear" size="small" color="medium" expand="block" class="ion-margin-top" @click="restorePurchases">
-            {{ $t('business.plan.restore') }}
-          </ion-button>
-        </template>
-
-        <div v-else class="up-empty">
-          <ion-icon :icon="lockClosedOutline" />
-          <p>{{ $t('business.plan.upgradeUnavailable') }}</p>
-        </div>
-      </ion-content>
-    </ion-modal>
+    <!-- Business plan paywall (admin preview only; owners upgrade from the overview) -->
+    <BusinessUpgradeModal v-model:open="showUpgrade" :current-tier="tier" :preview="previewMode" @purchased="onUpgraded" />
   </ion-page>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch, nextTick, onBeforeUnmount } from 'vue'
+import mapsLoader from '@/plugins/googleMapsLoader'
 import {
   IonPage, IonHeader, IonContent, IonSpinner, IonSegment, IonSegmentButton,
   IonLabel, IonList, IonItem, IonInput, IonTextarea, IonButton, IonIcon,
@@ -561,8 +532,7 @@ import { useLocationEntitlements } from '@/composables/useLocationEntitlements'
 import { useLocationAnalytics, type BusinessAnalytics } from '@/composables/useLocationAnalytics'
 import { isAdmin } from '@/composables/userProfile'
 import { ActivityLogService } from '@/services/ActivityLogService'
-import { useBusinessSubscription } from '@/composables/useBusinessSubscription'
-import type { PurchasesPackage } from '@revenuecat/purchases-capacitor'
+import BusinessUpgradeModal from '@/components/BusinessUpgradeModal.vue'
 import type { PlanFeatures, PlanTier, LocationPhoto, LocationMenuItem, LocationPromotion } from '@/types/Business'
 
 const route = useRoute()
@@ -596,6 +566,13 @@ const halalLabel = computed(() => {
 })
 
 const info = ref({ name: '', address: '', phone: '', instagram: '', facebook: '', tiktok: '', website: '', line_id: '', foodpanda_url: '', ubereats_url: '', price_range: '', description: '' })
+
+// Location coordinates (high-risk, like name/address — edits queue for admin review).
+// Fine-tuned via the map below the address field, kept in sync with the address by geocoding.
+const DEFAULT_CENTER = { lat: 25.0343, lng: 121.5645 }
+const coords = ref<{ lat: number; lng: number }>({ ...DEFAULT_CENTER })
+const mapLoading = ref(true)
+const mapReady = ref(false)
 
 // Price range as actual NT$ tiers (value stays the $ symbol for compatibility)
 const priceRanges = [
@@ -664,7 +641,7 @@ onIonViewWillEnter(async () => {
   loading.value = true
   const { data: loc } = await supabase
     .from('locations')
-    .select('name, address, phone, instagram, facebook, tiktok, website, line_id, foodpanda_url, ubereats_url, price_range, description, image, opening_hours, tags, halal_status, has_prayer_room, has_wudu, is_alcohol_free, halal_cert_url, halal_material_photos, location_types(name)')
+    .select('name, address, lat, lng, phone, instagram, facebook, tiktok, website, line_id, foodpanda_url, ubereats_url, price_range, description, image, opening_hours, tags, halal_status, has_prayer_room, has_wudu, is_alcohol_free, halal_cert_url, halal_material_photos, location_types(name)')
     .eq('id', locationId)
     .maybeSingle()
 
@@ -690,6 +667,7 @@ onIonViewWillEnter(async () => {
     halalMaterials.value = Array.isArray(loc.halal_material_photos) ? (loc.halal_material_photos as string[]) : []
     hours.value = normalizeHours(loc.opening_hours)
     tagsList.value = Array.isArray(loc.tags) ? (loc.tags as string[]) : []
+    if (typeof loc.lat === 'number' && typeof loc.lng === 'number') coords.value = { lat: loc.lat, lng: loc.lng }
   }
 
   // Overlay any unpublished draft on top of the live values so the owner keeps editing their draft
@@ -703,12 +681,16 @@ onIonViewWillEnter(async () => {
 
   await Promise.all([loadPhotos(), loadMenu(), loadPromotions(), loadAnalytics(), loadReports()])
   loading.value = false
+
+  // The map lives in the Info tab; init once the DOM for it exists.
+  if (tab.value === 'info') nextTick(ensureMap)
 })
 
 function applyDraft(draft: Record<string, unknown>) {
   const i = info.value, h = halal.value
   if ('name' in draft) i.name = String(draft.name ?? '')
   if ('address' in draft) i.address = String(draft.address ?? '')
+  if (typeof draft.lat === 'number' && typeof draft.lng === 'number') coords.value = { lat: draft.lat as number, lng: draft.lng as number }
   if ('phone' in draft) i.phone = String(draft.phone ?? '')
   if ('instagram' in draft) i.instagram = String(draft.instagram ?? '')
   if ('facebook' in draft) i.facebook = String(draft.facebook ?? '')
@@ -732,7 +714,9 @@ function applyDraft(draft: Record<string, unknown>) {
 /** All editable listing fields as a patch (info + halal). */
 function buildPatch(): Record<string, unknown> {
   return {
-    name: info.value.name, address: info.value.address, phone: info.value.phone,
+    name: info.value.name, address: info.value.address,
+    lat: coords.value.lat, lng: coords.value.lng,
+    phone: info.value.phone,
     instagram: info.value.instagram, facebook: info.value.facebook,
     tiktok: info.value.tiktok, website: info.value.website, line_id: info.value.line_id,
     foodpanda_url: info.value.foodpanda_url, ubereats_url: info.value.ubereats_url,
@@ -819,6 +803,116 @@ async function publish() {
     await toast(e?.message || t('common.error'), 'danger')
   } finally { saving.value = false }
 }
+
+// ---------------------------------------------------------------------------
+// Address ↔ map geocoding (mirrors AddPlaceView). The map lives in the Info tab
+// and is (re)created whenever that tab is shown, since it's behind a v-if.
+// ---------------------------------------------------------------------------
+let map: google.maps.Map | null = null
+let marker: any = null
+let pinEl: any = null
+let clickListener: google.maps.MapsEventListener | null = null
+let geocoder: google.maps.Geocoder | null = null
+// Guards against address→coords and coords→address updates fighting each other.
+const coordSource = ref<'address' | 'map' | null>(null)
+
+function carrotColor() {
+  return getComputedStyle(document.documentElement).getPropertyValue('--ion-color-carrot').trim() || '#d8620d'
+}
+
+async function ensureMap() {
+  const el = document.getElementById('biz-map')
+  if (!el || map) return
+  mapLoading.value = true
+  const [{ Map }, markerLib] = await Promise.all([
+    mapsLoader.importLibrary('maps'),
+    mapsLoader.importLibrary('marker'),
+  ])
+  map = new Map(el as HTMLElement, {
+    center: coords.value, zoom: 15, disableDefaultUI: true,
+    mapId: 'a40f1ec0ad0afbbb12694f19', gestureHandling: 'greedy',
+  })
+  pinEl = new markerLib.PinElement({ background: carrotColor(), borderColor: '#fff', glyphColor: '#fff', scale: 1.2 })
+  marker = new markerLib.AdvancedMarkerElement({ map, position: coords.value, content: pinEl.element, gmpDraggable: true, zIndex: 10 })
+
+  const onReady = () => { mapReady.value = true; requestAnimationFrame(() => { mapLoading.value = false }) }
+  google.maps.event.addListenerOnce(map, 'idle', onReady)
+  setTimeout(() => { if (!mapReady.value) onReady() }, 3000)
+
+  // Drag the pin or tap the map to fine-tune the exact spot, then reverse-geocode.
+  marker.addListener('dragend', () => {
+    const p = marker.position
+    if (!p) return
+    const lat = typeof p.lat === 'function' ? p.lat() : p.lat
+    const lng = typeof p.lng === 'function' ? p.lng() : p.lng
+    applyMapPoint(lat, lng)
+  })
+  clickListener = map.addListener('click', (e: google.maps.MapMouseEvent) => {
+    if (e.latLng) applyMapPoint(e.latLng.lat(), e.latLng.lng())
+  })
+}
+
+function teardownMap() {
+  clickListener?.remove(); clickListener = null
+  map = null; marker = null; pinEl = null; mapReady.value = false; mapLoading.value = true
+}
+
+async function applyMapPoint(lat: number, lng: number) {
+  coordSource.value = 'map'
+  coords.value = { lat, lng }
+  if (marker) marker.position = { lat, lng }
+  map?.panTo({ lat, lng })
+  const addr = await reverseGeocode(lat, lng)
+  if (addr) info.value.address = addr
+  coordSource.value = null
+}
+
+function ensureGeocoder() {
+  if (!geocoder) geocoder = new google.maps.Geocoder()
+  return geocoder
+}
+
+function reverseGeocode(lat: number, lng: number): Promise<string | null> {
+  return new Promise((resolve) => {
+    ensureGeocoder().geocode({ location: { lat, lng } }, (res, status) =>
+      resolve(status === 'OK' && res?.[0] ? res[0].formatted_address : null))
+  })
+}
+
+function geocodeAddress(address: string): Promise<{ lat: number; lng: number } | null> {
+  return new Promise((resolve) => {
+    ensureGeocoder().geocode({ address, region: 'TW', componentRestrictions: { country: 'TW' } }, (res, status) => {
+      if (status === 'OK' && res?.[0]) {
+        const loc = res[0].geometry.location
+        resolve({ lat: loc.lat(), lng: loc.lng() })
+      } else resolve(null)
+    })
+  })
+}
+
+// Address field blur → geocode → move the pin (skipped if the map just set the address).
+async function onAddressConfirm() {
+  if (coordSource.value === 'map' || !mapReady.value) return
+  const addr = info.value.address?.trim()
+  if (!addr || addr.length < 8) return
+  coordSource.value = 'address'
+  try {
+    const point = await geocodeAddress(addr)
+    if (point) {
+      coords.value = point
+      if (marker) marker.position = point
+      map?.panTo(point); map?.setZoom(16)
+    }
+  } finally { coordSource.value = null }
+}
+
+// (Re)create the map each time the Info tab is shown; tear it down when leaving.
+watch(tab, (val, old) => {
+  if (val === 'info') nextTick(ensureMap)
+  else if (old === 'info') teardownMap()
+})
+
+onBeforeUnmount(teardownMap)
 
 async function loadPhotos() { photos.value = await biz.getPhotos(locationId) }
 async function loadMenu() { menu.value = await biz.getMenu(locationId) }
@@ -912,64 +1006,22 @@ async function assignTier(newTier: PlanTier) {
   }
 }
 
-// Owner: RevenueCat upgrade flow (account-level — applies to all their businesses).
-const bizSub = useBusinessSubscription()
+// Business plan paywall. The tier is account-level, so owners upgrade from the
+// Business overview; here the modal is used only for the admin "Preview paywall".
 const showUpgrade = ref(false)
-const upgradeLoading = ref(false)
 const previewMode = ref(false)
-const businessPackages = ref<PurchasesPackage[]>([])
-const purchasingId = ref<string | null>(null)
 
-// Mock cards for the admin "Preview paywall" (real prices come from the store)
-const previewPlans = [
-  { tier: 'bronze', name: 'Bronze', price: 'NT$99/mo', perks: ['5 photos', '1 offer', 'Order & direction insights'] },
-  { tier: 'silver', name: 'Silver', price: 'NT$299/mo', perks: ['10 photos', 'Menu', '3 offers', 'Audience & peak times'] },
-  { tier: 'gold', name: 'Gold', price: 'NT$599/mo', perks: ['Unlimited photos', 'Menu', 'Unlimited offers', 'Funnel, benchmarking, search terms', 'Weekly email + CSV export'] },
-]
-
-async function openUpgrade(preview = false) {
+function openUpgrade(preview = false) {
   previewMode.value = preview
   showUpgrade.value = true
-  if (preview) return
-  upgradeLoading.value = true
-  try {
-    const offering = await bizSub.getBusinessOffering()
-    businessPackages.value = offering?.availablePackages ?? []
-  } finally {
-    upgradeLoading.value = false
-  }
 }
 
-async function buyPackage(pkg: PurchasesPackage) {
-  purchasingId.value = pkg.identifier
-  try {
-    await bizSub.purchasePackage(pkg)
-    // Authoritative tier is written by the revenuecat-webhook; give it a moment,
-    // then refresh from the DB.
-    await new Promise(r => setTimeout(r, 1500))
-    const ent = await getFeatures(locationId)
-    tier.value = ent.tier
-    features.value = ent.features
-    await loadAnalytics()
-    showUpgrade.value = false
-    await toast(t('business.plan.upgradeSuccess'), 'success')
-  } catch (e: any) {
-    if (!/cancel/i.test(e?.message || '')) await toast(e?.message || t('common.error'), 'danger')
-  } finally {
-    purchasingId.value = null
-  }
-}
-
-async function restorePurchases() {
-  try {
-    await bizSub.restore()
-    const ent = await getFeatures(locationId)
-    tier.value = ent.tier
-    features.value = ent.features
-    await toast(t('business.plan.restored'), 'success')
-  } catch (e: any) {
-    await toast(e?.message || t('common.error'), 'danger')
-  }
+// After a purchase completes in the modal, refresh this location's tier/features.
+async function onUpgraded() {
+  const ent = await getFeatures(locationId)
+  tier.value = ent.tier
+  features.value = ent.features
+  await loadAnalytics()
 }
 
 function sparkHeight(count: number): string {
@@ -1099,22 +1151,8 @@ async function toast(message: string, color: string) {
 .admin-tier-select { --padding-start: 8px; border: 1px solid var(--ion-color-medium); border-radius: 10px; font-weight: 800; text-transform: uppercase; font-size: .8rem; min-width: 110px; }
 .plan-upgrade-btn { --border-radius: 10px; font-weight: 800; text-transform: none; }
 
-.up-title { font-size: 1.4rem; font-weight: 900; margin: 4px 0 4px; color: var(--ion-color-dark); }
-.up-sub { color: var(--ion-color-medium); margin: 0 0 20px; font-size: .9rem; }
-.up-plan { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px; border: 1.5px solid var(--ion-color-light-shade); border-radius: 16px; margin-bottom: 12px; cursor: pointer; transition: border-color .2s, transform .1s; }
-.up-plan:active { transform: scale(.99); }
-.up-plan:hover { border-color: var(--ion-color-carrot); }
-.up-plan-info strong { font-size: 1.05rem; color: var(--ion-color-dark); }
-.up-plan-info p { margin: 2px 0 0; font-size: .82rem; color: var(--ion-color-medium); }
-.up-plan-price { display: flex; align-items: center; gap: 8px; font-weight: 800; color: var(--ion-color-carrot); white-space: nowrap; }
-.up-empty { text-align: center; padding: 40px 20px; color: var(--ion-color-medium); }
-.up-empty ion-icon { font-size: 44px; }
-
 .admin-plan-controls { display: flex; align-items: center; gap: 6px; }
-.up-preview-note { background: rgba(var(--ion-color-warning-rgb), .14); border-radius: 10px; padding: 8px 12px; font-size: .78rem; font-weight: 600; color: var(--ion-color-dark); margin-bottom: 14px; }
-.up-plan.tier-bronze { border-color: rgba(205,127,50,.5); }
-.up-plan.tier-silver { border-color: rgba(148,163,184,.7); }
-.up-plan.tier-gold { border-color: rgba(202,138,4,.7); }
+.plan-accountwide { display: block; font-size: .68rem; color: var(--ion-color-medium); margin-top: 2px; }
 
 .seg-scroll { border-bottom: 1px solid var(--ion-color-light-shade); }
 .tab-body { max-width: 720px; margin: 0 auto; }
@@ -1150,6 +1188,16 @@ async function toast(message: string, color: string) {
 }
 .review-badge ion-icon { font-size: .85rem; }
 .field-badge { align-self: center; }
+
+/* Address geocoding map */
+.biz-map-block { margin: 4px 4px 14px; }
+.biz-map-hint { font-size: .78rem; color: var(--ion-color-medium); margin: 0 0 8px; }
+.biz-map-holder { position: relative; height: 30vh; min-height: 200px; border-radius: 14px; overflow: hidden; border: 1px solid var(--ion-color-light-shade); }
+#biz-map { position: absolute; inset: 0; opacity: 0; transition: opacity 180ms ease-out; cursor: crosshair; }
+#biz-map.fade-in { opacity: 1; }
+.biz-map-loading { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+.biz-coords { display: flex; align-items: center; gap: 6px; margin-top: 8px; font-size: .72rem; color: var(--ion-color-medium); font-variant-numeric: tabular-nums; }
+.biz-coords ion-icon { font-size: .9rem; flex-shrink: 0; }
 .photo-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
 .photo-thumb { position: relative; aspect-ratio: 1; border-radius: 14px; overflow: hidden; }
 .photo-thumb img { width: 100%; height: 100%; object-fit: cover; }

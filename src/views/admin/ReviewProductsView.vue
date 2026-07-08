@@ -148,7 +148,7 @@
             <!-- 👤 Uploader Attribution -->
             <ion-item lines="none" class="uploader-info ion-margin-bottom">
               <ion-avatar slot="start">
-                <img :src="selectedProduct.uploader?.avatar_url || 'https://placehold.co/100x100?text=👤'" />
+                <img :src="selectedProduct.uploader?.avatar_url || 'https://placehold.co/100x100?text=👤'" @error="$event.target.onerror = null; $event.target.src = 'https://placehold.co/100x100?text=👤'" />
               </ion-avatar>
               <ion-label>
                 <p style="font-size: 12px; margin-bottom: 2px;">{{ $t('review.uploadedBy') }}</p>
@@ -242,6 +242,27 @@
                   auto-grow
                 ></ion-textarea>
               </ion-item>
+
+              <!-- Tags Section -->
+              <ion-item>
+                <ion-input
+                    v-model="tagInput"
+                    :label="$t('addPlace.addTagLabel', 'Add a tag')"
+                    label-placement="floating"
+                    :placeholder="$t('addPlace.tagPlaceholder', 'e.g. Snack, Spicy')"
+                    @ionInput="handleTagInput"
+                    @keyup.enter="addTag"
+                />
+                <ion-button slot="end" fill="clear" @click="addTag" style="margin-top: 14px;">
+                  {{ $t('common.add', 'Add') }}
+                </ion-button>
+              </ion-item>
+              <div v-if="selectedProduct.tags && selectedProduct.tags.length > 0" class="tag-chips ion-padding-horizontal ion-padding-bottom" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px;">
+                <ion-chip v-for="tag in selectedProduct.tags" :key="tag" color="primary" outline class="tag-chip" style="margin: 0;">
+                  <ion-label>{{ tag }}</ion-label>
+                  <ion-icon :icon="closeCircle" @click="removeTag(tag)" />
+                </ion-chip>
+              </div>
 
               <!-- Quick Insert Buttons -->
               <div class="quick-scroll-container ion-padding-horizontal ion-padding-bottom">
@@ -481,6 +502,40 @@ const pendingProducts = ref<any[]>([])
 const showModal = ref(false)
 const selectedProduct = ref<any | null>(null)
 const showImageModal = ref(false)
+
+const tagInput = ref('')
+
+const handleTagInput = (e: any) => {
+  const val = e.target.value
+  if (val.endsWith(',')) {
+    const tag = val.slice(0, -1).trim()
+    if (tag && selectedProduct.value) {
+      if (!selectedProduct.value.tags) selectedProduct.value.tags = []
+      if (!selectedProduct.value.tags.includes(tag)) {
+        selectedProduct.value.tags.push(tag)
+      }
+    }
+    tagInput.value = ''
+  }
+}
+
+const addTag = (e?: any) => {
+  if (e) e.preventDefault()
+  if (!selectedProduct.value) return
+  const val = tagInput.value.trim().replace(/,/g, '')
+  if (val) {
+    if (!selectedProduct.value.tags) selectedProduct.value.tags = []
+    if (!selectedProduct.value.tags.includes(val)) {
+      selectedProduct.value.tags.push(val)
+    }
+  }
+  tagInput.value = ''
+}
+
+const removeTag = (t: string) => {
+  if (!selectedProduct.value?.tags) return
+  selectedProduct.value.tags = selectedProduct.value.tags.filter((tag: string) => tag !== t)
+}
 const publishing = ref(false)
 
 const categoryModalOpen = ref(false)
@@ -963,7 +1018,8 @@ async function openProductModal(product: any) {
 
   selectedProduct.value = reactive({
     ...product,
-    store_ids: storeIds
+    store_ids: storeIds,
+    tags: product.tags || []
   })
   showModal.value = true
 }
@@ -1041,6 +1097,7 @@ async function approveProduct(product: any) {
         description: product.description,
         photo_front_url: frontUrl,
         photo_back_url: backUrl,
+        tags: product.tags || [],
         approved: true,
         approved_by: user.id,
         approved_at: new Date().toISOString(),
@@ -1334,6 +1391,33 @@ ion-header {
 .actions-toolbar ion-button,
 .actions-toolbar ion-icon {
   color: var(--ion-color-dark);
+}
+
+.form-section {
+  margin-bottom: 8px;
+}
+.form-section ion-list-header {
+  padding-inline-start: 16px;
+  min-height: 32px;
+  margin-bottom: 4px;
+}
+.form-section ion-list-header ion-label {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--ion-color-medium);
+}
+.input-card {
+  margin: 0 12px;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+  background: var(--ion-card-background, white);
+  border: 1px solid var(--ion-color-light-shade);
+}
+.input-card ion-item {
+  --background-active: transparent;
+  --ripple-color: transparent;
 }
 </style>
 

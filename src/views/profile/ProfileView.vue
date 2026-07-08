@@ -63,6 +63,10 @@
                 <ion-badge v-else :color="donorBadge.color" style="border-radius: 12px; padding: 6px 12px;">
                   {{ donorBadge.emoji }} {{ $t('profile.donors.' + donorBadge.label) }}
                 </ion-badge>
+                <ion-badge v-if="businessTier !== 'free'" class="badge-merchant" :class="'merchant-' + businessTier" style="cursor: pointer;" @click="openBusinessSubModal">
+                  <ion-icon :icon="icons.storefrontOutline" style="margin-right: 4px" />
+                  {{ $t('profile.merchantTier.' + businessTier) }}
+                </ion-badge>
               </div>
             </div>
 
@@ -709,6 +713,57 @@
           </button>
         </div>
       </template>
+
+      <!-- Business (merchant) subscription details -->
+      <ion-modal :is-open="showBusinessSubModal" @didDismiss="showBusinessSubModal = false" :initial-breakpoint="0.55" :breakpoints="[0, 0.55, 1]">
+        <ion-content class="ion-padding">
+          <div class="bsub-head">
+            <div class="bsub-icon" :class="'merchant-' + businessTier">
+              <ion-icon :icon="icons.storefrontOutline" />
+            </div>
+            <div>
+              <h2 class="bsub-title">{{ $t('profile.merchantTier.' + businessTier) }}</h2>
+              <div class="bsub-status" :class="{ warn: businessFromStore && !businessWillRenew }">
+                <ion-icon :icon="businessFromStore && !businessWillRenew ? icons.alertCircleOutline : icons.checkmarkCircle" />
+                <span>{{ businessFromStore && !businessWillRenew ? $t('profile.businessSub.cancelsSoon') : $t('profile.businessSub.active') }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="bsub-rows">
+            <div class="bsub-row">
+              <span>{{ $t('profile.businessSub.plan') }}</span>
+              <strong>{{ $t('profile.merchantTier.' + businessTier) }}</strong>
+            </div>
+            <template v-if="businessFromStore">
+              <div class="bsub-row">
+                <span>{{ $t('profile.businessSub.autoRenew') }}</span>
+                <strong :class="businessWillRenew ? 'ok' : 'warn'">{{ businessWillRenew ? $t('profile.businessSub.on') : $t('profile.businessSub.off') }}</strong>
+              </div>
+              <div class="bsub-row">
+                <span>{{ businessWillRenew ? $t('profile.businessSub.renewsOn') : $t('profile.businessSub.accessUntil') }}</span>
+                <strong>{{ businessExpirationLabel }}</strong>
+              </div>
+            </template>
+            <div v-else class="bsub-row">
+              <span>{{ $t('profile.businessSub.source') }}</span>
+              <strong>{{ $t('profile.businessSub.complimentary') }}</strong>
+            </div>
+          </div>
+
+          <template v-if="businessFromStore">
+            <ion-button v-if="isNative" expand="block" color="carrot" class="bsub-manage" @click="openManageSubscription">
+              {{ $t('profile.businessSub.manage') }}
+            </ion-button>
+            <p class="bsub-note">{{ isNative ? $t('profile.businessSub.cancelNote') : $t('profile.businessSub.webNote') }}</p>
+          </template>
+          <p v-else class="bsub-note">{{ $t('profile.businessSub.complimentaryNote') }}</p>
+
+          <ion-button expand="block" fill="clear" color="medium" @click="showBusinessSubModal = false">
+            {{ $t('common.close') }}
+          </ion-button>
+        </ion-content>
+      </ion-modal>
     </ion-content>
   </ion-page>
 </template>
@@ -723,6 +778,7 @@ import {
   IonBadge,
   IonButton,
   IonButtons,
+  IonModal,
   IonCard,
   IonCardContent,
   IonCardHeader,
@@ -876,6 +932,12 @@ const pendingMerchantAppsCount = ref(0);
 const pendingClaimsCount = ref(0);
 const pendingEditRequestsCount = ref(0);
 const hasOwnedBusinesses = ref(false);
+const businessSub = ref<{ tier: 'free' | 'bronze' | 'silver' | 'gold'; source: string; status: string; expires_at: string | null } | null>(null);
+const businessTier = computed<'free' | 'bronze' | 'silver' | 'gold'>(() =>
+  businessSub.value && businessSub.value.status === 'active' ? businessSub.value.tier : 'free'
+);
+const showBusinessSubModal = ref(false);
+function openBusinessSubModal() { showBusinessSubModal.value = true; }
 const merchantStore = ref<any | null>(null);
 const merchantApplication = ref<MerchantApplication | null>(null);
 const myProductsCount = ref<number | null>(null);
@@ -1069,6 +1131,16 @@ async function fetchHasOwnedBusinesses(userId: string) {
   hasOwnedBusinesses.value = (count ?? 0) > 0
 }
 
+// Account-level business (merchant) tier — separate from consumer Pro; a user can hold both.
+async function fetchBusinessTier(userId: string) {
+  const { data } = await supabase
+    .from('business_subscriptions')
+    .select('tier, source, status, expires_at')
+    .eq('user_id', userId)
+    .maybeSingle()
+  businessSub.value = (data as typeof businessSub.value) ?? null
+}
+
 async function fetchPendingLocationReportsCount() {
   if (!isAdmin.value) return
   const { count } = await supabase
@@ -1126,6 +1198,20 @@ const openManageSubscription = () => {
   }
 }
 
+// Business subscription details (RevenueCat entitlement backing the merchant tier).
+const businessEntitlement = computed(() => {
+  const active = customerInfo.value?.entitlements?.active
+  if (!active) return null
+  return active['business_gold'] ?? active['business_silver'] ?? active['business_bronze'] ?? null
+})
+const businessWillRenew = computed(() => businessEntitlement.value?.willRenew ?? false)
+const businessFromStore = computed(() => businessSub.value?.source === 'revenuecat')
+const businessExpirationLabel = computed(() => {
+  const iso = businessEntitlement.value?.expirationDate ?? businessSub.value?.expires_at ?? null
+  if (!iso) return '—'
+  return new Date(iso).toLocaleDateString(useI18n().locale.value, { year: 'numeric', month: 'long', day: 'numeric' })
+})
+
 const isSyncing = ref(false);
 
 async function refreshAllData(userId: string) {
@@ -1156,6 +1242,7 @@ async function refreshAllData(userId: string) {
         }
       })(),
       fetchHasOwnedBusinesses(userId),
+      fetchBusinessTier(userId),
       fetchMyContributionsCount(userId)
     ]);
 
@@ -1573,6 +1660,14 @@ async function fetchUnreadChatsCount() {
   margin: 4px 0 16px;
 }
 
+.badge-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
 .badge-pro {
   --background: var(--accent-gradient);
   --color: #fff;
@@ -1583,6 +1678,38 @@ async function fetchUnreadChatsCount() {
   letter-spacing: 0.5px;
   box-shadow: 0 4px 12px rgba(230, 126, 34, 0.3);
 }
+
+.badge-merchant {
+  --color: #fff;
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 0.75rem;
+  letter-spacing: 0.5px;
+}
+.badge-merchant.merchant-bronze { --background: #cd7f32; }
+.badge-merchant.merchant-silver { --background: #8a94a6; }
+.badge-merchant.merchant-gold   { --background: #c99700; }
+
+/* Business subscription detail modal */
+.bsub-head { display: flex; align-items: center; gap: 14px; margin: 4px 0 20px; }
+.bsub-icon { width: 52px; height: 52px; border-radius: 14px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 26px; flex-shrink: 0; }
+.bsub-icon.merchant-bronze { background: #cd7f32; }
+.bsub-icon.merchant-silver { background: #8a94a6; }
+.bsub-icon.merchant-gold   { background: #c99700; }
+.bsub-title { font-size: 1.3rem; font-weight: 800; margin: 0; color: var(--ion-color-dark); }
+.bsub-status { display: flex; align-items: center; gap: 5px; font-size: .82rem; font-weight: 700; color: var(--ion-color-success); margin-top: 4px; }
+.bsub-status.warn { color: var(--ion-color-warning-shade); }
+.bsub-rows { display: flex; flex-direction: column; gap: 2px; margin-bottom: 20px; }
+.bsub-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 4px; border-bottom: 1px solid var(--ion-color-light); font-size: .92rem; }
+.bsub-row span { color: var(--ion-color-medium); }
+.bsub-row strong { color: var(--ion-color-dark); font-weight: 700; }
+.bsub-row strong.ok { color: var(--ion-color-success); }
+.bsub-row strong.warn { color: var(--ion-color-warning-shade); }
+.bsub-manage { --border-radius: 12px; font-weight: 800; margin-top: 4px; }
+.bsub-note { font-size: .78rem; color: var(--ion-color-medium); text-align: center; line-height: 1.4; margin: 12px 8px 4px; }
 
 /* XP Visualization */
 .xp-section {

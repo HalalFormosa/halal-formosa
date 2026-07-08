@@ -39,7 +39,8 @@ const supabaseFunc = createClient(supabaseUrl, supabaseKey, {
     auth: {
         persistSession: false,
         autoRefreshToken: false,
-        detectSessionInUrl: false
+        detectSessionInUrl: false,
+        storageKey: 'sb-edge-functions-noop' // 🔑 Custom key prevents the multiple instances console warning
     }
 });
 

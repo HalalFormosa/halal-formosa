@@ -130,7 +130,7 @@
             <!-- 👤 Uploader Attribution -->
             <ion-item lines="none" class="uploader-info ion-margin-bottom">
               <ion-avatar slot="start">
-                <img :src="selectedLocation.uploader?.avatar_url || 'https://placehold.co/100x100?text=👤'" />
+                <img :src="selectedLocation.uploader?.avatar_url || 'https://placehold.co/100x100?text=👤'" @error="$event.target.onerror = null; $event.target.src = 'https://placehold.co/100x100?text=👤'" />
               </ion-avatar>
               <ion-label>
                 <p style="font-size: 12px; margin-bottom: 2px;">{{ $t('review.uploadedBy') }}</p>
@@ -259,26 +259,23 @@
               </ion-item>
 
               <!-- Tags Section -->
-              <ion-item-divider mode="md">
-                <ion-label>{{ $t('addPlace.tagsAndCategories') }}</ion-label>
-              </ion-item-divider>
-              <ion-item lines="none">
+              <ion-item>
                 <ion-input
                     v-model="tagInput"
                     :label="$t('addPlace.addTagLabel')"
-                    label-placement="stacked"
+                    label-placement="floating"
                     :placeholder="$t('addPlace.tagPlaceholder')"
                     @ionInput="handleTagInput"
                     @keyup.enter="addTag"
                 />
                 <ion-button slot="end" fill="clear" @click="addTag" style="margin-top: 14px;">
-                  <ion-icon :icon="checkmarkOutline" />
+                  {{ $t('common.add') }}
                 </ion-button>
               </ion-item>
-              <div v-if="selectedLocation.tags?.length > 0" class="tag-chips ion-padding-horizontal">
-                <ion-chip v-for="tag in selectedLocation.tags" :key="tag" color="primary" outline class="tag-chip">
+              <div v-if="selectedLocation.tags && selectedLocation.tags.length > 0" class="tag-chips ion-padding-horizontal ion-padding-bottom" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px;">
+                <ion-chip v-for="tag in selectedLocation.tags" :key="tag" color="primary" outline class="tag-chip" style="margin: 0;">
                   <ion-label>{{ tag }}</ion-label>
-                  <ion-icon :icon="closeOutline" @click="removeTag(tag)" />
+                  <ion-icon :icon="closeCircle" @click="removeTag(tag)" />
                 </ion-chip>
               </div>
 
@@ -350,7 +347,8 @@ import {
   IonModal, IonToolbar, IonTitle, IonButtons, IonAvatar, IonBadge, IonItemGroup,
   IonButton, IonInput, IonTextarea, IonSkeletonText, IonSelect, IonSelectOption,
   IonSearchbar, IonSegment, IonSegmentButton, IonPopover, IonIcon,
-  IonItemDivider, IonChip, IonCheckbox, toastController
+  IonItemDivider, IonChip, IonCheckbox, toastController,
+  IonCard, IonListHeader
 } from '@ionic/vue'
 
 import { ref, onMounted, reactive, computed } from 'vue'
@@ -359,7 +357,8 @@ import {
   listOutline, timeOutline, checkmarkCircle, swapVerticalOutline,
   closeOutline, checkmarkOutline, cameraOutline, cloudUploadOutline,
   trashOutline, callOutline, logoInstagram, chatboxEllipsesOutline,
-  cashOutline, locationOutline, shieldCheckmarkOutline, sparkles
+  cashOutline, locationOutline, shieldCheckmarkOutline, sparkles,
+  closeCircle
 } from 'ionicons/icons'
 import AppHeader from '@/components/AppHeader.vue'
 import { useI18n } from 'vue-i18n'
@@ -385,11 +384,15 @@ const dayLabels = {
   fri: 'Friday', sat: 'Saturday', sun: 'Sunday'
 }
 
-function addTag() {
+function addTag(e?: any) {
+  if (e) e.preventDefault()
   if (!tagInput.value.trim() || !selectedLocation.value) return
-  if (!selectedLocation.value.tags) selectedLocation.value.tags = []
-  if (!selectedLocation.value.tags.includes(tagInput.value.trim())) {
-    selectedLocation.value.tags.push(tagInput.value.trim())
+  const val = tagInput.value.trim().replace(/,/g, '')
+  if (val) {
+    if (!selectedLocation.value.tags) selectedLocation.value.tags = []
+    if (!selectedLocation.value.tags.includes(val)) {
+      selectedLocation.value.tags.push(val)
+    }
   }
   tagInput.value = ''
 }
@@ -401,14 +404,14 @@ function removeTag(tag: string) {
 
 function handleTagInput(ev: any) {
   const val = ev.target.value
-  if (val?.includes(',') || val?.includes(' ')) {
-    const parts = val.split(/[ ,]+/).filter(Boolean)
-    parts.forEach((p: string) => {
+  if (val.endsWith(',')) {
+    const tag = val.slice(0, -1).trim()
+    if (tag && selectedLocation.value) {
       if (!selectedLocation.value.tags) selectedLocation.value.tags = []
-      if (!selectedLocation.value.tags.includes(p)) {
-        selectedLocation.value.tags.push(p)
+      if (!selectedLocation.value.tags.includes(tag)) {
+        selectedLocation.value.tags.push(tag)
       }
-    })
+    }
     tagInput.value = ''
   }
 }
@@ -895,5 +898,32 @@ ion-header {
   margin-left: auto;
   color: var(--ion-color-medium);
   font-size: 13px;
+}
+
+.form-section {
+  margin-bottom: 8px;
+}
+.form-section ion-list-header {
+  padding-inline-start: 16px;
+  min-height: 32px;
+  margin-bottom: 4px;
+}
+.form-section ion-list-header ion-label {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--ion-color-medium);
+}
+.input-card {
+  margin: 0 12px;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+  background: var(--ion-card-background, white);
+  border: 1px solid var(--ion-color-light-shade);
+}
+.input-card ion-item {
+  --background-active: transparent;
+  --ripple-color: transparent;
 }
 </style>
