@@ -148,7 +148,7 @@
             <!-- 👤 Uploader Attribution -->
             <ion-item lines="none" class="uploader-info ion-margin-bottom">
               <ion-avatar slot="start">
-                <img :src="selectedProduct.uploader?.avatar_url || 'https://placehold.co/100x100?text=👤'" @error="$event.target.onerror = null; $event.target.src = 'https://placehold.co/100x100?text=👤'" />
+                <img :src="selectedProduct.uploader?.avatar_url || 'https://placehold.co/100x100?text=👤'" @error="handleImgError" />
               </ion-avatar>
               <ion-label>
                 <p style="font-size: 12px; margin-bottom: 2px;">{{ $t('review.uploadedBy') }}</p>
@@ -535,6 +535,14 @@ const addTag = (e?: any) => {
 const removeTag = (t: string) => {
   if (!selectedProduct.value?.tags) return
   selectedProduct.value.tags = selectedProduct.value.tags.filter((tag: string) => tag !== t)
+}
+
+const handleImgError = (ev: Event) => {
+  const target = ev.target as HTMLImageElement | null
+  if (target) {
+    target.onerror = null
+    target.src = 'https://placehold.co/100x100?text=👤'
+  }
 }
 const publishing = ref(false)
 
