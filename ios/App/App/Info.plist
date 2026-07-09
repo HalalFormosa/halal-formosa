@@ -38,7 +38,9 @@
 	<key>NSCameraUsageDescription</key>
 	<string>We need access to your camera to scan barcodes and take product photos.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>We need access to your location to provide personalized recommendations based on where you are.</string>
+	<string>We use your background location to detect when you visit a mosque or eatery and send you review reminders to earn points.</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>We use your background location to detect when you visit a mosque or eatery and send you review reminders to earn points.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>We need access to your location to show mosques, restaurants, and places accurately on the map.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
@@ -48,6 +50,7 @@
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>
+		<string>location</string>
 	</array>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>

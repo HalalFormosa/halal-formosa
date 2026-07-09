@@ -51,6 +51,8 @@ import {
     loadDonorFromCache,
     loadUserRoleFromCache,
     loadPublicLeaderboardFromCache,
+    loadNearbyPromptsFromCache,
+    loadBackgroundTrackingFromCache,
     loadUserProfile,
     currentUser, resetUserProfileState
 } from "@/composables/userProfile"
@@ -223,6 +225,8 @@ supabase.auth.getSession().then(({ data }) => {
         loadDonorFromCache(session.user.id);
         loadUserRoleFromCache(session.user.id);
         loadPublicLeaderboardFromCache(session.user.id);
+        loadNearbyPromptsFromCache(session.user.id);
+        loadBackgroundTrackingFromCache(session.user.id);
         // loadUserProfile and refreshSubscriptionStatus are moved to bootstrap
     } else {
         currentUser.value = null;
@@ -264,6 +268,8 @@ supabase.auth.onAuthStateChange(async (event, session) => {
                 loadDonorFromCache(session.user.id)
                 loadUserRoleFromCache(session.user.id)
                 loadPublicLeaderboardFromCache(session.user.id)
+                loadNearbyPromptsFromCache(session.user.id)
+                loadBackgroundTrackingFromCache(session.user.id)
             } catch (e) {
                 console.warn('[Post-login cache] failed', e)
             }
@@ -407,6 +413,8 @@ async function bootstrap() {
             loadDonorFromCache(session.user.id);
             loadUserRoleFromCache(session.user.id);
             loadPublicLeaderboardFromCache(session.user.id);
+            loadNearbyPromptsFromCache(session.user.id);
+            loadBackgroundTrackingFromCache(session.user.id);
 
             loadUserProfile(session.user.id).catch(e => console.error("Profile load failed", e));
 

@@ -70,6 +70,73 @@
       :current-version="currentVersion"
       :min-version="minVersion"
     />
+
+    <ion-modal 
+      :is-open="!!currentPrompt" 
+      @didDismiss="dismissPrompt" 
+      class="two-step-gate-modal"
+      :initial-breakpoint="0.6"
+      :breakpoints="[0, 0.6, 0.95]"
+      :handle="true"
+    >
+      <ion-content class="ion-no-padding">
+        <!-- Place Image Banner -->
+        <div class="place-banner">
+          <img v-if="currentPrompt?.image" :src="currentPrompt.image" class="place-img" />
+          <div v-else class="place-placeholder-banner">
+            <span class="placeholder-icon">🕌</span>
+          </div>
+          <div class="category-badge-wrapper">
+            <span class="category-badge">{{ currentPrompt?.category_name || 'Location' }}</span>
+          </div>
+        </div>
+
+        <div class="ion-padding content-wrapper ion-text-center">
+          <h2 class="place-title">{{ currentPrompt?.name }}</h2>
+          <p v-if="currentPrompt?.address" class="place-address">
+            <ion-icon :icon="navigateOutline" class="address-icon" /> {{ currentPrompt.address }}
+          </p>
+
+          <div class="gate-divider"></div>
+
+          <template v-if="inAppGateStep === 1">
+            <h3 class="gate-heading">{{ $t('facilityReview.gate.didYouVisitPrompt') || 'Did you visit here?' }}</h3>
+            <p class="gate-desc">{{ $t('facilityReview.gate.didYouVisitDesc') }}</p>
+            <div class="gate-buttons">
+              <ion-button expand="block" color="carrot" class="action-btn" @click="inAppGateStep = 2">
+                {{ $t('facilityReview.gate.yes') }}
+              </ion-button>
+              <ion-button expand="block" fill="clear" color="medium" class="cancel-btn" @click="dismissPrompt">
+                {{ $t('facilityReview.gate.no') }}
+              </ion-button>
+            </div>
+          </template>
+
+          <template v-else-if="inAppGateStep === 2">
+            <h3 class="gate-heading">{{ $t('facilityReview.gate.leaveReview') }}</h3>
+            <p class="gate-desc">{{ $t('facilityReview.gate.leaveReviewDesc') }}</p>
+            <div class="gate-buttons">
+              <ion-button expand="block" color="carrot" class="action-btn" @click="openReviewFromInAppGate">
+                {{ $t('facilityReview.gate.writeReview') }}
+              </ion-button>
+              <ion-button expand="block" fill="clear" color="medium" class="cancel-btn" @click="dismissPrompt">
+                {{ $t('facilityReview.gate.maybeLater') }}
+              </ion-button>
+            </div>
+          </template>
+        </div>
+      </ion-content>
+    </ion-modal>
+
+    <!-- Facility Review Modal for In-App Prompts -->
+    <FacilityReviewModal
+      v-if="currentPrompt"
+      :is-open="facilityReviewModalOpen"
+      :location-id="currentPrompt.id"
+      :location-name="currentPrompt.name"
+      @close="closeInAppReviewModal"
+      @success="dismissPrompt"
+    />
   </ion-app>
 
   <Analytics mode="production" />
@@ -77,7 +144,8 @@
 </template>
 
 <script setup lang="ts">
-import { IonApp, IonRouterOutlet, IonAlert, IonButton, IonProgressBar, IonAvatar, IonSpinner, alertController } from '@ionic/vue';
+import { IonApp, IonRouterOutlet, IonAlert, IonButton, IonProgressBar, IonAvatar, IonSpinner, IonModal, IonContent, IonIcon, alertController } from '@ionic/vue';
+import { navigateOutline } from 'ionicons/icons';
 import { onMounted, ref, computed } from 'vue';
 import { performBotChecks, isBotDetected } from '@/utils/botShield';
 import { initInteractionMonitor } from '@/utils/interactionShield';
@@ -103,6 +171,8 @@ import { useTheme } from '@/composables/useTheme';
 import { useAppUpdate } from '@/composables/useAppUpdate';
 import ForceUpdateModal from '@/components/ForceUpdateModal.vue';
 import SmartAppBanner from '@/components/SmartAppBanner.vue';
+import { useProximityPrompt } from '@/composables/useProximityPrompt';
+import FacilityReviewModal from '@/components/FacilityReviewModal.vue';
 
 dayjs.extend(relativeTime);
 dayjs.extend(utc);
@@ -171,7 +241,7 @@ const toastStyle = computed(() => {
     transition: isSwiping.value ? 'none' : 'transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.2s ease',
   };
 });
-import { updateLastSeen, currentUser, hasReviewedApp, setHasReviewedApp, profileLoaded, isProfileComplete, profileSkipped } from '@/composables/userProfile';
+import { updateLastSeen, currentUser, hasReviewedApp, setHasReviewedApp, profileLoaded, isProfileComplete, profileSkipped, backgroundTrackingEnabled } from '@/composables/userProfile';
 import { supabase } from '@/plugins/supabaseClient';
 const { initTheme } = useTheme();
 const { t } = useI18n();
@@ -375,14 +445,25 @@ onMounted(async () => {
   await askGeolocationPermission();
   await checkAppUpdate();
   await checkAndAskForReview();
+  
+  // Start proximity tracking for facility reviews
+  startProximityTracking();
 
   // ✅ Track Activity
   if (currentUser.value?.id) await updateLastSeen();
   
   // Update last seen when app becomes active again
   CapApp.addListener('appStateChange', ({ isActive }) => {
-    if (isActive && currentUser.value?.id) {
-      updateLastSeen();
+    if (isActive) {
+      if (currentUser.value?.id) {
+        updateLastSeen();
+      }
+      startProximityTracking();
+    } else {
+      if (!backgroundTrackingEnabled.value) {
+        console.log('[Proximity] Pausing proximity tracking in background to save battery.');
+        stopProximityTracking();
+      }
     }
   });
 
@@ -399,6 +480,25 @@ onMounted(async () => {
     }
   });
 });
+
+const { startProximityTracking, stopProximityTracking, currentPrompt, dismissPrompt } = useProximityPrompt()
+const inAppGateStep = ref(1)
+const facilityReviewModalOpen = ref(false)
+
+const openReviewFromInAppGate = () => {
+  facilityReviewModalOpen.value = true
+}
+
+const closeInAppReviewModal = () => {
+  facilityReviewModalOpen.value = false
+  dismissPrompt()
+}
+
+watch(() => currentPrompt.value, (newVal) => {
+  if (newVal) {
+    inAppGateStep.value = 1
+  }
+})
 </script>
 
 <style>
@@ -525,5 +625,131 @@ ion-toast.cart-toast-offset {
 }
 .ion-palette-dark .bot-subheader {
   color: #94a3b8;
+}
+
+.two-step-gate-modal {
+  --border-radius: 16px 16px 0 0;
+  --overflow: hidden;
+}
+
+.place-banner {
+  width: 100%;
+  height: 180px;
+  position: relative;
+  overflow: hidden;
+}
+
+.place-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.place-placeholder-banner {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, var(--ion-color-carrot, #ff9800), var(--ion-color-primary, #3880ff));
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.placeholder-icon {
+  font-size: 3rem;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+}
+
+.category-badge-wrapper {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+}
+
+.category-badge {
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.content-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.place-title {
+  font-size: 1.35rem;
+  font-weight: 800;
+  margin-top: 8px;
+  margin-bottom: 6px;
+  color: var(--ion-text-color);
+}
+
+.place-address {
+  font-size: 0.85rem;
+  color: var(--ion-color-medium);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 90%;
+  text-align: center;
+}
+
+.address-icon {
+  font-size: 0.95rem;
+  color: var(--ion-color-carrot);
+  flex-shrink: 0;
+}
+
+.gate-divider {
+  width: 40px;
+  height: 3px;
+  background: rgba(var(--ion-text-color-rgb), 0.1);
+  border-radius: 2px;
+  margin: 16px 0;
+}
+
+.gate-heading {
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+  color: var(--ion-color-carrot);
+}
+
+.gate-desc {
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: var(--ion-color-medium);
+  margin: 0 0 20px 0;
+}
+
+.gate-buttons {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.action-btn {
+  margin: 0;
+  --border-radius: 12px;
+  --box-shadow: none;
+  font-weight: 700;
+  height: 46px;
+}
+
+.cancel-btn {
+  margin: 0;
+  --border-radius: 12px;
+  font-weight: 700;
+  font-size: 0.88rem;
 }
 </style>

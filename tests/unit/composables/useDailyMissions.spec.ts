@@ -13,7 +13,10 @@ describe('useDailyMissions', () => {
                 eq: vi.fn().mockReturnValue({
                     gte: vi.fn().mockReturnValue({
                         lt: vi.fn().mockResolvedValue({
-                            data: [{ activity_type: 'home_page_open', activity_detail: {} }],
+                            data: [
+                                { activity_type: 'home_page_open', activity_detail: {} },
+                                { activity_type: 'location_review_success', activity_detail: {} }
+                            ],
                             error: null
                         })
                     })
@@ -26,5 +29,8 @@ describe('useDailyMissions', () => {
         
         const openApp = missions.value.find(m => m.id === 'open_app')
         expect(openApp?.current).toBeGreaterThan(0)
+
+        const reviewPlace = missions.value.find(m => m.id === 'review_place')
+        expect(reviewPlace?.current).toBeGreaterThan(0)
     })
 })

@@ -21,6 +21,8 @@ const fallbackRules: Record<string, { points: number; label: string }> = {
     mission_scan_barcode: { points: 5, label: "Scan Barcode" },
     mission_scan_ingredients: { points: 5, label: "Scan Ingredients" },
     mission_view_place_details: { points: 5, label: "Check location details" },
+    location_review: { points: 10, label: "Reviewing Place" },
+    mission_review_place: { points: 10, label: "Review Place Daily Mission" },
 };
 
 // 🎉 Confetti helper

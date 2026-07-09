@@ -158,6 +158,7 @@
       "scan_barcode": "Scan Barcode",
       "find_muslim_friendly": "Find Muslim-friendly product",
       "view_place_details": "Check location details",
+      "review_place": "Review a Location",
       "add_product": "Add A New Product or Location"
     }
   },
@@ -693,7 +694,11 @@
     "deleteAccountConfirmTitle": "Delete Account?",
     "deleteAccountConfirmMessage": "Are you sure you want to permanently delete your account? This action is irreversible and all your saved items, folders, and profile details will be permanently removed.",
     "deleteAccountConfirmBtn": "Delete My Account",
-    "deleteAccountSuccess": "Your account has been successfully deleted."
+    "deleteAccountSuccess": "Your account has been successfully deleted.",
+    "nearbyPrompts": "Nearby review reminders",
+    "nearbyPromptsNote": "Privately remind me to share Muslim facilities after I visit a mosque or halal eatery.",
+    "backgroundTracking": "Background Location checking",
+    "backgroundTrackingDisclaimer": "Allows detection of visits even when the app is closed, but it may reduce battery life faster."
   },
   "profile": {
     "sections": {
@@ -1274,7 +1279,8 @@
       "halal": "Halal",
       "promos": "Offers",
       "analytics": "Insights",
-      "reports": "Reports"
+      "reports": "Reports",
+      "reviews": "Reviews"
     },
     "info": {
       "name": "Business name",
@@ -1370,10 +1376,20 @@
       "digestOn": "Weekly email digest is on",
       "upgradeStandard": "Upgrade to Bronze for saves, order taps and directions.",
       "upgradeAdvanced": "Upgrade to Silver for audience nationality, gender and peak times.",
-      "upgradePro": "Upgrade to Gold for the conversion funnel, category benchmarking and search terms."
+      "upgradePro": "Upgrade to Gold for the conversion funnel, category benchmarking and search terms.",
+      "premiumInsights": "Visitor & Review Insights (Gold Plan)",
+      "visits30d": "Visits (Last 30 Days)",
+      "reviews30d": "Reviews (Last 30 Days)"
     },
     "reports": {
       "none": "No reports for your listing."
+    },
+    "reviews": {
+      "none": "No reviews yet for this location.",
+      "replyAction": "Reply to Review",
+      "yourResponse": "Your Response",
+      "replyPlaceholder": "Write your response to this customer...",
+      "ownerReplyBadge": "Owner Response"
     },
     "locked": {
       "title": "Locked"
@@ -2039,6 +2055,54 @@
       "error": "Failed to update password.",
       "mismatchError": "Passwords do not match",
       "backToProfile": "Back to Profile"
+    }
+  },
+  "facilityReview": {
+    "title": "Muslim Facilities Review",
+    "editTitle": "Edit Facilities Review",
+    "subtitle": "Help other travelers by sharing what Muslim facilities you found here.",
+    "checklistHeader": "Muslim Amenities Checklist",
+    "ratingHeader": "Place Rating (Optional)",
+    "commentHeader": "Visitor Comments (Optional)",
+    "commentPlaceholder": "A quiet corner to pray, bidet in the toilet, friendly staff...",
+    "submit": "Submit Review",
+    "noReviewsYet": "No visitor reviews yet",
+    "officialFacilitiesTitle": "Official Muslim Amenities",
+    "crowdConsensusTitle": "Muslim Facilities (Visitor Confirmed)",
+    "noConsensusYet": "No visitor reports yet. Be the first to share!",
+    "rateReviewAction": "Rate & Review Facilities",
+    "reviewsHeader": "Visitor Reviews",
+    "facilities": {
+      "halalCertified": "Halal Certified",
+      "prayerRoom": "Prayer Room / Musholla",
+      "wudu": "Wudu (Ablution) Facility",
+      "bidet": "Bidet / Water Spray in Toilet",
+      "spaceToPray": "Clean Prayer Space",
+      "porkFree": "Pork-Free",
+      "cashOnly": "Cash Only",
+      "halalFood": "Halal Food Menu",
+      "veganOption": "Vegan Option",
+      "muslimOwned": "Muslim Owned",
+      "muslimStaff": "Muslim Staff",
+      "alcoholFree": "Alcohol-Free",
+      "freeWifi": "Free Wi-Fi",
+      "qiblaDirection": "Qibla Direction"
+    },
+    "triState": {
+      "yes": "Yes",
+      "no": "No",
+      "unsure": "Unsure"
+    },
+    "gate": {
+      "didYouVisit": "Did you visit {name}?",
+      "didYouVisitPrompt": "Did you visit here?",
+      "didYouVisitDesc": "We noticed you were nearby. Mind sharing if this place has Muslim facilities?",
+      "leaveReview": "Help Muslim Travelers",
+      "leaveReviewDesc": "Sharing a quick 1-minute checklist helps other Muslim travelers find wudu, prayer spaces, and bidets on the go.",
+      "writeReview": "Share Facilities Checklist",
+      "maybeLater": "Maybe Later",
+      "yes": "Yes, I did",
+      "no": "Not really"
     }
   }
 }

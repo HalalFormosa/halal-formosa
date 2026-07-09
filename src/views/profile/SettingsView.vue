@@ -55,6 +55,45 @@
             </ion-note>
           </div>
         </ion-item>
+        <ion-item lines="full" style="--border-radius: 12px;">
+          <div style="width: 100%; padding: 8px 0;">
+            <ion-toggle
+                :checked="nearbyPromptsEnabled"
+                @ionChange="(e) => setNearbyPromptsEnabled(e.detail.checked)"
+            >
+              {{ $t('settings.nearbyPrompts') }}
+            </ion-toggle>
+            <ion-note style="display: block; margin-top: 8px; font-size: 0.85rem;">
+              {{ $t('settings.nearbyPromptsNote') }}
+            </ion-note>
+          </div>
+        </ion-item>
+        <ion-item lines="full" style="--border-radius: 12px;" v-if="nearbyPromptsEnabled">
+          <div style="width: 100%; padding: 8px 0;">
+            <ion-toggle
+                :checked="backgroundTrackingEnabled"
+                @ionChange="(e) => setBackgroundTrackingEnabled(e.detail.checked)"
+            >
+              {{ $t('settings.backgroundTracking') || 'Background Location Checking' }}
+            </ion-toggle>
+            <ion-note style="display: block; margin-top: 8px; font-size: 0.85rem; color: var(--ion-color-warning-shade, #b25e00);">
+              ⚠️ {{ $t('settings.backgroundTrackingDisclaimer') || 'Enabling background location tracking allows detection even when the app is closed, but it may reduce battery life faster.' }}
+            </ion-note>
+          </div>
+        </ion-item>
+      </ion-list>
+
+      <!-- 🛠️ Developer Options -->
+      <ion-list v-if="isDev" style="border-radius: 12px; margin-top: 20px;">
+        <ion-list-header style="color: var(--ion-color-tertiary)">🛠️ Developer Tools</ion-list-header>
+        <ion-item button lines="full" @click="triggerTestPrompt" style="--border-radius: 12px;">
+          <ion-icon :icon="sparkles" slot="start" style="margin-right: 12px; color: var(--ion-color-tertiary)" />
+          <ion-label style="font-weight: 500;">Trigger Test Review Prompt Modal</ion-label>
+        </ion-item>
+        <ion-item button lines="full" @click="triggerTestPush" style="--border-radius: 12px;">
+          <ion-icon :icon="chatboxEllipsesOutline" slot="start" style="margin-right: 12px; color: var(--ion-color-tertiary)" />
+          <ion-label style="font-weight: 500;">Send Test Push Notification</ion-label>
+        </ion-item>
       </ion-list>
       
       <!-- 👤 Account -->
@@ -104,7 +143,8 @@ import {
   IonNote,
   IonLabel,
   IonIcon,
-  alertController
+  alertController,
+  toastController
 } from '@ionic/vue'
 import { ref, onMounted, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -115,10 +155,18 @@ import {
   setPublicProfile,
   showLastSeen,
   setShowLastSeen,
-  resetUserProfileState
+  resetUserProfileState,
+  nearbyPromptsEnabled,
+  setNearbyPromptsEnabled,
+  backgroundTrackingEnabled,
+  setBackgroundTrackingEnabled,
+  donorType,
+  userRole
 } from '@/composables/userProfile'
 import { useTheme } from '@/composables/useTheme'
-import { keyOutline, trashOutline } from 'ionicons/icons'
+import { useProximityPrompt } from '@/composables/useProximityPrompt'
+import { useNotifier } from '@/composables/useNotifier'
+import { keyOutline, trashOutline, sparkles, chatboxEllipsesOutline } from 'ionicons/icons'
 import { useRouter } from 'vue-router'
 import { supabase } from '@/plugins/supabaseClient'
 
@@ -188,6 +236,59 @@ const executeDeleteAccount = async () => {
       buttons: ['OK']
     })
     await alert.present()
+  }
+}
+
+const { currentPrompt } = useProximityPrompt()
+const { notifyEvent } = useNotifier()
+
+const isDev = computed(() => {
+  return import.meta.env.DEV || donorType.value === 'Developer' || userRole.value === 'admin'
+})
+
+const triggerTestPrompt = () => {
+  currentPrompt.value = {
+    id: 1,
+    name: 'Siraya Tourist Center (Dev Test)',
+    lat: 23.136,
+    lng: 120.365,
+    type_id: 1,
+    distance_m: 12,
+    category_name: 'Visitor Center',
+    address: '720, Taiwan, Tainan City, Guantian District, 福田路99號',
+    image: null
+  }
+}
+
+const triggerTestPush = async () => {
+  try {
+    const { success } = await notifyEvent(
+      'test_visit_prompt',
+      'Did you visit Siraya Tourist Center?',
+      'Mind sharing its Muslim facilities? It really helps other travelers.',
+      undefined,
+      {
+        link: 'myapp://place/1?review=1'
+      },
+      ['onesignal']
+    )
+    if (success) {
+      const toast = await toastController.create({
+        message: '✅ Test push notification triggered!',
+        duration: 2000,
+        color: 'success'
+      })
+      toast.present()
+    } else {
+      throw new Error('Push notification service returned failure status')
+    }
+  } catch (err: any) {
+    const toast = await toastController.create({
+      message: `❌ Failed to trigger push: ${err.message || 'Error'}`,
+      duration: 3000,
+      color: 'danger'
+    })
+    toast.present()
   }
 }
 </script>

@@ -99,6 +99,17 @@
               </div>
             </div>
 
+            <!-- ⭐ Ratings Header Row -->
+            <div v-if="place?.review_count && place.review_count > 0" class="rating-header-row ion-margin-top ion-margin-bottom" @click="scrollToReviews">
+              <span class="rating-stars" v-html="renderStars(place.avg_rating || 0)"></span>
+              <span class="rating-value">{{ (place.avg_rating || 0).toFixed(1) }}</span>
+              <span class="rating-count">({{ $t('store.ratingCount', { count: place.review_count }) }})</span>
+            </div>
+            <div v-else-if="isReviewableType" class="rating-header-row ion-margin-top ion-margin-bottom no-ratings" @click="openFacilityReview">
+              <span class="rating-stars">☆☆☆☆☆</span>
+              <span class="rating-count">{{ $t('facilityReview.noReviewsYet') || 'No reviews yet' }}</span>
+            </div>
+
             <!-- Verified owner attribution -->
             <p v-if="place?.is_claimed && ownerName" class="owned-by-line">
               <ion-icon :icon="checkmarkCircle" />
@@ -148,6 +159,62 @@
                 </div>
               </div>
               <ion-icon v-if="place.description" :icon="chevronDown" class="disclaimer-arrow" />
+            </div>
+
+            <!-- 🕌 Muslim Facilities / Features -->
+            <div v-if="place" class="facilities-container ion-margin-top ion-margin-bottom">
+              <!-- Official Attributes -->
+              <div v-if="place.has_prayer_room || place.has_wudu || place.is_alcohol_free || place.halal_status" class="official-facilities-section">
+                <h3 class="section-subtitle">{{ $t('facilityReview.officialFacilitiesTitle') || 'Official Muslim Amenities' }}</h3>
+                <div class="facilities-chips">
+                  <ion-chip v-if="place.has_prayer_room" color="success">
+                    <ion-icon :icon="checkmarkCircle" />
+                    <ion-label>{{ $t('facilityReview.facilities.prayerRoom') }}</ion-label>
+                  </ion-chip>
+                  <ion-chip v-if="place.has_wudu" color="success">
+                    <ion-icon :icon="checkmarkCircle" />
+                    <ion-label>{{ $t('facilityReview.facilities.wudu') }}</ion-label>
+                  </ion-chip>
+                  <ion-chip v-if="place.is_alcohol_free" color="success">
+                    <ion-icon :icon="checkmarkCircle" />
+                    <ion-label>{{ $t('facilityReview.facilities.alcoholFree') }}</ion-label>
+                  </ion-chip>
+                  <ion-chip v-if="place.halal_status" color="primary">
+                    <ion-label class="capitalize">{{ place.halal_status.replace('_', ' ') }}</ion-label>
+                  </ion-chip>
+                </div>
+              </div>
+
+              <!-- Visitor Crowd Consensus -->
+              <div class="consensus-facilities-section ion-margin-top" v-if="isReviewableType">
+                <h3 class="section-subtitle">{{ $t('facilityReview.crowdConsensusTitle') || 'Muslim Facilities (Visitor Confirmed)' }}</h3>
+                <div class="consensus-squares" v-if="hasAnyConsensus">
+                  <div 
+                    v-for="fac in MUSLIM_FACILITIES" 
+                    :key="fac.code"
+                    v-show="getFacilityStatus(fac.code) && (fac.code !== 'qibla_direction' || isAccommodation)"
+                    class="consensus-square"
+                    :class="getFacilityStatus(fac.code)"
+                  >
+                    <span class="square-icon">{{ fac.icon }}</span>
+                    <span class="square-label">{{ getShortLabel(fac.code) }}</span>
+                  </div>
+                </div>
+                <p v-else class="no-consensus-text">
+                  {{ $t('facilityReview.noConsensusYet') || 'No visitor reports yet. Be the first to share!' }}
+                </p>
+                
+                <!-- Rate & Review Button -->
+                <ion-button 
+                  fill="outline" 
+                  color="carrot" 
+                  size="small" 
+                  class="rate-btn" 
+                  @click="openFacilityReview"
+                >
+                  {{ $t('facilityReview.rateReviewAction') || 'Rate & Review Facilities' }}
+                </ion-button>
+              </div>
             </div>
 
             <p v-if="place?.author?.public_profile" class="attribution-text">
@@ -418,6 +485,56 @@
 
             </div>
 
+            <!-- ⭐ Visitor Reviews List -->
+            <div v-if="place && isReviewableType" class="reviews-section ion-margin-top" id="visitor-reviews-section">
+              <h3 class="section-title">
+                <strong>{{ $t('facilityReview.reviewsHeader') || 'Visitor Reviews' }}</strong>
+              </h3>
+              <div v-if="reviews.length > 0" class="review-list">
+                <div v-for="review in reviews" :key="review.id" class="review-card">
+                  <div class="review-header">
+                    <ion-avatar class="reviewer-avatar">
+                      <img :src="review.user_profiles?.public_profile ? review.user_profiles?.avatar_url || '/favicon-32x32.png' : '/favicon-32x32.png'" />
+                    </ion-avatar>
+                    <div class="reviewer-info">
+                      <span class="reviewer-name">{{ review.user_profiles?.public_profile ? review.user_profiles?.display_name || 'User' : ($t('profile.anonymous') || 'Anonymous') }}</span>
+                      <span class="review-date">{{ fromNowToTaipei(review.created_at) }}</span>
+                    </div>
+                    <div class="review-stars-badge" v-if="review.rating">
+                      <span class="star-badge-icon">★</span>
+                      <span class="star-badge-val">{{ review.rating }}</span>
+                    </div>
+                  </div>
+
+                  <p v-if="review.comment" class="review-comment">{{ review.comment }}</p>
+
+                  <!-- Owner Response (if exists) -->
+                  <div class="owner-reply-block" v-if="review.owner_response">
+                    <div class="owner-reply-header">
+                      <span class="owner-reply-badge">🏪 {{ $t('business.reviews.ownerReplyBadge') || 'Owner Response' }}</span>
+                      <span class="owner-reply-date" v-if="review.owner_responded_at">{{ fromNowToTaipei(review.owner_responded_at) }}</span>
+                    </div>
+                    <p class="owner-reply-text">{{ review.owner_response }}</p>
+                  </div>
+
+                  <!-- User's own review actions -->
+                  <div class="review-actions-row" v-if="currentUser?.id === review.user_id">
+                    <ion-button fill="clear" size="small" color="carrot" class="action-btn" @click="openFacilityReview">
+                      <ion-icon :icon="createOutline" slot="start" />
+                      {{ $t('common.edit') || 'Edit' }}
+                    </ion-button>
+                    <ion-button fill="clear" size="small" color="danger" class="action-btn" @click="confirmDeleteReview(review.id)">
+                      <ion-icon :icon="trashOutline" slot="start" />
+                      {{ $t('common.delete') || 'Delete' }}
+                    </ion-button>
+                  </div>
+                </div>
+              </div>
+              <div v-else class="no-reviews">
+                <p>{{ $t('facilityReview.noReviewsYet') || 'No reviews yet' }}</p>
+              </div>
+            </div>
+
             <!-- Audit History Log -->
             <AuditHistoryLog ref="auditLogRef" entityType="location" :entityId="place.id" :createdAt="place.created_at" />
           </div>
@@ -470,6 +587,73 @@
       @close="showSaveLocationModal = false"
       @saved="checkSavedState(place?.id || 0)"
     />
+
+    <ion-modal 
+      :is-open="showTwoStepGate" 
+      @didDismiss="showTwoStepGate = false" 
+      class="two-step-gate-modal"
+      :initial-breakpoint="0.6"
+      :breakpoints="[0, 0.6, 0.95]"
+      :handle="true"
+    >
+      <ion-content class="ion-no-padding">
+        <!-- Place Image Banner -->
+        <div class="place-banner">
+          <img v-if="place?.image" :src="place.image" class="place-img" />
+          <div v-else class="place-placeholder-banner">
+            <span class="placeholder-icon">🕌</span>
+          </div>
+          <div class="category-badge-wrapper">
+            <span class="category-badge">{{ place?.type || 'Location' }}</span>
+          </div>
+        </div>
+
+        <div class="ion-padding content-wrapper ion-text-center">
+          <h2 class="place-title">{{ place?.name }}</h2>
+          <p v-if="place?.address" class="place-address">
+            <ion-icon :icon="navigateOutline" class="address-icon" /> {{ place.address }}
+          </p>
+
+          <div class="gate-divider"></div>
+
+          <template v-if="gateStep === 1">
+            <h3 class="gate-heading">{{ $t('facilityReview.gate.didYouVisitPrompt') || 'Did you visit here?' }}</h3>
+            <p class="gate-desc">{{ $t('facilityReview.gate.didYouVisitDesc') }}</p>
+            <div class="gate-buttons">
+              <ion-button expand="block" color="carrot" class="action-btn" @click="goToStep2">
+                {{ $t('facilityReview.gate.yes') }}
+              </ion-button>
+              <ion-button expand="block" fill="clear" color="medium" class="cancel-btn" @click="dismissGate">
+                {{ $t('facilityReview.gate.no') }}
+              </ion-button>
+            </div>
+          </template>
+
+          <template v-else-if="gateStep === 2">
+            <h3 class="gate-heading">{{ $t('facilityReview.gate.leaveReview') }}</h3>
+            <p class="gate-desc">{{ $t('facilityReview.gate.leaveReviewDesc') }}</p>
+            <div class="gate-buttons">
+              <ion-button expand="block" color="carrot" class="action-btn" @click="openReviewFromGate">
+                {{ $t('facilityReview.gate.writeReview') }}
+              </ion-button>
+              <ion-button expand="block" fill="clear" color="medium" class="cancel-btn" @click="showTwoStepGate = false">
+                {{ $t('facilityReview.gate.maybeLater') }}
+              </ion-button>
+            </div>
+          </template>
+        </div>
+      </ion-content>
+    </ion-modal>
+
+    <!-- Facility Review Modal -->
+    <FacilityReviewModal
+      :is-open="facilityReviewModalOpen"
+      :location-id="place?.id || 0"
+      :location-name="place?.name || ''"
+      :is-accommodation="isAccommodation"
+      @close="facilityReviewModalOpen = false"
+      @success="handleReviewSuccess"
+    />
   </ion-page>
 </template>
 
@@ -484,7 +668,9 @@ import {
   IonModal,
   IonButton, IonHeader, IonChip,
   IonList,
-  popoverController, onIonViewDidEnter
+  IonAvatar,
+  popoverController, onIonViewDidEnter,
+  alertController, toastController
 } from '@ionic/vue'
 import { Capacitor } from '@capacitor/core'
 import { isDonor } from "@/composables/useSubscriptionStatus"
@@ -506,6 +692,7 @@ import {
   alertCircle, informationCircle, chevronDown,
   alertCircleOutline, callOutline, cashOutline, chatboxEllipsesOutline,
   createOutline, documentTextOutline, logoInstagram,
+  trashOutline,
   mapOutline,
   navigateOutline,
   shareSocialOutline,
@@ -540,6 +727,10 @@ import { useSavedLocations } from '@/composables/useSavedLocations';
 import SaveLocationModal from '@/components/SaveLocationModal.vue';
 import mapsLoader from '@/plugins/googleMapsLoader'
 import { useLocation } from '@/composables/useLocation'
+import { currentUser } from '@/composables/userProfile'
+import { MUSLIM_FACILITIES } from '@/constants/muslimFacilities'
+import FacilityReviewModal from '@/components/FacilityReviewModal.vue'
+import type { LocationReview, FacilitySummary } from '@/types/LocationReview'
 
 type DayKey = "mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun"
 
@@ -580,6 +771,13 @@ type PlaceDetail = {
   approved?: boolean;
   tags?: string[] | null;
   is_claimed?: boolean;
+  typeId?: number | null;
+  has_prayer_room?: boolean;
+  has_wudu?: boolean;
+  is_alcohol_free?: boolean;
+  halal_status?: string | null;
+  avg_rating?: number;
+  review_count?: number;
 }
 
 type LocationCertification = {
@@ -897,6 +1095,13 @@ const loadPlace = async () => {
     approved,
     tags,
     is_claimed,
+    type_id,
+    has_prayer_room,
+    has_wudu,
+    is_alcohol_free,
+    halal_status,
+    avg_rating,
+    review_count,
     location_types(name),
     partner:partners(partner_tier)
   `)
@@ -938,8 +1143,17 @@ const loadPlace = async () => {
       author: null,
       location_types: locationType ?? null,
       tags: data.tags ?? [],
-      partner_tier: Array.isArray(data.partner) ? data.partner[0]?.partner_tier : (data.partner as any)?.partner_tier
+      partner_tier: Array.isArray(data.partner) ? data.partner[0]?.partner_tier : (data.partner as any)?.partner_tier,
+      typeId: data.type_id,
+      has_prayer_room: data.has_prayer_room,
+      has_wudu: data.has_wudu,
+      is_alcohol_free: data.is_alcohol_free,
+      halal_status: data.halal_status,
+      avg_rating: data.avg_rating,
+      review_count: data.review_count
     }
+
+    fetchReviewsAndSummary()
 
     // 🔹 Fetch author details separately since join is missing in schema
     if (data.created_by) {
@@ -1055,6 +1269,12 @@ async function fetchLocationCertifications(locationId: number) {
 onIonViewWillEnter(async () => {
   await loadPlace()
   auditLogRef.value?.fetchLogs()
+
+  // Honor ?review=1 query parameter
+  if (route.query.review === '1') {
+    gateStep.value = 1
+    showTwoStepGate.value = true
+  }
 })
 
 const logInstagram = () => {
@@ -1213,6 +1433,241 @@ const scrollToDescription = () => {
   const el = document.getElementById('place-description-section')
   if (el) {
     el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }
+}
+
+/* ---------------- Reviews & Facility Summary ---------------- */
+const reviews = ref<LocationReview[]>([])
+const facilitySummary = ref<FacilitySummary>({})
+const loadingReviews = ref(false)
+
+const showTwoStepGate = ref(false)
+const gateStep = ref(1)
+const facilityReviewModalOpen = ref(false)
+
+const isAccommodation = computed(() => {
+  if (!place.value?.type) return false
+  const typeLower = place.value.type.toLowerCase()
+  return typeLower.includes('hotel') || typeLower.includes('accommodation') || typeLower.includes('accomodation')
+})
+
+const isReviewableType = computed(() => {
+  return !!place.value
+})
+
+const getFacilityStatus = (code: string): 'yes' | 'no' | null => {
+  const counts = facilitySummary.value[code]
+  if (!counts) return null
+  const yes = counts.yes || 0
+  const no = counts.no || 0
+  
+  if (yes === 0 && no === 0) return null
+  
+  if (yes > no) {
+    return 'yes'
+  } else if (no > yes) {
+    return 'no'
+  }
+  return null
+}
+
+const hasAnyConsensus = computed(() => {
+  return MUSLIM_FACILITIES.some(fac => {
+    if (fac.code === 'qibla_direction' && !isAccommodation.value) return false
+    return getFacilityStatus(fac.code) !== null
+  })
+})
+
+const getShortLabel = (code: string): string => {
+  const labels: Record<string, string> = {
+    halal_certified: 'HALAL CERTIFIED',
+    prayer_room: 'PRAYER ROOM',
+    wudu: 'WUDU FACILITIES',
+    bidet: 'BIDET',
+    space_to_pray: 'PRAY SPACE',
+    pork_free: 'PORK FREE',
+    cash_only: 'CASH ONLY',
+    halal_food: 'HALAL FOOD',
+    vegan_option: 'VEGAN OPTION',
+    muslim_owned: 'MUSLIM OWNED',
+    muslim_staff: 'MUSLIM STAFF',
+    alcohol_free: 'ALCOHOL FREE',
+    free_wifi: 'FREE WIFI',
+    qibla_direction: 'QIBLA'
+  }
+  return labels[code] || code.replace('_', ' ').toUpperCase()
+}
+
+const fetchReviewsAndSummary = async () => {
+  if (!place.value?.id) return
+  loadingReviews.value = true
+  try {
+    // 1. Fetch reviews
+    const { data: revData, error: revError } = await supabase
+      .from('location_reviews')
+      .select(`
+        id,
+        user_id,
+        rating,
+        comment,
+        facilities,
+        created_at,
+        updated_at,
+        owner_response,
+        owner_responded_at,
+        user_profiles (
+          display_name,
+          avatar_url,
+          public_profile
+        )
+      `)
+      .eq('location_id', place.value.id)
+      .order('created_at', { ascending: false })
+
+    if (!revError) {
+      reviews.value = (revData || []) as any[]
+    }
+
+    // 2. Fetch facility summary
+    const { data: sumData, error: sumError } = await supabase
+      .rpc('get_location_facility_summary', { p_location_id: place.value.id })
+    if (!sumError) {
+      facilitySummary.value = (sumData || {}) as FacilitySummary
+    }
+  } catch (err) {
+    console.warn('[PlaceDetailsView] Failed to fetch reviews and facility summary', err)
+  } finally {
+    loadingReviews.value = false
+  }
+}
+
+const goToStep2 = () => {
+  gateStep.value = 2
+}
+
+const dismissGate = async () => {
+  showTwoStepGate.value = false
+  if (currentUser.value?.id && place.value?.id) {
+    try {
+      await supabase
+        .from('location_visits')
+        .update({ dismissed: true })
+        .eq('user_id', currentUser.value.id)
+        .eq('location_id', place.value.id)
+    } catch (err) {
+      console.warn('[PlaceDetailsView] Failed to dismiss visit in DB', err)
+    }
+  }
+}
+
+const openReviewFromGate = () => {
+  showTwoStepGate.value = false
+  openFacilityReview()
+}
+
+const openFacilityReview = () => {
+  facilityReviewModalOpen.value = true
+}
+
+const handleReviewSuccess = async () => {
+  await loadPlace()
+}
+
+const confirmDeleteReview = async (reviewId: number) => {
+  const alert = await alertController.create({
+    header: t('common.confirm') || 'Confirm',
+    message: t('facilityReview.deleteConfirmMsg') || 'Are you sure you want to delete your review?',
+    buttons: [
+      {
+        text: t('common.cancel') || 'Cancel',
+        role: 'cancel'
+      },
+      {
+        text: t('common.delete') || 'Delete',
+        role: 'destructive',
+        handler: async () => {
+          await deleteReview(reviewId)
+        }
+      }
+    ]
+  })
+  await alert.present()
+}
+
+const deleteReview = async (reviewId: number) => {
+  try {
+    const { error } = await supabase
+      .from('location_reviews')
+      .delete()
+      .eq('id', reviewId)
+
+    if (error) throw error
+
+    if (currentUser.value?.id && place.value?.id) {
+      try {
+        await supabase
+          .from('location_visits')
+          .update({ reviewed: false })
+          .eq('user_id', currentUser.value.id)
+          .eq('location_id', place.value.id)
+      } catch (visitErr) {
+        console.warn('Failed to reset visit reviewed status', visitErr)
+      }
+    }
+
+    const toast = await toastController.create({
+      message: '✅ Review deleted successfully',
+      duration: 2000,
+      color: 'success'
+    })
+    toast.present()
+
+    await loadPlace()
+  } catch (err: any) {
+    console.error('Failed to delete review:', err)
+    const toast = await toastController.create({
+      message: `❌ Error: ${err.message || 'Failed to delete review'}`,
+      duration: 3000,
+      color: 'danger'
+    })
+    toast.present()
+  }
+}
+
+function renderStars(rating: number): string {
+  const full = Math.floor(rating)
+  const half = rating - full >= 0.3 && rating - full < 0.8 ? 1 : 0
+  const empty = 5 - full - half
+  let html = ''
+  for (let i = 0; i < full; i++) html += '★'
+  if (half) html += '★'
+  for (let i = 0; i < empty; i++) html += '☆'
+  return html
+}
+
+const hasFacilities = (facilities: any) => {
+  return facilities && Object.keys(facilities).length > 0
+}
+
+const getReviewFacilities = (facilities: any) => {
+  return MUSLIM_FACILITIES.map(fac => {
+    if (fac.code === 'qibla_direction' && !isAccommodation.value) return null
+    const val = facilities[fac.code]
+    if (val && val !== 'unsure') {
+      return { ...fac, val }
+    }
+    return null
+  }).filter(f => f !== null)
+}
+
+const getTriStateLabel = (val: string) => {
+  return t(`facilityReview.triState.${val}`)
+}
+
+const scrollToReviews = () => {
+  const el = document.getElementById('visitor-reviews-section')
+  if (el) {
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 }
 </script>
@@ -1737,5 +2192,355 @@ ion-item ion-label p:not(.text-gray-500) {
   cursor: pointer;
   text-decoration: underline;
   user-select: none;
+}
+
+/* Ratings & Reviews Styles */
+.rating-header-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+.rating-stars {
+  color: #ffc409;
+}
+.rating-value {
+  color: var(--ion-text-color);
+  font-weight: 700;
+}
+.rating-count {
+  color: var(--ion-color-medium);
+}
+.no-ratings {
+  color: var(--ion-color-medium);
+  font-style: italic;
+}
+.rating-stars-badge {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  background: rgba(255, 196, 9, 0.15);
+  color: #ffc409;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+}
+.facilities-container {
+  border-top: 1px solid rgba(var(--ion-text-color-rgb), 0.08);
+  padding-top: 12px;
+}
+.section-subtitle {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--ion-color-medium);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  letter-spacing: 0.3px;
+}
+.facilities-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.consensus-squares {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.consensus-square {
+  width: 64px;
+  height: 64px;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  text-align: center;
+  box-sizing: border-box;
+  transition: transform 0.2s ease;
+}
+.consensus-square:active {
+  transform: scale(0.95);
+}
+.consensus-square.yes {
+  background: rgba(var(--ion-color-success-rgb, 16, 185, 129), 0.15);
+  color: var(--ion-color-success, #10b981);
+  border: 1px solid rgba(var(--ion-color-success-rgb, 16, 185, 129), 0.35);
+}
+.consensus-square.no {
+  background: rgba(var(--ion-color-danger-rgb, 239, 68, 68), 0.15);
+  color: var(--ion-color-danger, #ef4444);
+  border: 1px solid rgba(var(--ion-color-danger-rgb, 239, 68, 68), 0.35);
+}
+.square-icon {
+  font-size: 1.35rem;
+  margin-bottom: 1px;
+}
+.square-label {
+  font-size: 0.52rem;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: 0.1px;
+  text-transform: uppercase;
+  white-space: normal;
+}
+
+.no-consensus-text {
+  font-size: 0.85rem;
+  color: var(--ion-color-medium);
+  font-style: italic;
+  margin: 8px 0 12px;
+}
+.rate-btn {
+  margin: 0;
+  --border-radius: 8px;
+}
+.reviews-section {
+  border-top: 1px solid rgba(var(--ion-text-color-rgb), 0.08);
+  padding-top: 16px;
+}
+.review-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 12px;
+}
+.review-card {
+  background: rgba(var(--ion-text-color-rgb), 0.03);
+  border-radius: 12px;
+  padding: 12px;
+  border: 1px solid rgba(var(--ion-text-color-rgb), 0.05);
+}
+.review-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.reviewer-avatar {
+  width: 32px;
+  height: 32px;
+}
+.reviewer-info {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+}
+.reviewer-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+.review-date {
+  font-size: 0.75rem;
+  color: var(--ion-color-medium);
+}
+.review-actions-row {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 8px;
+  border-top: 1px dashed rgba(var(--ion-text-color-rgb), 0.06);
+  padding-top: 4px;
+}
+.review-actions-row .action-btn {
+  font-size: 0.75rem;
+  font-weight: 700;
+  margin: 0;
+  --padding-start: 4px;
+  --padding-end: 4px;
+}
+.review-facilities-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+.review-fac-chip {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 6px;
+  border: 1px solid;
+}
+.review-fac-chip.yes {
+  background: rgba(var(--ion-color-success-rgb), 0.1);
+  color: var(--ion-color-success);
+  border-color: rgba(var(--ion-color-success-rgb), 0.2);
+}
+.review-fac-chip.no {
+  background: rgba(var(--ion-color-danger-rgb), 0.1);
+  color: var(--ion-color-danger);
+  border-color: rgba(var(--ion-color-danger-rgb), 0.2);
+}
+.review-comment {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--ion-text-color);
+  line-height: 1.4;
+}
+.owner-reply-block {
+  margin-top: 10px;
+  padding: 10px;
+  background: rgba(var(--ion-color-carrot-rgb, 255, 152, 0), 0.05);
+  border-left: 3px solid var(--ion-color-carrot, #ff9800);
+  border-radius: 4px;
+}
+.owner-reply-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+.owner-reply-badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--ion-color-carrot, #ff9800);
+  text-transform: uppercase;
+}
+.owner-reply-date {
+  font-size: 0.7rem;
+  color: var(--ion-color-medium);
+}
+.owner-reply-text {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.35;
+  color: var(--ion-text-color);
+}
+.no-reviews {
+  text-align: center;
+  color: var(--ion-color-medium);
+  font-style: italic;
+  padding: 12px;
+}
+.two-step-gate-modal {
+  --border-radius: 16px 16px 0 0;
+  --overflow: hidden;
+}
+
+.place-banner {
+  width: 100%;
+  height: 180px;
+  position: relative;
+  overflow: hidden;
+}
+
+.place-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.place-placeholder-banner {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, var(--ion-color-carrot, #ff9800), var(--ion-color-primary, #3880ff));
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.placeholder-icon {
+  font-size: 3rem;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+}
+
+.category-badge-wrapper {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+}
+
+.category-badge {
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.content-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.place-title {
+  font-size: 1.35rem;
+  font-weight: 800;
+  margin-top: 8px;
+  margin-bottom: 6px;
+  color: var(--ion-text-color);
+}
+
+.place-address {
+  font-size: 0.85rem;
+  color: var(--ion-color-medium);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 90%;
+  text-align: center;
+}
+
+.address-icon {
+  font-size: 0.95rem;
+  color: var(--ion-color-carrot);
+  flex-shrink: 0;
+}
+
+.gate-divider {
+  width: 40px;
+  height: 3px;
+  background: rgba(var(--ion-text-color-rgb), 0.1);
+  border-radius: 2px;
+  margin: 16px 0;
+}
+
+.gate-heading {
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+  color: var(--ion-color-carrot);
+}
+
+.gate-desc {
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: var(--ion-color-medium);
+  margin: 0 0 20px 0;
+}
+
+.gate-buttons {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.action-btn {
+  margin: 0;
+  --border-radius: 12px;
+  --box-shadow: none;
+  font-weight: 700;
+  height: 46px;
+}
+
+.cancel-btn {
+  margin: 0;
+  --border-radius: 12px;
+  font-weight: 700;
+  font-size: 0.88rem;
 }
 </style>

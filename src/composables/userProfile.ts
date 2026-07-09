@@ -14,6 +14,8 @@ export const currentUser = ref<any | null>(null);
 export const isPublicProfile = ref<boolean | null>(null);
 export const showLastSeen = ref<boolean>(true);
 export const hasReviewedApp = ref<boolean>(false);
+export const nearbyPromptsEnabled = ref<boolean>(true);
+export const backgroundTrackingEnabled = ref<boolean>(false);
 
 /* ---------------- Profile fields ---------------- */
 export const donorType = ref("Free");
@@ -43,6 +45,7 @@ export const isProfileComplete = computed(() => {
 const donorKey = (userId: string) => `donor_type:${userId}`
 const roleKey = (userId: string) => `user_role:${userId}`
 const pubKey = (userId: string) => `public_profile:${userId}`
+const promptKey = (userId: string) => `nearby_prompts_enabled:${userId}`
 
 
 /* ---------------- Types ---------------- */
@@ -58,6 +61,7 @@ type UserProfileRow = {
     has_reviewed_app: boolean;
     consent_acknowledged: boolean;
     avatar_url: string | null;
+    nearby_prompts_enabled: boolean;
     user_roles: {
         role: string;
     } | null;
@@ -105,6 +109,19 @@ export async function setHasReviewedApp(value: boolean) {
         .eq("id", currentUser.value.id)
 }
 
+export async function setNearbyPromptsEnabled(value: boolean) {
+    if (!currentUser.value?.id) return
+    nearbyPromptsEnabled.value = value
+    localStorage.setItem(
+        promptKey(currentUser.value.id),
+        JSON.stringify(value)
+    )
+    await supabase
+        .from("user_profiles")
+        .update({ nearby_prompts_enabled: value })
+        .eq("id", currentUser.value.id)
+}
+
 
 
 /* ---------------- Donor helpers ---------------- */
@@ -139,6 +156,27 @@ export function loadUserRoleFromCache(userId: string) {
 export function loadPublicLeaderboardFromCache(userId: string) {
     const stored = localStorage.getItem(pubKey(userId))
     isPublicProfile.value = stored !== null ? JSON.parse(stored) : false
+}
+
+export function loadNearbyPromptsFromCache(userId: string) {
+    const stored = localStorage.getItem(promptKey(userId))
+    nearbyPromptsEnabled.value = stored !== null ? JSON.parse(stored) : true
+}
+
+const bgTrackingKey = (uid: string) => `hf_bg_tracking_${uid}`
+
+export function loadBackgroundTrackingFromCache(userId: string) {
+    const stored = localStorage.getItem(bgTrackingKey(userId))
+    backgroundTrackingEnabled.value = stored !== null ? JSON.parse(stored) : false
+}
+
+export async function setBackgroundTrackingEnabled(value: boolean) {
+    if (!currentUser.value?.id) return
+    backgroundTrackingEnabled.value = value
+    localStorage.setItem(
+        bgTrackingKey(currentUser.value.id),
+        JSON.stringify(value)
+    )
 }
 
 
@@ -179,6 +217,7 @@ export async function loadUserProfile(userId: string) {
           has_reviewed_app,
           consent_acknowledged,
           avatar_url,
+          nearby_prompts_enabled,
           user_roles (
             role
           )
@@ -203,6 +242,8 @@ export async function loadUserProfile(userId: string) {
         showLastSeen.value = data.show_last_seen ?? true;
         hasReviewedApp.value = data.has_reviewed_app ?? false;
         acknowledged.value = data.consent_acknowledged ?? false;
+        nearbyPromptsEnabled.value = data.nearby_prompts_enabled ?? true;
+        localStorage.setItem(promptKey(userId), JSON.stringify(nearbyPromptsEnabled.value));
     } else {
         console.warn("⚠️ No profile found, resetting defaults");
 
@@ -219,6 +260,8 @@ export async function loadUserProfile(userId: string) {
         editPhone.value = null;
         editAvatarUrl.value = null;
         editDisplayName.value = null;
+        nearbyPromptsEnabled.value = true;
+        localStorage.setItem(promptKey(userId), JSON.stringify(true));
     }
 
     profileLoaded.value = true // ⬅️ NEW (end)
@@ -267,4 +310,6 @@ export function resetUserProfileState() {
     hasReviewedApp.value = false
     acknowledged.value = false
     profileSkipped.value = false
+    nearbyPromptsEnabled.value = true
+    backgroundTrackingEnabled.value = false
 }

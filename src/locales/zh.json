@@ -152,6 +152,7 @@
       "scan_barcode": "掃描條碼",
       "find_muslim_friendly": "尋找穆斯林友善產品",
       "view_place_details": "查看地點詳情",
+      "review_place": "評價地點",
       "add_product": "新增產品或地點"
     }
   },
@@ -690,7 +691,9 @@
     "deleteAccountConfirmTitle": "刪除帳戶？",
     "deleteAccountConfirmMessage": "您確定要永久刪除您的帳戶嗎？此操作無法撤銷，您所有已儲存的項目、資料夾及個人資料將被永久刪除。",
     "deleteAccountConfirmBtn": "刪除我的帳戶",
-    "deleteAccountSuccess": "您的帳戶已成功刪除。"
+    "deleteAccountSuccess": "您的帳戶已成功刪除。",
+    "nearbyPrompts": "附近地點評論提醒",
+    "nearbyPromptsNote": "當我拜訪清真寺或清真餐廳後，私下提醒我分享穆斯林設施。"
   },
   "profile": {
     "sections": {
@@ -1756,5 +1759,53 @@
     "locationSavedSuccess": "Location saved successfully!",
     "locationAlreadySaved": "This location is already saved in this folder.",
     "saveFailed": "Failed to save location. Please try again."
+  },
+  "facilityReview": {
+    "title": "穆斯林設施評論",
+    "editTitle": "編輯設施評論",
+    "subtitle": "分享您在這裡發現的穆斯林設施，以幫助其他旅客。",
+    "checklistHeader": "穆斯林設施清單",
+    "ratingHeader": "地點評分 (選填)",
+    "commentHeader": "旅客評語 (選填)",
+    "commentPlaceholder": "安靜的祈禱角落、廁所有洗淨噴頭、友善的員工...",
+    "submit": "提交評論",
+    "noReviewsYet": "尚無旅客評論",
+    "officialFacilitiesTitle": "官方穆斯林設施",
+    "crowdConsensusTitle": "穆斯林設施 (旅客確認)",
+    "noConsensusYet": "尚無旅客回報。成為第一個分享的人吧！",
+    "rateReviewAction": "評分與評論設施",
+    "reviewsHeader": "旅客評論",
+    "facilities": {
+      "halalCertified": "清真認證",
+      "prayerRoom": "祈禱室 / 禮拜殿",
+      "wudu": "淨身 (小淨) 設施",
+      "bidet": "廁所噴水器 / 免治設備",
+      "spaceToPray": "乾淨祈禱空間",
+      "porkFree": "不含豬肉",
+      "cashOnly": "僅限現金",
+      "halalFood": "清真食品菜單",
+      "veganOption": "素食選擇",
+      "muslimOwned": "穆斯林擁有",
+      "muslimStaff": "穆斯林員工",
+      "alcoholFree": "無酒精",
+      "freeWifi": "免費 Wi-Fi",
+      "qiblaDirection": "朝向指引"
+    },
+    "triState": {
+      "yes": "是",
+      "no": "否",
+      "unsure": "不確定"
+    },
+    "gate": {
+      "didYouVisit": "您有去過 {name} 嗎？",
+      "didYouVisitPrompt": "您有到訪這裡嗎？",
+      "didYouVisitDesc": "我們注意到您剛才在附近。方便分享這裡是否提供穆斯林設施嗎？",
+      "leaveReview": "幫助穆斯林旅客",
+      "leaveReviewDesc": "分享快速的 1 分鐘清單，能幫助其他穆斯林旅客在旅途中輕鬆找到小淨設施、祈禱空間和廁所噴頭。",
+      "writeReview": "分享設施清單",
+      "maybeLater": "稍後再說",
+      "yes": "是的，我有去",
+      "no": "沒有耶"
+    }
   }
 }

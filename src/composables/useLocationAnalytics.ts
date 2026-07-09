@@ -23,6 +23,8 @@ export interface BusinessAnalytics {
   funnel?: { impressions: number; opens: number; actions: number; open_rate: number; action_rate: number }
   search_terms?: { q: string; count: number }[]
   benchmark?: { category: string; my_opens_30d: number; category_total: number; category_avg_30d: number; percentile: number; rank: number }
+  total_visits_30d?: number
+  total_reviews_30d?: number
 }
 
 const EMPTY: BusinessAnalytics = {

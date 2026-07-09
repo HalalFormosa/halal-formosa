@@ -47,6 +47,7 @@
             <ion-segment-button value="promos"><ion-label>{{ $t('business.tabs.promos') }}</ion-label></ion-segment-button>
             <ion-segment-button value="analytics"><ion-label>{{ $t('business.tabs.analytics') }}</ion-label></ion-segment-button>
             <ion-segment-button value="reports"><ion-label>{{ $t('business.tabs.reports') }}</ion-label></ion-segment-button>
+            <ion-segment-button value="reviews"><ion-label>{{ $t('business.tabs.reviews') || 'Reviews' }}</ion-label></ion-segment-button>
           </ion-segment>
         </div>
 
@@ -324,6 +325,34 @@
               <div class="stat-card"><span class="stat-num">{{ analytics.card_clicks_30d + analytics.marker_clicks_30d }}</span><span class="stat-label">{{ $t('business.analytics.impressions') }}</span></div>
             </div>
 
+            <!-- Gold/Premium Stats (Visits & Reviews) -->
+            <template v-if="analytics.level === 'pro'">
+              <p class="an-section-title">✨ {{ $t('business.analytics.premiumInsights') || 'Visitor & Review Insights (Gold Plan)' }}</p>
+              <div class="stat-grid gold-grid">
+                <div class="stat-card gold-card">
+                  <span class="stat-num">{{ analytics.total_visits_30d ?? 0 }}</span>
+                  <span class="stat-label">👥 {{ $t('business.analytics.visits30d') || 'Visits (Last 30 Days)' }}</span>
+                </div>
+                <div class="stat-card gold-card">
+                  <span class="stat-num">{{ analytics.total_reviews_30d ?? 0 }}</span>
+                  <span class="stat-label">✍️ {{ $t('business.analytics.reviews30d') || 'Reviews (Last 30 Days)' }}</span>
+                </div>
+              </div>
+            </template>
+            <template v-else>
+              <p class="an-section-title locked-title">✨ {{ $t('business.analytics.premiumInsights') || 'Visitor & Review Insights' }}</p>
+              <div class="stat-grid locked-grid" @click="openUpgrade(true)">
+                <div class="stat-card locked-card">
+                  <span class="stat-num"><ion-icon :icon="lockClosedOutline" size="small" /></span>
+                  <span class="stat-label">{{ $t('business.analytics.visits30d') || 'Visits (Last 30 Days)' }}</span>
+                </div>
+                <div class="stat-card locked-card">
+                  <span class="stat-num"><ion-icon :icon="lockClosedOutline" size="small" /></span>
+                  <span class="stat-label">{{ $t('business.analytics.reviews30d') || 'Reviews (Last 30 Days)' }}</span>
+                </div>
+              </div>
+            </template>
+
             <!-- Intent actions (standard+) -->
             <template v-if="analytics.intents">
               <p class="an-section-title">{{ $t('business.analytics.actions30') }}</p>
@@ -435,6 +464,84 @@
               <span class="report-date">{{ formatDate(r.created_at) }}</span>
             </div>
           </section>
+
+          <!-- REVIEWS -->
+          <section v-else-if="tab === 'reviews'" class="fade-in">
+            <div v-if="loadingReviews" class="ion-text-center ion-padding">
+              <ion-spinner name="crescent" color="carrot" />
+            </div>
+            <template v-else>
+              <div v-if="businessReviews.length === 0" class="empty-inline">
+                <ion-icon :icon="chatbubbleOutline" color="medium" />
+                <p>{{ $t('business.reviews.none') || 'No reviews yet for this location.' }}</p>
+              </div>
+              <div v-else class="review-manager-list">
+                <div v-for="rev in businessReviews" :key="rev.id" class="review-manage-card">
+                  <div class="rev-manage-header">
+                    <ion-avatar class="rev-avatar">
+                      <img :src="rev.user_profiles?.public_profile ? rev.user_profiles?.avatar_url || '/favicon-32x32.png' : '/favicon-32x32.png'" />
+                    </ion-avatar>
+                    <div class="rev-info">
+                      <h4 class="rev-username">{{ rev.user_profiles?.public_profile ? rev.user_profiles?.display_name || 'User' : ($t('profile.anonymous') || 'Anonymous') }}</h4>
+                      <span class="rev-date">{{ formatDate(rev.created_at) }}</span>
+                    </div>
+                    <div class="rev-stars" v-if="rev.rating">
+                      <ion-icon v-for="starIndex in 5" :key="starIndex" :icon="starIndex <= rev.rating ? star : starOutline" :color="starIndex <= rev.rating ? 'warning' : 'medium'" />
+                    </div>
+                  </div>
+
+                  <p class="rev-comment-text" v-if="rev.comment">"{{ rev.comment }}"</p>
+
+                  <div class="rev-facilities-checked" v-if="hasFacilities(rev.facilities)">
+                    <span v-for="fac in getReviewFacilities(rev.facilities)" :key="fac.code" class="rev-fac-badge" :class="fac.val">
+                      {{ fac.icon }} {{ getShortLabel(fac.code) }}: {{ fac.val.toUpperCase() }}
+                    </span>
+                  </div>
+
+                  <!-- Response Section -->
+                  <div class="reply-container">
+                    <div v-if="replyingToId === rev.id" class="reply-editor-box">
+                      <ion-textarea 
+                        v-model="activeReplyText" 
+                        :placeholder="$t('business.reviews.replyPlaceholder') || 'Write your response to this customer...'"
+                        class="reply-textarea"
+                        :rows="3"
+                        maxlength="500"
+                      />
+                      <div class="reply-editor-actions">
+                        <ion-button fill="clear" color="medium" size="small" @click="cancelReply">
+                          {{ $t('common.cancel') }}
+                        </ion-button>
+                        <ion-button color="carrot" size="small" :disabled="submittingReply || !activeReplyText.trim()" @click="submitReply(rev.id)">
+                          <ion-spinner name="crescent" v-if="submittingReply" slot="start" />
+                          {{ $t('common.submit') }}
+                        </ion-button>
+                      </div>
+                    </div>
+                    <div v-else-if="rev.owner_response" class="existing-reply-box">
+                      <div class="reply-box-header">
+                        <span class="reply-by-label">🏪 {{ $t('business.reviews.yourResponse') || 'Your Response' }}</span>
+                        <span class="reply-date-label" v-if="rev.owner_responded_at">{{ formatDate(rev.owner_responded_at) }}</span>
+                      </div>
+                      <p class="reply-content-text">{{ rev.owner_response }}</p>
+                      <div class="reply-box-footer">
+                        <ion-button fill="clear" color="carrot" size="small" class="reply-edit-btn" @click="startReply(rev)">
+                          <ion-icon :icon="createOutline" slot="start" />
+                          {{ $t('common.edit') }}
+                        </ion-button>
+                      </div>
+                    </div>
+                    <div v-else class="no-reply-yet">
+                      <ion-button fill="outline" color="carrot" size="small" @click="startReply(rev)">
+                        <ion-icon :icon="chatbubbleEllipsesOutline" slot="start" />
+                        {{ $t('business.reviews.replyAction') || 'Reply to Review' }}
+                      </ion-button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </template>
+          </section>
         </div>
       </template>
     </ion-content>
@@ -512,13 +619,14 @@ import {
   IonPage, IonHeader, IonContent, IonSpinner, IonSegment, IonSegmentButton,
   IonLabel, IonList, IonItem, IonInput, IonTextarea, IonButton, IonIcon,
   IonSelect, IonSelectOption, IonToggle, IonNote, IonBadge, IonFooter,
-  IonModal, IonToolbar, IonTitle, IonButtons,
+  IonModal, IonToolbar, IonTitle, IonButtons, IonAvatar,
   toastController, onIonViewWillEnter
 } from '@ionic/vue'
 import {
   trashOutline, cameraOutline, lockClosedOutline, checkmarkCircleOutline,
   createOutline, eyeOutline, navigateOutline, callOutline, logoInstagram, pricetagOutline,
-  closeCircle, downloadOutline, shieldCheckmarkOutline, flashOutline
+  closeCircle, downloadOutline, shieldCheckmarkOutline, flashOutline,
+  chatbubbleOutline, chatbubbleEllipsesOutline, star
 } from 'ionicons/icons'
 import { Capacitor } from '@capacitor/core'
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem'
@@ -634,6 +742,11 @@ const promotions = ref<LocationPromotion[]>([])
 const newPromo = ref({ title: '', body: '' })
 const analytics = ref<BusinessAnalytics>({ level: 'basic', total_views: 0, detail_opens_30d: 0, unique_viewers_30d: 0, card_clicks_30d: 0, marker_clicks_30d: 0 })
 const reports = ref<any[]>([])
+const businessReviews = ref<any[]>([])
+const loadingReviews = ref(false)
+const replyingToId = ref<number | null>(null)
+const activeReplyText = ref('')
+const submittingReply = ref(false)
 
 const canAddPhoto = computed(() => features.value.maxPhotos === -1 || photos.value.length < features.value.maxPhotos)
 
@@ -679,7 +792,7 @@ onIonViewWillEnter(async () => {
   tier.value = ent.tier
   features.value = ent.features
 
-  await Promise.all([loadPhotos(), loadMenu(), loadPromotions(), loadAnalytics(), loadReports()])
+  await Promise.all([loadPhotos(), loadMenu(), loadPromotions(), loadAnalytics(), loadReports(), loadReviews()])
   loading.value = false
 
   // The map lives in the Info tab; init once the DOM for it exists.
@@ -1135,6 +1248,118 @@ async function toast(message: string, color: string) {
   const t = await toastController.create({ message, duration: 2500, color, position: 'bottom' })
   await t.present()
 }
+
+// Reviews Management Logic
+async function loadReviews() {
+  loadingReviews.value = true
+  try {
+    const { data, error } = await supabase
+      .from('location_reviews')
+      .select(`
+        id,
+        rating,
+        comment,
+        facilities,
+        owner_response,
+        owner_responded_at,
+        created_at,
+        user_profiles (
+          display_name,
+          avatar_url,
+          public_profile
+        )
+      `)
+      .eq('location_id', locationId)
+      .order('created_at', { ascending: false })
+
+    if (!error && data) {
+      businessReviews.value = data
+    }
+  } catch (err) {
+    console.error('Failed to load reviews:', err)
+  } finally {
+    loadingReviews.value = false
+  }
+}
+
+function startReply(review: any) {
+  replyingToId.value = review.id
+  activeReplyText.value = review.owner_response || ''
+}
+
+function cancelReply() {
+  replyingToId.value = null
+  activeReplyText.value = ''
+}
+
+async function submitReply(reviewId: number) {
+  submittingReply.value = true
+  try {
+    const { error } = await supabase
+      .from('location_reviews')
+      .update({
+        owner_response: activeReplyText.value.trim(),
+        owner_responded_at: new Date().toISOString()
+      })
+      .eq('id', reviewId)
+
+    if (error) throw error
+
+    const toastInstance = await toastController.create({
+      message: '✅ Response submitted successfully',
+      duration: 2000,
+      color: 'success'
+    })
+    toastInstance.present()
+
+    await loadReviews()
+    cancelReply()
+  } catch (err: any) {
+    console.error('Failed to submit response:', err)
+    const toastInstance = await toastController.create({
+      message: `❌ Failed to submit reply: ${err.message}`,
+      duration: 3000,
+      color: 'danger'
+    })
+    toastInstance.present()
+  } finally {
+    submittingReply.value = false
+  }
+}
+
+const hasFacilities = (facilities: any) => {
+  return facilities && Object.keys(facilities).length > 0
+}
+
+const getReviewFacilities = (facilities: any) => {
+  return MUSLIM_FACILITIES.map(fac => {
+    const val = facilities[fac.code]
+    if (val && val !== 'unsure') {
+      return { ...fac, val }
+    }
+    return null
+  }).filter(f => f !== null)
+}
+
+const getShortLabel = (code: string): string => {
+  const labels: Record<string, string> = {
+    halal_certified: 'HALAL CERTIFIED',
+    prayer_room: 'PRAYER ROOM',
+    wudu: 'WUDU FACILITIES',
+    bidet: 'BIDET',
+    space_to_pray: 'PRAY SPACE',
+    pork_free: 'PORK FREE',
+    cash_only: 'CASH ONLY',
+    halal_food: 'HALAL FOOD',
+    vegan_option: 'VEGAN OPTION',
+    muslim_owned: 'MUSLIM OWNED',
+    muslim_staff: 'MUSLIM STAFF',
+    alcohol_free: 'ALCOHOL FREE',
+    free_wifi: 'FREE WIFI',
+    qibla_direction: 'QIBLA'
+  }
+  return labels[code] || code.replace('_', ' ').toUpperCase()
+}
 </script>
 
 <style scoped>
@@ -1340,4 +1565,162 @@ async function toast(message: string, color: string) {
 
 .fade-in { animation: fadeIn .3s ease-out; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+/* Reviews Manager style */
+.review-manager-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.review-manage-card {
+  background: var(--ion-color-light, #f4f5f8);
+  border-radius: 14px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.rev-manage-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.rev-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  overflow: hidden;
+}
+.rev-info {
+  flex-grow: 1;
+}
+.rev-username {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--ion-text-color);
+}
+.rev-date {
+  font-size: 0.75rem;
+  color: var(--ion-color-medium);
+}
+.rev-stars {
+  display: flex;
+  gap: 2px;
+}
+.rev-stars ion-icon {
+  font-size: 1.1rem;
+}
+.rev-comment-text {
+  margin: 0;
+  font-size: 0.92rem;
+  font-style: italic;
+  line-height: 1.4;
+  color: var(--ion-text-color);
+}
+.rev-facilities-checked {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.rev-fac-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+}
+.rev-fac-badge.yes {
+  background: rgba(var(--ion-color-success-rgb, 16, 185, 129), 0.12);
+  color: var(--ion-color-success, #10b981);
+}
+.rev-fac-badge.no {
+  background: rgba(var(--ion-color-danger-rgb, 239, 68, 68), 0.12);
+  color: var(--ion-color-danger, #ef4444);
+}
+.reply-container {
+  margin-top: 6px;
+  border-top: 1px dashed var(--ion-color-light-shade);
+  padding-top: 10px;
+}
+.reply-editor-box {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.reply-textarea {
+  background: var(--ion-color-step-50, #fff);
+  border: 1px solid var(--ion-color-light-shade);
+  border-radius: 10px;
+  padding: 8px;
+  font-size: 0.88rem;
+  --placeholder-color: var(--ion-color-medium);
+}
+.reply-editor-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.existing-reply-box {
+  background: rgba(var(--ion-color-carrot-rgb, 255, 152, 0), 0.04);
+  border-left: 3px solid var(--ion-color-carrot, #ff9800);
+  border-radius: 4px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.reply-box-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.reply-by-label {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: var(--ion-color-carrot, #ff9800);
+  text-transform: uppercase;
+}
+.reply-date-label {
+  font-size: 0.7rem;
+  color: var(--ion-color-medium);
+}
+.reply-content-text {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.4;
+  color: var(--ion-text-color);
+}
+.reply-box-footer {
+  display: flex;
+  justify-content: flex-end;
+}
+.reply-edit-btn {
+  --padding-start: 0;
+  --padding-end: 0;
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+.gold-grid {
+  margin-bottom: 20px;
+}
+.gold-card {
+  background: rgba(var(--ion-color-warning-rgb, 202, 138, 4), 0.08);
+  border: 1.5px solid rgba(var(--ion-color-warning-rgb, 202, 138, 4), 0.25);
+  box-shadow: 0 4px 12px rgba(202, 138, 4, 0.05);
+}
+.locked-grid {
+  opacity: 0.7;
+  cursor: pointer;
+}
+.locked-card {
+  background: var(--ion-color-light);
+  border: 1px dashed var(--ion-color-medium-shade);
+}
+.locked-title {
+  color: var(--ion-color-medium-shade);
+}
 </style>

@@ -72,6 +72,15 @@ const missions = ref<Mission[]>([
         points: 10,
         completed: false,
         icon: 'add-circle-outline'
+    },
+    {
+        id: 'review_place',
+        label: 'Review a Location',
+        required: 1,
+        current: 0,
+        points: 10,
+        completed: false,
+        icon: 'star-outline'
     }
 ])
 
@@ -174,6 +183,11 @@ export function useDailyMissions() {
                                 if (mMF && mMF.current < mMF.required) mMF.current++
                             }
                         }
+                        break
+                    }
+                    case 'location_review_success': {
+                        const mReview = missions.value.find(m => m.id === 'review_place')
+                        if (mReview && mReview.current < mReview.required) mReview.current++
                         break
                     }
                 }

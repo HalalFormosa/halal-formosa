@@ -48,6 +48,7 @@ function resolveEntity(activity: string, rawDetail: any): EntityResult {
         case 'explore_place_search_hit':
         case 'edit_place_success':
         case 'add_place_success':
+        case 'location_review_success':
             return {
                 entity_type: 'place',
                 entity_id: detail.id ? String(detail.id) : null
