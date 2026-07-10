@@ -90,10 +90,10 @@
           </div>
 
           <!-- Info -->
-          <ion-label style="min-width: 0; flex: 1; overflow: hidden;">
+          <ion-label style="min-width: 0; flex: 1; overflow: hidden; width: 0; margin-right: 8px;">
             <h2 style="margin: 0; font-weight: 600; font-size: 1rem; display: flex; align-items: center; gap: 6px; color: inherit; min-width: 0; overflow: hidden; width: 100%;">
               <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0; color: inherit;">
-                {{ formatDisplayName(currentUser?.id === user.id && !user.public_profile ? (currentUser?.user_metadata?.full_name || currentUser?.user_metadata?.display_name || 'Me') : user.display_name) }}
+                {{ user.public_profile ? user.display_name : formatDisplayName(currentUser?.id === user.id ? (currentUser?.user_metadata?.full_name || currentUser?.user_metadata?.display_name || 'Me') : user.display_name) }}
               </span>
               <span v-if="user.donor_type && user.donor_type.toLowerCase().includes('pro')" class="list-pro-badge">
                 <ion-icon :icon="sparkles" style="font-size: 0.7rem; margin-right: 2px;" />
@@ -859,14 +859,23 @@ ion-segment-button {
 }
 .leaderboard-item {
   --overflow: visible;
-  overflow: visible;
-  contain: none;
+  overflow: visible !important;
+  contain: none !important;
   margin: 8px 0;
   border-radius: 12px;
 }
 .leaderboard-item::part(native) {
   overflow: visible !important;
   border-radius: 12px !important;
+}
+.leaderboard-item::part(inner) {
+  overflow: visible !important;
+}
+.leaderboard-item ion-label {
+  min-width: 0 !important;
+  width: 0 !important;
+  flex: 1 1 0% !important;
+  margin-right: 8px !important;
 }
 
 .leaderboard-avatar-cell {
@@ -1119,28 +1128,28 @@ ion-segment-button {
   --color: currentColor;
 }
 
-.highlighted-row {
+.highlighted-row::part(native) {
   animation: highlight-pulse 2.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
 }
 
 @keyframes highlight-pulse {
   0% {
     transform: scale(1);
-    box-shadow: 0 0 0 rgba(230, 126, 34, 0);
+    box-shadow: inset 0 0 0 0 rgba(230, 126, 34, 0);
   }
   15% {
-    transform: scale(1.025);
-    box-shadow: 0 0 20px rgba(230, 126, 34, 0.75);
-    background: rgba(230, 126, 34, 0.22) !important;
+    transform: scale(1);
+    box-shadow: inset 0 0 0 2px rgba(230, 126, 34, 0.85), inset 0 0 8px rgba(230, 126, 34, 0.3);
+    background: rgba(230, 126, 34, 0.15) !important;
   }
   80% {
-    transform: scale(1.025);
-    box-shadow: 0 0 20px rgba(230, 126, 34, 0.75);
-    background: rgba(230, 126, 34, 0.22) !important;
+    transform: scale(1);
+    box-shadow: inset 0 0 0 2px rgba(230, 126, 34, 0.85), inset 0 0 8px rgba(230, 126, 34, 0.3);
+    background: rgba(230, 126, 34, 0.15) !important;
   }
   100% {
     transform: scale(1);
-    box-shadow: 0 0 0 rgba(230, 126, 34, 0);
+    box-shadow: inset 0 0 0 0 rgba(230, 126, 34, 0);
   }
 }
 

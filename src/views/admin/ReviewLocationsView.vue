@@ -136,6 +136,7 @@
                 <p style="font-size: 12px; margin-bottom: 2px;">{{ $t('review.uploadedBy') }}</p>
                 <h3 style="font-weight: 600;">{{ selectedLocation.uploader?.display_name || $t('home.anonymous') }}</h3>
               </ion-label>
+              <ion-badge v-if="selectedLocation.uploaderRole === 'contributor'" slot="end" color="warning" style="margin-right: 6px;">Dedicated Contributor</ion-badge>
               <ion-badge slot="end" color="medium">{{ selectedLocation.uploader?.donor_type || $t('profile.donors.Free') }}</ion-badge>
             </ion-item>
 
@@ -510,17 +511,27 @@ async function loadPendingLocations() {
   if (locations && locations.length > 0) {
     const uploaderIds = [...new Set(locations.map(l => l.created_by).filter(Boolean))]
 
-    if (uploaderIds.length > 0) {
-      const { data: profiles, error: profError } = await supabase
+      const [profilesResult, rolesResult] = await Promise.all([
+        supabase
           .from('user_profiles')
           .select('id, display_name, avatar_url, donor_type')
-          .in('id', uploaderIds)
+          .in('id', uploaderIds),
+        supabase
+          .from('user_roles')
+          .select('user_id, role')
+          .in('user_id', uploaderIds)
+      ])
+      const profiles = profilesResult.data
+      const profError = profilesResult.error
+      const roles = rolesResult.data
 
       if (!profError && profiles) {
         const profileMap = Object.fromEntries(profiles.map(p => [p.id, p]))
+        const rolesMap = Object.fromEntries((roles || []).map(r => [r.user_id, r.role]))
         pendingLocations.value = locations.map(l => ({
           ...l,
-          uploader: profileMap[l.created_by] || null
+          uploader: profileMap[l.created_by] || null,
+          uploaderRole: rolesMap[l.created_by] || 'user'
         }))
       } else {
         pendingLocations.value = locations

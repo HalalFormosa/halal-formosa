@@ -54,11 +54,75 @@
           </div>
           <h2 style="font-weight: 700; font-size: 1.35rem; margin-top: 0; margin-bottom: 12px;">Daily Limit Reached</h2>
           <p style="color: var(--ion-color-medium); line-height: 1.5; font-size: 0.95rem; margin-bottom: 24px; padding: 0 8px;">
-            You have reached your daily limit of 3 contributed locations. To maintain database quality, you can submit more locations tomorrow. Thank you for helping the community!
+            You have reached your daily limit of 3 contributed locations.
           </p>
-          <ion-button expand="block" color="carrot" @click="router.back()">
-            Go Back
-          </ion-button>
+
+          <div v-if="pendingApplicationExists">
+            <div style="background: var(--ion-color-light); border-radius: 8px; padding: 12px; margin-bottom: 24px; text-align: left;">
+              <span style="font-size: 13px; color: var(--ion-color-dark); font-weight: 600; display: flex; align-items: center; gap: 6px;">
+                ⏳ Application Pending Review
+              </span>
+              <p style="font-size: 12px; color: var(--ion-color-medium); margin-top: 4px; margin-bottom: 0; line-height: 1.4;">
+                We are currently reviewing your application to become a Dedicated Contributor. We will notify you once approved!
+              </p>
+            </div>
+            <ion-button expand="block" color="carrot" @click="router.back()">
+              Go Back
+            </ion-button>
+          </div>
+
+          <div v-else-if="!applicationSubmitted">
+            <div v-if="!applying">
+              <p style="color: var(--ion-color-medium); line-height: 1.4; font-size: 0.85rem; margin-bottom: 20px; padding: 0 8px; font-style: italic;">
+                Want to contribute more locations to help the community? Apply to become a Dedicated Contributor!
+              </p>
+              
+              <div style="display: flex; flex-direction: column; gap: 8px;">
+                <ion-button expand="block" color="carrot" @click="applying = true">
+                  Apply to be a Dedicated Contributor
+                </ion-button>
+                <ion-button expand="block" fill="clear" color="medium" @click="router.back()">
+                  Go Back
+                </ion-button>
+              </div>
+            </div>
+            
+            <div v-else class="ion-text-start ion-padding-top">
+              <ion-item lines="none" style="--background: transparent; margin-bottom: 12px;">
+                <ion-textarea
+                  v-model="applicationReason"
+                  label="Why do you want to contribute more locations?"
+                  label-placement="stacked"
+                  placeholder="Tell us why you want to help the community (e.g. 'I want to add Halal places in my city' or 'I travel a lot around Taiwan and find many mosques/restaurants')."
+                  rows="4"
+                  required
+                  style="border: 1px solid var(--ion-color-light); border-radius: 8px; padding: 8px; font-size: 14px;"
+                />
+              </ion-item>
+              
+              <div style="display: flex; gap: 8px; padding: 0 8px;">
+                <ion-button style="flex: 1;" color="carrot" :disabled="applicationLoading || !applicationReason.trim()" @click="submitApplication">
+                  <ion-spinner v-if="applicationLoading" name="crescent" style="zoom: 0.6; margin-right: 8px;" />
+                  Submit
+                </ion-button>
+                <ion-button style="flex: 1;" fill="outline" color="medium" @click="applying = false">
+                  Cancel
+                </ion-button>
+              </div>
+            </div>
+          </div>
+          
+          <div v-else>
+            <p style="color: var(--ion-color-success); font-weight: 600; font-size: 1rem; margin-bottom: 12px;">
+              ✅ Application Submitted!
+            </p>
+            <p style="color: var(--ion-color-medium); line-height: 1.5; font-size: 0.90rem; margin-bottom: 24px; padding: 0 8px;">
+              Thank you! We will review your application to become a Dedicated Contributor and update your status soon.
+            </p>
+            <ion-button expand="block" color="carrot" @click="router.back()">
+              Go Back
+            </ion-button>
+          </div>
         </ion-card>
       </div>
 
@@ -520,9 +584,79 @@ const isEditing = computed(() => !!route.params.id)
 const coordUpdateSource = ref<'address' | 'map' | 'manual' | 'init' | null>('init')
 
 const limitReached = ref(false)
+const applying = ref(false)
+const applicationReason = ref('')
+const applicationSubmitted = ref(false)
+const applicationLoading = ref(false)
+const pendingApplicationExists = ref(false)
+
+async function checkPendingApplication() {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return
+  const { data, error } = await supabase
+    .from('contributor_applications')
+    .select('id')
+    .eq('user_id', user.id)
+    .eq('status', 'pending')
+    .limit(1)
+  if (!error && data && data.length > 0) {
+    pendingApplicationExists.value = true
+  }
+}
+
+async function submitApplication() {
+  if (!applicationReason.value.trim()) return
+  applicationLoading.value = true
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    
+    const { error } = await supabase
+      .from('contributor_applications')
+      .insert({
+        user_id: user.id,
+        reason: applicationReason.value,
+        status: 'pending'
+      })
+      
+    if (error) throw error
+    
+    applicationSubmitted.value = true
+
+    // Fetch profile for user metadata
+    const { data: profile } = await supabase
+      .from('user_profiles')
+      .select('display_name, email')
+      .eq('id', user.id)
+      .maybeSingle()
+
+    const userName = profile?.display_name || user.email || 'Anonymous'
+    const userEmail = profile?.email || user.email || 'N/A'
+
+    await notifyEvent(
+      'contributor_application_needs_review',
+      '🔍 Contributor Application Needs Review',
+      `User ${userName} (${userEmail}) has applied to become a Dedicated Contributor.\nReason: ${applicationReason.value}`,
+      undefined,
+      {
+        user_id: user.id,
+        target_role: 'admin',
+        isNative: true
+      },
+      ['discord', 'onesignal']
+    )
+  } catch (err) {
+    console.error('Failed to submit contributor application:', err)
+  } finally {
+    applicationLoading.value = false
+  }
+}
 
 onIonViewWillEnter(async () => {
   limitReached.value = await isContributionLimitReached()
+  if (limitReached.value) {
+    await checkPendingApplication()
+  }
 })
 
 /* -------------------- Multi-Step Logic -------------------- */
@@ -560,7 +694,7 @@ const router = useRouter()
 /* -------------------- Role Gate -------------------- */
 const checkedRole = ref(false)
 const locationTypes = ref<{ id: number; name: string }[]>([])
-const isPrivileged = (r: Role | null) => r === 'admin' || r === 'contributor'
+const isPrivileged = (r: Role | null) => r === 'admin'
 
 type Role = 'admin' | 'contributor' | 'user'
 const myRole = ref<Role | null>(null)
@@ -1432,7 +1566,7 @@ const submitPlace = async () => {
             { id: newPlace.id, lat: form.value.lat, lng: form.value.lng, isNative: true, added_by: userEmail, user_id: user?.id }
         )
       } else {
-        // 🔴 Non-admin → notify Discord admins only
+        // 🔴 Non-admin → notify Discord and push to Admin accounts
         const selectedType = locationTypes.value.find(t => t.id === form.value.type_id)
         const placeTypeName = selectedType?.name || 'Halal Place'
 
@@ -1441,8 +1575,8 @@ const submitPlace = async () => {
             `🔍 Location Needs Review`,
             `${form.value.name} (${placeTypeName})\nAddress: ${form.value.address || 'N/A'}\nSubmitted by: ${userName} (${userEmail})\nAwaiting approval.`,
             form.value.image ?? undefined,
-            { id: newPlace.id, lat: form.value.lat, lng: form.value.lng, isNative: true, added_by: userEmail, user_id: user?.id },
-            ['discord']
+            { id: newPlace.id, lat: form.value.lat, lng: form.value.lng, isNative: true, added_by: userEmail, user_id: user?.id, target_role: 'admin' },
+            ['discord', 'onesignal']
         )
       }
 

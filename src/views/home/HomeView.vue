@@ -779,7 +779,7 @@
               </div>
 
               <!-- Info -->
-              <ion-label style="min-width: 0; flex: 1; overflow: hidden;">
+              <ion-label style="min-width: 0; flex: 1; overflow: hidden; width: 0; margin-right: 8px;">
                 <h2 style="margin: 0; font-weight: 600; font-size: 1rem; display: flex; align-items: center; gap: 6px; color: inherit; min-width: 0; overflow: hidden; width: 100%;">
                   <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0; color: inherit;">
                     {{ formatDisplayName(currentUser?.id === user.id && !user.public_profile ? (currentUser?.user_metadata?.full_name || currentUser?.user_metadata?.display_name || 'Me') : user.display_name) }}
@@ -3089,6 +3089,9 @@ ion-segment-button {
   contain: none;
 }
 .leaderboard-item::part(native) {
+  overflow: visible !important;
+}
+.leaderboard-item::part(inner) {
   overflow: visible !important;
 }
 

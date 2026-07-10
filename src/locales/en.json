@@ -396,9 +396,10 @@
       "unlockPro": "Unlock AI Explanation (PRO)"
     },
     "limit": {
-      "reached": "Daily scan limit reached ({limit}/day)",
+      "reached": "Daily scan limit reached. Watch an ad or contribute a missing product/location to get more scans!",
       "bonus": "Watch Ad +1 Scan",
-      "adLimit": "You can only watch {count} ads per day."
+      "adLimit": "You can only watch {count} ads per day.",
+      "contributeTip": "Earn +1 daily scan for every product or location you contribute (max 3/day)."
     },
     "errors": {
       "ocrFailed": "OCR analysis failed. Please try again with a clearer photo.",
@@ -960,7 +961,7 @@
     "coFounder": "Co-Founder",
     "coDeveloper": "Co-Developer",
     "uiUx": "UI/UX Contributor",
-    "database": "Database Contributor",
+    "database": "Early Contributor",
     "specialThanks": "Special Thanks",
     "thankYou": "We sincerely thank all community members, testers, and supporters who helped make Halal Formosa possible. May Allah SWT reward your contributions with abundant goodness."
   },
@@ -1449,6 +1450,26 @@
     }
   },
   "admin": {
+    "sections": {
+      "content": "Content Review",
+      "store": "Platform Store Admin",
+      "management": "Management",
+      "system": "System & Logs"
+    },
+    "pointsLogs": "View Points Logs",
+    "scanLogs": "Ingredient Scan Logs",
+    "analytics": "Analytics Dashboard",
+    "masterData": "Master Data",
+    "locationsReview": "Locations Review",
+    "locationReports": "Location Reports",
+    "productReports": "Product Reports",
+    "users": "Users",
+    "productCategories": "Product Categories",
+    "ingredientHighlights": "Ingredient Highlights",
+    "locationTypes": "Location Types",
+    "stores": "Stores",
+    "categoryRules": "Category Rules",
+    "products": "Manage Products",
     "claims": {
       "title": "Business Claims",
       "noPending": "No pending claims",
@@ -1509,7 +1530,29 @@
     "archive": "Archive",
     "confirmDeletePlace": "Are you sure you want to delete/reject this location permanently?",
     "master": {
-      "published": "Published"
+      "published": "Published",
+      "product_categories": "Product Categories",
+      "ingredient_highlights": "Ingredient Highlights",
+      "location_types": "Location Types",
+      "stores": "Stores",
+      "category_rules": "Category Rules",
+      "fields": {
+        "name": "Name",
+        "keyword_en": "Keyword (EN)",
+        "keyword_zh": "Keyword (ZH)",
+        "status": "Status",
+        "emoji": "Emoji",
+        "color": "Color (Hex)",
+        "is_active": "Active Status",
+        "active": "Active",
+        "inactive": "Inactive",
+        "store_name": "Store Name",
+        "website": "Website",
+        "logo_url": "Logo URL",
+        "sort_order": "Sort Order",
+        "keyword": "Keyword",
+        "category": "Category"
+      }
     },
     "name": "Name",
     "address": "Address",
@@ -1794,9 +1837,7 @@
     "saveFailed": "Failed to save product.",
     "adminOrders": "Store Orders",
     "noOrders": "No orders found.",
-    "admin": {
-      "products": "Manage Products"
-    },
+
     "myOrders": "My Orders",
     "orderPending": "Pending",
     "orderPaid": "Paid",

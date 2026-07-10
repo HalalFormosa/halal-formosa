@@ -101,7 +101,8 @@ import {
   IonRefresher,
   IonRefresherContent,
   IonInfiniteScroll,
-  IonInfiniteScrollContent
+  IonInfiniteScrollContent,
+  IonIcon
 } from "@ionic/vue"
 
 import AppHeader from "@/components/AppHeader.vue"

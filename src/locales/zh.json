@@ -425,9 +425,10 @@
       "unlockPro": "Unlock AI Explanation (PRO)"
     },
     "limit": {
-      "reached": "Daily scan limit reached ({limit}/day)",
+      "reached": "已達到每日掃描限制。觀看廣告或貢獻缺失的產品/地點以獲取更多掃描次數！",
       "bonus": "Watch Ad +1 Scan",
-      "adLimit": "You can only watch {count} ads per day."
+      "adLimit": "You can only watch {count} ads per day.",
+      "contributeTip": "每貢獻一個新產品或地點可獲得 +1 每日掃描次數（每日最多 +3 次）。"
     },
     "progress": {
       "initializing": "Initializing...",
@@ -925,7 +926,7 @@
     "coFounder": "共同創辦人",
     "coDeveloper": "共同開發者",
     "uiUx": "UI/UX 貢獻者",
-    "database": "資料庫貢獻者",
+    "database": "早期貢獻者",
     "specialThanks": "特別感謝",
     "thankYou": "我們誠摯感謝所有社群成員、測試人員和支持者，是你們讓 Halal Formosa 成為可能。願真主賞賜你們的貢獻。"
   },
@@ -1160,6 +1161,21 @@
     "moveFailed": "移動項目失敗。"
   },
   "admin": {
+    "sections": {
+      "content": "內容審核",
+      "store": "平台商店管理",
+      "management": "管理",
+      "system": "系統與紀錄"
+    },
+    "pointsLogs": "查看積分紀錄",
+    "scanLogs": "成分掃描紀錄",
+    "analytics": "數據分析儀表板",
+    "masterData": "主數據管理",
+    "locationsReview": "地點審核",
+    "locationReports": "地點回報",
+    "productReports": "產品回報",
+    "users": "用戶",
+    "products": "產品管理",
     "scanDetails": "掃描詳情",
     "close": "關閉",
     "status": "狀態",
@@ -1176,7 +1192,29 @@
     "archive": "封存",
     "confirmDeletePlace": "您確定要永久刪除/拒絕此地點嗎？",
     "master": {
-      "published": "已發布"
+      "published": "已發布",
+      "product_categories": "產品類別",
+      "ingredient_highlights": "成分亮點",
+      "location_types": "地點類型",
+      "stores": "商店",
+      "category_rules": "類別規則",
+      "fields": {
+        "name": "名稱",
+        "keyword_en": "英文關鍵字",
+        "keyword_zh": "中文關鍵字",
+        "status": "狀態",
+        "emoji": "表情符號",
+        "color": "顏色 (Hex)",
+        "is_active": "是否啟用",
+        "active": "啟用",
+        "inactive": "停用",
+        "store_name": "商店名稱",
+        "website": "網站",
+        "logo_url": "Logo 網址",
+        "sort_order": "排序",
+        "keyword": "關鍵字",
+        "category": "類別"
+      }
     },
     "name": "名稱",
     "address": "地址",
@@ -1463,9 +1501,7 @@
     "deleteConfirm": "您確定要刪除此產品嗎？",
     "deleteSuccess": "產品已成功刪除。",
     "inStockShort": "件",
-    "admin": {
-      "products": "產品管理"
-    },
+
     "myOrders": "我的訂單",
     "orderPending": "待處理",
     "orderPaid": "已付款",

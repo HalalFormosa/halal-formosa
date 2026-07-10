@@ -348,9 +348,10 @@
       "unlockPro": "Unlock AI Explanation (PRO)"
     },
     "limit": {
-      "reached": "Daily scan limit reached ({limit}/day)",
+      "reached": "Günlük tarama sınırına ulaşıldı. Daha fazla tarama hakkı kazanmak için reklam izleyin veya eksik bir ürün/konum ekleyin!",
       "bonus": "Watch Ad +1 Scan",
-      "adLimit": "You can only watch {count} ads per day."
+      "adLimit": "You can only watch {count} ads per day.",
+      "contributeTip": "Katkıda bulunduğunuz her ürün veya konum için günlük +1 tarama hakkı kazanın (en fazla 3/gün)."
     },
     "progress": {
       "initializing": "Initializing...",

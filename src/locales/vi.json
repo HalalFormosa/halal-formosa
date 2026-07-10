@@ -348,9 +348,10 @@
       "unlockPro": "Unlock AI Explanation (PRO)"
     },
     "limit": {
-      "reached": "Daily scan limit reached ({limit}/day)",
+      "reached": "Đã đạt giới hạn quét hàng ngày. Xem quảng cáo hoặc đóng góp sản phẩm/địa điểm còn thiếu để nhận thêm lượt quét!",
       "bonus": "Watch Ad +1 Scan",
-      "adLimit": "You can only watch {count} ads per day."
+      "adLimit": "You can only watch {count} ads per day.",
+      "contributeTip": "Nhận thêm +1 lượt quét hàng ngày cho mỗi sản phẩm hoặc địa điểm bạn đóng góp (tối đa 3 lượt/ngày)."
     },
     "progress": {
       "initializing": "Initializing...",

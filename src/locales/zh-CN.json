@@ -403,9 +403,10 @@
       "unlockPro": "Unlock AI Explanation (PRO)"
     },
     "limit": {
-      "reached": "Daily scan limit reached ({limit}/day)",
+      "reached": "已达到每日扫描限制。观看广告或贡献缺失的产品/地点以获取更多扫描次数！",
       "bonus": "Watch Ad +1 Scan",
-      "adLimit": "You can only watch {count} ads per day."
+      "adLimit": "You can only watch {count} ads per day.",
+      "contributeTip": "每贡献一个新产品或地点可获得 +1 每日扫描次数（每日最多 +3 次）。"
     },
     "progress": {
       "initializing": "Initializing...",

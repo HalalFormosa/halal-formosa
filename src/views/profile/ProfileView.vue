@@ -380,6 +380,19 @@
                 <p v-if="myLocationReportsCount !== null">{{ myLocationReportsCount }} {{ $t('profile.reportsCount') }}</p>
               </ion-label>
             </ion-item>
+
+            <!-- Dedicated Contributor Application (For regular users only) -->
+            <ion-item v-if="!isAdmin && !isContributor" button @click="showContributorAppModal = true">
+              <div class="icon-box" slot="start">
+                <ion-icon :icon="icons.documentTextOutline" />
+              </div>
+              <ion-label>
+                <h3 style="font-weight: 700; color: var(--ion-color-dark);">Become a Dedicated Contributor</h3>
+                <p style="font-size: 0.8rem; color: var(--ion-color-medium);">
+                  {{ contributorAppStatus === 'pending' ? '⏳ Application pending review' : 'Help the community & get unlimited contributions' }}
+                </p>
+              </ion-label>
+            </ion-item>
           </ion-list>
         </ion-card>
 
@@ -575,6 +588,14 @@
               <ion-label>{{ $t('profile.admin.users') }}</ion-label>
             </ion-item>
 
+            <ion-item button @click="$router.push('/admin/contributor-applications')">
+              <div class="icon-box" slot="start">
+                <ion-icon :icon="icons.documentTextOutline" />
+              </div>
+              <ion-label>Contributor Applications</ion-label>
+              <ion-badge v-if="pendingContributorAppsCount > 0" color="danger" slot="end" style="border-radius: 8px;">{{ pendingContributorAppsCount }}</ion-badge>
+            </ion-item>
+
             <ion-item button @click="goToMerchantApplications">
               <div class="icon-box" slot="start">
                 <ion-icon :icon="icons.storefrontOutline" />
@@ -632,6 +653,67 @@
             </ion-item>
           </ion-list>
         </ion-card>
+
+
+
+        <!-- Dedicated Contributor Application Modal -->
+        <ion-modal :is-open="showContributorAppModal" @didDismiss="showContributorAppModal = false">
+          <ion-header>
+            <ion-toolbar color="carrot">
+              <ion-title>Become a Contributor</ion-title>
+              <ion-buttons slot="end">
+                <ion-button @click="showContributorAppModal = false">Close</ion-button>
+              </ion-buttons>
+            </ion-toolbar>
+          </ion-header>
+          
+          <ion-content class="ion-padding">
+            <div class="ion-text-center ion-padding-bottom">
+              <div style="font-size: 48px; margin-bottom: 12px;">🌟</div>
+              <h2 style="font-weight: 700; margin-bottom: 8px;">Dedicated Contributor</h2>
+              <p style="color: var(--ion-color-medium); font-size: 14px;">
+                Apply to become a verified contributor. You'll get unlimited daily product & location contributions, and auto-approved submissions!
+              </p>
+            </div>
+
+            <div v-if="contributorAppStatus === 'pending'" style="background: var(--ion-color-light); border-radius: 12px; padding: 16px; margin-top: 16px; text-align: center;">
+              <span style="font-size: 14px; color: var(--ion-color-dark); font-weight: 600; display: block; margin-bottom: 4px;">
+                ⏳ Application Pending
+              </span>
+              <p style="font-size: 13px; color: var(--ion-color-medium); margin: 0; line-height: 1.4;">
+                We are currently reviewing your application. Thank you for your patience!
+              </p>
+            </div>
+
+            <div v-else-if="contributorAppStatus === 'rejected'" style="background: rgba(var(--ion-color-danger-rgb), 0.1); border-radius: 12px; padding: 16px; margin-top: 16px; text-align: center;">
+              <span style="font-size: 14px; color: var(--ion-color-danger); font-weight: 600; display: block; margin-bottom: 4px;">
+                ❌ Previous Application Declined
+              </span>
+              <p style="font-size: 13px; color: var(--ion-color-medium); margin: 0; line-height: 1.4; margin-bottom: 12px;">
+                Your previous application was not approved. You can submit a new request below if your circumstances have changed.
+              </p>
+            </div>
+
+            <div v-if="contributorAppStatus !== 'pending'">
+              <ion-item lines="none" style="--background: transparent; margin-bottom: 16px; margin-top: 16px;">
+                <ion-textarea
+                  v-model="appReason"
+                  label="Why do you want to contribute more to Halal Formosa?"
+                  label-placement="stacked"
+                  placeholder="Let us know how you plan to help (e.g. 'I want to translate ingredients for local stores' or 'I buy many foreign items and scan daily')."
+                  rows="5"
+                  required
+                  style="border: 1px solid var(--ion-color-light); border-radius: 8px; padding: 8px;"
+                />
+              </ion-item>
+
+              <ion-button expand="block" color="carrot" :disabled="appSubmitting || !appReason.trim()" @click="submitProfileContributorApp">
+                <ion-spinner v-if="appSubmitting" name="crescent" style="zoom: 0.6; margin-right: 8px;" />
+                Submit Application
+              </ion-button>
+            </div>
+          </ion-content>
+        </ion-modal>
 
         <!-- Information & About Section -->
         <ion-card>
@@ -797,6 +879,8 @@ import {
   IonText,
   IonTitle,
   IonToolbar,
+  IonSpinner,
+  IonTextarea,
   onIonViewWillEnter,
   onIonViewDidEnter,
   alertController
@@ -843,6 +927,8 @@ import {
   donorBadge, 
   donorType,
   isAdmin, 
+  isContributor,
+  userRole,
   loadUserProfile, 
   resetUserProfileState, 
   loadDonorFromCache, 
@@ -931,6 +1017,7 @@ const pendingProductReportsCount = ref(0);
 const pendingMerchantAppsCount = ref(0);
 const pendingClaimsCount = ref(0);
 const pendingEditRequestsCount = ref(0);
+const pendingContributorAppsCount = ref(0);
 const hasOwnedBusinesses = ref(false);
 const businessSub = ref<{ tier: 'free' | 'bronze' | 'silver' | 'gold'; source: string; status: string; expires_at: string | null } | null>(null);
 const businessTier = computed<'free' | 'bronze' | 'silver' | 'gold'>(() =>
@@ -1123,6 +1210,87 @@ async function fetchPendingEditRequestsCount() {
   pendingEditRequestsCount.value = await ClaimService.getPendingEditRequestsCount()
 }
 
+async function fetchPendingContributorAppsCount() {
+  if (!isAdmin.value) return
+  const { count } = await supabase
+    .from('contributor_applications')
+    .select('*', { count: 'exact', head: true })
+    .eq('status', 'pending')
+  pendingContributorAppsCount.value = count || 0
+}
+
+const contributorAppStatus = ref<string | null>(null)
+const showContributorAppModal = ref(false)
+const appReason = ref('')
+const appSubmitting = ref(false)
+
+async function fetchContributorAppStatus() {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return
+  const { data, error } = await supabase
+    .from('contributor_applications')
+    .select('status')
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: false })
+    .limit(1)
+  if (!error && data && data.length > 0) {
+    contributorAppStatus.value = data[0].status
+  }
+}
+
+async function submitProfileContributorApp() {
+  if (!appReason.value.trim()) return
+  appSubmitting.value = true
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    const { error } = await supabase
+      .from('contributor_applications')
+      .insert({
+        user_id: user.id,
+        reason: appReason.value,
+        status: 'pending'
+      })
+    if (error) throw error
+    contributorAppStatus.value = 'pending'
+    showContributorAppModal.value = false
+
+    // Fetch profile for user metadata
+    const { data: profile } = await supabase
+      .from('user_profiles')
+      .select('display_name, email')
+      .eq('id', user.id)
+      .maybeSingle()
+
+    const userName = profile?.display_name || user.email || 'Anonymous'
+    const userEmail = profile?.email || user.email || 'N/A'
+
+    await notifyEvent(
+      'contributor_application_needs_review',
+      '🔍 Contributor Application Needs Review',
+      `User ${userName} (${userEmail}) has applied to become a Dedicated Contributor.\nReason: ${appReason.value}`,
+      undefined,
+      {
+        user_id: user.id,
+        target_role: 'admin',
+        isNative: true
+      },
+      ['discord', 'onesignal']
+    )
+    
+    const toast = await toastController.create({
+      message: '✅ Application submitted successfully!',
+      duration: 2000,
+      color: 'success'
+    });
+    await toast.present();
+  } catch (err) {
+    console.error('Failed to submit contributor app:', err)
+  } finally {
+    appSubmitting.value = false
+  }
+}
+
 async function fetchHasOwnedBusinesses(userId: string) {
   const { count } = await supabase
     .from('location_owners')
@@ -1237,13 +1405,19 @@ async function refreshAllData(userId: string) {
             fetchPendingClaimsCount(),
             fetchPendingEditRequestsCount(),
             fetchPendingLocationReportsCount(),
-            fetchPendingProductReportsCount()
+            fetchPendingProductReportsCount(),
+            fetchPendingContributorAppsCount()
           ])
         }
       })(),
       fetchHasOwnedBusinesses(userId),
       fetchBusinessTier(userId),
-      fetchMyContributionsCount(userId)
+      fetchMyContributionsCount(userId),
+      (async () => {
+        if (!isAdmin.value && !isContributor.value) {
+          await fetchContributorAppStatus()
+        }
+      })()
     ]);
 
 
@@ -1336,6 +1510,9 @@ onMounted(async () => {
           fetchPendingLocationsCount();
           fetchPendingLocationReportsCount();
           fetchPendingProductReportsCount();
+          fetchPendingContributorAppsCount();
+        } else {
+          fetchContributorAppStatus();
         }
         
         fetchPendingOrdersCount();

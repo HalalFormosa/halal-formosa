@@ -348,9 +348,10 @@
       "unlockPro": "Unlock AI Explanation (PRO)"
     },
     "limit": {
-      "reached": "Daily scan limit reached ({limit}/day)",
+      "reached": "1日のスキャン制限に達しました。動画広告を視聴するか、不足している商品や場所を登録してスキャン回数を増やしましょう！",
       "bonus": "Watch Ad +1 Scan",
-      "adLimit": "You can only watch {count} ads per day."
+      "adLimit": "You can only watch {count} ads per day.",
+      "contributeTip": "商品や場所を1件登録するごとに、1日のスキャン回数が+1されます（1日最大+3回まで）。"
     },
     "progress": {
       "initializing": "Initializing...",

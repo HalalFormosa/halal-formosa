@@ -348,9 +348,10 @@
       "unlockPro": "Unlock AI Explanation (PRO)"
     },
     "limit": {
-      "reached": "Daily scan limit reached ({limit}/day)",
+      "reached": "দৈনিক স্ক্যান সীমা শেষ। আরও স্ক্যান পেতে একটি বিজ্ঞাপন দেখুন বা অনুপস্থিত পণ্য/অবস্থান অবদান রাখুন!",
       "bonus": "Watch Ad +1 Scan",
-      "adLimit": "You can only watch {count} ads per day."
+      "adLimit": "You can only watch {count} ads per day.",
+      "contributeTip": "আপনার অবদান রাখা প্রতিটি পণ্য বা অবস্থানের জন্য দৈনিক +১ টি অতিরিক্ত স্ক্যান পান (সর্বোচ্চ ৩/দিন)।"
     },
     "progress": {
       "initializing": "Initializing...",

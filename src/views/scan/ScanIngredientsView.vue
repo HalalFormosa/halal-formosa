@@ -195,6 +195,11 @@
             <ion-spinner v-if="loadingAd" name="crescent" style="zoom: 0.6; margin-right: 8px;"></ion-spinner>
             <span>🎁 {{ loadingAd ? 'Loading Ad...' : $t('scanIngredients.limit.bonus') }}</span>
           </ion-button>
+
+          <!-- Contribution quota tip -->
+          <p v-if="!isDonor" style="font-size: 11px; color: var(--ion-color-medium); text-align: center; margin-top: 8px; margin-bottom: 0; line-height: 1.4;">
+            💡 {{ $t('scanIngredients.limit.contributeTip') }}
+          </p>
         </div>
 
         <!-- Hero Header -->

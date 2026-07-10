@@ -296,6 +296,12 @@ const routes: Array<RouteRecordRaw> = [
         component: () => import('@/views/admin/ProductReportsView.vue'),
         meta: { requiresAuth: true, requiresAdmin: true, noAds: true }
     },
+    {
+        path: '/admin/contributor-applications',
+        name: 'ContributorApplications',
+        component: () => import('@/views/admin/ContributorApplicationsView.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true, noAds: true }
+    },
 
 
     // Store sub-routes (outside tabs)

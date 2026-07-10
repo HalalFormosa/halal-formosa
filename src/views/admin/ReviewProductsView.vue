@@ -154,6 +154,7 @@
                 <p style="font-size: 12px; margin-bottom: 2px;">{{ $t('review.uploadedBy') }}</p>
                 <h3 style="font-weight: 600;">{{ selectedProduct.uploader?.display_name || $t('admin.anonymousUser') }}</h3>
               </ion-label>
+              <ion-badge v-if="selectedProduct.uploaderRole === 'contributor'" slot="end" color="warning" style="margin-right: 6px;">Dedicated Contributor</ion-badge>
               <ion-badge slot="end" color="medium">{{ selectedProduct.uploader?.donor_type || $t('profile.donors.Free') }}</ion-badge>
             </ion-item>
 
@@ -841,16 +842,27 @@ async function loadPendingProducts() {
     const uploaderIds = [...new Set(products.map(p => p.added_by).filter(Boolean))]
     
     if (uploaderIds.length > 0) {
-      const { data: profiles, error: profError } = await supabase
+      const [profilesResult, rolesResult] = await Promise.all([
+        supabase
           .from('user_profiles')
           .select('id, display_name, avatar_url, donor_type')
-          .in('id', uploaderIds)
+          .in('id', uploaderIds),
+        supabase
+          .from('user_roles')
+          .select('user_id, role')
+          .in('user_id', uploaderIds)
+      ])
+      const profiles = profilesResult.data
+      const profError = profilesResult.error
+      const roles = rolesResult.data
 
       if (!profError && profiles) {
         const profileMap = Object.fromEntries(profiles.map(p => [p.id, p]))
+        const rolesMap = Object.fromEntries((roles || []).map(r => [r.user_id, r.role]))
         pendingProducts.value = products.map(p => ({
           ...p,
-          uploader: profileMap[p.added_by] || null
+          uploader: profileMap[p.added_by] || null,
+          uploaderRole: rolesMap[p.added_by] || 'user'
         }))
       } else {
         pendingProducts.value = products

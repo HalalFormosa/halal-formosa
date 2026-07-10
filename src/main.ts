@@ -325,6 +325,21 @@ document.addEventListener('deviceready', async () => {
         if (user) {
             await OneSignal.User.addTag('user_id', user.id);
             console.log('🏷️ Tagged user_id:', user.id);
+
+            // Fetch and tag user role
+            try {
+                const { data: roleData } = await supabase
+                    .from('user_roles')
+                    .select('role')
+                    .eq('user_id', user.id)
+                    .maybeSingle();
+                
+                const role = roleData?.role || 'user';
+                await OneSignal.User.addTag('role', role);
+                console.log('🏷️ Tagged role:', role);
+            } catch (err) {
+                console.error('Failed to tag role in OneSignal:', err);
+            }
         }
 
         console.log('✅ OneSignal v5 initialized');

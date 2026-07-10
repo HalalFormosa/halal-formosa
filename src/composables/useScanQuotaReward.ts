@@ -1,5 +1,6 @@
 import { supabase } from '@/plugins/supabaseClient'
 import { isDonor } from '@/composables/useSubscriptionStatus'
+import { userRole } from '@/composables/userProfile'
 
 /**
  * Awards bonus scan quota to the current user (e.g. for contributing a product or location).
@@ -72,6 +73,7 @@ export async function awardScanBonus(amount = 1) {
  */
 export async function isContributionLimitReached(): Promise<boolean> {
   if (isDonor.value) return false // Pro users have no limit
+  if (userRole.value === 'admin' || userRole.value === 'contributor') return false // Admins and approved contributors have no limit
 
   try {
     const { data: { user } } = await supabase.auth.getUser()

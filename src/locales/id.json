@@ -377,9 +377,10 @@
       "unlockPro": "Unlock AI Explanation (PRO)"
     },
     "limit": {
-      "reached": "Daily scan limit reached ({limit}/day)",
+      "reached": "Batas pemindaian harian tercapai. Tonton iklan atau kontribusikan produk/lokasi yang belum terdaftar untuk mendapatkan lebih banyak pemindaian!",
       "bonus": "Watch Ad +1 Scan",
-      "adLimit": "You can only watch {count} ads per day."
+      "adLimit": "You can only watch {count} ads per day.",
+      "contributeTip": "Dapatkan +1 pemindaian harian untuk setiap produk atau lokasi yang Anda kontribusikan (maks 3/hari)."
     },
     "progress": {
       "initializing": "Initializing...",

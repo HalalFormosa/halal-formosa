@@ -966,7 +966,7 @@ onMounted(async () => {
 }
 
 .phrase-item {
-  --background: var(--ion-color-step-50, #ffffff);
+  --background: var(--ion-card-background, #ffffff);
   margin-bottom: 8px;
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
@@ -1049,11 +1049,29 @@ onMounted(async () => {
 }
 
 .sentence-hero {
-  background: linear-gradient(135deg, var(--ion-color-carrot-tint, #ffecd2) 0%, #fff7ed 100%);
+  --hero-bg-start: #ffecd2;
+  --hero-bg-end: #fff7ed;
+  --hero-border: #ffd8a8;
+  background: linear-gradient(135deg, var(--hero-bg-start) 0%, var(--hero-bg-end) 100%);
   padding: 1.5rem;
   border-radius: 10px;
   margin-bottom: 1.5rem;
-  border: 1px solid var(--ion-color-carrot-shade, #ffd8a8);
+  border: 1px solid var(--hero-border);
+}
+
+@media (prefers-color-scheme: dark) {
+  .sentence-hero {
+    --hero-bg-start: #2b1f15;
+    --hero-bg-end: #1e140d;
+    --hero-border: #4a2f1b;
+  }
+}
+
+:host-context(.ion-palette-dark) .sentence-hero,
+.ion-palette-dark .sentence-hero {
+  --hero-bg-start: #2b1f15;
+  --hero-bg-end: #1e140d;
+  --hero-border: #4a2f1b;
 }
 
 .hero-label {
@@ -1133,7 +1151,7 @@ onMounted(async () => {
 }
 
 .alignment-block-card {
-  background: var(--ion-color-step-50, #fcfcfc);
+  background: var(--ion-card-background, #fcfcfc);
   border: 1px solid var(--ion-color-step-200, #eaeaea);
   border-radius: 10px;
   padding: 12px;
@@ -1227,12 +1245,12 @@ onMounted(async () => {
 }
 
 .simple-input {
-  border: 1px solid var(--ion-color-step-250, #dadada);
+  border: 1px solid var(--ion-color-step-200, #dadada);
   border-radius: 6px;
   padding: 6px 8px;
   font-size: 0.85rem;
-  background: white;
-  color: var(--ion-color-dark);
+  background: var(--ion-background-color, #ffffff);
+  color: var(--ion-text-color, #000000);
   outline: none;
   transition: border-color 0.2s;
 }
