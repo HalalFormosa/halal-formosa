@@ -450,8 +450,15 @@
           </div>
 
           <ion-toolbar class="ion-padding">
-            <ion-button expand="block" color="carrot" @click="handleConfirmCrop" style="font-weight: 700; height: 48px;">
-               {{ $t('scanIngredients.scan.done') }}
+            <ion-button 
+              expand="block" 
+              color="carrot" 
+              :disabled="ocrLoading" 
+              @click="handleConfirmCrop" 
+              style="font-weight: 700; height: 48px;"
+            >
+               <ion-spinner v-if="ocrLoading" name="crescent" style="zoom: 0.6; margin-right: 8px;"></ion-spinner>
+               {{ ocrLoading ? 'Processing...' : $t('scanIngredients.scan.done') }}
             </ion-button>
           </ion-toolbar>
         </ion-footer>
@@ -932,15 +939,14 @@ async function loadTodayScanCount() {
     return;
   }
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const today = new Date().toISOString().split('T')[0];
 
   const { data, error } = await supabase
       .from('ingredient_scan_logs')
       .select('id')
       .eq('user_id', user.id)
       .eq('success', true)       // 👈 ONLY count successful scans
-      .gte('created_at', today.toISOString());
+      .gte('created_at', today);
 
   if (error) {
     console.error("Failed to load daily scan count:", error);
@@ -958,15 +964,14 @@ async function checkDailyScanLimit() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return true;
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const today = new Date().toISOString().split('T')[0];
 
   const { data, error } = await supabase
       .from('ingredient_scan_logs')
       .select('id')
       .eq('user_id', user.id)
       .eq('success', true)
-      .gte('created_at', today.toISOString());
+      .gte('created_at', today);
 
   if (error) {
     console.error("Daily scan check error:", error);
