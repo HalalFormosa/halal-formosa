@@ -164,6 +164,27 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const submitting = ref(false)
 const isUpdate = ref(false)
+const isOwnerOfLocation = ref(false)
+
+const checkOwnership = async () => {
+  if (!currentUser.value?.id || !props.locationId) {
+    isOwnerOfLocation.value = false
+    return
+  }
+  try {
+    const { data, error } = await supabase
+      .from('location_owners')
+      .select('role')
+      .eq('location_id', props.locationId)
+      .eq('user_id', currentUser.value.id)
+      .maybeSingle()
+    
+    isOwnerOfLocation.value = !error && !!data
+  } catch (err) {
+    console.warn('[FacilityReviewModal] Failed to check ownership', err)
+    isOwnerOfLocation.value = false
+  }
+}
 
 const selectedRating = ref(0)
 const commentText = ref('')
@@ -184,6 +205,18 @@ const loadExistingReview = async () => {
   if (!currentUser.value?.id || !props.locationId) {
     isUpdate.value = false
     resetForm()
+    return
+  }
+
+  await checkOwnership()
+  if (isOwnerOfLocation.value) {
+    const toast = await toastController.create({
+      message: t('business.reviews.ownerCannotReview') || 'Owners are not allowed to review their own business',
+      duration: 3000,
+      color: 'warning'
+    })
+    toast.present()
+    emit('close')
     return
   }
 
@@ -277,8 +310,10 @@ const handleSubmit = async () => {
     }
 
     try {
-      await ActivityLogService.log('location_review_success', { id: props.locationId })
-      await awardAndCelebrate('location_review')
+      await ActivityLogService.log(isUpdate.value ? 'location_review_edit' : 'location_review_success', { id: props.locationId })
+      if (!isUpdate.value) {
+        await awardAndCelebrate('location_review')
+      }
     } catch (logErr) {
       console.warn('[FacilityReviewModal] Failed to log activity/points', logErr)
     }

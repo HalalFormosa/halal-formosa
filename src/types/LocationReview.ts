@@ -1,7 +1,7 @@
 export type TriState = 'yes' | 'no' | 'unsure';
 
 export interface LocationReview {
-  id?: string;
+  id?: number;
   location_id: number;
   user_id: string;
   rating: number | null;
@@ -9,9 +9,12 @@ export interface LocationReview {
   facilities: Record<string, TriState>;
   created_at?: string;
   updated_at?: string;
+  owner_response?: string | null;
+  owner_responded_at?: string | null;
   user_profiles?: {
     display_name: string | null;
     avatar_url: string | null;
+    public_profile?: boolean | null;
   } | null;
 }
 

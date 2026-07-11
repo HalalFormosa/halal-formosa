@@ -56,12 +56,27 @@
             :pagination="{ clickable: true }"
             class="place-swiper"
         >
-          <SwiperSlide>
+          <SwiperSlide v-if="place?.image">
             <img
-                :src="place?.image || 'https://placehold.co/600x300?text=No+Image'"
+                :src="place.image"
                 alt="Place image"
                 style="width: 100%; height: 100%; object-fit: cover; cursor: pointer;"
-                @click="openImageModal"
+                @click="openImageModal(0)"
+            />
+          </SwiperSlide>
+          <SwiperSlide v-for="(photo, index) in locationPhotos" :key="photo.id">
+            <img
+                :src="photo.url"
+                alt="Place image"
+                style="width: 100%; height: 100%; object-fit: cover; cursor: pointer;"
+                @click="openImageModal(place?.image ? index + 1 : index)"
+            />
+          </SwiperSlide>
+          <SwiperSlide v-if="!place?.image && locationPhotos.length === 0">
+            <img
+                src="https://placehold.co/600x300?text=No+Image"
+                alt="Place image"
+                style="width: 100%; height: 100%; object-fit: cover;"
             />
           </SwiperSlide>
         </Swiper>
@@ -105,7 +120,7 @@
               <span class="rating-value">{{ (place.avg_rating || 0).toFixed(1) }}</span>
               <span class="rating-count">({{ $t('store.ratingCount', { count: place.review_count }) }})</span>
             </div>
-            <div v-else-if="isReviewableType" class="rating-header-row ion-margin-top ion-margin-bottom no-ratings" @click="openFacilityReview">
+            <div v-else-if="isReviewableType" class="rating-header-row ion-margin-top ion-margin-bottom no-ratings" :class="{ 'disabled-click': isOwner }" @click="!isOwner && openFacilityReview()">
               <span class="rating-stars">☆☆☆☆☆</span>
               <span class="rating-count">{{ $t('facilityReview.noReviewsYet') || 'No reviews yet' }}</span>
             </div>
@@ -206,6 +221,7 @@
                 
                 <!-- Rate & Review Button -->
                 <ion-button 
+                  v-if="!isOwner"
                   fill="outline" 
                   color="carrot" 
                   size="small" 
@@ -329,6 +345,43 @@
                 </ion-label>
               </ion-item>
             </template>
+
+            <!-- 🏷️ Promotions & Offers -->
+            <div v-if="activePromos.length > 0" class="promos-section ion-margin-vertical">
+              <h3 class="section-title">
+                <strong>{{ $t('business.tabs.promos') || 'Promotions & Offers' }}</strong>
+              </h3>
+              <div v-for="promo in activePromos" :key="promo.id" class="promo-card">
+                <div class="promo-badge">
+                  <ion-icon :icon="sparkles" />
+                  <span>SPECIAL OFFER</span>
+                </div>
+                <h4 class="promo-title">{{ promo.title }}</h4>
+                <p v-if="promo.body" class="promo-body">{{ promo.body }}</p>
+              </div>
+            </div>
+
+            <!-- 🍽️ Menu -->
+            <div v-if="menuItems.length > 0" class="menu-section ion-margin-vertical">
+              <h3 class="section-title">
+                <strong>{{ $t('business.tabs.menu') || 'Menu' }}</strong>
+              </h3>
+              <div class="menu-list">
+                <div v-for="item in menuItems" :key="item.id" class="menu-item-row">
+                  <img v-if="item.photo_url" :src="item.photo_url" class="menu-item-photo" />
+                  <div v-else class="menu-item-photo-placeholder">
+                    <ion-icon :icon="restaurantOutline" />
+                  </div>
+                  <div class="menu-item-info">
+                    <div class="menu-item-header">
+                      <span class="menu-item-name">{{ item.name }}</span>
+                      <span v-if="item.price != null" class="menu-item-price">${{ item.price }}</span>
+                    </div>
+                    <p v-if="item.description" class="menu-item-description">{{ item.description }}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
 
 
             <!-- 📍 Address -->
@@ -523,7 +576,7 @@
                       <ion-icon :icon="createOutline" slot="start" />
                       {{ $t('common.edit') || 'Edit' }}
                     </ion-button>
-                    <ion-button fill="clear" size="small" color="danger" class="action-btn" @click="confirmDeleteReview(review.id)">
+                    <ion-button fill="clear" size="small" color="danger" class="action-btn" @click="review.id && confirmDeleteReview(review.id)">
                       <ion-icon :icon="trashOutline" slot="start" />
                       {{ $t('common.delete') || 'Delete' }}
                     </ion-button>
@@ -565,14 +618,22 @@
         </ion-button>
 
         <Swiper
-            :modules="[Zoom]"
+            v-if="showImageModal"
+            :modules="[Zoom, Pagination]"
             :zoom="true"
             :slides-per-view="1"
+            :pagination="{ clickable: true }"
+            :initial-slide="initialPhotoIndex"
             class="fullscreen-swiper"
         >
-          <SwiperSlide>
+          <SwiperSlide v-if="place?.image">
             <div class="swiper-zoom-container">
-              <img :src="place?.image || 'https://placehold.co/200x100'" alt="Place Image"/>
+              <img :src="place.image" alt="Place Image"/>
+            </div>
+          </SwiperSlide>
+          <SwiperSlide v-for="photo in locationPhotos" :key="photo.id">
+            <div class="swiper-zoom-container">
+              <img :src="photo.url" alt="Place Image"/>
             </div>
           </SwiperSlide>
         </Swiper>
@@ -705,7 +766,8 @@ import {
   checkmarkCircle,
   logoFacebook,
   logoTiktok,
-  globeOutline
+  globeOutline,
+  restaurantOutline
 } from 'ionicons/icons'
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
@@ -826,12 +888,18 @@ const handleScroll = (ev: any) => {
 }
 
 const showImageModal = ref(false)
+const locationPhotos = ref<any[]>([])
+const menuItems = ref<any[]>([])
+const activePromos = ref<any[]>([])
+const initialPhotoIndex = ref(0)
 
-function openImageModal() {
+function openImageModal(index = 0) {
+  initialPhotoIndex.value = index
   if (place.value) {
     ActivityLogService.log("explore_detail_open_image", {
       id: place.value.id,
-      name: place.value.name
+      name: place.value.name,
+      photo_index: index
     });
   }
   showImageModal.value = true
@@ -1218,6 +1286,46 @@ const loadPlace = async () => {
       name: data.name,
       type: locationType?.name ?? null
     });
+
+    // Fetch photos
+    try {
+      const { data: photosData } = await supabase
+        .from('location_photos')
+        .select('*')
+        .eq('location_id', data.id)
+        .order('sort_order', { ascending: true })
+      locationPhotos.value = photosData || []
+    } catch (err) {
+      console.error('Failed to load location photos:', err)
+      locationPhotos.value = []
+    }
+
+    // Fetch menu items
+    try {
+      const { data: menuData } = await supabase
+        .from('location_menu_items')
+        .select('*')
+        .eq('location_id', data.id)
+        .order('sort_order', { ascending: true })
+      menuItems.value = menuData || []
+    } catch (err) {
+      console.error('Failed to load menu items:', err)
+      menuItems.value = []
+    }
+
+    // Fetch promotions
+    try {
+      const { data: promosData } = await supabase
+        .from('location_promotions')
+        .select('*')
+        .eq('location_id', data.id)
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+      activePromos.value = promosData || []
+    } catch (err) {
+      console.error('Failed to load promotions:', err)
+      activePromos.value = []
+    }
   }
 
   loading.value = false
@@ -2542,5 +2650,117 @@ ion-item ion-label p:not(.text-gray-500) {
   --border-radius: 12px;
   font-weight: 700;
   font-size: 0.88rem;
+}
+
+.disabled-click {
+  cursor: default !important;
+}
+
+/* Promotions & Offers Styles */
+.promo-card {
+  background: linear-gradient(135deg, rgba(var(--ion-color-carrot-rgb, 242, 110, 36), 0.08) 0%, rgba(var(--ion-color-carrot-rgb, 242, 110, 36), 0.03) 100%);
+  border: 1px dashed var(--ion-color-carrot);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 12px;
+  position: relative;
+  overflow: hidden;
+}
+.promo-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--ion-color-carrot);
+  color: white;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+.promo-title {
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 0 0 6px 0;
+  color: var(--ion-text-color);
+}
+.promo-body {
+  font-size: 0.88rem;
+  margin: 0;
+  color: var(--ion-color-medium);
+  line-height: 1.4;
+}
+
+/* Menu Section Styles */
+.menu-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.menu-item-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 12px;
+  background: rgba(var(--ion-text-color-rgb, 0, 0, 0), 0.02);
+  border: 1px solid rgba(var(--ion-text-color-rgb, 0, 0, 0), 0.06);
+  border-radius: 12px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.menu-item-row:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+.menu-item-photo,
+.menu-item-photo-placeholder {
+  width: 70px;
+  height: 70px;
+  border-radius: 8px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+.menu-item-photo-placeholder {
+  background: rgba(var(--ion-color-carrot-rgb, 242, 110, 36), 0.1);
+  color: var(--ion-color-carrot);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+}
+.menu-item-info {
+  flex: 1;
+  min-width: 0;
+}
+.menu-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.menu-item-name {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--ion-text-color);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.menu-item-price {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--ion-color-carrot);
+}
+.menu-item-description {
+  font-size: 0.8rem;
+  color: var(--ion-color-medium);
+  margin: 0;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 </style>

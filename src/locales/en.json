@@ -1390,7 +1390,8 @@
       "replyAction": "Reply to Review",
       "yourResponse": "Your Response",
       "replyPlaceholder": "Write your response to this customer...",
-      "ownerReplyBadge": "Owner Response"
+      "ownerReplyBadge": "Owner Response",
+      "ownerCannotReview": "Owners are not allowed to review their own business"
     },
     "locked": {
       "title": "Locked"

@@ -626,7 +626,7 @@ import {
   trashOutline, cameraOutline, lockClosedOutline, checkmarkCircleOutline,
   createOutline, eyeOutline, navigateOutline, callOutline, logoInstagram, pricetagOutline,
   closeCircle, downloadOutline, shieldCheckmarkOutline, flashOutline,
-  chatbubbleOutline, chatbubbleEllipsesOutline, star
+  chatbubbleOutline, chatbubbleEllipsesOutline, star, starOutline
 } from 'ionicons/icons'
 import { Capacitor } from '@capacitor/core'
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem'
