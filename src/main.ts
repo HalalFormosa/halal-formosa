@@ -233,11 +233,47 @@ supabase.auth.getSession().then(({ data }) => {
     }
 });
 
+let isOneSignalInitialized = false;
+
+async function syncOneSignalUser(user: any) {
+    if (!Capacitor.isNativePlatform() || !isOneSignalInitialized) return;
+    if (user) {
+        try {
+            console.log('🔑 Logging in to OneSignal with External ID:', user.id);
+            OneSignal.login(user.id);
+
+            await OneSignal.User.addTag('user_id', user.id);
+            console.log('🏷️ Tagged user_id:', user.id);
+
+            // Fetch and tag user role
+            const { data: roleData } = await supabase
+                .from('user_roles')
+                .select('role')
+                .eq('user_id', user.id)
+                .maybeSingle();
+            
+            const role = roleData?.role || 'user';
+            await OneSignal.User.addTag('role', role);
+            console.log('🏷️ Tagged role:', role);
+        } catch (err) {
+            console.error('❌ Failed to tag user/role in OneSignal:', err);
+        }
+    } else {
+        try {
+            console.log('🔑 Logging out of OneSignal');
+            OneSignal.logout();
+        } catch (err) {
+            console.warn('⚠️ OneSignal logout failed:', err);
+        }
+    }
+}
+
 // ✅ Auth events (still needed for sign-in/out within app)
 supabase.auth.onAuthStateChange(async (event, session) => {
     console.log(`🔔 [Auth] Event: ${event}`, session?.user?.id);
     if (event === 'SIGNED_OUT') {
         try { await Purchases.logOut() } catch { /* empty */ }
+        syncOneSignalUser(null).catch(console.warn)
         resetUserProfileState()
         currentUser.value = null
         router.replace('/login')
@@ -279,6 +315,7 @@ supabase.auth.onAuthStateChange(async (event, session) => {
         if (Capacitor.isNativePlatform()) {
             Purchases.logIn({ appUserID: session.user.id }).catch(console.warn)
             refreshSubscriptionStatus({ syncToServer: true }).catch(console.warn)
+            syncOneSignalUser(session.user).catch(console.warn)
         }
     }
 })
@@ -294,6 +331,9 @@ document.addEventListener('deviceready', async () => {
 
         // Initialize your OneSignal App ID
         await OneSignal.initialize(import.meta.env.VITE_ONESIGNAL_APP_ID);
+
+        isOneSignalInitialized = true;
+        console.log('✅ OneSignal v5 initialized');
 
         // Wait for OneSignal to finish setting up the push service
         const deviceState = await OneSignal.User.pushSubscription.getIdAsync();
@@ -323,26 +363,8 @@ document.addEventListener('deviceready', async () => {
         // 🏷️ Tag the logged-in user for targeting
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-            await OneSignal.User.addTag('user_id', user.id);
-            console.log('🏷️ Tagged user_id:', user.id);
-
-            // Fetch and tag user role
-            try {
-                const { data: roleData } = await supabase
-                    .from('user_roles')
-                    .select('role')
-                    .eq('user_id', user.id)
-                    .maybeSingle();
-                
-                const role = roleData?.role || 'user';
-                await OneSignal.User.addTag('role', role);
-                console.log('🏷️ Tagged role:', role);
-            } catch (err) {
-                console.error('Failed to tag role in OneSignal:', err);
-            }
+            await syncOneSignalUser(user);
         }
-
-        console.log('✅ OneSignal v5 initialized');
     } catch (err) {
         console.warn('⚠️ OneSignal init failed:', err);
     }
