@@ -342,6 +342,7 @@ async function syncOneSignalUser(user: any) {
                 const currentLang = localStorage.getItem('lang') || 'en';
                 console.log('🌐 Setting OneSignal language:', currentLang);
                 OneSignal.User.setLanguage(currentLang);
+                await OneSignal.User.addTag('app_language', currentLang);
             } catch (err) {
                 console.error('❌ Failed to set language in OneSignal:', err);
             }

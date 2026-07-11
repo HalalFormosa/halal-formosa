@@ -414,6 +414,7 @@ watch(locale, (newLocale) => {
   if (Capacitor.isNativePlatform()) {
     try {
       OneSignal.User.setLanguage(newLocale);
+      OneSignal.User.addTag('app_language', newLocale);
       console.log('🌐 Synced OneSignal language:', newLocale);
     } catch (err) {
       console.warn('Failed to sync OneSignal language:', err);
