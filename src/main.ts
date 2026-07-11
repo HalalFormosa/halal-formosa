@@ -253,14 +253,7 @@ async function syncOneSignalUser(user: any) {
             console.log('🔑 Logging in to OneSignal with External ID:', user.id);
             OneSignal.login(user.id);
 
-            try {
-                await OneSignal.User.addTag('user_id', user.id);
-                console.log('🏷️ Tagged user_id:', user.id);
-            } catch (err) {
-                console.error('❌ Failed to tag user_id in OneSignal:', err);
-            }
-
-            // Fetch profile and role data in parallel
+            // 1. Fetch profile and role data in parallel
             let profile: any = null;
             let roleData: any = null;
             try {
@@ -282,28 +275,54 @@ async function syncOneSignalUser(user: any) {
                 console.warn('⚠️ Failed to fetch profile/role info from database:', err);
             }
 
-            // Sync user role
-            try {
-                const role = roleData?.role || 'user';
-                await OneSignal.User.addTag('role', role);
-                console.log('🏷️ Tagged role:', role);
-            } catch (err) {
-                console.error('❌ Failed to tag role in OneSignal:', err);
-            }
-
-            // Sync user display_name as alias
-            try {
-                const displayName = profile?.display_name || user.user_metadata?.display_name || user.user_metadata?.full_name || '';
-                if (displayName && displayName.trim()) {
-                    const cleanDisplayName = displayName.trim().slice(0, 128);
-                    console.log('🏷️ Adding alias display_name:', cleanDisplayName);
-                    OneSignal.User.addAlias('display_name', cleanDisplayName);
+            // 2. Fetch Pro subscriber status from RevenueCat if not already Pro in database
+            let isPro = profile?.donor_type === 'Pro' || profile?.donor_type === 'Developer';
+            if (!isPro) {
+                try {
+                    const { customerInfo } = await Purchases.getCustomerInfo();
+                    isPro = Boolean(customerInfo.entitlements.active["Halal Formosa Pro"]);
+                } catch (err) {
+                    console.warn('Failed to fetch RevenueCat customerInfo for OneSignal:', err);
+                    isPro = isDonor.value; // Fallback to cached state
                 }
-            } catch (err) {
-                console.error('❌ Failed to add display_name alias in OneSignal:', err);
             }
 
-            // Sync user email (if valid)
+            // 3. Gather all tags into a single unified object
+            const currentLang = localStorage.getItem('lang') || 'en';
+            const tags: Record<string, string> = {
+                user_id: user.id,
+                role: roleData?.role || 'user',
+                app_language: currentLang,
+                pro_subscriber: isPro ? 'true' : 'false'
+            };
+
+            // Format user phone if available
+            const rawPhone = user.phone || profile?.phone || '';
+            let formattedPhone = '';
+            if (rawPhone && rawPhone.trim()) {
+                let cleanPhone = rawPhone.trim();
+                if (!cleanPhone.startsWith('+')) {
+                    if (cleanPhone.startsWith('09') && cleanPhone.length === 10) {
+                        cleanPhone = '+886' + cleanPhone.slice(1);
+                    } else if (cleanPhone.startsWith('9') && cleanPhone.length === 9) {
+                        cleanPhone = '+886' + cleanPhone;
+                    }
+                }
+                if (cleanPhone.startsWith('+')) {
+                    formattedPhone = cleanPhone;
+                    tags.phone = cleanPhone; // Fallback data tag for phone
+                }
+            }
+
+            // 4. Send all tags in ONE batch call to prevent native SDK race conditions
+            try {
+                console.log('🏷️ Sending unified tags to OneSignal:', tags);
+                OneSignal.User.addTags(tags);
+            } catch (err) {
+                console.error('❌ Failed to send tags to OneSignal:', err);
+            }
+
+            // 5. Sync user email (if valid)
             try {
                 if (user.email && user.email.trim()) {
                     console.log('📧 Adding email to OneSignal:', user.email);
@@ -313,43 +332,21 @@ async function syncOneSignalUser(user: any) {
                 console.error('❌ Failed to add email in OneSignal:', err);
             }
 
-            // Sync user phone (from auth or profile)
-            try {
-                const rawPhone = user.phone || profile?.phone || '';
-                if (rawPhone && rawPhone.trim()) {
-                    let cleanPhone = rawPhone.trim();
-                    // Ensure it is in E.164 format (must start with +)
-                    // Taiwan mobile number auto-formatting convenience:
-                    if (!cleanPhone.startsWith('+')) {
-                        if (cleanPhone.startsWith('09') && cleanPhone.length === 10) {
-                            cleanPhone = '+886' + cleanPhone.slice(1);
-                        } else if (cleanPhone.startsWith('9') && cleanPhone.length === 9) {
-                            cleanPhone = '+886' + cleanPhone;
-                        }
+            // 6. Sync SMS channel subscription
+            if (formattedPhone) {
+                try {
+                    console.log('📱 Adding SMS phone to OneSignal:', formattedPhone);
+                    if (typeof (OneSignal.User as any).addSms === 'function') {
+                        OneSignal.User.addSms(formattedPhone);
+                    } else if (typeof (OneSignal.User as any).addSMS === 'function') {
+                        (OneSignal.User as any).addSMS(formattedPhone);
                     }
-
-                    if (cleanPhone.startsWith('+')) {
-                        console.log('📱 Adding SMS phone to OneSignal:', cleanPhone);
-                        // Save phone as a data tag as fallback
-                        await OneSignal.User.addTag('phone', cleanPhone);
-                        console.log('🏷️ Tagged phone:', cleanPhone);
-
-                        // Try registering as SMS subscription
-                        if (typeof (OneSignal.User as any).addSms === 'function') {
-                            OneSignal.User.addSms(cleanPhone);
-                        } else if (typeof (OneSignal.User as any).addSMS === 'function') {
-                            (OneSignal.User as any).addSMS(cleanPhone);
-                        }
-                    } else {
-                        console.warn('⚠️ Phone number format invalid for OneSignal SMS (missing +):', cleanPhone);
-                    }
+                } catch (err) {
+                    console.error('❌ Failed to add phone in OneSignal:', err);
                 }
-            } catch (err) {
-                console.error('❌ Failed to add phone in OneSignal:', err);
             }
 
-            // Sync user language
-            const currentLang = localStorage.getItem('lang') || 'en';
+            // 7. Sync native language settings
             try {
                 const sanitizedLang = sanitizeLangForOneSignal(currentLang);
                 console.log('🌐 Setting OneSignal language:', sanitizedLang);
@@ -358,30 +355,16 @@ async function syncOneSignalUser(user: any) {
                 console.error('❌ Failed to set language in OneSignal:', err);
             }
 
+            // 8. Sync display name alias
             try {
-                await OneSignal.User.addTag('app_language', currentLang);
-                console.log('🏷️ Tagged app_language:', currentLang);
-            } catch (err) {
-                console.error('❌ Failed to tag app_language in OneSignal:', err);
-            }
-
-            // Sync pro subscriber status
-            try {
-                // Check database profile first as it's the direct source of truth
-                let isPro = profile?.donor_type === 'Pro' || profile?.donor_type === 'Developer';
-                if (!isPro) {
-                    try {
-                        const { customerInfo } = await Purchases.getCustomerInfo();
-                        isPro = Boolean(customerInfo.entitlements.active["Halal Formosa Pro"]);
-                    } catch (err) {
-                        console.warn('Failed to fetch RevenueCat customerInfo for OneSignal:', err);
-                        isPro = isDonor.value; // Fallback to cached state
-                    }
+                const displayName = profile?.display_name || user.user_metadata?.display_name || user.user_metadata?.full_name || '';
+                if (displayName && displayName.trim()) {
+                    const cleanDisplayName = displayName.trim().slice(0, 128);
+                    console.log('🏷️ Adding alias display_name:', cleanDisplayName);
+                    OneSignal.User.addAlias('display_name', cleanDisplayName);
                 }
-                await OneSignal.User.addTag('pro_subscriber', isPro ? 'true' : 'false');
-                console.log('🏷️ Tagged pro_subscriber:', isPro ? 'true' : 'false');
             } catch (err) {
-                console.error('❌ Failed to tag pro_subscriber in OneSignal:', err);
+                console.error('❌ Failed to add display_name alias in OneSignal:', err);
             }
 
         } catch (err) {
