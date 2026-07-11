@@ -233,6 +233,17 @@ supabase.auth.getSession().then(({ data }) => {
     }
 });
 
+function sanitizeLangForOneSignal(langCode: string): string {
+    if (!langCode) return 'en';
+    const code = langCode.trim().toLowerCase();
+    if (code === 'zh' || code === 'zh-tw') return 'zh-Hant';
+    if (code === 'zh-cn') return 'zh-Hans';
+    if (code.includes('-')) {
+        return code.split('-')[0];
+    }
+    return code;
+}
+
 let isOneSignalInitialized = false;
 
 async function syncOneSignalUser(user: any) {
@@ -338,13 +349,20 @@ async function syncOneSignalUser(user: any) {
             }
 
             // Sync user language
+            const currentLang = localStorage.getItem('lang') || 'en';
             try {
-                const currentLang = localStorage.getItem('lang') || 'en';
-                console.log('🌐 Setting OneSignal language:', currentLang);
-                OneSignal.User.setLanguage(currentLang);
-                await OneSignal.User.addTag('app_language', currentLang);
+                const sanitizedLang = sanitizeLangForOneSignal(currentLang);
+                console.log('🌐 Setting OneSignal language:', sanitizedLang);
+                OneSignal.User.setLanguage(sanitizedLang);
             } catch (err) {
                 console.error('❌ Failed to set language in OneSignal:', err);
+            }
+
+            try {
+                await OneSignal.User.addTag('app_language', currentLang);
+                console.log('🏷️ Tagged app_language:', currentLang);
+            } catch (err) {
+                console.error('❌ Failed to tag app_language in OneSignal:', err);
             }
 
             // Sync pro subscriber status
