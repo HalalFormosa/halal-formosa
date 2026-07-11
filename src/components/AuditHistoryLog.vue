@@ -1,54 +1,53 @@
 <template>
   <div class="audit-history-container ion-margin-top ion-margin-bottom">
-    <ion-accordion-group>
-      <ion-accordion value="history">
-        <ion-item slot="header" color="light">
-          <ion-icon :icon="timeOutline" slot="start" color="medium"></ion-icon>
-          <ion-label>
-            <h3>{{ $t('common.history', 'History') }}</h3>
-            <p>
-              {{ $t('common.added', 'Added') }} {{ fromNowToTaipei(createdAt) }}
-              <span v-if="filteredLogs.length > 0"> &bull; {{ $t('common.lastEdited', 'Last edited') }} {{ fromNowToTaipei(filteredLogs[0].created_at) }}</span>
-            </p>
-          </ion-label>
-        </ion-item>
-        <div class="ion-padding" slot="content">
-          <div class="timeline" v-if="filteredLogs.length > 0">
-            <div v-for="(log, index) in filteredLogs" :key="log.id" class="timeline-item">
-              <div class="timeline-icon">
-                <ion-avatar class="small-avatar">
-                  <img :src="getAvatar(log)" alt="avatar" @error="handleImageError" />
-                </ion-avatar>
+    <div class="collapsible-header" @click="showHistory = !showHistory">
+      <div class="header-text-group">
+        <h3 class="font-bold text-lg ion-no-margin">{{ $t('common.history', 'History') }}</h3>
+        <p class="history-subtitle ion-no-margin">
+          {{ $t('common.added', 'Added') }} {{ fromNowToTaipei(createdAt) }}
+          <span v-if="filteredLogs.length > 0"> &bull; {{ $t('common.lastEdited', 'Last edited') }} {{ fromNowToTaipei(filteredLogs[0].created_at) }}</span>
+        </p>
+      </div>
+      <ion-icon :icon="showHistory ? chevronUp : chevronDown" class="collapsible-chevron" />
+    </div>
+
+    <div v-show="showHistory" class="collapsible-content">
+      <div class="timeline-wrapper">
+        <div class="timeline" v-if="filteredLogs.length > 0">
+          <div v-for="(log, index) in filteredLogs" :key="log.id" class="timeline-item">
+            <div class="timeline-icon">
+              <ion-avatar class="small-avatar">
+                <img :src="getAvatar(log)" alt="avatar" @error="handleImageError" />
+              </ion-avatar>
+            </div>
+            <div class="timeline-content">
+              <div class="timeline-header">
+                <div class="name-wrapper">
+                  <strong>{{ getDisplayName(log) }}</strong>
+                  <span v-if="isAdminUser(log)" class="admin-pill">{{ $t('common.admin', 'Admin') }}</span>
+                </div>
+                <span class="timeline-date">{{ fromNowToTaipei(log.created_at) }}</span>
               </div>
-              <div class="timeline-content">
-                <div class="timeline-header">
-                  <div class="name-wrapper">
-                    <strong>{{ getDisplayName(log) }}</strong>
-                    <span v-if="isAdminUser(log)" class="admin-pill">{{ $t('common.admin', 'Admin') }}</span>
-                  </div>
-                  <span class="timeline-date">{{ fromNowToTaipei(log.created_at) }}</span>
-                </div>
-                <div class="timeline-body">
-                  <p class="ion-no-margin text-sm timeline-desc">
-                    {{ getActionDescription(log) }}
-                  </p>
-                </div>
+              <div class="timeline-body">
+                <p class="ion-no-margin text-sm timeline-desc">
+                  {{ getActionDescription(log) }}
+                </p>
               </div>
             </div>
           </div>
-          <div v-else class="ion-text-center">
-            <p class="text-gray-500 text-sm">{{ $t('common.noEditHistory', 'No recent edits') }}</p>
-          </div>
         </div>
-      </ion-accordion>
-    </ion-accordion-group>
+        <div v-else class="ion-text-center timeline-empty">
+          <p class="text-gray-500 text-sm">{{ $t('common.noEditHistory', 'No recent edits') }}</p>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, watch, computed } from 'vue'
-import { IonAccordionGroup, IonAccordion, IonItem, IonLabel, IonIcon, IonAvatar } from '@ionic/vue'
-import { timeOutline } from 'ionicons/icons'
+import { IonIcon, IonAvatar } from '@ionic/vue'
+import { timeOutline, chevronDown, chevronUp } from 'ionicons/icons'
 import { supabase } from '@/plugins/supabaseClient'
 import dayjs from "dayjs"
 import utc from "dayjs/plugin/utc"
@@ -66,6 +65,7 @@ const props = defineProps<{
 }>()
 
 const logs = ref<any[]>([])
+const showHistory = ref(false)
 
 const filteredLogs = computed(() => {
   return logs.value.filter(log => {
@@ -206,9 +206,44 @@ function getActionDescription(log: any) {
 
 <style scoped>
 .audit-history-container {
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  /* Clean borderless container */
+}
+.collapsible-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  margin-top: 16px;
+  margin-bottom: 8px;
+  cursor: pointer;
+}
+.header-text-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.history-subtitle {
+  font-size: 0.82rem;
+  color: var(--ion-color-medium, #888888);
+  font-weight: 500;
+  text-align: left;
+}
+.collapsible-chevron {
+  font-size: 1.4rem;
+  color: var(--ion-color-carrot);
+}
+.collapsible-content {
+  animation: slideDown 0.25s ease-out;
+}
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.timeline-wrapper {
+  padding: 12px 0;
+}
+.timeline-empty {
+  padding: 16px 0;
 }
 
 .timeline {

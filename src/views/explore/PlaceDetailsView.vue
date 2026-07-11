@@ -118,7 +118,7 @@
             <div v-if="place?.review_count && place.review_count > 0" class="rating-header-row ion-margin-top ion-margin-bottom" @click="scrollToReviews">
               <span class="rating-stars" v-html="renderStars(place.avg_rating || 0)"></span>
               <span class="rating-value">{{ (place.avg_rating || 0).toFixed(1) }}</span>
-              <span class="rating-count">({{ $t('store.ratingCount', { count: place.review_count }) }})</span>
+              <span class="rating-count">{{ $t('store.ratingCount', { count: place.review_count }) }}</span>
             </div>
             <div v-else-if="isReviewableType" class="rating-header-row ion-margin-top ion-margin-bottom no-ratings" :class="{ 'disabled-click': isOwner }" @click="!isOwner && openFacilityReview()">
               <span class="rating-stars">☆☆☆☆☆</span>
@@ -177,51 +177,27 @@
             </div>
 
             <!-- 🕌 Muslim Facilities / Features -->
-            <div v-if="place" class="facilities-container ion-margin-top ion-margin-bottom">
-              <!-- Official Attributes -->
-              <div v-if="place.has_prayer_room || place.has_wudu || place.is_alcohol_free || place.halal_status" class="official-facilities-section">
-                <h3 class="section-subtitle">{{ $t('facilityReview.officialFacilitiesTitle') || 'Official Muslim Amenities' }}</h3>
-                <div class="facilities-chips">
-                  <ion-chip v-if="place.has_prayer_room" color="success">
-                    <ion-icon :icon="checkmarkCircle" />
-                    <ion-label>{{ $t('facilityReview.facilities.prayerRoom') }}</ion-label>
-                  </ion-chip>
-                  <ion-chip v-if="place.has_wudu" color="success">
-                    <ion-icon :icon="checkmarkCircle" />
-                    <ion-label>{{ $t('facilityReview.facilities.wudu') }}</ion-label>
-                  </ion-chip>
-                  <ion-chip v-if="place.is_alcohol_free" color="success">
-                    <ion-icon :icon="checkmarkCircle" />
-                    <ion-label>{{ $t('facilityReview.facilities.alcoholFree') }}</ion-label>
-                  </ion-chip>
-                  <ion-chip v-if="place.halal_status" color="primary">
-                    <ion-label class="capitalize">{{ place.halal_status.replace('_', ' ') }}</ion-label>
-                  </ion-chip>
+            <div v-if="place && isReviewableType" class="facilities-container ion-margin-top ion-margin-bottom">
+              <div class="consensus-squares" v-if="combinedFacilities.length > 0">
+                <div 
+                  v-for="fac in combinedFacilities" 
+                  :key="fac.code"
+                  class="consensus-square"
+                  :class="[fac.status, fac.source === 'owner' ? 'owner-source' : 'visitor-source']"
+                >
+                  <span class="square-icon">{{ fac.icon }}</span>
+                  <span class="square-label">{{ fac.customLabel || getShortLabel(fac.code) }}</span>
+                  <!-- Verified owner badge/label -->
+                  <span v-if="fac.source === 'owner'" class="owner-badge-dot">🏪 Verified</span>
                 </div>
               </div>
-
-              <!-- Visitor Crowd Consensus -->
-              <div class="consensus-facilities-section ion-margin-top" v-if="isReviewableType">
-                <h3 class="section-subtitle">{{ $t('facilityReview.crowdConsensusTitle') || 'Muslim Facilities (Visitor Confirmed)' }}</h3>
-                <div class="consensus-squares" v-if="hasAnyConsensus">
-                  <div 
-                    v-for="fac in MUSLIM_FACILITIES" 
-                    :key="fac.code"
-                    v-show="getFacilityStatus(fac.code) && (fac.code !== 'qibla_direction' || isAccommodation)"
-                    class="consensus-square"
-                    :class="getFacilityStatus(fac.code)"
-                  >
-                    <span class="square-icon">{{ fac.icon }}</span>
-                    <span class="square-label">{{ getShortLabel(fac.code) }}</span>
-                  </div>
-                </div>
-                <p v-else class="no-consensus-text">
-                  {{ $t('facilityReview.noConsensusYet') || 'No visitor reports yet. Be the first to share!' }}
-                </p>
-                
-                <!-- Rate & Review Button -->
+              <p v-else class="no-consensus-text">
+                {{ $t('facilityReview.noConsensusYet') || 'No visitor reports yet. Be the first to share!' }}
+              </p>
+              
+              <!-- Rate & Review Button -->
+              <div class="ion-text-center ion-margin-top" v-if="!isOwner && !userHasReviewed">
                 <ion-button 
-                  v-if="!isOwner"
                   fill="outline" 
                   color="carrot" 
                   size="small" 
@@ -346,42 +322,7 @@
               </ion-item>
             </template>
 
-            <!-- 🏷️ Promotions & Offers -->
-            <div v-if="activePromos.length > 0" class="promos-section ion-margin-vertical">
-              <h3 class="section-title">
-                <strong>{{ $t('business.tabs.promos') || 'Promotions & Offers' }}</strong>
-              </h3>
-              <div v-for="promo in activePromos" :key="promo.id" class="promo-card">
-                <div class="promo-badge">
-                  <ion-icon :icon="sparkles" />
-                  <span>SPECIAL OFFER</span>
-                </div>
-                <h4 class="promo-title">{{ promo.title }}</h4>
-                <p v-if="promo.body" class="promo-body">{{ promo.body }}</p>
-              </div>
-            </div>
 
-            <!-- 🍽️ Menu -->
-            <div v-if="menuItems.length > 0" class="menu-section ion-margin-vertical">
-              <h3 class="section-title">
-                <strong>{{ $t('business.tabs.menu') || 'Menu' }}</strong>
-              </h3>
-              <div class="menu-list">
-                <div v-for="item in menuItems" :key="item.id" class="menu-item-row">
-                  <img v-if="item.photo_url" :src="item.photo_url" class="menu-item-photo" />
-                  <div v-else class="menu-item-photo-placeholder">
-                    <ion-icon :icon="restaurantOutline" />
-                  </div>
-                  <div class="menu-item-info">
-                    <div class="menu-item-header">
-                      <span class="menu-item-name">{{ item.name }}</span>
-                      <span v-if="item.price != null" class="menu-item-price">${{ item.price }}</span>
-                    </div>
-                    <p v-if="item.description" class="menu-item-description">{{ item.description }}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
 
 
             <!-- 📍 Address -->
@@ -411,6 +352,18 @@
               <div ref="detailMapRef" class="detail-map"></div>
             </div>
 
+            <!-- Promotions and Menu Action Buttons -->
+            <div v-if="activePromos.length > 0 || menuItems.length > 0" class="biz-actions-row ion-margin-vertical">
+              <ion-button v-if="activePromos.length > 0" fill="solid" color="carrot" class="action-sheet-btn" @click="showPromosModal = true">
+                <ion-icon :icon="sparkles" slot="start" />
+                {{ $t('business.tabs.promos') || 'Promotions & Offers' }}
+              </ion-button>
+              <ion-button v-if="menuItems.length > 0" fill="outline" color="carrot" class="action-sheet-btn" @click="showMenuModal = true">
+                <ion-icon :icon="restaurantOutline" slot="start" />
+                {{ $t('business.tabs.menu') || 'View Menu' }}
+              </ion-button>
+            </div>
+
             <!-- ⭐ Additional Details -->
             <div class="ion-margin-vertical">
               <!-- 🕒 Opening Hours -->
@@ -435,105 +388,107 @@
                 </ion-list>
               </template>
 
-              <!-- 📞 Contact Info -->
-              <template v-if="place.phone || place.instagram || place.facebook || place.tiktok || place.website || place.line_id">
-                <h3 class="font-bold text-lg ion-margin-top">{{ $t('explore.details.additionalDetails') }}</h3>
+              <!-- 📞 Contact Info & Price Range (Additional Details) -->
+              <template v-if="place.phone || place.instagram || place.facebook || place.tiktok || place.website || place.line_id || place.price_range">
+                <div class="collapsible-header" @click="showAdditionalDetails = !showAdditionalDetails">
+                  <h3 class="font-bold text-lg ion-no-margin">{{ $t('explore.details.additionalDetails') || 'Additional Details' }}</h3>
+                  <ion-icon :icon="showAdditionalDetails ? chevronUp : chevronDown" class="collapsible-chevron" />
+                </div>
 
-                <ion-item lines="none" v-if="place.phone">
-                  <ion-icon :icon="callOutline" slot="start" color="carrot"/>
-                  <ion-label>
-                    <p class="text-sm text-gray-500">{{ $t('common.phone') }}</p>
-                    <p>{{ place.phone }}</p>
-                  </ion-label>
+                <div v-show="showAdditionalDetails" class="collapsible-content">
+                  <ion-item lines="none" v-if="place.phone">
+                    <ion-icon :icon="callOutline" slot="start" color="carrot"/>
+                    <ion-label>
+                      <p class="text-sm text-gray-500">{{ $t('common.phone') }}</p>
+                      <p>{{ place.phone }}</p>
+                    </ion-label>
 
-                  <ion-button
-                      fill="clear"
-                      color="carrot"
-                      @click="logCall"
-                      :href="`tel:${place.phone}`"
-                  >
-                    {{ $t('common.call') }}
-                  </ion-button>
-                </ion-item>
+                    <ion-button
+                        fill="clear"
+                        color="carrot"
+                        @click="logCall"
+                        :href="`tel:${place.phone}`"
+                    >
+                      {{ $t('common.call') }}
+                    </ion-button>
+                  </ion-item>
 
+                  <ion-item lines="none" v-if="place.instagram">
+                    <ion-icon :icon="logoInstagram" slot="start" color="carrot"/>
+                    <ion-label>
+                      <p class="text-sm text-gray-500">{{ $t('common.instagram') }}</p>
+                      <p>@{{ place.instagram.replace('@', '') }}</p>
+                    </ion-label>
+                    <ion-button
+                        fill="clear"
+                        size="small"
+                        @click="logInstagram"
+                        :href="`https://instagram.com/${place.instagram.replace('@','')}`"
+                        target="_blank">
+                      {{ $t('common.open') }}
+                    </ion-button>
+                  </ion-item>
 
-                <ion-item lines="none" v-if="place.instagram">
-                  <ion-icon :icon="logoInstagram" slot="start" color="carrot"/>
-                  <ion-label>
-                    <p class="text-sm text-gray-500">{{ $t('common.instagram') }}</p>
-                    <p>@{{ place.instagram.replace('@', '') }}</p>
-                  </ion-label>
-                  <ion-button
-                      fill="clear"
-                      size="small"
-                      @click="logInstagram"
-                      :href="`https://instagram.com/${place.instagram.replace('@','')}`"
-                      target="_blank">
-                    {{ $t('common.open') }}
-                  </ion-button>
-                </ion-item>
+                  <ion-item lines="none" v-if="place.facebook">
+                    <ion-icon :icon="logoFacebook" slot="start" color="carrot"/>
+                    <ion-label>
+                      <p class="text-sm text-gray-500">{{ $t('business.info.facebook') }}</p>
+                      <p>Facebook</p>
+                    </ion-label>
+                    <ion-button fill="clear" size="small" :href="place.facebook" target="_blank">
+                      {{ $t('common.open') }}
+                    </ion-button>
+                  </ion-item>
 
-                <ion-item lines="none" v-if="place.facebook">
-                  <ion-icon :icon="logoFacebook" slot="start" color="carrot"/>
-                  <ion-label>
-                    <p class="text-sm text-gray-500">{{ $t('business.info.facebook') }}</p>
-                    <p>Facebook</p>
-                  </ion-label>
-                  <ion-button fill="clear" size="small" :href="place.facebook" target="_blank">
-                    {{ $t('common.open') }}
-                  </ion-button>
-                </ion-item>
+                  <ion-item lines="none" v-if="place.tiktok">
+                    <ion-icon :icon="logoTiktok" slot="start" color="carrot"/>
+                    <ion-label>
+                      <p class="text-sm text-gray-500">{{ $t('business.info.tiktok') }}</p>
+                      <p>@{{ place.tiktok.replace('@', '') }}</p>
+                    </ion-label>
+                    <ion-button fill="clear" size="small" :href="`https://tiktok.com/@${place.tiktok.replace('@','')}`" target="_blank">
+                      {{ $t('common.open') }}
+                    </ion-button>
+                  </ion-item>
 
-                <ion-item lines="none" v-if="place.tiktok">
-                  <ion-icon :icon="logoTiktok" slot="start" color="carrot"/>
-                  <ion-label>
-                    <p class="text-sm text-gray-500">{{ $t('business.info.tiktok') }}</p>
-                    <p>@{{ place.tiktok.replace('@', '') }}</p>
-                  </ion-label>
-                  <ion-button fill="clear" size="small" :href="`https://tiktok.com/@${place.tiktok.replace('@','')}`" target="_blank">
-                    {{ $t('common.open') }}
-                  </ion-button>
-                </ion-item>
+                  <ion-item lines="none" v-if="place.website">
+                    <ion-icon :icon="globeOutline" slot="start" color="carrot"/>
+                    <ion-label>
+                      <p class="text-sm text-gray-500">{{ $t('business.info.website') }}</p>
+                      <p>{{ place.website.replace(/^https?:\/\//, '') }}</p>
+                    </ion-label>
+                    <ion-button fill="clear" size="small" :href="place.website" target="_blank">
+                      {{ $t('common.open') }}
+                    </ion-button>
+                  </ion-item>
 
-                <ion-item lines="none" v-if="place.website">
-                  <ion-icon :icon="globeOutline" slot="start" color="carrot"/>
-                  <ion-label>
-                    <p class="text-sm text-gray-500">{{ $t('business.info.website') }}</p>
-                    <p>{{ place.website.replace(/^https?:\/\//, '') }}</p>
-                  </ion-label>
-                  <ion-button fill="clear" size="small" :href="place.website" target="_blank">
-                    {{ $t('common.open') }}
-                  </ion-button>
-                </ion-item>
+                  <ion-item lines="none" v-if="place.line_id">
+                    <ion-icon :icon="chatboxEllipsesOutline" slot="start" color="carrot"/>
+                    <ion-label>
+                      <p class="text-sm text-gray-500">{{ $t('common.lineId') }}</p>
+                      <p>{{ place.line_id }}</p>
+                    </ion-label>
 
-                <ion-item lines="none" v-if="place.line_id">
-                  <ion-icon :icon="chatboxEllipsesOutline" slot="start" color="carrot"/>
-                  <ion-label>
-                    <p class="text-sm text-gray-500">{{ $t('common.lineId') }}</p>
-                    <p>{{ place.line_id }}</p>
-                  </ion-label>
+                    <ion-button
+                        fill="clear"
+                        size="small"
+                        @click="logLine"
+                        :href="`line://ti/p/~${place.line_id}`">
+                      {{ $t('common.open') }}
+                    </ion-button>
+                  </ion-item>
 
-                  <ion-button
-                      fill="clear"
-                      size="small"
-                      @click="logLine"
-                      :href="`line://ti/p/~${place.line_id}`">
-                    {{ $t('common.open') }}
-                  </ion-button>
-
-                </ion-item>
-
-              </template>
-
-              <!-- 💰 Price Range -->
-              <template v-if="place.price_range">
-                <ion-item lines="none">
-                  <ion-icon :icon="cashOutline" slot="start" color="carrot"/>
-                  <ion-label>
-                    <p class="text-sm text-gray-500">{{ $t('explore.details.estimatedPrice') }}</p>
-                    <p>{{ place.price_range }}</p>
-                  </ion-label>
-                </ion-item>
+                  <!-- 💰 Price Range -->
+                  <template v-if="place.price_range">
+                    <ion-item lines="none">
+                      <ion-icon :icon="cashOutline" slot="start" color="carrot"/>
+                      <ion-label>
+                        <p class="text-sm text-gray-500">{{ $t('explore.details.estimatedPrice') }}</p>
+                        <p>{{ place.price_range }}</p>
+                      </ion-label>
+                    </ion-item>
+                  </template>
+                </div>
               </template>
 
             </div>
@@ -715,6 +670,73 @@
       @close="facilityReviewModalOpen = false"
       @success="handleReviewSuccess"
     />
+
+    <!-- 🏷️ Promotions Bottom Sheet Modal -->
+    <ion-modal 
+      :is-open="showPromosModal" 
+      @didDismiss="showPromosModal = false" 
+      class="bottom-sheet-modal"
+      :initial-breakpoint="0.6"
+      :breakpoints="[0, 0.6, 0.95]"
+      :handle="true"
+    >
+      <ion-header>
+        <ion-toolbar>
+          <ion-title>{{ $t('business.tabs.promos') || 'Promotions & Offers' }}</ion-title>
+          <ion-buttons slot="end">
+            <ion-button @click="showPromosModal = false">{{ $t('common.close') || 'Close' }}</ion-button>
+          </ion-buttons>
+        </ion-toolbar>
+      </ion-header>
+      <ion-content class="ion-padding">
+        <div class="promos-modal-list">
+          <div v-for="promo in activePromos" :key="promo.id" class="promo-card">
+            <div class="promo-badge">
+              <ion-icon :icon="sparkles" />
+              <span>SPECIAL OFFER</span>
+            </div>
+            <h4 class="promo-title">{{ promo.title }}</h4>
+            <p v-if="promo.body" class="promo-body">{{ promo.body }}</p>
+          </div>
+        </div>
+      </ion-content>
+    </ion-modal>
+
+    <!-- 🍽️ Menu Bottom Sheet Modal -->
+    <ion-modal 
+      :is-open="showMenuModal" 
+      @didDismiss="showMenuModal = false" 
+      class="bottom-sheet-modal"
+      :initial-breakpoint="0.7"
+      :breakpoints="[0, 0.7, 0.95]"
+      :handle="true"
+    >
+      <ion-header>
+        <ion-toolbar>
+          <ion-title>{{ $t('business.tabs.menu') || 'Menu' }}</ion-title>
+          <ion-buttons slot="end">
+            <ion-button @click="showMenuModal = false">{{ $t('common.close') || 'Close' }}</ion-button>
+          </ion-buttons>
+        </ion-toolbar>
+      </ion-header>
+      <ion-content class="ion-padding">
+        <div class="menu-modal-list">
+          <div v-for="item in menuItems" :key="item.id" class="menu-item-row">
+            <img v-if="item.photo_url" :src="item.photo_url" class="menu-item-photo" />
+            <div v-else class="menu-item-photo-placeholder">
+              <ion-icon :icon="restaurantOutline" />
+            </div>
+            <div class="menu-item-info">
+              <div class="menu-item-header">
+                <span class="menu-item-name">{{ item.name }}</span>
+                <span v-if="item.price != null" class="menu-item-price">${{ item.price }}</span>
+              </div>
+              <p v-if="item.description" class="menu-item-description">{{ item.description }}</p>
+            </div>
+          </div>
+        </div>
+      </ion-content>
+    </ion-modal>
   </ion-page>
 </template>
 
@@ -730,6 +752,7 @@ import {
   IonButton, IonHeader, IonChip,
   IonList,
   IonAvatar,
+  IonToolbar, IonTitle, IonButtons,
   popoverController, onIonViewDidEnter,
   alertController, toastController
 } from '@ionic/vue'
@@ -750,7 +773,7 @@ import 'swiper/css/zoom'
 import AppHeader from '@/components/AppHeader.vue'
 import AuditHistoryLog from '@/components/AuditHistoryLog.vue'
 import {
-  alertCircle, informationCircle, chevronDown,
+  alertCircle, informationCircle, chevronDown, chevronUp,
   alertCircleOutline, callOutline, cashOutline, chatboxEllipsesOutline,
   createOutline, documentTextOutline, logoInstagram,
   trashOutline,
@@ -891,6 +914,9 @@ const showImageModal = ref(false)
 const locationPhotos = ref<any[]>([])
 const menuItems = ref<any[]>([])
 const activePromos = ref<any[]>([])
+const showPromosModal = ref(false)
+const showMenuModal = ref(false)
+const showAdditionalDetails = ref(false)
 const initialPhotoIndex = ref(0)
 
 function openImageModal(index = 0) {
@@ -1546,6 +1572,10 @@ const scrollToDescription = () => {
 
 /* ---------------- Reviews & Facility Summary ---------------- */
 const reviews = ref<LocationReview[]>([])
+const userHasReviewed = computed(() => {
+  if (!currentUser.value?.id || !reviews.value.length) return false
+  return reviews.value.some(rev => rev.user_id === currentUser.value.id)
+})
 const facilitySummary = ref<FacilitySummary>({})
 const loadingReviews = ref(false)
 
@@ -1584,6 +1614,51 @@ const hasAnyConsensus = computed(() => {
     if (fac.code === 'qibla_direction' && !isAccommodation.value) return false
     return getFacilityStatus(fac.code) !== null
   })
+})
+
+const combinedFacilities = computed(() => {
+  if (!place.value) return []
+  const p = place.value
+  const list: any[] = []
+  
+  const isOfficial = (code: string) => {
+    if (code === 'halal_certified') return p.halal_status === 'certified'
+    if (code === 'prayer_room') return !!p.has_prayer_room
+    if (code === 'wudu') return !!p.has_wudu
+    if (code === 'alcohol_free') return !!p.is_alcohol_free
+    return false
+  }
+
+  MUSLIM_FACILITIES.forEach(fac => {
+    if (fac.code === 'qibla_direction' && !isAccommodation.value) return
+    const official = isOfficial(fac.code)
+    const visitorStatus = getFacilityStatus(fac.code)
+    
+    if (official || visitorStatus === 'yes') {
+      list.push({
+        ...fac,
+        source: official ? 'owner' : 'visitor',
+        status: 'yes'
+      })
+    } else if (fac.code === 'halal_certified' && (p.halal_status === 'self_reported' || p.halal_status === 'muslim_friendly')) {
+      list.push({
+        ...fac,
+        source: 'owner',
+        status: 'yes',
+        customLabel: p.halal_status === 'self_reported' ? 'Self-Reported Halal' : 'Muslim-Friendly'
+      })
+    }
+  })
+
+  // Sort: Owner-reported (Official) first, then by code
+  list.sort((a, b) => {
+    if (a.source !== b.source) {
+      return a.source === 'owner' ? -1 : 1
+    }
+    return a.code.localeCompare(b.code)
+  })
+
+  return list
 })
 
 const getShortLabel = (code: string): string => {
@@ -2356,46 +2431,46 @@ ion-item ion-label p:not(.text-gray-500) {
 .consensus-squares {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 8px;
   margin-bottom: 16px;
 }
 .consensus-square {
-  width: 64px;
-  height: 64px;
-  border-radius: 10px;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  justify-content: center;
-  padding: 2px;
-  text-align: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 8px;
   box-sizing: border-box;
   transition: transform 0.2s ease;
+  min-height: 42px;
+  position: relative;
 }
 .consensus-square:active {
   transform: scale(0.95);
 }
 .consensus-square.yes {
-  background: rgba(var(--ion-color-success-rgb, 16, 185, 129), 0.15);
+  background: rgba(var(--ion-color-success-rgb, 16, 185, 129), 0.12);
   color: var(--ion-color-success, #10b981);
-  border: 1px solid rgba(var(--ion-color-success-rgb, 16, 185, 129), 0.35);
+  border: 1px solid rgba(var(--ion-color-success-rgb, 16, 185, 129), 0.25);
 }
 .consensus-square.no {
-  background: rgba(var(--ion-color-danger-rgb, 239, 68, 68), 0.15);
+  background: rgba(var(--ion-color-danger-rgb, 239, 68, 68), 0.12);
   color: var(--ion-color-danger, #ef4444);
-  border: 1px solid rgba(var(--ion-color-danger-rgb, 239, 68, 68), 0.35);
+  border: 1px solid rgba(var(--ion-color-danger-rgb, 239, 68, 68), 0.25);
 }
 .square-icon {
-  font-size: 1.35rem;
-  margin-bottom: 1px;
+  font-size: 1.25rem;
+  margin: 0;
+  display: flex;
+  align-items: center;
 }
 .square-label {
-  font-size: 0.52rem;
+  font-size: 0.7rem;
   font-weight: 800;
-  line-height: 1.1;
-  letter-spacing: 0.1px;
+  letter-spacing: 0.3px;
   text-transform: uppercase;
-  white-space: normal;
+  white-space: nowrap;
 }
 
 .no-consensus-text {
@@ -2656,6 +2731,30 @@ ion-item ion-label p:not(.text-gray-500) {
   cursor: default !important;
 }
 
+/* Combined facilities styles */
+.consensus-square.owner-source {
+  background: rgba(var(--ion-color-carrot-rgb, 242, 110, 36), 0.08) !important;
+  border: 1px dashed var(--ion-color-carrot) !important;
+  padding-top: 11px;
+  padding-bottom: 5px;
+}
+
+.consensus-square.owner-source .square-label {
+  color: var(--ion-color-carrot) !important;
+  font-weight: 800;
+}
+
+.owner-badge-dot {
+  position: absolute;
+  top: 1px;
+  right: 5px;
+  font-size: 0.45rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--ion-color-carrot);
+  letter-spacing: 0.5px;
+}
+
 /* Promotions & Offers Styles */
 .promo-card {
   background: linear-gradient(135deg, rgba(var(--ion-color-carrot-rgb, 242, 110, 36), 0.08) 0%, rgba(var(--ion-color-carrot-rgb, 242, 110, 36), 0.03) 100%);
@@ -2762,5 +2861,45 @@ ion-item ion-label p:not(.text-gray-500) {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+/* Modal and Actions Styles */
+.biz-actions-row {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+  margin-bottom: 16px;
+}
+.action-sheet-btn {
+  flex: 1;
+  --border-radius: 10px;
+  font-weight: 700;
+  height: 44px;
+}
+.bottom-sheet-modal {
+  --border-radius: 16px;
+}
+.promos-modal-list, .menu-modal-list {
+  padding-bottom: 30px;
+}
+.collapsible-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  margin-top: 16px;
+  margin-bottom: 8px;
+  cursor: pointer;
+}
+.collapsible-chevron {
+  font-size: 1.4rem;
+  color: var(--ion-color-carrot);
+}
+.collapsible-content {
+  animation: slideDown 0.25s ease-out;
+}
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 </style>
