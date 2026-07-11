@@ -358,6 +358,90 @@ async function syncOneSignalUser(user: any) {
     }
 }
 
+async function syncRevenueCatUser(user: any) {
+    if (!Capacitor.isNativePlatform()) return;
+    if (user) {
+        try {
+            console.log('💎 Syncing subscriber attributes to RevenueCat for user:', user.id);
+
+            // 1. Fetch profile and role data in parallel
+            let profile: any = null;
+            let roleData: any = null;
+            try {
+                const [profileResult, roleResult] = await Promise.all([
+                    supabase
+                        .from('user_profiles')
+                        .select('display_name, phone')
+                        .eq('id', user.id)
+                        .maybeSingle(),
+                    supabase
+                        .from('user_roles')
+                        .select('role')
+                        .eq('user_id', user.id)
+                        .maybeSingle()
+                ]);
+                profile = profileResult.data;
+                roleData = roleResult.data;
+            } catch (err) {
+                console.warn('⚠️ Failed to fetch profile/role info for RevenueCat:', err);
+            }
+
+            // 2. Set Email
+            if (user.email && user.email.trim()) {
+                await Purchases.setEmail({ email: user.email.trim() });
+            }
+
+            // 3. Set Display Name
+            const displayName = profile?.display_name || user.user_metadata?.display_name || user.user_metadata?.full_name || '';
+            if (displayName && displayName.trim()) {
+                await Purchases.setDisplayName({ displayName: displayName.trim().slice(0, 128) });
+            }
+
+            // 4. Set Phone Number
+            const rawPhone = user.phone || profile?.phone || '';
+            if (rawPhone && rawPhone.trim()) {
+                let cleanPhone = rawPhone.trim();
+                if (!cleanPhone.startsWith('+')) {
+                    if (cleanPhone.startsWith('09') && cleanPhone.length === 10) {
+                        cleanPhone = '+886' + cleanPhone.slice(1);
+                    } else if (cleanPhone.startsWith('9') && cleanPhone.length === 9) {
+                        cleanPhone = '+886' + cleanPhone;
+                    }
+                }
+                if (cleanPhone.startsWith('+')) {
+                    await Purchases.setPhoneNumber({ phoneNumber: cleanPhone });
+                }
+            }
+
+            // 5. Set Custom Attributes
+            const role = roleData?.role || 'user';
+            await Purchases.setAttributes({ role: role });
+
+            // 6. Set OneSignal IDs if OneSignal is initialized
+            if (isOneSignalInitialized) {
+                try {
+                    const onesignalUserID = await OneSignal.User.getOnesignalId();
+                    if (onesignalUserID) {
+                        await Purchases.setOnesignalUserID({ onesignalUserID });
+                        console.log('💎 Linked OneSignal User ID to RevenueCat:', onesignalUserID);
+                    }
+                    const pushSubscriptionId = await OneSignal.User.pushSubscription.getIdAsync();
+                    if (pushSubscriptionId) {
+                        await Purchases.setOnesignalID({ onesignalID: pushSubscriptionId });
+                        console.log('💎 Linked OneSignal Push ID to RevenueCat:', pushSubscriptionId);
+                    }
+                } catch (err) {
+                    console.warn('⚠️ Failed to link OneSignal IDs to RevenueCat:', err);
+                }
+            }
+
+            console.log('✅ RevenueCat subscriber attributes synced successfully');
+        } catch (err) {
+            console.error('❌ Failed to sync subscriber attributes to RevenueCat:', err);
+        }
+    }
+}
+
 // ✅ Auth events (still needed for sign-in/out within app)
 supabase.auth.onAuthStateChange(async (event, session) => {
     console.log(`🔔 [Auth] Event: ${event}`, session?.user?.id);
@@ -403,7 +487,9 @@ supabase.auth.onAuthStateChange(async (event, session) => {
 
         // Native plugins: never block
         if (Capacitor.isNativePlatform()) {
-            Purchases.logIn({ appUserID: session.user.id }).catch(console.warn)
+            Purchases.logIn({ appUserID: session.user.id })
+                .then(() => syncRevenueCatUser(session.user))
+                .catch(console.warn);
             refreshSubscriptionStatus({ syncToServer: true }).catch(console.warn)
             syncOneSignalUser(session.user).catch(console.warn)
         }
@@ -454,6 +540,7 @@ document.addEventListener('deviceready', async () => {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
             await syncOneSignalUser(user);
+            await syncRevenueCatUser(user);
         }
     } catch (err) {
         console.warn('⚠️ OneSignal init failed:', err);
