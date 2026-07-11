@@ -59,7 +59,7 @@ import {
 
 import { loadCountriesFromCache } from "@/composables/useCountries"
 import OneSignal from 'onesignal-cordova-plugin';
-import { refreshSubscriptionStatus } from "@/composables/useSubscriptionStatus";
+import { refreshSubscriptionStatus, isDonor } from "@/composables/useSubscriptionStatus";
 
 defineCustomElements(window)
 
@@ -245,18 +245,77 @@ async function syncOneSignalUser(user: any) {
             await OneSignal.User.addTag('user_id', user.id);
             console.log('🏷️ Tagged user_id:', user.id);
 
-            // Fetch and tag user role
-            const { data: roleData } = await supabase
-                .from('user_roles')
-                .select('role')
-                .eq('user_id', user.id)
-                .maybeSingle();
-            
+            // Fetch profile and role data in parallel
+            const [profileResult, roleResult] = await Promise.all([
+                supabase
+                    .from('user_profiles')
+                    .select('display_name, phone')
+                    .eq('id', user.id)
+                    .maybeSingle(),
+                supabase
+                    .from('user_roles')
+                    .select('role')
+                    .eq('user_id', user.id)
+                    .maybeSingle()
+            ]);
+
+            const profile = profileResult.data;
+            const roleData = roleResult.data;
+
             const role = roleData?.role || 'user';
             await OneSignal.User.addTag('role', role);
             console.log('🏷️ Tagged role:', role);
+
+            // Sync user display_name as alias
+            const displayName = profile?.display_name || user.user_metadata?.display_name || user.user_metadata?.full_name || '';
+            if (displayName && displayName.trim()) {
+                const cleanDisplayName = displayName.trim().slice(0, 128);
+                console.log('🏷️ Adding alias display_name:', cleanDisplayName);
+                OneSignal.User.addAlias('display_name', cleanDisplayName);
+            }
+
+            // Sync user email (if valid)
+            if (user.email && user.email.trim()) {
+                console.log('📧 Adding email to OneSignal:', user.email);
+                OneSignal.User.addEmail(user.email.trim());
+            }
+
+            // Sync user phone (from auth or profile)
+            const rawPhone = user.phone || profile?.phone || '';
+            if (rawPhone && rawPhone.trim()) {
+                let cleanPhone = rawPhone.trim();
+                // Ensure it is in E.164 format (must start with +)
+                // Taiwan mobile number auto-formatting convenience:
+                if (!cleanPhone.startsWith('+')) {
+                    if (cleanPhone.startsWith('09') && cleanPhone.length === 10) {
+                        cleanPhone = '+886' + cleanPhone.slice(1);
+                    } else if (cleanPhone.startsWith('9') && cleanPhone.length === 9) {
+                        cleanPhone = '+886' + cleanPhone;
+                    }
+                }
+
+                if (cleanPhone.startsWith('+')) {
+                    console.log('📱 Adding SMS phone to OneSignal:', cleanPhone);
+                    OneSignal.User.addSms(cleanPhone);
+                } else {
+                    console.warn('⚠️ Phone number format invalid for OneSignal SMS (missing +):', cleanPhone);
+                }
+            }
+
+            // Sync pro subscriber status
+            let isPro = false;
+            try {
+                const { customerInfo } = await Purchases.getCustomerInfo();
+                isPro = Boolean(customerInfo.entitlements.active["Halal Formosa Pro"]);
+            } catch (err) {
+                console.warn('Failed to fetch RevenueCat customerInfo for OneSignal:', err);
+                isPro = isDonor.value; // Fallback to cached state
+            }
+            await OneSignal.User.addTag('pro_subscriber', isPro ? 'true' : 'false');
+            console.log('🏷️ Tagged pro_subscriber:', isPro ? 'true' : 'false');
+
         } catch (err) {
-            console.error('❌ Failed to tag user/role in OneSignal:', err);
+            console.error('❌ Failed to sync user details to OneSignal:', err);
         }
     } else {
         try {
