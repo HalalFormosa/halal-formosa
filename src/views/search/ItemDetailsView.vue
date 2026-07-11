@@ -41,64 +41,54 @@
 
     <ion-content :scroll-events="true" @ionScroll="handleScroll" fullscreen>
 
-      <div v-if="loading">
-        <!-- Image carousel skeleton -->
-        <ion-skeleton-text
-            animated
-            style="width: 100%; height: 300px;"
-        />
+      <div v-if="loading" class="skeleton-container">
+        <!-- Hero image placeholder -->
+        <ion-skeleton-text animated class="skeleton-hero" />
 
-        <div class="ion-padding-horizontal">
-          <!-- Title -->
-          <ion-skeleton-text
-              animated
-              style="width: 70%; height: 22px; margin-top: 16px;"
-          />
-          <!-- Barcode -->
-          <ion-skeleton-text
-              animated
-              style="width: 40%; height: 16px; margin-top: 8px;"
-          />
+        <div class="ion-padding">
+          <!-- Title & Subtitle/attribution -->
+          <ion-skeleton-text animated class="skeleton-title-line" />
+          <ion-skeleton-text animated class="skeleton-subtitle-line" />
+          <ion-skeleton-text animated class="skeleton-meta-line" />
 
-          <!-- Status chip -->
-          <ion-skeleton-text
-              animated
-              style="width: 100%; height: 40px; border-radius: 5px; margin-top: 16px;"
-          />
+          <!-- Status badge capsule -->
+          <ion-skeleton-text animated class="skeleton-status-badge" />
 
-          <!-- Description header + text -->
-          <ion-skeleton-text
-              animated
-              style="width: 50%; height: 16px; margin-top: 20px;"
-          />
-          <ion-skeleton-text
-              animated
-              style="width: 90%; height: 14px; margin-top: 8px;"
-          />
-          <ion-skeleton-text
-              animated
-              style="width: 85%; height: 14px; margin-top: 4px;"
-          />
-
-          <!-- Ingredients header + list -->
-          <ion-skeleton-text
-              animated
-              style="width: 60%; height: 16px; margin-top: 20px;"
-          />
-          <div style="margin-top: 8px;">
-            <ion-skeleton-text
-                v-for="n in 4"
-                :key="n"
-                animated
-                style="width: 90%; height: 14px; margin-bottom: 6px;"
-            />
+          <!-- Available At header + Store circles -->
+          <div class="skeleton-section-group">
+            <ion-skeleton-text animated class="skeleton-section-title" />
+            <div class="skeleton-stores-row">
+              <ion-skeleton-text animated class="skeleton-store-circle" />
+              <ion-skeleton-text animated class="skeleton-store-circle" />
+            </div>
           </div>
 
-          <!-- Action buttons -->
-          <ion-skeleton-text
-              animated
-              style="width: 100%; height: 44px; border-radius: 4px; margin-top: 12px;"
-          />
+          <!-- Description block -->
+          <div class="skeleton-section-group">
+            <ion-skeleton-text animated class="skeleton-section-title" />
+            <ion-skeleton-text animated class="skeleton-desc-line" />
+          </div>
+
+          <!-- Tags row -->
+          <div class="skeleton-section-group">
+            <ion-skeleton-text animated class="skeleton-section-title" />
+            <div class="skeleton-tags-row">
+              <ion-skeleton-text animated class="skeleton-tag-pill" />
+              <ion-skeleton-text animated class="skeleton-tag-pill" />
+              <ion-skeleton-text animated class="skeleton-tag-pill" />
+            </div>
+          </div>
+
+          <!-- Ingredients list -->
+          <div class="skeleton-section-group">
+            <ion-skeleton-text animated class="skeleton-section-title" />
+            <div class="skeleton-ingredients-list">
+              <ion-skeleton-text animated class="skeleton-ingredient-item" />
+              <ion-skeleton-text animated class="skeleton-ingredient-item" />
+              <ion-skeleton-text animated class="skeleton-ingredient-item" />
+              <ion-skeleton-text animated class="skeleton-ingredient-item" />
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1216,6 +1206,15 @@ async function loadProductData() {
       userId.value = user.id
     }
 
+    // ✅ ingredient highlights
+    if (hlRes.error) {
+      console.error('Highlights load error:', hlRes.error)
+    } else if (hlRes.data) {
+      ingredientDictionary.value = Object.fromEntries(
+          hlRes.data.map(h => [h.keyword, h.color])
+      )
+    }
+
     // ✅ product
     if (prodRes.error) {
       console.error('Product load error:', prodRes.error)
@@ -1236,56 +1235,75 @@ async function loadProductData() {
       // ✅ assign once
       item.value = product
 
-      // Fetch author separately due to missing schema relationship
+      // 2. Fetch all dependent product details concurrently (Round 2)
+      const promises: Promise<void>[] = []
+
+      // Author profiles
       if (prodRes.data.added_by) {
-        const { data: authorData } = await supabase
-          .from('user_profiles')
-          .select('display_name, public_profile')
-          .eq('id', prodRes.data.added_by)
-          .maybeSingle()
-        if (authorData && item.value) {
-          item.value.author = authorData
-        }
+        promises.push((async () => {
+          const { data: authorData } = await supabase
+            .from('user_profiles')
+            .select('display_name, public_profile')
+            .eq('id', prodRes.data.added_by)
+            .maybeSingle()
+          if (authorData && item.value) {
+            item.value.author = authorData
+          }
+        })())
       }
+
+      // Certifications
       if (product.id) {
-        await fetchProductCertifications(product.id)
+        promises.push((async () => {
+          await fetchProductCertifications(product.id)
+        })())
       }
 
+      // View counts & Logging
+      promises.push((async () => {
+        let hasViewed = false
+        const viewedKey = `viewed_prod_${product.barcode}`
+        if (localStorage.getItem(viewedKey)) {
+          hasViewed = true
+        } else {
+          if (userId.value) {
+            const { data: existingLogs, error: logError } = await supabase
+              .from('activity_log')
+              .select('id')
+              .eq('user_id', userId.value)
+              .eq('activity_type', 'product_details_open')
+              .eq('entity_id', product.barcode)
+              .limit(1)
 
-      // Only log if the user hasn't viewed this product before (unique view count)
-      let hasViewed = false
-      const viewedKey = `viewed_prod_${product.barcode}`
-      if (localStorage.getItem(viewedKey)) {
-        hasViewed = true
-      } else {
-        if (userId.value) {
-          const { data: existingLogs, error: logError } = await supabase
-            .from('activity_log')
-            .select('id')
-            .eq('user_id', userId.value)
-            .eq('activity_type', 'product_details_open')
-            .eq('entity_id', product.barcode)
-            .limit(1)
-
-          if (!logError && existingLogs && existingLogs.length > 0) {
-            hasViewed = true
-            localStorage.setItem(viewedKey, 'true')
+            if (!logError && existingLogs && existingLogs.length > 0) {
+              hasViewed = true
+              localStorage.setItem(viewedKey, 'true')
+            }
           }
         }
-      }
 
-      if (!hasViewed) {
-        await ActivityLogService.log("product_details_open", {
-          barcode: product.barcode,
-          product_name: product.name,
-          status: product.status,
-          category: product.product_categories?.name || null,
-        })
-        localStorage.setItem(viewedKey, 'true')
-      }
+        if (!hasViewed) {
+          await ActivityLogService.log("product_details_open", {
+            barcode: product.barcode,
+            product_name: product.name,
+            status: product.status,
+            category: product.product_categories?.name || null,
+          })
+          localStorage.setItem(viewedKey, 'true')
+        }
+      })())
 
-      await fetchRelatedProducts()
-      await loadFoldersAndSavedState()
+      // Related Products
+      promises.push((async () => {
+        await fetchRelatedProducts()
+      })())
+
+      // Folders & Saved state
+      promises.push((async () => {
+        await loadFoldersAndSavedState()
+      })())
+
+      await Promise.all(promises)
     } else if (!prodRes.data && !prodRes.error) {
       // Product not found in database -> Show contribution prompt
       showContributionPrompt.value = true
@@ -1299,15 +1317,6 @@ async function loadProductData() {
         { barcode, isNative: true },
         ['discord'] // Only discord, no need to push to all users
       ).catch(console.error)
-    }
-
-    // ✅ ingredient highlights
-    if (hlRes.error) {
-      console.error('Highlights load error:', hlRes.error)
-    } else if (hlRes.data) {
-      ingredientDictionary.value = Object.fromEntries(
-          hlRes.data.map(h => [h.keyword, h.color])
-      )
     }
 
   } finally {
@@ -1813,5 +1822,81 @@ ion-skeleton-text {
   font-weight: 700;
   font-size: 16px;
   --border-radius: 14px;
+}
+.skeleton-container {
+  display: flex;
+  flex-direction: column;
+}
+.skeleton-hero {
+  width: 100%;
+  height: 300px;
+  margin-top: 0;
+  margin-bottom: 8px;
+}
+.skeleton-title-line {
+  width: 85%;
+  height: 24px;
+  border-radius: 4px;
+  margin-bottom: 8px;
+}
+.skeleton-subtitle-line {
+  width: 50%;
+  height: 14px;
+  border-radius: 4px;
+  margin-bottom: 8px;
+}
+.skeleton-meta-line {
+  width: 35%;
+  height: 12px;
+  border-radius: 4px;
+  margin-bottom: 16px;
+}
+.skeleton-status-badge {
+  width: 90px;
+  height: 32px;
+  border-radius: 16px;
+  margin-bottom: 24px;
+}
+.skeleton-section-group {
+  margin-bottom: 20px;
+}
+.skeleton-section-title {
+  width: 30%;
+  height: 12px;
+  border-radius: 2px;
+  margin-bottom: 12px;
+}
+.skeleton-stores-row {
+  display: flex;
+  gap: 12px;
+}
+.skeleton-store-circle {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+}
+.skeleton-desc-line {
+  width: 75%;
+  height: 16px;
+  border-radius: 4px;
+}
+.skeleton-tags-row {
+  display: flex;
+  gap: 8px;
+}
+.skeleton-tag-pill {
+  width: 70px;
+  height: 28px;
+  border-radius: 14px;
+}
+.skeleton-ingredients-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.skeleton-ingredient-item {
+  width: 60%;
+  height: 14px;
+  border-radius: 4px;
 }
 </style>

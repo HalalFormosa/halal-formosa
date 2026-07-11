@@ -14,7 +14,7 @@
     <div v-show="showHistory" class="collapsible-content">
       <div class="timeline-wrapper">
         <div class="timeline" v-if="filteredLogs.length > 0">
-          <div v-for="(log, index) in filteredLogs" :key="log.id" class="timeline-item">
+          <div v-for="(log, index) in displayedLogs" :key="log.id" class="timeline-item">
             <div class="timeline-icon">
               <ion-avatar class="small-avatar">
                 <img :src="getAvatar(log)" alt="avatar" @error="handleImageError" />
@@ -35,6 +35,13 @@
               </div>
             </div>
           </div>
+
+          <!-- See older changes button -->
+          <div v-if="hasOlderChanges || showAllLogs" class="see-older-wrapper">
+            <ion-button fill="clear" size="small" color="carrot" @click="toggleOlderChanges">
+              {{ showAllLogs ? ($t('common.hideOlderChanges') === 'common.hideOlderChanges' ? 'Hide older changes' : $t('common.hideOlderChanges')) : ($t('common.seeOlderChanges') === 'common.seeOlderChanges' ? 'See older changes' : $t('common.seeOlderChanges')) }}
+            </ion-button>
+          </div>
         </div>
         <div v-else class="ion-text-center timeline-empty">
           <p class="text-gray-500 text-sm">{{ $t('common.noEditHistory', 'No recent edits') }}</p>
@@ -46,7 +53,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, watch, computed } from 'vue'
-import { IonIcon, IonAvatar } from '@ionic/vue'
+import { IonIcon, IonAvatar, IonButton } from '@ionic/vue'
 import { timeOutline, chevronDown, chevronUp } from 'ionicons/icons'
 import { supabase } from '@/plugins/supabaseClient'
 import dayjs from "dayjs"
@@ -66,6 +73,12 @@ const props = defineProps<{
 
 const logs = ref<any[]>([])
 const showHistory = ref(false)
+const showAllLogs = ref(false)
+const hasOlderChanges = ref(false)
+const displayedLogs = computed(() => {
+  if (filteredLogs.value.length <= 5) return filteredLogs.value
+  return showAllLogs.value ? filteredLogs.value : filteredLogs.value.slice(0, 5)
+})
 
 const filteredLogs = computed(() => {
   return logs.value.filter(log => {
@@ -91,7 +104,7 @@ const filteredLogs = computed(() => {
 const fetchLogs = async () => {
   if (!props.entityId) return
 
-  const { data, error } = await supabase
+  let query = supabase
     .from('audit_logs')
     .select(`
       id,
@@ -112,10 +125,29 @@ const fetchLogs = async () => {
     .eq('entity_id', String(props.entityId))
     .order('created_at', { ascending: false })
 
+  if (!showAllLogs.value) {
+    query = query.limit(6)
+  }
+
+  const { data, error } = await query
+
   if (error) {
     console.error('Error fetching audit logs:', error)
   } else {
     logs.value = data || []
+    if (!showAllLogs.value) {
+      hasOlderChanges.value = logs.value.length > 5
+    }
+  }
+}
+
+const toggleOlderChanges = async () => {
+  if (!showAllLogs.value) {
+    showAllLogs.value = true
+    await fetchLogs()
+  } else {
+    showAllLogs.value = false
+    await fetchLogs()
   }
 }
 
@@ -330,5 +362,11 @@ function getActionDescription(log: any) {
   border-radius: 12px;
   margin-left: 6px;
   box-shadow: 0 1px 3px rgba(255, 152, 0, 0.4);
+}
+.see-older-wrapper {
+  display: flex;
+  justify-content: center;
+  margin-top: 12px;
+  padding-left: 36px;
 }
 </style>

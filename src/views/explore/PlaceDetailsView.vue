@@ -184,11 +184,12 @@
                   :key="fac.code"
                   class="consensus-square"
                   :class="[fac.status, fac.source === 'owner' ? 'owner-source' : 'visitor-source']"
+                  @click="fac.source === 'owner' ? showVerifiedToast() : null"
                 >
                   <span class="square-icon">{{ fac.icon }}</span>
                   <span class="square-label">{{ fac.customLabel || getShortLabel(fac.code) }}</span>
-                  <!-- Verified owner badge/label -->
-                  <span v-if="fac.source === 'owner'" class="owner-badge-dot">🏪 Verified</span>
+                  <!-- Verified owner checkmark icon -->
+                  <ion-icon v-if="fac.source === 'owner'" :icon="checkmarkCircle" class="owner-verified-icon" />
                 </div>
               </div>
               <p v-else class="no-consensus-text">
@@ -495,11 +496,23 @@
 
             <!-- ⭐ Visitor Reviews List -->
             <div v-if="place && isReviewableType" class="reviews-section ion-margin-top" id="visitor-reviews-section">
-              <h3 class="section-title">
-                <strong>{{ $t('facilityReview.reviewsHeader') || 'Visitor Reviews' }}</strong>
+              <div 
+                v-if="reviews.length > 1" 
+                class="collapsible-header" 
+                @click="showAllReviews = !showAllReviews"
+                style="margin-top: 0;"
+              >
+                <h3 class="font-bold text-lg ion-no-margin">
+                  {{ $t('facilityReview.reviewsHeader') || 'Visitor Reviews' }} ({{ reviews.length }})
+                </h3>
+                <ion-icon :icon="showAllReviews ? chevronUp : chevronDown" class="collapsible-chevron" />
+              </div>
+              <h3 v-else class="font-bold text-lg ion-margin-top ion-margin-bottom">
+                {{ $t('facilityReview.reviewsHeader') || 'Visitor Reviews' }}
               </h3>
+
               <div v-if="reviews.length > 0" class="review-list">
-                <div v-for="review in reviews" :key="review.id" class="review-card">
+                <div v-for="review in displayedReviews" :key="review.id" class="review-card">
                   <div class="review-header">
                     <ion-avatar class="reviewer-avatar">
                       <img :src="review.user_profiles?.public_profile ? review.user_profiles?.avatar_url || '/favicon-32x32.png' : '/favicon-32x32.png'" />
@@ -550,13 +563,37 @@
       </div>
 
       <!-- Skeleton while loading -->
-      <div v-else>
-        <ion-skeleton-text
-            animated
-            style="width:100%;height:300px;margin-bottom:12px;"
-        />
-        <ion-skeleton-text animated style="width:80%;height:20px;margin-bottom:8px;"/>
-        <ion-skeleton-text animated style="width:60%;height:16px;margin-bottom:8px;"/>
+      <div v-else class="ion-padding skeleton-container">
+        <!-- Hero image placeholder -->
+        <ion-skeleton-text animated class="skeleton-hero" />
+
+        <!-- Title & Subtitle placeholders -->
+        <ion-skeleton-text animated class="skeleton-title-line" />
+        <ion-skeleton-text animated class="skeleton-subtitle-line" />
+
+        <!-- Quick actions row placeholders -->
+        <div class="skeleton-actions-row">
+          <ion-skeleton-text animated class="skeleton-action-btn" />
+          <ion-skeleton-text animated class="skeleton-action-btn" />
+          <ion-skeleton-text animated class="skeleton-action-btn" />
+        </div>
+
+        <!-- Description placeholders -->
+        <div class="skeleton-desc-block">
+          <ion-skeleton-text animated style="width: 100%; height: 12px; margin-bottom: 8px;" />
+          <ion-skeleton-text animated style="width: 95%; height: 12px; margin-bottom: 8px;" />
+          <ion-skeleton-text animated style="width: 70%; height: 12px; margin-bottom: 16px;" />
+        </div>
+
+        <!-- Interactive Map placeholder -->
+        <ion-skeleton-text animated class="skeleton-map" />
+
+        <!-- Grid of facility rectangular badges -->
+        <div class="skeleton-facilities-grid">
+          <ion-skeleton-text animated class="skeleton-facility-card" />
+          <ion-skeleton-text animated class="skeleton-facility-card" />
+          <ion-skeleton-text animated class="skeleton-facility-card" />
+        </div>
       </div>
     </ion-content>
 
@@ -917,6 +954,11 @@ const activePromos = ref<any[]>([])
 const showPromosModal = ref(false)
 const showMenuModal = ref(false)
 const showAdditionalDetails = ref(false)
+const showAllReviews = ref(false)
+const displayedReviews = computed(() => {
+  if (reviews.value.length <= 1) return reviews.value
+  return showAllReviews.value ? reviews.value : [reviews.value[0]]
+})
 const initialPhotoIndex = ref(0)
 
 function openImageModal(index = 0) {
@@ -1164,195 +1206,238 @@ const mapSearchQuery = computed(() => {
 const loadPlace = async () => {
   loading.value = true
 
-  const {data, error} = await supabase
-      .from('locations')
-      .select(`
-    id,
-    name,
-    lat,
-    lng,
-    image,
-    address,
-    description,
-    created_by,
-    phone,
-    instagram,
-    facebook,
-    tiktok,
-    website,
-    line_id,
-    foodpanda_url,
-    ubereats_url,
-    price_range,
-    opening_hours,
-    created_at,
-    approved,
-    tags,
-    is_claimed,
-    type_id,
-    has_prayer_room,
-    has_wudu,
-    is_alcohol_free,
-    halal_status,
-    avg_rating,
-    review_count,
-    location_types(name),
-    partner:partners(partner_tier)
-  `)
-      .eq('id', route.params.id)
-      .maybeSingle()
-
-  if (error) {
-    console.error(error)
+  const locationId = route.params.id
+  if (!locationId) {
+    loading.value = false
     return
   }
 
-  if (data) {
-    const locationType = Array.isArray(data.location_types)
-        ? data.location_types[0]
-        : data.location_types
+  // 1. Fetch location details and user info concurrently (Round 1)
+  const [placeResult, userResult] = await Promise.all([
+    supabase
+      .from('locations')
+      .select(`
+        id,
+        name,
+        lat,
+        lng,
+        image,
+        address,
+        description,
+        created_by,
+        phone,
+        instagram,
+        facebook,
+        tiktok,
+        website,
+        line_id,
+        foodpanda_url,
+        ubereats_url,
+        price_range,
+        opening_hours,
+        created_at,
+        approved,
+        tags,
+        is_claimed,
+        type_id,
+        has_prayer_room,
+        has_wudu,
+        is_alcohol_free,
+        halal_status,
+        avg_rating,
+        review_count,
+        location_types(name),
+        partner:partners(partner_tier)
+      `)
+      .eq('id', locationId)
+      .maybeSingle(),
+    supabase.auth.getUser()
+  ])
 
-    place.value = {
-      id: data.id,
-      name: data.name,
-      image: data.image,
-      type: locationType?.name ?? 'Halal Location',
-      lat: data.lat,
-      lng: data.lng,
-      address: data.address,
-      description: data.description,
-      phone: data.phone,
-      instagram: data.instagram,
-      facebook: data.facebook,
-      tiktok: data.tiktok,
-      website: data.website,
-      line_id: data.line_id,
-      foodpanda_url: data.foodpanda_url,
-      ubereats_url: data.ubereats_url,
-      price_range: data.price_range,
-      opening_hours: data.opening_hours,
-      created_at: data.created_at,
-      approved: data.approved,
-      is_claimed: data.is_claimed ?? false,
-      author: null,
-      location_types: locationType ?? null,
-      tags: data.tags ?? [],
-      partner_tier: Array.isArray(data.partner) ? data.partner[0]?.partner_tier : (data.partner as any)?.partner_tier,
-      typeId: data.type_id,
-      has_prayer_room: data.has_prayer_room,
-      has_wudu: data.has_wudu,
-      is_alcohol_free: data.is_alcohol_free,
-      halal_status: data.halal_status,
-      avg_rating: data.avg_rating,
-      review_count: data.review_count
-    }
+  const { data, error } = placeResult
+  if (error || !data) {
+    if (error) console.error(error)
+    loading.value = false
+    return
+  }
 
-    fetchReviewsAndSummary()
+  const user = userResult?.data?.user || null
 
-    // 🔹 Fetch author details separately since join is missing in schema
-    if (data.created_by) {
-      const { data: authorData } = await supabase
+  const locationType = Array.isArray(data.location_types)
+      ? data.location_types[0]
+      : data.location_types
+
+  place.value = {
+    id: data.id,
+    name: data.name,
+    image: data.image,
+    type: locationType?.name ?? 'Halal Location',
+    lat: data.lat,
+    lng: data.lng,
+    address: data.address,
+    description: data.description,
+    phone: data.phone,
+    instagram: data.instagram,
+    facebook: data.facebook,
+    tiktok: data.tiktok,
+    website: data.website,
+    line_id: data.line_id,
+    foodpanda_url: data.foodpanda_url,
+    ubereats_url: data.ubereats_url,
+    price_range: data.price_range,
+    opening_hours: data.opening_hours,
+    created_at: data.created_at,
+    approved: data.approved,
+    is_claimed: data.is_claimed ?? false,
+    author: null,
+    location_types: locationType ?? null,
+    tags: data.tags ?? [],
+    partner_tier: Array.isArray(data.partner) ? data.partner[0]?.partner_tier : (data.partner as any)?.partner_tier,
+    typeId: data.type_id,
+    has_prayer_room: data.has_prayer_room,
+    has_wudu: data.has_wudu,
+    is_alcohol_free: data.is_alcohol_free,
+    halal_status: data.halal_status,
+    avg_rating: data.avg_rating,
+    review_count: data.review_count
+  }
+
+  // 2. Fetch all dependent listing details concurrently (Round 2)
+  const promises: Promise<void>[] = []
+
+  // Reviews and consensus summary
+  promises.push((async () => {
+    await fetchReviewsAndSummary()
+  })())
+
+  // Author details (if creator exists)
+  if (data.created_by) {
+    const authorPromise = (async () => {
+      const res = await supabase
         .from('user_profiles')
         .select('display_name, public_profile')
         .eq('id', data.created_by)
         .maybeSingle()
-      
-      if (authorData && place.value) {
-        place.value.author = authorData
+      if (res.data && place.value) {
+        place.value.author = res.data
       }
-    }
+    })()
+    promises.push(authorPromise)
+  }
 
+  // Certifications
+  promises.push((async () => {
     await fetchLocationCertifications(data.id)
+  })())
 
-    // 🔹 If this listing is claimed, resolve the verified owner's display name
-    if (data.is_claimed) {
-      const { data: name } = await supabase.rpc('location_owner_name', { p_location_id: data.id })
-      ownerName.value = (name as string | null) || null
-    }
+  // Claimed status owner display name (if claimed)
+  if (data.is_claimed) {
+    const ownerNamePromise = (async () => {
+      const res = await supabase
+        .rpc('location_owner_name', { p_location_id: data.id })
+      ownerName.value = (res.data as string | null) || null
+    })()
+    promises.push(ownerNamePromise)
+  }
 
+  // User authorization checks (role, ownership, claim)
+  if (user) {
+    isLoggedIn.value = true
 
-    // 🔹 Check if the current user can edit
-    const {data: {user}} = await supabase.auth.getUser()
-    if (user) {
-      isLoggedIn.value = true
-      // Check if user is the creator or an admin/contributor
-      const {data: roleData} = await supabase
+    const userPrivilegePromise = (async () => {
+      const [roleRes, ownerRes, claimRes] = await Promise.all([
+        supabase
           .from('user_roles')
           .select('role')
           .eq('user_id', user.id)
-          .single()
-
-      // Is the current user a verified owner/manager of this location?
-      const { data: ownerRow } = await supabase
+          .single(),
+        supabase
           .from('location_owners')
           .select('role')
           .eq('location_id', data.id)
           .eq('user_id', user.id)
-          .maybeSingle()
-      isOwner.value = !!ownerRow
+          .maybeSingle(),
+        ClaimService.getUserClaimForLocation(data.id)
+      ])
+
+      const roleData = roleRes.data
+      isOwner.value = !!ownerRes.data
 
       if (
-          user.id === data.created_by ||
-          roleData?.role === 'admin' ||
-          roleData?.role === 'contributor' ||
-          isOwner.value
+        user.id === data.created_by ||
+        roleData?.role === 'admin' ||
+        roleData?.role === 'contributor' ||
+        isOwner.value
       ) {
         canEdit.value = true
       }
 
-      // If not already an owner, look up any existing claim to reflect its status
       if (!isOwner.value) {
-        const claim = await ClaimService.getUserClaimForLocation(data.id)
-        claimStatus.value = claim?.status ?? null
+        claimStatus.value = claimRes?.status ?? null
       }
-    }
+    })()
 
-    await ActivityLogService.log("explore_place_detail_view", {
-      id: data.id,
-      name: data.name,
-      type: locationType?.name ?? null
-    });
+    promises.push(userPrivilegePromise)
+  }
 
-    // Fetch photos
+  // Photos
+  const photosPromise = (async () => {
     try {
-      const { data: photosData } = await supabase
+      const res = await supabase
         .from('location_photos')
         .select('*')
         .eq('location_id', data.id)
         .order('sort_order', { ascending: true })
-      locationPhotos.value = photosData || []
+      locationPhotos.value = res.data || []
     } catch (err) {
       console.error('Failed to load location photos:', err)
       locationPhotos.value = []
     }
+  })()
+  promises.push(photosPromise)
 
-    // Fetch menu items
+  // Menu items
+  const menuPromise = (async () => {
     try {
-      const { data: menuData } = await supabase
+      const res = await supabase
         .from('location_menu_items')
         .select('*')
         .eq('location_id', data.id)
         .order('sort_order', { ascending: true })
-      menuItems.value = menuData || []
+      menuItems.value = res.data || []
     } catch (err) {
       console.error('Failed to load menu items:', err)
       menuItems.value = []
     }
+  })()
+  promises.push(menuPromise)
 
-    // Fetch promotions
+  // Promotions
+  const promosPromise = (async () => {
     try {
-      const { data: promosData } = await supabase
+      const res = await supabase
         .from('location_promotions')
         .select('*')
         .eq('location_id', data.id)
         .eq('is_active', true)
         .order('created_at', { ascending: false })
-      activePromos.value = promosData || []
+      activePromos.value = res.data || []
     } catch (err) {
       console.error('Failed to load promotions:', err)
       activePromos.value = []
     }
-  }
+  })()
+  promises.push(promosPromise)
+
+  // Non-blocking Activity Log fire
+  ActivityLogService.log("explore_place_detail_view", {
+    id: data.id,
+    name: data.name,
+    type: locationType?.name ?? null
+  })
+
+  // Await all round 2 fetches concurrently
+  await Promise.all(promises)
 
   loading.value = false
 }
@@ -1660,6 +1745,17 @@ const combinedFacilities = computed(() => {
 
   return list
 })
+
+const showVerifiedToast = async () => {
+  const msg = t('facilityReview.ownerVerified')
+  const toast = await toastController.create({
+    message: msg === 'facilityReview.ownerVerified' ? 'Verified by business owner' : msg,
+    duration: 1500,
+    position: 'bottom',
+    color: 'success'
+  })
+  await toast.present()
+}
 
 const getShortLabel = (code: string): string => {
   const labels: Record<string, string> = {
@@ -2733,26 +2829,13 @@ ion-item ion-label p:not(.text-gray-500) {
 
 /* Combined facilities styles */
 .consensus-square.owner-source {
-  background: rgba(var(--ion-color-carrot-rgb, 242, 110, 36), 0.08) !important;
-  border: 1px dashed var(--ion-color-carrot) !important;
-  padding-top: 11px;
-  padding-bottom: 5px;
+  cursor: pointer;
 }
-
-.consensus-square.owner-source .square-label {
-  color: var(--ion-color-carrot) !important;
-  font-weight: 800;
-}
-
-.owner-badge-dot {
-  position: absolute;
-  top: 1px;
-  right: 5px;
-  font-size: 0.45rem;
-  font-weight: 800;
-  text-transform: uppercase;
-  color: var(--ion-color-carrot);
-  letter-spacing: 0.5px;
+.owner-verified-icon {
+  font-size: 0.95rem;
+  color: var(--ion-color-success, #10b981);
+  margin-left: 2px;
+  flex-shrink: 0;
 }
 
 /* Promotions & Offers Styles */
@@ -2901,5 +2984,56 @@ ion-item ion-label p:not(.text-gray-500) {
 @keyframes slideDown {
   from { opacity: 0; transform: translateY(-5px); }
   to { opacity: 1; transform: translateY(0); }
+}
+.skeleton-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.skeleton-hero {
+  width: 100%;
+  height: 200px;
+  border-radius: 12px;
+  margin-bottom: 8px;
+}
+.skeleton-title-line {
+  width: 65%;
+  height: 24px;
+  border-radius: 4px;
+}
+.skeleton-subtitle-line {
+  width: 40%;
+  height: 16px;
+  border-radius: 4px;
+  margin-bottom: 12px;
+}
+.skeleton-actions-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.skeleton-action-btn {
+  flex: 1;
+  height: 38px;
+  border-radius: 8px;
+}
+.skeleton-desc-block {
+  margin-bottom: 12px;
+}
+.skeleton-map {
+  width: 100%;
+  height: 150px;
+  border-radius: 12px;
+  margin-bottom: 16px;
+}
+.skeleton-facilities-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.skeleton-facility-card {
+  width: 110px;
+  height: 38px;
+  border-radius: 8px;
 }
 </style>

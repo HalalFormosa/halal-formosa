@@ -59,7 +59,9 @@
     "added": "Added",
     "lastEdited": "Last edited",
     "noEditHistory": "No recent edits",
-    "admin": "Admin"
+    "admin": "Admin",
+    "seeOlderChanges": "See older changes",
+    "hideOlderChanges": "Hide older changes"
   },
   "review": {
     "title": "Review Submissions",
@@ -2114,6 +2116,7 @@
     "noConsensusYet": "No visitor reports yet. Be the first to share!",
     "rateReviewAction": "Rate & Review Facilities",
     "reviewsHeader": "Visitor Reviews",
+    "ownerVerified": "Verified by business owner",
     "facilities": {
       "halalCertified": "Halal Certified",
       "prayerRoom": "Prayer Room / Musholla",
