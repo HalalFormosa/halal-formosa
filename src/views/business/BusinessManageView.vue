@@ -471,12 +471,28 @@
               <ion-spinner name="crescent" color="carrot" />
             </div>
             <template v-else>
-              <div v-if="businessReviews.length === 0" class="empty-inline">
+              <!-- Filter & Sort controls -->
+              <div class="reviews-filter-bar">
+                <ion-item lines="none" class="filter-item">
+                  <ion-select v-model="reviewsFilter" interface="popover" :label="$t('common.filter') || 'Filter'" label-placement="fixed" class="carrot-select">
+                    <ion-select-option value="all">All Reviews</ion-select-option>
+                    <ion-select-option value="unreplied">Unreplied Only</ion-select-option>
+                  </ion-select>
+                </ion-item>
+                <ion-item lines="none" class="filter-item">
+                  <ion-select v-model="reviewsSort" interface="popover" :label="$t('common.sort') || 'Sort'" label-placement="fixed" class="carrot-select">
+                    <ion-select-option value="recent">Recent Reviews</ion-select-option>
+                    <ion-select-option value="unreplied_first">Not Replied First</ion-select-option>
+                  </ion-select>
+                </ion-item>
+              </div>
+
+              <div v-if="processedReviews.length === 0" class="empty-inline">
                 <ion-icon :icon="chatbubbleOutline" color="medium" />
-                <p>{{ $t('business.reviews.none') || 'No reviews yet for this location.' }}</p>
+                <p>No matching reviews found.</p>
               </div>
               <div v-else class="review-manager-list">
-                <div v-for="rev in businessReviews" :key="rev.id" class="review-manage-card">
+                <div v-for="rev in processedReviews" :key="rev.id" class="review-manage-card">
                   <div class="rev-manage-header">
                     <ion-avatar class="rev-avatar">
                       <img :src="rev.user_profiles?.public_profile ? rev.user_profiles?.avatar_url || '/favicon-32x32.png' : '/favicon-32x32.png'" />
@@ -642,6 +658,7 @@ import { isAdmin } from '@/composables/userProfile'
 import { ActivityLogService } from '@/services/ActivityLogService'
 import BusinessUpgradeModal from '@/components/BusinessUpgradeModal.vue'
 import type { PlanFeatures, PlanTier, LocationPhoto, LocationMenuItem, LocationPromotion } from '@/types/Business'
+import { MUSLIM_FACILITIES } from '@/constants/muslimFacilities'
 
 const route = useRoute()
 const { t } = useI18n()
@@ -748,52 +765,90 @@ const replyingToId = ref<number | null>(null)
 const activeReplyText = ref('')
 const submittingReply = ref(false)
 
+const reviewsFilter = ref<'all' | 'unreplied'>('all')
+const reviewsSort = ref<'recent' | 'unreplied_first'>('recent')
+
+const processedReviews = computed(() => {
+  let list = [...businessReviews.value]
+  
+  if (reviewsFilter.value === 'unreplied') {
+    list = list.filter(rev => !rev.owner_response)
+  }
+  
+  if (reviewsSort.value === 'recent') {
+    list.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+  } else if (reviewsSort.value === 'unreplied_first') {
+    list.sort((a, b) => {
+      const aReplied = !!a.owner_response
+      const bReplied = !!b.owner_response
+      if (aReplied !== bReplied) {
+        return aReplied ? 1 : -1
+      }
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    })
+  }
+  
+  return list
+})
+
 const canAddPhoto = computed(() => features.value.maxPhotos === -1 || photos.value.length < features.value.maxPhotos)
 
 onIonViewWillEnter(async () => {
   loading.value = true
-  const { data: loc } = await supabase
-    .from('locations')
-    .select('name, address, lat, lng, phone, instagram, facebook, tiktok, website, line_id, foodpanda_url, ubereats_url, price_range, description, image, opening_hours, tags, halal_status, has_prayer_room, has_wudu, is_alcohol_free, halal_cert_url, halal_material_photos, location_types(name)')
-    .eq('id', locationId)
-    .maybeSingle()
+  try {
+    const { data: loc } = await supabase
+      .from('locations')
+      .select('name, address, lat, lng, phone, instagram, facebook, tiktok, website, line_id, foodpanda_url, ubereats_url, price_range, description, image, opening_hours, tags, halal_status, has_prayer_room, has_wudu, is_alcohol_free, halal_cert_url, halal_material_photos, location_types(name)')
+      .eq('id', locationId)
+      .maybeSingle()
 
-  if (loc) {
-    locationName.value = loc.name
-    heroImage.value = loc.image ?? null
-    const lt: any = Array.isArray(loc.location_types) ? loc.location_types[0] : loc.location_types
-    typeName.value = lt?.name ?? ''
-    info.value = {
-      name: loc.name ?? '', address: loc.address ?? '', phone: loc.phone ?? '',
-      instagram: loc.instagram ?? '', facebook: loc.facebook ?? '', tiktok: loc.tiktok ?? '', website: loc.website ?? '',
-      line_id: loc.line_id ?? '', foodpanda_url: loc.foodpanda_url ?? '',
-      ubereats_url: loc.ubereats_url ?? '',
-      price_range: loc.price_range ?? '', description: loc.description ?? '',
+    if (loc) {
+      locationName.value = loc.name
+      heroImage.value = loc.image ?? null
+      const lt: any = Array.isArray(loc.location_types) ? loc.location_types[0] : loc.location_types
+      typeName.value = lt?.name ?? ''
+      info.value = {
+        name: loc.name ?? '', address: loc.address ?? '', phone: loc.phone ?? '',
+        instagram: loc.instagram ?? '', facebook: loc.facebook ?? '', tiktok: loc.tiktok ?? '', website: loc.website ?? '',
+        line_id: loc.line_id ?? '', foodpanda_url: loc.foodpanda_url ?? '',
+        ubereats_url: loc.ubereats_url ?? '',
+        price_range: loc.price_range ?? '', description: loc.description ?? '',
+      }
+      halal.value = {
+        halal_status: loc.halal_status ?? '',
+        has_prayer_room: loc.has_prayer_room ?? false,
+        has_wudu: loc.has_wudu ?? false,
+        is_alcohol_free: loc.is_alcohol_free ?? false,
+      }
+      halalCertUrl.value = loc.halal_cert_url ?? ''
+      halalMaterials.value = Array.isArray(loc.halal_material_photos) ? (loc.halal_material_photos as string[]) : []
+      hours.value = normalizeHours(loc.opening_hours)
+      tagsList.value = Array.isArray(loc.tags) ? (loc.tags as string[]) : []
+      if (typeof loc.lat === 'number' && typeof loc.lng === 'number') coords.value = { lat: loc.lat, lng: loc.lng }
     }
-    halal.value = {
-      halal_status: loc.halal_status ?? '',
-      has_prayer_room: loc.has_prayer_room ?? false,
-      has_wudu: loc.has_wudu ?? false,
-      is_alcohol_free: loc.is_alcohol_free ?? false,
-    }
-    halalCertUrl.value = loc.halal_cert_url ?? ''
-    halalMaterials.value = Array.isArray(loc.halal_material_photos) ? (loc.halal_material_photos as string[]) : []
-    hours.value = normalizeHours(loc.opening_hours)
-    tagsList.value = Array.isArray(loc.tags) ? (loc.tags as string[]) : []
-    if (typeof loc.lat === 'number' && typeof loc.lng === 'number') coords.value = { lat: loc.lat, lng: loc.lng }
+
+    // Overlay any unpublished draft on top of the live values so the owner keeps editing their draft
+    const draft = await biz.getDraft(locationId)
+    hasUnpublished.value = Object.keys(draft).length > 0
+    applyDraft(draft)
+
+    const ent = await getFeatures(locationId)
+    tier.value = ent.tier
+    features.value = ent.features
+
+    await Promise.all([
+      loadPhotos().catch(e => console.error('loadPhotos failed:', e)),
+      loadMenu().catch(e => console.error('loadMenu failed:', e)),
+      loadPromotions().catch(e => console.error('loadPromotions failed:', e)),
+      loadAnalytics().catch(e => console.error('loadAnalytics failed:', e)),
+      loadReports().catch(e => console.error('loadReports failed:', e)),
+      loadReviews().catch(e => console.error('loadReviews failed:', e))
+    ])
+  } catch (err) {
+    console.error('onIonViewWillEnter failed:', err)
+  } finally {
+    loading.value = false
   }
-
-  // Overlay any unpublished draft on top of the live values so the owner keeps editing their draft
-  const draft = await biz.getDraft(locationId)
-  hasUnpublished.value = Object.keys(draft).length > 0
-  applyDraft(draft)
-
-  const ent = await getFeatures(locationId)
-  tier.value = ent.tier
-  features.value = ent.features
-
-  await Promise.all([loadPhotos(), loadMenu(), loadPromotions(), loadAnalytics(), loadReports(), loadReviews()])
-  loading.value = false
 
   // The map lives in the Info tab; init once the DOM for it exists.
   if (tab.value === 'info') nextTick(ensureMap)
@@ -1332,13 +1387,13 @@ const hasFacilities = (facilities: any) => {
 }
 
 const getReviewFacilities = (facilities: any) => {
-  return MUSLIM_FACILITIES.map(fac => {
+  return MUSLIM_FACILITIES.map((fac: any) => {
     const val = facilities[fac.code]
     if (val && val !== 'unsure') {
       return { ...fac, val }
     }
     return null
-  }).filter(f => f !== null)
+  }).filter((f: any) => f !== null)
 }
 
 const getShortLabel = (code: string): string => {
@@ -1567,6 +1622,24 @@ const getShortLabel = (code: string): string => {
 @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 
 /* Reviews Manager style */
+.reviews-filter-bar {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+  background: rgba(var(--ion-text-color-rgb, 0, 0, 0), 0.04);
+  border-radius: 8px;
+  padding: 4px;
+}
+.reviews-filter-bar .filter-item {
+  flex: 1;
+  --background: transparent;
+  --padding-start: 8px;
+  --min-height: 44px;
+  font-size: 0.9rem;
+}
+.reviews-filter-bar .carrot-select {
+  width: 100%;
+}
 .review-manager-list {
   display: flex;
   flex-direction: column;
