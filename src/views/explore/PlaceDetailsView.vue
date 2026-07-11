@@ -897,6 +897,16 @@ type PlaceDetail = {
   has_prayer_room?: boolean;
   has_wudu?: boolean;
   is_alcohol_free?: boolean;
+  has_bidet?: boolean;
+  has_space_to_pray?: boolean;
+  is_pork_free?: boolean;
+  is_cash_only?: boolean;
+  has_halal_food?: boolean;
+  has_vegan_option?: boolean;
+  is_muslim_owned?: boolean;
+  is_muslim_staff?: boolean;
+  has_free_wifi?: boolean;
+  has_qibla_direction?: boolean;
   halal_status?: string | null;
   avg_rating?: number;
   review_count?: number;
@@ -1243,6 +1253,16 @@ const loadPlace = async () => {
         has_prayer_room,
         has_wudu,
         is_alcohol_free,
+        has_bidet,
+        has_space_to_pray,
+        is_pork_free,
+        is_cash_only,
+        has_halal_food,
+        has_vegan_option,
+        is_muslim_owned,
+        is_muslim_staff,
+        has_free_wifi,
+        has_qibla_direction,
         halal_status,
         avg_rating,
         review_count,
@@ -1297,6 +1317,16 @@ const loadPlace = async () => {
     has_prayer_room: data.has_prayer_room,
     has_wudu: data.has_wudu,
     is_alcohol_free: data.is_alcohol_free,
+    has_bidet: data.has_bidet,
+    has_space_to_pray: data.has_space_to_pray,
+    is_pork_free: data.is_pork_free,
+    is_cash_only: data.is_cash_only,
+    has_halal_food: data.has_halal_food,
+    has_vegan_option: data.has_vegan_option,
+    is_muslim_owned: data.is_muslim_owned,
+    is_muslim_staff: data.is_muslim_staff,
+    has_free_wifi: data.has_free_wifi,
+    has_qibla_direction: data.has_qibla_direction,
     halal_status: data.halal_status,
     avg_rating: data.avg_rating,
     review_count: data.review_count
@@ -1711,6 +1741,16 @@ const combinedFacilities = computed(() => {
     if (code === 'prayer_room') return !!p.has_prayer_room
     if (code === 'wudu') return !!p.has_wudu
     if (code === 'alcohol_free') return !!p.is_alcohol_free
+    if (code === 'bidet') return !!p.has_bidet
+    if (code === 'space_to_pray') return !!p.has_space_to_pray
+    if (code === 'pork_free') return !!p.is_pork_free
+    if (code === 'cash_only') return !!p.is_cash_only
+    if (code === 'halal_food') return !!p.has_halal_food
+    if (code === 'vegan_option') return !!p.has_vegan_option
+    if (code === 'muslim_owned') return !!p.is_muslim_owned
+    if (code === 'muslim_staff') return !!p.is_muslim_staff
+    if (code === 'free_wifi') return !!p.has_free_wifi
+    if (code === 'qibla_direction') return !!p.has_qibla_direction
     return false
   }
 

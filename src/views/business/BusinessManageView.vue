@@ -270,13 +270,43 @@
               </div>
 
               <ion-item>
-                <ion-toggle v-model="halal.has_prayer_room">{{ $t('business.halal.prayerRoom') }}</ion-toggle>
+                <ion-toggle v-model="halal.has_prayer_room">{{ $t('facilityReview.facilities.prayerRoom') }}</ion-toggle>
               </ion-item>
               <ion-item>
-                <ion-toggle v-model="halal.has_wudu">{{ $t('business.halal.wudu') }}</ion-toggle>
+                <ion-toggle v-model="halal.has_wudu">{{ $t('facilityReview.facilities.wudu') }}</ion-toggle>
               </ion-item>
               <ion-item>
-                <ion-toggle v-model="halal.is_alcohol_free">{{ $t('business.halal.alcoholFree') }}</ion-toggle>
+                <ion-toggle v-model="halal.has_bidet">{{ $t('facilityReview.facilities.bidet') }}</ion-toggle>
+              </ion-item>
+              <ion-item>
+                <ion-toggle v-model="halal.has_space_to_pray">{{ $t('facilityReview.facilities.spaceToPray') }}</ion-toggle>
+              </ion-item>
+              <ion-item>
+                <ion-toggle v-model="halal.is_pork_free">{{ $t('facilityReview.facilities.porkFree') }}</ion-toggle>
+              </ion-item>
+              <ion-item>
+                <ion-toggle v-model="halal.is_cash_only">{{ $t('facilityReview.facilities.cashOnly') }}</ion-toggle>
+              </ion-item>
+              <ion-item>
+                <ion-toggle v-model="halal.has_halal_food">{{ $t('facilityReview.facilities.halalFood') }}</ion-toggle>
+              </ion-item>
+              <ion-item>
+                <ion-toggle v-model="halal.has_vegan_option">{{ $t('facilityReview.facilities.veganOption') }}</ion-toggle>
+              </ion-item>
+              <ion-item>
+                <ion-toggle v-model="halal.is_muslim_owned">{{ $t('facilityReview.facilities.muslimOwned') }}</ion-toggle>
+              </ion-item>
+              <ion-item>
+                <ion-toggle v-model="halal.is_muslim_staff">{{ $t('facilityReview.facilities.muslimStaff') }}</ion-toggle>
+              </ion-item>
+              <ion-item>
+                <ion-toggle v-model="halal.is_alcohol_free">{{ $t('facilityReview.facilities.alcoholFree') }}</ion-toggle>
+              </ion-item>
+              <ion-item>
+                <ion-toggle v-model="halal.has_free_wifi">{{ $t('facilityReview.facilities.freeWifi') }}</ion-toggle>
+              </ion-item>
+              <ion-item>
+                <ion-toggle v-model="halal.has_qibla_direction">{{ $t('facilityReview.facilities.qiblaDirection') }}</ion-toggle>
               </ion-item>
             </ion-list>
           </section>
@@ -600,10 +630,20 @@
             <span class="pv-type">{{ typeName }}</span>
             <span v-if="halal.halal_status" class="pv-halal" :class="halal.halal_status">{{ halalLabel }}</span>
           </div>
-          <div class="pv-attrs" v-if="halal.has_prayer_room || halal.has_wudu || halal.is_alcohol_free">
-            <span v-if="halal.has_prayer_room">🕌 {{ $t('business.halal.prayerRoom') }}</span>
-            <span v-if="halal.has_wudu">🚰 {{ $t('business.halal.wudu') }}</span>
-            <span v-if="halal.is_alcohol_free">🚫🍺 {{ $t('business.halal.alcoholFree') }}</span>
+          <div class="pv-attrs" v-if="halal.has_prayer_room || halal.has_wudu || halal.is_alcohol_free || halal.has_bidet || halal.has_space_to_pray || halal.is_pork_free || halal.is_cash_only || halal.has_halal_food || halal.has_vegan_option || halal.is_muslim_owned || halal.is_muslim_staff || halal.has_free_wifi || halal.has_qibla_direction">
+            <span v-if="halal.has_prayer_room">🕌 {{ $t('facilityReview.facilities.prayerRoom') }}</span>
+            <span v-if="halal.has_wudu">🚰 {{ $t('facilityReview.facilities.wudu') }}</span>
+            <span v-if="halal.has_bidet">🚿 {{ $t('facilityReview.facilities.bidet') }}</span>
+            <span v-if="halal.has_space_to_pray">🧎 {{ $t('facilityReview.facilities.spaceToPray') }}</span>
+            <span v-if="halal.is_pork_free">🚫🐷 {{ $t('facilityReview.facilities.porkFree') }}</span>
+            <span v-if="halal.is_cash_only">💵 {{ $t('facilityReview.facilities.cashOnly') }}</span>
+            <span v-if="halal.has_halal_food">🍽️ {{ $t('facilityReview.facilities.halalFood') }}</span>
+            <span v-if="halal.has_vegan_option">🌱 {{ $t('facilityReview.facilities.veganOption') }}</span>
+            <span v-if="halal.is_muslim_owned">👤 {{ $t('facilityReview.facilities.muslimOwned') }}</span>
+            <span v-if="halal.is_muslim_staff">👥 {{ $t('facilityReview.facilities.muslimStaff') }}</span>
+            <span v-if="halal.is_alcohol_free">🚫🍺 {{ $t('facilityReview.facilities.alcoholFree') }}</span>
+            <span v-if="halal.has_free_wifi">📶 {{ $t('facilityReview.facilities.freeWifi') }}</span>
+            <span v-if="halal.has_qibla_direction">🧭 {{ $t('facilityReview.facilities.qiblaDirection') }}</span>
           </div>
           <div v-if="halalCertUrl || halalMaterials.length" class="pv-proof">
             <p class="pv-proof-label">{{ halal.halal_status === 'certified' ? $t('business.halal.certProofTitle') : $t('business.halal.materialsTitle') }}</p>
@@ -706,7 +746,22 @@ const priceRanges = [
   { value: '$$$', label: '$$$ · NT$350–650' },
   { value: '$$$$', label: '$$$$ · Over NT$650' },
 ]
-const halal = ref({ halal_status: '' as string, has_prayer_room: false, has_wudu: false, is_alcohol_free: false })
+const halal = ref({
+  halal_status: '' as string,
+  has_prayer_room: false,
+  has_wudu: false,
+  is_alcohol_free: false,
+  has_bidet: false,
+  has_space_to_pray: false,
+  is_pork_free: false,
+  is_cash_only: false,
+  has_halal_food: false,
+  has_vegan_option: false,
+  is_muslim_owned: false,
+  is_muslim_staff: false,
+  has_free_wifi: false,
+  has_qibla_direction: false
+})
 const halalCertUrl = ref('')
 const halalMaterials = ref<string[]>([])
 const uploadingHalal = ref(false)
@@ -798,7 +853,7 @@ onIonViewWillEnter(async () => {
   try {
     const { data: loc } = await supabase
       .from('locations')
-      .select('name, address, lat, lng, phone, instagram, facebook, tiktok, website, line_id, foodpanda_url, ubereats_url, price_range, description, image, opening_hours, tags, halal_status, has_prayer_room, has_wudu, is_alcohol_free, halal_cert_url, halal_material_photos, location_types(name)')
+      .select('name, address, lat, lng, phone, instagram, facebook, tiktok, website, line_id, foodpanda_url, ubereats_url, price_range, description, image, opening_hours, tags, halal_status, has_prayer_room, has_wudu, is_alcohol_free, has_bidet, has_space_to_pray, is_pork_free, is_cash_only, has_halal_food, has_vegan_option, is_muslim_owned, is_muslim_staff, has_free_wifi, has_qibla_direction, halal_cert_url, halal_material_photos, location_types(name)')
       .eq('id', locationId)
       .maybeSingle()
 
@@ -819,6 +874,16 @@ onIonViewWillEnter(async () => {
         has_prayer_room: loc.has_prayer_room ?? false,
         has_wudu: loc.has_wudu ?? false,
         is_alcohol_free: loc.is_alcohol_free ?? false,
+        has_bidet: loc.has_bidet ?? false,
+        has_space_to_pray: loc.has_space_to_pray ?? false,
+        is_pork_free: loc.is_pork_free ?? false,
+        is_cash_only: loc.is_cash_only ?? false,
+        has_halal_food: loc.has_halal_food ?? false,
+        has_vegan_option: loc.has_vegan_option ?? false,
+        is_muslim_owned: loc.is_muslim_owned ?? false,
+        is_muslim_staff: loc.is_muslim_staff ?? false,
+        has_free_wifi: loc.has_free_wifi ?? false,
+        has_qibla_direction: loc.has_qibla_direction ?? false
       }
       halalCertUrl.value = loc.halal_cert_url ?? ''
       halalMaterials.value = Array.isArray(loc.halal_material_photos) ? (loc.halal_material_photos as string[]) : []
@@ -873,6 +938,16 @@ function applyDraft(draft: Record<string, unknown>) {
   if ('has_prayer_room' in draft) h.has_prayer_room = !!draft.has_prayer_room
   if ('has_wudu' in draft) h.has_wudu = !!draft.has_wudu
   if ('is_alcohol_free' in draft) h.is_alcohol_free = !!draft.is_alcohol_free
+  if ('has_bidet' in draft) h.has_bidet = !!draft.has_bidet
+  if ('has_space_to_pray' in draft) h.has_space_to_pray = !!draft.has_space_to_pray
+  if ('is_pork_free' in draft) h.is_pork_free = !!draft.is_pork_free
+  if ('is_cash_only' in draft) h.is_cash_only = !!draft.is_cash_only
+  if ('has_halal_food' in draft) h.has_halal_food = !!draft.has_halal_food
+  if ('has_vegan_option' in draft) h.has_vegan_option = !!draft.has_vegan_option
+  if ('is_muslim_owned' in draft) h.is_muslim_owned = !!draft.is_muslim_owned
+  if ('is_muslim_staff' in draft) h.is_muslim_staff = !!draft.is_muslim_staff
+  if ('has_free_wifi' in draft) h.has_free_wifi = !!draft.has_free_wifi
+  if ('has_qibla_direction' in draft) h.has_qibla_direction = !!draft.has_qibla_direction
   if ('halal_cert_url' in draft) halalCertUrl.value = String(draft.halal_cert_url ?? '')
   if ('halal_material_photos' in draft) halalMaterials.value = Array.isArray(draft.halal_material_photos) ? draft.halal_material_photos as string[] : []
   if ('opening_hours' in draft) hours.value = normalizeHours(draft.opening_hours)
@@ -894,6 +969,16 @@ function buildPatch(): Record<string, unknown> {
     has_prayer_room: halal.value.has_prayer_room,
     has_wudu: halal.value.has_wudu,
     is_alcohol_free: halal.value.is_alcohol_free,
+    has_bidet: halal.value.has_bidet,
+    has_space_to_pray: halal.value.has_space_to_pray,
+    is_pork_free: halal.value.is_pork_free,
+    is_cash_only: halal.value.is_cash_only,
+    has_halal_food: halal.value.has_halal_food,
+    has_vegan_option: halal.value.has_vegan_option,
+    is_muslim_owned: halal.value.is_muslim_owned,
+    is_muslim_staff: halal.value.is_muslim_staff,
+    has_free_wifi: halal.value.has_free_wifi,
+    has_qibla_direction: halal.value.has_qibla_direction,
     halal_cert_url: halalCertUrl.value || null,
     halal_material_photos: halalMaterials.value,
     opening_hours: hours.value,
