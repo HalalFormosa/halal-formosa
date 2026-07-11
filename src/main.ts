@@ -435,6 +435,14 @@ async function syncRevenueCatUser(user: any) {
                 }
             }
 
+            // 7. Force attributes synchronization to the backend
+            try {
+                await Purchases.syncAttributesAndOfferingsIfNeeded();
+                console.log('💎 Forced synchronization of RevenueCat attributes');
+            } catch (err) {
+                console.warn('⚠️ Failed to force sync RevenueCat attributes:', err);
+            }
+
             console.log('✅ RevenueCat subscriber attributes synced successfully');
         } catch (err) {
             console.error('❌ Failed to sync subscriber attributes to RevenueCat:', err);
