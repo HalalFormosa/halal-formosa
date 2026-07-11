@@ -511,6 +511,7 @@ async function loadPendingLocations() {
   if (locations && locations.length > 0) {
     const uploaderIds = [...new Set(locations.map(l => l.created_by).filter(Boolean))]
 
+    if (uploaderIds.length > 0) {
       const [profilesResult, rolesResult] = await Promise.all([
         supabase
           .from('user_profiles')
