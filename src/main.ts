@@ -337,6 +337,15 @@ async function syncOneSignalUser(user: any) {
                 console.error('❌ Failed to add phone in OneSignal:', err);
             }
 
+            // Sync user language
+            try {
+                const currentLang = localStorage.getItem('lang') || 'en';
+                console.log('🌐 Setting OneSignal language:', currentLang);
+                OneSignal.User.setLanguage(currentLang);
+            } catch (err) {
+                console.error('❌ Failed to set language in OneSignal:', err);
+            }
+
             // Sync pro subscriber status
             try {
                 // Check database profile first as it's the direct source of truth

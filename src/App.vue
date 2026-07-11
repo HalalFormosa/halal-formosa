@@ -173,6 +173,7 @@ import ForceUpdateModal from '@/components/ForceUpdateModal.vue';
 import SmartAppBanner from '@/components/SmartAppBanner.vue';
 import { useProximityPrompt } from '@/composables/useProximityPrompt';
 import FacilityReviewModal from '@/components/FacilityReviewModal.vue';
+import OneSignal from 'onesignal-cordova-plugin';
 
 dayjs.extend(relativeTime);
 dayjs.extend(utc);
@@ -409,6 +410,15 @@ const { locale } = useI18n();
 watch(locale, (newLocale) => {
   const dayjsLocale = newLocale === 'zh' ? 'zh-tw' : newLocale;
   dayjs.locale(dayjsLocale);
+
+  if (Capacitor.isNativePlatform()) {
+    try {
+      OneSignal.User.setLanguage(newLocale);
+      console.log('🌐 Synced OneSignal language:', newLocale);
+    } catch (err) {
+      console.warn('Failed to sync OneSignal language:', err);
+    }
+  }
 }, { immediate: true });
 
 import { App as CapApp } from '@capacitor/app';
