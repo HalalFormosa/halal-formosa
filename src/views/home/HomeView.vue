@@ -1023,7 +1023,7 @@ import {ActivityLogService} from "@/services/ActivityLogService";
 import {SocialMediaService} from "@/services/SocialMediaService";
 import { isDonor, refreshSubscriptionStatus } from "@/composables/useSubscriptionStatus";
 import { RevenueCatUI, PAYWALL_RESULT } from '@revenuecat/purchases-capacitor-ui';
-import {Capacitor} from "@capacitor/core";
+import {Capacitor, type PluginListenerHandle} from "@capacitor/core";
 import { Geolocation } from '@capacitor/geolocation'
 import { Browser } from '@capacitor/browser'
 import { TextToSpeech } from '@capacitor-community/text-to-speech'
@@ -1169,7 +1169,33 @@ function getFriendlyVoiceName(voice: SpeechSynthesisVoice): string {
   return voice.name.split('(')[0].replace('Microsoft', '').replace('Google', '').trim() + ' (' + voice.lang + ')'
 }
 
-function loadVoices() {
+let ttsRangeListenerHandle: PluginListenerHandle | null = null
+
+async function loadVoices() {
+  if (Capacitor.getPlatform() === 'android') {
+    try {
+      const { voices } = await TextToSpeech.getSupportedVoices()
+      const rawFiltered = voices.filter(v => v.lang.toLowerCase().startsWith('zh'))
+      const seen = new Set<string>()
+      const uniqueVoices = rawFiltered.filter(v => {
+        if (seen.has(v.name)) return false
+        seen.add(v.name)
+        return true
+      })
+      availableVoices.value = uniqueVoices.length > 0 ? uniqueVoices : voices.filter(v => v.lang.toLowerCase().startsWith('zh'))
+      if (availableVoices.value.length > 0) {
+        if (!selectedVoiceName.value) {
+          const preferred = availableVoices.value.find(v => v.name.toLowerCase().includes('taiwan') || v.name.toLowerCase().includes('tw')) 
+                         || availableVoices.value[0]
+          selectedVoiceName.value = preferred.name
+        }
+      }
+    } catch (e) {
+      console.error('Failed to load Android native voices:', e)
+    }
+    return
+  }
+
   if ('speechSynthesis' in window) {
     const voices = window.speechSynthesis.getVoices()
     
@@ -1224,6 +1250,10 @@ function getWordLengthAt(phrase: any, cleanIdx: number): number {
   return 1
 }
 
+// The Android System WebView does not support the Web Speech API (no Chinese
+// voices), so on Android we use the native TextToSpeech plugin instead. iOS's
+// WKWebView supports speechSynthesis (incl. word-boundary highlighting), so it
+// keeps the web path below.
 let cachedTtsLang: string | null | undefined
 async function pickChineseTtsLang(): Promise<string | null> {
   if (cachedTtsLang !== undefined) return cachedTtsLang
@@ -1248,6 +1278,8 @@ async function playPhraseNative(text: string) {
   if (activeSpeechText.value === text) {
     try { await TextToSpeech.stop() } catch { /* ignore */ }
     activeSpeechText.value = null
+    currentSpeechCharIndex.value = -1
+    currentSpeechCharLength.value = 0
     return
   }
   try { await TextToSpeech.stop() } catch { /* ignore */ }
@@ -1265,19 +1297,30 @@ async function playPhraseNative(text: string) {
   }
 
   activeSpeechText.value = text
+  currentSpeechCharIndex.value = -1
+  currentSpeechCharLength.value = 0
+  
   try {
+    const { voices } = await TextToSpeech.getSupportedVoices()
+    const voiceIndex = voices.findIndex(v => v.name === selectedVoiceName.value)
+    
     await TextToSpeech.speak({
       text,
       lang,
       rate: 1.0,
       pitch: 1.0,
       volume: 1.0,
+      voice: voiceIndex !== -1 ? voiceIndex : undefined,
       category: 'playback'
     })
   } catch (err) {
     console.error('Native TTS failed:', err)
   } finally {
-    if (activeSpeechText.value === text) activeSpeechText.value = null
+    if (activeSpeechText.value === text) {
+      activeSpeechText.value = null
+      currentSpeechCharIndex.value = -1
+      currentSpeechCharLength.value = 0
+    }
   }
 }
 
@@ -1698,7 +1741,7 @@ const isAuthenticated = ref(false)
 
 const isDark = ref(document.documentElement.classList.contains('ion-palette-dark'))
 
-onMounted(() => {
+onMounted(async () => {
   loadFavorites()
   initPhrases()
   startWatching()
@@ -1707,6 +1750,16 @@ onMounted(() => {
   loadVoices()
   if ('speechSynthesis' in window) {
     window.speechSynthesis.onvoiceschanged = loadVoices
+  }
+  if (Capacitor.getPlatform() === 'android') {
+    try {
+      ttsRangeListenerHandle = await TextToSpeech.addListener('onRangeStart', (info: { start: number; end: number; spokenWord?: string }) => {
+        currentSpeechCharIndex.value = info.start
+        currentSpeechCharLength.value = (info.end > info.start) ? (info.end - info.start) : (info.spokenWord ? info.spokenWord.length : 1)
+      })
+    } catch (e) {
+      console.error('Failed to register native TTS range listener:', e)
+    }
   }
   
   const observer = new MutationObserver(() => {
@@ -2405,6 +2458,10 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+  if (ttsRangeListenerHandle) {
+    ttsRangeListenerHandle.remove()
+    ttsRangeListenerHandle = null
+  }
   if (timeInterval) {
     clearInterval(timeInterval)
     timeInterval = null
