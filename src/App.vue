@@ -173,7 +173,6 @@ import ForceUpdateModal from '@/components/ForceUpdateModal.vue';
 import SmartAppBanner from '@/components/SmartAppBanner.vue';
 import { useProximityPrompt } from '@/composables/useProximityPrompt';
 import FacilityReviewModal from '@/components/FacilityReviewModal.vue';
-import OneSignal from 'onesignal-cordova-plugin';
 
 dayjs.extend(relativeTime);
 dayjs.extend(utc);
@@ -410,29 +409,6 @@ const { locale } = useI18n();
 watch(locale, (newLocale) => {
   const dayjsLocale = newLocale === 'zh' ? 'zh-tw' : newLocale;
   dayjs.locale(dayjsLocale);
-
-  if (Capacitor.isNativePlatform()) {
-    // 1. Sync native OneSignal language setting
-    try {
-      let sanitizedLang = newLocale ? newLocale.trim().toLowerCase() : 'en';
-      if (sanitizedLang === 'zh' || sanitizedLang === 'zh-tw') sanitizedLang = 'zh-Hant';
-      else if (sanitizedLang === 'zh-cn') sanitizedLang = 'zh-Hans';
-      else if (sanitizedLang.includes('-')) sanitizedLang = sanitizedLang.split('-')[0];
-
-      OneSignal.User.setLanguage(sanitizedLang);
-      console.log('🌐 Synced OneSignal language:', sanitizedLang);
-    } catch (err) {
-      console.warn('Failed to sync OneSignal language:', err);
-    }
-
-    // 2. Sync app_language custom data tag
-    try {
-      OneSignal.User.addTag('app_language', newLocale);
-      console.log('🏷️ Synced OneSignal app_language tag:', newLocale);
-    } catch (err) {
-      console.warn('Failed to sync OneSignal app_language tag:', err);
-    }
-  }
 }, { immediate: true });
 
 import { App as CapApp } from '@capacitor/app';

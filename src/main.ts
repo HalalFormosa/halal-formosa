@@ -233,17 +233,6 @@ supabase.auth.getSession().then(({ data }) => {
     }
 });
 
-function sanitizeLangForOneSignal(langCode: string): string {
-    if (!langCode) return 'en';
-    const code = langCode.trim().toLowerCase();
-    if (code === 'zh' || code === 'zh-tw') return 'zh-Hant';
-    if (code === 'zh-cn') return 'zh-Hans';
-    if (code.includes('-')) {
-        return code.split('-')[0];
-    }
-    return code;
-}
-
 let isOneSignalInitialized = false;
 
 async function syncOneSignalUser(user: any) {
@@ -288,11 +277,9 @@ async function syncOneSignalUser(user: any) {
             }
 
             // 3. Gather all tags into a single unified object
-            const currentLang = localStorage.getItem('lang') || 'en';
             const tags: Record<string, string> = {
                 user_id: user.id,
                 role: roleData?.role || 'user',
-                app_language: currentLang,
                 pro_subscriber: isPro ? 'true' : 'false'
             };
 
@@ -344,15 +331,6 @@ async function syncOneSignalUser(user: any) {
                 } catch (err) {
                     console.error('❌ Failed to add phone in OneSignal:', err);
                 }
-            }
-
-            // 7. Sync native language settings
-            try {
-                const sanitizedLang = sanitizeLangForOneSignal(currentLang);
-                console.log('🌐 Setting OneSignal language:', sanitizedLang);
-                OneSignal.User.setLanguage(sanitizedLang);
-            } catch (err) {
-                console.error('❌ Failed to set language in OneSignal:', err);
             }
 
             // 8. Sync display name alias
