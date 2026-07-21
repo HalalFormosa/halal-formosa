@@ -68,19 +68,6 @@
             </ion-note>
           </div>
         </ion-item>
-        <ion-item lines="full" style="--border-radius: 12px;" v-if="nearbyPromptsEnabled">
-          <div style="width: 100%; padding: 8px 0;">
-            <ion-toggle
-                :checked="backgroundTrackingEnabled"
-                @ionChange="(e) => setBackgroundTrackingEnabled(e.detail.checked)"
-            >
-              {{ $t('settings.backgroundTracking') || 'Background Location Checking' }}
-            </ion-toggle>
-            <ion-note style="display: block; margin-top: 8px; font-size: 0.85rem; color: var(--ion-color-warning-shade, #b25e00);">
-              ⚠️ {{ $t('settings.backgroundTrackingDisclaimer') || 'Enabling background location tracking allows detection even when the app is closed, but it may reduce battery life faster.' }}
-            </ion-note>
-          </div>
-        </ion-item>
       </ion-list>
 
       <!-- 🛠️ Developer Options -->
@@ -158,8 +145,6 @@ import {
   resetUserProfileState,
   nearbyPromptsEnabled,
   setNearbyPromptsEnabled,
-  backgroundTrackingEnabled,
-  setBackgroundTrackingEnabled,
   donorType,
   userRole
 } from '@/composables/userProfile'

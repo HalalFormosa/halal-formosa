@@ -241,7 +241,7 @@ const toastStyle = computed(() => {
     transition: isSwiping.value ? 'none' : 'transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.2s ease',
   };
 });
-import { updateLastSeen, currentUser, hasReviewedApp, setHasReviewedApp, profileLoaded, isProfileComplete, profileSkipped, backgroundTrackingEnabled } from '@/composables/userProfile';
+import { updateLastSeen, currentUser, hasReviewedApp, setHasReviewedApp, profileLoaded, isProfileComplete, profileSkipped } from '@/composables/userProfile';
 import { supabase } from '@/plugins/supabaseClient';
 const { initTheme } = useTheme();
 const { t } = useI18n();
@@ -460,10 +460,11 @@ onMounted(async () => {
       }
       startProximityTracking();
     } else {
-      if (!backgroundTrackingEnabled.value) {
-        console.log('[Proximity] Pausing proximity tracking in background to save battery.');
-        stopProximityTracking();
-      }
+      // Foreground-only by design: the app holds no background location
+      // permission, so Android suspends the watcher anyway. Stopping here also
+      // saves battery.
+      console.log('[Proximity] Pausing proximity tracking in background.');
+      stopProximityTracking();
     }
   });
 

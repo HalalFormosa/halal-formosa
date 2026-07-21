@@ -15,7 +15,6 @@ export const isPublicProfile = ref<boolean | null>(null);
 export const showLastSeen = ref<boolean>(true);
 export const hasReviewedApp = ref<boolean>(false);
 export const nearbyPromptsEnabled = ref<boolean>(true);
-export const backgroundTrackingEnabled = ref<boolean>(false);
 
 /* ---------------- Profile fields ---------------- */
 export const donorType = ref("Free");
@@ -163,22 +162,6 @@ export function loadNearbyPromptsFromCache(userId: string) {
     nearbyPromptsEnabled.value = stored !== null ? JSON.parse(stored) : true
 }
 
-const bgTrackingKey = (uid: string) => `hf_bg_tracking_${uid}`
-
-export function loadBackgroundTrackingFromCache(userId: string) {
-    const stored = localStorage.getItem(bgTrackingKey(userId))
-    backgroundTrackingEnabled.value = stored !== null ? JSON.parse(stored) : false
-}
-
-export async function setBackgroundTrackingEnabled(value: boolean) {
-    if (!currentUser.value?.id) return
-    backgroundTrackingEnabled.value = value
-    localStorage.setItem(
-        bgTrackingKey(currentUser.value.id),
-        JSON.stringify(value)
-    )
-}
-
 
 export const donorBadge = computed(() => {
     const map: Record<string, { label: string; color: string; emoji: string }> = {
@@ -311,5 +294,4 @@ export function resetUserProfileState() {
     acknowledged.value = false
     profileSkipped.value = false
     nearbyPromptsEnabled.value = true
-    backgroundTrackingEnabled.value = false
 }

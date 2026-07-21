@@ -699,9 +699,7 @@
     "deleteAccountConfirmBtn": "Delete My Account",
     "deleteAccountSuccess": "Your account has been successfully deleted.",
     "nearbyPrompts": "Nearby review reminders",
-    "nearbyPromptsNote": "Privately remind me to share Muslim facilities after I visit a mosque or halal eatery.",
-    "backgroundTracking": "Background Location checking",
-    "backgroundTrackingDisclaimer": "Allows detection of visits even when the app is closed, but it may reduce battery life faster."
+    "nearbyPromptsNote": "Privately remind me to share Muslim facilities after I visit a mosque or halal eatery."
   },
   "profile": {
     "sections": {

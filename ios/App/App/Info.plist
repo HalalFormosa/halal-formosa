@@ -37,12 +37,8 @@
 	<true/>
 	<key>NSCameraUsageDescription</key>
 	<string>We need access to your camera to scan barcodes and take product photos.</string>
-	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>We use your background location to detect when you visit a mosque or eatery and send you review reminders to earn points.</string>
-	<key>NSLocationAlwaysUsageDescription</key>
-	<string>We use your background location to detect when you visit a mosque or eatery and send you review reminders to earn points.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>We need access to your location to show mosques, restaurants, and places accurately on the map.</string>
+	<string>We need access to your location to show mosques, restaurants, and places accurately on the map, and to remind you to review places you visit while the app is open.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>We need access to add photos to your photo library.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
