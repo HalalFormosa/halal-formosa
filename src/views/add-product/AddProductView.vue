@@ -979,7 +979,7 @@ import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import { extractIonColor, colorMeaning } from '@/utils/ingredientHelpers'
-import { BarcodeValidator } from '@/utils/barcodeValidator'
+import { isValidBarcodeFormat } from '@/utils/barcodeValidator'
 
 // Import Camera plugin and types
 import {Camera, CameraDirection, CameraResultType, CameraSource} from '@capacitor/camera'
@@ -2353,23 +2353,6 @@ function applyQuickDescription(text: string) {
 }
 
 /** Offline check for barcode format and checksum (used at validation & submit time) */
-function isValidBarcodeFormat(barcode: string): boolean {
-  const clean = barcode.trim().replace(/[-\s]/g, "");
-  return (
-      BarcodeValidator.isValidEAN8(clean) ||
-      BarcodeValidator.isValidEAN13(clean) ||
-      BarcodeValidator.isValidEAN14(clean) ||
-      BarcodeValidator.isValidUPCA(clean) ||
-      BarcodeValidator.isValidUPCE(clean) ||
-      BarcodeValidator.isValidISBN(clean) ||
-      BarcodeValidator.isValidIMEI(clean) ||
-      BarcodeValidator.isValidGSIN(clean) ||
-      BarcodeValidator.isValidSSCC(clean) ||
-      BarcodeValidator.isValidGLN(clean) ||
-      BarcodeValidator.isValidASIN(clean)
-  );
-}
-
 
 async function saveProductStores(
     productId: string,

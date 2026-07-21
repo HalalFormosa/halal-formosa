@@ -107,6 +107,10 @@
               <ion-icon slot="start" :icon="swapVerticalOutline" />
               {{ $t('admin.restore') }}
             </ion-item-option>
+            <ion-item-option color="danger" @click="deleteProduct(product, $event)">
+              <ion-icon slot="start" :icon="trashBinOutline" />
+              Delete
+            </ion-item-option>
           </ion-item-options>
         </ion-item-sliding>
       </ion-list>
@@ -159,14 +163,39 @@
             </ion-item>
 
             <ion-item-group>
-              <!-- Barcode (now editable) -->
+              <!-- Barcode (now editable, re-checked against the live catalogue) -->
               <ion-item>
                 <ion-input
                   v-model="selectedProduct.barcode"
                   label-placement="floating"
                   :label="$t('review.barcode')"
                 ></ion-input>
+                <ion-button
+                  slot="end"
+                  fill="clear"
+                  size="small"
+                  :disabled="barcodeChecking"
+                  @click="checkBarcode"
+                >
+                  <ion-spinner v-if="barcodeChecking" name="dots" style="width: 20px;" />
+                  <template v-else>Re-check</template>
+                </ion-button>
               </ion-item>
+
+              <div v-if="barcodeCheck" class="barcode-check ion-padding-horizontal">
+                <ion-text :color="barcodeCheckColor" style="font-size: 13px;">
+                  {{ barcodeCheck.message }}
+                </ion-text>
+                <ion-button
+                  v-if="barcodeCheck.match"
+                  fill="clear"
+                  size="small"
+                  style="margin-left: 4px; --padding-start: 4px; --padding-end: 4px;"
+                  @click="openDuplicate(barcodeCheck.match.id)"
+                >
+                  View
+                </ion-button>
+              </div>
 
               <!-- Product Name -->
               <ion-item>
@@ -357,6 +386,17 @@
                   {{ $t('review.reject') }}
                 </ion-button>
               </div>
+
+              <ion-button
+                @click="deleteProduct(selectedProduct)"
+                :disabled="publishing"
+                color="danger"
+                fill="clear"
+                size="small"
+              >
+                <ion-icon slot="start" :icon="trashBinOutline" />
+                Delete permanently (incl. photos)
+              </ion-button>
             </div>
           </div>
         </ion-content>
@@ -469,6 +509,7 @@ import {
   closeCircle,
   listOutline,
   trashOutline,
+  trashBinOutline,
   cameraOutline,
   cloudUploadOutline,
   timeOutline,
@@ -490,12 +531,15 @@ import { Camera, CameraDirection, CameraResultType, CameraSource } from '@capaci
 import { useImageResizer } from "@/composables/useImageResizer";
 import { useBackgroundRemoval } from "@/composables/useBackgroundRemoval";
 import { highlightIngredients } from "@/utils/useIngredientHighlighter";
+import { isValidBarcodeFormat, normalizeBarcode } from "@/utils/barcodeValidator";
 import { useNotifier } from "@/composables/useNotifier";
 
 import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
 
 const { t } = useI18n()
 const { notifyEvent } = useNotifier()
+const router = useRouter()
 
 const categories = ref<{ id:number; name:string }[]>([])
 const modules = [Pagination, Zoom]
@@ -503,6 +547,124 @@ const pendingProducts = ref<any[]>([])
 const showModal = ref(false)
 const selectedProduct = ref<any | null>(null)
 const showImageModal = ref(false)
+
+/* ---------------- Barcode re-check ---------------- */
+type BarcodeCheckState = 'empty' | 'invalid' | 'duplicate' | 'ok'
+
+const barcodeChecking = ref(false)
+const barcodeCheck = ref<{
+  state: BarcodeCheckState
+  message: string
+  match?: { id: string; name: string; status: string; approved: boolean; barcode: string }
+} | null>(null)
+let barcodeCheckToken = 0
+let barcodeDebounce: ReturnType<typeof setTimeout> | null = null
+
+// Re-validates the barcode on the submission being reviewed: checksum first,
+// then a live lookup for another product already using it.
+//
+// Two things make this worth doing at review time. The barcode field is
+// editable here, so an admin can fix a typo into a value that is itself
+// malformed or already taken. And `products.barcode` carries a UNIQUE index, so
+// a collision is not a soft warning — publishing would fail outright on a
+// constraint violation. Better to surface it before they hit Publish.
+//
+// The submission's own row is excluded: pending products live in `products`
+// with approved = false, so it would otherwise always match itself.
+async function checkBarcode() {
+  const product = selectedProduct.value
+  if (!product) return
+
+  const raw = String(product.barcode ?? '')
+  const clean = normalizeBarcode(raw)
+  const token = ++barcodeCheckToken
+
+  if (!clean) {
+    barcodeCheck.value = { state: 'empty', message: 'No barcode entered.' }
+    return
+  }
+
+  if (!isValidBarcodeFormat(clean)) {
+    barcodeCheck.value = {
+      state: 'invalid',
+      message: 'Invalid barcode — fails the checksum for every supported format.'
+    }
+    return
+  }
+
+  barcodeChecking.value = true
+  try {
+    const { data, error } = await supabase
+      .from('products')
+      .select('id, name, status, approved, barcode')
+      .eq('barcode', clean)
+      .neq('id', product.id)
+      .order('approved', { ascending: false })
+      .limit(1)
+
+    // A newer check started while this one was in flight — drop this result
+    if (token !== barcodeCheckToken) return
+
+    if (error) {
+      barcodeCheck.value = { state: 'invalid', message: `Lookup failed: ${error.message}` }
+      return
+    }
+
+    const match = data?.[0]
+    if (match) {
+      barcodeCheck.value = {
+        state: 'duplicate',
+        message: match.approved
+          ? `Taken — already published as "${match.name}" (${match.status}). Publishing will fail.`
+          : `Taken by another pending submission, "${match.name}". Publishing will fail.`,
+        match
+      }
+      return
+    }
+
+    barcodeCheck.value = { state: 'ok', message: 'Valid checksum, and free to use.' }
+  } finally {
+    if (token === barcodeCheckToken) barcodeChecking.value = false
+  }
+}
+
+// Jump to whatever is already occupying this barcode so the admin can decide
+// which submission wins.
+function openDuplicate(productId: string) {
+  const match = barcodeCheck.value?.match
+  if (!match) return
+
+  if (match.approved) {
+    router.push(`/item/${match.barcode}`)
+    return
+  }
+
+  const pending = pendingProducts.value.find(p => String(p.id) === String(productId))
+  if (pending) {
+    closeModal()
+    openProductModal(pending)
+  }
+}
+
+const barcodeCheckColor = computed(() => {
+  switch (barcodeCheck.value?.state) {
+    case 'ok': return 'success'
+    case 'duplicate': return 'danger'
+    case 'invalid': return 'danger'
+    default: return 'medium'
+  }
+})
+
+// Auto re-check as the admin edits the barcode (debounced), on top of the
+// automatic check when a submission is opened and the manual button.
+watch(
+  () => selectedProduct.value?.barcode,
+  () => {
+    if (!selectedProduct.value) return
+    if (barcodeDebounce) clearTimeout(barcodeDebounce)
+    barcodeDebounce = setTimeout(() => { checkBarcode() }, 500)
+  }
+)
 
 const tagInput = ref('')
 
@@ -1042,9 +1204,19 @@ async function openProductModal(product: any) {
     tags: product.tags || []
   })
   showModal.value = true
+
+  // Contributors can submit a barcode the validator never saw (manual entry,
+  // older submissions predating the check), so verify it up front rather than
+  // making the admin remember to press the button.
+  barcodeCheck.value = null
+  checkBarcode()
 }
 
 function closeModal() {
+  if (barcodeDebounce) clearTimeout(barcodeDebounce)
+  barcodeCheckToken++
+  barcodeChecking.value = false
+  barcodeCheck.value = null
   selectedProduct.value = null
   frontFile.value = null
   backFile.value = null
@@ -1239,6 +1411,88 @@ async function archiveProduct(id: string, ev?: Event) {
     console.error("❌ Error archiving product:", error)
     showToast(t('review.actionFailed'), 'danger')
   }
+}
+
+/** Pulls the object path out of a Supabase public URL, ignoring any ?v= buster. */
+function storagePathFromUrl(url?: string | null): string | null {
+  if (!url) return null
+  const marker = '/product-images/'
+  const idx = url.indexOf(marker)
+  if (idx === -1) return null
+  const path = decodeURIComponent(url.slice(idx + marker.length).split('?')[0])
+  return path || null
+}
+
+// Photos live at product-images/<barcode>/{front,back}.jpg, but older rows may
+// point elsewhere, so collect paths from both the folder listing and the stored
+// URLs before removing.
+async function deleteProductPhotos(barcode: string, product: any) {
+  const paths = new Set<string>()
+
+  if (barcode) {
+    const { data: files, error } = await supabase.storage.from('product-images').list(barcode)
+    if (error) {
+      console.warn('⚠️ Could not list product photos:', error)
+    } else {
+      files?.forEach(f => paths.add(`${barcode}/${f.name}`))
+    }
+  }
+
+  for (const url of [product.photo_front_url, product.photo_back_url]) {
+    const path = storagePathFromUrl(url)
+    if (path) paths.add(path)
+  }
+
+  if (!paths.size) return
+
+  const { error } = await supabase.storage.from('product-images').remove([...paths])
+  if (error) console.warn('⚠️ Failed to delete some product photos:', error)
+}
+
+// Hard delete. Rows in product_stores, product_reports, product_certifications
+// and saved_items are removed by ON DELETE CASCADE; storage objects are not, so
+// they're cleared explicitly first.
+async function deleteProduct(product: any, ev?: Event) {
+  closeSlidingItem(ev)
+
+  // Use the barcode as persisted, not the one in the edit form — an unsaved
+  // edit would otherwise point the photo cleanup at the wrong folder.
+  const persisted = pendingProducts.value.find(p => String(p.id) === String(product.id))
+  const barcode = persisted?.barcode ?? product.barcode
+
+  const alert = await alertController.create({
+    header: 'Delete submission?',
+    message:
+      `"${persisted?.name ?? product.name ?? 'Untitled'}" (${barcode || 'no barcode'}) ` +
+      `will be permanently deleted, along with its photos. This cannot be undone.`,
+    buttons: [
+      { text: t('common.cancel', 'Cancel'), role: 'cancel' },
+      {
+        text: 'Delete',
+        role: 'destructive',
+        handler: async () => {
+          await deleteProductPhotos(barcode, persisted ?? product)
+
+          const { error } = await supabase
+            .from('products')
+            .delete()
+            .eq('id', product.id)
+
+          if (error) {
+            console.error('❌ Error deleting product:', error)
+            showToast(t('review.actionFailed'), 'danger')
+            return
+          }
+
+          closeModal()
+          showToast('Submission deleted.', 'success')
+          loadPendingProducts()
+        }
+      }
+    ]
+  })
+
+  await alert.present()
 }
 
 async function restoreProduct(id: string, ev?: Event) {

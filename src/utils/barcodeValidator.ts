@@ -129,3 +129,32 @@ export class BarcodeValidator {
         return /^B\d{2}\w{7}$/.test(code) || /^\d{9}(\d|X)$/.test(code);
     }
 }
+
+/** Strips separators so a hand-typed barcode validates the same as a scanned one. */
+export function normalizeBarcode(barcode: string): string {
+    return barcode.trim().replace(/[-\s]/g, "");
+}
+
+/**
+ * True if the barcode passes any of the supported symbologies' checksums.
+ * Shared by the contributor form (AddProductView) and the admin review screen
+ * (ReviewProductsView) so both judge a barcode identically.
+ */
+export function isValidBarcodeFormat(barcode: string): boolean {
+    const clean = normalizeBarcode(barcode);
+    if (!clean) return false;
+
+    return (
+        BarcodeValidator.isValidEAN8(clean) ||
+        BarcodeValidator.isValidEAN13(clean) ||
+        BarcodeValidator.isValidEAN14(clean) ||
+        BarcodeValidator.isValidUPCA(clean) ||
+        BarcodeValidator.isValidUPCE(clean) ||
+        BarcodeValidator.isValidISBN(clean) ||
+        BarcodeValidator.isValidIMEI(clean) ||
+        BarcodeValidator.isValidGSIN(clean) ||
+        BarcodeValidator.isValidSSCC(clean) ||
+        BarcodeValidator.isValidGLN(clean) ||
+        BarcodeValidator.isValidASIN(clean)
+    );
+}
