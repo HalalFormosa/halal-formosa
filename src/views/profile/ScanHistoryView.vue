@@ -56,7 +56,7 @@
               </ion-label>
 
               <span slot="end" :class="['status-badge', statusClass(item.status)]">
-                {{ item.status ? $t(`status.${item.status}`) : 'Unknown' }}
+                {{ statusLabel(item.status) }}
               </span>
             </ion-item>
           </ion-list>
@@ -78,8 +78,8 @@
             <h2 class="detail-title">{{ selectedScan.product_name || 'Ingredient Scan' }}</h2>
             <p class="detail-time"><strong>Scanned:</strong> {{ formatFullTime(selectedScan.created_at) }}</p>
             
-            <div class="status-summary-box" :class="selectedScan.auto_status">
-              <h3>Status: {{ selectedScan.auto_status ? $t(`status.${selectedScan.auto_status}`) : 'Unknown' }}</h3>
+            <div class="status-summary-box" :class="statusClass(selectedScan.auto_status)">
+              <h3>Status: {{ statusLabel(selectedScan.auto_status) }}</h3>
             </div>
 
             <h3 class="section-title">Ingredients (Chinese)</h3>
@@ -252,6 +252,15 @@ function viewIngredientScanDetail(scan: any) {
 // Normalize DB status values ("Muslim-friendly", "Syubhah") to the CSS badge classes.
 function statusClass(status?: string) {
   return (status || '').toLowerCase().replace(/[\s-]+/g, '_')
+}
+
+// Translate a scan status. The canonical values live under `scanIngredients.status.*`
+// (keyed by the exact DB value). Anything else (empty, "No ingredients detected") → Unknown.
+const KNOWN_STATUSES = ['Halal', 'Muslim-friendly', 'Syubhah', 'Haram']
+function statusLabel(status?: string) {
+  return status && KNOWN_STATUSES.includes(status)
+    ? t(`scanIngredients.status.${status}`)
+    : t('scanIngredients.status.Unknown')
 }
 
 function fromNowToTaipei(dateString?: string) {
