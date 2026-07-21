@@ -177,6 +177,41 @@ describe('useProximityPrompt', () => {
     expect(currentPrompt.value).toBeNull()
   })
 
+  it('should not re-prompt for a location the user already reviewed this session', async () => {
+    vi.spyOn(supabase, 'rpc').mockResolvedValue({
+      data: [
+        { id: 456, name: 'Main Mosque', lat: 25.0330, lng: 121.5654, type_id: 4, distance_m: 20 }
+      ],
+      error: null
+    } as any)
+
+    const { startProximityTracking, currentPrompt, dismissPrompt } = useProximityPrompt()
+    await startProximityTracking()
+
+    // Dwell until the first prompt fires
+    mockUserLocation.value = { lat: 25.0331, lng: 121.5655 }
+    await vi.runAllTimersAsync()
+    await vi.advanceTimersByTimeAsync(3.5 * 60 * 1000)
+    mockUserLocation.value = { lat: 25.03311, lng: 121.56551 }
+    await vi.runAllTimersAsync()
+    expect(currentPrompt.value?.id).toBe(456)
+
+    // User submits the review (App.vue calls dismissPrompt on @success)
+    await dismissPrompt()
+    expect(currentPrompt.value).toBeNull()
+
+    // Walk away and come back — the cached RPC result still lists the place
+    mockUserLocation.value = { lat: 26.0000, lng: 122.0000 }
+    await vi.runAllTimersAsync()
+    mockUserLocation.value = { lat: 25.0331, lng: 121.5655 }
+    await vi.runAllTimersAsync()
+    await vi.advanceTimersByTimeAsync(3.5 * 60 * 1000)
+    mockUserLocation.value = { lat: 25.03311, lng: 121.56551 }
+    await vi.runAllTimersAsync()
+
+    expect(currentPrompt.value).toBeNull()
+  })
+
   // Kept last: it overrides the shared `supabase.from` mock for the whole file.
   it('should never prompt for a location the user owns', async () => {
     // User owns location 456

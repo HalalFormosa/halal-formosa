@@ -40,6 +40,11 @@ const dwellConfirmed = ref(false)
 const ownedLocationIds = ref<Set<number>>(new Set())
 const ownedLocationsUserId = ref<string | null>(null)
 
+// Locations already handled this session (reviewed or dismissed). The RPC
+// excludes reviewed places, but its result is cached for up to 5 minutes, so
+// without this the user could be re-prompted for a place they just reviewed.
+const handledLocationIds = ref<Set<number>>(new Set())
+
 // Configurable thresholds for easy testing/extensibility
 const QUERY_DISTANCE_THRESHOLD_M = 75
 const QUERY_TIME_THRESHOLD_MS = 5 * 60 * 1000 // 5 minutes
@@ -84,6 +89,7 @@ export function useProximityPrompt() {
     // Force a refresh of the owned-locations cache on the next start
     ownedLocationsUserId.value = null
     ownedLocationIds.value = new Set()
+    handledLocationIds.value = new Set()
     console.log('[Proximity] Proximity tracking stopped')
   }
 
@@ -133,6 +139,14 @@ export function useProximityPrompt() {
     if (!prompt) return
 
     currentPrompt.value = null
+
+    // Don't ask about this place again for the rest of the session, even if the
+    // cached RPC result still lists it.
+    handledLocationIds.value.add(prompt.id)
+    nearbyLocations.value = nearbyLocations.value.filter(l => l.id !== prompt.id)
+    if (candidateId.value === prompt.id) {
+      resetDwellTracker()
+    }
 
     // If logged in, record dismissal in DB
     if (currentUser.value?.id) {
@@ -188,6 +202,7 @@ export function useProximityPrompt() {
           if (!error && Array.isArray(data)) {
             nearbyLocations.value = (data as ReviewableLocation[])
               .filter(l => !ownedLocationIds.value.has(l.id))
+              .filter(l => !handledLocationIds.value.has(l.id))
           } else {
             console.warn('[Proximity] find_reviewable_locations_near RPC failed', error)
           }
