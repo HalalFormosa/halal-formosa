@@ -124,7 +124,7 @@
       </div>
 
       <!-- ✅ Product Detail Modal -->
-      <ion-modal :is-open="showModal" @didDismiss="closeModal" class="review-modal">
+      <ion-modal ref="reviewModalRef" :is-open="showModal" @didDismiss="closeModal" class="review-modal">
         <ion-header>
           <ion-toolbar color="carrot">
             <ion-buttons slot="start">
@@ -567,6 +567,7 @@ const categories = ref<{ id:number; name:string }[]>([])
 const modules = [Pagination, Zoom]
 const pendingProducts = ref<any[]>([])
 const showModal = ref(false)
+const reviewModalRef = ref<any>(null)
 const selectedProduct = ref<any | null>(null)
 const showImageModal = ref(false)
 
@@ -711,16 +712,8 @@ function similarReason(match: SimilarProduct): string {
   return name
 }
 
-function openSimilar(match: SimilarProduct) {
-  if (match.approved) {
-    router.push(`/item/${match.barcode}`)
-    return
-  }
-  const pending = pendingProducts.value.find(p => String(p.id) === String(match.id))
-  if (pending) {
-    closeModal()
-    openProductModal(pending)
-  }
+async function openSimilar(match: SimilarProduct) {
+  await navigateToProduct(match.id, match.barcode, match.approved)
 }
 
 /** Both checks, for the Re-check button and whenever a submission is opened. */
@@ -731,19 +724,57 @@ function runProductChecks() {
 
 // Jump to whatever is already occupying this barcode so the admin can decide
 // which submission wins.
-function openDuplicate(productId: string) {
+async function openDuplicate(productId: string) {
   const match = barcodeCheck.value?.match
   if (!match) return
+  await navigateToProduct(productId, match.barcode, match.approved)
+}
 
-  if (match.approved) {
-    router.push(`/item/${match.barcode}`)
+// Ionic modals are presented at the app root, so they outlive a route change —
+// pushing while this one is open leaves it covering the item page. And swapping
+// selectedProduct in the same tick sets showModal false->true synchronously,
+// which Vue batches into no change at all. Both need the dismissal to finish
+// first, so wait for didDismiss rather than just flipping the flag.
+async function dismissReviewModal() {
+  const el = (reviewModalRef.value as any)?.$el
+  if (!el) {
+    closeModal()
     return
   }
 
-  const pending = pendingProducts.value.find(p => String(p.id) === String(productId))
-  if (pending) {
-    closeModal()
+  // Never await unbounded: dismiss() resolves false when the modal isn't
+  // presented, in which case didDismiss never fires.
+  const dismissed = new Promise<void>(resolve => {
+    el.addEventListener('didDismiss', () => resolve(), { once: true })
+    setTimeout(resolve, 600)
+  })
+
+  try {
+    const wasPresented = await el.dismiss()
+    if (wasPresented) await dismissed
+  } catch {
+    // Ignore — fall through to the explicit close below
+  }
+
+  // @didDismiss normally runs this; call it directly for the paths where the
+  // modal was already gone.
+  if (showModal.value) closeModal()
+}
+
+async function navigateToProduct(productId: string, barcode: string, approved: boolean) {
+  // Capture before dismissing: closeModal() nulls selectedProduct.
+  const pending = approved
+    ? null
+    : pendingProducts.value.find(p => String(p.id) === String(productId))
+
+  await dismissReviewModal()
+
+  if (approved) {
+    router.push(`/item/${barcode}`)
+  } else if (pending) {
     openProductModal(pending)
+  } else {
+    showToast('That submission is no longer in the queue.', 'warning')
   }
 }
 
