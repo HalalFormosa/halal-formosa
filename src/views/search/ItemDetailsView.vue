@@ -1308,15 +1308,10 @@ async function loadProductData() {
       // Product not found in database -> Show contribution prompt
       showContributionPrompt.value = true
 
-      // 🔔 Notify Discord about unknown barcode
-      await notifyEvent(
-        'unknown_product_scanned',
-        '🔍 Unknown Product Scanned',
-        `A user just scanned a barcode that is not in our database: **${barcode}**.\nConsider adding it!`,
-        undefined,
-        { barcode, isNative: true },
-        ['discord'] // Only discord, no need to push to all users
-      ).catch(console.error)
+      // 📝 Silently log the unknown scan. The weekly `scan-digest` function
+      // aggregates & ranks these — no per-scan Discord spam.
+      const { error: logScanError } = await supabase.rpc('log_unknown_scan', { p_barcode: barcode })
+      if (logScanError) console.error('log_unknown_scan failed:', logScanError)
     }
 
   } finally {

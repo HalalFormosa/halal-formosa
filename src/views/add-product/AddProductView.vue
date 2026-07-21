@@ -752,6 +752,22 @@
                 </div>
               </div>
 
+              <!-- 🛠️ Section: Admin Controls -->
+              <div v-if="isAdmin && props.editProduct" class="form-section">
+                <ion-list-header><ion-label>{{ $t('admin.controls') }}</ion-label></ion-list-header>
+                <ion-card class="input-card">
+                  <ion-item lines="none">
+                    <ion-icon :icon="checkmarkCircleOutline" slot="start" color="success" />
+                    <ion-label>{{ $t('admin.master.published') }}</ion-label>
+                    <ion-toggle
+                        slot="end"
+                        :checked="form.approved"
+                        @ionChange="form.approved = $event.detail.checked"
+                    />
+                  </ion-item>
+                </ion-card>
+              </div>
+
             </div>
         </div>
 
@@ -922,6 +938,7 @@ import {
   IonTextarea,
   IonTitle,
   IonToast,
+  IonToggle,
   IonToolbar,
   IonAccordion,
   IonAccordionGroup, IonNote, IonImg, IonThumbnail,
@@ -977,7 +994,7 @@ import AppHeader from "@/components/AppHeader.vue";
 
 import useHighlightCache from '@/composables/useHighlightCache'
 import useError from '@/composables/useError'
-import { userRole, setUserRole } from '@/composables/userProfile'
+import { userRole, setUserRole, isAdmin } from '@/composables/userProfile'
 import { usePoints } from "@/composables/usePoints";
 import { useNotifier } from "@/composables/useNotifier";
 import { useImageResizer } from "@/composables/useImageResizer";
@@ -1284,6 +1301,7 @@ interface ProductForm {
   description: string
   store_ids: string[]
   tags: string[]
+  approved: boolean
 }
 
 const form = ref<ProductForm>({
@@ -1294,7 +1312,8 @@ const form = ref<ProductForm>({
   ingredients: '',
   description: '',
   store_ids: [],
-  tags: []
+  tags: [],
+  approved: false
 })
 
 const barcodeInput = ref<any>(null)
@@ -1473,6 +1492,17 @@ watch([autoStatus, productName, ingredientsText], ([newStatus, newName, newIngre
 
 // ✅ Fetch highlights & blacklist once when component mounts
 onMounted(async () => {
+  // Ensure userRole/isAdmin is populated so admin-only controls render on load
+  const { data: { user: currentAuthUser } } = await supabase.auth.getUser()
+  if (currentAuthUser) {
+    const { data: roleRow } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', currentAuthUser.id)
+        .single()
+    setUserRole(currentAuthUser.id, roleRow?.role || 'user')
+  }
+
   const [highlightsResult, blacklistResult] = await Promise.all([
     supabase.from('ingredient_highlights').select('keyword, keyword_zh, color'),
     supabase.from('ingredient_blacklist').select('pattern').eq('is_active', true)
@@ -1496,7 +1526,8 @@ onMounted(async () => {
       ingredients: props.editProduct.ingredients ?? '',
       description: props.editProduct.description ?? '',
       store_ids: [],
-      tags: props.editProduct.tags ?? []
+      tags: props.editProduct.tags ?? [],
+      approved: props.editProduct.approved ?? false
     }
 
     frontPreview.value = props.editProduct.photo_front_url ?? null
@@ -2503,6 +2534,10 @@ async function handleSubmit() {
 
     // --- 🔹 Update vs. Create ---
     if (props.editProduct) {
+      // Admins control the published state via the toggle; non-admin edits
+      // always go back to unapproved and require a fresh review.
+      const finalApproved = autoApprove ? form.value.approved : false
+
       // UPDATE product
       await supabase.from("products").update({
         ...productData,
@@ -2510,9 +2545,9 @@ async function handleSubmit() {
         photo_back_url: backUrl,
         updated_at: new Date().toISOString(),
         updated_by: user.id,
-        approved: autoApprove ? true : false,
-        approved_by: autoApprove ? user.id : null,
-        approved_at: autoApprove ? new Date().toISOString() : null,
+        approved: finalApproved,
+        approved_by: finalApproved ? user.id : null,
+        approved_at: finalApproved ? new Date().toISOString() : null,
         is_rejected: false,
         rejection_reason: null
       }).eq("id", props.editProduct.id)
@@ -2622,7 +2657,7 @@ async function handleSubmit() {
 
       // reset form
       form.value = { barcode: '', name: '', status: 'Muslim-friendly',
-        product_category_id: null, ingredients: '', description: '', store_ids: [], tags: [] }
+        product_category_id: null, ingredients: '', description: '', store_ids: [], tags: [], approved: false }
       frontFile.value = null; backFile.value = null
       frontPreview.value = null; backPreview.value = null
       originalFrontFile.value = null; originalBackFile.value = null

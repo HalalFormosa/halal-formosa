@@ -21,78 +21,45 @@
 
       <!-- Main content for Pro/Donor users -->
       <template v-else>
-        <!-- Segment Control for Barcode vs Ingredients Scans -->
-        <ion-segment v-model="activeTab" color="carrot" class="ion-margin-bottom">
-          <ion-segment-button value="barcode">
-            <ion-label>Products</ion-label>
-          </ion-segment-button>
-          <ion-segment-button value="ingredient">
-            <ion-label>Ingredients</ion-label>
-          </ion-segment-button>
-        </ion-segment>
-
         <div v-if="loading" class="ion-text-center ion-margin-top">
           <ion-spinner name="crescent" color="carrot" />
         </div>
 
         <template v-else>
-          <!-- Barcode Scans Tab -->
-          <div v-if="activeTab === 'barcode'">
-            <div v-if="barcodeScans.length === 0" class="empty-state">
-              <ion-icon :icon="barcodeOutline" class="empty-icon" />
-              <h3>No products scanned yet</h3>
-              <p>Items you scan by barcode will appear here.</p>
-            </div>
-            <ion-list v-else lines="none">
-              <ion-item 
-                v-for="scan in barcodeScans" 
-                :key="scan.id" 
-                button 
-                @click="openProductDetails(scan.product)"
-                :disabled="!scan.product"
-                class="history-item"
-              >
-                <ion-thumbnail slot="start" class="product-thumbnail">
-                  <img :src="scan.product?.photo_front_url || 'https://via.placeholder.com/80.webp'" alt="Product Image" />
-                </ion-thumbnail>
-                <ion-label>
-                  <h3 class="product-name">{{ scan.product?.name || 'Unlisted Product' }}</h3>
-                  <p v-if="scan.product?.brand" class="product-brand">{{ scan.product.brand }}</p>
-                  <p class="scan-time">{{ fromNowToTaipei(scan.created_at) }}</p>
-                </ion-label>
-                <span slot="end" :class="['status-badge', scan.product?.status]">
-                  {{ scan.product?.status ? $t(`status.${scan.product.status}`) : 'Unknown' }}
-                </span>
-              </ion-item>
-            </ion-list>
+          <div v-if="combinedScans.length === 0" class="empty-state">
+            <ion-icon :icon="documentTextOutline" class="empty-icon" />
+            <h3>No scans yet</h3>
+            <p>Products and ingredients you scan will appear here.</p>
           </div>
 
-          <!-- Ingredient Scans Tab -->
-          <div v-if="activeTab === 'ingredient'">
-            <div v-if="ingredientScans.length === 0" class="empty-state">
-              <ion-icon :icon="documentTextOutline" class="empty-icon" />
-              <h3>No ingredients scanned yet</h3>
-              <p>Ingredient scans you perform will appear here.</p>
-            </div>
-            <ion-list v-else lines="none">
-              <ion-item 
-                v-for="scan in ingredientScans" 
-                :key="scan.id" 
-                button 
-                @click="viewIngredientScanDetail(scan)"
-                class="history-item"
-              >
-                <ion-label>
-                  <h3 class="product-name">{{ scan.product_name || 'Ingredient Scan' }}</h3>
-                  <p class="ingredients-summary">{{ scan.ingredients_text_zh || scan.ingredients_text_en || 'OCR Text' }}</p>
-                  <p class="scan-time">{{ fromNowToTaipei(scan.created_at) }}</p>
-                </ion-label>
-                <span slot="end" :class="['status-badge', scan.auto_status]">
-                  {{ scan.auto_status ? $t(`status.${scan.auto_status}`) : 'Unknown' }}
-                </span>
-              </ion-item>
-            </ion-list>
-          </div>
+          <ion-list v-else lines="none">
+            <ion-item
+              v-for="item in combinedScans"
+              :key="item.type + '-' + item.id"
+              button
+              @click="openScan(item)"
+              class="history-item"
+            >
+              <ion-thumbnail v-if="item.photo" slot="start" class="product-thumbnail">
+                <img :src="item.photo" alt="Product Image" />
+              </ion-thumbnail>
+              <div v-else slot="start" class="scan-type-icon" :class="item.type">
+                <ion-icon :icon="item.type === 'barcode' ? barcodeOutline : documentTextOutline" />
+              </div>
+
+              <ion-label>
+                <h3 class="product-name">{{ item.name }}</h3>
+                <p v-if="item.subtitle" class="ingredients-summary">{{ item.subtitle }}</p>
+                <p class="scan-time">
+                  {{ item.type === 'barcode' ? 'Barcode' : 'Ingredients' }} · {{ fromNowToTaipei(item.created_at) }}
+                </p>
+              </ion-label>
+
+              <span slot="end" :class="['status-badge', statusClass(item.status)]">
+                {{ item.status ? $t(`status.${item.status}`) : 'Unknown' }}
+              </span>
+            </ion-item>
+          </ion-list>
         </template>
       </template>
 
@@ -142,8 +109,6 @@ import {
   IonContent,
   IonButton,
   IonIcon,
-  IonSegment,
-  IonSegmentButton,
   IonLabel,
   IonSpinner,
   IonList,
@@ -176,10 +141,8 @@ const router = useRouter()
 const { t } = useI18n()
 const { notifyEvent } = useNotifier()
 
-const activeTab = ref<'barcode' | 'ingredient'>('barcode')
 const loading = ref(false)
-const barcodeScans = ref<any[]>([])
-const ingredientScans = ref<any[]>([])
+const combinedScans = ref<any[]>([])
 
 // Modal details
 const isDetailModalOpen = ref(false)
@@ -193,7 +156,9 @@ async function loadScanHistory() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
 
-    // 1. Fetch Barcode Scans
+    // 1. Barcode scans — keep only those that matched a real catalog product
+    //    (unlisted / unknown barcodes carry no info, so we drop them).
+    const barcodeItems: any[] = []
     const { data: logData, error: logError } = await supabase
       .from('activity_log')
       .select('*')
@@ -214,21 +179,24 @@ async function loadScanHistory() {
           .eq('is_archived', false)
 
         const productMap = new Map((productData || []).map(p => [p.barcode, p]))
-        barcodeScans.value = logData.map(log => {
-          const barcode = log.activity_detail?.barcode
-          return {
+        for (const log of logData) {
+          const product = productMap.get(log.activity_detail?.barcode)
+          if (!product) continue // skip unlisted / unknown
+          barcodeItems.push({
             id: log.id,
-            barcode,
+            type: 'barcode',
             created_at: log.created_at,
-            product: productMap.get(barcode) || null
-          }
-        })
+            name: product.name,
+            subtitle: product.brand || '',
+            photo: product.photo_front_url || null,
+            status: product.status || '',
+            product
+          })
+        }
       }
-    } else {
-      barcodeScans.value = []
     }
 
-    // 2. Fetch Ingredient Scans
+    // 2. Ingredient (OCR) scans
     const { data: ocrData, error: ocrError } = await supabase
       .from('ingredient_scan_logs')
       .select('*')
@@ -238,12 +206,35 @@ async function loadScanHistory() {
       .limit(100)
 
     if (ocrError) throw ocrError
-    ingredientScans.value = ocrData || []
+
+    const ingredientItems = (ocrData || []).map((scan: any) => ({
+      id: scan.id,
+      type: 'ingredient',
+      created_at: scan.created_at,
+      name: scan.product_name || 'Ingredient Scan',
+      subtitle: scan.ingredients_text_zh || scan.ingredients_text_en || 'OCR Text',
+      photo: null,
+      status: scan.auto_status || '',
+      raw: scan
+    }))
+
+    // 3. Merge into a single chronological history
+    combinedScans.value = [...barcodeItems, ...ingredientItems].sort(
+      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    )
 
   } catch (err) {
     console.error('Error loading scan history:', err)
   } finally {
     loading.value = false
+  }
+}
+
+function openScan(item: any) {
+  if (item.type === 'barcode') {
+    openProductDetails(item.product)
+  } else {
+    viewIngredientScanDetail(item.raw)
   }
 }
 
@@ -256,6 +247,11 @@ function openProductDetails(product: any) {
 function viewIngredientScanDetail(scan: any) {
   selectedScan.value = scan
   isDetailModalOpen.value = true
+}
+
+// Normalize DB status values ("Muslim-friendly", "Syubhah") to the CSS badge classes.
+function statusClass(status?: string) {
+  return (status || '').toLowerCase().replace(/[\s-]+/g, '_')
 }
 
 function fromNowToTaipei(dateString?: string) {
@@ -394,6 +390,27 @@ onMounted(() => {
   overflow: hidden;
   border: 1px solid var(--ion-color-light);
   background: #fff;
+}
+
+/* Placeholder icon shown when a scan has no product photo (e.g. ingredient scans) */
+.scan-type-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ion-color-light);
+  border: 1px solid var(--ion-color-light-shade, var(--ion-color-light));
+}
+
+.scan-type-icon ion-icon {
+  font-size: 26px;
+  color: var(--ion-color-medium);
+}
+
+.scan-type-icon.ingredient ion-icon {
+  color: var(--ion-color-carrot, var(--ion-color-primary));
 }
 
 .product-name {
