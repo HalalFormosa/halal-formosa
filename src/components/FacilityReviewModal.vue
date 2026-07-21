@@ -137,12 +137,14 @@ import { closeOutline } from 'ionicons/icons'
 import { useI18n } from 'vue-i18n'
 import { supabase } from '@/plugins/supabaseClient'
 import { MUSLIM_FACILITIES } from '@/constants/muslimFacilities'
-import { currentUser } from '@/composables/userProfile'
+import { currentUser, editDisplayName } from '@/composables/userProfile'
 import type { TriState } from '@/types/LocationReview'
 import { ActivityLogService } from '@/services/ActivityLogService'
 import { usePoints } from '@/composables/usePoints'
+import { useNotifier } from '@/composables/useNotifier'
 
 const { awardAndCelebrate } = usePoints()
+const { notifyEvent } = useNotifier()
 
 const props = withDefaults(
   defineProps<{
@@ -257,6 +259,48 @@ watch(
   }
 )
 
+// "halal_certified" -> "📜 Halal Certified" (English on purpose: Discord audience is staff)
+const facilityLabel = (code: string) => {
+  const def = MUSLIM_FACILITIES.find(f => f.code === code)
+  const words = code.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+  return def ? `${def.icon} ${words}` : words
+}
+
+// Discord-only ping to the contributions channel with the review results.
+// Type contains "location", so notify-event routes it to the contributions webhook.
+const notifyContributionsChannel = async () => {
+  const yes = Object.entries(facilitiesState.value)
+    .filter(([, v]) => v === 'yes')
+    .map(([code]) => facilityLabel(code))
+  const no = Object.entries(facilitiesState.value)
+    .filter(([, v]) => v === 'no')
+    .map(([code]) => facilityLabel(code))
+
+  const stars = selectedRating.value > 0
+    ? `${'★'.repeat(selectedRating.value)}${'☆'.repeat(5 - selectedRating.value)} (${selectedRating.value}/5)`
+    : 'No rating given'
+
+  const reviewer = editDisplayName.value || currentUser.value?.email || 'Anonymous'
+
+  const lines = [
+    `**${props.locationName}** (#${props.locationId})`,
+    `**Rating:** ${stars}`,
+    `**Comment:** ${commentText.value.trim() || '—'}`,
+    `**Available:** ${yes.length ? yes.join(', ') : '—'}`,
+    `**Not available:** ${no.length ? no.join(', ') : '—'}`,
+    `**By:** ${reviewer}`
+  ]
+
+  await notifyEvent(
+    isUpdate.value ? 'update_location_review' : 'new_location_review',
+    isUpdate.value ? '✏️ Location Review Updated' : '⭐ New Location Review',
+    lines.join('\n'),
+    undefined,
+    { id: props.locationId, isNative: true, user_id: currentUser.value?.id },
+    ['discord']
+  )
+}
+
 const setFacility = (code: string, val: TriState) => {
   facilitiesState.value[code] = val
 }
@@ -317,6 +361,11 @@ const handleSubmit = async () => {
     } catch (logErr) {
       console.warn('[FacilityReviewModal] Failed to log activity/points', logErr)
     }
+
+    // Fire-and-forget: never block the user on the Discord ping
+    notifyContributionsChannel().catch(err =>
+      console.warn('[FacilityReviewModal] Failed to notify contributions channel', err)
+    )
 
     const toast = await toastController.create({
       message: isUpdate.value ? `✅ ${t('store.reviewUpdated')}` : `✅ ${t('store.reviewSubmitted')}`,

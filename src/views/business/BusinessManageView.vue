@@ -552,7 +552,7 @@
                         :placeholder="$t('business.reviews.replyPlaceholder') || 'Write your response to this customer...'"
                         class="reply-textarea"
                         :rows="3"
-                        maxlength="500"
+                        :maxlength="500"
                       />
                       <div class="reply-editor-actions">
                         <ion-button fill="clear" color="medium" size="small" @click="cancelReply">

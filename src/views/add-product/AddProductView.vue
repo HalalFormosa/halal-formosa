@@ -86,7 +86,7 @@
                   label="Why do you want to contribute more products?"
                   label-placement="stacked"
                   placeholder="Tell us why you want to help the community (e.g. 'I want to add missing items from my local supermarket' or 'I scan many new items daily')."
-                  rows="4"
+                  :rows="4"
                   required
                   style="border: 1px solid var(--ion-color-light); border-radius: 8px; padding: 8px; font-size: 14px;"
                 />

@@ -44,6 +44,10 @@ vi.mock('@/plugins/supabaseClient', () => ({
         eq: vi.fn().mockReturnValue({
           eq: vi.fn().mockResolvedValue({ error: null })
         })
+      }),
+      // location_owners lookup — no owned locations by default
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockResolvedValue({ data: [], error: null })
       })
     })
   }
@@ -171,5 +175,40 @@ describe('useProximityPrompt', () => {
     mockUserLocation.value = { lat: 26.0001, lng: 122.0001 }
     await vi.runAllTimersAsync()
     expect(currentPrompt.value).toBeNull()
+  })
+
+  // Kept last: it overrides the shared `supabase.from` mock for the whole file.
+  it('should never prompt for a location the user owns', async () => {
+    // User owns location 456
+    vi.spyOn(supabase, 'from').mockReturnValue({
+      update: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          eq: vi.fn().mockResolvedValue({ error: null })
+        })
+      }),
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockResolvedValue({ data: [{ location_id: 456 }], error: null })
+      })
+    } as any)
+
+    const rpcMock = vi.spyOn(supabase, 'rpc').mockResolvedValue({
+      data: [
+        { id: 456, name: 'My Own Cafe', lat: 25.0330, lng: 121.5654, type_id: 4, distance_m: 20 }
+      ],
+      error: null
+    } as any)
+
+    const { startProximityTracking, currentPrompt } = useProximityPrompt()
+    await startProximityTracking()
+
+    mockUserLocation.value = { lat: 25.0331, lng: 121.5655 }
+    await vi.runAllTimersAsync()
+
+    await vi.advanceTimersByTimeAsync(3.5 * 60 * 1000)
+    mockUserLocation.value = { lat: 25.03311, lng: 121.56551 }
+    await vi.runAllTimersAsync()
+
+    expect(currentPrompt.value).toBeNull()
+    expect(rpcMock).not.toHaveBeenCalledWith('record_visit', { p_location_id: 456 })
   })
 })

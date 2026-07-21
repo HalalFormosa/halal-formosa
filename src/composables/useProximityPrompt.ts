@@ -35,6 +35,11 @@ const candidatePlace = ref<ReviewableLocation | null>(null)
 const enteredAt = ref<number | null>(null)
 const dwellConfirmed = ref(false)
 
+// Locations the current user owns/manages — never prompt them for these,
+// since owners are not allowed to review their own place.
+const ownedLocationIds = ref<Set<number>>(new Set())
+const ownedLocationsUserId = ref<string | null>(null)
+
 // Configurable thresholds for easy testing/extensibility
 const QUERY_DISTANCE_THRESHOLD_M = 75
 const QUERY_TIME_THRESHOLD_MS = 5 * 60 * 1000 // 5 minutes
@@ -67,6 +72,8 @@ export function useProximityPrompt() {
       }
     }
 
+    await loadOwnedLocations()
+
     isTracking.value = true
     console.log('[Proximity] Proximity tracking started')
   }
@@ -74,10 +81,45 @@ export function useProximityPrompt() {
   const stopProximityTracking = () => {
     isTracking.value = false
     resetDwellTracker()
+    // Force a refresh of the owned-locations cache on the next start
+    ownedLocationsUserId.value = null
+    ownedLocationIds.value = new Set()
     console.log('[Proximity] Proximity tracking stopped')
   }
 
 
+
+  // Loads (and caches per user) the set of locations the user owns/manages.
+  // The DB functions already filter these out; this is a client-side backstop
+  // so an owner never sees the prompt even against a stale RPC.
+  const loadOwnedLocations = async () => {
+    const userId = currentUser.value?.id || null
+
+    if (!userId) {
+      ownedLocationIds.value = new Set()
+      ownedLocationsUserId.value = null
+      return
+    }
+
+    if (ownedLocationsUserId.value === userId) return
+
+    try {
+      const { data, error } = await supabase
+        .from('location_owners')
+        .select('location_id')
+        .eq('user_id', userId)
+
+      if (error) {
+        console.warn('[Proximity] Failed to load owned locations', error)
+        return
+      }
+
+      ownedLocationIds.value = new Set((data ?? []).map((row: any) => row.location_id))
+      ownedLocationsUserId.value = userId
+    } catch (err) {
+      console.warn('[Proximity] Error loading owned locations', err)
+    }
+  }
 
   const resetDwellTracker = () => {
     candidateId.value = null
@@ -144,7 +186,8 @@ export function useProximityPrompt() {
             p_user_id: currentUser.value?.id || null
           })
           if (!error && Array.isArray(data)) {
-            nearbyLocations.value = data as ReviewableLocation[]
+            nearbyLocations.value = (data as ReviewableLocation[])
+              .filter(l => !ownedLocationIds.value.has(l.id))
           } else {
             console.warn('[Proximity] find_reviewable_locations_near RPC failed', error)
           }

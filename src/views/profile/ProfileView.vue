@@ -701,7 +701,7 @@
                   label="Why do you want to contribute more to Halal Formosa?"
                   label-placement="stacked"
                   placeholder="Let us know how you plan to help (e.g. 'I want to translate ingredients for local stores' or 'I buy many foreign items and scan daily')."
-                  rows="5"
+                  :rows="5"
                   required
                   style="border: 1px solid var(--ion-color-light); border-radius: 8px; padding: 8px;"
                 />

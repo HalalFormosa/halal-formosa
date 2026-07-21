@@ -94,7 +94,7 @@
                   label="Why do you want to contribute more locations?"
                   label-placement="stacked"
                   placeholder="Tell us why you want to help the community (e.g. 'I want to add Halal places in my city' or 'I travel a lot around Taiwan and find many mosques/restaurants')."
-                  rows="4"
+                  :rows="4"
                   required
                   style="border: 1px solid var(--ion-color-light); border-radius: 8px; padding: 8px; font-size: 14px;"
                 />
