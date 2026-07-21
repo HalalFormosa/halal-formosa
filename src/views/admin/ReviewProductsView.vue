@@ -174,10 +174,10 @@
                   slot="end"
                   fill="clear"
                   size="small"
-                  :disabled="barcodeChecking"
-                  @click="checkBarcode"
+                  :disabled="barcodeChecking || similarChecking"
+                  @click="runProductChecks"
                 >
-                  <ion-spinner v-if="barcodeChecking" name="dots" style="width: 20px;" />
+                  <ion-spinner v-if="barcodeChecking || similarChecking" name="dots" style="width: 20px;" />
                   <template v-else>Re-check</template>
                 </ion-button>
               </ion-item>
@@ -195,6 +195,28 @@
                 >
                   View
                 </ion-button>
+              </div>
+
+              <!-- Fuzzy near-duplicates: same product under a different barcode,
+                   or a mistyped digit. Advisory — these are judgement calls. -->
+              <div v-if="similarProducts.length" class="similar-box ion-margin-top">
+                <p class="similar-title">
+                  <ion-icon :icon="closeCircle" />
+                  Possible duplicate{{ similarProducts.length > 1 ? 's' : '' }} — check before publishing
+                </p>
+                <div
+                  v-for="match in similarProducts"
+                  :key="match.id"
+                  class="similar-row"
+                >
+                  <div class="similar-info">
+                    <span class="similar-name">{{ match.name }}</span>
+                    <span class="similar-meta">
+                      {{ match.barcode }} · {{ match.approved ? match.status : 'pending' }} · {{ similarReason(match) }}
+                    </span>
+                  </div>
+                  <ion-button fill="clear" size="small" @click="openSimilar(match)">View</ion-button>
+                </div>
               </div>
 
               <!-- Product Name -->
@@ -628,6 +650,85 @@ async function checkBarcode() {
   }
 }
 
+/* ---------------- Fuzzy duplicate check (admin only) ---------------- */
+interface SimilarProduct {
+  id: string
+  name: string
+  barcode: string
+  status: string
+  approved: boolean
+  name_similarity: number
+  barcode_distance: number | null
+  match_reason: 'name' | 'barcode' | 'both'
+}
+
+const similarChecking = ref(false)
+const similarProducts = ref<SimilarProduct[]>([])
+let similarToken = 0
+
+// The exact check above can only catch a barcode that is literally taken, and
+// products.barcode is UNIQUE so that can never arrive from a contributor. The
+// duplicates that actually reach review are near-misses: same product under a
+// different barcode, or a mistyped digit. find_similar_products scores both.
+async function checkSimilar() {
+  const product = selectedProduct.value
+  if (!product) return
+
+  const token = ++similarToken
+  similarChecking.value = true
+
+  try {
+    const { data, error } = await supabase.rpc('find_similar_products', {
+      p_product_id: product.id,
+      p_name: product.name ?? '',
+      p_barcode: normalizeBarcode(String(product.barcode ?? ''))
+    })
+
+    if (token !== similarToken) return
+
+    if (error) {
+      // Non-admins are rejected by the RPC itself; nothing useful to show.
+      console.warn('⚠️ Similar-product lookup failed:', error.message)
+      similarProducts.value = []
+      return
+    }
+
+    similarProducts.value = (data ?? []) as SimilarProduct[]
+  } finally {
+    if (token === similarToken) similarChecking.value = false
+  }
+}
+
+function similarReason(match: SimilarProduct): string {
+  const name = `${Math.round((match.name_similarity ?? 0) * 100)}% name match`
+  const barcode =
+    match.barcode_distance != null && match.barcode_distance <= 2
+      ? `barcode ${match.barcode_distance} digit${match.barcode_distance === 1 ? '' : 's'} off`
+      : null
+
+  if (match.match_reason === 'both' && barcode) return `${name}, ${barcode}`
+  if (match.match_reason === 'barcode' && barcode) return barcode
+  return name
+}
+
+function openSimilar(match: SimilarProduct) {
+  if (match.approved) {
+    router.push(`/item/${match.barcode}`)
+    return
+  }
+  const pending = pendingProducts.value.find(p => String(p.id) === String(match.id))
+  if (pending) {
+    closeModal()
+    openProductModal(pending)
+  }
+}
+
+/** Both checks, for the Re-check button and whenever a submission is opened. */
+function runProductChecks() {
+  checkBarcode()
+  checkSimilar()
+}
+
 // Jump to whatever is already occupying this barcode so the admin can decide
 // which submission wins.
 function openDuplicate(productId: string) {
@@ -655,14 +756,14 @@ const barcodeCheckColor = computed(() => {
   }
 })
 
-// Auto re-check as the admin edits the barcode (debounced), on top of the
-// automatic check when a submission is opened and the manual button.
+// Auto re-check as the admin edits the barcode or name (debounced), on top of
+// the automatic check when a submission is opened and the manual button.
 watch(
-  () => selectedProduct.value?.barcode,
+  () => [selectedProduct.value?.barcode, selectedProduct.value?.name],
   () => {
     if (!selectedProduct.value) return
     if (barcodeDebounce) clearTimeout(barcodeDebounce)
-    barcodeDebounce = setTimeout(() => { checkBarcode() }, 500)
+    barcodeDebounce = setTimeout(() => { runProductChecks() }, 500)
   }
 )
 
@@ -1209,14 +1310,18 @@ async function openProductModal(product: any) {
   // older submissions predating the check), so verify it up front rather than
   // making the admin remember to press the button.
   barcodeCheck.value = null
-  checkBarcode()
+  similarProducts.value = []
+  runProductChecks()
 }
 
 function closeModal() {
   if (barcodeDebounce) clearTimeout(barcodeDebounce)
   barcodeCheckToken++
+  similarToken++
   barcodeChecking.value = false
+  similarChecking.value = false
   barcodeCheck.value = null
+  similarProducts.value = []
   selectedProduct.value = null
   frontFile.value = null
   backFile.value = null
@@ -1655,6 +1760,50 @@ onMounted( async () => {
 .uploader-info {
   --background: var(--ion-color-step-50);
   border-radius: 12px;
+}
+
+.similar-box {
+  border: 1px solid var(--ion-color-warning);
+  background: rgba(var(--ion-color-warning-rgb), 0.08);
+  border-radius: 12px;
+  padding: 10px 12px;
+  margin: 8px 16px 0;
+}
+
+.similar-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ion-color-warning-shade);
+}
+
+.similar-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.similar-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.similar-name {
+  font-size: 13.5px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.similar-meta {
+  font-size: 11.5px;
+  opacity: 0.75;
 }
 
 ion-header {
