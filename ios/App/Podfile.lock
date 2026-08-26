@@ -17,6 +17,8 @@ PODS:
     - GoogleUserMessagingPlatform (~> 3.1)
   - CapacitorCommunityInAppReview (8.0.0):
     - Capacitor
+  - CapacitorCommunityTextToSpeech (8.0.2):
+    - Capacitor
   - CapacitorCordova (8.1.0)
   - CapacitorDevice (8.0.1):
     - Capacitor
@@ -48,8 +50,6 @@ PODS:
   - CapawesomeTeamCapacitorDatetimePicker (8.0.1):
     - Capacitor
   - CapgoCapacitorNavigationBar (8.0.22):
-    - Capacitor
-  - CapgoNativePurchases (8.1.1):
     - Capacitor
   - CordovaPluginsStatic (8.1.0):
     - CapacitorCordova
@@ -175,6 +175,7 @@ DEPENDENCIES:
   - "CapacitorClipboard (from `../../node_modules/@capacitor/clipboard`)"
   - "CapacitorCommunityAdmob (from `../../node_modules/@capacitor-community/admob`)"
   - "CapacitorCommunityInAppReview (from `../../node_modules/@capacitor-community/in-app-review`)"
+  - "CapacitorCommunityTextToSpeech (from `../../node_modules/@capacitor-community/text-to-speech`)"
   - "CapacitorCordova (from `../../node_modules/@capacitor/ios`)"
   - "CapacitorDevice (from `../../node_modules/@capacitor/device`)"
   - "CapacitorFilesystem (from `../../node_modules/@capacitor/filesystem`)"
@@ -190,7 +191,6 @@ DEPENDENCIES:
   - "CapawesomeCapacitorAppUpdate (from `../../node_modules/@capawesome/capacitor-app-update`)"
   - "CapawesomeTeamCapacitorDatetimePicker (from `../../node_modules/@capawesome-team/capacitor-datetime-picker`)"
   - "CapgoCapacitorNavigationBar (from `../../node_modules/@capgo/capacitor-navigation-bar`)"
-  - "CapgoNativePurchases (from `../../node_modules/@capgo/native-purchases`)"
   - CordovaPluginsStatic (from `../capacitor-cordova-ios-plugins`)
   - OneSignalXCFramework (= 5.4.1)
   - "RevenuecatPurchasesCapacitor (from `../../node_modules/@revenuecat/purchases-capacitor`)"
@@ -236,6 +236,8 @@ EXTERNAL SOURCES:
     :path: "../../node_modules/@capacitor-community/admob"
   CapacitorCommunityInAppReview:
     :path: "../../node_modules/@capacitor-community/in-app-review"
+  CapacitorCommunityTextToSpeech:
+    :path: "../../node_modules/@capacitor-community/text-to-speech"
   CapacitorCordova:
     :path: "../../node_modules/@capacitor/ios"
   CapacitorDevice:
@@ -266,8 +268,6 @@ EXTERNAL SOURCES:
     :path: "../../node_modules/@capawesome-team/capacitor-datetime-picker"
   CapgoCapacitorNavigationBar:
     :path: "../../node_modules/@capgo/capacitor-navigation-bar"
-  CapgoNativePurchases:
-    :path: "../../node_modules/@capgo/native-purchases"
   CordovaPluginsStatic:
     :path: "../capacitor-cordova-ios-plugins"
   RevenuecatPurchasesCapacitor:
@@ -284,6 +284,7 @@ SPEC CHECKSUMS:
   CapacitorClipboard: c75fdaa6e622111119f35e7914ecfc67b05efecb
   CapacitorCommunityAdmob: 9c36b466f46da413e5c105f7484e7603178c6223
   CapacitorCommunityInAppReview: 4492bdd34aad4d27ed87949376022cc93b294ea1
+  CapacitorCommunityTextToSpeech: a9f7c5bcdc424197d11bb7ae3e9010b415e931b0
   CapacitorCordova: e8b76fd95fc1e157775abc484c59cc0de464095d
   CapacitorDevice: ff033fa0c4ec19f5e059a073769a9b2347e69f57
   CapacitorFilesystem: 2db285a1ac6e475cc27cae2e1bea999000f9e2be
@@ -299,7 +300,6 @@ SPEC CHECKSUMS:
   CapawesomeCapacitorAppUpdate: 3a7537c6a6696837b51d06f26b2e909fd7b9226f
   CapawesomeTeamCapacitorDatetimePicker: 859adffaef2ac2f43f8c530f5b182ea13d5678d6
   CapgoCapacitorNavigationBar: b38f5c3fda336ab2e8493f8cc0c8093aa1a385c5
-  CapgoNativePurchases: ef1797e57514fe6521912d1bcc554f07634b0429
   CordovaPluginsStatic: b1e0cb61738004841352e28a8dcf8629f495d919
   Google-Mobile-Ads-SDK: 4534fd2dfcd3f705c5485a6633c5188d03d4eed2
   GoogleDataTransport: aae35b7ea0c09004c3797d53c8c41f66f219d6a7
@@ -324,6 +324,6 @@ SPEC CHECKSUMS:
   RevenuecatPurchasesCapacitorUi: 59851dc7076d29f5f010e3dca51902898659f2d1
   RevenueCatUI: 5f7b3496a7fd7a16a254a6b78de2e221c117d9d2
 
-PODFILE CHECKSUM: ef72f4ffe22e3475b88fd6e893de143a9abf342a
+PODFILE CHECKSUM: 6649ad7190c290704af8f8e6daf30b2d7854e0d0
 
 COCOAPODS: 1.16.2
