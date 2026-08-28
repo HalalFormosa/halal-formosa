@@ -378,7 +378,8 @@
         </div>
 
       </div>
-      <p v-else class="ion-text-center ion-margin-top">❌ {{ $t('search.details.no-item') }}</p>
+      <!-- Not found: the contribution modal below is the actual prompt — no need for a blank/errorish page behind it -->
+      <p v-else-if="!showContributionPrompt" class="ion-text-center ion-margin-top">❌ {{ $t('search.details.no-item') }}</p>
     </ion-content>
 
     <!-- 🟢 Fullscreen Image Modal -->
@@ -457,7 +458,7 @@
     </ion-modal>
 
     <!-- Contribution Prompt Modal -->
-    <ion-modal :is-open="showContributionPrompt" class="contribution-modal" @didDismiss="showContributionPrompt = false">
+    <ion-modal :is-open="showContributionPrompt" class="contribution-modal" @didDismiss="dismissContributionPrompt">
       <div class="modal-wrapper ion-padding">
         <div class="modal-header ion-text-center">
            <div class="icon-circle">
@@ -486,7 +487,7 @@
             <ion-icon slot="start" :icon="addOutline" />
             {{ $t('scanIngredients.scan.contributionPrompt.action') }}
           </ion-button>
-          <ion-button expand="block" fill="clear" color="medium" @click="showContributionPrompt = false">
+          <ion-button expand="block" fill="clear" color="medium" @click="dismissContributionPrompt">
             {{ $t('scanIngredients.scan.contributionPrompt.skip') }}
           </ion-button>
         </div>
@@ -670,6 +671,13 @@ function goToAddProduct() {
     path: '/add',
     query: { barcode: barcode }
   })
+}
+
+function dismissContributionPrompt() {
+  showContributionPrompt.value = false
+  // Skipping here means there's no item to show behind the modal — send the
+  // user back to the product list instead of stranding them on a blank page.
+  ionRouter.navigate('/search', 'back', 'replace')
 }
 
 function getColorFromHtml(html: string): string {
@@ -1177,15 +1185,32 @@ async function loadProductData() {
   loading.value = true
 
   try {
-    const [
-      { data: { user } },
-      prodRes,
-      hlRes
-    ] = await Promise.all([
-      supabase.auth.getUser(),
-      supabase
-          .from('products')
-          .select(`
+    // Kick these off now but don't let them gate the found/not-found signal —
+    // they're not needed to answer "does this item exist".
+    const userPromise: Promise<void> = (async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) userId.value = user.id
+    })().catch(err => console.error('Auth lookup failed:', err))
+
+    ;(async () => {
+      const { data, error } = await supabase
+          .from('ingredient_highlights')
+          .select('keyword, color')
+
+      if (error) {
+        console.error('Highlights load error:', error)
+      } else if (data) {
+        ingredientDictionary.value = Object.fromEntries(
+            data.map(h => [h.keyword, h.color])
+        )
+      }
+    })().catch(err => console.error('Highlights load failed:', err))
+
+    // The one query that decides "found" vs "not found" — resolves on its
+    // own so that signal reaches the user as fast as possible.
+    const { data: prodData, error: prodError } = await supabase
+        .from('products')
+        .select(`
           *,
           product_categories ( id, name ),
           product_stores (
@@ -1194,38 +1219,20 @@ async function loadProductData() {
           ),
           partner:partners(id, name, partner_tier, partner_type, logo_url, verified)
         `)
-          .eq('barcode', barcode)
-          .maybeSingle(),
-      supabase
-          .from('ingredient_highlights')
-          .select('keyword, color')
-    ])
-
-    // ✅ current user (READ ONLY)
-    if (user) {
-      userId.value = user.id
-    }
-
-    // ✅ ingredient highlights
-    if (hlRes.error) {
-      console.error('Highlights load error:', hlRes.error)
-    } else if (hlRes.data) {
-      ingredientDictionary.value = Object.fromEntries(
-          hlRes.data.map(h => [h.keyword, h.color])
-      )
-    }
+        .eq('barcode', barcode)
+        .maybeSingle()
 
     // ✅ product
-    if (prodRes.error) {
-      console.error('Product load error:', prodRes.error)
-    } else if (prodRes.data) {
-      const partnerBody = Array.isArray(prodRes.data.partner) ? prodRes.data.partner[0] : prodRes.data.partner
+    if (prodError) {
+      console.error('Product load error:', prodError)
+    } else if (prodData) {
+      const partnerBody = Array.isArray(prodData.partner) ? prodData.partner[0] : prodData.partner
       const product: Product = {
-        ...prodRes.data,
+        ...prodData,
         author: null,
         partner: partnerBody,
         partner_tier: partnerBody?.partner_tier,
-        stores: prodRes.data.product_stores?.map((ps: any) => ({
+        stores: prodData.product_stores?.map((ps: any) => ({
           id: ps.stores.id as string,
           name: ps.stores.name,
           logo_url: ps.stores.logo_url ?? undefined,
@@ -1235,16 +1242,22 @@ async function loadProductData() {
       // ✅ assign once
       item.value = product
 
-      // 2. Fetch all dependent product details concurrently (Round 2)
-      const promises: Promise<void>[] = []
+      // Reveal the page now — core product data is ready. Everything below
+      // (author, certifications, related products, folders, view logging)
+      // is secondary and loads in behind it instead of blocking the skeleton.
+      loading.value = false
+      await nextTick()
+      ;(window as any).scheduleBannerUpdate?.()
+
+      const secondary: Promise<void>[] = []
 
       // Author profiles
-      if (prodRes.data.added_by) {
-        promises.push((async () => {
+      if (prodData.added_by) {
+        secondary.push((async () => {
           const { data: authorData } = await supabase
             .from('user_profiles')
             .select('display_name, public_profile')
-            .eq('id', prodRes.data.added_by)
+            .eq('id', prodData.added_by)
             .maybeSingle()
           if (authorData && item.value) {
             item.value.author = authorData
@@ -1254,13 +1267,14 @@ async function loadProductData() {
 
       // Certifications
       if (product.id) {
-        promises.push((async () => {
+        secondary.push((async () => {
           await fetchProductCertifications(product.id)
         })())
       }
 
       // View counts & Logging
-      promises.push((async () => {
+      secondary.push((async () => {
+        await userPromise
         let hasViewed = false
         const viewedKey = `viewed_prod_${product.barcode}`
         if (localStorage.getItem(viewedKey)) {
@@ -1294,19 +1308,23 @@ async function loadProductData() {
       })())
 
       // Related Products
-      promises.push((async () => {
+      secondary.push((async () => {
         await fetchRelatedProducts()
       })())
 
       // Folders & Saved state
-      promises.push((async () => {
+      secondary.push((async () => {
+        await userPromise
         await loadFoldersAndSavedState()
       })())
 
-      await Promise.all(promises)
-    } else if (!prodRes.data && !prodRes.error) {
+      Promise.all(secondary).catch(err => console.error('Secondary product data load failed:', err))
+    } else if (!prodData && !prodError) {
       // Product not found in database -> Show contribution prompt
       showContributionPrompt.value = true
+      loading.value = false
+      await nextTick()
+      ;(window as any).scheduleBannerUpdate?.()
 
       // 📝 Silently log the unknown scan. The weekly `scan-digest` function
       // aggregates & ranks these — no per-scan Discord spam.
@@ -1314,10 +1332,11 @@ async function loadProductData() {
       if (logScanError) console.error('log_unknown_scan failed:', logScanError)
     }
 
+  } catch (err) {
+    console.error('loadProductData failed:', err)
   } finally {
+    // Safety net in case an error above skipped the branch-local loading.value = false
     loading.value = false
-    await nextTick()
-    ;(window as any).scheduleBannerUpdate?.()
   }
 }
 

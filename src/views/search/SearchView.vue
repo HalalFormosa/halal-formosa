@@ -274,7 +274,7 @@
 
 
           <!-- 🧾 Empty state (ONLY for normal modes) -->
-          <template v-else-if="!loadingProducts && results.length === 0">
+          <template v-else-if="!loadingProducts && !isNavigatingToItem && results.length === 0">
             <ion-card>
               <ion-card-content>
                 <p>😔 {{ $t('search.noProductFound') }}</p>
@@ -738,6 +738,10 @@ const results = ref<Product[]>([])
 const errorMsg = ref('')
 const scanning = ref(false)
 const isScanning = ref(false)
+// Suppresses the "no product found" empty state during the brief window
+// between router.push(/item/...) and the page transition actually completing —
+// fetchProducts' finally block resets loadingProducts before that transition finishes.
+const isNavigatingToItem = ref(false)
 const searchQuery = ref('')
 const categories = ref<{ id: number; name: string }[]>([])
 const activeCategories = ref<{ id: number; name: string }[]>([])
@@ -1413,6 +1417,7 @@ const fetchProducts = async (reset = false) => {
           if (isScanning.value) {
             isScanning.value = false;
             shouldResetSearch.value = true;
+            isNavigatingToItem.value = true;
             router.push({path: `/item/${barcodeMatch.barcode}`});
             return;
           }
@@ -1427,6 +1432,7 @@ const fetchProducts = async (reset = false) => {
           if (isScanning.value) {
              isScanning.value = false;
              shouldResetSearch.value = true;
+             isNavigatingToItem.value = true;
              router.push({path: `/item/${q}`});
              return;
           }
@@ -1760,6 +1766,8 @@ onMounted(async () => {
 
 onIonViewWillEnter(async () => {
   if (Capacitor.isNativePlatform()) refreshSubscriptionStatus();
+
+  isNavigatingToItem.value = false
 
   if (shouldResetSearch.value) {
     clearAllFilters();
