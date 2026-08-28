@@ -157,7 +157,7 @@
               <ion-icon :icon="cameraOutline" v-if="currentStep <= 0" />
               <ion-icon :icon="checkmarkCircle" v-else />
            </div>
-           <span class="step-label">1. {{ $t('main.scan') }}</span>
+           <span class="step-label">{{ $t('scanIngredients.steps.scan') }}</span>
         </div>
         <div class="step-line" :class="{ active: currentStep >= 1 }"></div>
         <div class="step-item" :class="{ active: currentStep >= 1 }">
@@ -165,14 +165,14 @@
               <ion-icon :icon="sparklesOutline" v-if="currentStep <= 1" />
               <ion-icon :icon="checkmarkCircle" v-else />
            </div>
-           <span class="step-label">2. {{ $t('scanIngredients.scan.results') }}</span>
+           <span class="step-label">{{ $t('scanIngredients.scan.results') }}</span>
         </div>
       </div>
 
       <!-- 🔍 STEP 1: Capture -->
       <div v-show="currentStep === STEP_CAPTURE" class="step-content">
         <!-- Daily Scan Counter -->
-        <div class="ion-margin-bottom" v-if="todayScanCount !== null">
+        <div style="margin-bottom: 8px;" v-if="todayScanCount !== null">
           <ion-chip color="primary" style="width: 100%; justify-content: center; height: 32px;">
             <ion-icon :icon="scanOutline"></ion-icon>
             <ion-label>
@@ -203,9 +203,7 @@
         </div>
 
         <!-- Hero Header -->
-        <div class="ion-padding-vertical ion-text-center">
-          <div class="hero-icon">🥬</div>
-          <h2 class="hero-title">{{ $t('scanIngredients.tips.title') || 'Scan Ingredients' }}</h2>
+        <div class="ion-text-center">
           <p class="hero-desc">
             {{ $t('scanIngredients.tips.content') || 'Capture the ingredients list to see their halal status in seconds.' }}
           </p>
@@ -257,7 +255,17 @@
         <div class="form-section">
           <!-- Cropped Image Preview -->
           <div v-if="croppedPreviewUrl" class="ion-margin-bottom ion-text-center">
-            <img :src="croppedPreviewUrl" alt="Cropped" class="preview-img-cropped" />
+            <IngredientHighlightImage
+                :src="croppedPreviewUrl"
+                :ocr-image-width="ocrImageWidth"
+                :ocr-image-height="ocrImageHeight"
+                :highlights="dangerousHighlights"
+                img-class="preview-img-cropped"
+                zoomable
+            />
+            <p class="tap-to-enlarge-hint">
+              🔍 {{ $t('scanIngredients.scan.tapToEnlarge') }}
+            </p>
           </div>
 
           <!-- Status & Identity -->
@@ -270,7 +278,30 @@
                 {{ $t(`search.status.${autoStatus}`, autoStatus) }}
               </ion-chip>
             </div>
-            <h2 style="font-weight: 700; margin-top: 12px; font-size: 22px;">{{ productName || $t('scanIngredients.scan.results') }}</h2>
+            <h2 style="font-weight: 700; margin-top: 12px; font-size: 22px;">
+              {{ productName || $t('scanIngredients.scan.results') }}
+              <ion-icon
+                  v-if="productFoundInDb"
+                  :icon="checkmarkCircle"
+                  color="success"
+                  class="db-found-badge"
+                  :title="$t('scanIngredients.scan.alreadyInDb')"
+              />
+            </h2>
+            <p
+                v-if="productFoundInDb && matchedDbProductName && matchedDbProductBarcode"
+                class="db-matched-name db-matched-link"
+                @click="router.push(`/item/${matchedDbProductBarcode}`)"
+            >
+              {{ $t('scanIngredients.scan.verifiedListing', { name: matchedDbProductName }) }}
+              <ion-icon :icon="arrowForwardOutline" />
+            </p>
+            <p
+                v-else-if="productFoundInDb && matchedDbProductName"
+                class="db-matched-name"
+            >
+              {{ $t('scanIngredients.scan.verifiedListing', { name: matchedDbProductName }) }}
+            </p>
           </div>
 
           <!-- Results Card -->
@@ -544,12 +575,9 @@
               </template>
             </i18n-t>
 
-            <div class="motivation-box">
-               <div class="islamic-ornament">📿</div>
-               <p class="religious-text">
-                 {{ $t('scanIngredients.scan.contributionPrompt.motivation') }}
-               </p>
-            </div>
+            <p class="sub-message">
+              {{ $t(contributionMotivationKey) }}
+            </p>
           </div>
 
           <div class="modal-footer">
@@ -577,7 +605,7 @@
 <script setup lang="ts">
 import {
   IonPage, IonContent, IonButton, IonIcon, IonCard, IonCardContent, IonItem,
-  IonTextarea, IonModal, IonHeader, IonToolbar, IonTitle, IonButtons, IonToast,
+  IonTextarea, IonModal, IonHeader, IonToolbar, IonTitle, IonToast,
   IonProgressBar, IonChip, IonLabel, onIonViewWillEnter, IonList, IonSpinner,
   IonFooter, IonLoading
 } from '@ionic/vue'
@@ -607,6 +635,7 @@ import {
   timeOutline
 } from 'ionicons/icons'
 import AppHeader from '@/components/AppHeader.vue'
+import IngredientHighlightImage from '@/components/scan/IngredientHighlightImage.vue'
 import {ref, onUnmounted, computed, nextTick} from 'vue'
 import { Swiper, SwiperSlide } from 'swiper/vue'
 import { Autoplay, Pagination } from 'swiper/modules'
@@ -778,6 +807,15 @@ const truncatedProductName = computed(() => {
 
 const showContributionPrompt = ref(false)
 const checkingExistence = ref(false)
+// null = not checked yet, true = found in our database, false = not found
+const productFoundInDb = ref<boolean | null>(null)
+// The exact name stored in our database for the matched product, so the user can
+// visually confirm it's really the same item (the lookup is a fuzzy ilike match).
+const matchedDbProductName = ref<string | null>(null)
+const matchedDbProductBarcode = ref<string | null>(null)
+// Show the fuller Quran/Hadith reminder only some of the time — the short line the rest,
+// so the prompt doesn't feel repetitive on every scan.
+const contributionMotivationKey = ref('scanIngredients.scan.contributionPrompt.motivation')
 
 async function checkProductExistence(name: string) {
   if (!name || name === 'Unknown' || name === 'Scan Results') return false
@@ -785,14 +823,19 @@ async function checkProductExistence(name: string) {
   try {
     const { data, error } = await supabase
       .from('products')
-      .select('id')
+      .select('id, name, barcode')
       .ilike('name', `%${name}%`)
       .limit(1)
-    
+
     if (error) throw error
-    return data && data.length > 0
+    const found = data && data.length > 0
+    matchedDbProductName.value = found ? data[0].name : null
+    matchedDbProductBarcode.value = found ? data[0].barcode : null
+    return found
   } catch (err) {
     console.error("❌ Failed to check product existence:", err)
+    matchedDbProductBarcode.value = null
+    matchedDbProductName.value = null
     return true // Assume exists on error to avoid false positives
   } finally {
     checkingExistence.value = false
@@ -870,7 +913,9 @@ const {
   progress,
   progressLabel,
   stencilProps,
-  setAspectRatio
+  setAspectRatio,
+  ocrImageWidth,
+  ocrImageHeight
 } = useCropperOcr({
   allHighlights,
   blacklistPatterns,
@@ -880,7 +925,7 @@ const {
   t,
 })
 
-const dangerousHighlights = computed(() => 
+const dangerousHighlights = computed(() =>
   ingredientHighlights.value.filter((h: IngredientHighlight) => extractIonColor(h.color) !== 'primary')
 )
 const friendlyHighlights = computed(() => 
@@ -988,11 +1033,11 @@ async function checkDailyScanLimit() {
 // Gallery
 
 
-function calculateReadingTime(text: string) {
+function calculateReadingTime(text: string, minMs = 2500, maxMs = 4000) {
   const words = text.trim().split(/\s+/).length
   const wordsPerSecond = 3.2
   const ms = (words / wordsPerSecond) * 1000
-  return Math.min(4000, Math.max(2500, ms))
+  return Math.min(maxMs, Math.max(minMs, ms))
 }
 
 const summaryUsed = ref(false)
@@ -1092,6 +1137,9 @@ function toProperCase(str: string) {
 
 function clearAll() {
   reset()
+  productFoundInDb.value = null
+  matchedDbProductName.value = null
+  matchedDbProductBarcode.value = null
   originalFile.value = null
   croppedFile.value = null
   overallNote.value = ''
@@ -1216,13 +1264,29 @@ async function handleConfirmCrop() {
       nextStep()
 
       // 🔍 Proactively check if product exists in database by name
+      productFoundInDb.value = null
+      matchedDbProductName.value = null
+      matchedDbProductBarcode.value = null
       if (productName.value) {
         checkProductExistence(productName.value).then(exists => {
+          productFoundInDb.value = exists
           if (!exists) {
             console.log("🕵️‍♂️ Product not found in DB, showing contribution prompt")
+            // Give the user time to actually read the results (status, product name,
+            // ingredient highlights) before interrupting with this prompt — scale the
+            // wait with how much there is to read instead of a flat 1s.
+            const resultsText = [productName.value, ingredientsText.value, ingredientsTextZh.value]
+                .filter(Boolean)
+                .join(' ')
+            const readDelay = calculateReadingTime(resultsText, 3500, 8000)
             setTimeout(() => {
-              showContributionPrompt.value = true
-            }, 1000) // Show after result transition
+              if (currentStep.value === STEP_RESULTS) {
+                contributionMotivationKey.value = Math.random() < 0.3
+                    ? 'scanIngredients.scan.contributionPrompt.motivationQuote'
+                    : 'scanIngredients.scan.contributionPrompt.motivation'
+                showContributionPrompt.value = true
+              }
+            }, readDelay)
           }
         })
       }
@@ -1526,16 +1590,17 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 24px;
+  padding: 8px 16px;
   background: var(--ion-color-light);
-  border-radius: 16px;
+  border-radius: 12px;
   margin-top: 8px;
 }
 
 .step-item {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
+  justify-content: center;
   gap: 6px;
   flex: 1;
   opacity: 0.4;
@@ -1547,16 +1612,17 @@ onUnmounted(() => {
 }
 
 .step-dot {
-  width: 36px;
-  height: 36px;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
   border-radius: 50%;
   background: var(--ion-color-step-150);
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--ion-color-step-500);
-  font-size: 20px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  font-size: 12px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
 }
 
 .active .step-dot {
@@ -1565,9 +1631,10 @@ onUnmounted(() => {
 }
 
 .step-label {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   color: var(--ion-color-step-600);
+  white-space: nowrap;
 }
 
 .active .step-label {
@@ -1578,7 +1645,6 @@ onUnmounted(() => {
   flex: 0.5;
   height: 2px;
   background: var(--ion-color-step-300);
-  margin-bottom: 20px; /* Offset for labels */
 }
 
 .step-line.active {
@@ -1596,9 +1662,32 @@ onUnmounted(() => {
   to   { opacity: 1; transform: translateY(0); }
 }
 
-.hero-icon { font-size: 48px; margin-bottom: 12px; }
-.hero-title { font-weight: 800; font-size: 24px; margin-bottom: 8px; }
 .hero-desc { color: var(--ion-color-step-600); line-height: 1.5; margin-bottom: 16px; }
+
+.db-found-badge {
+  font-size: 18px;
+  vertical-align: middle;
+  margin-left: 4px;
+  transform: translateY(-2px);
+}
+
+.db-matched-name {
+  font-size: 12px;
+  color: var(--ion-color-success);
+  margin: 2px 0 0;
+}
+
+.db-matched-link {
+  cursor: pointer;
+  text-decoration: underline;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.db-matched-link ion-icon {
+  font-size: 12px;
+}
 
 .action-card {
   border-radius: 20px;
@@ -1731,13 +1820,11 @@ onUnmounted(() => {
   gap: 12px;
 }
 
-.preview-img-cropped {
-  width: 100%;
-  max-height: 300px;
-  object-fit: contain;
-  border-radius: 16px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-  background: var(--ion-color-step-100);
+.tap-to-enlarge-hint {
+  font-size: 12px;
+  color: var(--ion-color-step-600);
+  margin-top: 6px;
+  margin-bottom: 0;
 }
 
 /* 🔹 OCR Loading Overlay */
@@ -1853,57 +1940,43 @@ onUnmounted(() => {
 }
 
 .modal-header {
-  margin-bottom: 24px;
+  margin-bottom: 16px;
 }
 
 .icon-circle {
-  width: 64px;
-  height: 64px;
+  width: 48px;
+  height: 48px;
   background: rgba(var(--ion-color-carrot-rgb), 0.1);
   border-radius: 50%;
   display: flex;
   justify-content: center;
   align-items: center;
-  margin: 0 auto 16px;
-  font-size: 32px;
+  margin: 0 auto 12px;
+  font-size: 24px;
   box-shadow: 0 4px 12px rgba(var(--ion-color-carrot-rgb), 0.1);
 }
 
 .modal-title {
   font-weight: 800;
-  font-size: 24px;
+  font-size: 20px;
   margin: 0;
   color: var(--ion-color-step-900);
 }
 
 .main-message {
-  font-size: 16px;
-  line-height: 1.5;
+  font-size: 15px;
+  line-height: 1.4;
   color: var(--ion-color-step-700);
   text-align: center;
-  margin-bottom: 24px;
+  margin-bottom: 4px;
 }
 
-.motivation-box {
-  background: var(--ion-color-step-50);
-  border-radius: 20px;
-  padding: 20px;
-  text-align: center;
-  margin-bottom: 32px;
-  border: 1px dashed rgba(var(--ion-color-carrot-rgb), 0.3);
-}
-
-.islamic-ornament {
-  font-size: 24px;
-  margin-bottom: 8px;
-}
-
-.religious-text {
-  font-size: 14px;
-  font-style: italic;
-  line-height: 1.6;
+.sub-message {
+  font-size: 13px;
+  line-height: 1.4;
   color: var(--ion-color-step-600);
-  margin: 0;
+  text-align: center;
+  margin: 0 0 20px;
 }
 
 .modal-footer {

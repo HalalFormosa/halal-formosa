@@ -317,7 +317,10 @@
     "help": "How it works",
     "tips": {
       "title": "Tips: How to Scan Correctly",
-      "content": "📸 Please take a clear photo of the ingredients (成分 / 原料 / 內容物) and the product name (品名)."
+      "content": "Include the ingredients (成分 / 原料 / 內容物) and product name (品名) clearly in the photo."
+    },
+    "steps": {
+      "scan": "Scan"
     },
     "status": {
       "Halal": "Halal",
@@ -428,9 +431,12 @@
       "auto": "Auto Scan (BETA)",
       "reCrop": "Re-crop",
       "productName": "Detected Product Name",
+      "alreadyInDb": "Already in our database",
+      "verifiedListing": "Verified listing: {name}",
       "ingredientsZh": "Detected Ingredients (Chinese)",
       "ingredientsEn": "Translated Ingredients (English)",
       "originalImage": "Original Image",
+      "tapToEnlarge": "Pinch or double-tap to zoom in",
       "share": "Share",
       "clear": "Scan Again",
       "cropTitle": "Crop Ingredients",
@@ -442,8 +448,9 @@
       "contribute": "Contribute to Database",
       "contributionPrompt": {
         "title": "Unlisted Product",
-        "message": "The product \"{name}\" is {status}, but it seems we don't have it in our database yet.",
-        "motivation": "With your contribution, you are helping thousands of Muslims using Halal Formosa to discover more products. Helping others is a noble act: \"Help one another in goodness and piety\" (Quran 5:2). The Prophet (SAW) said: \"The best of people are those that bring most benefit to others.\" (At-Tabarani)",
+        "message": "\"{name}\" ({status}) isn't in our database yet.",
+        "motivation": "Help other Muslims shop with confidence — add it in seconds.",
+        "motivationQuote": "Helping others is a noble act: \"Help one another in goodness and piety\" (Quran 5:2). The Prophet (SAW) said: \"The best of people are those that bring most benefit to others.\" (At-Tabarani)",
         "action": "Contribute Now",
         "skip": "Maybe later"
       }

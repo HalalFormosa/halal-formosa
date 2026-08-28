@@ -387,6 +387,14 @@ function resolveActivityGroup(activity: string): string | null {
         case 'home_viewmore_news':
         case 'home_social_follow_click':
         case 'smart_banner_click':
+        case 'home_viewmore_phrases':
+        case 'home_partner_click':
+        case 'home_open_products':
+        case 'home_open_locations':
+        case 'home_viewmore_scans':
+        case 'home_cert_body_click':
+        case 'home_viewmore_cert_bodies':
+        case 'home_prayer_popover_open':
             return 'home'
 
         /* -------------------------
@@ -398,6 +406,7 @@ function resolveActivityGroup(activity: string): string | null {
         case 'search_filter_store':
         case 'search_filter_status':
         case 'search_sort_change':
+        case 'search_query':
             return 'search'
 
         /* -------------------------
@@ -405,11 +414,19 @@ function resolveActivityGroup(activity: string): string | null {
         -------------------------- */
         case 'barcode_scan_start':
         case 'barcode_scan_success':
+        case 'barcode_scan_error':
         case 'product_details_open':
         case 'product_image_open':
         case 'related_product_click':
         case 'product_edit_click':
         case 'product_report_click':
+        case 'product_share':
+        case 'scan_ingredients_start':
+        case 'scan_ingredients_success':
+        case 'scan_ingredients_error':
+        case 'ai_summary_click':
+        case 'ai_summary_used':
+        case 'product_detail_open':
             return 'product'
 
         /* -------------------------
@@ -419,6 +436,10 @@ function resolveActivityGroup(activity: string): string | null {
         case 'explore_center_user':
         case 'explore_place_card_click':
         case 'explore_marker_click':
+        case 'explore_place_impression':
+        case 'explore_search_query':
+        case 'explore_address_search':
+        case 'explore_filter_category':
             return 'explore'
 
         /* -------------------------
@@ -439,6 +460,9 @@ function resolveActivityGroup(activity: string): string | null {
         case 'explore_detail_report':
         case 'explore_detail_line':
         case 'explore_detail_foodpanda':
+        case 'explore_detail_ubereats':
+        case 'location_review_edit':
+        case 'location_review_success':
             return 'place'
 
         /* -------------------------
@@ -463,6 +487,7 @@ function resolveActivityGroup(activity: string): string | null {
         case 'news_page_open':
         case 'news_detail_open':
         case 'news_share':
+        case 'home_news_click':
             return 'news'
 
         /* -------------------------
@@ -538,6 +563,19 @@ function resolveActivityGroup(activity: string): string | null {
         case 'merchant_admin_view_applications':
         case 'merchant_registration_page_open':
         case 'merchant_registration_step_view':
+        case 'merchant_registration_success':
+        case 'business_listing_edit':
+        case 'business_listing_draft_save':
+        case 'business_listing_publish':
+        case 'business_promo_create':
+        case 'business_claim_start':
+        case 'business_claim_submit':
+        case 'business_claim_approve':
+        case 'business_claim_reject':
+        case 'business_edit_request_approve':
+        case 'business_edit_request_reject':
+        case 'business_dashboard_open':
+        case 'business_analytics_export':
             return 'merchant'
 
         /* -------------------------
@@ -553,6 +591,7 @@ function resolveActivityGroup(activity: string): string | null {
         case 'explore_reel_open_choice':
         case 'home_media_partner_open':
         case 'reels_audio_toggle':
+        case 'explore_reel_placeholder_click':
             return 'social_reels'
 
         /* -------------------------
@@ -562,6 +601,9 @@ function resolveActivityGroup(activity: string): string | null {
         case 'auth_login_failed':
         case 'auth_signup_success':
         case 'auth_signup_failed':
+        case 'auth_password_reset_requested':
+        case 'auth_password_update_success':
+        case 'auth_password_update_failed':
             return 'auth'
 
         /* -------------------------
@@ -586,6 +628,7 @@ function resolveActivityGroup(activity: string): string | null {
         case 'add_product_submit_success':
         case 'add_place_success':
         case 'edit_place_success':
+        case 'add_place_source_input':
             return 'contributions'
 
         /* -------------------------
@@ -593,6 +636,12 @@ function resolveActivityGroup(activity: string): string | null {
         -------------------------- */
         case 'search_no_results':
             return 'search'
+
+        /* -------------------------
+           ADMIN
+        -------------------------- */
+        case 'admin_hide_location':
+            return 'admin'
 
         /* -------------------------
            FALLBACK

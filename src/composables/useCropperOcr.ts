@@ -32,7 +32,10 @@ export function useCropperOcr(options: CropperOcrOptions) {
         showOk,
         detectedLanguage,
         progress,
-        progressLabel
+        progressLabel,
+        ocrWords,
+        ocrImageWidth,
+        ocrImageHeight
     } = useOcrService(options)
 
     const pendingRoi = ref<any>(null)
@@ -188,6 +191,9 @@ export function useCropperOcr(options: CropperOcrOptions) {
         autoStatus.value = ""
         ocrRaw.value = "" // ✅ reset too
         originalFile.value = null
+        ocrWords.value = []
+        ocrImageWidth.value = 0
+        ocrImageHeight.value = 0
     }
 
     function closeCropper() {
@@ -299,6 +305,9 @@ export function useCropperOcr(options: CropperOcrOptions) {
         ocrRaw,
         detectedLanguage,
         progress,
-        progressLabel
+        progressLabel,
+        ocrWords,
+        ocrImageWidth,
+        ocrImageHeight
     }
 }

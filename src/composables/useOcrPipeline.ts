@@ -1,5 +1,5 @@
 import { Ref, ref, nextTick } from 'vue'
-import type { IngredientHighlight } from '@/types/Ingredient'
+import type { IngredientHighlight, OcrWord, HighlightBox } from '@/types/Ingredient'
 import { extractIonColor } from '@/utils/ingredientHelpers'
 import { supabase, invokeFunction } from '@/plugins/supabaseClient'
 
@@ -51,6 +51,11 @@ export default function useOcrPipeline(options: OcrPipelineOptions) {
     const showOk = ref(false)
     const detectedLanguage = ref<'chinese' | 'english' | 'mixed' | 'unknown'>('unknown')
     const ocrRawText = ref('')
+    // 📍 raw OCR words (with pixel-space bounding boxes) for the exact image sent to Vision,
+    // plus that image's pixel dimensions so callers can scale boxes onto whatever size it's displayed at
+    const ocrWords = ref<OcrWord[]>([])
+    const ocrImageWidth = ref(0)
+    const ocrImageHeight = ref(0)
     const progress = ref(0)
     const progressLabel = ref(t('scanIngredients.progress.initializing'))
 
@@ -100,12 +105,15 @@ export default function useOcrPipeline(options: OcrPipelineOptions) {
             progress.value = 0.15
             progressLabel.value = t('scanIngredients.progress.runningOcr')
 
-            const { text: rawText, translatedText: translatedFull } = await extractTextFromImage(file);
+            const { text: rawText, translatedText: translatedFull, words, imageWidth, imageHeight } = await extractTextFromImage(file);
             if (!rawText || !rawText.trim()) {
                 return setError('OCR failed to detect any text.');
             }
             let raw = rawText;
             ocrRawText.value = raw || ''
+            ocrWords.value = words || []
+            ocrImageWidth.value = imageWidth || 0
+            ocrImageHeight.value = imageHeight || 0
 
             progress.value = 0.30
             progressLabel.value = t('scanIngredients.progress.detectingLang')
@@ -274,23 +282,43 @@ export default function useOcrPipeline(options: OcrPipelineOptions) {
         })
     }
 
+    function getImageDimensions(file: File): Promise<{ width: number; height: number }> {
+        return new Promise((resolve, reject) => {
+            const img = new Image()
+            const url = URL.createObjectURL(file)
+            img.onload = () => {
+                URL.revokeObjectURL(url)
+                resolve({ width: img.naturalWidth, height: img.naturalHeight })
+            }
+            img.onerror = (err) => {
+                URL.revokeObjectURL(url)
+                reject(err)
+            }
+            img.src = url
+        })
+    }
+
     async function extractTextFromImage(file: File) {
         try {
             const base64 = await fileToBase64(file)
-            const res = await withTimeout(
-                invokeFunction('google-ocr', {
-                    body: { imageBase64: base64, translate: true }
-                }),
-                20000
-            )
+            const [res, dims] = await Promise.all([
+                withTimeout(
+                    invokeFunction('google-ocr', {
+                        body: { imageBase64: base64, translate: true }
+                    }),
+                    20000
+                ),
+                getImageDimensions(file).catch(() => ({ width: 0, height: 0 }))
+            ])
             const { data, error } = res
             if (error || !data) {
                 setError(`OCR failed: ${error?.message || 'Google OCR server error'}`)
-                return { text: '', translatedText: '' }
+                return { text: '', translatedText: '', words: [] as OcrWord[], imageWidth: 0, imageHeight: 0 }
             }
 
             const text = data.text || ''
             let translatedText = data.translatedText || ''
+            const words: OcrWord[] = Array.isArray(data.words) ? data.words : []
 
             // Fallback for translation if google-ocr returned text but no translation
             if (text.trim() && !translatedText.trim()) {
@@ -303,7 +331,10 @@ export default function useOcrPipeline(options: OcrPipelineOptions) {
 
             return {
                 text,
-                translatedText
+                translatedText,
+                words,
+                imageWidth: dims.width,
+                imageHeight: dims.height
             }
         } catch (e: any) {
             if (e.message === 'timeout') {
@@ -312,7 +343,7 @@ export default function useOcrPipeline(options: OcrPipelineOptions) {
                 setError('Failed to connect to OCR server. Please try again later.')
             }
             console.error(e)
-            return { text: '', translatedText: '' }
+            return { text: '', translatedText: '', words: [] as OcrWord[], imageWidth: 0, imageHeight: 0 }
         }
     }
 
@@ -549,10 +580,15 @@ export default function useOcrPipeline(options: OcrPipelineOptions) {
             found.push(...ingredientHighlights.value)
         }
 
-        // Deduplicate by matchedVariant or keyword
-        const unique = new Map(
-            found.map(f => [f.keyword, f]) // dedupe by ingredient identity
-        )
+        // Deduplicate by keyword, preferring whichever occurrence has a located
+        // image box (a later pass with no box shouldn't clobber an earlier one that has one)
+        const unique = new Map<string, IngredientHighlight>()
+        for (const f of found) {
+            const existing = unique.get(f.keyword)
+            if (!existing || (!existing.boxes?.length && f.boxes?.length)) {
+                unique.set(f.keyword, f)
+            }
+        }
 
         ingredientHighlights.value = Array.from(unique.values())
 
@@ -592,6 +628,72 @@ export default function useOcrPipeline(options: OcrPipelineOptions) {
         }
 
         return results.length > 0 ? results : [text];
+    }
+
+    // 📍 Locate the OCR word(s) a matched keyword variant came from, so we can
+    // draw a highlight box on the source image. Works purely off the raw
+    // OCR words (untouched by cleaning/translation) — matches found only via
+    // translated text with no counterpart among the original words simply
+    // return no boxes, which callers treat as "can't highlight this one".
+    function normalizeForBoxMatch(s: string, isLatin: boolean): string {
+        return isLatin
+            ? s.replace(/[^a-z0-9]/gi, '').toLowerCase()
+            : s.replace(/[,\s]/g, '')
+    }
+
+    function mergeWordBoxes(words: OcrWord[]): HighlightBox | null {
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
+        for (const w of words) {
+            for (const v of w.vertices || []) {
+                minX = Math.min(minX, v.x)
+                minY = Math.min(minY, v.y)
+                maxX = Math.max(maxX, v.x)
+                maxY = Math.max(maxY, v.y)
+            }
+        }
+        if (!isFinite(minX) || !isFinite(minY) || !isFinite(maxX) || !isFinite(maxY)) return null
+        return { x: minX, y: minY, width: maxX - minX, height: maxY - minY }
+    }
+
+    function findWordBoxes(variant: string, words: OcrWord[]): HighlightBox[] {
+        if (!variant.trim() || !words.length) return []
+
+        const isLatin = /^[a-z0-9\s\-'".,()]+$/i.test(variant.trim())
+        const target = normalizeForBoxMatch(variant, isLatin)
+        if (!target) return []
+
+        // Concatenate all normalized word text into one string, remembering each
+        // word's [start, end) character range within it. Then locate the target via
+        // indexOf — an exact substring search, immune to the "growing window happens
+        // to contain the target via an unrelated prefix" failure mode a greedy
+        // window-growth approach would have.
+        let fullText = ''
+        const spans: { start: number; end: number; wordIndex: number }[] = []
+        words.forEach((w, i) => {
+            const norm = normalizeForBoxMatch(w.description || '', isLatin)
+            if (!norm) return
+            spans.push({ start: fullText.length, end: fullText.length + norm.length, wordIndex: i })
+            fullText += norm
+        })
+
+        const boxes: HighlightBox[] = []
+        let searchFrom = 0
+        while (boxes.length < 5) {
+            const matchStart = fullText.indexOf(target, searchFrom)
+            if (matchStart === -1) break
+            const matchEnd = matchStart + target.length
+
+            const matchedIndexes = spans
+                .filter(s => s.start < matchEnd && s.end > matchStart)
+                .map(s => s.wordIndex)
+
+            if (matchedIndexes.length) {
+                const box = mergeWordBoxes(matchedIndexes.map(i => words[i]))
+                if (box) boxes.push(box)
+            }
+            searchFrom = matchEnd
+        }
+        return boxes
     }
 
     const checkingIngredients = ref(false)
@@ -666,7 +768,13 @@ export default function useOcrPipeline(options: OcrPipelineOptions) {
                             if ([...found].some(f => f.matchedVariant && f.matchedVariant.includes(normVariant))) {
                                 continue;
                             }
-                            found.push({ ...h, matchedVariant: variant });
+                            let boxes: HighlightBox[] = [];
+                            try {
+                                boxes = findWordBoxes(variant, ocrWords.value);
+                            } catch (e) {
+                                console.warn('⚠️ [OcrPipeline] Box lookup failed for variant:', variant, e);
+                            }
+                            found.push({ ...h, matchedVariant: variant, boxes });
                         }
                     }
                 }
@@ -697,6 +805,9 @@ export default function useOcrPipeline(options: OcrPipelineOptions) {
         detectedLanguage,
         cleanChineseOcrText,
         ocrRawText,
+        ocrWords,
+        ocrImageWidth,
+        ocrImageHeight,
         progress,
         progressLabel
     }

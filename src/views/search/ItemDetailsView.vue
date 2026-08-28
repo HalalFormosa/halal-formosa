@@ -1411,6 +1411,11 @@ const share = async () => {
   font-weight: 800;
   font-size: 1.6rem;
   line-height: 1.2;
+  /* A global, unscoped .product-title rule in SearchView.vue also targets this class
+     and falls back to white text when --ion-text-color isn't set (i.e. outside dark
+     palette) — declare color explicitly here so this scoped rule's higher specificity
+     wins instead of leaking that fallback in. */
+  color: var(--ion-text-color, var(--ion-color-step-900));
 }
 
 .barcode-row {

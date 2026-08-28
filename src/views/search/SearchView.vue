@@ -1122,6 +1122,32 @@ function stopGoldRotation() {
   }
 }
 
+async function applyGoldRotationOffset() {
+  if (goldProducts.value.length === 0) return
+
+  // The search_products RPC already orders gold items starting from the
+  // correct position for the current rotationSeed (see its
+  // `(gold_rank + p_seed) % total` ORDER BY clause). Re-applying the seed
+  // here as an array index would double-rotate: since gold_rank is
+  // 1-indexed on the server but this offset is 0-indexed, the two
+  // rotations cancel out and always land on the same (highest-ranked)
+  // item instead of cycling. Just start the carousel at the top of the
+  // order the server already gave us.
+  goldRotationOffset.value = 0
+
+  await nextTick()
+  if (goldScroller.value) {
+    const children = goldScroller.value.querySelectorAll('.featured-gold-wrapper')
+    if (children[goldRotationOffset.value]) {
+      children[goldRotationOffset.value].scrollIntoView({
+        behavior: 'auto',
+        block: 'nearest',
+        inline: 'center'
+      })
+    }
+  }
+}
+
 const sortLabel = computed(() => {
   if (sortBy.value === 'for_you') return 'For You'
   if (sortBy.value === 'views') return 'Hot'
@@ -1686,10 +1712,16 @@ async function refreshList(event: CustomEvent) {
     await nextTick()
     infiniteDisabled.value = false   // ✅ reactive instead of mutating prop
 
+    // Advance rotation seed on manual refresh too, so gold partner rotates
+    rotationSeed.value = (rotationSeed.value + 1) % 1000
+    localStorage.setItem('product_rotation_seed', rotationSeed.value.toString())
+
     await Promise.all([
       fetchProducts(true),
       fetchTotalCount(),
     ])
+
+    await applyGoldRotationOffset()
   } finally {
     event.detail.complete()
   }
@@ -1746,28 +1778,8 @@ onIonViewWillEnter(async () => {
   }
 
   // Increment rotation seed for "Round Robin" feel
-  rotationSeed.value = (rotationSeed.value + 1) % 1000 
+  rotationSeed.value = (rotationSeed.value + 1) % 1000
   localStorage.setItem('product_rotation_seed', rotationSeed.value.toString())
-  
-  // Set initial scroll position based on Round Robin seed
-  if (goldProducts.value.length > 0) {
-    goldRotationOffset.value = rotationSeed.value % goldProducts.value.length
-    
-    // Jump to the starting partner instantly
-    await nextTick()
-    if (goldScroller.value) {
-      const children = goldScroller.value.querySelectorAll('.featured-gold-wrapper')
-      if (children[goldRotationOffset.value]) {
-        children[goldRotationOffset.value].scrollIntoView({ 
-          behavior: 'auto', 
-          block: 'nearest', 
-          inline: 'center' 
-        })
-      }
-    }
-  }
-
-  startGoldRotation()
 
   // Refresh products and count on entry if we don't have results yet
   if (results.value.length === 0) {
@@ -1776,6 +1788,11 @@ onIonViewWillEnter(async () => {
       fetchTotalCount(),
     ])
   }
+
+  // Set initial scroll position based on Round Robin seed (after products are loaded)
+  await applyGoldRotationOffset()
+
+  startGoldRotation()
 })
 
 

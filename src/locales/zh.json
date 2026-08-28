@@ -312,7 +312,10 @@
     "help": "如何運作",
     "tips": {
       "title": "提示：如何正確掃描",
-      "content": "📸 請清晰拍攝成分表（成分 / 原料 / 內容物）與產品名稱（品名）。"
+      "content": "請將成分（成分 / 原料 / 內容物）與產品名稱（品名）清楚入鏡。"
+    },
+    "steps": {
+      "scan": "掃描"
     },
     "status": {
       "Halal": "清真 (Halal)",
@@ -389,9 +392,12 @@
       "auto": "自動掃描 (測試版)",
       "reCrop": "重新裁剪",
       "productName": "偵測到的產品名稱",
+      "alreadyInDb": "已收錄於資料庫",
+      "verifiedListing": "已驗證項目：{name}",
       "ingredientsZh": "偵測到的成分 (中文)",
       "ingredientsEn": "翻譯後的成分 (英文)",
       "originalImage": "原始圖片",
+      "tapToEnlarge": "以雙指或雙擊放大",
       "share": "分享",
       "clear": "清除",
       "cropTitle": "裁剪成分",
@@ -403,8 +409,9 @@
       "contribute": "貢獻到資料庫",
       "contributionPrompt": {
         "title": "未收錄產品",
-        "message": "產品「{name}」狀態為 {status}，但我們的資料庫似乎尚未收錄它。",
-        "motivation": "透過您的貢獻，您正在幫助成千上萬使用 Halal Formosa 的穆斯林發現更多產品。幫助他人是高尚的行為：「你們當為正義和敬畏而互助」(古蘭經 5:2)。穆聖 (SAW) 曾說：「最優秀的人是那些對他人最有益的人。」(泰伯拉尼 輯錄)",
+        "message": "「{name}」（{status}）尚未收錄於資料庫。",
+        "motivation": "幫助更多穆斯林安心選購 — 只需幾秒鐘即可新增。",
+        "motivationQuote": "幫助他人是高尚的行為：「你們當為正義和敬畏而互助」(古蘭經 5:2)。穆聖 (SAW) 曾說：「最優秀的人是那些對他人最有益的人。」(泰伯拉尼 輯錄)",
         "action": "立即貢獻",
         "skip": "稍後再說"
       }
