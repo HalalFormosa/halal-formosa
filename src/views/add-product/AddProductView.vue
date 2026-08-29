@@ -1849,7 +1849,18 @@ async function checkBarcodeExists(barcode: string) {
       .eq("barcode", barcode)
       .maybeSingle()
 
-  return data || null
+  if (data) return data
+
+  // This barcode may already have been merged into another product —
+  // treat that the same as "already exists" so it isn't re-created.
+  const { data: aliasData } = await supabase
+      .from('product_barcodes')
+      .select('products (id, name, status, photo_front_url)')
+      .eq('barcode', barcode)
+      .maybeSingle() as { data: any }
+  const aliased = Array.isArray(aliasData?.products) ? aliasData?.products[0] : aliasData?.products
+
+  return aliased || null
 }
 
 watch(() => form.value.barcode, async (newBarcode) => {

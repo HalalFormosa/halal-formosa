@@ -250,6 +250,12 @@ const routes: Array<RouteRecordRaw> = [
         meta: { requiresAdmin: true }
     },
     {
+        path: '/admin/duplicate-products',
+        name: 'DuplicateProducts',
+        component: () => import('@/views/admin/DuplicateProductsView.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true, noAds: true }
+    },
+    {
         path: '/admin/halalify-phrases',
         name: 'HalalifyPhrasesEditor',
         component: () => import('@/views/admin/HalalifyPhrasesEditorView.vue'),

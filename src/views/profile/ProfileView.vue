@@ -627,6 +627,13 @@
               <ion-label>{{ $t('profile.admin.masterData') }}</ion-label>
             </ion-item>
 
+            <ion-item button @click="$router.push('/admin/duplicate-products')">
+              <div class="icon-box" slot="start">
+                <ion-icon :icon="icons.copyOutline" />
+              </div>
+              <ion-label>Merge Duplicate Products</ion-label>
+            </ion-item>
+
             <ion-list-header style="min-height: 32px; padding-bottom: 4px; border-top: 1px solid var(--ion-color-step-100); margin-top: 8px; padding-top: 8px;">
               <ion-label style="font-size: 0.85rem; color: var(--ion-color-carrot); margin-top: 0; text-transform: uppercase;">{{ $t('profile.admin.sections.system') }}</ion-label>
             </ion-list-header>
@@ -891,6 +898,7 @@ import { useBadgeCosmetics } from "@/composables/useBadgeCosmetics";
 
 import {
   constructOutline,
+  copyOutline,
   createOutline,
   documentTextOutline,
   globeOutline,
@@ -972,6 +980,7 @@ const icons = {
   chatbubblesOutline,
   peopleOutline,
   constructOutline,
+  copyOutline,
   documentTextOutline,
   personCircleOutline,
   bookmarkOutline,

@@ -143,10 +143,10 @@
 
             <!-- Barcode row -->
             <p class="barcode-row">
-              <!-- Left side: barcode -->
+              <!-- Left side: barcode(s) -->
               <span class="barcode-wrapper">
                 <ion-icon :icon="barcodeOutline" />
-                <small>{{ item.barcode }}</small>
+                <small>{{ [item.barcode, ...alternateBarcodes].join(', ') }}</small>
               </span>
 
               <!-- Right side: category -->
@@ -643,6 +643,7 @@ const item = ref<Product | null>(null)
 const showImageModal = ref(false)
 const activeImageIndex = ref(0)
 const relatedProducts = ref<RelatedProduct[]>([])
+const alternateBarcodes = ref<string[]>([])
 
 const colorPriority: Record<string, number> = {
   "--ion-color-danger": 1,   // haram
@@ -1208,7 +1209,7 @@ async function loadProductData() {
 
     // The one query that decides "found" vs "not found" — resolves on its
     // own so that signal reaches the user as fast as possible.
-    const { data: prodData, error: prodError } = await supabase
+    let { data: prodData, error: prodError } = await supabase
         .from('products')
         .select(`
           *,
@@ -1221,6 +1222,34 @@ async function loadProductData() {
         `)
         .eq('barcode', barcode)
         .maybeSingle()
+
+    // This barcode might have been merged into another product — before
+    // treating it as genuinely unknown, check whether it now resolves to a
+    // survivor product via product_barcodes.
+    let resolvedAliasBarcode: string | null = null
+    if (!prodData && !prodError) {
+      const { data: aliasData } = await supabase
+          .from('product_barcodes')
+          .select(`
+            products (
+              *,
+              product_categories ( id, name ),
+              product_stores (
+                store_id,
+                stores ( id, name, logo_url )
+              ),
+              partner:partners(id, name, partner_tier, partner_type, logo_url, verified)
+            )
+          `)
+          .eq('barcode', barcode)
+          .maybeSingle()
+
+      const aliasedProduct: any = Array.isArray(aliasData?.products) ? aliasData?.products[0] : aliasData?.products
+      if (aliasedProduct) {
+        prodData = aliasedProduct
+        resolvedAliasBarcode = aliasedProduct.barcode
+      }
+    }
 
     // ✅ product
     if (prodError) {
@@ -1241,6 +1270,12 @@ async function loadProductData() {
 
       // ✅ assign once
       item.value = product
+
+      // If we got here via a merged-away barcode, fix the URL to the
+      // canonical one (bookmarks/shares/QR codes should settle on it too).
+      if (resolvedAliasBarcode && resolvedAliasBarcode !== barcode) {
+        router.replace(`/item/${resolvedAliasBarcode}`)
+      }
 
       // Reveal the page now — core product data is ready. Everything below
       // (author, certifications, related products, folders, view logging)
@@ -1310,6 +1345,16 @@ async function loadProductData() {
       // Related Products
       secondary.push((async () => {
         await fetchRelatedProducts()
+      })())
+
+      // Other barcodes merged into this same product, if any
+      secondary.push((async () => {
+        const { data } = await supabase
+          .from('product_barcodes')
+          .select('barcode')
+          .eq('product_id', product.id)
+          .neq('barcode', product.barcode)
+        alternateBarcodes.value = (data ?? []).map(r => r.barcode)
       })())
 
       // Folders & Saved state

@@ -1407,11 +1407,25 @@ const fetchProducts = async (reset = false) => {
 
       // 1️⃣ PRIORITIZE EXACT BARCODE MATCH (FAST)
       if (isNumeric && q.length >= 8) {
-        const { data: barcodeMatch } = await supabase
+        const { data: barcodeMatchRaw } = await supabase
           .from("products")
           .select(baseSelect)
           .eq("barcode", q) // exact match
           .single() as { data: Product | null }
+
+        let barcodeMatch = barcodeMatchRaw
+
+        if (!barcodeMatch) {
+          // This barcode might have been merged into another product —
+          // check product_barcodes before treating it as genuinely unknown.
+          const { data: aliasData } = await supabase
+            .from('product_barcodes')
+            .select(`products (${baseSelect})`)
+            .eq('barcode', q)
+            .maybeSingle() as { data: any }
+          const aliased: Product | null = Array.isArray(aliasData?.products) ? aliasData?.products[0] : aliasData?.products
+          if (aliased) barcodeMatch = aliased
+        }
 
         if (barcodeMatch) {
           if (isScanning.value) {

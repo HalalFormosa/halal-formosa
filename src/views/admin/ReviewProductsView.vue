@@ -216,6 +216,7 @@
                     </span>
                   </div>
                   <ion-button fill="clear" size="small" @click="openSimilar(match)">View</ion-button>
+                  <ion-button fill="clear" size="small" color="carrot" @click="mergeIntoSimilar(match)">Merge</ion-button>
                 </div>
               </div>
 
@@ -645,6 +646,28 @@ async function checkBarcode() {
       return
     }
 
+    // Not a live products.barcode collision — but it may be an alias that was
+    // already merged into another product. products.barcode's UNIQUE
+    // constraint won't catch this (the barcode no longer lives there), so
+    // this app-level check is the only guard against re-fragmenting a merge.
+    const { data: aliasData } = await supabase
+      .from('product_barcodes')
+      .select('products (id, name, status, approved, barcode)')
+      .eq('barcode', clean)
+      .maybeSingle() as { data: any }
+    const aliasMatch = Array.isArray(aliasData?.products) ? aliasData?.products[0] : aliasData?.products
+
+    if (token !== barcodeCheckToken) return
+
+    if (aliasMatch && aliasMatch.id !== product.id) {
+      barcodeCheck.value = {
+        state: 'duplicate',
+        message: `Already merged into "${aliasMatch.name}" (${aliasMatch.status}) under a different barcode. Publishing this as a new product would re-fragment it.`,
+        match: aliasMatch
+      }
+      return
+    }
+
     barcodeCheck.value = { state: 'ok', message: 'Valid checksum, and free to use.' }
   } finally {
     if (token === barcodeCheckToken) barcodeChecking.value = false
@@ -714,6 +737,48 @@ function similarReason(match: SimilarProduct): string {
 
 async function openSimilar(match: SimilarProduct) {
   await navigateToProduct(match.id, match.barcode, match.approved)
+}
+
+// Merges this submission into an existing product instead of publishing it as
+// a separate one: the submission's barcode becomes an alias (via
+// merge_products), and the submission row itself is gone — nothing left to
+// approve or reject, so the review modal just closes.
+async function mergeIntoSimilar(match: SimilarProduct) {
+  const product = selectedProduct.value
+  if (!product) return
+
+  const alert = await alertController.create({
+    header: t('review.confirmMergeHeader', 'Merge into existing product?'),
+    message: t(
+      'review.confirmMergeMsg',
+      `This submission won't be published separately — its barcode becomes an alias of "${match.name}" (${match.barcode}), and this submission is removed. This can't be undone.`
+    ),
+    buttons: [
+      { text: t('common.cancel', 'Cancel'), role: 'cancel' },
+      {
+        text: t('review.merge', 'Merge'),
+        handler: async () => {
+          const { error } = await supabase.rpc('merge_products', {
+            p_survivor_id: match.id,
+            p_loser_id: product.id,
+            p_resolved_status: null,
+            p_resolved_category_id: null
+          })
+
+          if (error) {
+            console.error('Merge failed:', error)
+            await showToast(`Merge failed: ${error.message}`, 'danger')
+            return
+          }
+
+          await showToast(`Merged into "${match.name}".`, 'success')
+          loadPendingProducts()
+          closeModal()
+        }
+      }
+    ]
+  })
+  await alert.present()
 }
 
 /** Both checks, for the Re-check button and whenever a submission is opened. */
