@@ -337,6 +337,13 @@ const routes: Array<RouteRecordRaw> = [
         meta: { requiresAuth: true, noAds: true }
     },
     {
+        path: '/trip/checkout/:tripId',
+        name: 'TripCheckout',
+        component: () => import('@/views/trip/TripCheckoutView.vue'),
+        props: true,
+        meta: { requiresAuth: true, noAds: true }
+    },
+    {
         path: '/store/order-success',
         name: 'StoreOrderSuccess',
         component: () => import('@/views/store/StoreOrderSuccessView.vue'),

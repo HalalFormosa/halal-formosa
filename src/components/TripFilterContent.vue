@@ -3,12 +3,15 @@ import {
   IonIcon, IonChip, IonLabel
 } from '@ionic/vue'
 import {
-  mapOutline, locationOutline
+  mapOutline, locationOutline, compassOutline, ribbonOutline, pricetagOutline
 } from 'ionicons/icons'
+import { TRIP_REGIONS } from '@/types/Trip'
+import type { HalalTier, TripSource } from '@/types/Trip'
 
 interface Category {
   id: number
   name: string
+  name_zh?: string
   emoji: string
 }
 
@@ -19,17 +22,35 @@ interface City {
   emoji: string
 }
 
+const HALAL_TIERS: { value: HalalTier; emoji: string; i18nKey: string }[] = [
+  { value: 'verified', emoji: '✅', i18nKey: 'trip.tierVerified' },
+  { value: 'silver', emoji: '🥈', i18nKey: 'trip.tierSilver' },
+  { value: 'gold', emoji: '🥇', i18nKey: 'trip.tierGold' }
+]
+
+const SOURCES: { value: TripSource; emoji: string; i18nKey: string }[] = [
+  { value: 'internal', emoji: '⭐', i18nKey: 'trip.sourceInternal' },
+  { value: 'partner', emoji: '🤝', i18nKey: 'trip.sourcePartner' },
+  { value: 'klook', emoji: '🧳', i18nKey: 'trip.sourceKlook' }
+]
+
 defineProps<{
   categories: Category[]
   activeCategoryIds: number[]
   cities: City[]
   activeCityIds: string[]
+  activeRegion: string | null
+  activeHalalTier: HalalTier | null
+  activeSource: TripSource | null
   hasActiveFilters: boolean
 }>()
 
 defineEmits<{
   (e: 'toggleCategory', id: number): void
   (e: 'toggleCity', slug: string): void
+  (e: 'setRegion', region: string | null): void
+  (e: 'setHalalTier', tier: HalalTier | null): void
+  (e: 'setSource', source: TripSource | null): void
   (e: 'clearFilters'): void
 }>()
 </script>
@@ -73,7 +94,7 @@ defineEmits<{
             :key="city.slug"
             class="modern-category-chip"
             :class="{ active: activeCityIds.includes(city.slug) }"
-            :style="{ 
+            :style="{
               '--cat-color': 'var(--ion-color-carrot)',
               '--cat-contrast': 'var(--ion-color-carrot-contrast)',
               '--cat-bg': activeCityIds.includes(city.slug) ? 'var(--ion-color-carrot)' : 'transparent'
@@ -84,6 +105,80 @@ defineEmits<{
           <ion-label>
             {{ $i18n.locale === 'zh-tw' ? city.name_zh : city.name }}
           </ion-label>
+        </ion-chip>
+      </div>
+    </div>
+
+    <!-- Region (Klook trips) -->
+    <div class="filter-section">
+      <h3 class="filter-section-title">
+        <ion-icon :icon="compassOutline" />
+        {{ $t('trip.region') }}
+      </h3>
+      <div class="category-bar">
+        <ion-chip
+            v-for="region in TRIP_REGIONS"
+            :key="region.value"
+            class="modern-category-chip"
+            :class="{ active: activeRegion === region.value }"
+            :style="{
+              '--cat-color': 'var(--ion-color-carrot)',
+              '--cat-contrast': 'var(--ion-color-carrot-contrast)',
+              '--cat-bg': activeRegion === region.value ? 'var(--ion-color-carrot)' : 'transparent'
+            }"
+            @click="$emit('setRegion', activeRegion === region.value ? null : region.value)"
+        >
+          <ion-label>{{ $t(region.i18nKey) }}</ion-label>
+        </ion-chip>
+      </div>
+    </div>
+
+    <!-- Halal tier -->
+    <div class="filter-section">
+      <h3 class="filter-section-title">
+        <ion-icon :icon="ribbonOutline" />
+        {{ $t('trip.halalTier') }}
+      </h3>
+      <div class="category-bar">
+        <ion-chip
+            v-for="tier in HALAL_TIERS"
+            :key="tier.value"
+            class="modern-category-chip"
+            :class="{ active: activeHalalTier === tier.value }"
+            :style="{
+              '--cat-color': 'var(--ion-color-carrot)',
+              '--cat-contrast': 'var(--ion-color-carrot-contrast)',
+              '--cat-bg': activeHalalTier === tier.value ? 'var(--ion-color-carrot)' : 'transparent'
+            }"
+            @click="$emit('setHalalTier', activeHalalTier === tier.value ? null : tier.value)"
+        >
+          <span class="category-emoji">{{ tier.emoji }}</span>
+          <ion-label>{{ $t(tier.i18nKey) }}</ion-label>
+        </ion-chip>
+      </div>
+    </div>
+
+    <!-- Source: our own picks / partner listings / Klook catalog -->
+    <div class="filter-section">
+      <h3 class="filter-section-title">
+        <ion-icon :icon="pricetagOutline" />
+        {{ $t('trip.source') }}
+      </h3>
+      <div class="category-bar">
+        <ion-chip
+            v-for="src in SOURCES"
+            :key="src.value"
+            class="modern-category-chip"
+            :class="{ active: activeSource === src.value }"
+            :style="{
+              '--cat-color': 'var(--ion-color-carrot)',
+              '--cat-contrast': 'var(--ion-color-carrot-contrast)',
+              '--cat-bg': activeSource === src.value ? 'var(--ion-color-carrot)' : 'transparent'
+            }"
+            @click="$emit('setSource', activeSource === src.value ? null : src.value)"
+        >
+          <span class="category-emoji">{{ src.emoji }}</span>
+          <ion-label>{{ $t(src.i18nKey) }}</ion-label>
         </ion-chip>
       </div>
     </div>

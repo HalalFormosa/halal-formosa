@@ -84,9 +84,15 @@
                 :activeCategoryIds="activeCategoryIds"
                 :cities="cities"
                 :activeCityIds="activeCityIds"
+                :activeRegion="filters.region"
+                :activeHalalTier="filters.halalTier"
+                :activeSource="filters.source"
                 :hasActiveFilters="hasActiveFilters"
                 @toggleCategory="toggleCategory"
                 @toggleCity="toggleCity"
+                @setRegion="setRegion"
+                @setHalalTier="setHalalTier"
+                @setSource="setSource"
                 @clearFilters="clearFilters"
             />
           </div>
@@ -121,9 +127,15 @@
               :activeCategoryIds="activeCategoryIds"
               :cities="cities"
               :activeCityIds="activeCityIds"
+              :activeRegion="filters.region"
+              :activeHalalTier="filters.halalTier"
+              :activeSource="filters.source"
               :hasActiveFilters="hasActiveFilters"
               @toggleCategory="toggleCategory"
               @toggleCity="toggleCity"
+              @setRegion="setRegion"
+              @setHalalTier="setHalalTier"
+              @setSource="setSource"
               @clearFilters="clearFilters"
           />
         </ion-content>
@@ -168,7 +180,7 @@
                 'trip-card-v2', 
                 trip.provider?.partner_tier ? 'tier-card-' + trip.provider.partner_tier.toLowerCase() : ''
               ]"
-              @click="openTrip(trip)"
+              @click="book(trip)"
           >
             <!-- Cover Image + Overlaid Badges -->
             <div class="trip-cover-wrap">
@@ -183,6 +195,12 @@
               <div v-if="trip.provider?.partner_tier" :class="['trip-tier-badge', trip.provider.partner_tier.toLowerCase()]">
                 <ion-icon :icon="sparkles" />
                 <span>{{ $t('home.partnerTier', { tier: (trip.provider.partner_tier || '').toUpperCase() }) }}</span>
+              </div>
+
+              <!-- Halal tier badge (top-right overlay) -->
+              <div v-if="trip.halal?.halal_tier" :class="['halal-tier-badge', trip.halal.halal_tier]">
+                <span>{{ trip.halal.halal_tier === 'gold' ? '🥇' : trip.halal.halal_tier === 'silver' ? '🥈' : '✅' }}</span>
+                <span>{{ $t('trip.tier' + trip.halal.halal_tier.charAt(0).toUpperCase() + trip.halal.halal_tier.slice(1)) }}</span>
               </div>
 
               <!-- Gradient overlay for readability -->
@@ -201,10 +219,13 @@
                 }}
               </h3>
 
-              <!-- Provider + Official tag -->
+              <!-- Provider + Official tag / Klook source tag -->
               <div class="trip-card-provider-row">
-                <span class="trip-card-provider">
-                  {{ $t('trip.providedBy') }} <strong>{{ trip.provider?.name }}</strong>
+                <span v-if="trip.provider?.name" class="trip-card-provider">
+                  {{ $t('trip.providedBy') }} <strong>{{ trip.provider.name }}</strong>
+                </span>
+                <span v-else-if="trip.source === 'klook'" class="trip-klook-tag">
+                  🧳 {{ $t('trip.poweredByKlook') }}
                 </span>
                 <span v-if="trip.provider?.partner_tier" class="trip-official-tag">
                   <ion-icon :icon="shieldCheckmarkOutline" />
@@ -216,10 +237,9 @@
               <div class="trip-meta-grid">
                 <div class="trip-meta-chip">
                   <ion-icon :icon="locationOutline" class="trip-meta-icon" />
-                  <span>{{ 
+                  <span>{{
                     (trip.trip_cities ?? [])
-                      .filter(tc => tc.cities)
-                      .map(tc => $i18n.locale === 'zh-tw' ? tc.cities.name_zh : tc.cities.name)
+                      .map(tc => $i18n.locale === 'zh-tw' ? tc.name_zh : tc.name)
                       .join(' · ') || 'N/A'
                   }}</span>
                 </div>
@@ -236,6 +256,40 @@
                   <span>{{ fromNow(trip.updated_at) }}</span>
                 </div>
               </div>
+
+              <!-- Halal facility badges -->
+              <div v-if="trip.halal" class="halal-facility-row">
+                <span v-if="trip.halal.halal_lunch_included" class="halal-facility-chip">
+                  🍽️ {{ $t('trip.halalLunchIncluded') }}
+                </span>
+                <span v-if="trip.halal.prayer_room_onsite" class="halal-facility-chip">
+                  🕌 {{ $t('trip.prayerRoomOnsite') }}
+                </span>
+                <span v-if="trip.halal.mosque_stop_nearby" class="halal-facility-chip">
+                  🧭 {{ $t('trip.mosqueStopNearby') }}
+                </span>
+                <span v-if="trip.halal.alcohol_pork_free_environment" class="halal-facility-chip">
+                  🚫🍺 {{ $t('trip.alcoholPorkFree') }}
+                </span>
+              </div>
+
+              <!-- Price + CTA -->
+              <div class="trip-cta-row">
+                <span v-if="trip.live_price ?? trip.min_price" class="trip-price">
+                  {{ trip.currency }} {{ (trip.live_price ?? trip.min_price)!.toLocaleString() }}
+                </span>
+                <span v-else class="trip-price-placeholder" />
+                <ion-button
+                    size="small"
+                    fill="solid"
+                    color="carrot"
+                    :disabled="trip.live_stock_status === 'sold_out'"
+                    class="trip-cta-btn"
+                    @click.stop="book(trip)"
+                >
+                  {{ trip.live_stock_status === 'sold_out' ? $t('trip.soldOut') : $t(ctaLabelKey(trip)) }}
+                </ion-button>
+              </div>
             </div>
 
             <!-- Premium Flare for Gold/Silver -->
@@ -243,6 +297,10 @@
           </div>
         </template>
       </div>
+
+      <ion-infinite-scroll :disabled="!hasMore" @ionInfinite="loadMore">
+        <ion-infinite-scroll-content loading-spinner="bubbles" :loading-text="$t('common.loading')" />
+      </ion-infinite-scroll>
 
     </ion-content>
 
@@ -258,7 +316,7 @@ import {
   IonPage, IonContent, IonSearchbar, IonToolbar,
   IonButton, IonIcon, IonText,
   IonCard, IonCardContent, IonChip, IonSkeletonText, IonLabel, IonHeader, IonBadge, IonSelect, IonSelectOption,
-  IonPopover, IonList, IonItem, IonModal, IonTitle, IonButtons, onIonViewDidEnter
+  IonPopover, IonList, IonItem, IonModal, IonTitle, IonButtons, IonInfiniteScroll, IonInfiniteScrollContent, onIonViewDidEnter
 } from '@ionic/vue'
 import { Capacitor } from '@capacitor/core'
 import { isDonor } from "@/composables/useSubscriptionStatus"
@@ -272,7 +330,6 @@ import AppHeader from '@/components/AppHeader.vue'
 import TripFilterContent from '@/components/TripFilterContent.vue'
 import { ActivityLogService } from '@/services/ActivityLogService'
 import { supabase } from '@/plugins/supabaseClient'
-import { Browser } from '@capacitor/browser'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import utc from 'dayjs/plugin/utc'
@@ -280,24 +337,38 @@ import timezone from 'dayjs/plugin/timezone'
 import { flagBot } from '@/utils/botShield'
 import { hasOrganicInteraction, delayForHuman } from '@/utils/interactionShield'
 import { useRecaptcha } from '@/composables/useRecaptcha'
+import { useTrips } from '@/composables/useTrips'
+import { useKlookBooking } from '@/composables/useKlookBooking'
+import type { HalalTier, TripSource } from '@/types/Trip'
 
 dayjs.extend(utc)
 dayjs.extend(timezone)
 dayjs.extend(relativeTime)
 
+const {
+  trips, categories, loading, hasMore, filters,
+  fetchTrips, fetchMore, fetchCategories, setFilters, clearFilters: clearTripFilters,
+  refreshAvailability
+} = useTrips()
 
-const loading = ref(true)
+const { book, ctaLabelKey } = useKlookBooking()
+
 const searchQuery = ref('')
 const showSearchbar = ref(false)
 const showFilters = ref(false)
 const isFilterModalOpen = ref(false)
 const activeCategoryIds = ref<number[]>([])
-const sortBy = ref<'recent' | 'views'>('recent')
 const isNative = ref(Capacitor.isNativePlatform())
 const { execute: executeRecaptcha, isCaptchaEnabled } = useRecaptcha()
 
+const sortBy = computed<'recent' | 'views'>({
+  get: () => filters.value.sortBy,
+  set: (val) => setFilters({ sortBy: val })
+})
+
 onIonViewDidEnter(() => {
   scheduleBannerUpdate()
+  refreshAvailability()
 })
 
 const isSmallScreen = ref(window.innerWidth < 768)
@@ -322,20 +393,22 @@ const hasActiveFilters = computed(() => {
   return (
       activeCategoryIds.value.length > 0 ||
       activeCityIds.value.length > 0 ||
+      !!filters.value.region ||
+      !!filters.value.halalTier ||
+      !!filters.value.source ||
       searchQuery.value.length > 0
   )
 })
 
 const activeFiltersCount = computed(() => {
-  return activeCategoryIds.value.length + activeCityIds.value.length
+  return (
+      activeCategoryIds.value.length +
+      activeCityIds.value.length +
+      (filters.value.region ? 1 : 0) +
+      (filters.value.halalTier ? 1 : 0) +
+      (filters.value.source ? 1 : 0)
+  )
 })
-
-/* Categories using i18n keys */
-const categories = ref([
-  { id: 1, name: 'trip.catCity', emoji: '🏙️' },
-  { id: 2, name: 'trip.catNature', emoji: '🌿' },
-  { id: 3, name: 'trip.catFamily', emoji: '👨‍👩‍👧‍👦' },
-])
 
 /* Cities using i18n keys */
 const cities = ref<any[]>([])
@@ -359,128 +432,15 @@ async function fetchCities() {
   loadingCities.value = false
 }
 
-
-/* Trips (placeholder → Supabase later) */
-interface Trip {
-  id: string
-  title: string
-  title_zh?: string
-  cover: string
-  duration: string
-  categories: string[]
-  external_url: string
-  provider: any
-  view_count?: number
-  created_at?: string
-  updated_at?: string
-  trip_cities?: {
-    cities: {
-      id: string
-      slug: string
-      name: string
-      name_zh: string
-      emoji: string
-    }
-  }[]
-
-}
-
-
-// Change your ref to use the interface
-const trips = ref<Trip[]>([])
-
-async function fetchTrips() {
-  loading.value = true
-
-  const { data, error } = await supabase
-      .from('trips')
-      .select(`
-        id,
-        title,
-        title_zh,
-        duration,
-        cover_url,
-        external_url,
-        created_at,
-        updated_at,
-        view_count,
-        provider:partners (
-          id,
-          name,
-          partner_tier
-        ),
-        trip_cities (
-          city_id,
-          cities:city_id (
-            id,
-            slug,
-            name,
-            name_zh,
-            emoji
-          )
-        )
-      `)
-      .eq('is_active', true)
-
-  if (error) {
-    console.error('[Trips]', error)
-    loading.value = false
-    return
-  }
-
-  // Use a type assertion to help the compiler handle the Supabase join structure
-  trips.value = (data as any[] ?? []).map(t => ({
-    id: t.id,
-    title: t.title,
-    title_zh: t.title_zh,
-    cover: t.cover_url,
-    duration: t.duration,
-    categories: [], // Initialized as empty
-    external_url: t.external_url,
-    provider: Array.isArray(t.provider) ? t.provider[0] : t.provider,
-    created_at: t.created_at,
-    updated_at: t.updated_at,
-    view_count: t.view_count,
-    trip_cities: t.trip_cities || []
-  }))
-
-  loading.value = false
-}
-
+/* Server-side filters (region/category/halalTier/search) are applied by useTrips;
+   city selection stays a client-side refinement over the fetched page. */
 const filteredTrips = computed(() => {
-  const list = trips.value.filter(trip => {
-    const matchesSearch =
-        trip.title.toLowerCase().includes(searchQuery.value.toLowerCase())
+  if (activeCityIds.value.length === 0) return trips.value
 
-    const matchesCategory =
-        activeCategoryIds.value.length === 0 ||
-        trip.categories.some((cat: string) =>
-            categories.value
-                .filter(c => activeCategoryIds.value.includes(c.id))
-                .map(c => c.name)
-                .includes(cat)
-        )
-
-    const matchesCity =
-        activeCityIds.value.length === 0 ||
-        trip.trip_cities?.some(tc =>
-            activeCityIds.value.includes(tc.cities.slug)
-        )
-
-    return matchesSearch && matchesCategory && matchesCity
-  })
-
-  // 🔥 Sort logic (basic UI-level for now)
-  if (sortBy.value === 'views') {
-    return [...list].sort((a, b) => (b.view_count ?? 0) - (a.view_count ?? 0))
-  }
-
-  return [...list].sort((a, b) => {
-    return new Date(b.created_at ?? '').getTime()
-        - new Date(a.created_at ?? '').getTime()
-  })
+  return trips.value.filter(trip =>
+      trip.trip_cities?.some(tc => activeCityIds.value.includes(tc.slug))
+  )
 })
-
 
 function toggleFilters() {
   if (isSmallScreen.value) {
@@ -493,25 +453,37 @@ function toggleFilters() {
 function clearFilters() {
   ActivityLogService.log("trip_filter_clear", {
     categories: activeCategoryIds.value,
-    cities: activeCityIds.value
+    cities: activeCityIds.value,
+    region: filters.value.region,
+    halal_tier: filters.value.halalTier
   })
 
   activeCategoryIds.value = []
   activeCityIds.value = []
+  clearTripFilters()
 }
 
-
-
 function toggleCategory(id: number) {
-  const i = activeCategoryIds.value.indexOf(id)
+  const isActive = activeCategoryIds.value.includes(id)
+  activeCategoryIds.value = isActive ? [] : [id]
 
-  if (i === -1) {
-    activeCategoryIds.value.push(id)
-    ActivityLogService.log("trip_filter_category_add", { category_id: id })
-  } else {
-    activeCategoryIds.value.splice(i, 1)
-    ActivityLogService.log("trip_filter_category_remove", { category_id: id })
-  }
+  ActivityLogService.log(isActive ? "trip_filter_category_remove" : "trip_filter_category_add", { category_id: id })
+  setFilters({ categoryId: isActive ? null : id })
+}
+
+function setRegion(region: string | null) {
+  ActivityLogService.log("trip_filter_region_set", { region })
+  setFilters({ region })
+}
+
+function setHalalTier(tier: HalalTier | null) {
+  ActivityLogService.log("trip_filter_halal_tier_set", { halal_tier: tier })
+  setFilters({ halalTier: tier })
+}
+
+function setSource(source: TripSource | null) {
+  ActivityLogService.log("trip_filter_source_set", { source })
+  setFilters({ source })
 }
 
 
@@ -535,8 +507,8 @@ function handleSearchInput(ev: Event) {
 
   if (searchTimeout) clearTimeout(searchTimeout)
 
-  if (q.length > 1) {
-    searchTimeout = window.setTimeout(async () => {
+  searchTimeout = window.setTimeout(async () => {
+    if (q.length > 1) {
       // 🛡️ Level 2 Interaction & hCaptcha Attestation Guard for Trip Search
       if (!hasOrganicInteraction()) {
         flagBot('no_organic_interaction');
@@ -560,8 +532,10 @@ function handleSearchInput(ev: Event) {
       await delayForHuman();
 
       ActivityLogService.log("trip_search", { query: q })
-    }, 800)
-  }
+    }
+
+    setFilters({ search: q })
+  }, 800)
 }
 
 function fromNow(dateString?: string) {
@@ -569,31 +543,9 @@ function fromNow(dateString?: string) {
   return dayjs.utc(dateString).tz('Asia/Taipei').fromNow()
 }
 
-
-async function openTrip(trip: any) {
-
-  ActivityLogService.log("trip_click", {
-    trip_id: trip.id,
-    trip_title: trip.title,
-    provider_id: trip.provider?.id,
-    provider_name: trip.provider?.name,
-    provider_tier: trip.provider?.partner_tier,
-    current_sort: sortBy.value,
-    active_categories: activeCategoryIds.value,
-    active_cities: activeCityIds.value,
-    search_query: searchQuery.value || null
-  })
-
-  await supabase.rpc('increment_trip_view', {
-    p_trip_id: trip.id
-  })
-
-  await Browser.open({
-    url: trip.external_url,
-    windowName: '_self',
-    toolbarColor: '#e67e22',
-    presentationStyle: 'fullscreen',
-  })
+async function loadMore(ev: any) {
+  await fetchMore()
+  ev.target.complete()
 }
 
 watch(sortBy, (val) => {
@@ -607,8 +559,10 @@ onMounted(async () => {
     source: "main_navigation"
   })
 
-  fetchTrips()
+  fetchCategories()
   fetchCities()
+  await fetchTrips()
+  refreshAvailability()
   window.addEventListener('resize', handleResize)
 })
 
@@ -753,6 +707,90 @@ onUnmounted(() => {
   color: #fff;
 }
 
+/* Halal tier badge (top-right overlay) */
+.halal-tier-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 10px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,0.3);
+  background: rgba(16, 122, 84, 0.88);
+  color: #ffffff;
+}
+
+.halal-tier-badge.gold {
+  background: rgba(234, 179, 8, 0.88);
+  color: #1a0e00;
+}
+
+.halal-tier-badge.silver {
+  background: rgba(120, 130, 140, 0.88);
+  color: #ffffff;
+}
+
+/* Halal facility chips row */
+.halal-facility-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.halal-facility-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(16, 122, 84, 0.1);
+  color: #0d7a54;
+  border: 1px solid rgba(16, 122, 84, 0.25);
+  border-radius: 999px;
+  padding: 3px 9px;
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.ion-palette-dark .halal-facility-chip {
+  background: rgba(52, 211, 153, 0.14);
+  color: #6ee7b7;
+  border-color: rgba(52, 211, 153, 0.3);
+}
+
+/* Price + CTA row */
+.trip-cta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 4px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(var(--ion-color-dark-rgb), 0.08);
+}
+
+.trip-price {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--ion-color-dark);
+}
+
+.trip-price-placeholder {
+  flex: 1;
+}
+
+.trip-cta-btn {
+  margin: 0;
+  --border-radius: 12px;
+  font-weight: 700;
+  text-transform: none;
+}
+
 /* Card Body */
 .trip-card-body {
   padding: 16px 18px 18px;
@@ -801,6 +839,12 @@ onUnmounted(() => {
 
 .trip-official-tag ion-icon {
   font-size: 12px;
+}
+
+.trip-klook-tag {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--ion-color-medium);
 }
 
 /* Meta Grid */

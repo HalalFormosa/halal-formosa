@@ -39,6 +39,8 @@
 	<string>We need access to your camera to scan barcodes and take product photos.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>We need access to your location to show mosques, restaurants, and places accurately on the map, and to remind you to review places you visit while the app is open.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>We only use your location while Halal Formosa is open, to show nearby places and prompt reviews. We do not track your location in the background.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>We need access to add photos to your photo library.</string>
 	<key>NSPhotoLibraryUsageDescription</key>

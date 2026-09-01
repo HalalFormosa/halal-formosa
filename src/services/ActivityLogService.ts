@@ -478,6 +478,11 @@ function resolveActivityGroup(activity: string): string | null {
         case 'trip_filter_city_add':
         case 'trip_filter_city_remove':
         case 'trip_filter_clear':
+        case 'trip_book_click':
+        case 'trip_checkout_confirm':
+        case 'trip_filter_region_set':
+        case 'trip_filter_halal_tier_set':
+        case 'trip_filter_source_set':
             return 'trip'
 
 
