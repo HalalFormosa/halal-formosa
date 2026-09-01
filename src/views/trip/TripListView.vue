@@ -15,7 +15,7 @@
       />
 
       <ion-toolbar class="actions-toolbar">
-        <div class="header-main-actions">
+        <div class="header-main-actions capsule-actions">
           <!-- Sort Button (Left Side) -->
           <ion-button fill="clear" class="classic-action-btn sort-btn-wrapper" id="sort-trigger-trip">
             <ion-icon :icon="sortIcon" />
@@ -211,6 +211,8 @@
                   {{ $t('search.officialPartner') }}
                 </span>
               </div>
+
+              <div class="trip-card-divider"></div>
 
               <!-- Meta Grid -->
               <div class="trip-meta-grid">

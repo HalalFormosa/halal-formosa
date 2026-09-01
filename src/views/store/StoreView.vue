@@ -775,17 +775,24 @@ onBeforeUnmount(() => {
   position: relative;
   min-width: 280px;
   max-width: 320px;
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   overflow: hidden;
   scroll-snap-align: start;
   flex-shrink: 0;
   cursor: pointer;
   box-shadow: var(--card-shadow);
+  border: 1px solid var(--card-border);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.promo-card:active {
+  transform: scale(0.98);
+  box-shadow: var(--card-shadow-hover);
 }
 
 .promo-image {
   width: 100%;
-  height: 140px;
+  height: 150px;
   object-fit: cover;
   display: block;
 }
@@ -795,21 +802,24 @@ onBeforeUnmount(() => {
   bottom: 0;
   left: 0;
   right: 0;
-  padding: 12px 16px;
-  background: linear-gradient(transparent, rgba(0, 0, 0, 0.7));
+  padding: 16px;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.75));
   color: #fff;
 }
 
 .promo-overlay h3 {
   margin: 0;
-  font-size: 1rem;
-  font-weight: 700;
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
 }
 
 .promo-overlay p {
   margin: 4px 0 0;
   font-size: 0.8rem;
-  opacity: 0.9;
+  opacity: 0.92;
+  font-weight: 500;
 }
 
 /* Category pills */

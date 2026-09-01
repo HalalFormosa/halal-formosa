@@ -114,7 +114,9 @@
     padding-top: var(--safe-area-inset-top);
 }
 
-.safe-area ion-tab-bar {
+/* The floating tab bar (see MainView.vue) handles the safe-area inset itself
+   via its own margin, so it's excluded here to avoid double-padding it. */
+.safe-area ion-tab-bar:not(.floating-tab-bar) {
     padding-bottom: calc(var(--safe-area-inset-bottom) - (var(--safe-area-inset-bottom) / 1.75));
 }
 

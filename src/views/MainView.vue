@@ -4,7 +4,7 @@
       <ion-router-outlet />
 
       <!-- Bottom tab bar -->
-      <ion-tab-bar slot="bottom" id="footer-tabs">
+      <ion-tab-bar slot="bottom" id="footer-tabs" class="floating-tab-bar">
         <ion-tab-button tab="home" href="/home">
           <div class="tab-icon-wrapper">
             <ion-icon :icon="homeOutline" />
@@ -96,33 +96,63 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
+/* Floating capsule tab bar — detached from the screen edge, own card surface */
+.floating-tab-bar {
+  --background: var(--card-bg);
+  position: relative;
+  margin: 0 12px calc(env(safe-area-inset-bottom, 0px) + 10px);
+  padding: 6px 4px;
+  height: 64px;
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--card-border);
+  box-shadow: var(--card-shadow-hover);
+}
+
+ion-tab-button {
+  --padding-top: 6px;
+  --padding-bottom: 6px;
+  border-radius: var(--radius-lg);
+  margin: 0 2px;
+}
+
 .tab-icon-wrapper {
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 34px;
+  height: 26px;
+  border-radius: 999px;
+  transition: background-color 0.2s ease, transform 0.2s ease;
 }
 
 .tab-icon-wrapper ion-icon {
-  font-size: 21px;
+  font-size: 19px;
+  transition: color 0.2s ease;
+}
+
+/* Active tab gets a pill highlight behind its icon */
+ion-tab-button.tab-selected .tab-icon-wrapper {
+  background: rgba(var(--ion-color-carrot-rgb), 0.14);
+  transform: translateY(-1px);
+}
+
+ion-tab-button ion-label {
+  font-size: 10.5px;
+  font-weight: 600;
+  margin-top: 3px;
 }
 
 .tab-dot {
   position: absolute;
   top: -2px;
-  right: -4px;
-  width: 9px;
-  height: 9px;
+  right: 2px;
+  width: 8px;
+  height: 8px;
   background-color: var(--ion-color-danger);
   border-radius: 50%;
-  border: 2px solid var(--ion-tab-bar-background, #fff);
+  border: 2px solid var(--card-bg);
   box-shadow: 0 0 5px rgba(var(--ion-color-danger-rgb), 0.5);
   z-index: 10001; /* Stay above ion-modal sheet */
-}
-
-/* Ensure tab buttons have enough vertical space */
-ion-tab-button {
-  --padding-top: 8px;
-  --padding-bottom: 8px;
 }
 </style>
