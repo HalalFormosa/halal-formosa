@@ -21,113 +21,115 @@
           </ion-button>
         </div>
 
-        <!-- Logo -->
-        <div class="logo-wrapper">
-          <img
-              src="/android-chrome-512x512.png"
-              alt="App logo"
-              class="app-logo"
-          />
+        <div class="auth-card">
+          <!-- Logo -->
+          <div class="logo-wrapper">
+            <img
+                src="/android-chrome-512x512.png"
+                alt="App logo"
+                class="app-logo"
+            />
+          </div>
+
+          <!-- Title -->
+          <h1 class="auth-title">{{ $t('auth.signUp') }}</h1>
+          <p class="auth-subtitle">
+            {{ $t('auth.signUpSubtitle') }}
+          </p>
+
+          <!-- Form -->
+          <form @submit.prevent="signup">
+            <!-- Full Name -->
+            <div class="input-card">
+              <ion-input
+                  fill="outline"
+                  :label="$t('auth.displayName')"
+                  label-placement="floating"
+                  type="text"
+                  v-model="displayName"
+                  required
+              />
+            </div>
+
+            <!-- Email -->
+            <div class="input-card">
+              <ion-input
+                  fill="outline"
+                  :label="$t('auth.email')"
+                  label-placement="floating"
+                  type="email"
+                  v-model="email"
+                  required
+              />
+            </div>
+
+            <!-- Password -->
+            <div class="input-card">
+              <ion-input
+                  fill="outline"
+                  :label="$t('auth.password')"
+                  label-placement="floating"
+                  type="password"
+                  v-model="password"
+                  required
+              >
+                <ion-input-password-toggle slot="end" />
+              </ion-input>
+            </div>
+
+            <!-- Confirm Password -->
+            <div class="input-card">
+              <ion-input
+                  fill="outline"
+                  :label="$t('auth.confirmPassword')"
+                  label-placement="floating"
+                  type="password"
+                  v-model="confirmPassword"
+                  required
+              >
+                <ion-input-password-toggle slot="end" />
+              </ion-input>
+            </div>
+
+
+
+            <!-- Error -->
+            <ion-text color="danger" v-if="errorMsg" class="error-text">
+              {{ errorMsg }}
+            </ion-text>
+
+            <!-- Signup button -->
+            <ion-button
+                type="submit"
+                expand="block"
+                color="carrot"
+                class="primary-btn"
+                :disabled="loading || captchaLoading"
+            >
+              <ion-icon :icon="personAddOutline" slot="start" v-if="!loading && !captchaLoading"></ion-icon>
+              {{ captchaLoading ? 'Verifying...' : (loading ? $t('auth.signingUp') : $t('auth.signUp')) }}
+            </ion-button>
+
+            <!-- Back to login -->
+            <div class="signup-prompt">
+              {{ $t('auth.alreadyHaveAccount') }}
+              <span class="signup-link" @click="goToLogin">{{ $t('auth.login') }}</span>
+            </div>
+
+            <!-- Back -->
+            <div class="back-divider" @click="goHome">
+              <span>{{ $t('common.backToHome') }}</span>
+            </div>
+
+          </form>
+
+          <!-- reCAPTCHA disclosure -->
+          <p class="hcaptcha-disclosure" v-if="showDisclosure">
+            This site is protected by reCAPTCHA and the Google
+            <a href="https://policies.google.com/privacy" target="_blank">Privacy Policy</a> and
+            <a href="https://policies.google.com/terms" target="_blank">Terms of Service</a> apply.
+          </p>
         </div>
-
-        <!-- Title -->
-        <h1 class="auth-title">{{ $t('auth.signUp') }}</h1>
-        <p class="auth-subtitle">
-          {{ $t('auth.signUpSubtitle') }}
-        </p>
-
-        <!-- Form -->
-        <form @submit.prevent="signup">
-          <!-- Full Name -->
-          <div class="input-card">
-            <ion-input
-                fill="outline"
-                :label="$t('auth.displayName')"
-                label-placement="floating"
-                type="text"
-                v-model="displayName"
-                required
-            />
-          </div>
-
-          <!-- Email -->
-          <div class="input-card">
-            <ion-input
-                fill="outline"
-                :label="$t('auth.email')"
-                label-placement="floating"
-                type="email"
-                v-model="email"
-                required
-            />
-          </div>
-
-          <!-- Password -->
-          <div class="input-card">
-            <ion-input
-                fill="outline"
-                :label="$t('auth.password')"
-                label-placement="floating"
-                type="password"
-                v-model="password"
-                required
-            >
-              <ion-input-password-toggle slot="end" />
-            </ion-input>
-          </div>
-
-          <!-- Confirm Password -->
-          <div class="input-card">
-            <ion-input
-                fill="outline"
-                :label="$t('auth.confirmPassword')"
-                label-placement="floating"
-                type="password"
-                v-model="confirmPassword"
-                required
-            >
-              <ion-input-password-toggle slot="end" />
-            </ion-input>
-          </div>
-
-
-
-          <!-- Error -->
-          <ion-text color="danger" v-if="errorMsg" class="error-text">
-            {{ errorMsg }}
-          </ion-text>
-
-          <!-- Signup button -->
-          <ion-button
-              type="submit"
-              expand="block"
-              color="carrot"
-              class="primary-btn"
-              :disabled="loading || captchaLoading"
-          >
-            <ion-icon :icon="personAddOutline" slot="start" v-if="!loading && !captchaLoading"></ion-icon>
-            {{ captchaLoading ? 'Verifying...' : (loading ? $t('auth.signingUp') : $t('auth.signUp')) }}
-          </ion-button>
-
-          <!-- Back to login -->
-          <div class="signup-prompt">
-            {{ $t('auth.alreadyHaveAccount') }}
-            <span class="signup-link" @click="goToLogin">{{ $t('auth.login') }}</span>
-          </div>
-
-          <!-- Back -->
-          <div class="back-divider" @click="goHome">
-            <span>{{ $t('common.backToHome') }}</span>
-          </div>
-
-        </form>
-
-        <!-- reCAPTCHA disclosure -->
-        <p class="hcaptcha-disclosure" v-if="showDisclosure">
-          This site is protected by reCAPTCHA and the Google
-          <a href="https://policies.google.com/privacy" target="_blank">Privacy Policy</a> and
-          <a href="https://policies.google.com/terms" target="_blank">Terms of Service</a> apply.
-        </p>
 
       </div>
     </ion-content>
@@ -340,13 +342,6 @@ html:not(.ion-palette-dark) .auth-subtitle {
   color: #4b5563;
 }
 
-html:not(.ion-palette-dark) ion-input {
-  background: #ffffff;
-  --border-color: #d1d5db;
-  --color: #111827;
-  --placeholder-color: #6b7280;
-}
-
 html:not(.ion-palette-dark) ion-input::part(label) {
   color: #6b7280;
 }
@@ -354,15 +349,6 @@ html:not(.ion-palette-dark) ion-input::part(label) {
 html:not(.ion-palette-dark) ion-input.has-focus::part(label),
 html:not(.ion-palette-dark) ion-input.has-value::part(label) {
   color: var(--ion-color-carrot);
-}
-
-html:not(.ion-palette-dark) .divider::before,
-html:not(.ion-palette-dark) .divider::after {
-  background: #e5e7eb;
-}
-
-html:not(.ion-palette-dark) .back-divider {
-  color: #6b7280;
 }
 
 html:not(.ion-palette-dark) .lang-select {
@@ -377,10 +363,21 @@ html:not(.ion-palette-dark) .lang-select {
   min-height: 100%;
   max-width: 420px;
   margin: auto;
-  padding: calc(36px + var(--safe-area-inset-top, env(safe-area-inset-top))) 22px 32px;
+  padding: calc(36px + var(--safe-area-inset-top, env(safe-area-inset-top))) 18px 32px;
   display: flex;
   flex-direction: column;
   justify-content: center;
+}
+
+/* =========================
+   FLOATING CARD
+========================= */
+.auth-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--card-shadow-hover);
+  padding: 32px 24px 24px;
 }
 
 /* =========================
@@ -393,9 +390,10 @@ html:not(.ion-palette-dark) .lang-select {
 }
 
 .app-logo {
-  width: 150px;
-  height: 150px;
-  border-radius: 28px;
+  width: 110px;
+  height: 110px;
+  border-radius: var(--radius-xl);
+  box-shadow: var(--card-shadow);
 }
 
 /* =========================
@@ -404,16 +402,16 @@ html:not(.ion-palette-dark) .lang-select {
 .auth-title {
   margin-top: 6px;
   margin-bottom: 6px;
-  font-size: 28px;
-  font-weight: 700;
-  letter-spacing: 0.2px;
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
   text-align: center;
 }
 
 .auth-subtitle {
   font-size: 14px;
   line-height: 1.5;
-  margin-bottom: 40px;
+  margin-bottom: 32px;
   text-align: center;
 }
 
@@ -425,24 +423,31 @@ html:not(.ion-palette-dark) .lang-select {
 }
 
 ion-input {
-  --min-height: 56px;
+  --min-height: 54px;
   --padding-start: 16px;
   --padding-end: 16px;
 
-  --border-radius: 14px;
-  --border-color: #3a3a3a;
+  --border-radius: var(--radius-lg);
+  --border-color: var(--card-border);
+  --border-width: 1.5px;
   --highlight-color-focused: var(--ion-color-carrot);
 
-  --color: #ffffff;
-  --placeholder-color: #9a9a9a;
+  --color: var(--ion-text-color);
+  --placeholder-color: var(--ion-color-medium);
 
-  background: rgba(255, 255, 255, 0.015);
+  background: var(--card-inner-bg);
+  border-radius: var(--radius-lg);
+  transition: box-shadow 0.15s ease;
+}
+
+ion-input.has-focus {
+  box-shadow: 0 0 0 3px rgba(var(--ion-color-carrot-rgb), 0.15);
 }
 
 /* Floating label */
 ion-input::part(label) {
   font-size: 14px;
-  color: #b5b5b5;
+  color: var(--ion-color-medium);
   transition: color 0.15s ease;
 }
 
@@ -466,8 +471,10 @@ ion-input.has-value::part(label) {
 ========================= */
 .primary-btn {
   margin-top: 22px;
-  font-weight: 600;
-  letter-spacing: 0.4px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  --border-radius: var(--radius-lg);
+  --box-shadow: 0 8px 20px rgba(var(--ion-color-carrot-rgb), 0.3);
 }
 
 .primary-btn::part(native):active {
@@ -501,7 +508,7 @@ ion-input.has-value::part(label) {
   margin-top: 22px;
   font-size: 12px;
   letter-spacing: 1px;
-  color: #8f8f8f;
+  color: var(--ion-color-medium);
   cursor: pointer;
 }
 
@@ -540,7 +547,11 @@ ion-input.has-value::part(label) {
 .theme-btn {
   --padding-start: 8px;
   --padding-end: 8px;
-  --color: #b8b8b8;
+  --color: var(--ion-color-medium);
+  --border-radius: 50%;
+  --background: var(--card-inner-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 50%;
   font-size: 18px;
   transition: color 0.2s ease, transform 0.15s ease;
 }
@@ -557,7 +568,7 @@ ion-input.has-value::part(label) {
   text-align: center;
   margin-top: 32px;
   font-size: 14px;
-  color: #8f8f8f;
+  color: var(--ion-color-medium);
 }
 
 .signup-link {
@@ -591,10 +602,6 @@ ion-input.has-value::part(label) {
   opacity: 1;
 }
 
-html:not(.ion-palette-dark) .signup-prompt {
-  color: #6b7280;
-}
-
 /* =========================
    SUCCESS MODAL STYLES
 ========================= */
@@ -603,11 +610,7 @@ html:not(.ion-palette-dark) .signup-prompt {
   --width: 90%;
   --max-width: 400px;
   --border-radius: var(--radius-xl);
-  --background: #ffffff;
-}
-
-html.ion-palette-dark .success-modal {
-  --background: #1e1e1e;
+  --background: var(--card-bg);
 }
 
 .modal-content {
@@ -651,8 +654,8 @@ html.ion-palette-dark .success-modal {
 .modal-btn {
   width: 100%;
   margin: 0;
-  font-weight: 600;
-  --border-radius: 14px;
-  height: 56px;
+  font-weight: 700;
+  --border-radius: var(--radius-lg);
+  height: 54px;
 }
 </style>
