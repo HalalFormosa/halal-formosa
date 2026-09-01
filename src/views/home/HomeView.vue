@@ -2573,8 +2573,22 @@ function openPartner(partner: any) {
 /* ===============================
    2.0 — Editorial Section Headers
    =============================== */
+/* These ion-cards are just section wrappers (header + a horizontal scroll of
+   already-carded items) — they shouldn't look like a card themselves, or you
+   get a "card full of cards" boxed-in-a-box effect. Strip the card surface,
+   keep only the spacing. */
 ion-card:has(> ion-card-header .card-header-row) {
-  margin-block: 6px 22px;
+  --background: transparent;
+  background: transparent;
+  box-shadow: none;
+  margin-block: 4px 4px;
+  margin-inline: 12px;
+}
+
+ion-card:has(> ion-card-header .card-header-row) > ion-card-header,
+ion-card:has(> ion-card-header .card-header-row) > ion-card-content {
+  padding-inline: 0;
+  padding-block: 4px;
 }
 
 .card-header-row {
