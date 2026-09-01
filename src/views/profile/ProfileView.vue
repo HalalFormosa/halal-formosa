@@ -2054,14 +2054,14 @@ ion-item {
   padding: 12px 20px;
   border-radius: 16px;
   text-decoration: none;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  box-shadow: var(--card-shadow);
   transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   max-width: fit-content;
 }
 
 .boba-button:active {
   transform: scale(0.95);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  box-shadow: var(--card-shadow-hover);
 }
 
 .boba-img-premium {
@@ -2085,7 +2085,7 @@ ion-item {
   background: rgba(255, 215, 0, 0.15);
   width: 64px;
   height: 64px;
-  border-radius: 20px;
+  border-radius: var(--radius-lg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2148,7 +2148,7 @@ ion-item {
 .pro-active-banner {
   padding: 24px;
   background: linear-gradient(135deg, rgba(250, 204, 21, 0.08) 0%, rgba(217, 119, 6, 0.12) 100%);
-  border-radius: 20px;
+  border-radius: var(--radius-lg);
   position: relative;
   overflow: hidden;
 }

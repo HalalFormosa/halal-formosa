@@ -2054,7 +2054,7 @@ const scrollToReviews = () => {
   background: var(--ion-card-background, #ffffff);
   border-radius: 12px;
   padding: 16px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--card-shadow);
   border: 1px solid var(--ion-color-light, #f0f0f0);
   cursor: pointer;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
@@ -2062,7 +2062,7 @@ const scrollToReviews = () => {
 
 .foodpanda-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--card-shadow-hover);
 }
 
 .ubereats-card {
@@ -2073,7 +2073,7 @@ const scrollToReviews = () => {
   border-radius: 12px;
   padding: 16px;
   margin-top: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--card-shadow);
   border: 1px solid var(--ion-color-light, #f0f0f0);
   cursor: pointer;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
@@ -2081,7 +2081,7 @@ const scrollToReviews = () => {
 
 .ubereats-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--card-shadow-hover);
 }
 
 .ubereats-logo {
@@ -2106,7 +2106,7 @@ const scrollToReviews = () => {
   background: var(--ion-background-color); /* Default theme background */
   margin-top: -24px;
   position: relative;
-  border-radius: 24px 24px 0 0;
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
   min-height: 100vh; /* Ensure background fills to bottom */
   z-index: 10;
   overflow: hidden;
@@ -2938,7 +2938,7 @@ ion-item ion-label p:not(.text-gray-500) {
 }
 .menu-item-row:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--card-shadow-hover);
 }
 .menu-item-photo,
 .menu-item-photo-placeholder {

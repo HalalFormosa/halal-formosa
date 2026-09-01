@@ -1930,7 +1930,7 @@ ion-header {
 .input-card {
   margin: 0 12px;
   border-radius: 16px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--card-shadow);
   background: var(--ion-card-background, white);
   border: 1px solid var(--ion-color-light-shade);
 }

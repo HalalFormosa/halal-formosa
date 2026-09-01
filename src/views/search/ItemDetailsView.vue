@@ -1853,7 +1853,7 @@ ion-skeleton-text {
 
 .contribution-modal .motivation-box {
   background: var(--ion-color-step-50);
-  border-radius: 20px;
+  border-radius: var(--radius-lg);
   padding: 20px;
   text-align: center;
   margin-bottom: 32px;

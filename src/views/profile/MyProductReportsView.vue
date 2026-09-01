@@ -316,7 +316,7 @@ watch(viewMode, () => {
   margin-bottom: 12px;
   --border-radius: 16px;
   --background: var(--ion-color-step-50);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--card-shadow);
 }
 
 .product-name {
@@ -397,7 +397,7 @@ ion-thumbnail {
   margin-top: 8px;
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  box-shadow: var(--card-shadow);
 }
 
 .report-image {

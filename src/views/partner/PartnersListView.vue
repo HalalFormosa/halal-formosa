@@ -392,7 +392,7 @@ onMounted(async () => {
   position: relative;
   display: flex;
   flex-direction: column;
-  border-radius: 20px;
+  border-radius: var(--radius-lg);
   margin: 0;
   overflow: hidden;
   border: 1px solid var(--card-border-color, rgba(0,0,0,0.05));
@@ -405,8 +405,8 @@ onMounted(async () => {
   --card-shadow-color: rgba(0,0,0,0.05);
   --partner-text-color: var(--ion-color-dark, #000000);
   --logo-area-bg: #ffffff;
-  --tag-bg: rgba(var(--ion-color-primary-rgb), 0.08);
-  --tag-text: var(--ion-color-primary);
+  --tag-bg: rgba(var(--ion-color-carrot-rgb), 0.08);
+  --tag-text: var(--ion-color-carrot);
   
   background: var(--card-bg);
 }
@@ -436,7 +436,7 @@ onMounted(async () => {
   position: relative;
   display: flex;
   flex-direction: column;
-  border-radius: 20px;
+  border-radius: var(--radius-lg);
   margin: 0;
   overflow: hidden;
   border: 1px solid var(--card-border-color);
@@ -451,8 +451,8 @@ onMounted(async () => {
   --logo-bg: #ffffff;
   --info-bg: #f9fafb;
   --partner-text-color: #111827;
-  --tag-bg: rgba(var(--ion-color-primary-rgb), 0.08);
-  --tag-text: var(--ion-color-primary);
+  --tag-bg: rgba(var(--ion-color-carrot-rgb), 0.08);
+  --tag-text: var(--ion-color-carrot);
   
   background: var(--info-bg);
 }
@@ -490,8 +490,8 @@ onMounted(async () => {
     --info-bg: #1f2937;
     --partner-text-color: #f3f4f6;
     --logo-bg: #ffffff; /* Keep white for seamless logo integration as per user request */
-    --tag-bg: rgba(var(--ion-color-primary-rgb), 0.2);
-    --tag-text: var(--ion-color-primary-tint);
+    --tag-bg: rgba(var(--ion-color-carrot-rgb), 0.2);
+    --tag-text: var(--ion-color-carrot-tint);
   }
   
   .discover-item.gold {

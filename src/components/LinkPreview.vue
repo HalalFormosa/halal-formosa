@@ -72,18 +72,19 @@ onMounted(() => {
   margin-top: 8px;
   background: var(--ion-background-color);
   border: 1px solid var(--ion-color-step-150, rgba(0,0,0,0.1));
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   overflow: hidden;
   display: flex;
   flex-direction: column;
   cursor: pointer;
   transition: transform 0.2s, box-shadow 0.2s;
   max-width: 100%;
+  box-shadow: var(--card-shadow);
 }
 
 .link-preview-container:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  box-shadow: var(--card-shadow-hover);
 }
 
 .preview-image-box {

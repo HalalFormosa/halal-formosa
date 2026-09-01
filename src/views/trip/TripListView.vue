@@ -648,9 +648,9 @@ onUnmounted(() => {
 .trip-card-v2 {
   margin: 0; /* Reset margin for grid layout */
   background: var(--ion-card-background, #ffffff);
-  border-radius: 20px;
+  border-radius: var(--radius-lg);
   overflow: hidden;
-  box-shadow: 0 6px 24px rgba(0,0,0,0.08);
+  box-shadow: var(--card-shadow);
   border: 1px solid rgba(var(--ion-color-dark-rgb), 0.05);
   transition: transform 0.2s ease, box-shadow 0.3s ease;
   cursor: pointer;
@@ -666,7 +666,7 @@ onUnmounted(() => {
 
 .trip-card-v2:active {
   transform: scale(0.985);
-  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  box-shadow: var(--card-shadow-hover);
 }
 
 /* Cover Image */

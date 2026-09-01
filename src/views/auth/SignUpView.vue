@@ -472,7 +472,7 @@ ion-input.has-value::part(label) {
 
 .primary-btn::part(native):active {
   transform: scale(0.98);
-  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.45);
+  box-shadow: var(--card-shadow-hover);
 }
 
 /* =========================
@@ -602,7 +602,7 @@ html:not(.ion-palette-dark) .signup-prompt {
   --height: auto;
   --width: 90%;
   --max-width: 400px;
-  --border-radius: 24px;
+  --border-radius: var(--radius-xl);
   --background: #ffffff;
 }
 

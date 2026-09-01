@@ -674,11 +674,11 @@ onUnmounted(() => {
 
 /* Dark mode overrides handled by variables.css but specific ones here */
 .ion-palette-dark .order-card {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--card-shadow);
 }
 
 .tracking-row {
-  background: rgba(var(--ion-color-primary-rgb, 56, 128, 255), 0.06);
+  background: rgba(var(--ion-color-carrot-rgb), 0.06);
   padding: 6px 8px;
   border-radius: 8px;
   margin: 4px 0;

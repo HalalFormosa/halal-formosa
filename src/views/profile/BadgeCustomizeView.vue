@@ -453,7 +453,7 @@ async function confirmRefund(owned: OwnedCosmetic) {
 /* ========= Preview Card Wrapper ========= */
 .preview-card-outer {
   background: var(--ion-card-background);
-  border-radius: 20px;
+  border-radius: var(--radius-lg);
   padding: 20px;
   margin-bottom: 20px;
   border: 1px solid var(--ion-color-step-100);
@@ -492,7 +492,7 @@ async function confirmRefund(owned: OwnedCosmetic) {
   max-width: 260px;
   background: #181818;
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 20px;
+  border-radius: var(--radius-lg);
   padding: 20px 16px;
   margin: 0 auto;
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);

@@ -674,7 +674,7 @@ onUnmounted(() => {
 .lock-icon {
   font-size: 60px;
   margin-bottom: 20px;
-  color: var(--ion-color-primary);
+  color: var(--ion-color-carrot);
 }
 
 .redirect-btn.multi-ig {

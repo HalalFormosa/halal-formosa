@@ -910,8 +910,8 @@ async function saveProfile() {
 <style scoped>
 ion-card {
   margin: 16px 0 24px;
-  border-radius: 20px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--card-shadow);
   overflow: hidden;
 }
 
@@ -985,7 +985,7 @@ ion-toolbar {
   height: 120px;
   border-radius: 50%;
   cursor: pointer;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--card-shadow);
 }
 
 .profile-avatar-img {
@@ -1080,7 +1080,7 @@ ion-toolbar {
   font-weight: 700;
   font-size: 0.9rem;
   transition: all 0.3s ease;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--card-shadow);
 }
 
 .step-badge.active {

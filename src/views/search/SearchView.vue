@@ -1956,9 +1956,9 @@ ion-searchbar.rounded {
 .modern-product-card {
   margin: 0; /* Reset margin for grid layout */
   background: var(--ion-card-background, #ffffff);
-  border-radius: 20px;
+  border-radius: var(--radius-lg);
   overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  box-shadow: var(--card-shadow);
   border: 1px solid rgba(var(--ion-color-dark-rgb), 0.05);
   transition: transform 0.2s ease, box-shadow 0.3s ease;
   cursor: pointer;
@@ -2423,7 +2423,7 @@ ion-header {
   border-radius: 16px;
   overflow: hidden;
   background: var(--ion-card-background, #ffffff);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  box-shadow: var(--card-shadow);
   border: 1px solid rgba(var(--ion-color-dark-rgb), 0.05);
   position: relative;
   transition: transform 0.2s ease;

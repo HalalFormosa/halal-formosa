@@ -650,7 +650,7 @@ onMounted(() => {
 .trend-up { color: #2ecc71; }
 .trend-down { color: #e74c3c; }
 .trend-neutral { color: #f39c12; }
-.neutral { color: #3498db; }
+.neutral { color: var(--ion-color-carrot); }
 
 .doughnut-container {
   height: 220px;

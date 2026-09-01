@@ -2597,7 +2597,7 @@ ion-segment-button {
   position: relative;
   overflow: hidden;
   border: 1px solid rgba(0,0,0,0.05);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  box-shadow: var(--card-shadow);
   transition: all 0.2s ease;
 }
 
@@ -2740,7 +2740,7 @@ ion-segment-button {
   cursor: pointer;
   position: relative;
   overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  box-shadow: var(--card-shadow);
 }
 
 .feature-card:active {
@@ -3072,7 +3072,7 @@ ion-segment-button {
 
 /* === Announcement Bottom Sheet Styles === */
 .announcement-sheet {
-  --border-radius: 24px 24px 0 0;
+  --border-radius: var(--radius-xl) var(--radius-xl) 0 0;
   --box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.12);
 }
 
@@ -3082,7 +3082,7 @@ ion-segment-button {
   overflow: hidden;
   border-radius: 16px;
   margin-bottom: 20px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--card-shadow);
 }
 
 .announcement-hero-img {
@@ -3255,9 +3255,9 @@ ion-segment-button {
 }
 
 .popover-custom-content {
-  border-radius: 20px;
+  border-radius: var(--radius-xl);
   overflow: hidden;
-  --border-radius: 20px;
+  --border-radius: var(--radius-xl);
   --padding-start: 20px !important;
   --padding-end: 20px !important;
   --padding-top: 20px !important;
@@ -3467,13 +3467,13 @@ ion-segment-button {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.03);
+  box-shadow: var(--card-shadow);
 }
 
 .ion-palette-dark .phrase-card {
   background: var(--ion-color-step-100, #1e1e1e);
   border-color: var(--ion-color-step-200, #2d2d2d);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--card-shadow);
 }
 
 .phrase-header {

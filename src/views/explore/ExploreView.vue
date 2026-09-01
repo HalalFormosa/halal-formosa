@@ -3370,9 +3370,9 @@ button.gm-ui-hover-effect > span {
 .modern-location-card {
   margin: 16px 0;
   background: var(--ion-card-background, #ffffff);
-  border-radius: 20px;
+  border-radius: var(--radius-lg);
   overflow: hidden;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+  box-shadow: var(--card-shadow);
   border: 1px solid rgba(var(--ion-color-dark-rgb), 0.05);
   transition: all 0.3s ease;
   cursor: pointer;
@@ -3599,12 +3599,12 @@ button.gm-ui-hover-effect > span {
   max-width: 380px;
   margin: 0;
   /* Light Mode Base */
-  background: rgba(255, 255, 255, 0.85); 
+  background: rgba(255, 255, 255, 0.85);
   backdrop-filter: blur(25px) saturate(200%);
   -webkit-backdrop-filter: blur(25px) saturate(200%);
-  border-radius: 20px;
+  border-radius: var(--radius-lg);
   overflow: hidden;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+  box-shadow: var(--card-shadow);
   border: 1px solid rgba(255, 255, 255, 0.5);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
@@ -4384,7 +4384,7 @@ button.gm-ui-hover-effect > span {
   border-radius: 12px;
   background: var(--ion-background-color);
   border: 1px solid rgba(var(--ion-color-carrot-rgb), 0.3);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--card-shadow);
 }
 
 .for-you-row {

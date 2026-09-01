@@ -257,7 +257,7 @@ onUnmounted(() => {
   flex-direction: column;
   height: 100%;
   background: var(--ion-background-color);
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   overflow: hidden;
   border: 1px solid var(--ion-color-step-100, rgba(0,0,0,0.08));
 }

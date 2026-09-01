@@ -330,9 +330,9 @@ ion-card-content li {
 
 /* Premium Popover Styles */
 .popover-custom-content {
-  border-radius: 20px;
+  border-radius: var(--radius-xl);
   overflow: hidden;
-  --border-radius: 20px;
+  --border-radius: var(--radius-xl);
 }
 
 .mock-popover-pro-badge {

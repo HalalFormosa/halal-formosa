@@ -307,7 +307,7 @@ watch(viewMode, () => {
   margin-bottom: 12px;
   --border-radius: 16px;
   --background: var(--ion-color-step-50);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--card-shadow);
 }
 
 .product-name {

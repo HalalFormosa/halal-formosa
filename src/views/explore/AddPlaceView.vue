@@ -1907,7 +1907,7 @@ onBeforeUnmount(() => {
 .tag-chip {
   margin: 0;
   height: 32px;
-  --color: var(--ion-color-primary);
+  --color: var(--ion-color-carrot);
 }
 
 .tag-chip ion-icon {
@@ -1949,7 +1949,7 @@ onBeforeUnmount(() => {
 .input-card {
   margin: 0 12px;
   border-radius: 16px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--card-shadow);
   background: var(--ion-card-background, white);
   border: 1px solid var(--ion-color-light-shade);
 }
@@ -2082,7 +2082,7 @@ ion-header {
 }
 
 .shadow-md {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--card-shadow);
 }
 
 </style>

@@ -922,7 +922,7 @@ onMounted(async () => {
 .search-card {
   margin-bottom: 20px;
   border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--card-shadow);
 }
 
 .search-header h2 {
@@ -969,7 +969,7 @@ onMounted(async () => {
   --background: var(--ion-card-background, #ffffff);
   margin-bottom: 8px;
   border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+  box-shadow: var(--card-shadow);
 }
 
 .phrase-header {
@@ -1032,7 +1032,7 @@ onMounted(async () => {
 
 .edit-card {
   border-radius: 12px;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--card-shadow);
 }
 
 .edit-title-row {
@@ -1160,7 +1160,7 @@ onMounted(async () => {
 
 .alignment-block-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--card-shadow-hover);
 }
 
 .alignment-block-header {

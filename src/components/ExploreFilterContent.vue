@@ -199,7 +199,7 @@ defineEmits<{
   font-size: 0.82rem;
   transition: all 0.2s ease;
   flex-shrink: 0;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--card-shadow);
   margin: 0;
 }
 
@@ -207,7 +207,7 @@ defineEmits<{
   background: var(--cat-color) !important;
   color: #ffffff !important;
   border-color: var(--cat-color) !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--card-shadow-hover);
   transform: translateY(-1px);
 }
 

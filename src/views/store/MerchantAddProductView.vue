@@ -589,10 +589,10 @@ onMounted(async () => {
 }
 
 .form-card {
-  background: #ffffff;
-  border-radius: 20px;
+  background: var(--card-bg);
+  border-radius: var(--radius-lg);
   padding: 8px 4px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--card-shadow);
   margin-bottom: 8px;
 }
 
@@ -731,7 +731,7 @@ onMounted(async () => {
   left: -4px;
   --padding-start: 2px;
   --padding-end: 2px;
-  color: var(--ion-color-primary);
+  color: var(--ion-color-carrot);
   background: white;
   border-radius: 50%;
 }

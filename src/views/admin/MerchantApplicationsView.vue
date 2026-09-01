@@ -189,9 +189,9 @@ onMounted(() => {
 }
 
 .application-card {
-  border-radius: 20px;
+  border-radius: var(--radius-lg);
   margin-bottom: 16px;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+  box-shadow: var(--card-shadow);
 }
 
 .card-title-row {

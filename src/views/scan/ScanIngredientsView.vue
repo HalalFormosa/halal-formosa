@@ -1690,8 +1690,8 @@ onUnmounted(() => {
 }
 
 .action-card {
-  border-radius: 20px;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--card-shadow);
   border: 1px solid var(--ion-color-step-100);
 }
 
@@ -1715,7 +1715,7 @@ onUnmounted(() => {
 .input-card {
   border-radius: 16px;
   overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  box-shadow: var(--card-shadow);
 }
 
 .highlights-title {

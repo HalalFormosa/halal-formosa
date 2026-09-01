@@ -1045,7 +1045,7 @@ onMounted(async () => {
 .external-link {
   display: inline-block;
   margin-top: 6px;
-  color: var(--ion-color-primary);
+  color: var(--ion-color-carrot);
 }
 
 /* =========================
@@ -1251,7 +1251,7 @@ onMounted(async () => {
   margin: 0;
   border-radius: 16px;
   overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+  box-shadow: var(--card-shadow);
   position: relative;
   transition: transform 0.2s cubic-bezier(0.2, 0, 0, 1);
 }
@@ -1311,7 +1311,7 @@ onMounted(async () => {
   align-items: center;
   justify-content: center;
   gap: 3px;
-  color: var(--ion-color-primary) !important;
+  color: var(--ion-color-carrot) !important;
   font-weight: 600;
   margin-top: 6px !important;
   width: 100%;
@@ -1330,7 +1330,7 @@ onMounted(async () => {
 }
 
 .home-partner-verified {
-  color: var(--ion-color-primary);
+  color: var(--ion-color-carrot);
   font-size: 16px;
   flex-shrink: 0;
   display: flex;

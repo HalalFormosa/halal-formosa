@@ -2758,7 +2758,7 @@ ion-item {
 .input-card {
   margin: 0 12px;
   border-radius: 16px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--card-shadow);
   background: var(--ion-card-background, white);
   border: 1px solid var(--ion-color-light-shade);
 }
@@ -2908,7 +2908,7 @@ ion-item {
 
 .photo-card.has-photo {
   border-style: solid;
-  border-color: var(--ion-color-primary-tint);
+  border-color: var(--ion-color-carrot-tint);
 }
 
 .photo-card-header {
@@ -3100,7 +3100,7 @@ ion-item {
   --background: var(--ion-color-light);
   margin: 12px 16px;
   border-radius: 12px;
-  border: 1px solid var(--ion-color-primary-tint);
+  border: 1px solid var(--ion-color-carrot-tint);
 }
 
 /* 🟢 Step Indicator */

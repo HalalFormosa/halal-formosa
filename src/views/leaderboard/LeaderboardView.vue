@@ -919,9 +919,9 @@ ion-segment-button {
 }
 
 .popover-custom-content {
-  border-radius: 20px;
+  border-radius: var(--radius-xl);
   overflow: hidden;
-  --border-radius: 20px;
+  --border-radius: var(--radius-xl);
 }
 
 .mock-popover-pro-badge {
@@ -1172,7 +1172,7 @@ ion-segment-button {
   padding: 32px 24px;
   width: 100%;
   max-width: 400px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--card-shadow);
 }
 
 .trophy-badge-container {

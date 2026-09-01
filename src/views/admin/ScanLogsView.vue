@@ -547,7 +547,7 @@ onMounted(() => fetchLogs(true))
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   margin-bottom: 12px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  box-shadow: var(--card-shadow);
 }
 
 .status-badge-hero ion-icon {

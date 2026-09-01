@@ -200,7 +200,7 @@ onMounted(() => fetchUsers(true))
   --background: var(--ion-background-color);
   margin-bottom: 12px;
   border-radius: 16px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+  box-shadow: var(--card-shadow);
   border: 1px solid var(--ion-color-step-100);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }

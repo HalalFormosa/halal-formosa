@@ -589,7 +589,7 @@ async function submitApplication() {
 
 .success-card {
   background: rgba(var(--ion-color-light-rgb), 0.4);
-  border-radius: 24px;
+  border-radius: var(--radius-xl);
   border: 1px solid var(--ion-color-light-shade);
   margin-bottom: 40px;
 }
@@ -850,7 +850,7 @@ async function submitApplication() {
 }
 
 .review-card {
-  border-radius: 24px;
+  border-radius: var(--radius-xl);
   background: rgba(var(--ion-color-light-rgb), 0.3);
   border: 1px solid var(--ion-color-light-shade);
 }

@@ -607,7 +607,7 @@ ion-input.has-value::part(label) {
 
 .primary-btn::part(native):active {
   transform: scale(0.98);
-  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.45);
+  box-shadow: var(--card-shadow-hover);
 }
 
 /* =========================

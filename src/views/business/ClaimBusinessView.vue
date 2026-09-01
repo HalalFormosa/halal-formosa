@@ -418,7 +418,7 @@ async function submitClaim() {
 .innovative-field {
   background: rgba(var(--ion-color-carrot-rgb), 0.03);
   border: 1.5px solid var(--ion-color-light-shade);
-  border-radius: 20px; padding: 16px; margin-bottom: 20px;
+  border-radius: var(--radius-lg); padding: 16px; margin-bottom: 20px;
   display: flex; align-items: flex-start; gap: 16px; position: relative;
   transition: all .3s cubic-bezier(.4,0,.2,1);
 }
@@ -445,12 +445,12 @@ async function submitClaim() {
 }
 .proof-add ion-icon { font-size: 28px; color: var(--ion-color-carrot); }
 
-.review-card { border-radius: 24px; background: rgba(var(--ion-color-light-rgb), .3); border: 1px solid var(--ion-color-light-shade); }
+.review-card { border-radius: var(--radius-xl); background: rgba(var(--ion-color-light-rgb), .3); border: 1px solid var(--ion-color-light-shade); }
 .review-item { margin-bottom: 20px; }
 .review-item label { font-size: .75rem; color: var(--ion-color-carrot); font-weight: 800; text-transform: uppercase; margin-bottom: 4px; display: block; }
 .review-item p { margin: 0; font-weight: 600; color: var(--ion-color-dark); }
 
-.verification-note { background: rgba(var(--ion-color-carrot-rgb), .05); border: 1px solid var(--ion-color-carrot); border-radius: 20px; text-align: center; }
+.verification-note { background: rgba(var(--ion-color-carrot-rgb), .05); border: 1px solid var(--ion-color-carrot); border-radius: var(--radius-lg); text-align: center; }
 .verification-note h3 { font-weight: 800; margin: 12px 0 4px; color: var(--ion-color-dark); }
 .verification-note p { font-size: 14px; color: var(--ion-color-medium); }
 
@@ -463,7 +463,7 @@ async function submitClaim() {
 .success-circle ion-icon { font-size: 64px; }
 .success-title { font-size: 28px; font-weight: 800; color: var(--ion-color-dark); margin-bottom: 8px; }
 .success-subtitle { font-size: 18px; color: var(--ion-color-medium); margin-bottom: 32px; }
-.success-card { background: rgba(var(--ion-color-light-rgb), .4); border-radius: 24px; border: 1px solid var(--ion-color-light-shade); margin-bottom: 40px; }
+.success-card { background: rgba(var(--ion-color-light-rgb), .4); border-radius: var(--radius-xl); border: 1px solid var(--ion-color-light-shade); margin-bottom: 40px; }
 .success-text { font-size: 15px; line-height: 1.6; color: var(--ion-color-step-600); margin: 0; }
 .back-btn { width: 100%; max-width: 300px; height: 56px; --border-radius: 18px; font-weight: 700; font-size: 1.1rem; }
 
