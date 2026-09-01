@@ -3,14 +3,20 @@
  * Any overrides to theme variables should be placed in this file.
  * For more information, please see:
  * http://ionicframework.com/docs/theming/
+ *
+ * Halal Formosa 2.0 — "Modern Minimal" design system.
+ * Brand accent stays the logo orange (--ion-color-carrot). Status colors
+ * (success/warning/danger/primary) are a separate semantic palette used
+ * for halal/syubhah/haram/muslim-friendly labels and must not be
+ * conflated with the brand accent.
  */
 
-/* Import Roboto instead of Nunito */
-@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
+/* Inter — modern minimal grotesque */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
 /* This sets a different item border color for the default theme on ios and md */
 :root {
-    --ion-font-family: 'Roboto', sans-serif;
+    --ion-font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 
     /* Success (Halal green) */
     --ion-color-success: #2ecc71;
@@ -44,16 +50,22 @@
     --ion-color-primary-shade: #2c80b4;
     --ion-color-primary-tint: #5dade2;
 
-    /* ✅ Carrot */
+    /* ✅ Carrot — brand accent (logo orange) */
     --ion-color-carrot: #e67e22;
     --ion-color-carrot-rgb: 230, 126, 34;
     --ion-color-carrot-contrast: #000000;
     --ion-color-carrot-contrast-rgb: 0, 0, 0;
-    --ion-color-carrot-shade: #ca6f1e;
-    --ion-color-carrot-tint: #e98b38;
+    --ion-color-carrot-shade: #c96718;
+    --ion-color-carrot-tint: #ea9550;
 
     /* existing variables */
     --ion-item-border-color: var(--ion-background-color-step-200);
+
+    /* Minimal radius scale */
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 20px;
 
     /* ✅ Safe area fallbacks */
     --safe-area-inset-top: env(safe-area-inset-top, 0px);
@@ -68,24 +80,21 @@
     --ion-safe-area-left: var(--safe-area-inset-left);
 
 
-    /* Tier Colors */
-    --tier-gold-bg: linear-gradient(135deg, #fffbeb 0%, #fef3c7 60%, #fde68a 100%);
-    --tier-silver-bg: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 60%, #e2e8f0 100%);
-    --tier-bronze-bg: linear-gradient(135deg, #fffafb 0%, #fff7ed 60%, #ffedd5 100%);
+    /* Tier Colors — kept subtle, mostly flat with a faint tint */
+    --tier-gold-bg: linear-gradient(135deg, #fffdf7 0%, #fef6e0 100%);
+    --tier-silver-bg: linear-gradient(135deg, #fbfcfd 0%, #f1f4f7 100%);
+    --tier-bronze-bg: linear-gradient(135deg, #fffcfa 0%, #fdf1e6 100%);
 
 }
 
-/* This sets a different background and item background for the default theme on ios */
-:root.ios {
-    --ion-background-color: var(--ion-background-color-step-50, #f2f2f6);
-    --ion-toolbar-background: var(--ion-background-color);
-    --ion-item-background: #fff;
-}
-
-/* This sets a different background and item background for the default theme on md */
+/* Unified, quieter neutral background on ios and md — one grey, not two.
+   Falls through to Ionic's own dark-palette step-50 in dark mode, so this
+   stays a light-mode-only override rather than fighting dark.class.css. */
+:root.ios,
 :root.md {
-    --ion-background-color: var(--ion-background-color-step-100, #f9f9f9);
-    --ion-item-background: #fff;
+    --ion-background-color: var(--ion-background-color-step-50, #f7f7f8);
+    --ion-toolbar-background: var(--ion-background-color);
+    --ion-item-background: #ffffff;
 }
 
 /* Match the actual <ion-app> element */
@@ -112,7 +121,7 @@
 /* This sets a different item background when dark mode is enabled on ios and md */
 .ion-palette-dark.ios,
 .ion-palette-dark.md {
-    --ion-item-background: #1c1c1d;
+    --ion-item-background: #161618;
 }
 
 ion-title.title-brand {
@@ -274,10 +283,12 @@ ion-chip.status-chip.chip-medium {
 
 
 :root {
+    /* Flat, hairline-bordered cards with a barely-there shadow — minimal, not skeuomorphic */
     --card-bg: #ffffff;
     --card-inner-bg: #ffffff;
-    --card-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-    --card-border: rgba(0, 0, 0, 0.08);
+    --card-shadow: 0 1px 2px rgba(0, 0, 0, 0.03), 0 1px 0 rgba(0, 0, 0, 0.02);
+    --card-shadow-hover: 0 4px 16px rgba(0, 0, 0, 0.06);
+    --card-border: rgba(0, 0, 0, 0.07);
 
     /* UI Utilities */
     --soft-warning-bg: linear-gradient(135deg, #fef9e7 0%, #fdf2d0 100%);
@@ -287,13 +298,14 @@ ion-chip.status-chip.chip-medium {
 
 .ion-palette-dark {
     /* Tier Colors Dark */
-    --tier-gold-bg: linear-gradient(135deg, #1c1c1e 0%, #422006 100%);
-    --tier-silver-bg: linear-gradient(135deg, #1c1c1e 0%, #1e293b 100%);
-    --tier-bronze-bg: linear-gradient(135deg, #1c1c1e 0%, #431407 100%);
-    --card-bg: #1c1c1d;
-    --card-inner-bg: #1c1c1d;
-    --card-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
-    --card-border: rgba(255, 255, 255, 0.08);
+    --tier-gold-bg: linear-gradient(135deg, #1a1a1c 0%, #2e2110 100%);
+    --tier-silver-bg: linear-gradient(135deg, #1a1a1c 0%, #1a222c 100%);
+    --tier-bronze-bg: linear-gradient(135deg, #1a1a1c 0%, #2c1a0d 100%);
+    --card-bg: #18181a;
+    --card-inner-bg: #18181a;
+    --card-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --card-shadow-hover: 0 4px 20px rgba(0, 0, 0, 0.5);
+    --card-border: rgba(255, 255, 255, 0.07);
 
     /* UI Utilities Dark */
     --soft-warning-bg: linear-gradient(135deg, #1c1c1e 0%, #422006 100%);
@@ -305,11 +317,17 @@ ion-card {
     --background: var(--card-bg);
     --color: var(--ion-color-dark);
     box-shadow: var(--card-shadow);
-    border-radius: 20px;
-    margin: 12px 10px;
+    border-radius: var(--radius-lg);
+    margin: 10px 12px;
     cursor: pointer;
     border: 1px solid var(--card-border);
     overflow: hidden;
+    transition: box-shadow 0.2s ease, transform 0.15s ease;
+}
+
+ion-card:active {
+    transform: scale(0.99);
+    box-shadow: var(--card-shadow-hover);
 }
 
 ion-card ion-list,
@@ -351,10 +369,11 @@ ion-card ion-item {
 
 .discover-item {
     flex: 0 0 210px;
-    border-radius: 16px;
+    border-radius: var(--radius-md);
     overflow: hidden;
     text-align: center;
-    box-shadow: none;
+    box-shadow: var(--card-shadow);
+    border: 1px solid var(--card-border);
     --background: var(--card-inner-bg);
     display: flex;
     flex-direction: column;
@@ -379,8 +398,8 @@ ion-card ion-item {
     width: 100%;
     height: 140px;
     object-fit: cover;
-    border-top-left-radius: 16px;
-    border-top-right-radius: 16px;
+    border-top-left-radius: var(--radius-md);
+    border-top-right-radius: var(--radius-md);
     display: block;
 }
 
@@ -751,7 +770,7 @@ ion-card ion-item {
 
 .gold-cert-card {
     position: relative;
-    border-radius: 14px;
+    border-radius: var(--radius-md);
     padding: 12px;
     margin-top: 6px;
     cursor: pointer;
@@ -762,8 +781,8 @@ ion-card ion-item {
 .gold-cert-card.tier-card-gold,
 .gold-cert-card {
     /* Legacy override to ensure it matches unified tier card */
-    border: 2px solid #facc15 !important;
-    background: linear-gradient(135deg, rgba(250, 204, 21, 0.05), transparent) !important;
+    border: 1.5px solid #eab308 !important;
+    background: linear-gradient(135deg, rgba(234, 179, 8, 0.06), transparent) !important;
 }
 
 .ion-palette-dark .gold-cert-card {
@@ -903,7 +922,7 @@ ion-card ion-item {
 
 /* 2. Tier Card Backgrounds & Borders */
 .tier-card-gold {
-    border: 2px solid #facc15 !important;
+    border: 1.5px solid #eab308 !important;
     background: var(--tier-gold-bg) !important;
     --background: var(--tier-gold-bg) !important;
 }
@@ -1069,15 +1088,15 @@ ion-card ion-item {
 
 /* Base container variables */
 ion-popover {
-    --border-radius: 16px;
-    --box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+    --border-radius: var(--radius-lg);
+    --box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
 }
 
-/* Glassmorphism content shell - Updated to be Opaque for readability */
+/* Opaque content shell for readability */
 ion-popover::part(content) {
     background: var(--ion-background-color, #ffffff) !important;
-    border: 0.5px solid rgba(0, 0, 0, 0.1);
-    border-radius: 16px;
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius-lg);
     overflow: hidden;
 }
 
@@ -1312,7 +1331,7 @@ ion-header {
     margin: 16px;
     padding: 32px 24px;
     background: var(--ion-card-background, var(--ion-item-background, #fff));
-    border-radius: 24px;
+    border-radius: var(--radius-xl);
     text-align: center;
     border: 1px dashed var(--ion-color-carrot);
     color: var(--ion-text-color);
@@ -1420,7 +1439,7 @@ ion-header {
   background: var(--ion-background-color);
   margin-top: -24px;
   position: relative;
-  border-radius: 24px 24px 0 0;
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
   min-height: 100vh;
   z-index: 10;
   overflow: hidden;
