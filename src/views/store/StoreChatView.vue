@@ -196,7 +196,7 @@ async function init() {
       // Merchant sees the Buyer's profile
       const { data: profile } = await supabase
         .from('user_profiles')
-        .select('*, last_seen_at, show_last_seen')
+        .select('id, display_name, avatar_url, last_seen_at, show_last_seen')
         .eq('id', conv.buyer_id)
         .maybeSingle()
       if (profile) otherUser.value = profile

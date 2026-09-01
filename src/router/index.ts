@@ -221,7 +221,8 @@ const routes: Array<RouteRecordRaw> = [
     {
         path: '/admin/review-locations',
         name: 'ReviewLocations',
-        component: () => import('@/views/admin/ReviewLocationsView.vue')
+        component: () => import('@/views/admin/ReviewLocationsView.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true }
     },
     {
         path: '/admin/points-logs',
@@ -270,7 +271,8 @@ const routes: Array<RouteRecordRaw> = [
     {
         path: '/admin/users/:id',
         name: 'UserDetail',
-        component: () => import('@/views/admin/UserDetailView.vue')
+        component: () => import('@/views/admin/UserDetailView.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true }
     },
     {
         path: '/admin/merchant/applications',
