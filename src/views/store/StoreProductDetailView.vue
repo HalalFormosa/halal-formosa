@@ -841,18 +841,19 @@ function updateQtyInCart(productId: string, newQty: number) {
 
 .category-badge {
   --background: var(--ion-color-step-100, #f4f5f8);
-  --color: var(--ion-color-step-600, #666666);
-  font-size: 0.72rem;
-  font-weight: 600;
+  --color: var(--ion-color-carrot);
+  font-size: 0.7rem;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
   height: 24px;
-  margin: 0 0 8px;
+  margin: 0 0 10px;
 }
 
 .detail-name {
-  font-size: 1.4rem;
-  font-weight: 700;
+  font-size: 1.45rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
   line-height: 1.3;
   color: var(--ion-text-color);
   margin: 0 0 4px;
@@ -868,26 +869,35 @@ function updateQtyInCart(productId: string, newQty: number) {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin: 12px 0;
+  margin: 14px 0 0;
+  padding: 16px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--card-shadow);
 }
 
 .detail-price {
-  font-size: 1.6rem;
+  font-size: 1.75rem;
   font-weight: 800;
+  letter-spacing: -0.02em;
   color: var(--ion-color-carrot);
 }
 
 .meta-badges {
   display: flex;
-  gap: 8px;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
 }
 
 .meta-badge {
   font-size: 0.72rem;
+  font-weight: 600;
   color: var(--ion-color-step-600, #666666);
   background: var(--ion-color-step-100, #f4f5f8);
-  padding: 4px 8px;
-  border-radius: 8px;
+  padding: 4px 9px;
+  border-radius: var(--radius-sm);
 }
 
 .stock-row {
@@ -896,8 +906,8 @@ function updateQtyInCart(productId: string, newQty: number) {
   gap: 6px;
   font-size: 0.85rem;
   color: var(--ion-color-success);
-  margin: 8px 0 20px;
-  font-weight: 500;
+  margin: 10px 0 20px;
+  font-weight: 600;
 }
 
 .stock-row.out-of-stock {
@@ -906,11 +916,16 @@ function updateQtyInCart(productId: string, newQty: number) {
 
 .description-section {
   margin: 16px 0;
+  padding: 16px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--card-shadow);
 }
 
 .description-section h3 {
   font-size: 0.95rem;
-  font-weight: 600;
+  font-weight: 700;
   margin: 0 0 8px;
   color: var(--ion-text-color);
 }
@@ -935,23 +950,29 @@ function updateQtyInCart(productId: string, newQty: number) {
 }
 
 .quantity-controls {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 12px;
+  gap: 4px;
+  padding: 4px;
+  background: var(--card-inner-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--card-shadow);
 }
 
 .quantity-controls ion-button {
-  --border-radius: 10px;
+  --border-radius: var(--radius-md);
   --padding-start: 8px;
   --padding-end: 8px;
+  margin: 0;
   width: 36px;
   height: 36px;
 }
 
 .qty-display {
-  font-size: 1.1rem;
-  font-weight: 700;
-  min-width: 32px;
+  font-size: 1.05rem;
+  font-weight: 800;
+  min-width: 36px;
   text-align: center;
 }
 
@@ -970,10 +991,15 @@ function updateQtyInCart(productId: string, newQty: number) {
 
 .action-btn {
   flex: 1;
-  --border-radius: 14px;
-  font-weight: 600;
-  height: 48px;
-  font-size: 0.92rem;
+  --border-radius: var(--radius-lg);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  height: 50px;
+  font-size: 0.94rem;
+}
+
+.action-btn[fill="solid"] {
+  --box-shadow: 0 6px 18px rgba(var(--ion-color-carrot-rgb), 0.3);
 }
 
 .chat-btn {
@@ -1002,9 +1028,10 @@ function updateQtyInCart(productId: string, newQty: number) {
 .store-info-section {
   margin: 24px 0;
   padding: 16px;
-  background: var(--ion-color-step-100, #f8f9fa);
-  border-radius: 16px;
-  border: 1px solid var(--ion-color-step-200, rgba(0,0,0,0.05));
+  background: var(--card-bg);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--card-border);
+  box-shadow: var(--card-shadow);
 }
 
 .store-header {
@@ -1062,9 +1089,14 @@ function updateQtyInCart(productId: string, newQty: number) {
 }
 
 .visit-store-btn {
-  --border-radius: 8px;
+  --border-radius: var(--radius-md);
   font-size: 0.75rem;
   height: 32px;
+}
+
+.store-avatar {
+  border: 1px solid var(--card-border);
+  box-shadow: var(--card-shadow);
 }
 
 
@@ -1083,10 +1115,7 @@ function updateQtyInCart(productId: string, newQty: number) {
   color: var(--ion-color-step-700, #cccccc);
 }
 
-.ion-palette-dark .store-info-section {
-  background: var(--ion-color-step-150, #1e1e1e);
-  border: 1px solid var(--ion-color-step-250, rgba(255,255,255,0.1));
-}
+/* .store-info-section now uses --card-bg/--card-border, which already flip in dark mode */
 
 /* Responsive Layout */
 .product-container {
@@ -1187,7 +1216,7 @@ function updateQtyInCart(productId: string, newQty: number) {
   .thumb-item {
     width: 70px;
     height: 70px;
-    border-radius: 12px;
+    border-radius: var(--radius-md);
     overflow: hidden;
     cursor: pointer;
     border: 2px solid transparent;
@@ -1284,9 +1313,10 @@ function updateQtyInCart(productId: string, newQty: number) {
 
 .review-card {
   padding: 14px;
-  background: var(--ion-color-step-50, #f8f9fa);
-  border-radius: 14px;
-  border: 1px solid var(--ion-color-step-100, rgba(0,0,0,0.04));
+  background: var(--card-bg);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--card-border);
+  box-shadow: var(--card-shadow);
 }
 
 .review-header {
@@ -1404,11 +1434,6 @@ function updateQtyInCart(productId: string, newQty: number) {
 }
 
 /* Dark mode overrides for reviews */
-.ion-palette-dark .review-card {
-  background: var(--ion-color-step-100, #1e1e1e);
-  border-color: var(--ion-color-step-200, rgba(255,255,255,0.08));
-}
-
 .ion-palette-dark .review-comment {
   color: var(--ion-color-step-700, #ccc);
 }

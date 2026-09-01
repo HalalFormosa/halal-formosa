@@ -1061,11 +1061,12 @@ onMounted(async () => {
   margin-left: calc(-50vw + 50%);
   margin-right: calc(-50vw + 50%);
 
-  /* Remove card feel */
-  border-radius: 0;
+  /* Rounded bottom edge flows into the content sheet below */
+  border-radius: 0 0 var(--radius-xl) var(--radius-xl);
   overflow: hidden;
 
-  margin-bottom: 16px;
+  margin-bottom: 20px;
+  box-shadow: var(--card-shadow);
 }
 
 
@@ -1103,7 +1104,7 @@ onMounted(async () => {
   height: 96px;
   object-fit: contain;
   background: #fff;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   padding: 8px;
 
 
@@ -1114,8 +1115,9 @@ onMounted(async () => {
 /* Name */
 .body-name {
   margin: 4px 0;
-  font-size: 1.2rem;
-  font-weight: 600;
+  font-size: 1.3rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
 }
 
 /* Badge */
@@ -1249,11 +1251,16 @@ onMounted(async () => {
 
 .discover-item {
   margin: 0;
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   overflow: hidden;
   box-shadow: var(--card-shadow);
+  border: 1px solid var(--card-border);
   position: relative;
-  transition: transform 0.2s cubic-bezier(0.2, 0, 0, 1);
+  transition: transform 0.2s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.2s ease;
+}
+
+.discover-item:hover {
+  box-shadow: var(--card-shadow-hover);
 }
 
 .discover-item--scroll {

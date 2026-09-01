@@ -1955,15 +1955,19 @@ ion-searchbar.rounded {
 
 .modern-product-card {
   margin: 0; /* Reset margin for grid layout */
-  background: var(--ion-card-background, #ffffff);
+  background: var(--card-bg);
   border-radius: var(--radius-lg);
   overflow: hidden;
   box-shadow: var(--card-shadow);
-  border: 1px solid rgba(var(--ion-color-dark-rgb), 0.05);
-  transition: transform 0.2s ease, box-shadow 0.3s ease;
+  border: 1px solid var(--card-border);
+  transition: transform 0.15s ease, box-shadow 0.25s ease;
   cursor: pointer;
   position: relative;
   height: 160px; /* Fixed height for clean grid rows */
+}
+
+.modern-product-card:hover {
+  box-shadow: var(--card-shadow-hover);
 }
 
 /* Mobile: restore bottom margin if grid is 1 column */
@@ -2028,7 +2032,7 @@ ion-searchbar.rounded {
 .floating-status-pill {
   position: absolute;
   padding: 4px 10px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   display: flex;
   align-items: center;
   gap: 5px;
@@ -2083,8 +2087,9 @@ ion-searchbar.rounded {
 
 .info-top .name {
   margin: 0;
-  font-size: 1.15rem; /* Larger */
-  font-weight: 850; /* Heavier */
+  font-size: 1.1rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
   color: var(--ion-color-dark);
   line-height: 1.25;
   display: -webkit-box;
@@ -2216,47 +2221,66 @@ ion-searchbar.rounded {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: 8px 16px;
-  width: 100%;
+  margin: 2px 16px 6px;
+  padding: 5px 6px;
+  width: auto;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--card-shadow);
 }
 
 .classic-scan-btn {
-  width: 50px;
-  height: 50px;
-  min-width: 50px;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
   --padding-start: 0;
   --padding-end: 0;
-  --border-radius: 12px;
+  --border-radius: var(--radius-md);
+  --box-shadow: 0 4px 14px rgba(var(--ion-color-carrot-rgb), 0.4);
   margin: 0;
 }
 
 .classic-scan-btn ion-icon {
-  font-size: 24px;
+  font-size: 22px;
 }
 
 .classic-action-btn {
-  height: 50px;
+  height: 44px;
+  width: 44px;
   margin: 0;
   --color: var(--ion-color-dark);
+  --border-radius: var(--radius-md);
+  --background-hover: rgba(var(--ion-color-carrot-rgb), 0.1);
+  --background-activated: rgba(var(--ion-color-carrot-rgb), 0.14);
+  --transition: background-color 0.2s ease;
   position: relative;
   font-weight: 700;
   text-transform: none;
 }
 
 .classic-action-btn ion-icon {
-  font-size: 22px;
+  font-size: 20px;
 }
 
 .sort-btn-wrapper {
   display: flex;
   align-items: center;
   gap: 4px;
+  --background: var(--card-inner-bg);
+  --background-hover: rgba(var(--ion-color-carrot-rgb), 0.1);
+  --border-width: 1px;
+  --border-style: solid;
+  --border-color: var(--card-border);
+  --border-radius: var(--radius-xl);
+  --padding-start: 12px;
+  --padding-end: 12px;
 }
 
 .right-actions-group {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
 }
 
 .btn-label {
@@ -2420,13 +2444,13 @@ ion-header {
 
 .grid-product-card {
   aspect-ratio: 1 / 1;
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   overflow: hidden;
-  background: var(--ion-card-background, #ffffff);
+  background: var(--card-bg);
   box-shadow: var(--card-shadow);
-  border: 1px solid rgba(var(--ion-color-dark-rgb), 0.05);
+  border: 1px solid var(--card-border);
   position: relative;
-  transition: transform 0.2s ease;
+  transition: transform 0.2s ease, box-shadow 0.25s ease;
   z-index: 1;
 }
 
@@ -2437,6 +2461,10 @@ ion-header {
 
 .grid-product-card[class*="tier-card-"] {
   border: 2px solid transparent !important; /* Base for tiered items */
+}
+
+.grid-product-card:hover {
+  box-shadow: var(--card-shadow-hover);
 }
 
 .grid-product-card:active {

@@ -131,44 +131,46 @@
           <div v-if="['gold', 'silver'].includes(String(item?.partner_tier || '').toLowerCase())" class="premium-flare"></div>
 
           <div class="ion-padding" style="position: relative; z-index: 2;">
-            <div class="title-row">
-              <h2 class="product-title">{{ item?.name }}</h2>
-              <div v-if="item?.partner_tier" class="premium-badge-wrapper">
-                <div :class="['premium-badge-pill', item.partner_tier.toLowerCase()]">
-                  <ion-icon :icon="sparkles" />
-                  <span>{{ $t('home.partnerTier', { tier: item.partner_tier.toUpperCase() }) }}</span>
+            <div class="hero-card">
+              <div class="title-row">
+                <h2 class="product-title">{{ item?.name }}</h2>
+                <div v-if="item?.partner_tier" class="premium-badge-wrapper">
+                  <div :class="['premium-badge-pill', item.partner_tier.toLowerCase()]">
+                    <ion-icon :icon="sparkles" />
+                    <span>{{ $t('home.partnerTier', { tier: item.partner_tier.toUpperCase() }) }}</span>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <!-- Barcode row -->
-            <p class="barcode-row">
-              <!-- Left side: barcode(s) -->
-              <span class="barcode-wrapper">
-                <ion-icon :icon="barcodeOutline" />
-                <small>{{ [item.barcode, ...alternateBarcodes].join(', ') }}</small>
-              </span>
+              <!-- Barcode row -->
+              <p class="barcode-row">
+                <!-- Left side: barcode(s) -->
+                <span class="barcode-wrapper">
+                  <ion-icon :icon="barcodeOutline" />
+                  <small>{{ [item.barcode, ...alternateBarcodes].join(', ') }}</small>
+                </span>
 
-              <!-- Right side: category -->
-              <small class="category-text">{{ $te('search.categoriesList.' + item.product_categories?.name) ? $t('search.categoriesList.' + item.product_categories?.name) : item.product_categories?.name }}</small>
-            </p>
+                <!-- Right side: category -->
+                <small class="category-text">{{ $te('search.categoriesList.' + item.product_categories?.name) ? $t('search.categoriesList.' + item.product_categories?.name) : item.product_categories?.name }}</small>
+              </p>
 
-            <p v-if="item.author?.public_profile" class="attribution-text">
-              {{ $t('home.addedBy', { author: item.author.display_name }) }} - {{ fromNowToTaipei(item.created_at) }}
-            </p>
-            <p v-else class="attribution-text">
-              {{ $t('home.added') }} {{ fromNowToTaipei(item.created_at) }}
-            </p>
+              <p v-if="item.author?.public_profile" class="attribution-text">
+                {{ $t('home.addedBy', { author: item.author.display_name }) }} - {{ fromNowToTaipei(item.created_at) }}
+              </p>
+              <p v-else class="attribution-text">
+                {{ $t('home.added') }} {{ fromNowToTaipei(item.created_at) }}
+              </p>
 
-            <!-- Status & Verified Tag -->
-            <div class="status-action-row">
-              <ion-chip :class="statusToChipClass(item?.status || '')">
-                {{ $t(`search.status.${item?.status}`) }}
-              </ion-chip>
-              
-              <div v-if="item?.partner_tier" class="official-verified-tag">
-                <ion-icon :icon="shieldCheckmarkOutline" />
-                <span>{{ $t('search.officialPartner') }}</span>
+              <!-- Status & Verified Tag -->
+              <div class="status-action-row">
+                <ion-chip :class="statusToChipClass(item?.status || '')" class="verdict-chip">
+                  {{ $t(`search.status.${item?.status}`) }}
+                </ion-chip>
+
+                <div v-if="item?.partner_tier" class="official-verified-tag">
+                  <ion-icon :icon="shieldCheckmarkOutline" />
+                  <span>{{ $t('search.officialPartner') }}</span>
+                </div>
               </div>
             </div>
 
@@ -257,7 +259,7 @@
             </div>
 
             <!-- Stores where this product is available -->
-            <div v-if="item.stores?.length" class="ion-margin-top">
+            <div v-if="item.stores?.length" class="ion-margin-top info-card">
               <p class="section-title">
                 <strong><small>{{ $t('search.details.availableAt') }}</small></strong>
               </p>
@@ -268,16 +270,18 @@
             </div>
 
             <!-- Description -->
-            <p class="section-title ion-margin-top">
-              <strong><small>{{ $t('search.details.description') }}</small></strong>
-            </p>
-            <h5
-                class="description-text ion-no-margin"
-                v-html="highlightedDescription"
-            ></h5>
+            <div class="ion-margin-top info-card">
+              <p class="section-title">
+                <strong><small>{{ $t('search.details.description') }}</small></strong>
+              </p>
+              <h5
+                  class="description-text ion-no-margin"
+                  v-html="highlightedDescription"
+              ></h5>
+            </div>
 
             <!-- Tags -->
-            <div v-if="item.tags && item.tags.length > 0" class="ion-margin-top">
+            <div v-if="item.tags && item.tags.length > 0" class="ion-margin-top info-card">
               <p class="section-title">
                 <strong><small>{{ $t('addPlace.tagsAndCategories', 'Tags') }}</small></strong>
               </p>
@@ -289,39 +293,41 @@
             </div>
 
             <!-- Ingredients -->
-            <p class="section-title ion-margin-top">
-              <strong><small>{{ $t('search.details.ingredients') }}</small></strong>
-            </p>
+            <div class="ion-margin-top info-card ingredients-card">
+              <p class="section-title">
+                <strong><small>{{ $t('search.details.ingredients') }}</small></strong>
+              </p>
 
-            <ul class="ingredients-list">
-              <li v-for="(ing, idx) in visibleIngredients"
-                  :key="idx"
-                  v-html="ing.html">
-              </li>
-            </ul>
+              <ul class="ingredients-list">
+                <li v-for="(ing, idx) in visibleIngredients"
+                    :key="idx"
+                    v-html="ing.html">
+                </li>
+              </ul>
 
-            <!-- Toggle button -->
-            <div v-if="highlightedIngredients.length > maxVisible" class="ion-margin-top">
-              <ion-button
-                  fill="clear"
-                  size="small"
-                  @click="showAllIngredients = !showAllIngredients"
-              >
-                {{ !showAllIngredients ? $t('search.details.viewMore') : $t('search.details.viewLess') }}
-              </ion-button>
-            </div>
-
-            <!-- Color Legend -->
-            <div v-if="usedColors.length" class="ion-margin-top ingredient-legend">
-              <p class="section-title"><strong><small>{{ $t('search.details.colorLegend') }}</small></strong></p>
-              <div class="legend-chips">
-                <ion-chip
-                    v-for="color in usedColors"
-                    :key="color"
-                    :class="colorToChipClass(color)"
+              <!-- Toggle button -->
+              <div v-if="highlightedIngredients.length > maxVisible" class="ion-margin-top">
+                <ion-button
+                    fill="clear"
+                    size="small"
+                    @click="showAllIngredients = !showAllIngredients"
                 >
-                  {{ $t(colorLabels[color]) }}
-                </ion-chip>
+                  {{ !showAllIngredients ? $t('search.details.viewMore') : $t('search.details.viewLess') }}
+                </ion-button>
+              </div>
+
+              <!-- Color Legend -->
+              <div v-if="usedColors.length" class="ion-margin-top ingredient-legend">
+                <p class="section-title"><strong><small>{{ $t('search.details.colorLegend') }}</small></strong></p>
+                <div class="legend-chips">
+                  <ion-chip
+                      v-for="color in usedColors"
+                      :key="color"
+                      :class="colorToChipClass(color)"
+                  >
+                    {{ $t(colorLabels[color]) }}
+                  </ion-chip>
+                </div>
               </div>
             </div>
 
@@ -1424,6 +1430,44 @@ const share = async () => {
 </script>
 
 <style scoped>
+/* ===============================
+   Premium card-grouped sections
+   =============================== */
+.hero-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--card-shadow);
+  padding: 18px 16px 16px;
+  margin-bottom: 16px;
+}
+
+.info-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--card-shadow);
+  padding: 14px 16px 16px;
+}
+
+.info-card .section-title {
+  margin-bottom: 6px;
+}
+
+.ingredients-card .ingredient-legend {
+  border-top: 1px solid var(--card-border);
+  padding-top: 12px;
+}
+
+/* Verdict chip: same semantic colors, bigger and bolder for a "hero" feel */
+.verdict-chip {
+  height: 34px;
+  padding: 0 16px;
+  font-size: 0.92rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
 /* TIERED PAGE STYLES - Inherit from global variables if needed, otherwise clean up redundant local backgrounds */
 .tier-gold .official-verified-tag {
   color: #ca8a04;
@@ -1473,7 +1517,8 @@ const share = async () => {
 .product-title {
   margin: 0;
   font-weight: 800;
-  font-size: 1.6rem;
+  font-size: 1.65rem;
+  letter-spacing: -0.02em;
   line-height: 1.2;
   /* A global, unscoped .product-title rule in SearchView.vue also targets this class
      and falls back to white text when --ion-text-color isn't set (i.e. outside dark
@@ -1852,12 +1897,13 @@ ion-skeleton-text {
 }
 
 .contribution-modal .motivation-box {
-  background: var(--ion-color-step-50);
+  background: var(--card-inner-bg);
   border-radius: var(--radius-lg);
   padding: 20px;
   text-align: center;
   margin-bottom: 32px;
   border: 1px dashed rgba(var(--ion-color-carrot-rgb), 0.3);
+  box-shadow: var(--card-shadow);
 }
 
 .contribution-modal .islamic-ornament {

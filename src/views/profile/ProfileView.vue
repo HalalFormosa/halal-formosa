@@ -1819,11 +1819,11 @@ async function fetchUnreadChatsCount() {
   width: 100%;
   height: 100%;
   border-radius: 50%;
-  border: 4px solid var(--ion-color-carrot);
+  border: 3px solid var(--ion-color-carrot);
   object-fit: cover;
   position: relative;
   z-index: 1;
-  box-shadow: 0 4px 12px rgba(var(--ion-color-carrot-rgb), 0.3);
+  box-shadow: var(--card-shadow-hover);
 }
 
 .profile-info {
@@ -1831,17 +1831,15 @@ async function fetchUnreadChatsCount() {
 }
 
 .profile-name-main {
-  font-size: 1.6rem;
+  font-size: 1.5rem;
   font-weight: 800;
+  letter-spacing: -0.02em;
   margin: 0;
-  background: linear-gradient(to bottom, var(--ion-color-carrot), var(--ion-color-carrot-shade));
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: var(--ion-text-color);
 }
 
 .profile-email-sub {
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   color: var(--ion-color-medium);
   margin: 4px 0 16px;
 }
@@ -1855,25 +1853,27 @@ async function fetchUnreadChatsCount() {
 }
 
 .badge-pro {
-  --background: var(--accent-gradient);
-  --color: #fff;
-  padding: 6px 12px;
-  border-radius: 12px;
+  --background: rgba(var(--ion-color-carrot-rgb), 0.12);
+  --color: var(--ion-color-carrot-shade);
+  padding: 5px 12px;
+  border-radius: var(--radius-md);
   font-weight: 700;
-  font-size: 0.75rem;
-  letter-spacing: 0.5px;
-  box-shadow: 0 4px 12px rgba(230, 126, 34, 0.3);
+  font-size: 0.72rem;
+  letter-spacing: 0.3px;
+  box-shadow: none;
+  border: 1px solid rgba(var(--ion-color-carrot-rgb), 0.25);
 }
 
 .badge-merchant {
   --color: #fff;
   display: inline-flex;
   align-items: center;
-  padding: 6px 12px;
-  border-radius: 12px;
+  padding: 5px 12px;
+  border-radius: var(--radius-md);
   font-weight: 700;
-  font-size: 0.75rem;
-  letter-spacing: 0.5px;
+  font-size: 0.72rem;
+  letter-spacing: 0.3px;
+  box-shadow: none;
 }
 .badge-merchant.merchant-bronze { --background: #cd7f32; }
 .badge-merchant.merchant-silver { --background: #8a94a6; }
@@ -1881,7 +1881,7 @@ async function fetchUnreadChatsCount() {
 
 /* Business subscription detail modal */
 .bsub-head { display: flex; align-items: center; gap: 14px; margin: 4px 0 20px; }
-.bsub-icon { width: 52px; height: 52px; border-radius: 14px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 26px; flex-shrink: 0; }
+.bsub-icon { width: 52px; height: 52px; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 26px; flex-shrink: 0; }
 .bsub-icon.merchant-bronze { background: #cd7f32; }
 .bsub-icon.merchant-silver { background: #8a94a6; }
 .bsub-icon.merchant-gold   { background: #c99700; }
@@ -1910,10 +1910,11 @@ async function fetchUnreadChatsCount() {
 }
 
 .level-badge {
-  background: var(--primary-gradient);
+  background: rgba(var(--ion-color-carrot-rgb), 0.12);
+  border: 1px solid rgba(var(--ion-color-carrot-rgb), 0.22);
   padding: 8px 16px;
-  border-radius: 16px;
-  color: #fff;
+  border-radius: var(--radius-md);
+  color: var(--ion-color-carrot-shade);
 }
 
 .level-num {
@@ -1966,9 +1967,6 @@ async function fetchUnreadChatsCount() {
   background: linear-gradient(90deg, var(--ion-color-carrot-tint), var(--ion-color-carrot));
   border-radius: 6px;
   transition: width 1s ease-out;
-  box-shadow: 
-    0 0 10px rgba(var(--ion-color-carrot-rgb), 0.5),
-    0 0 20px rgba(var(--ion-color-carrot-rgb), 0.3);
   position: relative;
   overflow: hidden;
 }
@@ -1994,7 +1992,7 @@ ion-item {
 .icon-box {
   width: 36px;
   height: 36px;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2022,9 +2020,9 @@ ion-item {
   align-items: center;
   gap: 8px;
   padding: 12px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 16px;
+  background: var(--card-inner-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-lg);
   text-decoration: none;
   transition: all 0.2s ease;
 }
@@ -2090,7 +2088,7 @@ ion-item {
   align-items: center;
   justify-content: center;
   margin: 0 auto 12px;
-  box-shadow: 0 4px 12px rgba(250, 204, 21, 0.2);
+  box-shadow: var(--card-shadow);
 }
 
 .pro-icon-hero ion-icon {
@@ -2170,11 +2168,11 @@ ion-item {
   width: 48px;
   height: 48px;
   background: var(--ion-color-carrot);
-  border-radius: 14px;
+  border-radius: var(--radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 12px rgba(var(--ion-color-carrot-rgb), 0.3);
+  box-shadow: var(--card-shadow);
 }
 
 .pro-active-icon ion-icon {
@@ -2329,15 +2327,6 @@ ion-item {
 }
 
 
-@media (prefers-color-scheme: light) {
-  .profile-name-main {
-    background: linear-gradient(to bottom, var(--ion-color-carrot), var(--ion-color-carrot-shade));
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-  }
-}
-
 /* System Section & Logout */
 .system-section {
   margin: 40px 16px;
@@ -2363,7 +2352,7 @@ ion-item {
   color: var(--ion-color-danger);
   border: 1px solid rgba(var(--ion-color-danger-rgb), 0.15);
   padding: 12px 24px;
-  border-radius: 14px;
+  border-radius: var(--radius-md);
   font-size: 0.95rem;
   font-weight: 700;
   transition: all 0.2s ease;
@@ -2473,7 +2462,7 @@ ion-header {
 .icon-pulse {
   background: rgba(var(--ion-color-carrot-rgb), 0.1);
   padding: 12px;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   animation: pulse 2s infinite ease-in-out;
 }
 
@@ -2484,7 +2473,7 @@ ion-header {
 .icon-pulse-red {
   background: rgba(var(--ion-color-danger-rgb), 0.1);
   padding: 12px;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2550,8 +2539,8 @@ ion-header {
 }
 
 .default-avatar-border :deep(.cosmetic-avatar-wrapper) {
-  border: 4px solid var(--ion-color-carrot);
-  box-shadow: 0 4px 12px rgba(var(--ion-color-carrot-rgb), 0.3);
+  border: 3px solid var(--ion-color-carrot);
+  box-shadow: var(--card-shadow-hover);
 }
 
 .activity-pro-badge {

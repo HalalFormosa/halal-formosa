@@ -402,7 +402,7 @@
                 shape="round"
                 @click="saveProfile"
                 :disabled="!acknowledged || !hasValidDisplayName"
-                style="--box-shadow: 0 4px 12px rgba(var(--ion-color-carrot-rgb), 0.3);"
+                style="--box-shadow: var(--card-shadow-hover);"
             >
               {{ $t('profile.editProfile.save') }}
             </ion-button>
@@ -924,7 +924,7 @@ ion-card {
 .icon-box {
   width: 36px;
   height: 36px;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1009,7 +1009,7 @@ ion-toolbar {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 12px rgba(var(--ion-color-carrot-rgb), 0.35);
+  box-shadow: var(--card-shadow-hover);
   border: 2px solid var(--ion-card-background, #fff);
 }
 
@@ -1087,7 +1087,7 @@ ion-toolbar {
   background: var(--ion-color-carrot);
   border-color: var(--ion-color-carrot);
   color: #fff;
-  box-shadow: 0 4px 10px rgba(var(--ion-color-carrot-rgb), 0.3);
+  box-shadow: var(--card-shadow-hover);
 }
 
 .step-label {

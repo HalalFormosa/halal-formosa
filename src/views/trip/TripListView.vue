@@ -649,14 +649,19 @@ onUnmounted(() => {
 
 .trip-card-v2 {
   margin: 0; /* Reset margin for grid layout */
-  background: var(--ion-card-background, #ffffff);
+  background: var(--card-bg);
   border-radius: var(--radius-lg);
   overflow: hidden;
   box-shadow: var(--card-shadow);
-  border: 1px solid rgba(var(--ion-color-dark-rgb), 0.05);
-  transition: transform 0.2s ease, box-shadow 0.3s ease;
+  border: 1px solid var(--card-border);
+  transition: transform 0.2s ease, box-shadow 0.25s ease, border-color 0.25s ease;
   cursor: pointer;
   position: relative;
+}
+
+.trip-card-v2:hover {
+  box-shadow: var(--card-shadow-hover);
+  border-color: rgba(var(--ion-color-carrot-rgb), 0.25);
 }
 
 /* Mobile: restore bottom margin if grid is 1 column */
@@ -675,9 +680,10 @@ onUnmounted(() => {
 .trip-cover-wrap {
   position: relative;
   width: 100%;
-  height: 200px;
+  height: 190px;
   overflow: hidden;
   background: var(--ion-background-color-step-100, #f0f0f0);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
 }
 
 .trip-cover {
@@ -725,15 +731,16 @@ onUnmounted(() => {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 4px 10px;
-  border-radius: 10px;
-  font-size: 0.68rem;
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 0.66rem;
   font-weight: 800;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255,255,255,0.3);
+  border: 1px solid rgba(255,255,255,0.35);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
 }
 
 .trip-tier-badge ion-icon {
@@ -760,13 +767,14 @@ onUnmounted(() => {
   padding: 16px 18px 18px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
 .trip-card-title {
   margin: 0;
-  font-size: 1.18rem;
+  font-size: 1.1rem;
   font-weight: 800;
+  letter-spacing: -0.01em;
   color: var(--ion-color-dark);
   line-height: 1.3;
   display: -webkit-box;
@@ -786,23 +794,43 @@ onUnmounted(() => {
 }
 
 .trip-card-provider {
-  font-size: 0.78rem;
+  font-size: 0.74rem;
+  font-weight: 600;
   color: var(--ion-color-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.trip-card-provider strong {
+  color: var(--ion-color-dark);
+  font-weight: 700;
+  text-transform: none;
+  letter-spacing: normal;
 }
 
 .trip-official-tag {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: 0.65rem;
-  font-weight: 700;
+  font-size: 0.64rem;
+  font-weight: 800;
   color: var(--ion-color-carrot);
+  background: rgba(var(--ion-color-carrot-rgb), 0.1);
+  padding: 3px 8px;
+  border-radius: 999px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
 
 .trip-official-tag ion-icon {
   font-size: 12px;
+}
+
+/* Divider between provider row and meta */
+.trip-card-divider {
+  height: 1px;
+  background: var(--card-border);
+  margin: 2px 0;
 }
 
 /* Meta Grid */
@@ -816,16 +844,13 @@ onUnmounted(() => {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  background: rgba(var(--ion-color-dark-rgb), 0.05);
-  border-radius: 8px;
+  background: transparent;
+  border: 1px solid var(--card-border);
+  border-radius: 999px;
   padding: 5px 10px;
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 600;
-  color: var(--ion-color-dark);
-}
-
-.ion-palette-dark .trip-meta-chip {
-  background: rgba(255,255,255,0.07);
+  color: var(--ion-color-medium);
 }
 
 .trip-meta-icon {
@@ -959,10 +984,20 @@ ion-header :deep(app-header ion-toolbar) {
   width: 100%;
 }
 
+.capsule-actions .classic-action-btn,
+.capsule-actions .sort-btn-wrapper {
+  --border-radius: var(--radius-lg);
+  --background: var(--card-inner-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-lg);
+}
+
 .classic-action-btn {
-  height: 50px;
+  height: 44px;
   margin: 0;
   --color: var(--ion-color-dark);
+  --padding-start: 10px;
+  --padding-end: 10px;
   position: relative;
   font-weight: 700;
   text-transform: none;

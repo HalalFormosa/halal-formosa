@@ -715,7 +715,7 @@ onBeforeUnmount(() => {
 }
 
 .modern-sort-button {
-  --border-radius: 20px;
+  --border-radius: var(--radius-xl);
   --padding-start: 12px;
   --padding-end: 12px;
   font-size: 0.8rem;
@@ -822,14 +822,19 @@ onBeforeUnmount(() => {
   font-weight: 500;
 }
 
-/* Category pills */
+/* Category pills — cohesive capsule pill-nav, same surface language as the
+   floating tab bar and header chip buttons */
 .category-scroll {
   display: flex;
-  gap: 12px;
+  gap: 10px;
   overflow-x: auto;
-  padding: 16px;
+  padding: 12px 16px;
   -webkit-overflow-scrolling: touch;
-  background: transparent;
+  background: var(--card-inner-bg);
+  margin: 0 16px;
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--card-border);
+  box-shadow: var(--card-shadow);
 }
 
 .category-scroll::-webkit-scrollbar {
@@ -840,12 +845,11 @@ onBeforeUnmount(() => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0 24px;
   padding: 0 16px;
   height: 42px;
   min-width: 80px;
-  border-radius: 21px;
-  border: 2px solid transparent;
+  border-radius: var(--radius-lg);
+  border: 1.5px solid transparent;
   background-size: cover;
   background-position: center;
   position: relative;
@@ -853,8 +857,7 @@ onBeforeUnmount(() => {
   color: #ffffff;
   flex-shrink: 0;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -874,25 +877,25 @@ onBeforeUnmount(() => {
 .pill-text {
   position: relative;
   z-index: 2;
-  font-size: 0.85rem;
+  font-size: 0.83rem;
   font-weight: 700;
   white-space: nowrap;
-  letter-spacing: 0.02em;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+  letter-spacing: 0.01em;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
 }
 
 .pill-active {
   border-color: var(--ion-color-carrot) !important;
-  box-shadow: 0 8px 25px rgba(255, 126, 0, 0.35);
-  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 0 0 3px rgba(var(--ion-color-carrot-rgb), 0.18);
+  transform: translateY(-1px);
 }
 
 .pill-active::before {
-  background: rgba(var(--ion-color-carrot-rgb), 0.3);
+  background: rgba(var(--ion-color-carrot-rgb), 0.32);
 }
 
-.ion-palette-dark .premium-cat-pill {
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+.ion-palette-dark .category-scroll {
+  background: var(--card-inner-bg);
 }
 
 /* Filter Row */
@@ -904,7 +907,7 @@ onBeforeUnmount(() => {
 }
 
 .modern-filter-button {
-  --border-radius: 20px;
+  --border-radius: var(--radius-xl);
   font-size: 0.8rem;
   font-weight: 500;
   text-transform: none;
@@ -1055,12 +1058,12 @@ onBeforeUnmount(() => {
 
 .store-product-card {
   background: var(--card-bg);
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   overflow: hidden;
   cursor: pointer;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
   box-shadow: var(--card-shadow);
-  border: 1px solid var(--ion-color-step-50, transparent);
+  border: 1px solid var(--card-border);
   height: 100%;
   display: flex;
   flex-direction: column;
@@ -1068,6 +1071,7 @@ onBeforeUnmount(() => {
 
 .store-product-card:active {
   transform: scale(0.97);
+  box-shadow: var(--card-shadow-hover);
 }
 
 .product-image-wrapper {
@@ -1077,13 +1081,16 @@ onBeforeUnmount(() => {
   overflow: hidden;
   background: var(--ion-color-step-50, #f4f5f8);
   flex-shrink: 0;
+  padding: 10px;
+  box-sizing: border-box;
 }
 
 .product-image {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   display: block;
+  border-radius: var(--radius-sm);
 }
 
 .product-image-placeholder {
@@ -1117,20 +1124,22 @@ onBeforeUnmount(() => {
 }
 
 .product-info {
-  padding: 12px;
+  padding: 12px 12px 14px;
   display: flex;
   flex-direction: column;
   flex-grow: 1;
   justify-content: space-between;
+  gap: 3px;
+  border-top: 1px solid var(--card-border);
 }
 
 .product-category {
-  font-size: 0.65rem;
+  font-size: 0.62rem;
   color: var(--ion-color-medium);
-  margin-bottom: 2px;
+  margin-bottom: 0;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  font-weight: 600;
+  letter-spacing: 0.06em;
+  font-weight: 700;
 }
 
 .product-store-info {
@@ -1152,9 +1161,10 @@ onBeforeUnmount(() => {
 }
 
 .product-name {
-  margin: 4px 0;
+  margin: 2px 0;
   font-size: 0.88rem;
-  font-weight: 600;
+  font-weight: 700;
+  letter-spacing: -0.01em;
   line-height: 1.3;
   color: var(--ion-text-color);
   display: -webkit-box;
@@ -1191,14 +1201,16 @@ onBeforeUnmount(() => {
 
 .product-price-row {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   justify-content: space-between;
   gap: 4px;
+  margin-top: 4px;
 }
 
 .product-price {
-  font-size: 1rem;
-  font-weight: 700;
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
   color: var(--ion-color-carrot);
 }
 
@@ -1302,13 +1314,14 @@ onBeforeUnmount(() => {
 
 /* Dark mode */
 .ion-palette-dark .store-product-card {
-  background: var(--ion-color-step-100, #1e1e1e);
+  background: var(--card-bg);
   box-shadow: var(--card-shadow);
-  border-color: rgba(255, 255, 255, 0.05);
+  border-color: var(--card-border);
 }
 
 .ion-palette-dark .promo-card {
   box-shadow: var(--card-shadow);
+  border-color: var(--card-border);
 }
 
 .ion-palette-dark .product-image-wrapper {

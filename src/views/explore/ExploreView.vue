@@ -566,7 +566,7 @@
       @saved="checkSavedState(selectedLocationForSave?.id || 0)"
     />
 
-    <ion-footer v-if="viewMode === 'list'" style="position: absolute; bottom: 0; left: 0; right: 0; width: 100%; z-index: 1001; background: var(--ion-background-color); border-top: 1px solid rgba(var(--ion-color-dark-rgb), 0.05);">
+    <ion-footer v-if="viewMode === 'list'" style="position: absolute; bottom: 0; left: 0; right: 0; width: 100%; z-index: 1001; background: var(--ion-background-color); border-top: 1px solid var(--card-border);">
       <div class="footer-count">
         <small>
           {{ $t('explore.showingResults', {count: listLocations.length, total: boundsFilteredLocations.length}) }}
@@ -2916,7 +2916,7 @@ button.gm-ui-hover-effect > span {
  * QUICK FILTERS BAR (Map View Only)
  *********************************************/
 .quick-filters-bar {
-  padding: 6px 12px;
+  padding: 6px 12px 8px;
   background: transparent;
   pointer-events: auto;
   z-index: 1001;
@@ -2925,11 +2925,17 @@ button.gm-ui-hover-effect > span {
 
 .quick-filters-scroll {
   display: flex;
-  gap: 8px;
+  gap: 4px;
   overflow-x: auto;
   scrollbar-width: none;
   -ms-overflow-style: none;
-  padding-bottom: 2px;
+  padding: 4px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 999px;
+  box-shadow: var(--card-shadow);
+  width: fit-content;
+  max-width: 100%;
 }
 
 .quick-filters-scroll::-webkit-scrollbar {
@@ -2937,15 +2943,15 @@ button.gm-ui-hover-effect > span {
 }
 
 .quick-filter-chip {
-  background: var(--ion-background-color) !important;
-  --color: var(--cat-color, var(--ion-color-carrot));
-  border: 1px solid var(--cat-color, var(--ion-color-carrot));
-  border-radius: 16px;
+  background: transparent !important;
+  --color: var(--ion-color-medium);
+  border: none;
+  border-radius: 999px;
   padding: 4px 12px;
   margin: 0;
   height: 32px;
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 600;
   flex-shrink: 0;
   transition: all 0.2s ease;
   pointer-events: auto;
@@ -2957,7 +2963,8 @@ button.gm-ui-hover-effect > span {
   --background: var(--cat-bg, var(--ion-color-carrot));
   color: white !important;
   --color: white;
-  border-color: var(--cat-bg, var(--ion-color-carrot));
+  border-color: transparent;
+  box-shadow: 0 3px 8px rgba(var(--ion-color-carrot-rgb), 0.25);
 }
 
 .quick-filter-chip .category-icon {
@@ -3178,17 +3185,17 @@ button.gm-ui-hover-effect > span {
 }
 
 .compact-searchbar {
-  --background: rgba(255, 255, 255, 0.85) !important;
+  --background: var(--card-bg) !important;
   --box-shadow: none !important;
-  --border-radius: 16px !important;
-  border-radius: 16px !important;
+  --border-radius: var(--radius-lg) !important;
+  border-radius: var(--radius-lg) !important;
   --padding-start: 30px;
   --padding-end: 12px;
   padding: 0;
-  height: 44px !important;
-  min-height: 44px !important;
-  max-height: 44px !important;
-  --height: 44px;
+  height: 46px !important;
+  min-height: 46px !important;
+  max-height: 46px !important;
+  --height: 46px;
   margin: 0;
   background: transparent !important;
   border: none !important;
@@ -3197,16 +3204,12 @@ button.gm-ui-hover-effect > span {
   -webkit-backdrop-filter: none !important;
 }
 
-.ion-palette-dark .compact-searchbar {
-  --background: rgba(45, 45, 45, 0.85) !important;
-}
-
 .compact-searchbar::part(container) {
   background: transparent !important;
-  border-radius: 16px !important;
-  height: 44px !important;
-  min-height: 44px !important;
-  max-height: 44px !important;
+  border-radius: var(--radius-lg) !important;
+  height: 46px !important;
+  min-height: 46px !important;
+  max-height: 46px !important;
   width: 100% !important;
   border: none !important;
   box-shadow: none !important;
@@ -3217,14 +3220,16 @@ button.gm-ui-hover-effect > span {
 .compact-searchbar::part(input) {
   height: 100% !important;
   width: 100% !important;
+  background: var(--card-bg) !important;
   backdrop-filter: blur(12px) !important;
   -webkit-backdrop-filter: blur(12px) !important;
-  border-radius: 16px !important;
+  border-radius: var(--radius-lg) !important;
   padding-inline-start: 30px !important;
   padding-inline-end: 12px !important;
-  border: none !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
-  font-size: 0.78rem !important;
+  border: 1px solid var(--card-border) !important;
+  box-shadow: var(--card-shadow) !important;
+  font-size: 0.8rem !important;
+  font-weight: 500;
 }
 
 .compact-searchbar::part(input)::placeholder {
@@ -3243,19 +3248,19 @@ button.gm-ui-hover-effect > span {
 }
 
 .header-btn {
-  --border-radius: 50%;
-  height: 44px !important;
-  width: 44px !important;
-  min-height: 44px !important;
-  max-height: 44px !important;
-  min-width: 44px !important;
-  max-width: 44px !important;
+  --border-radius: var(--radius-lg);
+  height: 46px !important;
+  width: 46px !important;
+  min-height: 46px !important;
+  max-height: 46px !important;
+  min-width: 46px !important;
+  max-width: 46px !important;
   margin: 0;
   --padding-start: 0;
   --padding-end: 0;
   --color: #fff;
   --background: var(--ion-color-carrot);
-  --box-shadow: 0 4px 12px rgba(var(--ion-color-carrot-rgb), 0.3);
+  --box-shadow: var(--card-shadow-hover);
   flex-shrink: 0;
 }
 
@@ -3334,19 +3339,17 @@ button.gm-ui-hover-effect > span {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: var(--ion-background-color) !important;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: var(--card-bg) !important;
   color: var(--cat-color);
   height: 36px;
-  border-radius: 100px;
+  border-radius: 999px;
   padding: 0 14px;
-  border: 1px solid rgba(var(--ion-color-dark-rgb), 0.18);
+  border: 1px solid var(--card-border);
   font-weight: 600;
   font-size: 0.8rem;
   transition: all 0.2s ease;
   flex-shrink: 0;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--card-shadow);
 }
 
 .modern-category-chip ion-label {
@@ -3356,8 +3359,8 @@ button.gm-ui-hover-effect > span {
 .modern-category-chip.active {
   background: var(--cat-color) !important;
   color: #ffffff;
-  border-color: var(--cat-color);
-  box-shadow: 0 4px 12px rgba(6, 182, 212, 0.2);
+  border-color: transparent;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .category-emoji, .category-icon { margin-right: 6px; }
@@ -3369,18 +3372,19 @@ button.gm-ui-hover-effect > span {
 ========================= */
 .modern-location-card {
   margin: 16px 0;
-  background: var(--ion-card-background, #ffffff);
+  background: var(--card-bg);
   border-radius: var(--radius-lg);
   overflow: hidden;
   box-shadow: var(--card-shadow);
-  border: 1px solid rgba(var(--ion-color-dark-rgb), 0.05);
-  transition: all 0.3s ease;
+  border: 1px solid var(--card-border);
+  transition: all 0.25s ease;
   cursor: pointer;
   position: relative;
 }
 
 .modern-location-card.active-card {
-  border: 3px solid var(--ion-color-carrot) !important;
+  border: 2px solid var(--ion-color-carrot) !important;
+  box-shadow: var(--card-shadow-hover);
 }
 
 .card-inner {
@@ -3598,26 +3602,17 @@ button.gm-ui-hover-effect > span {
   flex: 0 0 85vw;
   max-width: 380px;
   margin: 0;
-  /* Light Mode Base */
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(25px) saturate(200%);
-  -webkit-backdrop-filter: blur(25px) saturate(200%);
+  background: var(--card-bg);
   border-radius: var(--radius-lg);
   overflow: hidden;
-  box-shadow: var(--card-shadow);
-  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: var(--card-shadow-hover);
+  border: 1px solid var(--card-border);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
   position: relative;
   scroll-snap-align: center;
   will-change: transform;
   scroll-snap-stop: always;
-}
-
-/* Dark Mode Base Case */
-.ion-palette-dark .modern-location-card {
-  background: rgba(28, 28, 30, 0.92);
-  border: 1px solid rgba(255, 255, 255, 0.15);
 }
 
 @media (min-width: 768px) {
@@ -3821,7 +3816,7 @@ button.gm-ui-hover-effect > span {
   font-size: 0.8rem;
   font-weight: 800;
   background: rgba(var(--ion-color-carrot-rgb), 0.15);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   margin: 0;
   letter-spacing: 0.05em;
 }
@@ -3955,28 +3950,20 @@ button.gm-ui-hover-effect > span {
   bottom: calc(var(--explore-card-height) + 12px);
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(255, 255, 255, 0.9);
+  background: var(--card-bg);
   padding: 8px 16px;
-  border-radius: 20px;
+  border-radius: 999px;
   display: flex;
   align-items: center;
   gap: 10px;
   font-size: 13.5px;
   font-weight: 600;
-  color: #c2410c; /* dark orange */
-  box-shadow: 0 4px 15px rgba(0,0,0,0.12);
+  color: var(--ion-color-carrot-shade);
+  box-shadow: var(--card-shadow-hover);
   z-index: 2000;
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.5);
+  border: 1px solid var(--card-border);
   pointer-events: none;
   animation: fadeIn 0.3s ease-out;
-}
-
-.ion-palette-dark .locating-status-badge {
-  background: rgba(28, 28, 30, 0.85);
-  color: #fdba74; /* light orange */
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
 }
 
 .pulse-dot {
@@ -4051,11 +4038,11 @@ button.gm-ui-hover-effect > span {
   font-size: 0.65rem;
   font-weight: 800;
   color: var(--ion-color-step-850, #1f2937);
-  background: rgba(var(--ion-color-dark-rgb), 0.08); /* Darker gray background */
+  background: rgba(var(--ion-color-dark-rgb), 0.06);
   padding: 3px 8px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   text-transform: lowercase;
-  border: 1.5px solid rgba(var(--ion-color-dark-rgb), 0.1);
+  border: 1px solid var(--card-border);
   letter-spacing: 0.01em;
 }
 
@@ -4086,17 +4073,22 @@ button.gm-ui-hover-effect > span {
 .list-header {
   margin-bottom: 20px;
   padding-bottom: 12px;
-  border-bottom: 1px solid rgba(var(--ion-color-dark-rgb), 0.05);
+  border-bottom: 1px solid var(--card-border);
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
 .sort-btn-simple {
-  --padding-start: 8px;
-  --padding-end: 8px;
-  height: 32px;
-  font-size: 0.9rem;
+  --padding-start: 12px;
+  --padding-end: 10px;
+  --border-radius: var(--radius-md);
+  --background: var(--card-bg);
+  --box-shadow: var(--card-shadow);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-md);
+  height: 34px;
+  font-size: 0.85rem;
   font-weight: 600;
   color: var(--ion-color-medium);
   margin: 0;
@@ -4283,10 +4275,10 @@ button.gm-ui-hover-effect > span {
 }
 
 .clear-chip {
-  --background: rgba(255,255,255,0.08);
+  --background: var(--card-bg);
   --color: var(--ion-color-carrot);
-  border: 1px dashed var(--ion-color-medium);
-  border-radius: 100px;
+  border: 1px dashed var(--ion-color-carrot);
+  border-radius: 999px;
   font-weight: 700;
   width: auto;
   flex-shrink: 0;
@@ -4296,8 +4288,8 @@ button.gm-ui-hover-effect > span {
   height: 38px;
   padding: 0 16px;
   margin: 0;
-  background: var(--ion-background-color) !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  background: var(--card-bg) !important;
+  box-shadow: var(--card-shadow);
 }
 
 .floating-clear {

@@ -49,37 +49,40 @@
     <ion-content :scroll-events="true" @ionScroll="handleScroll" fullscreen>
       <div v-if="!loading && place">
         <!-- 🖼️ Image carousel (Swiper) -->
-        <Swiper
-            :modules="modules"
-            :zoom="true"
-            :slides-per-view="1"
-            :pagination="{ clickable: true }"
-            class="place-swiper"
-        >
-          <SwiperSlide v-if="place?.image">
-            <img
-                :src="place.image"
-                alt="Place image"
-                style="width: 100%; height: 100%; object-fit: cover; cursor: pointer;"
-                @click="openImageModal(0)"
-            />
-          </SwiperSlide>
-          <SwiperSlide v-for="(photo, index) in locationPhotos" :key="photo.id">
-            <img
-                :src="photo.url"
-                alt="Place image"
-                style="width: 100%; height: 100%; object-fit: cover; cursor: pointer;"
-                @click="openImageModal(place?.image ? index + 1 : index)"
-            />
-          </SwiperSlide>
-          <SwiperSlide v-if="!place?.image && locationPhotos.length === 0">
-            <img
-                src="https://placehold.co/600x300?text=No+Image"
-                alt="Place image"
-                style="width: 100%; height: 100%; object-fit: cover;"
-            />
-          </SwiperSlide>
-        </Swiper>
+        <div class="hero-wrapper">
+          <Swiper
+              :modules="modules"
+              :zoom="true"
+              :slides-per-view="1"
+              :pagination="{ clickable: true }"
+              class="place-swiper"
+          >
+            <SwiperSlide v-if="place?.image">
+              <img
+                  :src="place.image"
+                  alt="Place image"
+                  style="width: 100%; height: 100%; object-fit: cover; cursor: pointer;"
+                  @click="openImageModal(0)"
+              />
+            </SwiperSlide>
+            <SwiperSlide v-for="(photo, index) in locationPhotos" :key="photo.id">
+              <img
+                  :src="photo.url"
+                  alt="Place image"
+                  style="width: 100%; height: 100%; object-fit: cover; cursor: pointer;"
+                  @click="openImageModal(place?.image ? index + 1 : index)"
+              />
+            </SwiperSlide>
+            <SwiperSlide v-if="!place?.image && locationPhotos.length === 0">
+              <img
+                  src="https://placehold.co/600x300?text=No+Image"
+                  alt="Place image"
+                  style="width: 100%; height: 100%; object-fit: cover;"
+              />
+            </SwiperSlide>
+          </Swiper>
+          <div class="hero-gradient-overlay"></div>
+        </div>
 
         <!-- 📍 Location Info Section -->
         <div 
@@ -326,31 +329,32 @@
 
 
 
-            <!-- 📍 Address -->
-            <ion-item lines="none">
-              <ion-icon :icon="navigateOutline" slot="start" color="carrot"/>
+            <!-- 📍 Address + Map (grouped info card) -->
+            <div class="info-card address-map-card ion-margin-vertical">
+              <ion-item lines="none" class="info-card-item">
+                <ion-icon :icon="navigateOutline" slot="start" color="carrot"/>
 
-              <ion-label>
-                <p class="text-sm text-gray-500">{{ $t('explore.details.address') }}</p>
-                <p>{{ place.address || $t('explore.details.noAddress') }}</p>
-              </ion-label>
+                <ion-label>
+                  <p class="text-sm text-gray-500">{{ $t('explore.details.address') }}</p>
+                  <p>{{ place.address || $t('explore.details.noAddress') }}</p>
+                </ion-label>
 
-              <ion-button
-                  fill="clear"
-                  size="small"
-                  color="carrot"
-                  @click="logOpenMaps"
-                  :href="`https://www.google.com/maps/search/?api=1&query=${mapSearchQuery}&center=${place.lat},${place.lng}&zoom=16`"
-                  target="_blank"
-              >
-                {{ $t('common.open') }}
-              </ion-button>
-            </ion-item>
+                <ion-button
+                    fill="clear"
+                    size="small"
+                    color="carrot"
+                    @click="logOpenMaps"
+                    :href="`https://www.google.com/maps/search/?api=1&query=${mapSearchQuery}&center=${place.lat},${place.lng}&zoom=16`"
+                    target="_blank"
+                >
+                  {{ $t('common.open') }}
+                </ion-button>
+              </ion-item>
 
-
-            <!-- 🗺️ Interactive Map -->
-            <div class="rounded-xl overflow-hidden ion-margin-vertical shadow-md detail-map-container">
-              <div ref="detailMapRef" class="detail-map"></div>
+              <!-- 🗺️ Interactive Map -->
+              <div class="detail-map-container">
+                <div ref="detailMapRef" class="detail-map"></div>
+              </div>
             </div>
 
             <!-- Promotions and Menu Action Buttons -->
@@ -369,24 +373,26 @@
             <div class="ion-margin-vertical">
               <!-- 🕒 Opening Hours -->
               <template v-if="place.opening_hours">
-                <div class="ion-margin-top ion-margin-bottom">
-                  <h3 class="font-bold text-lg">{{ $t('explore.details.openingHours') }}</h3>
-                  <div class="open-status-badge" :class="{ open: isOpenNow, closed: !isOpenNow }">
-                    {{ isOpenNow ? $t('explore.details.openNow') : $t('explore.details.closedNow') }}
+                <div class="info-card hours-card ion-margin-top ion-margin-bottom">
+                  <div class="info-card-header">
+                    <h3 class="font-bold text-lg ion-no-margin">{{ $t('explore.details.openingHours') }}</h3>
+                    <div class="open-status-badge" :class="{ open: isOpenNow, closed: !isOpenNow }">
+                      {{ isOpenNow ? $t('explore.details.openNow') : $t('explore.details.closedNow') }}
+                    </div>
                   </div>
-                </div>
 
-                <ion-list>
-                  <ion-item v-for="(value, day) in formattedOpeningHours" :key="day" :class="{ 'today-highlight': day === todayDayLabel }">
-                    <ion-label class="capitalize">{{ day }}</ion-label>
-                    <ion-label slot="end" class="ion-text-right">
+                  <ion-list>
+                    <ion-item v-for="(value, day) in formattedOpeningHours" :key="day" :class="{ 'today-highlight': day === todayDayLabel }">
+                      <ion-label class="capitalize">{{ day }}</ion-label>
+                      <ion-label slot="end" class="ion-text-right">
             <span v-if="value.active">
               {{ value.open }} – {{ value.close }}
             </span>
-                      <span v-else class="text-gray-400">{{ $t('common.closed') }}</span>
-                    </ion-label>
-                  </ion-item>
-                </ion-list>
+                        <span v-else class="text-gray-400">{{ $t('common.closed') }}</span>
+                      </ion-label>
+                    </ion-item>
+                  </ion-list>
+                </div>
               </template>
 
               <!-- 📞 Contact Info & Price Range (Additional Details) -->
@@ -396,7 +402,7 @@
                   <ion-icon :icon="showAdditionalDetails ? chevronUp : chevronDown" class="collapsible-chevron" />
                 </div>
 
-                <div v-show="showAdditionalDetails" class="collapsible-content">
+                <div v-show="showAdditionalDetails" class="collapsible-content info-card">
                   <ion-item lines="none" v-if="place.phone">
                     <ion-icon :icon="callOutline" slot="start" color="carrot"/>
                     <ion-label>
@@ -1993,11 +1999,63 @@ const scrollToReviews = () => {
 
 
 <style scoped>
+/* HERO GALLERY */
+.hero-wrapper {
+  position: relative;
+}
+
+.hero-gradient-overlay {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 90px;
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.28) 100%);
+  pointer-events: none;
+  z-index: 5;
+}
+
+/* GROUPED INFO CARDS */
+.info-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--card-shadow);
+  overflow: hidden;
+}
+
+.info-card-item {
+  --background: transparent;
+}
+
+.address-map-card {
+  padding-bottom: 0;
+}
+
+.hours-card {
+  padding: 14px 16px 4px;
+}
+
+.hours-card ion-item {
+  --background: transparent;
+}
+
+.info-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.info-card-header .open-status-badge {
+  margin-top: 0;
+}
+
 /* MAP STYLES */
 .detail-map-container {
   width: 100%;
   height: 200px;
-  border-radius: 12px;
   overflow: hidden;
 }
 
@@ -2051,11 +2109,11 @@ const scrollToReviews = () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: var(--ion-card-background, #ffffff);
-  border-radius: 12px;
+  background: var(--card-bg);
+  border-radius: var(--radius-lg);
   padding: 16px;
   box-shadow: var(--card-shadow);
-  border: 1px solid var(--ion-color-light, #f0f0f0);
+  border: 1px solid var(--card-border);
   cursor: pointer;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
@@ -2069,12 +2127,12 @@ const scrollToReviews = () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: var(--ion-card-background, #ffffff);
-  border-radius: 12px;
+  background: var(--card-bg);
+  border-radius: var(--radius-lg);
   padding: 16px;
   margin-top: 8px;
   box-shadow: var(--card-shadow);
-  border: 1px solid var(--ion-color-light, #f0f0f0);
+  border: 1px solid var(--card-border);
   cursor: pointer;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
@@ -2149,8 +2207,9 @@ const scrollToReviews = () => {
 .product-title {
   margin: 0;
   font-weight: 800;
-  font-size: 1.6rem;
-  line-height: 1.2;
+  font-size: 1.7rem;
+  letter-spacing: -0.02em;
+  line-height: 1.18;
   /* A global, unscoped .product-title rule in SearchView.vue also targets this class
      and falls back to white text when --ion-text-color isn't set (i.e. outside dark
      palette) — declare color explicitly here so this scoped rule's higher specificity
@@ -2246,7 +2305,7 @@ const scrollToReviews = () => {
 .open-status-badge {
   display: inline-block;
   padding: 6px 12px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   font-weight: 600;
   font-size: 13px;
   margin-top: 8px;
@@ -2283,21 +2342,28 @@ const scrollToReviews = () => {
   display: flex;
   align-items: center;
   gap: 4px;
-  padding: 4px 10px;
-  border-radius: 99px;
+  padding: 5px 11px;
+  border-radius: 999px;
   font-weight: 800;
   font-size: 11px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  box-shadow: var(--card-shadow);
 }
 
 .premium-badge-pill.gold {
-  background: #facc15;
-  color: #854d0e;
+  background: linear-gradient(135deg, #facc15 0%, #ca8a04 100%);
+  color: #422006;
 }
 
 .premium-badge-pill.silver {
-  background: #94a3b8;
-  color: #1e293b;
+  background: linear-gradient(135deg, #cbd5e1 0%, #64748b 100%);
+  color: #0f172a;
+}
+
+.premium-badge-pill.bronze {
+  background: linear-gradient(135deg, #d97706 0%, #78350f 100%);
+  color: #fff;
 }
 
 .status-action-row {
@@ -2306,6 +2372,18 @@ const scrollToReviews = () => {
   justify-content: space-between;
   margin-top: 12px;
   gap: 8px;
+}
+
+.status-action-row ion-chip.capitalize {
+  --background: rgba(var(--ion-color-carrot-rgb), 0.12);
+  --color: var(--ion-color-carrot-shade);
+  font-weight: 700;
+  font-size: 0.72rem;
+  letter-spacing: 0.02em;
+  height: 26px;
+  border-radius: var(--radius-sm);
+  box-shadow: none;
+  margin: 0;
 }
 
 .official-verified-tag {
@@ -2338,7 +2416,7 @@ const scrollToReviews = () => {
   gap: 12px;
   margin-top: 14px;
   padding: 14px 16px;
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   background: rgba(var(--ion-color-carrot-rgb), 0.08);
   border: 1px solid rgba(var(--ion-color-carrot-rgb), 0.3);
 }
@@ -2469,7 +2547,7 @@ ion-item ion-label p:not(.text-gray-500) {
   background: rgba(var(--ion-color-warning-rgb, 255, 196, 9), 0.12);
   border: 1px solid var(--ion-color-warning, #ffc409);
   padding: 12px 16px;
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   margin: 16px 0;
   transition: all 0.2s ease;
 }
@@ -2581,7 +2659,7 @@ ion-item ion-label p:not(.text-gray-500) {
   align-items: center;
   gap: 8px;
   padding: 8px 12px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   box-sizing: border-box;
   transition: transform 0.2s ease;
   min-height: 42px;
@@ -2635,10 +2713,11 @@ ion-item ion-label p:not(.text-gray-500) {
   margin-top: 12px;
 }
 .review-card {
-  background: rgba(var(--ion-text-color-rgb), 0.03);
-  border-radius: 12px;
+  background: var(--card-bg);
+  border-radius: var(--radius-md);
   padding: 12px;
-  border: 1px solid rgba(var(--ion-text-color-rgb), 0.05);
+  border: 1px solid var(--card-border);
+  box-shadow: var(--card-shadow);
 }
 .review-header {
   display: flex;
@@ -2887,7 +2966,7 @@ ion-item ion-label p:not(.text-gray-500) {
 .promo-card {
   background: linear-gradient(135deg, rgba(var(--ion-color-carrot-rgb, 242, 110, 36), 0.08) 0%, rgba(var(--ion-color-carrot-rgb, 242, 110, 36), 0.03) 100%);
   border: 1px dashed var(--ion-color-carrot);
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   padding: 16px;
   margin-bottom: 12px;
   position: relative;
@@ -2931,9 +3010,10 @@ ion-item ion-label p:not(.text-gray-500) {
   align-items: flex-start;
   gap: 16px;
   padding: 12px;
-  background: rgba(var(--ion-text-color-rgb, 0, 0, 0), 0.02);
-  border: 1px solid rgba(var(--ion-text-color-rgb, 0, 0, 0), 0.06);
-  border-radius: 12px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--card-shadow);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 .menu-item-row:hover {
@@ -3025,6 +3105,14 @@ ion-item ion-label p:not(.text-gray-500) {
 }
 .collapsible-content {
   animation: slideDown 0.25s ease-out;
+}
+
+.collapsible-content.info-card {
+  padding: 2px 12px 6px;
+}
+
+.collapsible-content.info-card ion-item {
+  --background: transparent;
 }
 @keyframes slideDown {
   from { opacity: 0; transform: translateY(-5px); }

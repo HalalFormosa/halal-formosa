@@ -6,11 +6,13 @@
 
     <ion-content class="ion-padding">
       <!-- === Prayer Times Horizontal === -->
-      <ion-card>
+      <ion-card class="prayer-hero-card">
+        <div class="prayer-hero-glow" aria-hidden="true"></div>
         <ion-card-header>
           <div class="prayer-header-row">
-            <ion-card-title>
+            <ion-card-title class="prayer-hero-title">
               <template v-if="nextPrayer && userLocation">
+                <div class="prayer-eyebrow">{{ $t('home.prayerTimes') }}</div>
                 <div class="prayer-title-main">
                   {{ $t('home.prayerNotification', { label: nextPrayer.label, time: upcomingCountdown }) }}
                 </div>
@@ -2568,6 +2570,49 @@ function openPartner(partner: any) {
 
 <style scoped>
 
+/* ===============================
+   2.0 — Editorial Section Headers
+   =============================== */
+ion-card:has(> ion-card-header .card-header-row) {
+  margin-block: 6px 22px;
+}
+
+.card-header-row {
+  padding: 2px 2px 6px;
+  gap: 8px;
+}
+
+.card-header-row ion-card-title {
+  position: relative;
+  min-width: 0;
+  flex-shrink: 1;
+  padding-left: 13px;
+  font-size: 1.08rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--ion-color-dark);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.card-header-row ion-card-title::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 17px;
+  border-radius: 3px;
+  background: linear-gradient(180deg, var(--ion-color-carrot), var(--ion-color-carrot-tint));
+}
+
+.card-header-row ion-button {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
 /* === Compact Segment === */
 ion-segment {
   --background: var(--ion-color-step-100);
@@ -2713,14 +2758,14 @@ ion-segment-button {
 
 .main-feature-section {
   padding: 0;
-  margin-top: 10px;
-  margin-bottom: 10px;
+  margin-top: 14px;
+  margin-bottom: 22px;
 }
 
 .main-features-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 12px;
+  gap: 10px;
 }
 
 .feature-card {
@@ -2728,15 +2773,15 @@ ion-segment-button {
   flex-direction: column;
   align-items: flex-start;
   justify-content: space-between;
-  padding: 16px;
-  border-radius: 16px;
+  padding: 18px;
+  border-radius: var(--radius-lg);
   border: none;
   text-align: left;
-  height: 150px;
+  height: 148px;
   width: 100%;
   margin: 0;
   box-sizing: border-box;
-  transition: transform 0.2s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.2s;
+  transition: transform 0.18s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.18s;
   cursor: pointer;
   position: relative;
   overflow: hidden;
@@ -2744,32 +2789,31 @@ ion-segment-button {
 }
 
 .feature-card:active {
-  transform: scale(0.96);
+  transform: scale(0.97);
 }
 
 .feature-primary {
-  background: linear-gradient(135deg, var(--ion-color-carrot) 0%, #ff8c3a 100%);
+  background: linear-gradient(155deg, var(--ion-color-carrot) 0%, #ff9d4d 100%);
   color: white;
-  box-shadow: 0 8px 16px rgba(217, 119, 6, 0.25);
+  box-shadow: 0 6px 18px rgba(217, 119, 6, 0.22);
 }
 
 .feature-secondary {
   /* Using a contrasting premium color for barcode */
-  background: linear-gradient(135deg, var(--ion-color-tertiary, #5260ff) 0%, #7b88ff 100%);
+  background: linear-gradient(155deg, var(--ion-color-tertiary, #5260ff) 0%, #7b88ff 100%);
   color: white;
-  box-shadow: 0 8px 16px rgba(82, 96, 255, 0.25);
+  box-shadow: 0 6px 18px rgba(82, 96, 255, 0.22);
 }
 
 .feature-icon-wrapper {
-  background: rgba(255, 255, 255, 0.25);
-  border-radius: 12px;
-  width: 44px;
-  height: 44px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: var(--radius-md);
+  width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 24px;
-  backdrop-filter: blur(4px);
+  font-size: 21px;
   z-index: 2;
 }
 
@@ -2780,16 +2824,16 @@ ion-segment-button {
 
 .feature-text h3 {
   margin: 0 0 4px;
-  font-size: 1.1rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
+  font-size: 1.08rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
   white-space: normal;
 }
 
 .feature-text p {
   margin: 0;
-  font-size: 0.75rem;
-  opacity: 0.9;
+  font-size: 0.74rem;
+  opacity: 0.88;
   line-height: 1.3;
   white-space: normal;
   word-wrap: break-word;
@@ -2797,12 +2841,12 @@ ion-segment-button {
 
 .feature-bg-icon {
   position: absolute;
-  right: -10px;
-  bottom: -15px;
-  font-size: 90px;
-  opacity: 0.15;
+  right: -12px;
+  bottom: -18px;
+  font-size: 84px;
+  opacity: 0.12;
   z-index: 1;
-  transform: rotate(-10deg);
+  transform: rotate(-8deg);
   pointer-events: none;
 }
 
@@ -2864,8 +2908,9 @@ ion-segment-button {
   flex: 0 0 80px;
   scroll-snap-align: center;
 
-  border-radius: 6px;
-  padding: 7px 6px;
+  border-radius: var(--radius-md);
+  padding: 8px 6px;
+  background: rgba(var(--ion-color-dark-rgb, 0, 0, 0), 0.03);
 
   display: flex;
   flex-direction: column;
@@ -2909,14 +2954,62 @@ ion-segment-button {
 
 
 .prayer-title-main {
-  font-size: 1rem;
-  font-weight: 600;
+  font-size: 1.22rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  color: var(--ion-color-dark);
 }
 
 .prayer-title-location {
-  font-size: 0.75rem;
+  font-size: 0.78rem;
+  font-weight: 600;
   color: var(--ion-color-medium);
-  margin-top: 2px;
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+/* ===============================
+   2.0 — Prayer Hero Treatment
+   =============================== */
+.prayer-hero-card {
+  position: relative;
+  overflow: hidden;
+  margin-block: 10px 8px;
+  background: linear-gradient(165deg, rgba(var(--ion-color-carrot-rgb), 0.12) 0%, var(--card-bg) 60%);
+}
+
+.prayer-hero-glow {
+  position: absolute;
+  top: -70px;
+  right: -60px;
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(var(--ion-color-carrot-rgb), 0.28) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.prayer-hero-card ion-card-header,
+.prayer-hero-card ion-card-content {
+  position: relative;
+  z-index: 1;
+}
+
+.prayer-hero-title {
+  display: block !important;
+}
+
+.prayer-eyebrow {
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ion-color-carrot);
+  margin-bottom: 3px;
 }
 
 /* === Insights Dashboard Section === */
@@ -3046,6 +3139,52 @@ ion-segment-button {
 .partner-list-enter-from, .partner-list-leave-to {
   opacity: 0;
   transform: translateY(10px);
+}
+
+/* ===============================
+   2.0 — Discover Card Refresh
+   =============================== */
+.discover-grid {
+  gap: 12px;
+  padding: 2px 2px 6px;
+}
+
+.discover-item {
+  border-radius: var(--radius-lg);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.discover-item:active {
+  transform: scale(0.97);
+  box-shadow: var(--card-shadow-hover);
+}
+
+.discover-img {
+  border-top-left-radius: var(--radius-lg);
+  border-top-right-radius: var(--radius-lg);
+}
+
+.discover-label {
+  padding: 13px 10px;
+}
+
+.discover-label h3,
+.discover-label .discover-name {
+  letter-spacing: -0.01em;
+}
+
+.discover-item--compact {
+  border-radius: var(--radius-md);
+}
+
+.discover-img--compact {
+  border-radius: var(--radius-sm);
+}
+
+.tier-badge {
+  top: 8px;
+  left: 8px;
+  border-radius: var(--radius-sm);
 }
 
 /* === Community Reels / What's New === */

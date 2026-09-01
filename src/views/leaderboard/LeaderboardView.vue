@@ -785,9 +785,11 @@ onMounted(() => {
 <style scoped>
 /* === Compact Segment === */
 ion-segment {
-  --background: var(--ion-color-step-100);
-  border-radius: 8px;
-  min-height: 32px;
+  --background: var(--card-inner-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 999px;
+  min-height: 36px;
+  padding: 3px;
 }
 ion-segment-button {
   --padding-top: 4px;
@@ -796,9 +798,19 @@ ion-segment-button {
   --margin-bottom: 2px;
   --margin-start: 2px;
   --margin-end: 2px;
+  --border-radius: 999px;
+  --indicator-color: var(--ion-color-carrot);
+  --color-checked: var(--ion-color-carrot-contrast, #fff);
   min-height: 28px;
   font-size: 0.82rem;
   letter-spacing: 0;
+  font-weight: 600;
+}
+
+ion-searchbar {
+  --border-radius: var(--radius-lg);
+  --box-shadow: none;
+  --background: var(--card-inner-bg);
 }
 
 /* === Leaderboard Hint Banner === */
@@ -809,7 +821,7 @@ ion-segment-button {
   padding: 12px 16px;
   background: linear-gradient(135deg, rgba(249, 115, 22, 0.08) 0%, rgba(251, 146, 60, 0.08) 100%);
   border: 1px solid rgba(249, 115, 22, 0.15);
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   margin-bottom: 16px;
   cursor: pointer;
   transition: transform 0.2s ease, opacity 0.2s ease;
@@ -862,14 +874,42 @@ ion-segment-button {
   overflow: visible !important;
   contain: none !important;
   margin: 8px 0;
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
 }
 .leaderboard-item::part(native) {
   overflow: visible !important;
-  border-radius: 12px !important;
+  border-radius: var(--radius-lg) !important;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  box-shadow: var(--card-shadow);
+  transition: box-shadow 0.2s ease, transform 0.15s ease;
 }
 .leaderboard-item::part(inner) {
   overflow: visible !important;
+}
+
+/* Top-3 get stronger visual rhythm: elevated card + tier-colored accent edge */
+.leaderboard-list ion-item:nth-of-type(1)::part(native),
+.leaderboard-list ion-item:nth-of-type(2)::part(native),
+.leaderboard-list ion-item:nth-of-type(3)::part(native) {
+  box-shadow: var(--card-shadow-hover);
+  border-width: 1.5px;
+}
+
+.leaderboard-list ion-item:nth-of-type(1)::part(native) {
+  border-left: 4px solid #FFD700;
+}
+
+.leaderboard-list ion-item:nth-of-type(2)::part(native) {
+  border-left: 4px solid #C0C0C0;
+}
+
+.leaderboard-list ion-item:nth-of-type(3)::part(native) {
+  border-left: 4px solid #CD7F32;
+}
+
+.leaderboard-list ion-item:nth-of-type(n+4) {
+  margin: 6px 0;
 }
 .leaderboard-item ion-label {
   min-width: 0 !important;
@@ -1074,13 +1114,13 @@ ion-segment-button {
   display: flex;
   align-items: center;
   gap: 12px;
-  background: var(--ion-color-step-150, rgba(30, 30, 30, 0.85));
+  background: var(--card-bg);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   padding: 6px 8px 6px 16px;
-  border-radius: 30px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
-  border: 1px solid var(--ion-color-step-200, rgba(255, 255, 255, 0.1));
+  border-radius: 999px;
+  box-shadow: var(--card-shadow-hover);
+  border: 1px solid var(--card-border);
 }
 
 .summary-text {
@@ -1166,9 +1206,9 @@ ion-segment-button {
   flex-direction: column;
   align-items: center;
   text-align: center;
-  background: var(--ion-card-background, var(--ion-color-step-50));
-  border: 1px solid var(--ion-color-step-150);
-  border-radius: 16px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-lg);
   padding: 32px 24px;
   width: 100%;
   max-width: 400px;

@@ -60,17 +60,19 @@
 
     <ion-content class="ion-padding">
 
-      <ion-button
-          v-if="activeCategoryIds.length"
-          size="small"
-          fill="clear"
-          color="medium"
-          @click="clearFilters"
-      >
-        {{ $t('partner.actions.clearFilters') }}
-      </ion-button>
-
-
+      <div class="list-section-header">
+        <span v-if="!loading" class="results-count">{{ filteredBodies.length }} {{ $t('partner.title') }}</span>
+        <ion-button
+            v-if="activeCategoryIds.length"
+            size="small"
+            fill="clear"
+            color="medium"
+            class="clear-filters-btn"
+            @click="clearFilters"
+        >
+          {{ $t('partner.actions.clearFilters') }}
+        </ion-button>
+      </div>
 
       <!-- List -->
       <div class="discover-grid">
@@ -686,8 +688,9 @@ onMounted(async () => {
    ========================= */
 
 ion-searchbar.rounded {
-  --border-radius: 12px;
-  --box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+  --border-radius: var(--radius-lg);
+  --box-shadow: none;
+  --background: var(--card-inner-bg);
   padding: 0;
 }
 
@@ -710,7 +713,41 @@ ion-searchbar.rounded {
   --border-style: none;
 }
 
+.search-toolbar ion-button[fill="clear"] {
+  --border-radius: var(--radius-lg);
+  --background: var(--card-inner-bg);
+  border: 1px solid var(--card-border);
+  margin: 0 12px;
+  font-weight: 700;
+}
+
 .text-center { text-align: center; }
 .text-sm { font-size: 0.875rem; }
 .text-gray-500 { color: var(--ion-color-medium); }
-.mt-8 { margin-top: 2rem; }</style>
+.mt-8 { margin-top: 2rem; }
+
+/* =========================
+   Section Header
+   ========================= */
+.list-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 32px;
+  margin-bottom: 4px;
+}
+
+.results-count {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--ion-color-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.clear-filters-btn {
+  margin: 0 0 0 auto;
+  --padding-start: 8px;
+  --padding-end: 8px;
+  font-size: 0.8rem;
+}</style>
