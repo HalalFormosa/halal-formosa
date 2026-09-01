@@ -322,7 +322,6 @@ ion-card {
     border-radius: var(--radius-lg);
     margin: 10px 12px;
     cursor: pointer;
-    border: 1px solid var(--card-border);
     overflow: hidden;
     transition: box-shadow 0.2s ease, transform 0.15s ease;
 }
