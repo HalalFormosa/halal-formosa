@@ -432,10 +432,6 @@
       <!-- === Store === -->
       <LazySection placeholderHeight="200px" @load="fetchMarketplaceProducts">
       <ion-card style="position: relative;">
-        <div v-if="isUnderConstruction" class="test-phase-banner" style="margin: 12px 16px 0;">
-          <ion-icon :icon="warningOutline" class="test-phase-icon" />
-          <span style="font-size: 0.82rem;">{{ $t('store.testPhaseDisclaimer') }}</span>
-        </div>
         <ion-card-header>
           <div class="card-header-row">
             <ion-card-title>{{ $t('home.marketplace') }}</ion-card-title>
@@ -1005,7 +1001,6 @@ import {
   cartOutline,
   constructOutline,
   chevronForwardOutline,
-  warningOutline,
   addOutline,
   copyOutline,
   bookOutline,
@@ -1670,7 +1665,6 @@ const { fetchProgress } = useDailyMissions()
 const RECENT_DISCOVER_LIMIT = 15
 const loadingStats = ref(true)
 
-const isUnderConstruction = computed(() => import.meta.env.VITE_STORE_UNDER_CONSTRUCTION === 'true')
 const loadingProducts = ref(true)
 const loadingLocations = ref(true)
 const recentProducts = ref<any[]>([])
