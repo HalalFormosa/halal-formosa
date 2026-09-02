@@ -18,10 +18,9 @@
 
       <ion-toolbar class="actions-toolbar">
         <div class="header-main-actions">
-          <!-- 🎚️ Sort Button (Left Side) -->
-          <ion-button fill="clear" class="classic-action-btn sort-btn-wrapper" id="sort-trigger">
+          <!-- 🎚️ Sort Button (Left Side) — icon-only to match the rest of the toolbar -->
+          <ion-button fill="clear" class="classic-action-btn" id="sort-trigger" :aria-label="sortLabel">
             <ion-icon :icon="sortIcon" />
-            <span class="btn-label">{{ sortLabel }}</span>
           </ion-button>
 
           <ion-popover trigger="sort-trigger" trigger-action="click" :dismiss-on-select="true" class="width-190">
@@ -2263,29 +2262,10 @@ ion-searchbar.rounded {
   font-size: 20px;
 }
 
-.sort-btn-wrapper {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  --background: var(--card-inner-bg);
-  --background-hover: rgba(var(--ion-color-carrot-rgb), 0.1);
-  --border-width: 1px;
-  --border-style: solid;
-  --border-color: var(--card-border);
-  --border-radius: var(--radius-xl);
-  --padding-start: 12px;
-  --padding-end: 12px;
-}
-
 .right-actions-group {
   display: flex;
   align-items: center;
   gap: 2px;
-}
-
-.btn-label {
-  margin-left: 4px;
-  font-size: 13px;
 }
 
 .badge-dot {
