@@ -30,6 +30,17 @@
     </ion-header>
 
     <ion-content>
+      <!-- ion-refresher must be a direct child of ion-content — nested
+           inside the wrapper divs below, it never rendered its pulling
+           icon/text even though the refresh itself still fired. -->
+      <ion-refresher slot="fixed" @ionRefresh="doRefresh($event)">
+        <ion-refresher-content
+            :pulling-icon="chevronDownCircleOutline"
+            :pullingText="$t('search.pullToRefresh')"
+            refreshingSpinner="circles"
+        />
+      </ion-refresher>
+
       <div class="store-view-wrapper" style="position: relative; min-height: 100%;">
         <div class="store-container">
           <!-- Test Phase Disclaimer Banner -->
@@ -37,13 +48,6 @@
             <ion-icon :icon="warningOutline" class="test-phase-icon" />
             <span>{{ $t('store.testPhaseDisclaimer') }}</span>
           </div>
-          <ion-refresher slot="fixed" @ionRefresh="doRefresh($event)">
-            <ion-refresher-content
-                :pulling-icon="chevronDownCircleOutline"
-                :pullingText="$t('search.pullToRefresh')"
-                refreshingSpinner="circles"
-            />
-          </ion-refresher>
 
           <!-- Promo Banners -->
           <div v-if="promoBanners.length > 0" class="promo-section">
