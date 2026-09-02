@@ -14,43 +14,6 @@
           :showProfile="true"
       />
 
-      <ion-toolbar class="actions-toolbar">
-        <div class="header-main-actions capsule-actions">
-          <div class="right-actions-group">
-            <!-- Search Toggle Button -->
-            <ion-button
-                fill="clear"
-                @click="showSearchbar = !showSearchbar"
-                :color="showSearchbar ? 'carrot' : 'dark'"
-                class="classic-action-btn"
-            >
-              <ion-icon :icon="showSearchbar ? closeCircle : searchOutline" />
-            </ion-button>
-
-            <!-- Filter Toggle (sort now lives inside here too) -->
-            <ion-button fill="clear" @click="toggleFilters" class="classic-action-btn">
-              <ion-icon :icon="optionsOutline" />
-              <div v-if="activeFiltersCount > 0" class="badge-count">{{ activeFiltersCount }}</div>
-            </ion-button>
-          </div>
-        </div>
-      </ion-toolbar>
-
-      <transition name="fade-down">
-        <ion-toolbar v-if="showSearchbar" class="search-row-toolbar">
-          <div class="search-container">
-            <ion-searchbar
-                v-model="searchQuery"
-                :placeholder="$t('trip.searchPlaceholder')"
-                :debounce="500"
-                @ionInput="handleSearchInput"
-                class="compact-searchbar"
-                :animated="true"
-            ></ion-searchbar>
-          </div>
-        </ion-toolbar>
-      </transition>
-
       <!-- Desktop Filters (Toggleable Toolbar) -->
       <transition name="collapse">
         <ion-toolbar v-if="!isSmallScreen && showFilters" class="filter-toolbar">
@@ -112,7 +75,28 @@
     </ion-header>
 
     <!-- ================= CONTENT ================= -->
-    <ion-content class="ion-padding">
+    <ion-content class="ion-padding trip-content">
+
+      <!-- Search bar + filter button float over the content instead of
+           sitting in their own ion-toolbar — matching Product's pattern. -->
+      <div class="header-main-actions" slot="fixed">
+        <ion-searchbar
+            v-model="searchQuery"
+            :placeholder="$t('trip.searchPlaceholder')"
+            :debounce="500"
+            @ionInput="handleSearchInput"
+            class="compact-searchbar inline-searchbar"
+            :animated="true"
+        ></ion-searchbar>
+
+        <div class="right-actions-group">
+          <!-- Filter Toggle (sort now lives inside here too) -->
+          <ion-button fill="clear" @click="toggleFilters" class="classic-action-btn">
+            <ion-icon :icon="optionsOutline" />
+            <div v-if="activeFiltersCount > 0" class="badge-count">{{ activeFiltersCount }}</div>
+          </ion-button>
+        </div>
+      </div>
 
       <!-- Trip Grid Container -->
       <div class="trip-grid">
@@ -247,7 +231,7 @@ import { scheduleBannerUpdate } from '@/plugins/admob'
 
 import {
   optionsOutline, chevronUpOutline, chevronDownOutline, mapOutline, compassOutline, locationOutline,
-  searchOutline, closeCircle, timeOutline, sparkles, shieldCheckmarkOutline, eyeOutline, calendarOutline, closeOutline
+  timeOutline, sparkles, shieldCheckmarkOutline, eyeOutline, calendarOutline, closeOutline
 } from 'ionicons/icons'
 import AppHeader from '@/components/AppHeader.vue'
 import TripFilterContent from '@/components/TripFilterContent.vue'
@@ -269,7 +253,6 @@ dayjs.extend(relativeTime)
 
 const loading = ref(true)
 const searchQuery = ref('')
-const showSearchbar = ref(false)
 const showFilters = ref(false)
 const isFilterModalOpen = ref(false)
 const activeCategoryIds = ref<number[]>([])
@@ -942,41 +925,66 @@ ion-header :deep(app-header ion-toolbar) {
   border-bottom: none !important;
 }
 
+/* Floats over the trip grid (slot="fixed" in the template) instead of
+   sitting in its own ion-toolbar — matches Product's search/filter bar.
+   Fixed positioning + explicit left/right (not width:100% + margin,
+   which overflows by exactly the margin amount) avoids the overflow
+   bug that hit Product's equivalent bar. */
 .header-main-actions {
+  position: absolute;
+  top: 10px;
+  left: 16px;
+  right: 16px;
+  z-index: 5;
   display: flex;
   align-items: center;
-  justify-content: flex-end;
   gap: 8px;
-  padding: 8px 16px;
-  width: 100%;
 }
 
-.capsule-actions .classic-action-btn {
-  --border-radius: var(--radius-lg);
-  --background: var(--card-inner-bg);
-  border: 1px solid var(--card-border);
-  border-radius: var(--radius-lg);
+.inline-searchbar {
+  flex: 1;
+  min-width: 0;
 }
 
 .classic-action-btn {
   height: 44px;
+  width: 44px;
+  min-width: 44px;
   margin: 0;
   --color: var(--ion-color-dark);
-  --padding-start: 10px;
-  --padding-end: 10px;
+  /* !important needed: ion-button's fill="clear" sets --background:
+     transparent via its own .button-clear class at higher specificity
+     than a plain class selector here. */
+  --background: var(--card-bg) !important;
+  --border-radius: var(--radius-md);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--card-shadow);
   position: relative;
   font-weight: 700;
   text-transform: none;
 }
 
 .classic-action-btn ion-icon {
-  font-size: 22px;
+  font-size: 24px;
+  color: var(--ion-color-dark);
 }
 
 .right-actions-group {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.trip-content {
+  /* Ionic's .ion-padding utility sets padding-top via !important, so a
+     plain override here never wins without matching it. */
+  --padding-top: 62px;
+}
+
+.trip-content::part(scroll) {
+  padding-top: 62px !important;
 }
 
 .badge-dot {
