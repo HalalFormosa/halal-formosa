@@ -38,7 +38,11 @@
             <span>{{ $t('store.testPhaseDisclaimer') }}</span>
           </div>
           <ion-refresher slot="fixed" @ionRefresh="doRefresh($event)">
-            <ion-refresher-content />
+            <ion-refresher-content
+                :pulling-icon="chevronDownCircleOutline"
+                :pullingText="$t('search.pullToRefresh')"
+                refreshingSpinner="circles"
+            />
           </ion-refresher>
 
           <!-- Promo Banners -->
@@ -315,7 +319,7 @@ import {
   bagHandleOutline, chatbubblesOutline, cartOutline, constructOutline,
   chevronDownOutline, checkmarkOutline, filterOutline, imageOutline,
   closeOutline, storefrontOutline, addOutline, removeCircleOutline, addCircleOutline,
-  warningOutline
+  warningOutline, chevronDownCircleOutline
 } from 'ionicons/icons'
 import AppHeader from '@/components/AppHeader.vue'
 import { supabase } from '@/plugins/supabaseClient'
