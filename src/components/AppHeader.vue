@@ -163,6 +163,8 @@ onMounted(() => {
   min-width: 36px !important;
   max-width: 36px !important;
   height: 36px !important;
+  min-height: 36px !important;
+  max-height: 36px !important;
   margin: 0 2px !important;
   border: 1px solid var(--card-border);
   border-radius: 50%;
