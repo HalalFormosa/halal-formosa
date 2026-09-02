@@ -142,9 +142,13 @@ onMounted(() => {
   color: var(--ion-text-color);
 }
 
-/* Back button / secondary action buttons: soft circular chip instead of a bare icon */
+/* Back button / secondary action buttons: soft circular chip instead of a bare icon.
+   :slotted() reaches buttons individual views pass into the #end slot (e.g. a
+   history/theme-toggle icon) so every header button matches this chip style
+   without each view having to opt in with a class. */
 :deep(.custom-back-button),
-:deep(.header-action-button) {
+:deep(.header-action-button),
+:slotted(ion-button) {
   --border-radius: 50%;
   width: 36px;
   height: 36px;
