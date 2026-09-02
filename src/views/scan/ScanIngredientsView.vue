@@ -209,33 +209,33 @@
           </p>
         </div>
 
-        <!-- Tutorial Hint Carousel -->
-        <div v-if="showTutorial" style="text-align:center; margin-bottom:24px;">
-          <swiper
-              :modules="[Autoplay, Pagination]"
-              :autoplay="{ delay: 5000 }"
-              :loop="false"
-              :pagination="{ clickable: true }"
-              style="width:100%; max-width:340px; border-radius:16px; overflow:hidden; box-shadow:0 8px 16px rgba(0,0,0,0.1);"
-          >
-            <swiper-slide v-for="n in 5" :key="n" style="display:flex; align-items:center; justify-content:center; background:var(--ion-color-light);">
-              <img
-                  :src="`/hints/hints${n}.png`"
-                  :alt="`Tutorial hint ${n}`"
-                  style="max-width:100%; max-height:220px; object-fit:contain; border-radius:8px;"
-              />
-            </swiper-slide>
-          </swiper>
-        </div>
-
-        <!-- Capture Buttons Card -->
+        <!-- Capture Card: tutorial carousel + buttons live in one panel, not two stacked boxes -->
         <ion-card class="action-card ion-no-margin">
+          <!-- Tutorial Hint Carousel -->
+          <div v-if="showTutorial" class="tutorial-carousel-wrap">
+            <swiper
+                :modules="[Autoplay, Pagination]"
+                :autoplay="{ delay: 5000 }"
+                :loop="false"
+                :pagination="{ clickable: true }"
+                style="width:100%;"
+            >
+              <swiper-slide v-for="n in 5" :key="n" style="display:flex; align-items:center; justify-content:center; background:var(--ion-color-light);">
+                <img
+                    :src="`/hints/hints${n}.png`"
+                    :alt="`Tutorial hint ${n}`"
+                    style="max-width:100%; max-height:220px; object-fit:contain;"
+                />
+              </swiper-slide>
+            </swiper>
+          </div>
+
           <ion-card-content>
             <ion-button expand="block" color="carrot" style="height: 56px; font-weight: 700;" class="ion-margin-bottom" @click="scanFromCamera">
                 <ion-icon slot="start" :icon="cameraOutline" />
                 {{ $t('scanIngredients.scan.camera') }}
             </ion-button>
-            
+
             <div style="display: flex; gap: 12px;">
                 <ion-button fill="outline" color="carrot" style="flex: 1; height: 48px;" @click="scanFromGallery">
                   <ion-icon slot="start" :icon="cloudUploadOutline" />
@@ -1692,7 +1692,16 @@ onUnmounted(() => {
 .action-card {
   border-radius: var(--radius-lg);
   box-shadow: var(--card-shadow);
-  border: 1px solid var(--ion-color-step-100);
+  overflow: hidden;
+}
+
+.tutorial-carousel-wrap {
+  margin-bottom: 4px;
+}
+
+.tutorial-carousel-wrap :deep(.swiper-pagination) {
+  position: relative;
+  margin-top: 8px;
 }
 
 /* 🔬 Results UI */
