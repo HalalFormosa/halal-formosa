@@ -146,17 +146,24 @@ onMounted(() => {
    :slotted() reaches buttons individual views pass into the #end slot (e.g. a
    history/theme-toggle icon) so every header button matches this chip style
    without each view having to opt in with a class. */
+/* !important is necessary here: ion-buttons ships its own shadow-scoped rule
+   (.sc-ion-buttons-*-s .button-has-icon-only.button-clear) with higher
+   specificity than a plain :slotted()/:deep() selector, which otherwise wins
+   over our width/height/--background and silently no-ops this whole rule. */
 :deep(.custom-back-button),
 :deep(.header-action-button),
 :slotted(ion-button) {
-  --border-radius: 50%;
-  --background: var(--card-inner-bg);
-  --background-hover: var(--card-inner-bg);
-  --background-activated: var(--card-inner-bg);
-  --background-focused: var(--card-inner-bg);
-  --box-shadow: none;
-  width: 36px;
-  height: 36px;
+  --border-radius: 50% !important;
+  --background: var(--card-inner-bg) !important;
+  --background-hover: var(--card-inner-bg) !important;
+  --background-activated: var(--card-inner-bg) !important;
+  --background-focused: var(--card-inner-bg) !important;
+  --box-shadow: none !important;
+  width: 36px !important;
+  min-width: 36px !important;
+  max-width: 36px !important;
+  height: 36px !important;
+  margin: 0 2px !important;
   border: 1px solid var(--card-border);
   border-radius: 50%;
 }
