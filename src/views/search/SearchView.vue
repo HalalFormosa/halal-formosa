@@ -72,16 +72,6 @@
               <ion-icon :icon="viewMode === 'grid' ? listOutline : gridOutline" />
             </ion-button>
 
-            <!-- 📷 Scan Button (Classic Style) -->
-            <ion-button
-                @click="startScan"
-                v-if="!scanning"
-                color="carrot"
-                class="classic-scan-btn"
-            >
-              <ion-icon :icon="barcodeOutline" />
-            </ion-button>
-
             <!-- 🌪️ Filter Toggle -->
             <ion-button fill="clear" @click="toggleFilters" class="classic-action-btn">
               <ion-icon :icon="funnelOutline" />
@@ -604,12 +594,17 @@
         ❌ {{ errorMsg }}
       </ion-text>
 
-      <!-- 🟠 FAB Add Product (only for admins) -->
-      <ion-fab v-if="isAuthenticated" vertical="bottom" horizontal="end" slot="fixed">
-        <ion-fab-button color="carrot" @click="goToAddProduct">
+      <!-- 🟠 Stacked FABs: Add Product on top, Scan Barcode just below it.
+           Built as our own fixed column rather than nested <ion-fab>s, since
+           ion-fab only auto-positions a single direct button per anchor. -->
+      <div v-if="isAuthenticated || !scanning" class="stacked-fabs" slot="fixed">
+        <ion-fab-button v-if="isAuthenticated" color="carrot" @click="goToAddProduct">
           <ion-icon :icon="addOutline"/>
         </ion-fab-button>
-      </ion-fab>
+        <ion-fab-button v-if="!scanning" color="carrot" @click="startScan">
+          <ion-icon :icon="barcodeOutline"/>
+        </ion-fab-button>
+      </div>
     </ion-content>
 
     <ion-footer class="results-footer">
@@ -2257,19 +2252,16 @@ ion-searchbar.rounded {
   box-shadow: var(--card-shadow);
 }
 
-.classic-scan-btn {
-  width: 44px;
-  height: 44px;
-  min-width: 44px;
-  --padding-start: 0;
-  --padding-end: 0;
-  --border-radius: var(--radius-md);
-  --box-shadow: 0 4px 14px rgba(var(--ion-color-carrot-rgb), 0.4);
-  margin: 0;
-}
-
-.classic-scan-btn ion-icon {
-  font-size: 22px;
+/* Stacked FABs: Add Product (top) + Scan Barcode (just below it) */
+.stacked-fabs {
+  position: absolute;
+  right: 16px;
+  bottom: calc(16px + var(--safe-area-inset-bottom, 0px));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  z-index: 10;
 }
 
 .classic-action-btn {
