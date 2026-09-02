@@ -1884,6 +1884,9 @@ const getStatusIcon = (status: string) => {
   --border-width: 0;
   --box-shadow: none;
   background: transparent;
+  /* Ionic's .footer-md class sets a real Material elevation box-shadow
+     directly (not through --box-shadow), so it has to be beaten explicitly. */
+  box-shadow: none !important;
 }
 
 .results-footer::before {

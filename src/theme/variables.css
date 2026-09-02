@@ -1245,6 +1245,23 @@ ion-header {
     background: var(--ion-background-color);
 }
 
+/* ion-footer: same deal as ion-header above — Ionic's .footer-md class sets a
+   real Material elevation box-shadow directly (not through --box-shadow), so
+   it has to be beaten with !important rather than the custom property alone. */
+ion-footer {
+    --box-shadow: none !important;
+    box-shadow: none !important;
+    border-top: none !important;
+}
+
+ion-footer ion-toolbar {
+    --background: var(--ion-background-color);
+    --border-width: 0;
+    --box-shadow: none;
+    border-top: none !important;
+    box-shadow: none !important;
+}
+
 /* Transparent Variant */
 .premium-header.is-transparent {
     --background: transparent !important;
