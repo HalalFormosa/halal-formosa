@@ -85,6 +85,7 @@
                 :sortBy="sortBy"
                 @update:sortBy="sortBy = $event"
                 :canShowForYouSort="canShowForYouSort"
+                :isDonor="isDonor"
             />
           </div>
         </ion-toolbar>
@@ -95,7 +96,7 @@
           :is-open="isFilterModalOpen"
           @didDismiss="isFilterModalOpen = false"
           :initial-breakpoint="0.5"
-          :breakpoints="[0, 0.5, 0.8, 1]"
+          :breakpoints="[0, 0.5, 0.8]"
           handle-behavior="cycle"
           class="filter-modal"
       >
@@ -131,6 +132,7 @@
               :sortBy="sortBy"
               @update:sortBy="sortBy = $event"
               :canShowForYouSort="canShowForYouSort"
+              :isDonor="isDonor"
           />
         </ion-content>
       </ion-modal>

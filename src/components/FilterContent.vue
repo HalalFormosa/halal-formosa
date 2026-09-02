@@ -5,7 +5,8 @@ import {
 import { ref, onMounted, onUnmounted, nextTick, watch, computed } from 'vue'
 import {
   storefrontOutline, pricetagsOutline, shieldCheckmarkOutline,
-  swapVerticalOutline, timeOutline, trendingUpOutline, flameOutline, sparklesOutline
+  swapVerticalOutline, timeOutline, trendingUpOutline, flameOutline, sparklesOutline,
+  lockClosedOutline
 } from 'ionicons/icons'
 import StoreLogoBar from "@/components/StoreLogoBar.vue";
 
@@ -36,6 +37,7 @@ const props = withDefaults(defineProps<{
   STATUS_COLOR_MAP?: Record<string, string>
   sortBy?: SortOption
   canShowForYouSort?: boolean
+  isDonor?: boolean
 }>(), {
   loadingStores: false,
   stores: () => [],
@@ -49,7 +51,8 @@ const props = withDefaults(defineProps<{
   categoryIcons: () => ({}),
   STATUS_COLOR_MAP: () => ({}),
   sortBy: 'recent',
-  canShowForYouSort: false
+  canShowForYouSort: false,
+  isDonor: false
 })
 
 const emit = defineEmits<{
@@ -61,10 +64,10 @@ const emit = defineEmits<{
 }>()
 
 const sortOptions: { key: SortOption; icon: string; labelKey: string }[] = [
+  { key: 'for_you', icon: sparklesOutline, labelKey: 'search.sortForYou' },
   { key: 'recent', icon: timeOutline, labelKey: 'search.sortRecent' },
   { key: 'trending', icon: trendingUpOutline, labelKey: 'search.sortTrending' },
   { key: 'views', icon: flameOutline, labelKey: 'search.sortViews' },
-  { key: 'for_you', icon: sparklesOutline, labelKey: 'search.sortForYou' },
 ]
 
 function toggleCategory(cat: Category) {
@@ -98,9 +101,8 @@ const localActiveStores = computed({
       <div class="category-bar">
         <template v-for="opt in sortOptions" :key="opt.key">
           <ion-chip
-              v-if="opt.key !== 'for_you' || canShowForYouSort"
               class="modern-category-chip"
-              :class="{ active: sortBy === opt.key }"
+              :class="{ active: sortBy === opt.key, 'is-locked': opt.key === 'for_you' && !isDonor }"
               :style="{
                         '--cat-color': 'var(--ion-color-carrot)',
                         '--cat-contrast': 'var(--ion-color-carrot-contrast)',
@@ -110,6 +112,7 @@ const localActiveStores = computed({
           >
             <ion-icon :icon="opt.icon" class="category-icon" />
             <ion-label>{{ $t(opt.labelKey) }}</ion-label>
+            <ion-icon v-if="opt.key === 'for_you' && !isDonor" :icon="lockClosedOutline" class="lock-icon" />
           </ion-chip>
         </template>
       </div>
@@ -270,6 +273,21 @@ ion-chip.modern-category-chip {
 }
 
 .category-emoji, .category-icon { margin-right: 6px; font-size: 1.1rem; }
+
+/* "For You" is a pro/donor-gated sort — kept visible (not hidden) so people
+   can see the feature exists, with a lock badge instead of disappearing.
+   Tapping it while locked still works: it routes into the app's existing
+   upsell/gate screen rather than doing nothing. */
+.modern-category-chip.is-locked {
+  opacity: 0.75;
+}
+
+.modern-category-chip .lock-icon {
+  margin-left: 6px;
+  margin-right: 0;
+  font-size: 0.85rem;
+  opacity: 0.7;
+}
 
 .store-scroll {
   display: flex;
