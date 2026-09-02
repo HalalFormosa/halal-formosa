@@ -132,7 +132,11 @@
           <div v-if="['gold', 'silver'].includes(String(item?.partner_tier || '').toLowerCase())" class="premium-flare"></div>
 
           <div class="ion-padding" style="position: relative; z-index: 2;">
-            <div class="hero-card">
+            <!-- Details: one continuous sheet from title through ingredients,
+                 sections separated by spacing alone (no hairlines/boxes),
+                 closer to a flowing product-detail page. -->
+            <div class="details-flow">
+            <div class="hero-card info-card">
               <div class="title-row">
                 <h2 class="product-title">{{ item?.name }}</h2>
                 <div v-if="item?.partner_tier" class="premium-badge-wrapper">
@@ -178,7 +182,7 @@
             <!-- Produced By (Campus Partner) -->
             <div
                 v-if="item?.partner?.partner_type === 'campus' && item?.partner?.partner_tier === 'gold'"
-                class="ion-margin-top"
+                class="info-card"
             >
               <p class="section-title">
                 <strong><small>{{ $t('search.details.producedBy') }}</small></strong>
@@ -219,7 +223,7 @@
             <!-- Certified By (Gold Partner) -->
             <div
                 v-if="!loadingCertifications && certifications.length"
-                class="ion-margin-top"
+                class="info-card"
             >
               <p class="section-title">
                 <strong><small>{{ $t('search.details.certifiedBy') }}</small></strong>
@@ -259,10 +263,6 @@
               </div>
             </div>
 
-            <!-- Details: one continuous sheet instead of a stack of separately
-                 boxed cards — sections are divided by hairlines, not repeated
-                 card chrome, closer to a flowing product-detail page. -->
-            <div class="details-flow ion-margin-top">
               <!-- Stores where this product is available -->
               <div v-if="item.stores?.length" class="info-card">
                 <p class="section-title">
@@ -1438,15 +1438,6 @@ const share = async () => {
 /* ===============================
    Premium card-grouped sections
    =============================== */
-.hero-card {
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--card-shadow);
-  padding: 18px 16px 16px;
-  margin-bottom: 16px;
-}
-
 .info-card {
   background: var(--card-bg);
   border: 1px solid var(--card-border);
@@ -1459,14 +1450,16 @@ const share = async () => {
   margin-bottom: 6px;
 }
 
-/* Flowing details sheet: one card surface, sections separated by a
-   hairline instead of each one being its own boxed card. */
+/* Flowing details sheet: one card surface from title through ingredients.
+   Sections are told apart by spacing alone (no hairlines/nested boxes),
+   matching a reference design that uses generous whitespace instead of
+   dividers. */
 .details-flow {
   background: var(--card-bg);
   border: 1px solid var(--card-border);
   border-radius: var(--radius-lg);
   box-shadow: var(--card-shadow);
-  overflow: hidden;
+  padding: 18px 0 20px;
 }
 
 .details-flow .info-card {
@@ -1474,15 +1467,15 @@ const share = async () => {
   border: none;
   box-shadow: none;
   border-radius: 0;
+  padding: 0 16px;
 }
 
 .details-flow .info-card + .info-card {
-  border-top: 1px solid var(--card-border);
+  margin-top: 22px;
 }
 
 .ingredients-card .ingredient-legend {
-  border-top: 1px solid var(--card-border);
-  padding-top: 12px;
+  margin-top: 16px;
 }
 
 /* Verdict chip: same semantic colors, bigger and bolder for a "hero" feel */
