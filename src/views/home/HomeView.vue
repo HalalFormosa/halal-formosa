@@ -2570,62 +2570,11 @@ function openPartner(partner: any) {
 
 <style scoped>
 
-/* ===============================
-   2.0 — Editorial Section Headers
-   =============================== */
-/* These ion-cards are just section wrappers (header + a horizontal scroll of
-   already-carded items) — they shouldn't look like a card themselves, or you
-   get a "card full of cards" boxed-in-a-box effect. Strip the card surface,
-   keep only the spacing. */
-ion-card:has(> ion-card-header .card-header-row) {
-  --background: transparent;
-  background: transparent;
-  box-shadow: none;
-  margin-block: 4px 4px;
-  margin-inline: 12px;
-}
-
-ion-card:has(> ion-card-header .card-header-row) > ion-card-header,
-ion-card:has(> ion-card-header .card-header-row) > ion-card-content {
-  padding-inline: 0;
-  padding-block: 4px;
-}
-
-.card-header-row {
-  padding: 2px 2px 6px;
-  gap: 8px;
-}
-
-.card-header-row ion-card-title {
-  position: relative;
-  min-width: 0;
-  flex-shrink: 1;
-  padding-left: 13px;
-  font-size: 1.08rem;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  color: var(--ion-color-dark);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.card-header-row ion-card-title::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 4px;
-  height: 17px;
-  border-radius: 3px;
-  background: linear-gradient(180deg, var(--ion-color-carrot), var(--ion-color-carrot-tint));
-}
-
-.card-header-row ion-button {
-  flex-shrink: 0;
-  white-space: nowrap;
-}
+/* Section header typography (.card-header-row) and the flattened
+   section-wrapper ion-card treatment now live globally in
+   src/theme/variables.css so every component using this pattern
+   (Home's own sections, DailyMissions.vue, etc.) looks consistent —
+   see that file instead of duplicating the rules here. */
 
 /* === Compact Segment === */
 ion-segment {

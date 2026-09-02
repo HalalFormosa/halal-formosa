@@ -352,12 +352,68 @@ ion-card ion-item {
     --ion-item-background: transparent;
 }
 
+/* Section header row used inside ion-card-header across the app (Home,
+   DailyMissions, and any other section that pairs a title with a "View
+   more"-style button). Kept global — not per-view scoped CSS — so every
+   component that reuses this class gets identical typography instead of
+   silently falling back to plain ion-card-title styling. */
 .card-header-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
     width: 100%;
     margin-bottom: 4px;
+    padding: 2px 2px 6px;
+    gap: 8px;
+}
+
+.card-header-row ion-card-title {
+    position: relative;
+    min-width: 0;
+    flex-shrink: 1;
+    padding-left: 13px;
+    font-size: 1.08rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--ion-color-dark);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.card-header-row ion-card-title::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 4px;
+    height: 17px;
+    border-radius: 3px;
+    background: linear-gradient(180deg, var(--ion-color-carrot), var(--ion-color-carrot-tint));
+}
+
+.card-header-row ion-button {
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+
+/* Section-wrapper cards (a card-header-row header + a horizontal scroll of
+   already-carded items) shouldn't look like a card themselves — otherwise
+   you get a "card full of cards" boxed-in-a-box effect. Strip the card
+   surface, keep only the spacing. */
+ion-card:has(> ion-card-header .card-header-row) {
+    --background: transparent;
+    background: transparent;
+    box-shadow: none;
+    margin-block: 4px 4px;
+    margin-inline: 12px;
+}
+
+ion-card:has(> ion-card-header .card-header-row) > ion-card-header,
+ion-card:has(> ion-card-header .card-header-row) > ion-card-content {
+    padding-inline: 0;
+    padding-block: 4px;
 }
 
 .discover-grid {
