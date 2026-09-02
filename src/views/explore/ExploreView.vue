@@ -3186,9 +3186,12 @@ button.gm-ui-hover-effect > span {
   align-items: center;
 }
 
-.compact-searchbar {
-  --background: var(--card-bg) !important;
-  --box-shadow: none !important;
+/* Scoped to .search-bar-wrapper (Explore's own container) rather than the
+   bare .compact-searchbar class — this file's <style> isn't scoped, so an
+   unscoped .compact-searchbar rule here was leaking into every other view
+   that reuses that shared class (Search/Trip/Store/etc.), fighting their
+   own frosted-glass styling with !important. */
+.search-bar-wrapper .compact-searchbar {
   --border-radius: var(--radius-lg) !important;
   border-radius: var(--radius-lg) !important;
   --padding-start: 30px;
@@ -3199,15 +3202,11 @@ button.gm-ui-hover-effect > span {
   max-height: 46px !important;
   --height: 46px;
   margin: 0;
-  background: transparent !important;
   border: none !important;
   box-shadow: none !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
 }
 
-.compact-searchbar::part(container) {
-  background: transparent !important;
+.search-bar-wrapper .compact-searchbar::part(container) {
   border-radius: var(--radius-lg) !important;
   height: 46px !important;
   min-height: 46px !important;
@@ -3215,26 +3214,19 @@ button.gm-ui-hover-effect > span {
   width: 100% !important;
   border: none !important;
   box-shadow: none !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
 }
 
-.compact-searchbar::part(input) {
+.search-bar-wrapper .compact-searchbar::part(input) {
   height: 100% !important;
   width: 100% !important;
-  background: var(--card-bg) !important;
-  backdrop-filter: blur(12px) !important;
-  -webkit-backdrop-filter: blur(12px) !important;
   border-radius: var(--radius-lg) !important;
   padding-inline-start: 30px !important;
   padding-inline-end: 12px !important;
-  border: 1px solid var(--card-border) !important;
-  box-shadow: var(--card-shadow) !important;
   font-size: 0.8rem !important;
   font-weight: 500;
 }
 
-.compact-searchbar::part(input)::placeholder {
+.search-bar-wrapper .compact-searchbar::part(input)::placeholder {
   font-size: 0.78rem !important;
 }
 
