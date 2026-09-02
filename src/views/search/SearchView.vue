@@ -18,40 +18,6 @@
 
       <ion-toolbar class="actions-toolbar">
         <div class="header-main-actions">
-          <!-- 🎚️ Sort Button (Left Side) — icon-only to match the rest of the toolbar -->
-          <ion-button fill="clear" class="classic-action-btn" id="sort-trigger" :aria-label="sortLabel">
-            <ion-icon :icon="sortIcon" />
-          </ion-button>
-
-          <ion-popover trigger="sort-trigger" trigger-action="click" :dismiss-on-select="true" class="width-190">
-            <ion-list lines="none">
-              <ion-item button :detail="false" @click="sortBy = 'recent'">
-                <ion-icon :icon="timeOutline" slot="start" />
-                <ion-label>{{ $t('search.sortRecent') }}</ion-label>
-                <ion-icon v-if="sortBy === 'recent'" :icon="checkmarkCircle" slot="end" color="success" style="font-size: 14px;" />
-              </ion-item>
-              
-              <ion-item button :detail="false" @click="sortBy = 'trending'">
-                <ion-icon :icon="trendingUpOutline" slot="start" />
-                <ion-label>{{ $t('search.sortTrending') }}</ion-label>
-                <ion-icon v-if="sortBy === 'trending'" :icon="checkmarkCircle" slot="end" color="success" style="font-size: 14px;" />
-              </ion-item>
-
-              <ion-item button :detail="false" @click="sortBy = 'views'">
-                <ion-icon :icon="flameOutline" slot="start" />
-                <ion-label>{{ $t('search.sortViews') }}</ion-label>
-                <ion-icon v-if="sortBy === 'views'" :icon="checkmarkCircle" slot="end" color="success" style="font-size: 14px;" />
-              </ion-item>
-
-              <ion-item v-if="canShowForYouSort" button :detail="false" @click="sortBy = 'for_you'">
-                <ion-icon :icon="sparklesOutline" slot="start" />
-                <ion-label>{{ $t('search.sortForYou') }}</ion-label>
-                <ion-icon v-if="sortBy === 'for_you'" :icon="checkmarkCircle" slot="end" color="success" style="font-size: 14px;" />
-              </ion-item>
-            </ion-list>
-          </ion-popover>
-
-
           <div class="right-actions-group">
             <!-- 🔍 Search Toggle Button -->
             <ion-button
@@ -72,9 +38,9 @@
               <ion-icon :icon="viewMode === 'grid' ? listOutline : gridOutline" />
             </ion-button>
 
-            <!-- 🌪️ Filter Toggle -->
+            <!-- 🎚️ Filter Toggle (sort now lives inside here too) -->
             <ion-button fill="clear" @click="toggleFilters" class="classic-action-btn">
-              <ion-icon :icon="funnelOutline" />
+              <ion-icon :icon="optionsOutline" />
               <div v-if="activeFiltersCount > 0" class="badge-dot">
                 <span class="badge-count">{{ activeFiltersCount }}</span>
               </div>
@@ -116,6 +82,9 @@
                 @clearAllFilters="clearAllFilters"
                 :categoryIcons="categoryIcons"
                 :STATUS_COLOR_MAP="STATUS_COLOR_MAP"
+                :sortBy="sortBy"
+                @update:sortBy="sortBy = $event"
+                :canShowForYouSort="canShowForYouSort"
             />
           </div>
         </ion-toolbar>
@@ -159,6 +128,9 @@
               @clearAllFilters="clearAllFilters"
               :categoryIcons="categoryIcons"
               :STATUS_COLOR_MAP="STATUS_COLOR_MAP"
+              :sortBy="sortBy"
+              @update:sortBy="sortBy = $event"
+              :canShowForYouSort="canShowForYouSort"
           />
         </ion-content>
       </ion-modal>
@@ -640,16 +612,12 @@ import {
   addOutline,
   chevronUpOutline,
   chevronDownOutline,
-  funnelOutline,
+  optionsOutline,
   pricetagsOutline, storefrontOutline, shieldCheckmarkOutline,
-  checkmarkCircle, warning, closeCircle, alertCircle, sparkles,
+  warning, closeCircle, alertCircle, sparkles,
   swapVerticalOutline,
   searchOutline,
   eyeOutline,
-  timeOutline,
-  flameOutline,
-  sparklesOutline,
-  trendingUpOutline,
   listOutline,
   closeOutline
 } from 'ionicons/icons'
@@ -1145,20 +1113,6 @@ async function applyGoldRotationOffset() {
     }
   }
 }
-
-const sortLabel = computed(() => {
-  if (sortBy.value === 'for_you') return 'For You'
-  if (sortBy.value === 'views') return 'Hot'
-  if (sortBy.value === 'trending') return 'Trending'
-  return 'New'
-})
-
-const sortIcon = computed(() => {
-  if (sortBy.value === 'for_you') return sparklesOutline
-  if (sortBy.value === 'views') return flameOutline
-  if (sortBy.value === 'trending') return trendingUpOutline
-  return timeOutline
-})
 
 function toggleCategory(cat: { id: number; name: string }) {
   const index = activeCategories.value.findIndex(c => c.id === cat.id)
@@ -2253,7 +2207,7 @@ ion-searchbar.rounded {
 .header-main-actions {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 8px;
   margin: 2px 16px 6px;
   padding: 5px 6px;

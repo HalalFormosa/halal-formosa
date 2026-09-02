@@ -468,6 +468,7 @@
     "filtersLabel": "Filters",
     "filters": {
       "title": "Filters",
+      "sort": "Sort",
       "stores": "Stores",
       "categories": "Categories",
       "statuses": "Statuses"
