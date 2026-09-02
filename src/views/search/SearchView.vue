@@ -2247,7 +2247,8 @@ ion-searchbar.rounded {
 }
 
 .classic-action-btn ion-icon {
-  font-size: 20px;
+  font-size: 24px;
+  color: var(--ion-color-dark);
 }
 
 .right-actions-group {
