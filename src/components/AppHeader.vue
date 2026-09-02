@@ -183,6 +183,8 @@ onMounted(() => {
 }
 
 .profile-img-wrapper {
+  width: 38px;
+  height: 38px;
   padding: 2px;
   border-radius: 50%;
   background: linear-gradient(135deg, var(--ion-color-carrot), var(--ion-color-carrot-tint));
@@ -193,15 +195,15 @@ onMounted(() => {
 }
 
 .toolbar-profile-img {
-  width: 30px;
-  height: 30px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
   object-fit: cover;
   border: 2px solid var(--ion-background-color);
 }
 
 .profile-placeholder {
-  font-size: 32px;
+  font-size: 38px;
   color: var(--ion-color-medium);
 }
 
