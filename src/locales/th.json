@@ -594,6 +594,11 @@
       "about": "เกี่ยวกับแอพ",
       "contributions": "Contributions"
     },
+    "stats": {
+      "products": "สินค้า",
+      "places": "สถานที่",
+      "xp": "XP"
+    },
     "title": "ประวัติโดยย่อ",
     "logout": "ออกจากระบบ",
     "donor": "สถานะผู้บริจาค",

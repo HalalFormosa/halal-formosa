@@ -594,6 +594,11 @@
       "about": "Perihal App",
       "contributions": "Contributions"
     },
+    "stats": {
+      "products": "Produk",
+      "places": "Tempat",
+      "xp": "XP"
+    },
     "title": "Profil",
     "logout": "Log keluar",
     "donor": "Status Penderma",

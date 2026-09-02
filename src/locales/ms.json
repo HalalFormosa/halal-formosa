@@ -573,6 +573,11 @@
       "about": "Mengenai Aplikasi",
       "contributions": "Contributions"
     },
+    "stats": {
+      "products": "Produk",
+      "places": "Tempat",
+      "xp": "XP"
+    },
     "title": "Profil",
     "logout": "Log Keluar",
     "donor": "Status Penderma",

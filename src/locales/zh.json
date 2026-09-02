@@ -710,6 +710,11 @@
       "about": "關於 App",
       "contributions": "Contributions"
     },
+    "stats": {
+      "products": "商品",
+      "places": "地點",
+      "xp": "經驗值"
+    },
     "title": "個人資料",
     "incompleteNoticeTitle": "💡 完善您的「關於我」",
     "incompleteNoticeDesc": "新增您的出生日期、國籍、性別或個人簡介，以個性化您的資料。",

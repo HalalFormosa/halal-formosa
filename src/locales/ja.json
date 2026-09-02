@@ -594,6 +594,11 @@
       "about": "アプリについて",
       "contributions": "Contributions"
     },
+    "stats": {
+      "products": "商品",
+      "places": "場所",
+      "xp": "XP"
+    },
     "title": "プロフィール",
     "logout": "ログアウト",
     "donor": "ドナーステータス",

@@ -594,6 +594,11 @@
       "about": "앱 소개",
       "contributions": "Contributions"
     },
+    "stats": {
+      "products": "제품",
+      "places": "장소",
+      "xp": "XP"
+    },
     "title": "윤곽",
     "logout": "로그아웃",
     "donor": "기부자 현황",

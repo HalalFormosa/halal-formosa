@@ -594,6 +594,11 @@
       "about": "Giới thiệu về ứng dụng",
       "contributions": "Contributions"
     },
+    "stats": {
+      "products": "Sản phẩm",
+      "places": "Địa điểm",
+      "xp": "XP"
+    },
     "title": "Hồ sơ",
     "logout": "Đăng xuất",
     "donor": "Tình trạng nhà tài trợ",

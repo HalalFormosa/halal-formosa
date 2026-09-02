@@ -594,6 +594,11 @@
       "about": "ایپ کے بارے میں",
       "contributions": "Contributions"
     },
+    "stats": {
+      "products": "پروڈکٹس",
+      "places": "مقامات",
+      "xp": "ایکس پی"
+    },
     "title": "پروفائل",
     "logout": "لاگ آؤٹ",
     "donor": "ڈونر کی حیثیت",

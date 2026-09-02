@@ -33,7 +33,16 @@
       <!-- ================= ACTUAL CONTENT ================= -->
       <template v-else>
         <!-- Profile Header Card -->
-        <ion-card>
+        <div class="profile-hero-card" :class="{ 'no-user': !userEmail }">
+          <ion-button
+              v-if="userEmail"
+              fill="clear"
+              class="hero-edit-btn"
+              @click="goToEditProfile"
+          >
+            <ion-icon :icon="icons.createOutline" slot="icon-only" />
+          </ion-button>
+
           <div class="profile-header-premium">
             <div class="avatar-container" :class="{ 'default-avatar-border': !hasFrameOrOutline }">
               <CosmeticBadge
@@ -45,16 +54,11 @@
             </div>
 
             <div class="profile-info text-center" v-if="userEmail">
-              <h2 class="profile-name-main" style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+              <h2 class="profile-name-main">
                 {{ userDisplayName || $t('profile.defaultName') }}
-                <ion-icon 
-                  :icon="icons.createOutline" 
-                  style="font-size: 1.1rem; color: var(--ion-color-carrot); cursor: pointer;" 
-                  @click="goToEditProfile" 
-                />
               </h2>
               <p class="profile-email-sub">{{ userEmail }}</p>
-              
+
               <div class="badge-row">
                 <ion-badge v-if="isSubscribed" class="badge-pro">
                   <ion-icon :icon="icons.bookmarkOutline" style="margin-right: 4px" />
@@ -68,6 +72,24 @@
                   {{ $t('profile.merchantTier.' + businessTier) }}
                 </ion-badge>
               </div>
+
+              <!-- Stat row: contributions + XP -->
+              <div class="hero-stats-row">
+                <div class="hero-stat">
+                  <span class="hero-stat-value">{{ myProductsCount ?? 0 }}</span>
+                  <span class="hero-stat-label">{{ $t('profile.stats.products') }}</span>
+                </div>
+                <div class="hero-stat-divider"></div>
+                <div class="hero-stat">
+                  <span class="hero-stat-value">{{ myLocationsCount ?? 0 }}</span>
+                  <span class="hero-stat-label">{{ $t('profile.stats.places') }}</span>
+                </div>
+                <div class="hero-stat-divider"></div>
+                <div class="hero-stat">
+                  <span class="hero-stat-value">{{ currentPoints || 0 }}</span>
+                  <span class="hero-stat-label">{{ $t('profile.stats.xp') }}</span>
+                </div>
+              </div>
             </div>
 
             <div v-else class="login-prompt">
@@ -77,7 +99,7 @@
               </ion-button>
             </div>
           </div>
-        </ion-card>
+        </div>
 
         <!-- 💡 Optional profile completion notice banner -->
         <ion-card
@@ -235,12 +257,9 @@
         </ion-card>
 
         <!-- Account & Preferences Section -->
-        <ion-card>
+        <h3 class="menu-section-label">{{ $t('profile.sections.account') }}</h3>
+        <ion-card class="menu-card">
           <ion-list lines="none">
-            <ion-list-header style="min-height: 32px; padding-bottom: 4px;">
-              <ion-label style="font-size: 0.85rem; color: var(--ion-color-medium); margin-top: 0; text-transform: uppercase;">{{ $t('profile.sections.account') }}</ion-label>
-            </ion-list-header>
-
             <ion-item v-if="userEmail" button @click="goToEditProfile">
               <div class="icon-box" slot="start">
                 <ion-icon :icon="icons.createOutline" />
@@ -292,12 +311,9 @@
         </ion-card>
 
         <!-- General Activity Section -->
-        <ion-card v-if="userEmail">
+        <h3 class="menu-section-label" v-if="userEmail">{{ $t('profile.sections.activity') }}</h3>
+        <ion-card class="menu-card" v-if="userEmail">
           <ion-list lines="none">
-            <ion-list-header style="min-height: 32px; padding-bottom: 4px;">
-              <ion-label style="font-size: 0.85rem; color: var(--ion-color-medium); margin-top: 0; text-transform: uppercase;">{{ $t('profile.sections.activity') }}</ion-label>
-            </ion-list-header>
-
             <ion-item v-if="userEmail" button @click="goToSavedItems">
               <div class="icon-box" slot="start">
                 <ion-icon :icon="icons.bookmarkOutline" />
@@ -335,12 +351,9 @@
         </ion-card>
 
         <!-- Contributions Section -->
-        <ion-card v-if="userEmail">
+        <h3 class="menu-section-label" v-if="userEmail">{{ $t('profile.sections.contributions') }}</h3>
+        <ion-card class="menu-card" v-if="userEmail">
           <ion-list lines="none">
-            <ion-list-header style="min-height: 32px; padding-bottom: 4px;">
-              <ion-label style="font-size: 0.85rem; color: var(--ion-color-medium); margin-top: 0; text-transform: uppercase;">{{ $t('profile.sections.contributions') }}</ion-label>
-            </ion-list-header>
-
             <ion-item button @click="$router.push('/submissions/products')">
               <div class="icon-box" slot="start">
                 <ion-icon :icon="icons.bagHandleOutline" />
@@ -397,13 +410,8 @@
         </ion-card>
 
         <!-- Become a Merchant Section -->
-        <ion-card v-if="userEmail && !merchantStore">
-          <ion-list lines="none" style="padding-bottom: 0;">
-            <ion-list-header style="min-height: 32px; padding-bottom: 4px;">
-              <ion-label style="font-size: 0.85rem; color: var(--ion-color-medium); margin-top: 0; text-transform: uppercase;">{{ $t('merchant.register.sectionTitle') }}</ion-label>
-            </ion-list-header>
-          </ion-list>
-
+        <h3 class="menu-section-label" v-if="userEmail && !merchantStore">{{ $t('merchant.register.sectionTitle') }}</h3>
+        <ion-card class="menu-card" v-if="userEmail && !merchantStore">
           <div v-if="isStoreUnderConstruction" class="xp-section vendor-onboarding construction">
             <div class="pending-status-box">
               <div class="icon-pulse">
@@ -465,7 +473,8 @@
           </template>
         </ion-card>
 
-        <ion-card v-if="merchantStore">
+        <h3 class="menu-section-label" v-if="merchantStore && !isStoreUnderConstruction">{{ $t('store.sellerCenter.title') }}</h3>
+        <ion-card class="menu-card" v-if="merchantStore">
           <div v-if="isStoreUnderConstruction" class="xp-section vendor-onboarding construction">
             <div class="pending-status-box">
               <div class="icon-pulse">
@@ -477,12 +486,8 @@
               </div>
             </div>
           </div>
-          
-          <ion-list v-else lines="none">
-            <ion-list-header style="min-height: 32px; padding-bottom: 4px;">
-              <ion-label style="font-size: 0.85rem; color: var(--ion-color-primary); margin-top: 0; text-transform: uppercase;">{{ $t('store.sellerCenter.title') }}</ion-label>
-            </ion-list-header>
 
+          <ion-list v-else lines="none">
             <ion-item button @click="$router.push('/merchant/store/settings')">
               <div class="icon-box" slot="start" style="background: rgba(var(--ion-color-primary-rgb), 0.1);">
                 <ion-icon :icon="icons.settingsOutline" color="primary" />
@@ -519,12 +524,10 @@
         </ion-card>
 
         <!-- Admin Section -->
-        <ion-card v-if="isAdmin">
+        <template v-if="isAdmin">
+        <h3 class="menu-section-label admin-label">{{ $t('profile.admin.sections.content') }}</h3>
+        <ion-card class="menu-card">
           <ion-list lines="none">
-            <ion-list-header style="min-height: 32px; padding-bottom: 4px;">
-              <ion-label style="font-size: 0.85rem; color: var(--ion-color-carrot); margin-top: 0; text-transform: uppercase;">{{ $t('profile.admin.sections.content') }}</ion-label>
-            </ion-list-header>
-
             <ion-item button @click="goToReviewSubmissions">
               <div class="icon-box" slot="start">
                 <ion-icon :icon="icons.listOutline" />
@@ -556,11 +559,12 @@
               <ion-label>{{ $t('profile.admin.locationReports') }}</ion-label>
               <ion-badge v-if="pendingLocationReportsCount > 0" color="danger" slot="end" style="border-radius: 8px;">{{ pendingLocationReportsCount }}</ion-badge>
             </ion-item>
+          </ion-list>
+        </ion-card>
 
-            <ion-list-header style="min-height: 32px; padding-bottom: 4px; border-top: 1px solid var(--ion-color-step-100); margin-top: 8px; padding-top: 8px;">
-              <ion-label style="font-size: 0.85rem; color: var(--ion-color-carrot); margin-top: 0; text-transform: uppercase;">{{ $t('profile.admin.sections.store') }}</ion-label>
-            </ion-list-header>
-
+        <h3 class="menu-section-label admin-label">{{ $t('profile.admin.sections.store') }}</h3>
+        <ion-card class="menu-card">
+          <ion-list lines="none">
             <ion-item button @click="goToStoreOrders">
               <div class="icon-box" slot="start">
                 <ion-icon :icon="icons.bagHandleOutline" />
@@ -576,11 +580,12 @@
               <ion-label>{{ $t('store.chat.storeMessages') }}</ion-label>
               <ion-badge v-if="unreadChatsCount > 0" color="danger" slot="end" style="border-radius: 8px;">{{ unreadChatsCount }}</ion-badge>
             </ion-item>
+          </ion-list>
+        </ion-card>
 
-            <ion-list-header style="min-height: 32px; padding-bottom: 4px; border-top: 1px solid var(--ion-color-step-100); margin-top: 8px; padding-top: 8px;">
-              <ion-label style="font-size: 0.85rem; color: var(--ion-color-carrot); margin-top: 0; text-transform: uppercase;">{{ $t('profile.admin.sections.management') }}</ion-label>
-            </ion-list-header>
-
+        <h3 class="menu-section-label admin-label">{{ $t('profile.admin.sections.management') }}</h3>
+        <ion-card class="menu-card">
+          <ion-list lines="none">
             <ion-item button @click="goToUsersList">
               <div class="icon-box" slot="start">
                 <ion-icon :icon="icons.peopleOutline" />
@@ -633,11 +638,12 @@
               </div>
               <ion-label>Merge Duplicate Products</ion-label>
             </ion-item>
+          </ion-list>
+        </ion-card>
 
-            <ion-list-header style="min-height: 32px; padding-bottom: 4px; border-top: 1px solid var(--ion-color-step-100); margin-top: 8px; padding-top: 8px;">
-              <ion-label style="font-size: 0.85rem; color: var(--ion-color-carrot); margin-top: 0; text-transform: uppercase;">{{ $t('profile.admin.sections.system') }}</ion-label>
-            </ion-list-header>
-
+        <h3 class="menu-section-label admin-label">{{ $t('profile.admin.sections.system') }}</h3>
+        <ion-card class="menu-card">
+          <ion-list lines="none">
             <ion-item button @click="goToPointsLogs">
               <div class="icon-box" slot="start">
                 <ion-icon :icon="icons.listOutline" />
@@ -660,7 +666,7 @@
             </ion-item>
           </ion-list>
         </ion-card>
-
+        </template>
 
 
         <!-- Dedicated Contributor Application Modal -->
@@ -723,12 +729,9 @@
         </ion-modal>
 
         <!-- Information & About Section -->
-        <ion-card>
+        <h3 class="menu-section-label">{{ $t('profile.sections.about') }}</h3>
+        <ion-card class="menu-card">
           <ion-list lines="none">
-            <ion-list-header style="min-height: 32px; padding-bottom: 4px;">
-              <ion-label style="font-size: 0.85rem; color: var(--ion-color-medium); margin-top: 0; text-transform: uppercase;">{{ $t('profile.sections.about') }}</ion-label>
-            </ion-list-header>
-
             <ion-item button @click="goToLegal">
               <div class="icon-box" slot="start">
                 <ion-icon :icon="icons.documentTextOutline" />
@@ -1801,6 +1804,40 @@ async function fetchUnreadChatsCount() {
   --accent-gradient: linear-gradient(135deg, #ff9f43, var(--ion-color-carrot));
 }
 
+/* =========================
+   PROFILE HERO (gradient card wrapping avatar + name + stats)
+========================= */
+.profile-hero-card {
+  position: relative;
+  margin: 10px 12px 16px;
+  border-radius: var(--radius-xl);
+  background: linear-gradient(155deg, var(--ion-color-carrot) 0%, #a8500f 55%, #241206 100%);
+  box-shadow: var(--card-shadow-hover);
+  overflow: hidden;
+}
+
+.profile-hero-card.no-user {
+  background: var(--card-bg);
+  box-shadow: var(--card-shadow);
+}
+
+.hero-edit-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+  --padding-start: 8px;
+  --padding-end: 8px;
+  --color: #ffffff;
+  --background: rgba(255, 255, 255, 0.16);
+  --border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  margin: 0;
+}
+
 /* Profile Header Section */
 .profile-header-premium {
   padding: 32px 16px 24px;
@@ -1838,10 +1875,18 @@ async function fetchUnreadChatsCount() {
   color: var(--ion-text-color);
 }
 
+.profile-hero-card:not(.no-user) .profile-name-main {
+  color: #ffffff;
+}
+
 .profile-email-sub {
   font-size: 0.88rem;
   color: var(--ion-color-medium);
   margin: 4px 0 16px;
+}
+
+.profile-hero-card:not(.no-user) .profile-email-sub {
+  color: rgba(255, 255, 255, 0.8);
 }
 
 .badge-row {
@@ -1850,6 +1895,46 @@ async function fetchUnreadChatsCount() {
   align-items: center;
   justify-content: center;
   gap: 8px;
+}
+
+/* Stat row: products / places / XP */
+.hero-stats-row {
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  gap: 4px;
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.hero-stat {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+}
+
+.hero-stat-value {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.02em;
+}
+
+.hero-stat-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.75);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.hero-stat-divider {
+  width: 1px;
+  background: rgba(255, 255, 255, 0.18);
 }
 
 .badge-pro {
@@ -1862,6 +1947,14 @@ async function fetchUnreadChatsCount() {
   letter-spacing: 0.3px;
   box-shadow: none;
   border: 1px solid rgba(var(--ion-color-carrot-rgb), 0.25);
+}
+
+/* On the orange hero gradient, the tinted-orange badge styles lose all
+   contrast — switch them to a translucent white chip instead. */
+.profile-hero-card:not(.no-user) .badge-pro {
+  --background: rgba(255, 255, 255, 0.16);
+  --color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.35);
 }
 
 .badge-merchant {
@@ -1987,6 +2080,50 @@ ion-item {
   --padding-end: 16px;
   --inner-padding-top: 12px;
   --inner-padding-bottom: 12px;
+}
+
+/* =========================
+   FLAT GROUPED-LIST SECTIONS
+   Section label sits as plain text directly on the page; only the row
+   group below it (.menu-card) is boxed — matching the reference where
+   the heading is outside the card and just the list is.
+========================= */
+.menu-section-label {
+  margin: 22px 16px 8px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--ion-color-medium);
+}
+
+.menu-section-label.admin-label {
+  color: var(--ion-color-carrot);
+}
+
+/* Admin's 4 label+card pairs sit right after each other — tighten the
+   gap between one card and the next section's label. */
+.menu-card + .admin-label {
+  margin-top: 18px;
+}
+
+ion-card.menu-card {
+  margin: 0 12px 4px;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--card-shadow);
+}
+
+ion-card.menu-card ion-list {
+  padding: 4px 0;
+}
+
+ion-card.menu-card ion-item {
+  --border-color: var(--card-border);
+  --inner-border-width: 0 0 1px 0;
+}
+
+ion-card.menu-card ion-item:last-of-type {
+  --inner-border-width: 0;
 }
 
 .icon-box {

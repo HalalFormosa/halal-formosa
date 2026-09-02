@@ -594,6 +594,11 @@
       "about": "Uygulama Hakkında",
       "contributions": "Contributions"
     },
+    "stats": {
+      "products": "Ürünler",
+      "places": "Yerler",
+      "xp": "XP"
+    },
     "title": "Profil",
     "logout": "Oturumu kapat",
     "donor": "Donör Durumu",

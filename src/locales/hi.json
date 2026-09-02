@@ -594,6 +594,11 @@
       "about": "ऐप के बारे में",
       "contributions": "Contributions"
     },
+    "stats": {
+      "products": "उत्पाद",
+      "places": "स्थान",
+      "xp": "एक्सपी"
+    },
     "title": "प्रोफ़ाइल",
     "logout": "लॉग आउट",
     "donor": "दाता स्थिति",

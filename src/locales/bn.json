@@ -594,6 +594,11 @@
       "about": "অ্যাপ সম্পর্কে",
       "contributions": "Contributions"
     },
+    "stats": {
+      "products": "পণ্য",
+      "places": "স্থান",
+      "xp": "এক্সপি"
+    },
     "title": "প্রোফাইল",
     "logout": "লগআউট",
     "donor": "দাতার অবস্থা",

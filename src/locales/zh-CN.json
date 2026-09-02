@@ -681,6 +681,11 @@
       "about": "关于应用程序",
       "contributions": "Contributions"
     },
+    "stats": {
+      "products": "商品",
+      "places": "地点",
+      "xp": "经验值"
+    },
     "title": "轮廓",
     "incompleteNoticeTitle": "💡 完善您的「关于我」",
     "incompleteNoticeDesc": "添加您的出生日期、国籍、性别或个人简介，以个性化您的资料。",

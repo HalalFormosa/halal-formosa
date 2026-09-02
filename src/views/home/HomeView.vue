@@ -1864,7 +1864,17 @@ async function getUserLocation(): Promise<LatLng> {
 }
 
 async function fetchPrayerTimes() {
-  loadingPrayerTimes.value = true
+  // Only show the skeleton on the very first load. `sharedLocation` keeps
+  // getting reassigned to a new object on every GPS watch ping (even when
+  // the coordinates haven't meaningfully changed), which re-triggers this
+  // function repeatedly in the background — toggling loadingPrayerTimes
+  // back to true on every refresh would remount the pill row (v-if/v-else)
+  // and reset its scrollLeft, undoing the auto-scroll-to-current-prayer
+  // effect below since that watcher only re-fires when the *key* changes,
+  // not on every recompute.
+  if (!prayerTimes.value) {
+    loadingPrayerTimes.value = true
+  }
 
   const location = await getUserLocation()
 
@@ -1986,35 +1996,52 @@ const scrollPrayerKey = computed(() => {
   return currentPrayerKey.value
 })
 
+function scrollToCurrentPrayer(smooth = true) {
+  const key = scrollPrayerKey.value
+  if (!key) return
+
+  const container = prayerScroll.value
+  if (!container) return
+
+  const target = container.querySelector(
+      `.prayer-pill[data-key="${key}"]`
+  ) as HTMLElement
+
+  if (!target) return
+
+  const offset =
+      target.offsetLeft -
+      container.clientWidth / 2 +
+      target.clientWidth / 2
+
+  container.scrollTo({
+    left: offset,
+    behavior: smooth ? 'smooth' : 'instant'
+  })
+}
+
+// Re-scroll whenever the active prayer changes...
 watch(
     () => scrollPrayerKey.value,
-    async (key) => {
-      if (!key) return
-
-      // wait for DOM + Ionic layout
+    async () => {
       await nextTick()
-      requestAnimationFrame(() => {
-        const container = prayerScroll.value
-        if (!container) return
-
-        const target = container.querySelector(
-            `.prayer-pill[data-key="${key}"]`
-        ) as HTMLElement
-
-        if (!target) return
-
-        const offset =
-            target.offsetLeft -
-            container.clientWidth / 2 +
-            target.clientWidth / 2
-
-        container.scrollTo({
-          left: offset,
-          behavior: 'smooth'
-        })
-      })
+      requestAnimationFrame(() => scrollToCurrentPrayer(true))
     },
     { immediate: true }
+)
+
+// ...and also whenever the pill row (re)mounts — `sharedLocation` keeps
+// getting reassigned on every GPS watch ping, and while fetchPrayerTimes
+// no longer remounts the list on every one of those refreshes, this is a
+// safety net so the scroll is always correct once the real content is on
+// screen, regardless of what triggered the mount.
+watch(
+    () => loadingPrayerTimes.value,
+    async (loading) => {
+      if (loading) return
+      await nextTick()
+      requestAnimationFrame(() => scrollToCurrentPrayer(false))
+    }
 )
 
 const upcomingCountdown = computed(() => {

@@ -594,6 +594,11 @@
       "about": "حول التطبيق",
       "contributions": "Contributions"
     },
+    "stats": {
+      "products": "المنتجات",
+      "places": "الأماكن",
+      "xp": "النقاط"
+    },
     "title": "حساب تعريفي",
     "logout": "تسجيل الخروج",
     "donor": "حالة المتبرع",

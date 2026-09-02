@@ -717,6 +717,11 @@
       "contributions": "Contributions",
       "about": "About App"
     },
+    "stats": {
+      "products": "Products",
+      "places": "Places",
+      "xp": "XP"
+    },
     "title": "Profile",
     "incompleteNoticeTitle": "💡 Complete your \"About Me\"",
     "incompleteNoticeDesc": "Add your Date of Birth, Nationality, Gender, or Bio to personalize your profile.",

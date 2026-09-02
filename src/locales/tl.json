@@ -594,6 +594,11 @@
       "about": "Tungkol sa App",
       "contributions": "Contributions"
     },
+    "stats": {
+      "products": "Mga Produkto",
+      "places": "Mga Lugar",
+      "xp": "XP"
+    },
     "title": "Profile",
     "logout": "Mag-logout",
     "donor": "Katayuan ng Donor",

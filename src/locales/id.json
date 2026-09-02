@@ -630,6 +630,11 @@
       "about": "Tentang Aplikasi",
       "contributions": "Contributions"
     },
+    "stats": {
+      "products": "Produk",
+      "places": "Tempat",
+      "xp": "XP"
+    },
     "title": "Profil",
     "incompleteNoticeTitle": "💡 Lengkapi \"Tentang Saya\"",
     "incompleteNoticeDesc": "Tambahkan Tanggal Lahir, Kewarganegaraan, Jenis Kelamin, atau Bio Anda untuk mempersonalisasi profil Anda.",
