@@ -4486,6 +4486,10 @@ button.gm-ui-hover-effect > span {
 /* Filter bottom sheet: centered title, plain "Reset" link (no separate
    close button — the sheet's own drag handle / backdrop tap dismiss it),
    and a full-width "Show results" CTA pinned to the bottom. */
+.filter-modal {
+  --border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+}
+
 .filter-modal-header ion-toolbar {
   --background: transparent;
   --min-height: 52px;
