@@ -116,38 +116,6 @@
 
 
 
-      <!-- === Main Feature: Scan === -->
-      <ion-card class="main-feature-section clear-card">
-        <div class="main-features-grid">
-          <button class="feature-card feature-primary" @click="goScan">
-            <div class="feature-icon-wrapper">
-              <ion-icon :icon="scanOutline" />
-            </div>
-            <div class="feature-text">
-              <h3>{{ $t('home.scan') }}</h3>
-              <p>{{ $t('home.scanDesc') }}</p>
-            </div>
-            <div class="feature-bg-icon">
-              <ion-icon :icon="scanOutline" />
-            </div>
-          </button>
-          
-          <button class="feature-card feature-secondary" @click="goToSearchAndScan">
-            <div class="feature-icon-wrapper">
-              <ion-icon :icon="barcodeOutline" />
-            </div>
-            <div class="feature-text">
-              <h3>{{ $t('home.scanBarcode') }}</h3>
-              <p>{{ $t('home.scanBarcodeDesc') }}</p>
-            </div>
-            <div class="feature-bg-icon">
-              <ion-icon :icon="barcodeOutline" />
-            </div>
-          </button>
-        </div>
-      </ion-card>
-
-
       <!-- === Our Partner=== -->
       <ion-card>
         <ion-card-header>
@@ -219,6 +187,38 @@
           </transition-group>
         </ion-card-content>
 
+      </ion-card>
+
+
+      <!-- === Main Feature: Scan === -->
+      <ion-card class="main-feature-section clear-card">
+        <div class="main-features-grid">
+          <button class="feature-card feature-primary" @click="goScan">
+            <div class="feature-icon-wrapper">
+              <ion-icon :icon="scanOutline" />
+            </div>
+            <div class="feature-text">
+              <h3>{{ $t('home.scan') }}</h3>
+              <p>{{ $t('home.scanDesc') }}</p>
+            </div>
+            <div class="feature-bg-icon">
+              <ion-icon :icon="scanOutline" />
+            </div>
+          </button>
+
+          <button class="feature-card feature-secondary" @click="goToSearchAndScan">
+            <div class="feature-icon-wrapper">
+              <ion-icon :icon="barcodeOutline" />
+            </div>
+            <div class="feature-text">
+              <h3>{{ $t('home.scanBarcode') }}</h3>
+              <p>{{ $t('home.scanBarcodeDesc') }}</p>
+            </div>
+            <div class="feature-bg-icon">
+              <ion-icon :icon="barcodeOutline" />
+            </div>
+          </button>
+        </div>
       </ion-card>
 
       <!-- === Daily Missions === -->
