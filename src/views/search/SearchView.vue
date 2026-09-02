@@ -18,17 +18,17 @@
 
       <ion-toolbar class="actions-toolbar">
         <div class="header-main-actions">
-          <div class="right-actions-group">
-            <!-- 🔍 Search Toggle Button -->
-            <ion-button
-                fill="clear"
-                @click="showSearchbar = !showSearchbar"
-                :color="showSearchbar ? 'carrot' : 'dark'"
-                class="classic-action-btn"
-            >
-              <ion-icon :icon="showSearchbar ? closeCircle : searchOutline" />
-            </ion-button>
+          <!-- 🔍 Search bar — its own separate pill, always visible -->
+          <ion-searchbar
+              :placeholder="$t('search.placeholder')"
+              :debounce="1000"
+              @ionInput="handleSearchInput($event)"
+              :value="searchQuery"
+              class="compact-searchbar inline-searchbar"
+              :animated="true"
+          ></ion-searchbar>
 
+          <div class="right-actions-group">
             <!-- 📱 Grid/List Toggle -->
             <ion-button
                 fill="clear"
@@ -48,21 +48,6 @@
           </div>
         </div>
       </ion-toolbar>
-
-      <transition name="fade-down">
-        <ion-toolbar v-if="showSearchbar" class="search-row-toolbar">
-          <div class="search-container">
-            <ion-searchbar
-                :placeholder="$t('search.placeholder')"
-                :debounce="1000"
-                @ionInput="handleSearchInput($event)"
-                :value="searchQuery"
-                class="compact-searchbar"
-                :animated="true"
-            ></ion-searchbar>
-          </div>
-        </ion-toolbar>
-      </transition>
       <!-- Filter Section (Desktop: Toolbar expansion) -->
       <transition name="collapse">
         <ion-toolbar v-show="showFilters && !isSmallScreen" class="filter-toolbar">
@@ -616,9 +601,7 @@ import {
   chevronDownOutline,
   optionsOutline,
   pricetagsOutline, storefrontOutline, shieldCheckmarkOutline,
-  warning, closeCircle, alertCircle, sparkles,
-  swapVerticalOutline,
-  searchOutline,
+  warning, alertCircle, sparkles,
   eyeOutline,
   listOutline,
   closeOutline
@@ -757,7 +740,6 @@ const stores = ref<{ id: string; name: string; logo_url?: string }[]>([])
 const activeStores = ref<{ id: string; name: string }[]>([])
 const loadingStores = ref(true)
 const showFilters = ref(false)
-const showSearchbar = ref(false)
 const isFilterModalOpen = ref(false)
 const isSmallScreen = ref(window.innerWidth < 768)
 
@@ -2206,18 +2188,18 @@ ion-searchbar.rounded {
 }
 
 /* Consolidated Search Header Styles (3-Row Layout) */
+/* Three separate pills (search bar + two buttons), not one shared bar */
 .header-main-actions {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
   gap: 8px;
   margin: 2px 16px 6px;
-  padding: 5px 6px;
-  width: auto;
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
-  border-radius: var(--radius-xl);
-  box-shadow: var(--card-shadow);
+  width: 100%;
+}
+
+.inline-searchbar {
+  flex: 1;
+  min-width: 0;
 }
 
 /* Stacked FABs: Add Product (top) + Scan Barcode (just below it) */
@@ -2235,12 +2217,20 @@ ion-searchbar.rounded {
 .classic-action-btn {
   height: 44px;
   width: 44px;
+  min-width: 44px;
   margin: 0;
   --color: var(--ion-color-dark);
+  /* !important needed: ion-button's fill="clear" sets --background:
+     transparent via its own .button-clear class at higher specificity
+     than a plain class selector here. */
+  --background: var(--card-bg) !important;
   --border-radius: var(--radius-md);
   --background-hover: rgba(var(--ion-color-carrot-rgb), 0.1);
   --background-activated: rgba(var(--ion-color-carrot-rgb), 0.14);
   --transition: background-color 0.2s ease;
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--card-shadow);
   position: relative;
   font-weight: 700;
   text-transform: none;
@@ -2253,7 +2243,8 @@ ion-searchbar.rounded {
 .right-actions-group {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
 .badge-dot {
@@ -2277,32 +2268,7 @@ ion-searchbar.rounded {
   font-weight: 800;
 }
 
-.search-container {
-  padding: 0 16px 12px;
-}
-
-
-
-.search-row-toolbar {
-  --min-height: auto;
-}
-
-/* Animation for searchbar row */
-.fade-down-enter-active,
-.fade-down-leave-active {
-  transition: all 0.25s ease-out;
-  transform-origin: top;
-}
-
-.fade-down-enter-from,
-.fade-down-leave-to {
-  opacity: 0;
-  transform: translateY(-10px);
-}
-
-
 .actions-toolbar,
-.search-row-toolbar,
 .filter-toolbar {
   --background: var(--ion-background-color);
   backdrop-filter: none;

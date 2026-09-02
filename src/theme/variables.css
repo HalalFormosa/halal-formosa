@@ -1494,17 +1494,14 @@ ion-footer ion-toolbar {
     --icon-color: var(--ion-color-carrot);
     --clear-button-color: var(--ion-color-step-600);
     --border-radius: 100px;
-    --background: var(--ion-color-step-150, #edeef0);
+    --background: var(--card-bg);
     width: 100%;
     padding: 0;
     transition: all 0.25s ease;
     border-radius: 100px;
+    border: 1px solid var(--card-border);
+    box-shadow: var(--card-shadow);
     font-size: 0.92rem;
-}
-
-/* Dark Palette Overrides */
-.ion-palette-dark .compact-searchbar {
-    --background: var(--ion-color-step-100, #1e1e1e);
 }
 
 /* ===============================
