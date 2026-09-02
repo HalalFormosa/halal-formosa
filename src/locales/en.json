@@ -591,6 +591,7 @@
     "clear": "Clear",
     "showingPlace": "Showing 1 place",
     "results": "Results",
+    "showResults": "Show {count} results",
     "showingResults": "Showing {count} of {total} locations",
     "loadingMoreLocations": "Loading more locations...",
     "details": {

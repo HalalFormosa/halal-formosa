@@ -583,15 +583,12 @@
         handle-behavior="cycle"
         class="filter-modal"
     >
-      <ion-header class="ion-no-border">
+      <ion-header class="ion-no-border filter-modal-header">
         <ion-toolbar>
           <ion-title>{{ $t('common.filter') || 'Filter' }}</ion-title>
           <ion-buttons slot="end">
             <ion-button v-if="activeFiltersCount > 0" @click="() => { activeCategoryIds = []; activeTag = null; focusedPlaceId = null; }" color="carrot" class="modal-reset-btn">
-              {{ $t('common.reset') || 'RESET' }}
-            </ion-button>
-            <ion-button @click="isFilterModalOpen = false">
-              <ion-icon :icon="closeOutline" />
+              {{ $t('common.reset') || 'Reset' }}
             </ion-button>
           </ion-buttons>
         </ion-toolbar>
@@ -609,6 +606,11 @@
             @clearFilters="() => { activeCategoryIds = []; activeTag = null; focusedPlaceId = null; }"
         />
       </ion-content>
+      <ion-footer class="ion-no-border filter-modal-footer">
+        <ion-button expand="block" color="carrot" class="show-results-btn" @click="isFilterModalOpen = false">
+          {{ $t('explore.showResults', { count: sortedLocations.length }) }}
+        </ion-button>
+      </ion-footer>
     </ion-modal>
 
     <!-- Tag Overflow Popover -->
@@ -652,7 +654,7 @@ import {
   layersOutline, listOutline, gridOutline, mapOutline, sparkles, shieldCheckmarkOutline, checkmarkCircle,
   trendingUpOutline, flameOutline, timeOutline, locationOutline, filterOutline,
   eyeOutline, shareSocialOutline, navigateOutline, closeCircleOutline,
-  calendarOutline, pricetagOutline, school, funnelOutline, closeOutline,
+  calendarOutline, pricetagOutline, school, funnelOutline,
   bookmarkOutline, bookmark,
   sparklesOutline
 } from 'ionicons/icons'
@@ -4477,5 +4479,47 @@ button.gm-ui-hover-effect > span {
 .ion-palette-dark .modern-location-card.tier-silver .title-text,
 .ion-palette-dark .modern-location-card.tier-bronze .title-text {
   color: #ffffff !important;
+}
+</style>
+
+<style>
+/* Filter bottom sheet: centered title, plain "Reset" link (no separate
+   close button — the sheet's own drag handle / backdrop tap dismiss it),
+   and a full-width "Show results" CTA pinned to the bottom. */
+.filter-modal-header ion-toolbar {
+  --background: transparent;
+  --min-height: 52px;
+}
+
+.filter-modal-header ion-title {
+  text-align: center;
+  font-weight: 800;
+  font-size: 1.05rem;
+  letter-spacing: -0.02em;
+}
+
+.modal-reset-btn {
+  --color: var(--ion-color-carrot);
+  font-weight: 700;
+  text-transform: none;
+}
+
+.filter-modal-content {
+  --background: var(--ion-background-color);
+}
+
+.filter-modal-footer {
+  --background: transparent;
+  background: transparent;
+  padding: 8px 16px calc(12px + var(--safe-area-inset-bottom, 0px));
+}
+
+.show-results-btn {
+  --border-radius: var(--radius-lg);
+  --box-shadow: 0 8px 20px rgba(var(--ion-color-carrot-rgb), 0.3);
+  height: 52px;
+  font-weight: 700;
+  font-size: 1rem;
+  margin: 0;
 }
 </style>

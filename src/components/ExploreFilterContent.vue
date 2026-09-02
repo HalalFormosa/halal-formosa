@@ -146,18 +146,20 @@ defineEmits<{
 
 .category-bar {
   display: flex;
-  gap: 12px;
-  overflow-x: auto;
+  flex-wrap: wrap;
+  gap: 10px;
   padding: 0 16px 8px;
-  scrollbar-width: none;
-}
-
-.category-bar::-webkit-scrollbar {
-  display: none;
 }
 
 .campus-bar {
+  flex-wrap: nowrap;
+  overflow-x: auto;
   align-items: flex-end;
+  scrollbar-width: none;
+}
+
+.campus-bar::-webkit-scrollbar {
+  display: none;
 }
 
 .campus-filter-wrapper {
