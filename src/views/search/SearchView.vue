@@ -612,7 +612,7 @@
       </ion-fab>
     </ion-content>
 
-    <ion-footer>
+    <ion-footer class="results-footer">
       <div class="footer-count">
         <small>
           {{ $t('search.showingResults', {count: results.length, total: totalProductsCount}) }}
@@ -1876,12 +1876,37 @@ const getStatusIcon = (status: string) => {
 
 
 <style>
-.footer-count {
-  text-align: center;
-  padding: 3px 0;
-  font-size: 14px;
-  color: var(--ion-color-medium);
+/* Flat Ionic footer bar didn't match the rest of the app's rounded card
+   language — dropped its own background so it's seamless with the page,
+   and turned the count into a small floating pill instead of a plain line. */
+.results-footer {
+  --background: transparent;
+  --border-width: 0;
+  --box-shadow: none;
   background: transparent;
+}
+
+.results-footer::before {
+  display: none;
+}
+
+.footer-count {
+  display: flex;
+  justify-content: center;
+  padding: 8px 0 12px;
+  background: transparent;
+}
+
+.footer-count small {
+  display: inline-block;
+  padding: 6px 16px;
+  border-radius: var(--radius-pill);
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  box-shadow: var(--card-shadow);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ion-color-medium);
 }
 
 

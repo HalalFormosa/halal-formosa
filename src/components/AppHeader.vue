@@ -48,7 +48,7 @@
 
     <!-- Profile button (optional) -->
     <ion-buttons slot="end" v-if="showProfile">
-      <ion-button @click="navigateToProfile" class="profile-button">
+      <ion-button fill="clear" @click="navigateToProfile" class="profile-button">
         <template v-if="isAuthenticated && profilePic">
           <div class="profile-img-wrapper">
             <img :src="profilePic" alt="Profile" class="toolbar-profile-img" />
@@ -178,8 +178,25 @@ onMounted(() => {
   border-color: transparent;
 }
 
+/* Same Ionic default-solid-fill trap as the chip buttons above: without
+   these overrides ion-button renders its own solid background box around
+   the (smaller) avatar ring, making the photo look tiny inside a dark
+   square. fill="clear" on the element plus these !importants close it out. */
 .profile-button {
-  margin-left: 6px;
+  --background: transparent !important;
+  --background-hover: transparent !important;
+  --background-activated: transparent !important;
+  --background-focused: transparent !important;
+  --box-shadow: none !important;
+  --padding-start: 0 !important;
+  --padding-end: 0 !important;
+  width: 38px !important;
+  min-width: 38px !important;
+  max-width: 38px !important;
+  height: 38px !important;
+  min-height: 38px !important;
+  max-height: 38px !important;
+  margin: 0 0 0 6px !important;
 }
 
 .profile-img-wrapper {
