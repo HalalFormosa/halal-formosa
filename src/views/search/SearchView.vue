@@ -1817,7 +1817,7 @@ const getStatusIcon = (status: string) => {
   position: absolute;
   left: 0;
   right: 0;
-  bottom: calc(14px + var(--safe-area-inset-bottom, 0px));
+  bottom: 2px;
   display: flex;
   justify-content: center;
   pointer-events: none;
