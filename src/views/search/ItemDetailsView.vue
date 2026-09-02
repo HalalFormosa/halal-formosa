@@ -259,75 +259,80 @@
               </div>
             </div>
 
-            <!-- Stores where this product is available -->
-            <div v-if="item.stores?.length" class="ion-margin-top info-card">
-              <p class="section-title">
-                <strong><small>{{ $t('search.details.availableAt') }}</small></strong>
-              </p>
-              <StoreLogoBar
-                  :stores="item.stores"
-                  mode="readonly"
-              />
-            </div>
-
-            <!-- Description -->
-            <div class="ion-margin-top info-card">
-              <p class="section-title">
-                <strong><small>{{ $t('search.details.description') }}</small></strong>
-              </p>
-              <h5
-                  class="description-text ion-no-margin"
-                  v-html="highlightedDescription"
-              ></h5>
-            </div>
-
-            <!-- Tags -->
-            <div v-if="item.tags && item.tags.length > 0" class="ion-margin-top info-card">
-              <p class="section-title">
-                <strong><small>{{ $t('addPlace.tagsAndCategories', 'Tags') }}</small></strong>
-              </p>
-              <div class="tag-chips" style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px;">
-                <ion-chip v-for="tag in item.tags" :key="tag" style="margin: 0; font-size: 12px; height: 24px; padding: 0 10px;">
-                  <ion-label>{{ tag }}</ion-label>
-                </ion-chip>
-              </div>
-            </div>
-
-            <!-- Ingredients -->
-            <div class="ion-margin-top info-card ingredients-card">
-              <p class="section-title">
-                <strong><small>{{ $t('search.details.ingredients') }}</small></strong>
-              </p>
-
-              <ul class="ingredients-list">
-                <li v-for="(ing, idx) in visibleIngredients"
-                    :key="idx"
-                    v-html="ing.html">
-                </li>
-              </ul>
-
-              <!-- Toggle button -->
-              <div v-if="highlightedIngredients.length > maxVisible" class="ion-margin-top">
-                <ion-button
-                    fill="clear"
-                    size="small"
-                    @click="showAllIngredients = !showAllIngredients"
-                >
-                  {{ !showAllIngredients ? $t('search.details.viewMore') : $t('search.details.viewLess') }}
-                </ion-button>
+            <!-- Details: one continuous sheet instead of a stack of separately
+                 boxed cards — sections are divided by hairlines, not repeated
+                 card chrome, closer to a flowing product-detail page. -->
+            <div class="details-flow ion-margin-top">
+              <!-- Stores where this product is available -->
+              <div v-if="item.stores?.length" class="info-card">
+                <p class="section-title">
+                  <strong><small>{{ $t('search.details.availableAt') }}</small></strong>
+                </p>
+                <StoreLogoBar
+                    :stores="item.stores"
+                    mode="readonly"
+                />
               </div>
 
-              <!-- Color Legend -->
-              <div v-if="usedColors.length" class="ion-margin-top ingredient-legend">
-                <p class="section-title"><strong><small>{{ $t('search.details.colorLegend') }}</small></strong></p>
-                <div class="legend-chips">
-                  <ion-chip
-                      v-for="color in usedColors"
-                      :key="color"
-                      :class="colorToChipClass(color)"
-                  >
-                    {{ $t(colorLabels[color]) }}
+              <!-- Description -->
+              <div class="info-card">
+                <p class="section-title">
+                  <strong><small>{{ $t('search.details.description') }}</small></strong>
+                </p>
+                <h5
+                    class="description-text ion-no-margin"
+                    v-html="highlightedDescription"
+                ></h5>
+              </div>
+
+              <!-- Tags -->
+              <div v-if="item.tags && item.tags.length > 0" class="info-card">
+                <p class="section-title">
+                  <strong><small>{{ $t('addPlace.tagsAndCategories', 'Tags') }}</small></strong>
+                </p>
+                <div class="tag-chips" style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px;">
+                  <ion-chip v-for="tag in item.tags" :key="tag" style="margin: 0; font-size: 12px; height: 24px; padding: 0 10px;">
+                    <ion-label>{{ tag }}</ion-label>
                   </ion-chip>
+                </div>
+              </div>
+
+              <!-- Ingredients -->
+              <div class="info-card ingredients-card">
+                <p class="section-title">
+                  <strong><small>{{ $t('search.details.ingredients') }}</small></strong>
+                </p>
+
+                <ul class="ingredients-list">
+                  <li v-for="(ing, idx) in visibleIngredients"
+                      :key="idx"
+                      v-html="ing.html">
+                  </li>
+                </ul>
+
+                <!-- Toggle button -->
+                <div v-if="highlightedIngredients.length > maxVisible" class="ion-margin-top">
+                  <ion-button
+                      fill="clear"
+                      size="small"
+                      @click="showAllIngredients = !showAllIngredients"
+                  >
+                    {{ !showAllIngredients ? $t('search.details.viewMore') : $t('search.details.viewLess') }}
+                  </ion-button>
+                </div>
+
+                <!-- Color Legend -->
+                <div v-if="usedColors.length" class="ion-margin-top ingredient-legend">
+                  <p class="section-title"><strong><small>{{ $t('search.details.colorLegend') }}</small></strong></p>
+                  <div class="legend-chips">
+                    <ion-chip
+                        v-for="color in usedColors"
+                        :key="color"
+                        :class="colorToChipClass(color)"
+                    >
+                      {{ $t(colorLabels[color]) }}
+                    </ion-chip>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1452,6 +1457,27 @@ const share = async () => {
 
 .info-card .section-title {
   margin-bottom: 6px;
+}
+
+/* Flowing details sheet: one card surface, sections separated by a
+   hairline instead of each one being its own boxed card. */
+.details-flow {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--card-shadow);
+  overflow: hidden;
+}
+
+.details-flow .info-card {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  border-radius: 0;
+}
+
+.details-flow .info-card + .info-card {
+  border-top: 1px solid var(--card-border);
 }
 
 .ingredients-card .ingredient-legend {
