@@ -150,15 +150,22 @@ onMounted(() => {
 :deep(.header-action-button),
 :slotted(ion-button) {
   --border-radius: 50%;
+  --background: var(--card-inner-bg);
+  --background-hover: var(--card-inner-bg);
+  --background-activated: var(--card-inner-bg);
+  --background-focused: var(--card-inner-bg);
+  --box-shadow: none;
   width: 36px;
   height: 36px;
-  background: var(--card-inner-bg);
   border: 1px solid var(--card-border);
+  border-radius: 50%;
 }
 
 :deep(.custom-back-button.contrast),
 :deep(.header-action-button.contrast) {
-  background: rgba(0, 0, 0, 0.28);
+  --background: rgba(0, 0, 0, 0.28);
+  --background-hover: rgba(0, 0, 0, 0.28);
+  --background-activated: rgba(0, 0, 0, 0.28);
   border-color: transparent;
 }
 
