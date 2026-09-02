@@ -564,17 +564,18 @@
           <ion-icon :icon="barcodeOutline"/>
         </ion-fab-button>
       </div>
-    </ion-content>
 
-    <ion-footer class="results-footer">
-      <div class="footer-count">
+      <!-- Results-count pill: lives inside ion-content (slot="fixed") rather
+           than a separate <ion-footer>, so it floats OVER the product grid
+           instead of ion-content stopping short before a footer's reserved
+           row — the frosted-glass blur now actually has real scrolling
+           content behind it to blur, not blank page background. -->
+      <div class="footer-count" slot="fixed">
         <small>
           {{ $t('search.showingResults', {count: results.length, total: totalProductsCount}) }}
         </small>
       </div>
-    </ion-footer>
-
-
+    </ion-content>
   </ion-page>
 </template>
 
@@ -1809,28 +1810,18 @@ const getStatusIcon = (status: string) => {
 
 
 <style>
-/* Flat Ionic footer bar didn't match the rest of the app's rounded card
-   language — dropped its own background so it's seamless with the page,
-   and turned the count into a small floating pill instead of a plain line. */
-.results-footer {
-  --background: transparent;
-  --border-width: 0;
-  --box-shadow: none;
-  background: transparent;
-  /* Ionic's .footer-md class sets a real Material elevation box-shadow
-     directly (not through --box-shadow), so it has to be beaten explicitly. */
-  box-shadow: none !important;
-}
-
-.results-footer::before {
-  display: none;
-}
-
+/* Floats over the product grid (see slot="fixed" note in the template)
+   instead of reserving its own row below ion-content, so the frosted
+   pill actually has scrolling content behind it to blur. */
 .footer-count {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(14px + var(--safe-area-inset-bottom, 0px));
   display: flex;
   justify-content: center;
-  padding: 8px 0 12px;
-  background: transparent;
+  pointer-events: none;
+  z-index: 5;
 }
 
 .footer-count small {
