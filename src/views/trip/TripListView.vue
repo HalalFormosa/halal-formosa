@@ -16,30 +16,6 @@
 
       <ion-toolbar class="actions-toolbar">
         <div class="header-main-actions capsule-actions">
-          <!-- Sort Button (Left Side) -->
-          <ion-button fill="clear" class="classic-action-btn sort-btn-wrapper" id="sort-trigger-trip">
-            <ion-icon :icon="sortIcon" />
-            <span class="btn-label">{{ sortLabel }}</span>
-          </ion-button>
-
-          <ion-popover trigger="sort-trigger-trip" trigger-action="click" :dismiss-on-select="true" class="width-190">
-            <ion-list lines="none">
-              <ion-item button :detail="false" @click="sortBy = 'recent'">
-                <ion-icon :icon="timeOutline" slot="start" />
-                <ion-label>{{ $t('trip.sortRecentShort') }}</ion-label>
-                <ion-icon v-if="sortBy === 'recent'" :icon="checkmarkCircle" slot="end" color="success" style="font-size: 14px;" />
-              </ion-item>
-              
-              <ion-item button :detail="false" @click="sortBy = 'views'">
-                <ion-icon :icon="flameOutline" slot="start" />
-                <ion-label>{{ $t('trip.sortViewsShort') }}</ion-label>
-                <ion-icon v-if="sortBy === 'views'" :icon="checkmarkCircle" slot="end" color="success" style="font-size: 14px;" />
-              </ion-item>
-            </ion-list>
-          </ion-popover>
-
-
-
           <div class="right-actions-group">
             <!-- Search Toggle Button -->
             <ion-button
@@ -51,9 +27,9 @@
               <ion-icon :icon="showSearchbar ? closeCircle : searchOutline" />
             </ion-button>
 
-            <!-- Filter Toggle -->
+            <!-- Filter Toggle (sort now lives inside here too) -->
             <ion-button fill="clear" @click="toggleFilters" class="classic-action-btn">
-              <ion-icon :icon="funnelOutline" />
+              <ion-icon :icon="optionsOutline" />
               <div v-if="activeFiltersCount > 0" class="badge-count">{{ activeFiltersCount }}</div>
             </ion-button>
           </div>
@@ -88,6 +64,8 @@
                 @toggleCategory="toggleCategory"
                 @toggleCity="toggleCity"
                 @clearFilters="clearFilters"
+                :sortBy="sortBy"
+                @update:sortBy="sortBy = $event"
             />
           </div>
         </ion-toolbar>
@@ -98,7 +76,7 @@
           :is-open="isFilterModalOpen"
           @didDismiss="isFilterModalOpen = false"
           :initial-breakpoint="0.5"
-          :breakpoints="[0, 0.5, 0.8, 1]"
+          :breakpoints="[0, 0.5, 0.8]"
           handle-behavior="cycle"
           class="filter-modal"
       >
@@ -125,6 +103,8 @@
               @toggleCategory="toggleCategory"
               @toggleCity="toggleCity"
               @clearFilters="clearFilters"
+              :sortBy="sortBy"
+              @update:sortBy="sortBy = $event"
           />
         </ion-content>
       </ion-modal>
@@ -255,7 +235,6 @@
 
 <script setup lang="ts">
 import {ref, computed, onMounted, onUnmounted, watch} from 'vue'
-import { useI18n } from 'vue-i18n'
 import {
   IonPage, IonContent, IonSearchbar, IonToolbar,
   IonButton, IonIcon, IonText,
@@ -267,8 +246,8 @@ import { isDonor } from "@/composables/useSubscriptionStatus"
 import { scheduleBannerUpdate } from '@/plugins/admob'
 
 import {
-  funnelOutline, chevronUpOutline, chevronDownOutline, mapOutline, compassOutline, locationOutline,
-  searchOutline, closeCircle, timeOutline, checkmarkCircle, sparkles, shieldCheckmarkOutline, eyeOutline, flameOutline, calendarOutline, closeOutline
+  optionsOutline, chevronUpOutline, chevronDownOutline, mapOutline, compassOutline, locationOutline,
+  searchOutline, closeCircle, timeOutline, sparkles, shieldCheckmarkOutline, eyeOutline, calendarOutline, closeOutline
 } from 'ionicons/icons'
 import AppHeader from '@/components/AppHeader.vue'
 import TripFilterContent from '@/components/TripFilterContent.vue'
@@ -307,18 +286,6 @@ const isSmallScreen = ref(window.innerWidth < 768)
 const handleResize = () => {
   isSmallScreen.value = window.innerWidth < 768
 }
-
-const { t } = useI18n()
-
-const sortLabel = computed(() => {
-  if (sortBy.value === 'views') return t('trip.sortViewsShort')
-  return t('trip.sortRecentShort')
-})
-
-const sortIcon = computed(() => {
-  if (sortBy.value === 'views') return flameOutline
-  return timeOutline
-})
 
 const hasActiveFilters = computed(() => {
   return (
@@ -978,14 +945,13 @@ ion-header :deep(app-header ion-toolbar) {
 .header-main-actions {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 8px;
   padding: 8px 16px;
   width: 100%;
 }
 
-.capsule-actions .classic-action-btn,
-.capsule-actions .sort-btn-wrapper {
+.capsule-actions .classic-action-btn {
   --border-radius: var(--radius-lg);
   --background: var(--card-inner-bg);
   border: 1px solid var(--card-border);
@@ -1005,17 +971,6 @@ ion-header :deep(app-header ion-toolbar) {
 
 .classic-action-btn ion-icon {
   font-size: 22px;
-}
-
-.sort-btn-wrapper {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.btn-label {
-  margin-left: 4px;
-  font-size: 13px;
 }
 
 .right-actions-group {

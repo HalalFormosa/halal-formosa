@@ -4,11 +4,12 @@
       <!-- Native (mobile) AdMob banner -->
       <div v-if="isNative && showAds" id="ad-space-item-details" :style="{ height: '65px', paddingTop: 'var(--ion-safe-area-top, 0)' }"></div>
 
-      <app-header 
-        :title="$t('search.details.title')" 
-        show-back 
-        backRoute="/search" 
-        :icon="bagOutline"
+      <app-header
+        :title="$t('search.details.title')"
+        show-back
+        backRoute="/search"
+        icon="none"
+        :centerTitle="true"
         :transparent="!isScrolled"
         :contrast="!isScrolled"
       >
@@ -551,7 +552,6 @@ import AppHeader from "@/components/AppHeader.vue";
 import AuditHistoryLog from "@/components/AuditHistoryLog.vue";
 import {
   alertCircleOutline,
-  bagOutline,
   barcodeOutline,
   createOutline,
   bookmarkOutline,

@@ -14,7 +14,7 @@
     </ion-buttons>
 
     <!-- Title + Icon -->
-    <ion-title class="header-title">
+    <ion-title :class="['header-title', { 'is-centered': centerTitle }]">
       <div class="title-content">
         <template v-if="icon === 'none'"></template>
         <template v-else-if="!icon">
@@ -78,10 +78,12 @@ withDefaults(defineProps<{
   useRouterBack?: boolean
   transparent?: boolean
   contrast?: boolean
+  centerTitle?: boolean
 }>(), {
   useRouterBack: true,
   transparent: false,
-  contrast: false
+  contrast: false,
+  centerTitle: false
 })
 
 const isAuthenticated = ref(false)
@@ -120,6 +122,16 @@ onMounted(() => {
   justify-content: flex-start !important;
   height: 100%;
   gap: 10px;
+}
+
+/* Opt-in centered title (no icon/logo) for pages like Product Details that
+   want a plain centered title instead of the default left-aligned icon+text. */
+.header-title.is-centered {
+  padding-inline: 0;
+}
+
+.header-title.is-centered .title-content {
+  justify-content: center !important;
 }
 
 .header-logo {
