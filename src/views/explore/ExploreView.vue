@@ -156,7 +156,7 @@
     </ion-header>
 
     <div
-        style="position: absolute; height: 100%; width: 100%; top: 0; left: 0; z-index: 0;"
+        style="position: fixed; inset: 0; z-index: 0;"
     >
       <div id="map" :class="{ 'map-dimmed': viewMode === 'list' }" style="height: 100%; width: 100%;"></div>
 
