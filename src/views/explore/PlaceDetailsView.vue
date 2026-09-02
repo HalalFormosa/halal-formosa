@@ -8,7 +8,8 @@
            show-back
            :useRouterBack="true"
            :backRoute="'/explore'"
-           :icon="mapOutline"
+           icon="none"
+           :centerTitle="true"
            :transparent="!isScrolled"
            :contrast="!isScrolled"
        >
@@ -820,7 +821,6 @@ import {
   alertCircleOutline, callOutline, cashOutline, chatboxEllipsesOutline,
   createOutline, documentTextOutline, logoInstagram,
   trashOutline,
-  mapOutline,
   navigateOutline,
   shareSocialOutline,
   sparkles,

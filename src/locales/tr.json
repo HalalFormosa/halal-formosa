@@ -971,6 +971,9 @@
     "direction": "Kıble Yönü",
     "fromNorth": "Gerçek Kuzey'den",
     "preparing": "Pusula hazırlanıyor...",
+    "needsPermission": "Yönü göstermek için pusula erişimi gereklidir.",
+    "enableButton": "Pusulayı Etkinleştir",
+    "error": "Pusula başlatılamadı.",
     "facing": "Kıbleye dönüksün"
   },
   "savedItems": {

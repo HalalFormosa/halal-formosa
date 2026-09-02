@@ -566,13 +566,11 @@
       @saved="checkSavedState(selectedLocationForSave?.id || 0)"
     />
 
-    <ion-footer v-if="viewMode === 'list'" style="position: absolute; bottom: 0; left: 0; right: 0; width: 100%; z-index: 1001; background: var(--ion-background-color); border-top: 1px solid var(--card-border);">
-      <div class="footer-count">
-        <small>
-          {{ $t('explore.showingResults', {count: listLocations.length, total: boundsFilteredLocations.length}) }}
-        </small>
-      </div>
-    </ion-footer>
+    <div v-if="viewMode === 'list'" class="list-mode-footer-count">
+      <small>
+        {{ $t('explore.showingResults', {count: listLocations.length, total: boundsFilteredLocations.length}) }}
+      </small>
+    </div>
 
     <!-- Mobile Filters (Modal Bottom Sheet) -->
     <ion-modal
@@ -2927,15 +2925,11 @@ button.gm-ui-hover-effect > span {
 
 .quick-filters-scroll {
   display: flex;
-  gap: 4px;
+  gap: 8px;
   overflow-x: auto;
   scrollbar-width: none;
   -ms-overflow-style: none;
   padding: 4px;
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
-  border-radius: 999px;
-  box-shadow: var(--card-shadow);
   width: fit-content;
   max-width: 100%;
 }
@@ -2945,10 +2939,11 @@ button.gm-ui-hover-effect > span {
 }
 
 .quick-filter-chip {
-  background: transparent !important;
+  background: var(--card-bg) !important;
   --color: var(--ion-color-medium);
-  border: none;
+  border: 1px solid var(--card-border);
   border-radius: 999px;
+  box-shadow: var(--card-shadow);
   padding: 4px 12px;
   margin: 0;
   height: 32px;
@@ -3563,7 +3558,7 @@ button.gm-ui-hover-effect > span {
 /* FLOATING RESULTS BAR (HORIZONTAL SLIDER) */
 .floating-results-bar {
   position: absolute;
-  bottom: calc(var(--ion-safe-area-bottom, 0px) + 8px); /* Lowered position */
+  bottom: var(--floating-tab-bar-offset);
   left: 0;
   right: 0;
   z-index: 1000;
@@ -3886,7 +3881,7 @@ button.gm-ui-hover-effect > span {
 ========================= */
 .map-floating-actions {
   position: absolute;
-  bottom: calc(var(--ion-safe-area-bottom, 0px) + var(--explore-card-height) + 40px);
+  bottom: calc(var(--floating-tab-bar-offset) + var(--explore-card-height) + 16px);
   right: 20px;
   z-index: 1001;
   pointer-events: auto;
@@ -3897,7 +3892,8 @@ button.gm-ui-hover-effect > span {
 }
 
 .map-floating-actions.list-mode {
-  bottom: calc(var(--ion-safe-area-bottom, 0px) + 20px);
+  /* Sits above the results-count footer pill, not on top of it. */
+  bottom: calc(var(--floating-tab-bar-offset) + 60px);
 }
 
 .floating-action-btn {
@@ -4222,7 +4218,7 @@ button.gm-ui-hover-effect > span {
 }
 
 .view-mode-fab {
-  bottom: 92px; /* above tab bar */
+  bottom: calc(92px + var(--floating-tab-bar-extra-offset)); /* above floating tab bar */
   left: 12px;
   z-index: 30;
 }
@@ -4253,19 +4249,19 @@ button.gm-ui-hover-effect > span {
 /* MAP ONLY */
 .fab-right.map,
 .view-mode-fab.map {
-  bottom: 5vh; /* above tab bar */
+  bottom: calc(5vh + var(--floating-tab-bar-extra-offset)); /* above floating tab bar */
 }
 
 /* BOTH — panel collapsed */
 .fab-right.panel-collapsed,
 .view-mode-fab.panel-collapsed {
-  bottom: 26vh;
+  bottom: calc(26vh + var(--floating-tab-bar-extra-offset));
 }
 
 /* BOTH — panel open */
 .fab-right.panel-open,
 .view-mode-fab.panel-open {
-  bottom: 62vh;
+  bottom: calc(62vh + var(--floating-tab-bar-extra-offset));
 }
 
 .clear-chip {
@@ -4299,6 +4295,37 @@ button.gm-ui-hover-effect > span {
   font-size: 14px;
   color: var(--ion-color-medium);
   background: transparent;
+}
+
+/* Floats over the map/list content as a frosted pill (see SearchView's
+   matching .footer-count), instead of a solid ion-footer bar. */
+.list-mode-footer-count {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(var(--floating-tab-bar-offset) + 4px);
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 1001;
+}
+
+.list-mode-footer-count small {
+  display: inline-block;
+  padding: 6px 16px;
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--card-border);
+  box-shadow: var(--card-shadow);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ion-color-medium);
+}
+
+.ion-palette-dark .list-mode-footer-count small {
+  background: rgba(20, 20, 22, 0.65);
 }
 
 

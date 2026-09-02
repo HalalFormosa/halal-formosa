@@ -971,6 +971,9 @@
     "direction": "Hướng Qibla",
     "fromNorth": "từ phía Bắc đích thực",
     "preparing": "Đang chuẩn bị la bàn...",
+    "needsPermission": "Cần quyền truy cập la bàn để hiển thị hướng.",
+    "enableButton": "Bật La Bàn",
+    "error": "Không thể khởi tạo la bàn.",
     "facing": "Bạn đang đối mặt với Qibla"
   },
   "savedItems": {

@@ -271,6 +271,13 @@ const sortBy = ref<'recent' | 'views'>('recent')
 const isNative = ref(Capacitor.isNativePlatform())
 const { execute: executeRecaptcha, isCaptchaEnabled } = useRecaptcha()
 
+// Same tier weighting as Home's partner rotation, so "featured first" reads
+// consistently across the app.
+const TRIP_TIER_WEIGHTS: Record<string, number> = { gold: 3, silver: 2, bronze: 1 }
+function getTripTierWeight(trip: any): number {
+  return TRIP_TIER_WEIGHTS[(trip.provider?.partner_tier || '').toLowerCase()] || 0
+}
+
 onIonViewDidEnter(() => {
   scheduleBannerUpdate()
 })
@@ -433,15 +440,22 @@ const filteredTrips = computed(() => {
     return matchesSearch && matchesCategory && matchesCity
   })
 
-  // 🔥 Sort logic (basic UI-level for now)
+  // 🔥 Sort logic — tiered partners (Gold/Silver/Bronze) always float above
+  // untiered listings, matching the tier weighting used on Home; recency/
+  // views only break ties within the same tier.
+  const tierDiff = (a: any, b: any) =>
+      getTripTierWeight(b) - getTripTierWeight(a)
+
   if (sortBy.value === 'views') {
-    return [...list].sort((a, b) => (b.view_count ?? 0) - (a.view_count ?? 0))
+    return [...list].sort((a, b) =>
+        tierDiff(a, b) || ((b.view_count ?? 0) - (a.view_count ?? 0))
+    )
   }
 
-  return [...list].sort((a, b) => {
-    return new Date(b.created_at ?? '').getTime()
-        - new Date(a.created_at ?? '').getTime()
-  })
+  return [...list].sort((a, b) =>
+      tierDiff(a, b) ||
+      (new Date(b.created_at ?? '').getTime() - new Date(a.created_at ?? '').getTime())
+  )
 })
 
 

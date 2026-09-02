@@ -121,6 +121,36 @@
     padding-bottom: calc(var(--safe-area-inset-bottom) - (var(--safe-area-inset-bottom) / 1.75));
 }
 
+/* Floating tab bar clearance: since the router-outlet now fills the full
+   screen behind the floating bar (see MainView.vue), give every tabbed
+   page's content enough bottom padding to clear it instead of hiding
+   underneath. Pages outside ion-tabs (noTabs routes) are untouched. */
+:root {
+    /* The bar's declared height is 64px, but ion-tab-bar renders it as
+       content-box (a light-DOM `box-sizing: border-box` override doesn't
+       reach it), so its real painted height is 64px + 6px+6px padding +
+       1px+1px border = 78px. Measured directly via getBoundingClientRect —
+       don't change this back to 64px without re-measuring live. */
+    --floating-tab-bar-clearance: calc(78px + 12px + 24px + var(--safe-area-inset-bottom));
+
+    /* For elements that use `position: fixed` (viewport-relative, e.g. the
+       Explore view-mode/locate FABs) and were already tuned to clear the
+       old flush ion-tab-bar on their own: the floating bar only adds its
+       own outer margin on top of that, not the full clearance above. */
+    --floating-tab-bar-extra-offset: 12px;
+
+    /* Snug fit: exactly the floating bar's own top edge (its bottom margin
+       + real painted height + safe area), no extra breathing room on top.
+       Use this for small pills/footers that should sit immediately above
+       the bar rather than scroll-stop padding, which wants the more
+       generous clearance. */
+    --floating-tab-bar-offset: calc(78px + 12px + var(--safe-area-inset-bottom));
+}
+
+ion-tabs > ion-router-outlet .ion-page > ion-content {
+    --padding-bottom: var(--floating-tab-bar-clearance);
+}
+
 /* This sets a different item background when dark mode is enabled on ios and md */
 .ion-palette-dark.ios,
 .ion-palette-dark.md {
@@ -302,6 +332,7 @@ ion-chip.status-chip.chip-medium {
 :root {
     /* Flat, hairline-bordered cards with a barely-there shadow — minimal, not skeuomorphic */
     --card-bg: #ffffff;
+    --card-bg-rgb: 255, 255, 255;
     --card-inner-bg: #ffffff;
     --card-shadow: 0 1px 2px rgba(0, 0, 0, 0.03), 0 1px 0 rgba(0, 0, 0, 0.02);
     --card-shadow-hover: 0 4px 16px rgba(0, 0, 0, 0.06);
@@ -319,6 +350,7 @@ ion-chip.status-chip.chip-medium {
     --tier-silver-bg: linear-gradient(135deg, #1a1a1c 0%, #1a222c 100%);
     --tier-bronze-bg: linear-gradient(135deg, #1a1a1c 0%, #2c1a0d 100%);
     --card-bg: #18181a;
+    --card-bg-rgb: 24, 24, 26;
     --card-inner-bg: #18181a;
     --card-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
     --card-shadow-hover: 0 4px 20px rgba(0, 0, 0, 0.5);
@@ -1385,6 +1417,7 @@ ion-footer ion-toolbar {
 .premium-header .custom-back-button.contrast {
     --color: white !important;
     --icon-color: white !important;
+    --background: rgba(0, 0, 0, 0.25) !important;
     color: white !important;
     background: rgba(0, 0, 0, 0.25);
     backdrop-filter: blur(8px);

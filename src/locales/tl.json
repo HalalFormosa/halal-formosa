@@ -971,6 +971,9 @@
     "direction": "Direksyon ng Qibla",
     "fromNorth": "mula sa True North",
     "preparing": "Inihahanda ang compass...",
+    "needsPermission": "Kailangan ang pag-access sa compass upang ipakita ang direksyon.",
+    "enableButton": "I-enable ang Compass",
+    "error": "Hindi ma-initialize ang compass.",
     "facing": "Nakaharap ka sa Qibla"
   },
   "savedItems": {

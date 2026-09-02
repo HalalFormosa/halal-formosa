@@ -5,28 +5,6 @@
       <div v-if="isNative && !isDonor" id="ad-space-store" :style="{ height: '65px', paddingTop: 'var(--ion-safe-area-top, 0)' }"></div>
 
       <app-header :title="$t('store.title')" :icon="bagHandleOutline" :showProfile="true" />
-
-      <!-- Actions toolbar: search input + chats + cart -->
-      <ion-toolbar class="actions-toolbar">
-        <ion-searchbar
-          v-model="searchQuery"
-          :placeholder="$t('store.searchPlaceholder')"
-          :debounce="400"
-          show-clear-button="focus"
-          class="compact-searchbar"
-        />
-
-        <ion-buttons slot="end">
-          <ion-button @click="openChats" class="header-action-button">
-            <ion-icon :icon="chatbubblesOutline" />
-            <ion-badge v-if="totalUnreadCount > 0" color="danger" class="header-badge">{{ totalUnreadCount }}</ion-badge>
-          </ion-button>
-          <ion-button @click="openCart" class="header-action-button cart-button">
-            <ion-icon :icon="cartOutline" />
-            <ion-badge v-if="cartCount > 0" color="danger" class="header-badge">{{ cartCount }}</ion-badge>
-          </ion-button>
-        </ion-buttons>
-      </ion-toolbar>
     </ion-header>
 
     <ion-content>
@@ -40,6 +18,29 @@
             refreshingSpinner="circles"
         />
       </ion-refresher>
+
+      <!-- Search bar + chats/cart float over the content instead of sitting
+           in their own ion-toolbar — matches Product/Trip's pattern. -->
+      <div class="header-main-actions" slot="fixed">
+        <ion-searchbar
+            v-model="searchQuery"
+            :placeholder="$t('store.searchPlaceholder')"
+            :debounce="400"
+            show-clear-button="focus"
+            class="compact-searchbar inline-searchbar"
+        />
+
+        <div class="right-actions-group">
+          <ion-button @click="openChats" class="classic-action-btn">
+            <ion-icon :icon="chatbubblesOutline" />
+            <ion-badge v-if="totalUnreadCount > 0" color="danger" class="header-badge">{{ totalUnreadCount }}</ion-badge>
+          </ion-button>
+          <ion-button @click="openCart" class="classic-action-btn cart-button">
+            <ion-icon :icon="cartOutline" />
+            <ion-badge v-if="cartCount > 0" color="danger" class="header-badge">{{ cartCount }}</ion-badge>
+          </ion-button>
+        </div>
+      </div>
 
       <div class="store-view-wrapper" style="position: relative; min-height: 100%;">
         <div class="store-container">
@@ -172,25 +173,29 @@
           <ion-infinite-scroll @ionInfinite="loadMore($event)" :disabled="noMore">
             <ion-infinite-scroll-content :loading-text="$t('store.loadingMore')" />
           </ion-infinite-scroll>
-
-          <!-- Admin FAB -->
-          <ion-fab v-if="isAdmin" vertical="bottom" horizontal="end" slot="fixed">
-            <ion-fab-button color="carrot" @click="navigateToAdminAdd">
-              <ion-icon :icon="addOutline" />
-            </ion-fab-button>
-          </ion-fab>
         </div>
       </div>
-    </ion-content>
 
-    <!-- Footer result count -->
-    <ion-footer v-if="totalCount > 0" class="result-footer">
-      <ion-toolbar>
-        <ion-title size="small" class="result-count">
+      <!-- Admin FAB: must be a direct child of ion-content for slot="fixed"
+           to actually pin it to the viewport — nested inside the scrolling
+           wrapper divs above, the slot assignment silently no-ops (native
+           shadow DOM only slots direct light-DOM children) and it scrolls
+           with the grid instead of staying put like Search/Explore's FABs. -->
+      <ion-fab v-if="isAdmin" vertical="bottom" horizontal="end" slot="fixed" class="admin-add-fab">
+        <ion-fab-button color="carrot" @click="navigateToAdminAdd">
+          <ion-icon :icon="addOutline" />
+        </ion-fab-button>
+      </ion-fab>
+
+      <!-- Results-count pill: lives inside ion-content (slot="fixed") so it
+           floats over the product grid instead of reserving its own footer
+           row, matching SearchView's frosted-glass results pill. -->
+      <div v-if="totalCount > 0" class="footer-count" slot="fixed">
+        <small>
           {{ $t('store.showingResults', { count: products.length, total: totalCount }) }}
-        </ion-title>
-      </ion-toolbar>
-    </ion-footer>
+        </small>
+      </div>
+    </ion-content>
 
     <!-- Cart Modal -->
     <ion-modal :is-open="cartOpen" @didDismiss="cartOpen = false" :initial-breakpoint="0.5" :breakpoints="[0, 0.5, 0.85]">
@@ -312,7 +317,7 @@ import { useI18n } from 'vue-i18n'
 import {
   IonPage, IonHeader, IonContent, IonToolbar, IonButtons, IonButton, IonIcon,
   IonSearchbar, IonChip, IonSkeletonText, IonInfiniteScroll, IonInfiniteScrollContent,
-  IonFab, IonFabButton, IonRefresher, IonRefresherContent, IonFooter, IonTitle,
+  IonFab, IonFabButton, IonRefresher, IonRefresherContent, IonTitle,
   IonPopover, IonList, IonItem, IonLabel, IonModal, IonThumbnail, IonBadge,
   IonInput, IonToggle, onIonViewWillEnter, onIonViewDidEnter
 } from '@ionic/vue'
@@ -467,7 +472,7 @@ function navigateToMerchant(id: string) {
 
 function navigateToAdminAdd() {
   if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
-  router.push('/admin/store/add-product')
+  router.push('/merchant/store/product/add')
 }
 
 function openFilter() {
@@ -700,17 +705,77 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-/* Actions toolbar */
-.actions-toolbar {
-  --background: var(--ion-background-color);
-  --border-width: 0;
-  /* Align the search field + trailing icons to the same 16px gutter used by the
-     category pills, filter row and product grid. The ion-searchbar host adds ~7px
-     of inner padding, so 8px here lands the field edge at ~15px (matching the pills). */
-  --padding-start: 8px;
-  --padding-end: 8px;
-  --padding-top: 4px;
-  --padding-bottom: 6px;
+.admin-add-fab {
+  bottom: var(--floating-tab-bar-clearance);
+}
+
+/* Clears the floating search bar (slot="fixed" in the template) instead
+   of content starting right underneath it. */
+.store-view-wrapper {
+  padding-top: 78px;
+}
+
+/* Floats over the store content (slot="fixed" in the template) instead of
+   sitting in its own ion-toolbar — matches Product/Trip's search bar. */
+.header-main-actions {
+  position: absolute;
+  top: 10px;
+  left: 16px;
+  right: 16px;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.inline-searchbar {
+  flex: 1;
+  min-width: 0;
+}
+
+.classic-action-btn {
+  /* !important + min/max on all four needed: iOS mode's own ion-button
+     internal padding/min-height (different from md/Android) otherwise
+     wins over a plain height/width here, making the button render a
+     different size on iPhone than on Android. */
+  height: 44px !important;
+  width: 44px !important;
+  min-width: 44px !important;
+  max-width: 44px !important;
+  min-height: 44px !important;
+  max-height: 44px !important;
+  margin: 0;
+  --color: var(--ion-color-dark);
+  /* !important needed: ion-button's fill="clear" sets --background:
+     transparent via its own .button-clear class at higher specificity
+     than a plain class selector here. Frosted-glass tint (not the
+     opaque --card-bg) to match the see-through searchbar next to it. */
+  --background: rgba(255, 255, 255, 0.65) !important;
+  --border-radius: var(--radius-md);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--card-shadow);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  position: relative;
+  font-weight: 700;
+  text-transform: none;
+}
+
+.ion-palette-dark .classic-action-btn {
+  --background: rgba(20, 20, 22, 0.65) !important;
+}
+
+.classic-action-btn ion-icon {
+  font-size: 24px;
+  color: var(--ion-color-dark);
+}
+
+.right-actions-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
 
@@ -729,10 +794,6 @@ onBeforeUnmount(() => {
   font-size: 0.8rem;
   font-weight: 600;
   text-transform: none;
-  --color: var(--ion-text-color);
-}
-
-.header-action-button {
   --color: var(--ion-text-color);
 }
 
@@ -1089,16 +1150,13 @@ onBeforeUnmount(() => {
   overflow: hidden;
   background: var(--ion-color-step-50, #f4f5f8);
   flex-shrink: 0;
-  padding: 10px;
-  box-sizing: border-box;
 }
 
 .product-image {
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  object-fit: cover;
   display: block;
-  border-radius: var(--radius-sm);
 }
 
 .product-image-placeholder {
@@ -1254,17 +1312,36 @@ onBeforeUnmount(() => {
   opacity: 0.5;
 }
 
-/* Footer */
-.result-footer ion-toolbar {
-  --background: var(--ion-background-color);
-  --border-width: 0;
-  --min-height: 24px;
+/* Floats over the product grid (see slot="fixed" note in the template)
+   instead of reserving its own row below ion-content, so the frosted
+   pill actually has scrolling content behind it to blur. */
+.footer-count {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 2px;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 5;
 }
 
-.result-count {
-  font-size: 0.75rem;
+.footer-count small {
+  display: inline-block;
+  padding: 6px 16px;
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--card-border);
+  box-shadow: var(--card-shadow);
+  font-size: 12px;
+  font-weight: 600;
   color: var(--ion-color-medium);
-  text-align: center;
+}
+
+.ion-palette-dark .footer-count small {
+  background: rgba(20, 20, 22, 0.65);
 }
 
 /* Active sort */
@@ -1345,11 +1422,11 @@ onBeforeUnmount(() => {
 
 /* Responsive Searchbar */
 @media (min-width: 768px) {
-  .actions-toolbar {
-    --padding-start: 24px;
-    --padding-end: 24px;
+  .header-main-actions {
+    left: 24px;
+    right: 24px;
   }
-  
+
   .compact-searchbar {
     max-width: 600px;
     margin: 0 auto;

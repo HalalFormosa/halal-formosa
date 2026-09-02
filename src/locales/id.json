@@ -1000,6 +1000,9 @@
     "direction": "Arah Kiblat",
     "fromNorth": "dari Utara Sejati",
     "preparing": "Menyiapkan kompas...",
+    "needsPermission": "Akses kompas diperlukan untuk menampilkan arah.",
+    "enableButton": "Aktifkan Kompas",
+    "error": "Tidak dapat menginisialisasi kompas.",
     "facing": "Anda sedang menghadap Kiblat"
   },
   "savedItems": {

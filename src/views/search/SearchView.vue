@@ -1819,7 +1819,7 @@ const getStatusIcon = (status: string) => {
   position: absolute;
   left: 0;
   right: 0;
-  bottom: 2px;
+  bottom: var(--floating-tab-bar-offset);
   display: flex;
   justify-content: center;
   pointer-events: none;
@@ -2215,8 +2215,8 @@ ion-searchbar.rounded {
 .stacked-fabs {
   position: absolute;
   right: 16px;
-  /* Cleared above the results-count pill's row so they don't overlap. */
-  bottom: calc(46px + var(--safe-area-inset-bottom, 0px));
+  /* Cleared above the results-count pill, not floating far above it. */
+  bottom: calc(var(--floating-tab-bar-offset) + 42px);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -2257,7 +2257,7 @@ ion-searchbar.rounded {
 }
 
 .classic-action-btn ion-icon {
-  font-size: 24px;
+  font-size: 38px;
   color: var(--ion-color-dark);
 }
 

@@ -971,6 +971,9 @@
     "direction": "キブラの方向",
     "fromNorth": "トゥルーノースから",
     "preparing": "コンパスを準備しています...",
+    "needsPermission": "方向を表示するにはコンパスへのアクセスが必要です。",
+    "enableButton": "コンパスを有効にする",
+    "error": "コンパスを初期化できませんでした。",
     "facing": "あなたはキブラに面しています"
   },
   "savedItems": {

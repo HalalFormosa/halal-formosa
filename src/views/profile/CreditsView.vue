@@ -99,6 +99,19 @@
         </ion-card-content>
       </ion-card>
 
+      <!-- Powered By -->
+      <ion-card>
+        <ion-card-header>
+          <ion-card-title>{{ $t('credits.poweredBy') }}</ion-card-title>
+        </ion-card-header>
+        <ion-card-content>
+          <p class="powered-by-name clickable-contributor" @click="openYiQiWebsite">
+            YiQi Global Consulting (藝啟文創行銷有限公司) <ion-icon :icon="sparkles" class="link-spark" />
+          </p>
+          <p class="powered-by-description">{{ $t('credits.poweredByDescription') }}</p>
+        </ion-card-content>
+      </ion-card>
+
       <!-- Special Thanks -->
       <div class="special-thanks ion-padding-horizontal">
         <h3>{{ $t('credits.specialThanks') }}</h3>
@@ -224,6 +237,10 @@ const closePopover = () => {
   popoverEvent.value = null
 }
 
+const openYiQiWebsite = () => {
+  window.open('https://www.yiqiconsultant.com/', '_blank')
+}
+
 function isHighSimilarity(dbName: string, contributorName: string): boolean {
   const cleanDb = dbName.toLowerCase().replace(/[^a-z0-9 ]/g, '').trim()
   const cleanCont = contributorName.toLowerCase().replace(/[^a-z0-9 ]/g, '').trim()
@@ -295,6 +312,18 @@ ion-card-content li {
 .logo-img {
   max-width: 160px;   /* adjust size as needed */
   height: auto;
+}
+
+.powered-by-name {
+  font-weight: 600;
+  color: var(--ion-text-color);
+  margin: 0 0 4px;
+}
+
+.powered-by-description {
+  font-size: 0.9rem;
+  color: var(--ion-color-medium);
+  margin: 0;
 }
 
 .special-thanks {

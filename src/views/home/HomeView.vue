@@ -2975,31 +2975,13 @@ ion-segment-button {
 }
 
 .insights-scroll {
-  display: flex;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  padding: 0px; /* Allow card margins to breathe */
-  scrollbar-width: none;
-  -ms-overflow-style: none; 
-}
-
-/* 🖥️ Desktop: Transform Scroll to Grid */
-@media (min-width: 1024px) {
-  .insights-scroll {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    overflow-x: visible;
-    padding: 8px 16px; /* Match standard page margins */
-  }
-}
-
-.insights-scroll::-webkit-scrollbar {
-  display: none;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  padding: 0px;
 }
 
 .insight-card {
-  flex: 0 0 240px;
-  scroll-snap-align: center;
+  min-width: 0;
   margin: 12px 10px;
   background: var(--card-bg);
   border-radius: 16px; /* Match the exact 16px radius from the inspector */
@@ -3017,13 +2999,6 @@ ion-segment-button {
 .insight-card:active {
   transform: scale(0.98);
   background: var(--ion-color-step-50);
-}
-
-@media (min-width: 1024px) {
-  .insight-card {
-    flex: 1; /* Fit width */
-    min-width: 0;
-  }
 }
 
 /* Stat Cards (Centered Icons) */

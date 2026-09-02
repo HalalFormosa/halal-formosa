@@ -953,6 +953,9 @@
     "direction": "Arah Kiblat",
     "fromNorth": "dari Utara Sebenar",
     "preparing": "Menyediakan kompas...",
+    "needsPermission": "Akses kompas diperlukan untuk menunjukkan arah.",
+    "enableButton": "Aktifkan Kompas",
+    "error": "Tidak dapat memulakan kompas.",
     "facing": "Anda sedang menghadap Kiblat"
   },
   "savedItems": {

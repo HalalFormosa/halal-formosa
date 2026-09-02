@@ -971,6 +971,8 @@
     "coDeveloper": "Co-Developer",
     "uiUx": "UI/UX Contributor",
     "database": "Early Contributor",
+    "poweredBy": "Powered By",
+    "poweredByDescription": "Halal Formosa's platform publishing, registration, and operational requirements in Taiwan are supported by YiQi Global Consulting (藝啟文創行銷有限公司).",
     "specialThanks": "Special Thanks",
     "thankYou": "We sincerely thank all community members, testers, and supporters who helped make Halal Formosa possible. May Allah SWT reward your contributions with abundant goodness."
   },
@@ -1179,6 +1181,9 @@
     "direction": "Qibla Direction",
     "fromNorth": "from True North",
     "preparing": "Preparing compass...",
+    "needsPermission": "Compass access is required to show direction.",
+    "enableButton": "Enable Compass",
+    "error": "Unable to initialize compass.",
     "facing": "You are facing Qibla"
   },
   "savedItems": {

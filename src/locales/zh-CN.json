@@ -1049,6 +1049,9 @@
     "direction": "朝拜方向",
     "fromNorth": "从正北出发",
     "preparing": "准备指南针...",
+    "needsPermission": "需要指南针权限才能显示方向。",
+    "enableButton": "启用指南针",
+    "error": "无法初始化指南针。",
     "facing": "你面对着朝拜"
   },
   "savedItems": {

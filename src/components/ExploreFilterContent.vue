@@ -68,7 +68,7 @@ defineEmits<{
         <ion-skeleton-text animated style="width:85px; height:36px; border-radius:100px; margin: 0;"/>
         <ion-skeleton-text animated style="width:120px; height:36px; border-radius:100px; margin: 0;"/>
       </div>
-      <div v-else class="category-bar">
+      <div v-else class="category-bar categories-scroll">
         <ion-chip
             v-for="cat in categories"
             :key="cat.id"
@@ -149,6 +149,16 @@ defineEmits<{
   flex-wrap: wrap;
   gap: 10px;
   padding: 0 16px 8px;
+}
+
+/* Bounded-height chip cloud: caps how tall the category list can grow as
+   more categories are added, instead of pushing "Show N results" further
+   down the modal. A partial next row peeks past the cutoff as a scroll cue. */
+.categories-scroll {
+  max-height: 146px;
+  overflow-y: auto;
+  align-content: flex-start;
+  scrollbar-width: thin;
 }
 
 .campus-bar {

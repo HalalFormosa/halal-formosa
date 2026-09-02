@@ -971,6 +971,9 @@
     "direction": "키블라 방향",
     "fromNorth": "진북에서",
     "preparing": "나침반 준비 중...",
+    "needsPermission": "방향을 표시하려면 나침반 접근 권한이 필요합니다.",
+    "enableButton": "나침반 활성화",
+    "error": "나침반을 초기화할 수 없습니다.",
     "facing": "당신은 Qibla를 직면하고 있습니다"
   },
   "savedItems": {
