@@ -77,7 +77,7 @@
     <!-- ================= CONTENT ================= -->
     <ion-content class="ion-padding trip-content">
 
-      <ion-refresher style="margin-top: 66px;" slot="fixed" @ionRefresh="refreshList">
+      <ion-refresher style="margin-top: 78px;" slot="fixed" @ionRefresh="refreshList">
         <ion-refresher-content
             :pulling-icon="chevronDownCircleOutline"
             :pullingText="$t('search.pullToRefresh')"
@@ -969,9 +969,16 @@ ion-header :deep(app-header ion-toolbar) {
 }
 
 .classic-action-btn {
-  height: 44px;
-  width: 44px;
-  min-width: 44px;
+  /* !important + min/max on all four needed: iOS mode's own ion-button
+     internal padding/min-height (different from md/Android) otherwise
+     wins over a plain height/width here, making the button render a
+     different size on iPhone than on Android. */
+  height: 44px !important;
+  width: 44px !important;
+  min-width: 44px !important;
+  max-width: 44px !important;
+  min-height: 44px !important;
+  max-height: 44px !important;
   margin: 0;
   --color: var(--ion-color-dark);
   /* !important needed: ion-button's fill="clear" sets --background:
@@ -1009,11 +1016,11 @@ ion-header :deep(app-header ion-toolbar) {
 .trip-content {
   /* Ionic's .ion-padding utility sets padding-top via !important, so a
      plain override here never wins without matching it. */
-  --padding-top: 62px;
+  --padding-top: 78px;
 }
 
 .trip-content::part(scroll) {
-  padding-top: 62px !important;
+  padding-top: 78px !important;
 }
 
 .badge-dot {
