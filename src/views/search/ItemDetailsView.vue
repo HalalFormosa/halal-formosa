@@ -1454,11 +1454,11 @@ const share = async () => {
    Sections are told apart by spacing alone (no hairlines/nested boxes),
    matching a reference design that uses generous whitespace instead of
    dividers. */
+/* No card surface of its own — the outer .details-container sheet
+   (rounded top, curving over the hero image) already separates this
+   from the page; a second nested card here was redundant. */
 .details-flow {
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--card-shadow);
+  background: transparent;
   padding: 18px 0 20px;
 }
 
