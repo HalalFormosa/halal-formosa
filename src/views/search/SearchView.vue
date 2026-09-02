@@ -1899,7 +1899,9 @@ const getStatusIcon = (status: string) => {
   display: inline-block;
   padding: 6px 16px;
   border-radius: var(--radius-pill);
-  background: var(--card-bg);
+  background: rgba(var(--ion-background-color-rgb, 0, 0, 0), 0.55);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   border: 1px solid var(--card-border);
   box-shadow: var(--card-shadow);
   font-size: 12px;
