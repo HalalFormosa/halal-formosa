@@ -16,38 +16,6 @@
           :showProfile="true"
       />
 
-      <ion-toolbar class="actions-toolbar">
-        <div class="header-main-actions">
-          <!-- 🔍 Search bar — its own separate pill, always visible -->
-          <ion-searchbar
-              :placeholder="$t('search.placeholder')"
-              :debounce="1000"
-              @ionInput="handleSearchInput($event)"
-              :value="searchQuery"
-              class="compact-searchbar inline-searchbar"
-              :animated="true"
-          ></ion-searchbar>
-
-          <div class="right-actions-group">
-            <!-- 📱 Grid/List Toggle -->
-            <ion-button
-                fill="clear"
-                @click="toggleViewMode"
-                class="classic-action-btn"
-            >
-              <ion-icon :icon="viewMode === 'grid' ? listOutline : gridOutline" />
-            </ion-button>
-
-            <!-- 🎚️ Filter Toggle (sort now lives inside here too) -->
-            <ion-button fill="clear" @click="toggleFilters" class="classic-action-btn">
-              <ion-icon :icon="optionsOutline" />
-              <div v-if="activeFiltersCount > 0" class="badge-dot">
-                <span class="badge-count">{{ activeFiltersCount }}</span>
-              </div>
-            </ion-button>
-          </div>
-        </div>
-      </ion-toolbar>
       <!-- Filter Section (Desktop: Toolbar expansion) -->
       <transition name="collapse">
         <ion-toolbar v-show="showFilters && !isSmallScreen" class="filter-toolbar">
@@ -133,6 +101,40 @@
         </ion-refresher-content>
       </ion-refresher>
 
+      <!-- Search bar + grid/filter buttons float over the content instead of
+           sitting in their own ion-toolbar — transparent surroundings, each
+           pill keeps its own background, so the product grid is visible
+           (and later scrolls) behind them rather than a solid bar. -->
+      <div class="header-main-actions" slot="fixed">
+        <ion-searchbar
+            :placeholder="$t('search.placeholder')"
+            :debounce="1000"
+            @ionInput="handleSearchInput($event)"
+            :value="searchQuery"
+            class="compact-searchbar inline-searchbar"
+            :animated="true"
+        ></ion-searchbar>
+
+        <div class="right-actions-group">
+          <!-- 📱 Grid/List Toggle -->
+          <ion-button
+              fill="clear"
+              @click="toggleViewMode"
+              class="classic-action-btn"
+          >
+            <ion-icon :icon="viewMode === 'grid' ? listOutline : gridOutline" />
+          </ion-button>
+
+          <!-- 🎚️ Filter Toggle (sort now lives inside here too) -->
+          <ion-button fill="clear" @click="toggleFilters" class="classic-action-btn">
+            <ion-icon :icon="optionsOutline" />
+            <div v-if="activeFiltersCount > 0" class="badge-dot">
+              <span class="badge-count">{{ activeFiltersCount }}</span>
+            </div>
+          </ion-button>
+        </div>
+      </div>
+
       <!-- ✅ Scanner Modal (WEB ONLY) -->
       <ion-modal
           v-if="!isNative"
@@ -149,7 +151,7 @@
       </ion-modal>
 
       <div>
-        <div v-if="!scanning" class="ion-padding" style="padding-top: 5px;">
+        <div v-if="!scanning" class="ion-padding search-results-wrap">
 
           <!-- Skeleton loader -->
           <template v-if="loadingProducts && results.length === 0 && !showForYouGate">
@@ -1896,6 +1898,17 @@ ion-searchbar.rounded {
   padding: 4px 0 130px;
 }
 
+/* Top clearance for the floating search/filter bar (now inside
+   ion-content, slot="fixed") lives on the outer wrapper — the actual
+   first thing rendered (featured-gold section, "for you" card, or the
+   product grid, depending on state) — not on .product-grid itself,
+   since content before the grid needs to clear the bar too. */
+.search-results-wrap {
+  /* Ionic's .ion-padding utility sets padding-top via !important, so a
+     plain override here never wins without matching it. */
+  padding-top: 62px !important;
+}
+
 /* Laptop & Computer Only: Multiple columns */
 @media (min-width: 1024px) {
   .product-grid {
@@ -2179,13 +2192,18 @@ ion-searchbar.rounded {
 }
 
 /* Consolidated Search Header Styles (3-Row Layout) */
-/* Three separate pills (search bar + two buttons), not one shared bar */
+/* Three separate pills (search bar + two buttons), floating over the
+   product grid instead of sitting in a solid ion-toolbar — each pill
+   keeps its own background, the space around them is transparent. */
 .header-main-actions {
+  position: absolute;
+  top: 10px;
+  left: 16px;
+  right: 16px;
+  z-index: 5;
   display: flex;
   align-items: center;
   gap: 8px;
-  margin: 2px 16px 6px;
-  width: 100%;
 }
 
 .inline-searchbar {
@@ -2197,7 +2215,8 @@ ion-searchbar.rounded {
 .stacked-fabs {
   position: absolute;
   right: 16px;
-  bottom: calc(16px + var(--safe-area-inset-bottom, 0px));
+  /* Cleared above the results-count pill's row so they don't overlap. */
+  bottom: calc(46px + var(--safe-area-inset-bottom, 0px));
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -2259,7 +2278,6 @@ ion-searchbar.rounded {
   font-weight: 800;
 }
 
-.actions-toolbar,
 .filter-toolbar {
   --background: var(--ion-background-color);
   backdrop-filter: none;
@@ -2283,8 +2301,8 @@ ion-header {
 
 
 /* Force neutral text color in toolbar controls */
-.actions-toolbar ion-button,
-.actions-toolbar ion-icon {
+.header-main-actions ion-button,
+.header-main-actions ion-icon {
   color: var(--ion-color-dark);
 }
 
