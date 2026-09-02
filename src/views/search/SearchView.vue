@@ -92,7 +92,7 @@
 
     </ion-header>
     <ion-content ref="contentRef">
-      <ion-refresher style="margin-top: 15px;" slot="fixed" @ionRefresh="refreshList">
+      <ion-refresher style="margin-top: 66px;" slot="fixed" @ionRefresh="refreshList">
         <ion-refresher-content
             :pulling-icon="chevronDownCircleOutline"
             :pullingText="$t('search.pullToRefresh')"
