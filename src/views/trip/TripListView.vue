@@ -77,6 +77,15 @@
     <!-- ================= CONTENT ================= -->
     <ion-content class="ion-padding trip-content">
 
+      <ion-refresher style="margin-top: 66px;" slot="fixed" @ionRefresh="refreshList">
+        <ion-refresher-content
+            :pulling-icon="chevronDownCircleOutline"
+            :pullingText="$t('search.pullToRefresh')"
+            refreshingSpinner="circles"
+        >
+        </ion-refresher-content>
+      </ion-refresher>
+
       <!-- Search bar + filter button float over the content instead of
            sitting in their own ion-toolbar — matching Product's pattern. -->
       <div class="header-main-actions" slot="fixed">
@@ -223,7 +232,8 @@ import {
   IonPage, IonContent, IonSearchbar, IonToolbar,
   IonButton, IonIcon, IonText,
   IonCard, IonCardContent, IonChip, IonSkeletonText, IonLabel, IonHeader, IonBadge, IonSelect, IonSelectOption,
-  IonPopover, IonList, IonItem, IonModal, IonTitle, IonButtons, onIonViewDidEnter
+  IonPopover, IonList, IonItem, IonModal, IonTitle, IonButtons, onIonViewDidEnter,
+  IonRefresher, IonRefresherContent
 } from '@ionic/vue'
 import { Capacitor } from '@capacitor/core'
 import { isDonor } from "@/composables/useSubscriptionStatus"
@@ -231,7 +241,8 @@ import { scheduleBannerUpdate } from '@/plugins/admob'
 
 import {
   optionsOutline, chevronUpOutline, chevronDownOutline, mapOutline, compassOutline, locationOutline,
-  timeOutline, sparkles, shieldCheckmarkOutline, eyeOutline, calendarOutline, closeOutline
+  timeOutline, sparkles, shieldCheckmarkOutline, eyeOutline, calendarOutline, closeOutline,
+  chevronDownCircleOutline
 } from 'ionicons/icons'
 import AppHeader from '@/components/AppHeader.vue'
 import TripFilterContent from '@/components/TripFilterContent.vue'
@@ -553,6 +564,17 @@ watch(sortBy, (val) => {
     sort_by: val
   })
 })
+
+async function refreshList(event: CustomEvent) {
+  try {
+    await Promise.all([
+      fetchTrips(),
+      fetchCities(),
+    ])
+  } finally {
+    event.detail.complete()
+  }
+}
 
 onMounted(async () => {
   ActivityLogService.log("trip_page_open", {
