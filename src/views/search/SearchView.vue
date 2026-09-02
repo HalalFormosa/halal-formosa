@@ -1899,7 +1899,11 @@ const getStatusIcon = (status: string) => {
   display: inline-block;
   padding: 6px 16px;
   border-radius: var(--radius-pill);
-  background: rgba(var(--ion-background-color-rgb, 0, 0, 0), 0.55);
+  /* --ion-background-color-rgb isn't kept in sync with our custom
+     --ion-background-color override, so build the tint from an explicit
+     light/dark pair instead of trusting it (it silently fell back to
+     black in light mode, producing an unreadable dark-on-dark pill). */
+  background: rgba(255, 255, 255, 0.65);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   border: 1px solid var(--card-border);
@@ -1907,6 +1911,10 @@ const getStatusIcon = (status: string) => {
   font-size: 12px;
   font-weight: 600;
   color: var(--ion-color-medium);
+}
+
+.ion-palette-dark .footer-count small {
+  background: rgba(20, 20, 22, 0.65);
 }
 
 
@@ -1954,7 +1962,9 @@ ion-searchbar.rounded {
   display: grid;
   grid-template-columns: 1fr;
   gap: 16px;
-  padding: 4px 0;
+  /* Extra bottom padding so the last row always clears the fixed
+     Add/Scan FABs instead of sitting flush underneath them. */
+  padding: 4px 0 130px;
 }
 
 /* Laptop & Computer Only: Multiple columns */
@@ -2429,7 +2439,7 @@ ion-header {
 .product-grid.grid-mode {
   grid-template-columns: repeat(2, 1fr);
   gap: 12px;
-  padding: 8px;
+  padding: 8px 8px 130px;
 }
 
 @media (min-width: 768px) {
