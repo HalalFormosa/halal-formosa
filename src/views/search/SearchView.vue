@@ -2232,8 +2232,9 @@ ion-searchbar.rounded {
   --color: var(--ion-color-dark);
   /* !important needed: ion-button's fill="clear" sets --background:
      transparent via its own .button-clear class at higher specificity
-     than a plain class selector here. */
-  --background: var(--card-bg) !important;
+     than a plain class selector here. Frosted-glass tint (not the
+     opaque --card-bg) to match the see-through searchbar next to it. */
+  --background: rgba(255, 255, 255, 0.65) !important;
   --border-radius: var(--radius-md);
   --background-hover: rgba(var(--ion-color-carrot-rgb), 0.1);
   --background-activated: rgba(var(--ion-color-carrot-rgb), 0.14);
@@ -2241,6 +2242,8 @@ ion-searchbar.rounded {
   border: 1px solid var(--card-border);
   border-radius: var(--radius-md);
   box-shadow: var(--card-shadow);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   position: relative;
   font-weight: 700;
   text-transform: none;
@@ -2249,6 +2252,10 @@ ion-searchbar.rounded {
 .classic-action-btn ion-icon {
   font-size: 24px;
   color: var(--ion-color-dark);
+}
+
+.ion-palette-dark .classic-action-btn {
+  --background: rgba(20, 20, 22, 0.65) !important;
 }
 
 .right-actions-group {

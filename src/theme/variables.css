@@ -1494,14 +1494,23 @@ ion-footer ion-toolbar {
     --icon-color: var(--ion-color-carrot);
     --clear-button-color: var(--ion-color-step-600);
     --border-radius: 100px;
-    --background: var(--card-bg);
+    /* Frosted glass, same idea as the results-count pill — see-through
+       when floating over scrolling content (Search/Trip's toolbar,
+       Explore's map), harmless where it sits on an opaque toolbar. */
+    --background: rgba(255, 255, 255, 0.65);
     width: 100%;
     padding: 0;
     transition: all 0.25s ease;
     border-radius: 100px;
     border: 1px solid var(--card-border);
     box-shadow: var(--card-shadow);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     font-size: 0.92rem;
+}
+
+.ion-palette-dark .compact-searchbar {
+    --background: rgba(20, 20, 22, 0.65);
 }
 
 /* ===============================
