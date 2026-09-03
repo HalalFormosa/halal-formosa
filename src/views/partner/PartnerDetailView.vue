@@ -66,9 +66,9 @@
             <ion-badge
                 v-else-if="body.verified"
                 color="success"
-                class="verified-badge"
+                class="partner-verified-badge"
             >
-              Verified Halal Certification Body
+              {{ verifiedBadgeLabel(body.partner_type) }}
             </ion-badge>
 
 
@@ -345,6 +345,160 @@
           </ion-card-content>
         </ion-card>
 
+        <!-- Product from Indonesia (IETO/KDEI only) -->
+        <ion-card
+            v-if="body.slug === 'kdei-taipei' && (loadingIndonesianProducts || indonesianProducts.length)"
+        >
+          <ion-card-header>
+            <div class="card-header-row">
+              <ion-card-title>Product from Indonesia</ion-card-title>
+              <ion-button
+                  fill="clear"
+                  size="small"
+                  color="carrot"
+                  @click="viewAllIndonesianProducts"
+              >
+                {{ $t('home.viewMore') }}
+              </ion-button>
+            </div>
+          </ion-card-header>
+
+          <ion-card-content>
+            <template v-if="loadingIndonesianProducts">
+              <ion-skeleton-text animated style="width:100%;height:140px;border-radius:12px;" />
+              <ion-skeleton-text animated style="width:80%;height:14px;margin-top:8px;" />
+            </template>
+
+            <div v-else class="discover-scroll">
+              <div class="discover-track">
+                <ion-card
+                    v-for="p in indonesianProducts"
+                    :key="p.id"
+                    class="discover-item discover-item--scroll"
+                    button
+                    @click="openProducedProduct(p)"
+                >
+                  <img
+                      :src="p.photo_front_url || 'https://placehold.co/200x200'"
+                      class="discover-img"
+                      @error="(e) => (e.target as any).src = `https://placehold.co/200x200?text=${encodeURIComponent(p.name)}`"
+                  />
+                  <ion-label class="discover-label">
+                    <p class="discover-name" style="text-align: center;">{{ p.name }}</p>
+                    <ion-chip
+                        v-if="p.status"
+                        :color="p.status === 'Halal' ? 'success' : 'primary'"
+                        style="font-size:10px; height: 20px; margin-top: 4px;"
+                    >
+                      {{ p.status }}
+                    </ion-chip>
+                  </ion-label>
+                </ion-card>
+              </div>
+            </div>
+          </ion-card-content>
+        </ion-card>
+
+        <!-- Halal Indonesian Restaurant List (IETO/KDEI only) -->
+        <ion-card
+            v-if="body.slug === 'kdei-taipei' && (loadingHalalIndoRestaurants || halalIndoRestaurants.length)"
+        >
+          <ion-card-header>
+            <div class="card-header-row">
+              <ion-card-title>Halal Indonesian Restaurant List</ion-card-title>
+              <ion-button
+                  fill="clear"
+                  size="small"
+                  color="carrot"
+                  @click="viewAllHalalIndoRestaurants"
+              >
+                {{ $t('home.viewMore') }}
+              </ion-button>
+            </div>
+          </ion-card-header>
+
+          <ion-card-content>
+            <template v-if="loadingHalalIndoRestaurants">
+              <ion-skeleton-text animated style="width:100%;height:140px;border-radius:12px;" />
+              <ion-skeleton-text animated style="width:80%;height:14px;margin-top:8px;" />
+            </template>
+
+            <div v-else class="discover-scroll">
+              <div class="discover-track">
+                <ion-card
+                    v-for="loc in halalIndoRestaurants"
+                    :key="loc.id"
+                    class="discover-item discover-item--scroll"
+                    button
+                    @click="openCertifiedLocation(loc)"
+                >
+                  <img
+                      :src="loc.image || 'https://placehold.co/200x200'"
+                      class="discover-img"
+                      @error="(e) => (e.target as any).src = `https://placehold.co/200x200?text=${encodeURIComponent(loc.name)}`"
+                  />
+                  <ion-label class="discover-label">
+                    <p class="discover-name" style="text-align: center;">{{ loc.name }}</p>
+                    <p style="font-size:12px;color:var(--ion-color-medium)">
+                      {{ loc.location_types?.name }}
+                    </p>
+                  </ion-label>
+                </ion-card>
+              </div>
+            </div>
+          </ion-card-content>
+        </ion-card>
+
+        <!-- Muslim-friendly Indonesian Restaurant List (IETO/KDEI only) -->
+        <ion-card
+            v-if="body.slug === 'kdei-taipei' && (loadingMuslimFriendlyIndoRestaurants || muslimFriendlyIndoRestaurants.length)"
+        >
+          <ion-card-header>
+            <div class="card-header-row">
+              <ion-card-title>Muslim-friendly Indonesian Restaurant List</ion-card-title>
+              <ion-button
+                  fill="clear"
+                  size="small"
+                  color="carrot"
+                  @click="viewAllMuslimFriendlyIndoRestaurants"
+              >
+                {{ $t('home.viewMore') }}
+              </ion-button>
+            </div>
+          </ion-card-header>
+
+          <ion-card-content>
+            <template v-if="loadingMuslimFriendlyIndoRestaurants">
+              <ion-skeleton-text animated style="width:100%;height:140px;border-radius:12px;" />
+              <ion-skeleton-text animated style="width:80%;height:14px;margin-top:8px;" />
+            </template>
+
+            <div v-else class="discover-scroll">
+              <div class="discover-track">
+                <ion-card
+                    v-for="loc in muslimFriendlyIndoRestaurants"
+                    :key="loc.id"
+                    class="discover-item discover-item--scroll"
+                    button
+                    @click="openCertifiedLocation(loc)"
+                >
+                  <img
+                      :src="loc.image || 'https://placehold.co/200x200'"
+                      class="discover-img"
+                      @error="(e) => (e.target as any).src = `https://placehold.co/200x200?text=${encodeURIComponent(loc.name)}`"
+                  />
+                  <ion-label class="discover-label">
+                    <p class="discover-name" style="text-align: center;">{{ loc.name }}</p>
+                    <p style="font-size:12px;color:var(--ion-color-medium)">
+                      {{ loc.location_types?.name }}
+                    </p>
+                  </ion-label>
+                </ion-card>
+              </div>
+            </div>
+          </ion-card-content>
+        </ion-card>
+
         <!-- Trips (Gold Partner only) -->
         <ion-card
             v-if="body.partner_tier === 'gold' && (loadingTrips || partnerTrips.length)"
@@ -566,7 +720,7 @@ type Partner = {
   logo: string
   verified: boolean
   partner_tier?: 'gold' | 'silver' | 'bronze' | null
-  partner_type?: 'campus' | 'halal_body' | 'vendor' | 'merchant' | 'organization' | null
+  partner_type?: 'campus' | 'halal_body' | 'vendor' | 'merchant' | 'organization' | 'government' | null
   scopes: string[]
   about: string
   programs: string[]
@@ -595,6 +749,17 @@ const body = ref<Partner>({
 })
 
 
+
+const verifiedBadgeLabel = (type?: Partner['partner_type']) => {
+  switch (type) {
+    case 'halal_body': return 'Verified Halal Certification Body'
+    case 'campus': return 'Verified Campus Partner'
+    case 'vendor': return 'Verified Vendor'
+    case 'merchant': return 'Verified Merchant'
+    case 'government': return 'Verified Government Partner'
+    default: return 'Verified Partner'
+  }
+}
 
 /* ---------------- Fetch ---------------- */
 async function fetchPartner(id: string) {
@@ -809,6 +974,85 @@ async function fetchNearbyLocations() {
   loadingNearby.value = false
 }
 
+const indonesianProducts = ref<any[]>([])
+const loadingIndonesianProducts = ref(false)
+
+async function fetchIndonesianProducts() {
+  loadingIndonesianProducts.value = true
+
+  const { data, error } = await supabase
+      .from('products')
+      .select(`
+        id,
+        barcode,
+        name,
+        status,
+        photo_front_url
+      `)
+      .contains('tags', ['IndonesiadiTaiwan'])
+      .eq('approved', true)
+      .eq('is_archived', false)
+      .limit(20)
+
+  if (!error && data) {
+    indonesianProducts.value = data
+  }
+
+  loadingIndonesianProducts.value = false
+}
+
+const halalIndoRestaurants = ref<any[]>([])
+const loadingHalalIndoRestaurants = ref(false)
+
+async function fetchHalalIndoRestaurants() {
+  loadingHalalIndoRestaurants.value = true
+
+  const { data, error } = await supabase
+      .from('locations')
+      .select(`
+        id,
+        name,
+        image,
+        address,
+        location_types ( name )
+      `)
+      .eq('type_id', 16)
+      .eq('approved', true)
+      .eq('is_archived', false)
+
+  if (!error && data) {
+    halalIndoRestaurants.value = data
+  }
+
+  loadingHalalIndoRestaurants.value = false
+}
+
+const muslimFriendlyIndoRestaurants = ref<any[]>([])
+const loadingMuslimFriendlyIndoRestaurants = ref(false)
+
+async function fetchMuslimFriendlyIndoRestaurants() {
+  loadingMuslimFriendlyIndoRestaurants.value = true
+
+  const { data, error } = await supabase
+      .from('locations')
+      .select(`
+        id,
+        name,
+        image,
+        address,
+        location_types ( name )
+      `)
+      .eq('type_id', 17)
+      .eq('approved', true)
+      .eq('is_archived', false)
+
+  if (!error && data) {
+    muslimFriendlyIndoRestaurants.value = data
+  }
+
+  loadingMuslimFriendlyIndoRestaurants.value = false
+}
+
 const partnerTrips = ref<any[]>([])
 const loadingTrips = ref(false)
 
@@ -939,6 +1183,33 @@ function viewAllNearbyLocations() {
   ionRouter.navigate(`/explore?tag=${body.value.slug}`, 'back', 'replace');
 }
 
+function viewAllIndonesianProducts() {
+  ActivityLogService.log('partner_indonesian_products_view_more_click', {
+    partner_id: body.value.id,
+    partner_name: body.value.name
+  })
+
+  ionRouter.navigate(`/search?q=IndonesiadiTaiwan`, 'back', 'replace');
+}
+
+function viewAllHalalIndoRestaurants() {
+  ActivityLogService.log('partner_halal_indo_restaurants_view_more_click', {
+    partner_id: body.value.id,
+    partner_name: body.value.name
+  })
+
+  ionRouter.navigate(`/explore?type=${encodeURIComponent('Halal Indonesian Restaurant')}`, 'back', 'replace');
+}
+
+function viewAllMuslimFriendlyIndoRestaurants() {
+  ActivityLogService.log('partner_muslim_friendly_indo_restaurants_view_more_click', {
+    partner_id: body.value.id,
+    partner_name: body.value.name
+  })
+
+  ionRouter.navigate(`/explore?type=${encodeURIComponent('Muslim-friendly Indonesian Restaurant')}`, 'back', 'replace');
+}
+
 
 /* ---------------- Lifecycle ---------------- */
 onMounted(async () => {
@@ -965,6 +1236,12 @@ onMounted(async () => {
   if (body.value.partner_type === 'campus') {
     fetchNearbyLocations()
     fetchProducedProducts()
+  }
+
+  if (body.value.slug === 'kdei-taipei') {
+    fetchIndonesianProducts()
+    fetchHalalIndoRestaurants()
+    fetchMuslimFriendlyIndoRestaurants()
   }
 })
 
@@ -1119,7 +1396,7 @@ onMounted(async () => {
 }
 
 /* Badge */
-.verified-badge {
+.partner-verified-badge {
   margin-top: 4px;
 }
 /* Fullscreen swiper */

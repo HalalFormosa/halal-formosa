@@ -1792,10 +1792,20 @@ onIonViewWillEnter(async () => {
   if (route.query.status) {
     const status = route.query.status as string;
     activeStatuses.value = [status];
-    
+
     // Clean up URL
     const query = { ...route.query };
     delete query.status;
+    router.replace({ query });
+  }
+
+  // Handle prefilled search query (e.g. from Partner "View More" links)
+  if (route.query.q) {
+    searchQuery.value = route.query.q as string;
+
+    // Clean up URL
+    const query = { ...route.query };
+    delete query.q;
     router.replace({ query });
   }
 
