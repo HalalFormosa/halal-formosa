@@ -168,6 +168,14 @@ async function handleApprove(app: ContributorApplication) {
 
     if (roleError) throw roleError
 
+    // 3. Reflect the Contributor badge on the user's profile
+    const { error: donorError } = await supabase
+      .from('user_profiles')
+      .update({ donor_type: 'Contributor' })
+      .eq('id', app.user_id)
+
+    if (donorError) throw donorError
+
     toastMsg.value = `Approved ${app.display_name || 'user'} as Contributor!`
     showToast.value = true
     

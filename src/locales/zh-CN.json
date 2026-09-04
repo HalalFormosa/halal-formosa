@@ -701,6 +701,7 @@
       "Contributor": "贡献者"
     },
     "admin": {
+      "badge": "管理员",
       "sections": {
         "content": "内容审核",
         "store": "平台商店管理员",
@@ -825,6 +826,89 @@
     "myLocations": {
       "title": "My Submitted Locations",
       "noLocations": "You haven't submitted any locations yet."
+    }
+  },
+"achievements": {
+    "title": "我的成就",
+    "summaryLabel": "已解锁奖杯",
+    "nextTierHint": "再完成 {count} 次即可解锁“{tier}”",
+    "allTiersUnlocked": "所有等级均已解锁——传奇成就！",
+    "showcaseSet": "奖杯已固定在你的个人主页！",
+    "showcaseCleared": "奖杯已从个人主页移除",
+    "chooseTrophyCta": "选一个奖杯来展示",
+    "categories": {
+      "scanner": {
+        "title": "扫描大师",
+        "description": "扫描条码以累积你的总扫描次数。",
+        "tiers": {
+          "1": "好奇扫描者",
+          "2": "扫描爱好者",
+          "3": "扫描高手",
+          "4": "扫描大师",
+          "5": "扫描传奇",
+          "6": "扫描霸主"
+        }
+      },
+      "halal_hunter": {
+        "title": "清真猎人",
+        "description": "通过扫描产品发现穆斯林友好商品。",
+        "tiers": {
+          "1": "清真好奇者",
+          "2": "清真探寻者",
+          "3": "清真猎人",
+          "4": "清真侦探",
+          "5": "清真神探",
+          "6": "清真贤者"
+        }
+      },
+      "explorer": {
+        "title": "探索者",
+        "description": "亲自到访穆斯林友好的餐厅和摊位。",
+        "tiers": {
+          "1": "漫游者",
+          "2": "本地探索者",
+          "3": "城市探索者",
+          "4": "全岛探索者",
+          "5": "福尔摩沙探索者",
+          "6": "清真地图绘制者"
+        }
+      },
+      "community_pillar": {
+        "title": "社区支柱",
+        "description": "添加获批准收录进 Halal Formosa 的产品与地点。",
+        "tiers": {
+          "1": "首次贡献",
+          "2": "热心援手",
+          "3": "社区建设者",
+          "4": "社区支柱",
+          "5": "社区冠军",
+          "6": "社区传奇"
+        }
+      },
+      "community_voice": {
+        "title": "社区之声",
+        "description": "撰写评论，帮助其他用户找到优质地点。",
+        "tiers": {
+          "1": "首条评论",
+          "2": "评论者",
+          "3": "值得信赖的声音",
+          "4": "社区评论家",
+          "5": "资深评论员",
+          "6": "评论标杆"
+        }
+      },
+      "halal_habit": {
+        "title": "清真习惯",
+        "description": "在多个不同的日子里保持使用本应用的活跃度。",
+        "tiers": {
+          "1": "连续一周",
+          "2": "坚持一个月",
+          "3": "百日达成",
+          "4": "坚持一年",
+          "5": "两年如一日",
+          "6": "Halal Formosa 资深会员"
+        }
+      }
     }
   },
   "appReview": {

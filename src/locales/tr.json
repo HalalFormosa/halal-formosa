@@ -611,6 +611,7 @@
       "Contributor": "Katkıda Bulunan"
     },
     "admin": {
+      "badge": "Yönetici",
       "sections": {
         "content": "İçerik İncelemesi",
         "store": "Platform Mağazası Yöneticisi",
@@ -724,6 +725,89 @@
     "myLocations": {
       "title": "My Submitted Locations",
       "noLocations": "You haven't submitted any locations yet."
+    }
+  },
+"achievements": {
+    "title": "Başarılarım",
+    "summaryLabel": "Kazanılan Kupalar",
+    "nextTierHint": "\"{tier}\" seviyesini açmak için {count} tane daha",
+    "allTiersUnlocked": "Tüm seviyeler açıldı — efsanevi!",
+    "showcaseSet": "Kupa profiline sabitlendi!",
+    "showcaseCleared": "Kupa profilinden kaldırıldı",
+    "chooseTrophyCta": "Sergilemek için bir kupa seç",
+    "categories": {
+      "scanner": {
+        "title": "Tarama Ustası",
+        "description": "Toplam tarama sayınızı artırmak için barkod tarayın.",
+        "tiers": {
+          "1": "Meraklı Tarayıcı",
+          "2": "Tarama Meraklısı",
+          "3": "Tarama Profesyoneli",
+          "4": "Tarama Ustası",
+          "5": "Tarama Efsanesi",
+          "6": "Tarama Hükümdarı"
+        }
+      },
+      "halal_hunter": {
+        "title": "Helal Avcısı",
+        "description": "Ürünleri tarayarak Müslüman dostu ürünleri keşfedin.",
+        "tiers": {
+          "1": "Helal Meraklısı",
+          "2": "Helal Arayıcı",
+          "3": "Helal Avcısı",
+          "4": "Helal Dedektifi",
+          "5": "Helal İz Sürücüsü",
+          "6": "Helal Bilgesi"
+        }
+      },
+      "explorer": {
+        "title": "Kaşif",
+        "description": "Müslüman dostu restoranları ve büfeleri bizzat ziyaret edin.",
+        "tiers": {
+          "1": "Gezgin",
+          "2": "Yerel Kaşif",
+          "3": "Şehir Kaşifi",
+          "4": "Ada Kaşifi",
+          "5": "Formosa Kaşifi",
+          "6": "Helal Haritacısı"
+        }
+      },
+      "community_pillar": {
+        "title": "Topluluk Direği",
+        "description": "Halal Formosa'ya onaylanan ürün ve mekanlar ekleyin.",
+        "tiers": {
+          "1": "İlk Katkı",
+          "2": "Yardımsever El",
+          "3": "Topluluk Kurucusu",
+          "4": "Topluluk Direği",
+          "5": "Topluluk Şampiyonu",
+          "6": "Topluluk Efsanesi"
+        }
+      },
+      "community_voice": {
+        "title": "Topluluk Sesi",
+        "description": "Diğer kullanıcıların harika mekanlar bulmasına yardımcı olacak yorumlar yazın.",
+        "tiers": {
+          "1": "İlk Yorum",
+          "2": "Yorumcu",
+          "3": "Güvenilir Ses",
+          "4": "Topluluk Eleştirmeni",
+          "5": "Yorum Kıdemlisi",
+          "6": "Yorum İkonu"
+        }
+      },
+      "halal_habit": {
+        "title": "Helal Alışkanlığı",
+        "description": "Uygulamada birçok farklı günde aktif kalın.",
+        "tiers": {
+          "1": "Bir Haftalık Seri",
+          "2": "Bir Aylık Alışkanlık",
+          "3": "Yüz Günlük Yolculuk",
+          "4": "Bir Yıllık Azim",
+          "5": "İki Yıllık Bağlılık",
+          "6": "Halal Formosa Gazisi"
+        }
+      }
     }
   },
   "appReview": {

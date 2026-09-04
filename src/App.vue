@@ -27,15 +27,17 @@
         :style="toastStyle"
       >
         <div class="reward-toast-left">
-          <ion-avatar class="reward-toast-avatar" v-if="rewardAvatar">
+          <ion-avatar class="reward-toast-avatar" v-if="rewardAvatar && !rewardIsAchievement">
             <img :src="rewardAvatar" alt="Avatar" />
           </ion-avatar>
-          <div v-else class="reward-toast-icon">✨</div>
+          <div v-else class="reward-toast-icon">{{ rewardIcon || '✨' }}</div>
         </div>
 
         <div class="reward-toast-body">
           <div class="reward-toast-header">
-            <span class="reward-points-badge">+{{ rewardPoints }} XP</span>
+            <span class="reward-points-badge" :class="{ 'reward-points-badge--achievement': rewardIsAchievement }">
+              {{ rewardIsAchievement ? $t('achievements.unlockedBadge') : `+${rewardPoints} XP` }}
+            </span>
             <span class="reward-action-text">{{ rewardAction }}</span>
           </div>
 
@@ -184,6 +186,8 @@ import {
   rewardAction,
   closeReward,
   rewardAvatar,
+  rewardIcon,
+  rewardIsAchievement,
   rewardDisplay,
   rewardLevel,
   rewardNextXp,
