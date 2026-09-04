@@ -88,9 +88,9 @@
 
               <!-- Pay Now button for pending orders -->
               <div v-if="order.status === 'pending'" class="pay-now-section">
-                <ion-button expand="block" color="carrot" @click.stop="payNow(order.id)" :disabled="submittingId === order.id">
+                <ion-button expand="block" color="carrot" @click.stop="payNow(order.id)" :disabled="purchasesDisabled || submittingId === order.id">
                   <ion-spinner v-if="submittingId === order.id" name="crescent" slot="start" />
-                  {{ $t('store.payNow') || 'Pay Now' }}
+                  {{ purchasesDisabled ? $t('store.purchasesDisabled') : ($t('store.payNow') || 'Pay Now') }}
                 </ion-button>
               </div>
 
@@ -222,6 +222,9 @@ const { isDark, toggleDarkPalette } = useTheme()
 const { initiatePayment, submittingOrderId: submittingId } = useEcpayPayment()
 
 const isUnderConstruction = false
+// Independent of the page-level overlay above (kept off so order tracking/history
+// stays visible) — this one specifically blocks triggering a real payment.
+const purchasesDisabled = computed(() => import.meta.env.VITE_STORE_UNDER_CONSTRUCTION === 'true')
 const loading = ref(true)
 const orders = ref<any[]>([])
 const expandedId = ref<string | null>(null)
@@ -315,6 +318,7 @@ function formatCodDate(dateStr: string): string {
 }
 
 async function payNow(orderId: string) {
+  if (purchasesDisabled.value) return
   try {
     await initiatePayment(orderId)
   } catch (err: any) {

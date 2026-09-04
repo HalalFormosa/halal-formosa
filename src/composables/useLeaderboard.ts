@@ -47,6 +47,13 @@ export interface LeaderboardUser {
         css_value: Record<string, any>
         tier: string
     }> | null
+    showcase_achievement?: {
+        id: string
+        category: string
+        tier: number
+        name: string
+        icon: string
+    } | null
 }
 
 export function useLeaderboard() {

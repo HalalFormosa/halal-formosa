@@ -45,12 +45,12 @@
 
         <!-- Quick Filters Bar (Mobile Only) -->
         <div
-          v-if="isSmallScreen && !loadingCategories && categories.length > 0"
+          v-if="isSmallScreen && !loadingCategories && visibleCategories.length > 0"
           class="quick-filters-bar"
         >
           <div class="quick-filters-scroll">
             <ion-chip
-              v-for="cat in categories.slice(0, 4)"
+              v-for="cat in visibleCategories.slice(0, 4)"
               :key="'quick-' + cat.id"
               class="quick-filter-chip"
               :class="{ active: activeCategoryIds.includes(cat.id) }"
@@ -60,7 +60,8 @@
               }"
               @click="toggleCategory(cat)"
             >
-              <span v-if="typeof categoryIconMap[cat.name] === 'string' && categoryIconMap[cat.name].length === 2" class="category-emoji">
+              <img v-if="categoryImageMap[cat.name]" :src="categoryImageMap[cat.name]" class="category-image" :alt="cat.name" />
+              <span v-else-if="typeof categoryIconMap[cat.name] === 'string' && categoryIconMap[cat.name].length === 2" class="category-emoji">
                 {{ categoryIconMap[cat.name] }}
               </span>
               <ion-icon v-else-if="categoryIconMap[cat.name]" :icon="categoryIconMap[cat.name]" class="category-icon" />
@@ -93,7 +94,7 @@
               </ion-chip>
 
               <ion-chip
-                  v-for="cat in categories"
+                  v-for="cat in visibleCategories"
                   :key="cat.id"
                   class="modern-category-chip"
                   :class="{ active: activeCategoryIds.includes(cat.id) }"
@@ -103,7 +104,8 @@
                   }"
                   @click="toggleCategory(cat)"
               >
-                <span v-if="typeof categoryIconMap[cat.name] === 'string' && categoryIconMap[cat.name].length === 2" class="category-emoji">
+                <img v-if="categoryImageMap[cat.name]" :src="categoryImageMap[cat.name]" class="category-image" :alt="cat.name" />
+                <span v-else-if="typeof categoryIconMap[cat.name] === 'string' && categoryIconMap[cat.name].length === 2" class="category-emoji">
                   {{ categoryIconMap[cat.name] }}
                 </span>
                 <ion-icon v-else-if="categoryIconMap[cat.name]" :icon="categoryIconMap[cat.name]" class="category-icon" />
@@ -604,6 +606,7 @@
             :activeTag="activeTag"
             :loadingCategories="loadingCategories"
             :categoryIconMap="categoryIconMap"
+            :categoryImageMap="categoryImageMap"
             @toggleCategory="toggleCategory"
             @toggleTag="(slug) => { activeTag = (activeTag === slug ? null : slug); focusedPlaceId = null; }"
             @clearFilters="() => { activeCategoryIds = []; activeTag = null; focusedPlaceId = null; }"
@@ -734,6 +737,7 @@ type LocationType = {
   color: string | null
   emoji: string | null
   icon: string | null
+  icon_url: string | null
 }
 
 
@@ -1146,7 +1150,7 @@ const fetchLocationTypes = async () => {
 
   const {data, error} = await supabase
       .from('location_types')
-      .select('id, name, color, emoji, icon')
+      .select('id, name, color, emoji, icon, icon_url')
       .eq('is_active', true)
       .order('sort_order', {ascending: true})
       .order('name', {ascending: true})
@@ -1163,7 +1167,7 @@ const fetchCampusPartners = async () => {
     .select('id, name, slug')
     .eq('partner_type', 'campus')
     .eq('is_active', true)
-    
+
   if (!error && data) {
     campusPartners.value = data
   }
@@ -1339,6 +1343,19 @@ const categoryIconMap = computed<Record<string, any>>(() => {
   return map
 })
 
+// Custom image logo per category, takes priority over emoji/icon when set
+const categoryImageMap = computed<Record<string, string>>(() => {
+  const map: Record<string, string> = {}
+
+  for (const t of locationTypes.value) {
+    if (t.icon_url) {
+      map[t.name] = t.icon_url
+    }
+  }
+
+  return map
+})
+
 const topOffset = computed(() => {
   let offset = 12; // base padding
 
@@ -1398,13 +1415,15 @@ function dismissForYouInfo() {
 const markerStyles = computed<Record<string, {
   color: string
   emoji?: string
+  imageUrl?: string
 }>>(() => {
   const map: Record<string, any> = {}
 
   for (const t of locationTypes.value) {
     map[t.name] = {
       color: t.color ?? 'var(--ion-color-carrot)',
-      emoji: t.emoji ?? undefined
+      emoji: t.emoji ?? undefined,
+      imageUrl: t.icon_url ?? undefined
     }
   }
 
@@ -1593,7 +1612,10 @@ const buildInfoHtml = (p: Place) => {
       markerStyles.value[p.type]?.color ?? 'var(--ion-color-carrot)'
 
   const textColor = darkenColor(baseColor, 0.45)
-  const emoji = markerStyles.value[p.type]?.emoji ?? ''
+  const imageUrl = markerStyles.value[p.type]?.imageUrl
+  const emoji = imageUrl
+      ? `<img src="${imageUrl}" style="width:12px;height:12px;border-radius:50%;object-fit:cover;vertical-align:-1px;" alt="" />`
+      : (markerStyles.value[p.type]?.emoji ?? '')
 
   // Check dark mode
   const isDark = document.documentElement.classList.contains('ion-palette-dark')
@@ -1649,10 +1671,14 @@ const createPinElement = (place: Place) => {
   const wrapper = document.createElement("div")
   wrapper.className = "pin-wrapper"
 
+  const pinHeadContent = style.imageUrl
+      ? `<img src="${style.imageUrl}" class="pin-head-image" alt="" />`
+      : (style.emoji ?? "")
+
   wrapper.innerHTML = `
     <div class="pin">
       <div class="pin-head">
-        ${style.emoji ?? ""}
+        ${pinHeadContent}
       </div>
       <div class="pin-body" style="background:${style.color}"></div>
     </div>
@@ -1851,6 +1877,16 @@ const fetchTrendingPlaces = async () => {
 }
 
 const categories = computed(() => locationTypes.value)
+
+// Government-partner-only categories (e.g. Indonesian Restaurant types) are
+// surfaced solely under the "Government Partners" section of the filter
+// modal, not in the regular Categories chip rows.
+const GOV_PARTNER_CATEGORY_NAMES = ['Halal Indonesian Restaurant', 'Muslim-friendly Indonesian Restaurant']
+const visibleCategories = computed(() => categories.value.filter(c => !GOV_PARTNER_CATEGORY_NAMES.includes(c.name)))
+
+// Halal Restaurant (3) -> Halal Indonesian Restaurant (16)
+// Muslim-friendly Restaurant (6) -> Muslim-friendly Indonesian Restaurant (17)
+const CATEGORY_PARENT_TO_CHILD: Record<number, number> = { 3: 16, 6: 17 }
 
 const toggleCategory = (cat: LocationType) => {
   const index = activeCategoryIds.value.indexOf(cat.id)
@@ -2416,10 +2452,18 @@ const sortedLocations = computed(() => {
     base = base.filter(l => l.tags && l.tags.some(t => t.toLowerCase() === qTag))
   }
 
-  // filter by category
+  // filter by category (parent categories also include their Indonesian
+  // government-partner sub-variants, e.g. "Halal Restaurant" -> "Halal
+  // Indonesian Restaurant", even though those aren't separately selectable
+  // in the regular Categories list)
   if (activeCategoryIds.value.length > 0) {
+    const effectiveIds = new Set(activeCategoryIds.value)
+    for (const [parentId, childId] of Object.entries(CATEGORY_PARENT_TO_CHILD)) {
+      if (effectiveIds.has(Number(parentId))) effectiveIds.add(childId)
+    }
+
     base = base.filter(l =>
-        l.typeId && activeCategoryIds.value.includes(l.typeId)
+        l.typeId && effectiveIds.has(l.typeId)
     )
   }
 
@@ -2643,7 +2687,7 @@ onMounted(async () => {
   loadRole()
   await fetchLocationTypes()
   
-  // These are more critical for the list, but let's fire them 
+  // These are more critical for the list, but let's fire them
   fetchCampusPartners()
   
   // Viewport bounds fetching will trigger automatically once map is initialized
@@ -2970,6 +3014,12 @@ button.gm-ui-hover-effect > span {
   margin-right: 4px;
 }
 
+.quick-filter-chip .category-image {
+  width: 14px;
+  height: 14px;
+  margin-right: 4px;
+}
+
 .quick-filter-chip ion-label {
   font-size: 13px;
 }
@@ -3049,6 +3099,13 @@ button.gm-ui-hover-effect > span {
 .ion-palette-dark .pin-head {
   background: rgba(40, 40, 40, 0.9);
   color: #fff;
+}
+
+.pin-head-image {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  object-fit: cover;
 }
 
 /*********************************************
@@ -3361,6 +3418,14 @@ button.gm-ui-hover-effect > span {
 }
 
 .category-emoji, .category-icon { margin-right: 6px; }
+.category-image {
+  width: 16px;
+  height: 16px;
+  margin-right: 6px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
 
 
 

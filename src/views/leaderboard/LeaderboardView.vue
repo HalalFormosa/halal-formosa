@@ -81,7 +81,7 @@
           <div slot="start" class="leaderboard-avatar-cell" :style="getLeaderboardGlowStyle(user)" style="margin-right: 12px;">
             <ion-avatar style="width: 40px; height: 40px;" :style="getLeaderboardFrameStyle(user)">
               <img
-                :src="(user.public_profile || currentUser?.id === user.id) ? (user.public_profile ? (user.avatar_url || 'https://placehold.co/64x64') : (currentUser?.user_metadata?.avatar_url || 'https://placehold.co/64x64')) : `https://placehold.co/64x64?text=${$t('home.unknownAvatar')}`"
+                :src="(user.public_profile || currentUser?.id === user.id) ? (user.public_profile ? (user.avatar_url || 'https://placehold.co/64x64/e5e7eb/374151') : (currentUser?.user_metadata?.avatar_url || 'https://placehold.co/64x64/e5e7eb/374151')) : `https://placehold.co/64x64/e5e7eb/374151?text=${$t('home.unknownAvatar')}`"
                 :alt="$t('home.altAvatar')"
                 loading="lazy"
                 @error="handleImgError"
@@ -98,6 +98,13 @@
               <span v-if="user.donor_type && user.donor_type.toLowerCase().includes('pro')" class="list-pro-badge">
                 <ion-icon :icon="sparkles" style="font-size: 0.7rem; margin-right: 2px;" />
                 PRO
+              </span>
+              <span v-else-if="user.donor_type && user.donor_type.toLowerCase() === 'contributor'" class="list-contributor-badge">
+                <ion-icon :icon="star" style="font-size: 0.7rem; margin-right: 2px;" />
+                {{ $t('profile.donors.Contributor') }}
+              </span>
+              <span v-if="user.showcase_achievement" class="list-trophy-badge" :title="$t('achievements.categories.' + user.showcase_achievement.category + '.tiers.' + user.showcase_achievement.tier)">
+                {{ user.showcase_achievement.icon }}
               </span>
               <ion-badge v-if="currentUser?.id === user.id && !user.public_profile" color="medium" style="font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; flex-shrink: 0;" @click="showPrivateInfoAlert($event)">Private</ion-badge>
             </h2>
@@ -188,13 +195,17 @@
             <template v-if="selectedUser.public_profile || currentUser?.id === selectedUser.id">
               <div class="popover-cosmetic-wrapper" :style="getPopoverGlowStyle(selectedUser)">
                 <ion-avatar style="width:72px;height:72px;margin:0;" :style="getPopoverFrameStyle(selectedUser)">
-                  <img :src="(selectedUser.public_profile ? selectedUser.avatar_url : currentUser?.user_metadata?.avatar_url) || 'https://placehold.co/72px?text=?'" :alt="$t('home.altAvatar')" @error="handleImgError"/>
+                  <img :src="(selectedUser.public_profile ? selectedUser.avatar_url : currentUser?.user_metadata?.avatar_url) || 'https://placehold.co/72px/e5e7eb/374151?text=?'" :alt="$t('home.altAvatar')" @error="handleImgError"/>
                 </ion-avatar>
               </div>
 
               <div v-if="selectedUser.donor_type && selectedUser.donor_type.toLowerCase().includes('pro')" class="mock-popover-pro-badge">
                 <ion-icon :icon="sparkles" class="pro-icon" />
                 <span>Pro</span>
+              </div>
+              <div v-else-if="selectedUser.donor_type && selectedUser.donor_type.toLowerCase() === 'contributor'" class="mock-popover-contributor-badge">
+                <ion-icon :icon="star" class="contributor-icon" />
+                <span>{{ $t('profile.donors.Contributor') }}</span>
               </div>
 
               <div v-if="currentUser?.id === selectedUser.id && !selectedUser.public_profile" style="margin-bottom: 8px;">
@@ -209,8 +220,13 @@
                 </span>
               </h3>
 
+              <div v-if="selectedUser.showcase_achievement" class="mock-popover-trophy-badge">
+                <span>{{ selectedUser.showcase_achievement.icon }}</span>
+                <span>{{ $t('achievements.categories.' + selectedUser.showcase_achievement.category + '.tiers.' + selectedUser.showcase_achievement.tier) }}</span>
+              </div>
+
               <p class="mock-popover-stats">
-                {{ $t('profile.level', { level: getLevelFromPoints(selectedUser.total_points || selectedUser.points) }) }} • 
+                {{ $t('profile.level', { level: getLevelFromPoints(selectedUser.total_points || selectedUser.points) }) }} •
                 <ion-badge
                   class="leaderboard-points-badge"
                   style="margin-left: 4px; border-radius: 8px; font-weight: bold; font-size: 0.75rem; padding: 4px 8px; display: inline-block; vertical-align: middle;"
@@ -290,6 +306,7 @@ import AppHeader from '@/components/AppHeader.vue'
 import {
   medalOutline,
   sparkles,
+  star,
   chevronForwardOutline,
   scanOutline,
   personOutline,
@@ -734,11 +751,14 @@ function getPopoverContentStyle(user: any) {
     if (bg.css_value.color) {
       styles['--color'] = bg.css_value.color
       styles.color = bg.css_value.color
+      styles['--sub-color'] = bg.css_value.color
     } else {
       const isLight = isBackgroundLight(bg)
       const textColor = isLight ? '#121212' : '#ffffff'
+      const subTextColor = isLight ? '#444444' : 'rgba(255, 255, 255, 0.75)'
       styles['--color'] = textColor
       styles.color = textColor
+      styles['--sub-color'] = subTextColor
     }
     if (bg.css_value.animation) styles.animation = bg.css_value.animation
     if (bg.css_value.backgroundSize) styles.backgroundSize = bg.css_value.backgroundSize
@@ -906,6 +926,25 @@ ion-segment-button {
   box-shadow: 0 0 5px rgba(250, 204, 21, 0.4);
 }
 
+.list-contributor-badge {
+  display: inline-flex;
+  align-items: center;
+  background: var(--ion-color-primary);
+  color: #fff;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.list-trophy-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
 
 
 .popover-cosmetic-wrapper {
@@ -939,21 +978,54 @@ ion-segment-button {
   box-shadow: 0 0 10px rgba(250, 204, 21, 0.4);
 }
 
+.mock-popover-contributor-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--ion-color-primary);
+  color: #fff;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 750;
+  margin: 8px auto 12px;
+  width: fit-content;
+  box-shadow: 0 0 10px rgba(var(--ion-color-primary-rgb, 0, 0, 0), 0.4);
+}
+
+.mock-popover-contributor-badge .contributor-icon {
+  font-size: 0.85rem;
+}
+
 .mock-popover-pro-badge .pro-icon {
   font-size: 0.85rem;
+}
+
+.mock-popover-trophy-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(255, 159, 67, 0.15);
+  color: var(--ion-color-carrot, #ff9f43);
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  margin: 4px auto 0;
+  width: fit-content;
 }
 
 .mock-popover-name {
   margin: 8px 0 0;
   font-size: 1.25rem;
   font-weight: 700;
-  color: var(--ion-text-color);
+  color: var(--color, var(--ion-text-color));
 }
 
 .mock-popover-stats {
   margin: 4px 0 16px;
   font-size: 0.85rem;
-  color: var(--ion-color-medium);
+  color: var(--sub-color, var(--ion-color-medium));
   font-weight: 600;
 }
 
@@ -975,7 +1047,7 @@ ion-segment-button {
 
 .grid-label {
   font-size: 0.7rem;
-  color: var(--ion-color-medium);
+  color: var(--sub-color, var(--ion-color-medium));
   text-transform: uppercase;
   font-weight: 700;
   letter-spacing: 0.5px;
@@ -985,7 +1057,7 @@ ion-segment-button {
 .grid-val {
   font-size: 1.15rem;
   font-weight: 800;
-  color: var(--ion-color-dark);
+  color: var(--color, var(--ion-color-dark));
 }
 
 .ion-palette-dark .grid-val {
@@ -995,7 +1067,7 @@ ion-segment-button {
 .mock-popover-bio {
   margin: 16px 0 0;
   font-size: 0.85rem;
-  color: var(--ion-color-step-700);
+  color: var(--sub-color, var(--ion-color-step-700));
   font-style: italic;
   line-height: 1.45;
 }

@@ -611,6 +611,7 @@
       "Contributor": "Contributor"
     },
     "admin": {
+      "badge": "Admin",
       "sections": {
         "content": "Pagsusuri ng Nilalaman",
         "store": "Admin ng Platform Store",
@@ -724,6 +725,89 @@
     "myLocations": {
       "title": "My Submitted Locations",
       "noLocations": "You haven't submitted any locations yet."
+    }
+  },
+"achievements": {
+    "title": "Aking mga Tagumpay",
+    "summaryLabel": "Mga Trophy na Na-unlock",
+    "nextTierHint": "{count} na lang para ma-unlock ang \"{tier}\"",
+    "allTiersUnlocked": "Na-unlock na ang lahat ng antas — legendary!",
+    "showcaseSet": "Na-pin na ang trophy sa iyong profile!",
+    "showcaseCleared": "Naalis na ang trophy mula sa iyong profile",
+    "chooseTrophyCta": "Pumili ng trophy na ipapasikat",
+    "categories": {
+      "scanner": {
+        "title": "Dalubhasa sa Pag-scan",
+        "description": "Mag-scan ng mga barcode para bumuo ng iyong kabuuang bilang ng scan.",
+        "tiers": {
+          "1": "Mausisang Scanner",
+          "2": "Mahilig sa Pag-scan",
+          "3": "Pro sa Pag-scan",
+          "4": "Dalubhasa sa Pag-scan",
+          "5": "Alamat ng Pag-scan",
+          "6": "Haring Scanner"
+        }
+      },
+      "halal_hunter": {
+        "title": "Mangangaso ng Halal",
+        "description": "Tumuklas ng mga produktong friendly sa mga Muslim sa pamamagitan ng pag-scan.",
+        "tiers": {
+          "1": "Nag-uumpisang Interesado sa Halal",
+          "2": "Naghahanap ng Halal",
+          "3": "Mangangaso ng Halal",
+          "4": "Detektib ng Halal",
+          "5": "Bihasang Manghuhula ng Halal",
+          "6": "Pantas ng Halal"
+        }
+      },
+      "explorer": {
+        "title": "Explorer",
+        "description": "Bisitahin nang personal ang mga restawran at tindahang friendly sa mga Muslim.",
+        "tiers": {
+          "1": "Manlalakbay",
+          "2": "Lokal na Explorer",
+          "3": "Explorer ng Lungsod",
+          "4": "Explorer ng Isla",
+          "5": "Explorer ng Formosa",
+          "6": "Tagagawa ng Mapa ng Halal"
+        }
+      },
+      "community_pillar": {
+        "title": "Haligi ng Komunidad",
+        "description": "Magdagdag ng mga produkto at lugar na maa-aprubahan sa Halal Formosa.",
+        "tiers": {
+          "1": "Unang Ambag",
+          "2": "Kapaki-pakinabang na Kamay",
+          "3": "Tagapagtayo ng Komunidad",
+          "4": "Haligi ng Komunidad",
+          "5": "Kampeon ng Komunidad",
+          "6": "Alamat ng Komunidad"
+        }
+      },
+      "community_voice": {
+        "title": "Tinig ng Komunidad",
+        "description": "Sumulat ng mga review para matulungan ang ibang users na makahanap ng magagandang lugar.",
+        "tiers": {
+          "1": "Unang Review",
+          "2": "Reviewer",
+          "3": "Pinagkakatiwalaang Tinig",
+          "4": "Kritiko ng Komunidad",
+          "5": "Beteranong Reviewer",
+          "6": "Icon ng Review"
+        }
+      },
+      "halal_habit": {
+        "title": "Gawing Halal",
+        "description": "Manatiling aktibo sa app sa loob ng maraming magkakaibang araw.",
+        "tiers": {
+          "1": "Isang Linggong Streak",
+          "2": "Isang Buwang Gawi",
+          "3": "Isandaang Araw",
+          "4": "Isang Taong Matatag",
+          "5": "Dalawang Taong Tapat na Gumagamit",
+          "6": "Beterano ng Halal Formosa"
+        }
+      }
     }
   },
   "appReview": {

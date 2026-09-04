@@ -2,6 +2,8 @@ import { supabase } from "@/plugins/supabaseClient";
 import { ref } from "vue";
 import { usePointRules } from "@/composables/usePointRules";
 import { openReward, closeReward } from "@/composables/useRewardOverlay";
+import { useAchievements } from "@/composables/useAchievements";
+import { i18n } from "@/i18n";
 import confetti from "canvas-confetti";
 import lottie from "lottie-web";
 import { Capacitor } from "@capacitor/core";
@@ -57,6 +59,36 @@ function fireConfetti() {
     confetti({ particleCount: 60, spread: 100, origin: { x: 0.8, y: 0.6 } });
 }
 
+// 🏆 Checks whether the action that just earned points also crossed an
+// achievement tier, and queues a trophy-flavored reward toast for each one
+// unlocked — staggered to play after the XP toast (and any earlier trophy
+// toasts) finish, since they all share the same overlay state.
+async function celebrateNewAchievements(userId: string, avatar: string) {
+    const { syncAchievements, fetchDefinitions, definitions } = useAchievements();
+    const unlocked = await syncAchievements(userId);
+    if (!unlocked.length) return;
+
+    await fetchDefinitions();
+
+    let delay = 4200; // let the XP toast (4000ms) finish first
+    for (const u of unlocked) {
+        const def = definitions.value.find((d) => d.id === u.unlocked_achievement_id);
+        const label = def
+            ? i18n.global.t(`achievements.categories.${def.category}.tiers.${def.tier}`)
+            : i18n.global.t("achievements.title");
+        const icon = def?.icon ?? "🏆";
+
+        setTimeout(() => {
+            const newTotal = (currentPoints.value ?? 0) + u.points_reward;
+            currentPoints.value = newTotal;
+            openReward(u.points_reward, label, avatar, newTotal, 4500, { icon, isAchievement: true });
+            fireConfetti();
+        }, delay);
+
+        delay += 4700;
+    }
+}
+
 export function usePoints() {
     const { rules } = usePointRules();
 
@@ -90,6 +122,9 @@ export function usePoints() {
             console.log(
                 `✅ Confirmed ${res.points} pts for ${res.label}. Total = ${res.total}`
             );
+
+            const userId = session?.user?.id;
+            if (userId) celebrateNewAchievements(userId, avatar);
         } else {
             console.warn("❌ Failed:", res.error);
             closeReward();

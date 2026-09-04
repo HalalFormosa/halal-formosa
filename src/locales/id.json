@@ -650,6 +650,7 @@
       "Contributor": "Kontributor"
     },
     "admin": {
+      "badge": "Admin",
       "sections": {
         "content": "Tinjauan Konten",
         "store": "Admin Toko",
@@ -776,6 +777,89 @@
     "myLocations": {
       "title": "My Submitted Locations",
       "noLocations": "You haven't submitted any locations yet."
+    }
+  },
+"achievements": {
+    "title": "Pencapaian Saya",
+    "summaryLabel": "Trofi Terbuka",
+    "nextTierHint": "{count} lagi untuk membuka \"{tier}\"",
+    "allTiersUnlocked": "Semua tingkatan terbuka — legendaris!",
+    "showcaseSet": "Trofi disematkan ke profil Anda!",
+    "showcaseCleared": "Trofi dihapus dari profil Anda",
+    "chooseTrophyCta": "Pilih trofi untuk dipamerkan",
+    "categories": {
+      "scanner": {
+        "title": "Master Pindai",
+        "description": "Pindai barcode untuk menambah jumlah pemindaian Anda.",
+        "tiers": {
+          "1": "Pemindai Penasaran",
+          "2": "Penggemar Pindai",
+          "3": "Pemindai Pro",
+          "4": "Master Pindai",
+          "5": "Legenda Pindai",
+          "6": "Penguasa Pindai"
+        }
+      },
+      "halal_hunter": {
+        "title": "Pemburu Halal",
+        "description": "Temukan produk ramah Muslim dengan memindainya.",
+        "tiers": {
+          "1": "Penasaran Halal",
+          "2": "Pencari Halal",
+          "3": "Pemburu Halal",
+          "4": "Detektif Halal",
+          "5": "Penyelidik Halal",
+          "6": "Bijak Halal"
+        }
+      },
+      "explorer": {
+        "title": "Penjelajah",
+        "description": "Kunjungi langsung restoran dan kios ramah Muslim.",
+        "tiers": {
+          "1": "Pengembara",
+          "2": "Penjelajah Lokal",
+          "3": "Penjelajah Kota",
+          "4": "Penjelajah Pulau",
+          "5": "Penjelajah Formosa",
+          "6": "Kartografer Halal"
+        }
+      },
+      "community_pillar": {
+        "title": "Pilar Komunitas",
+        "description": "Tambahkan produk dan tempat yang disetujui masuk ke Halal Formosa.",
+        "tiers": {
+          "1": "Kontribusi Pertama",
+          "2": "Tangan Membantu",
+          "3": "Pembangun Komunitas",
+          "4": "Pilar Komunitas",
+          "5": "Juara Komunitas",
+          "6": "Legenda Komunitas"
+        }
+      },
+      "community_voice": {
+        "title": "Suara Komunitas",
+        "description": "Tulis ulasan untuk membantu pengguna lain menemukan tempat yang bagus.",
+        "tiers": {
+          "1": "Ulasan Pertama",
+          "2": "Peninjau",
+          "3": "Suara Terpercaya",
+          "4": "Kritikus Komunitas",
+          "5": "Veteran Ulasan",
+          "6": "Ikon Ulasan"
+        }
+      },
+      "halal_habit": {
+        "title": "Kebiasaan Halal",
+        "description": "Tetap aktif di aplikasi selama banyak hari berbeda.",
+        "tiers": {
+          "1": "Rentetan Satu Minggu",
+          "2": "Kebiasaan Satu Bulan",
+          "3": "Seratus Hari",
+          "4": "Setahun Kuat",
+          "5": "Setia Dua Tahun",
+          "6": "Veteran Halal Formosa"
+        }
+      }
     }
   },
   "appReview": {

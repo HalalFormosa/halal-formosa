@@ -1,9 +1,10 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import {
   IonIcon, IonChip, IonLabel, IonSkeletonText
 } from '@ionic/vue'
 import {
-  pricetagOutline, closeCircleOutline, school, sparkles
+  pricetagOutline, closeCircleOutline, school, sparkles, businessOutline
 } from 'ionicons/icons'
 
 interface Category {
@@ -12,6 +13,7 @@ interface Category {
   color: string | null
   emoji: string | null
   icon: string | null
+  icon_url: string | null
 }
 
 interface Campus {
@@ -20,13 +22,14 @@ interface Campus {
   slug: string
 }
 
-defineProps<{
+const props = defineProps<{
   categories: Category[]
   activeCategoryIds: number[]
   campusPartners: Campus[]
   activeTag: string | null
   loadingCategories: boolean
   categoryIconMap: Record<string, any>
+  categoryImageMap: Record<string, string>
 }>()
 
 defineEmits<{
@@ -34,6 +37,18 @@ defineEmits<{
   (e: 'toggleTag', slug: string): void
   (e: 'clearFilters'): void
 }>()
+
+const GOV_PARTNER_CATEGORY_NAMES = ['Halal Indonesian Restaurant', 'Muslim-friendly Indonesian Restaurant']
+
+const govPartnerCategories = computed(() =>
+  props.categories.filter(c => GOV_PARTNER_CATEGORY_NAMES.includes(c.name))
+)
+
+// Regular Categories section excludes gov-partner-only categories; they're
+// shown solely under "Government Partners" below.
+const regularCategories = computed(() =>
+  props.categories.filter(c => !GOV_PARTNER_CATEGORY_NAMES.includes(c.name))
+)
 </script>
 
 <template>
@@ -70,17 +85,18 @@ defineEmits<{
       </div>
       <div v-else class="category-bar">
         <ion-chip
-            v-for="cat in categories"
+            v-for="cat in regularCategories"
             :key="cat.id"
             class="modern-category-chip"
             :class="{ active: activeCategoryIds.includes(cat.id) }"
-            :style="{ 
+            :style="{
               '--cat-color': cat.color || 'var(--ion-color-carrot)',
               '--cat-bg': activeCategoryIds.includes(cat.id) ? (cat.color || 'var(--ion-color-carrot)') : 'transparent'
             }"
             @click="$emit('toggleCategory', cat)"
         >
-          <span v-if="typeof categoryIconMap[cat.name] === 'string' && categoryIconMap[cat.name].length === 2" class="category-emoji">
+          <img v-if="categoryImageMap[cat.name]" :src="categoryImageMap[cat.name]" class="category-image" :alt="cat.name" />
+          <span v-else-if="typeof categoryIconMap[cat.name] === 'string' && categoryIconMap[cat.name].length === 2" class="category-emoji">
             {{ categoryIconMap[cat.name] }}
           </span>
           <ion-icon v-else-if="categoryIconMap[cat.name]" :icon="categoryIconMap[cat.name]" class="category-icon" />
@@ -112,6 +128,31 @@ defineEmits<{
             <ion-label>{{ $t('explore.campusFilter', { name: campus.slug.toUpperCase() }) }}</ion-label>
           </ion-chip>
         </div>
+      </div>
+    </div>
+
+    <!-- Government Partners -->
+    <div v-if="govPartnerCategories.length > 0" class="filter-section">
+      <h3 class="filter-section-title">
+        <ion-icon :icon="businessOutline" />
+        Government Partners
+      </h3>
+      <div class="category-bar campus-bar">
+        <ion-chip
+            v-for="cat in govPartnerCategories"
+            :key="cat.id"
+            class="modern-category-chip campus-chip"
+            :class="{ active: activeCategoryIds.includes(cat.id) }"
+            style="--cat-color: var(--ion-color-tertiary); --cat-bg: var(--ion-color-tertiary);"
+            @click="$emit('toggleCategory', cat)"
+        >
+          <img v-if="categoryImageMap[cat.name]" :src="categoryImageMap[cat.name]" class="category-image" :alt="cat.name" />
+          <span v-else-if="typeof categoryIconMap[cat.name] === 'string' && categoryIconMap[cat.name].length === 2" class="category-emoji">
+            {{ categoryIconMap[cat.name] }}
+          </span>
+          <ion-icon v-else-if="categoryIconMap[cat.name]" :icon="categoryIconMap[cat.name]" class="category-icon" />
+          <ion-label>{{ cat.name }}</ion-label>
+        </ion-chip>
       </div>
     </div>
   </div>
@@ -212,4 +253,12 @@ defineEmits<{
 }
 
 .category-emoji, .category-icon { margin-right: 6px; font-size: 1.1rem; }
+.category-image {
+  width: 18px;
+  height: 18px;
+  margin-right: 6px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
 </style>

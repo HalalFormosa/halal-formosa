@@ -56,16 +56,39 @@
               <p class="profile-email-sub">{{ userEmail }}</p>
               
               <div class="badge-row">
+                <ion-badge v-if="isAdmin" color="danger" style="border-radius: 12px; padding: 6px 12px;">
+                  <ion-icon :icon="icons.shieldCheckmarkOutline" style="margin-right: 4px" />
+                  {{ $t('profile.admin.badge') }}
+                </ion-badge>
                 <ion-badge v-if="isSubscribed" class="badge-pro">
                   <ion-icon :icon="icons.bookmarkOutline" style="margin-right: 4px" />
                   {{ $t('profile.proMember') }}
                 </ion-badge>
-                <ion-badge v-else :color="donorBadge.color" style="border-radius: 12px; padding: 6px 12px;">
+                <ion-badge v-if="!isSubscribed" :color="donorBadge.color" style="border-radius: 12px; padding: 6px 12px;">
                   {{ donorBadge.emoji }} {{ $t('profile.donors.' + donorBadge.label) }}
+                </ion-badge>
+                <ion-badge v-if="isSubscribed && isContributor" color="primary" style="border-radius: 12px; padding: 6px 12px;">
+                  ⭐️ {{ $t('profile.donors.Contributor') }}
                 </ion-badge>
                 <ion-badge v-if="businessTier !== 'free'" class="badge-merchant" :class="'merchant-' + businessTier" style="cursor: pointer;" @click="openBusinessSubModal">
                   <ion-icon :icon="icons.storefrontOutline" style="margin-right: 4px" />
                   {{ $t('profile.merchantTier.' + businessTier) }}
+                </ion-badge>
+                <ion-badge
+                  v-if="showcaseAchievement"
+                  color="warning"
+                  style="border-radius: 12px; padding: 6px 12px; cursor: pointer;"
+                  @click="$router.push('/profile/achievements')"
+                >
+                  {{ showcaseAchievement.icon }} {{ $t('achievements.categories.' + showcaseAchievement.category + '.tiers.' + showcaseAchievement.tier) }}
+                </ion-badge>
+                <ion-badge
+                  v-else-if="unlockedAchievementsCount > 0"
+                  color="medium"
+                  style="border-radius: 12px; padding: 6px 12px; cursor: pointer; opacity: 0.85;"
+                  @click="$router.push('/profile/achievements')"
+                >
+                  🏆 {{ $t('achievements.chooseTrophyCta') }}
                 </ion-badge>
               </div>
             </div>
@@ -320,6 +343,13 @@
                 <span>{{ $t('profile.scanHistory') }}</span>
                 <span class="activity-pro-badge">PRO</span>
               </ion-label>
+            </ion-item>
+
+            <ion-item v-if="userEmail" button @click="$router.push('/profile/achievements')">
+              <div class="icon-box" slot="start">
+                <ion-icon :icon="icons.trophyOutline" />
+              </div>
+              <ion-label>{{ $t('achievements.title') }}</ion-label>
             </ion-item>
 
             <ion-item v-if="userEmail" button @click="$router.push('/store/my-orders')" :disabled="isStoreUnderConstruction">
@@ -927,7 +957,9 @@ import {
   alertCircleOutline,
   keyOutline,
   helpCircleOutline,
-  colorPaletteOutline
+  colorPaletteOutline,
+  trophyOutline,
+  shieldCheckmarkOutline
 } from "ionicons/icons";
 
 // ✅ Composables
@@ -999,7 +1031,9 @@ const icons = {
   keyOutline,
   flagOutline,
   helpCircleOutline,
-  colorPaletteOutline
+  colorPaletteOutline,
+  trophyOutline,
+  shieldCheckmarkOutline
 }
 
 interface RcProduct {
@@ -1040,6 +1074,8 @@ const myProductsCount = ref<number | null>(null);
 const myLocationsCount = ref<number | null>(null);
 const myProductReportsCount = ref<number | null>(null);
 const myLocationReportsCount = ref<number | null>(null);
+const showcaseAchievement = ref<{ category: string; tier: number; icon: string } | null>(null);
+const unlockedAchievementsCount = ref(0);
 
 const loadingProfile = ref(true)     // avatar, name, email
 const loadingAdmin = ref(false)      // admin-only data
@@ -1350,6 +1386,24 @@ async function fetchMyContributionsCount(userId: string) {
   myLocationReportsCount.value = locationReportsRes.count;
 }
 
+async function fetchShowcaseAchievement(userId: string) {
+  const [{ data }, { count }] = await Promise.all([
+    supabase
+      .from('user_profiles')
+      .select('achievement_definitions(category, tier, icon)')
+      .eq('id', userId)
+      .single(),
+    supabase
+      .from('user_achievements')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', userId),
+  ]);
+
+  const def = (data as any)?.achievement_definitions;
+  showcaseAchievement.value = def ? { category: def.category, tier: def.tier, icon: def.icon } : null;
+  unlockedAchievementsCount.value = count ?? 0;
+}
+
 const renewalMessage = computed(() => {
   if (!entitlement.value) return ''
 
@@ -1422,6 +1476,7 @@ async function refreshAllData(userId: string) {
       fetchHasOwnedBusinesses(userId),
       fetchBusinessTier(userId),
       fetchMyContributionsCount(userId),
+      fetchShowcaseAchievement(userId),
       (async () => {
         if (!isAdmin.value && !isContributor.value) {
           await fetchContributorAppStatus()
