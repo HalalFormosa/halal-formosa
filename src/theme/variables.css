@@ -583,6 +583,11 @@ ion-card ion-item {
     display: inline-block;
 }
 
+.reward-points-badge--achievement {
+    background: var(--ion-color-carrot, #ff9f43);
+    color: #fff;
+}
+
 .reward-action-text {
     font-size: 0.85rem;
     font-weight: 600;

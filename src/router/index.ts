@@ -97,6 +97,12 @@ const routes: Array<RouteRecordRaw> = [
         meta: { requiresAuth: true, noTabs: true, noAds: true }
     },
     {
+        path: '/profile/achievements',
+        name: 'Achievements',
+        component: () => import('@/views/profile/AchievementsView.vue'),
+        meta: { requiresAuth: true, noTabs: true, noAds: true }
+    },
+    {
         path: '/submissions/products',
         name: 'MyProducts',
         component: () => import('@/views/profile/MyProductsView.vue'),

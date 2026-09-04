@@ -785,6 +785,7 @@
       "Contributor": "Contributor"
     },
     "admin": {
+      "badge": "Admin",
       "sections": {
         "content": "Content Review",
         "store": "Platform Store Admin",
@@ -950,6 +951,90 @@
       "unsaved": "Unsaved"
     },
     "defaultName": "User"
+  },
+"achievements": {
+    "title": "My Achievements",
+    "summaryLabel": "Trophies Unlocked",
+    "nextTierHint": "{count} more to unlock \"{tier}\"",
+    "allTiersUnlocked": "All tiers unlocked — legendary!",
+    "unlockedBadge": "Trophy Unlocked!",
+    "showcaseSet": "Trophy pinned to your profile!",
+    "showcaseCleared": "Trophy removed from your profile",
+    "chooseTrophyCta": "Pick a trophy to show off",
+    "categories": {
+      "scanner": {
+        "title": "Scan Master",
+        "description": "Scan barcodes to build up your total scan count.",
+        "tiers": {
+          "1": "Curious Scanner",
+          "2": "Scan Enthusiast",
+          "3": "Scan Pro",
+          "4": "Scan Master",
+          "5": "Scan Legend",
+          "6": "Scan Overlord"
+        }
+      },
+      "halal_hunter": {
+        "title": "Halal Hunter",
+        "description": "Discover Muslim-friendly products by scanning them.",
+        "tiers": {
+          "1": "Halal Curious",
+          "2": "Halal Seeker",
+          "3": "Halal Hunter",
+          "4": "Halal Detective",
+          "5": "Halal Sleuth",
+          "6": "Halal Sage"
+        }
+      },
+      "explorer": {
+        "title": "Explorer",
+        "description": "Visit Muslim-friendly restaurants and stalls in person.",
+        "tiers": {
+          "1": "Wanderer",
+          "2": "Local Explorer",
+          "3": "City Explorer",
+          "4": "Island Explorer",
+          "5": "Formosa Explorer",
+          "6": "Halal Cartographer"
+        }
+      },
+      "community_pillar": {
+        "title": "Community Pillar",
+        "description": "Add products and places that get approved into Halal Formosa.",
+        "tiers": {
+          "1": "First Contribution",
+          "2": "Helpful Hand",
+          "3": "Community Builder",
+          "4": "Community Pillar",
+          "5": "Community Champion",
+          "6": "Community Legend"
+        }
+      },
+      "community_voice": {
+        "title": "Community Voice",
+        "description": "Write reviews to help other users find great places.",
+        "tiers": {
+          "1": "First Review",
+          "2": "Reviewer",
+          "3": "Trusted Voice",
+          "4": "Community Critic",
+          "5": "Review Veteran",
+          "6": "Review Icon"
+        }
+      },
+      "halal_habit": {
+        "title": "Halal Habit",
+        "description": "Stay active in the app across many different days.",
+        "tiers": {
+          "1": "One Week Streak",
+          "2": "One Month Habit",
+          "3": "Century of Days",
+          "4": "One Year Strong",
+          "5": "Two-Year Devotee",
+          "6": "Halal Formosa Veteran"
+        }
+      }
+    }
   },
   "appReview": {
     "title": "Enjoying Halal Formosa?",
@@ -1780,6 +1865,7 @@
   },
   "store": {
     "testPhaseDisclaimer": "⚠️ This store is in the testing phase. Please do NOT make actual purchases. We will make an official announcement once development is complete.",
+    "purchasesDisabled": "Purchases are disabled during the testing phase",
     "underConstructionDesc": "We're brewing something amazing! The store will be back soon.",
     "title": "Halal Formosa Store",
     "construction": {

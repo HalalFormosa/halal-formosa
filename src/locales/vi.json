@@ -611,6 +611,7 @@
       "Contributor": "Người đóng góp"
     },
     "admin": {
+      "badge": "Quản trị viên",
       "sections": {
         "content": "Đánh giá nội dung",
         "store": "Quản trị viên cửa hàng nền tảng",
@@ -724,6 +725,89 @@
     "myLocations": {
       "title": "My Submitted Locations",
       "noLocations": "You haven't submitted any locations yet."
+    }
+  },
+"achievements": {
+    "title": "Thành Tích Của Tôi",
+    "summaryLabel": "Cúp Đã Mở Khóa",
+    "nextTierHint": "Còn {count} nữa để mở khóa \"{tier}\"",
+    "allTiersUnlocked": "Đã mở khóa tất cả các cấp — huyền thoại!",
+    "showcaseSet": "Đã ghim cúp lên hồ sơ của bạn!",
+    "showcaseCleared": "Đã gỡ cúp khỏi hồ sơ của bạn",
+    "chooseTrophyCta": "Chọn một cúp để khoe",
+    "categories": {
+      "scanner": {
+        "title": "Bậc Thầy Quét Mã",
+        "description": "Quét mã vạch để tăng tổng số lần quét của bạn.",
+        "tiers": {
+          "1": "Người Quét Tò Mò",
+          "2": "Người Đam Mê Quét Mã",
+          "3": "Chuyên Gia Quét Mã",
+          "4": "Bậc Thầy Quét Mã",
+          "5": "Huyền Thoại Quét Mã",
+          "6": "Bá Chủ Quét Mã"
+        }
+      },
+      "halal_hunter": {
+        "title": "Thợ Săn Halal",
+        "description": "Khám phá các sản phẩm thân thiện với người Hồi giáo bằng cách quét chúng.",
+        "tiers": {
+          "1": "Người Tò Mò Về Halal",
+          "2": "Người Tìm Kiếm Halal",
+          "3": "Thợ Săn Halal",
+          "4": "Thám Tử Halal",
+          "5": "Thám Tử Tài Ba Halal",
+          "6": "Bậc Hiền Triết Halal"
+        }
+      },
+      "explorer": {
+        "title": "Nhà Thám Hiểm",
+        "description": "Ghé thăm trực tiếp các nhà hàng và quầy hàng thân thiện với người Hồi giáo.",
+        "tiers": {
+          "1": "Người Lữ Hành",
+          "2": "Nhà Thám Hiểm Địa Phương",
+          "3": "Nhà Thám Hiểm Thành Phố",
+          "4": "Nhà Thám Hiểm Đảo",
+          "5": "Nhà Thám Hiểm Formosa",
+          "6": "Nhà Vẽ Bản Đồ Halal"
+        }
+      },
+      "community_pillar": {
+        "title": "Trụ Cột Cộng Đồng",
+        "description": "Thêm sản phẩm và địa điểm được duyệt vào Halal Formosa.",
+        "tiers": {
+          "1": "Đóng Góp Đầu Tiên",
+          "2": "Bàn Tay Nhiệt Tình",
+          "3": "Người Xây Dựng Cộng Đồng",
+          "4": "Trụ Cột Cộng Đồng",
+          "5": "Nhà Vô Địch Cộng Đồng",
+          "6": "Huyền Thoại Cộng Đồng"
+        }
+      },
+      "community_voice": {
+        "title": "Tiếng Nói Cộng Đồng",
+        "description": "Viết đánh giá để giúp người dùng khác tìm được địa điểm tuyệt vời.",
+        "tiers": {
+          "1": "Đánh Giá Đầu Tiên",
+          "2": "Người Đánh Giá",
+          "3": "Tiếng Nói Đáng Tin Cậy",
+          "4": "Nhà Phê Bình Cộng Đồng",
+          "5": "Người Đánh Giá Kỳ Cựu",
+          "6": "Biểu Tượng Đánh Giá"
+        }
+      },
+      "halal_habit": {
+        "title": "Thói Quen Halal",
+        "description": "Duy trì hoạt động trên ứng dụng qua nhiều ngày khác nhau.",
+        "tiers": {
+          "1": "Chuỗi Một Tuần",
+          "2": "Thói Quen Một Tháng",
+          "3": "Một Trăm Ngày",
+          "4": "Một Năm Kiên Trì",
+          "5": "Hai Năm Gắn Bó",
+          "6": "Cựu Chiến Binh Halal Formosa"
+        }
+      }
     }
   },
   "appReview": {

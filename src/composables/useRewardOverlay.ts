@@ -9,6 +9,8 @@ export const rewardAction = ref("");
 export const rewardAvatar = ref(""); // 👈 user avatar
 export const rewardTotal = ref(0);   // final total
 export const rewardDisplay = ref(0); // animated total
+export const rewardIcon = ref("");        // overrides the ✨ fallback icon (e.g. a trophy tier's emoji)
+export const rewardIsAchievement = ref(false); // trophy-flavored toast instead of a plain XP grant
 
 let animFrame: number | null = null;
 let dismissTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -29,10 +31,17 @@ export const rewardProgress = computed(() => {
     return (xp - rewardPrevXp.value) / (rewardNextXp.value - rewardPrevXp.value);
 });
 
-export function openReward(points: number, action: string, avatar?: string, newTotal?: number, durationMs = 4000) {
+export function openReward(
+    points: number,
+    action: string,
+    avatar?: string,
+    newTotal?: number,
+    durationMs = 4000,
+    opts?: { icon?: string; isAchievement?: boolean }
+) {
     const nextTotal = newTotal ?? (currentPoints.value ?? 0);
 
-    if (nextTotal === rewardTotal.value && rewardOpen.value) {
+    if (nextTotal === rewardTotal.value && rewardOpen.value && !opts?.isAchievement) {
         // 👀 nothing changed, skip re-animation if already open
         return;
     }
@@ -40,6 +49,8 @@ export function openReward(points: number, action: string, avatar?: string, newT
     rewardPoints.value = points;
     rewardAction.value = action;
     rewardAvatar.value = avatar || "";
+    rewardIcon.value = opts?.icon || "";
+    rewardIsAchievement.value = opts?.isAchievement ?? false;
     rewardTotal.value = nextTotal;
     rewardDisplay.value = Math.max(0, rewardTotal.value - points);
     rewardOpen.value = true;

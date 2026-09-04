@@ -71,10 +71,10 @@
             </div>
           </div>
 
-          <ion-button expand="block" color="carrot" class="action-btn primary-btn" @click="tryAgain" :disabled="retrying">
+          <ion-button expand="block" color="carrot" class="action-btn primary-btn" @click="tryAgain" :disabled="purchasesDisabled || retrying">
             <ion-spinner v-if="retrying" name="crescent" slot="start" />
             <ion-icon v-else :icon="refreshOutline" slot="start" />
-            {{ $t('store.tryAgain') || 'Try Again' }}
+            {{ purchasesDisabled ? $t('store.purchasesDisabled') : ($t('store.tryAgain') || 'Try Again') }}
           </ion-button>
           <ion-button expand="block" fill="outline" color="medium" class="action-btn" @click="goToOrders">
             <ion-icon :icon="receiptOutline" slot="start" />
@@ -111,6 +111,7 @@ const orderId = ref('')
 const paymentStatus = ref<'checking' | 'paid' | 'failed'>('checking')
 const checking = ref(true)
 const retrying = ref(false)
+const purchasesDisabled = computed(() => import.meta.env.VITE_STORE_UNDER_CONSTRUCTION === 'true')
 const orderAmount = ref('')
 const pollAttempts = ref(0)
 const maxPollAttempts = 20 // 40 seconds total
@@ -187,7 +188,7 @@ async function checkPaymentStatus() {
 }
 
 async function tryAgain() {
-  if (!orderId.value) return
+  if (!orderId.value || purchasesDisabled.value) return
   retrying.value = true
   try {
     await initiatePayment(orderId.value)
