@@ -168,10 +168,10 @@
           color="carrot"
           class="place-order-btn"
           @click="placeOrder"
-          :disabled="submitting || cartItems.length === 0"
+          :disabled="isUnderConstruction || submitting || cartItems.length === 0"
         >
           <ion-spinner v-if="submitting" name="crescent" slot="start" />
-          {{ submitting ? $t('store.saving') : $t('store.placeOrder') }}
+          {{ isUnderConstruction ? $t('store.purchasesDisabled') : (submitting ? $t('store.saving') : $t('store.placeOrder')) }}
         </ion-button>
       </ion-toolbar>
     </ion-footer>
@@ -323,6 +323,8 @@ async function fetchDeliveryOptions() {
 }
 
 async function placeOrder() {
+  if (isUnderConstruction.value) return
+
   if (!buyerName.value.trim() || !buyerEmail.value.trim()) {
     const toast = await toastController.create({
       message: '⚠️ Name and Email are required',
