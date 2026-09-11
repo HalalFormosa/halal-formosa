@@ -149,36 +149,19 @@ async function fetchApplications() {
 
 async function handleApprove(app: ContributorApplication) {
   try {
-    // 1. Update application status
-    const { error: appError } = await supabase
-      .from('contributor_applications')
-      .update({ status: 'approved' })
-      .eq('id', app.id)
+    // Runs server-side as a SECURITY DEFINER RPC: user_roles has RLS that
+    // blocks client-side updates entirely, so status + role + badge must be
+    // applied atomically in one admin-gated function instead of three
+    // separate table writes (which silently no-op on the blocked update).
+    const { error } = await supabase.rpc('approve_contributor_application', {
+      application_id: app.id
+    })
 
-    if (appError) throw appError
-
-    // 2. Upsert user role to contributor
-    const { error: roleError } = await supabase
-      .from('user_roles')
-      .upsert({
-        user_id: app.user_id,
-        role: 'contributor',
-        created_at: new Date().toISOString()
-      }, { onConflict: 'user_id' })
-
-    if (roleError) throw roleError
-
-    // 3. Reflect the Contributor badge on the user's profile
-    const { error: donorError } = await supabase
-      .from('user_profiles')
-      .update({ donor_type: 'Contributor' })
-      .eq('id', app.user_id)
-
-    if (donorError) throw donorError
+    if (error) throw error
 
     toastMsg.value = `Approved ${app.display_name || 'user'} as Contributor!`
     showToast.value = true
-    
+
     // Refresh list
     await fetchApplications()
   } catch (err) {
@@ -188,10 +171,9 @@ async function handleApprove(app: ContributorApplication) {
 
 async function handleReject(app: ContributorApplication) {
   try {
-    const { error } = await supabase
-      .from('contributor_applications')
-      .update({ status: 'rejected' })
-      .eq('id', app.id)
+    const { error } = await supabase.rpc('reject_contributor_application', {
+      application_id: app.id
+    })
 
     if (error) throw error
 
