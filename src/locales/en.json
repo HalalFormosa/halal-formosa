@@ -699,6 +699,8 @@
     "markAllRead": "Mark all read",
     "empty": "No notifications yet",
     "emptyHint": "We'll let you know when something new happens.",
+    "dailyMissionTitle": "Daily Mission still available",
+    "dailyMissionBody": "Finish it to get Extra XP!",
     "category": {
       "products": "New products added",
       "locations": "New places added",

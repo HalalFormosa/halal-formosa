@@ -1,5 +1,21 @@
 import {supabase} from '@/plugins/supabaseClient'
 import SessionService from '@/services/SessionService'
+import { useDailyMissions } from '@/composables/useDailyMissions'
+
+// Activity types useDailyMissions.fetchProgress() actually scores (see its
+// switch statement). Re-checking mission progress right after one of these
+// is logged — rather than only on Home's own mount/enter — means a mission
+// completed while on Explore/Search/Scan/etc. gets detected and celebrated
+// immediately, not just the next time the user happens to visit Home.
+const MISSION_ACTIVITY_TYPES = new Set([
+    'home_page_open',
+    'scan_ingredients_success',
+    'barcode_scan_success',
+    'explore_place_detail_open',
+    'add_product_success',
+    'add_place_success',
+    'location_review_success',
+])
 
 // ðŸ”§ TEMPORARY GLOBAL SWITCH
 const ACTIVITY_LOG_ENABLED = true
@@ -724,6 +740,14 @@ export class ActivityLogService {
 
         if (error) {
             console.error('[ActivityLogService] Insert error:', error)
+            return
+        }
+
+        if (payload.user_id && MISSION_ACTIVITY_TYPES.has(activity)) {
+            // Fire-and-forget: don't make every log() call across the app
+            // wait on a full mission re-check + potential award/celebration
+            // round-trip.
+            useDailyMissions().fetchProgress()
         }
     }
 }

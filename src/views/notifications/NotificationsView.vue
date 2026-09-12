@@ -10,6 +10,19 @@
       </div>
 
       <template v-else>
+        <!-- Daily mission nudge: not a real notification row, so it doesn't
+             come from useNotifications — just a call-to-action while today's
+             missions aren't all done yet. -->
+        <div v-if="!dailyMissionsCompleted" class="feed-section">
+          <ion-item button class="notif-item mission-item" @click="openDailyMissions">
+            <ion-icon slot="start" :icon="icons.flashOutline" class="notif-icon color-carrot" />
+            <ion-label>
+              <h3 class="notif-title">{{ t('notifications.dailyMissionTitle', 'Daily Mission still available') }}</h3>
+              <p class="notif-body">{{ t('notifications.dailyMissionBody', 'Finish it to get Extra XP!') }}</p>
+            </ion-label>
+          </ion-item>
+        </div>
+
         <!-- Aggregate cards: categories with more new items than the threshold -->
         <div v-if="aggregateBadges.length > 0" class="category-grid">
           <div
@@ -101,11 +114,12 @@ import {
 import {
   notificationsOutline, notificationsOffOutline, checkmarkCircleOutline,
   closeCircleOutline, chatbubbleEllipsesOutline, cubeOutline, locationOutline,
-  newspaperOutline, compassOutline, bagHandleOutline
+  newspaperOutline, compassOutline, bagHandleOutline, flashOutline
 } from 'ionicons/icons';
 import AppHeader from '@/components/AppHeader.vue';
 import { useI18n } from 'vue-i18n';
 import { useNotifications, type AppNotification, type CategoryBadge, type BroadcastCategory, type CategoryItem } from '@/composables/useNotifications';
+import { useDailyMissions } from '@/composables/useDailyMissions';
 import { ActivityLogService } from '@/services/ActivityLogService';
 
 const { t } = useI18n();
@@ -123,7 +137,9 @@ const {
   markAllSeen,
 } = useNotifications();
 
-const icons = { notificationsOutline, notificationsOffOutline };
+const { allCompleted: dailyMissionsCompleted, requestOpenMissionsModal } = useDailyMissions();
+
+const icons = { notificationsOutline, notificationsOffOutline, flashOutline };
 
 const visibleBadges = computed(() => categoryBadges.value.filter(b => b.count > 0));
 // Small counts get listed as individual items instead of a vague "N new X" card.
@@ -146,8 +162,18 @@ const newItemEntries = computed<NewItemEntry[]>(() => {
 });
 
 const hasAnyContent = computed(() =>
-  personalNotifications.value.length > 0 || visibleBadges.value.length > 0
+  personalNotifications.value.length > 0 || visibleBadges.value.length > 0 || !dailyMissionsCompleted.value
 );
+
+function openDailyMissions() {
+  ActivityLogService.log('notification_daily_mission_opened', {});
+  // Flip the shared flag before navigating — DailyMissions.vue (rendered on
+  // Home) watches it with immediate:true, so it opens its own details modal
+  // the moment it mounts regardless of exactly when that happens relative
+  // to this navigation.
+  requestOpenMissionsModal();
+  router.push('/home');
+}
 
 function iconForCategory(category: BroadcastCategory) {
   switch (category) {

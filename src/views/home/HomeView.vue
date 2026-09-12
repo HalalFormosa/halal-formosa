@@ -688,7 +688,6 @@
               <span class="stat-label">{{ $t('home.totalProducts') }}</span>
               <h2 class="stat-value">{{ totalProductCount }}</h2>
             </div>
-            <ion-icon :icon="chevronForwardOutline" class="forward-icon" />
           </div>
 
           <!-- Card 2: Total Locations -->
@@ -700,7 +699,6 @@
               <span class="stat-label">{{ $t('home.totalLocations') }}</span>
               <h2 class="stat-value">{{ totalLocationCount }}</h2>
             </div>
-            <ion-icon :icon="chevronForwardOutline" class="forward-icon" />
           </div>
         </div>
       </div>
@@ -3046,13 +3044,6 @@ ion-segment-button {
   justify-content: flex-start;
 }
 
-.forward-icon {
-  position: absolute;
-  right: 16px;
-  color: var(--ion-color-medium);
-  opacity: 0.5;
-  font-size: 1.1rem;
-}
 
 .stat-icon-wrapper {
   width: 48px;

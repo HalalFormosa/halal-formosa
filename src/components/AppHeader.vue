@@ -51,7 +51,7 @@
       <ion-button fill="clear" class="header-notif-button" @click="navigateToNotifications">
         <div class="header-notif-icon-wrapper">
           <ion-icon :icon="notificationsOutline" />
-          <div v-if="totalUnreadCount > 0" class="header-notif-badge">{{ totalUnreadCount > 9 ? '9+' : totalUnreadCount }}</div>
+          <div v-if="displayBadgeCount > 0" class="header-notif-badge">{{ displayBadgeCount > 9 ? '9+' : displayBadgeCount }}</div>
         </div>
       </ion-button>
     </ion-buttons>
@@ -73,12 +73,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { IonToolbar, IonButton, IonTitle, IonButtons, IonIcon, IonBackButton, IonPopover, IonList, IonContent, isPlatform } from '@ionic/vue'
 import { useRouter } from 'vue-router'
 import {arrowBackOutline, ellipsisVerticalOutline, personCircle, notificationsOutline} from 'ionicons/icons'
 import { supabase } from '@/plugins/supabaseClient'
 import { useNotifications } from '@/composables/useNotifications'
+import { useDailyMissions } from '@/composables/useDailyMissions'
 
 withDefaults(defineProps<{
   title: string
@@ -104,6 +105,13 @@ const profilePic = ref<string | null>(null)
 const isIos = ref(isPlatform('ios'))
 const router = useRouter()
 const { totalUnreadCount } = useNotifications()
+const { allCompleted: dailyMissionsCompleted } = useDailyMissions()
+
+// Daily missions aren't real notification rows, so they don't add to
+// totalUnreadCount itself — just fold a "+1" into the bell badge shown here
+// as a nudge while any mission is still outstanding today (MainView.vue
+// keeps the underlying mission state fresh app-wide via fetchProgress()).
+const displayBadgeCount = computed(() => totalUnreadCount.value + (dailyMissionsCompleted.value ? 0 : 1))
 
 function navigateToProfile() {
   if (document.activeElement instanceof HTMLElement) document.activeElement.blur()

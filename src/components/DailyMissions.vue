@@ -165,23 +165,34 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { 
+import {
   IonIcon, IonButton, IonModal,
   IonHeader, IonToolbar, IonTitle, IonButtons, IonContent, IonProgressBar,
   IonCard, IonCardHeader, IonCardTitle, IonCardContent, onIonViewWillEnter, IonSkeletonText, IonLabel
 } from '@ionic/vue'
-import { 
-  rocketOutline, scanOutline, heartOutline, locationOutline, 
+import {
+  rocketOutline, scanOutline, heartOutline, locationOutline,
   barcodeOutline, addCircleOutline, checkmarkCircle, homeOutline,
   giftOutline
 } from 'ionicons/icons'
 import { useDailyMissions } from '@/composables/useDailyMissions'
 
 const showModal = ref(false)
-const { missions, loading, claimedBonus, allCompleted, fetchProgress, checkAndAwardBonus } = useDailyMissions()
+const { missions, loading, claimedBonus, allCompleted, openModalRequested, fetchProgress, checkAndAwardBonus } = useDailyMissions()
 const router = useRouter()
+
+// Lets external entry points (e.g. the notifications feed's "Daily Mission
+// still available" nudge) open the details modal directly. A reactive flag
+// rather than a route query param: `immediate: true` catches a request made
+// before this component even mounted, with no dependency on route-guard/
+// auth-check/mount-order timing across the navigation.
+watch(openModalRequested, (requested) => {
+  if (!requested) return
+  showModal.value = true
+  openModalRequested.value = false
+}, { immediate: true })
 
 // Missions still to complete, plus the bonus itself once every mission is
 // done but the bonus hasn't been claimed yet.

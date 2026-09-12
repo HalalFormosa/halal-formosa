@@ -248,6 +248,7 @@ const toastStyle = computed(() => {
 });
 import { updateLastSeen, currentUser, hasReviewedApp, setHasReviewedApp, profileLoaded, isProfileComplete, profileSkipped } from '@/composables/userProfile';
 import { supabase } from '@/plugins/supabaseClient';
+import { usePoints } from '@/composables/usePoints';
 const { initTheme } = useTheme();
 const { t } = useI18n();
 const { isUpdateRequired, storeUrl, currentVersion, minVersion } = useAppUpdate();
@@ -447,7 +448,16 @@ onMounted(async () => {
   performBotChecks();
 
   const { initNotifications, refreshAll: refreshNotifications } = useNotifications();
-  if (currentUser.value?.id) initNotifications();
+  const { fetchCurrentPoints } = usePoints();
+  if (currentUser.value?.id) {
+    initNotifications();
+    // Populate currentPoints proactively — it otherwise stays null until the
+    // user visits Profile, and an award earned before that (e.g. straight
+    // from Explore) would compute its optimistic toast total as just the
+    // point delta on top of null, flashing "Level 1" before the confirmed
+    // backend total corrects it a moment later.
+    fetchCurrentPoints(currentUser.value.id);
+  }
 
   initTheme();
   await askGeolocationPermission();
@@ -490,6 +500,7 @@ onMounted(async () => {
     }
     if (event === 'SIGNED_IN') {
       initNotifications();
+      if (currentUser.value?.id) fetchCurrentPoints(currentUser.value.id);
     }
   });
 });
