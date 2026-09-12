@@ -1023,6 +1023,7 @@ import { usePoints } from "@/composables/usePoints";
 import { useNotifier } from "@/composables/useNotifier";
 import { useImageResizer } from "@/composables/useImageResizer";
 import { useBackgroundRemoval } from "@/composables/useBackgroundRemoval";
+import { computeImageHash } from "@/utils/useImageHash";
 import { useCropperOcr } from "@/composables/useCropperOcr"
 import type { Product } from '@/types/Product'
 import { useRouter, useRoute } from 'vue-router';
@@ -2532,6 +2533,20 @@ async function handleSubmit() {
     let frontUrl = props.editProduct?.photo_front_url || ''
     let backUrl  = props.editProduct?.photo_back_url || ''
 
+    // Perceptual hash of the front photo, for the admin review queue's
+    // duplicate detector (find_similar_products). Only computed when a new
+    // front photo is actually being uploaded — an edit that doesn't touch
+    // the photo leaves the existing stored hash untouched. Best-effort: a
+    // hashing failure shouldn't block the submission.
+    let imageHash: string | undefined
+    if (frontFile.value) {
+      try {
+        imageHash = await computeImageHash(frontFile.value)
+      } catch (err) {
+        console.warn('⚠️ Failed to compute image hash:', err)
+      }
+    }
+
     if (frontFile.value) {
       const {
         error
@@ -2587,17 +2602,24 @@ async function handleSubmit() {
       // Admins control the published state via the toggle; non-admin edits
       // always go back to unapproved and require a fresh review.
       const finalApproved = autoApprove ? form.value.approved : false
+      // Only stamp approved_at when this edit newly publishes the product —
+      // keep the original timestamp if it was already approved, so editing a
+      // live product doesn't make it reappear as "new" in notifications.
+      const finalApprovedAt = finalApproved
+        ? (props.editProduct.approved ? props.editProduct.approved_at : new Date().toISOString())
+        : null
 
       // UPDATE product
       await supabase.from("products").update({
         ...productData,
         photo_front_url: frontUrl,
         photo_back_url: backUrl,
+        ...(imageHash !== undefined ? { image_hash: imageHash } : {}),
         updated_at: new Date().toISOString(),
         updated_by: user.id,
         approved: finalApproved,
         approved_by: finalApproved ? user.id : null,
-        approved_at: finalApproved ? new Date().toISOString() : null,
+        approved_at: finalApprovedAt,
         is_rejected: false,
         rejection_reason: null
       }).eq("id", props.editProduct.id)
@@ -2633,6 +2655,7 @@ async function handleSubmit() {
             barcode,
             photo_front_url: frontUrl,
             photo_back_url: backUrl,
+            image_hash: imageHash ?? null,
             added_by: user.id,
             approved: autoApprove,
             approved_by: autoApprove ? user.id : null,

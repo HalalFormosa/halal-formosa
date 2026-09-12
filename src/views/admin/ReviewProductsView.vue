@@ -10,28 +10,7 @@
 
       <ion-toolbar class="actions-toolbar">
         <div class="header-main-actions">
-          <ion-button fill="clear" class="classic-action-btn sort-btn-wrapper" id="sort-trigger">
-            <ion-icon :icon="sortIcon" />
-            <span class="btn-label">{{ sortLabel }}</span>
-          </ion-button>
-
-          <ion-popover trigger="sort-trigger" trigger-action="click" :dismiss-on-select="true" class="width-190">
-            <ion-list lines="none">
-              <ion-item button :detail="false" @click="sortBy = 'recent'">
-                <ion-icon :icon="timeOutline" slot="start" />
-                <ion-label>{{ $t('admin.sortRecent') }}</ion-label>
-                <ion-icon v-if="sortBy === 'recent'" :icon="checkmarkCircle" slot="end" color="success" style="font-size: 14px;" />
-              </ion-item>
-              
-              <ion-item button :detail="false" @click="sortBy = 'alpha'">
-                <ion-icon :icon="listOutline" slot="start" />
-                <ion-label>{{ $t('admin.sortAlpha') }}</ion-label>
-                <ion-icon v-if="sortBy === 'alpha'" :icon="checkmarkCircle" slot="end" color="success" style="font-size: 14px;" />
-              </ion-item>
-            </ion-list>
-          </ion-popover>
-
-          <ion-segment v-model="viewMode" mode="ios" style="width: 140px;">
+          <ion-segment v-model="viewMode" mode="ios" class="view-segment">
             <ion-segment-button value="pending">
               <ion-label>Review</ion-label>
             </ion-segment-button>
@@ -39,6 +18,26 @@
               <ion-label>Archive</ion-label>
             </ion-segment-button>
           </ion-segment>
+
+          <ion-button fill="clear" class="sort-icon-btn" id="sort-trigger" :title="sortLabel">
+            <ion-icon :icon="sortIcon" slot="icon-only" />
+          </ion-button>
+
+          <ion-popover trigger="sort-trigger" trigger-action="click" :dismiss-on-select="true" class="sort-popover">
+            <ion-list lines="none" class="sort-popover-list">
+              <ion-item button :detail="false" @click="sortBy = 'recent'">
+                <ion-icon :icon="timeOutline" slot="start" />
+                <ion-label>{{ $t('admin.sortRecent') }}</ion-label>
+                <ion-icon v-if="sortBy === 'recent'" :icon="checkmarkCircle" slot="end" color="success" style="font-size: 14px;" />
+              </ion-item>
+
+              <ion-item button :detail="false" @click="sortBy = 'alpha'">
+                <ion-icon :icon="listOutline" slot="start" />
+                <ion-label>{{ $t('admin.sortAlpha') }}</ion-label>
+                <ion-icon v-if="sortBy === 'alpha'" :icon="checkmarkCircle" slot="end" color="success" style="font-size: 14px;" />
+              </ion-item>
+            </ion-list>
+          </ion-popover>
         </div>
       </ion-toolbar>
 
@@ -84,17 +83,21 @@
           <ion-item
               button
               detail
+              class="product-row"
               @click="openProductModal(product)"
           >
-            <ion-thumbnail slot="start">
+            <ion-thumbnail slot="start" class="product-thumb">
               <img :src="product.photo_front_url" :alt="$t('review.imageAlt')" />
             </ion-thumbnail>
             <ion-label>
-              <div style="display: flex; align-items: center; gap: 8px;">
-                <h2 style="margin: 0;">{{ product.name }}</h2>
-                <ion-badge v-if="product.is_rejected" color="danger" style="font-size: 10px; padding: 3px 6px; border-radius: 4px;">Rejected</ion-badge>
+              <div class="product-title-row">
+                <h2 class="product-name">{{ product.name }}</h2>
+                <ion-badge v-if="product.is_rejected" color="danger" class="rejected-badge">Rejected</ion-badge>
               </div>
-              <p>{{ product.barcode }}</p>
+              <div class="product-meta-row">
+                <p class="product-barcode">{{ product.barcode }}</p>
+                <ion-badge :color="statusColor(product.status)" class="status-badge">{{ product.status }}</ion-badge>
+              </div>
             </ion-label>
           </ion-item>
 
@@ -126,14 +129,15 @@
       <!-- ✅ Product Detail Modal -->
       <ion-modal ref="reviewModalRef" :is-open="showModal" @didDismiss="closeModal" class="review-modal">
         <ion-header>
-          <ion-toolbar color="carrot">
-            <ion-buttons slot="start">
-              <ion-button @click="closeModal">
-                <ion-icon :icon="closeOutline" />
-              </ion-button>
-            </ion-buttons>
-            <ion-title>{{ $t('review.modalTitle') }}</ion-title>
-          </ion-toolbar>
+          <app-header
+              :title="$t('review.modalTitle')"
+              icon="none"
+              :showBack="true"
+              :useRouterBack="false"
+              :showProfile="false"
+              :showNotifications="false"
+              @back="closeModal"
+          />
         </ion-header>
 
         <ion-content class="ion-padding">
@@ -150,12 +154,17 @@
             </div>
 
             <!-- 👤 Uploader Attribution -->
+            <div class="section-heading section-heading-first">
+              <div class="section-heading-title">
+                <ion-icon :icon="personOutline" />
+                <span>{{ $t('review.uploadedBy') }}</span>
+              </div>
+            </div>
             <ion-item lines="none" class="uploader-info ion-margin-bottom">
               <ion-avatar slot="start">
                 <img :src="selectedProduct.uploader?.avatar_url || 'https://placehold.co/100x100?text=👤'" @error="handleImgError" />
               </ion-avatar>
               <ion-label>
-                <p style="font-size: 12px; margin-bottom: 2px;">{{ $t('review.uploadedBy') }}</p>
                 <h3 style="font-weight: 600;">{{ selectedProduct.uploader?.display_name || $t('admin.anonymousUser') }}</h3>
               </ion-label>
               <ion-badge v-if="selectedProduct.uploaderRole === 'contributor'" slot="end" color="warning" style="margin-right: 6px;">Dedicated Contributor</ion-badge>
@@ -163,173 +172,190 @@
             </ion-item>
 
             <ion-item-group>
-              <!-- Barcode (now editable, re-checked against the live catalogue) -->
-              <ion-item>
-                <ion-input
-                  v-model="selectedProduct.barcode"
-                  label-placement="floating"
-                  :label="$t('review.barcode')"
-                ></ion-input>
-                <ion-button
-                  slot="end"
-                  fill="clear"
-                  size="small"
-                  :disabled="barcodeChecking || similarChecking"
-                  @click="runProductChecks"
-                >
-                  <ion-spinner v-if="barcodeChecking || similarChecking" name="dots" style="width: 20px;" />
-                  <template v-else>Re-check</template>
-                </ion-button>
-              </ion-item>
-
-              <div v-if="barcodeCheck" class="barcode-check ion-padding-horizontal">
-                <ion-text :color="barcodeCheckColor" style="font-size: 13px;">
-                  {{ barcodeCheck.message }}
-                </ion-text>
-                <ion-button
-                  v-if="barcodeCheck.match"
-                  fill="clear"
-                  size="small"
-                  style="margin-left: 4px; --padding-start: 4px; --padding-end: 4px;"
-                  @click="openDuplicate(barcodeCheck.match.id)"
-                >
-                  View
-                </ion-button>
-              </div>
-
-              <!-- Fuzzy near-duplicates: same product under a different barcode,
-                   or a mistyped digit. Advisory — these are judgement calls. -->
-              <div v-if="similarProducts.length" class="similar-box ion-margin-top">
-                <p class="similar-title">
-                  <ion-icon :icon="closeCircle" />
-                  Possible duplicate{{ similarProducts.length > 1 ? 's' : '' }} — check before publishing
-                </p>
-                <div
-                  v-for="match in similarProducts"
-                  :key="match.id"
-                  class="similar-row"
-                >
-                  <div class="similar-info">
-                    <span class="similar-name">{{ match.name }}</span>
-                    <span class="similar-meta">
-                      {{ match.barcode }} · {{ match.approved ? match.status : 'pending' }} · {{ similarReason(match) }}
-                    </span>
-                  </div>
-                  <ion-button fill="clear" size="small" @click="openSimilar(match)">View</ion-button>
-                  <ion-button fill="clear" size="small" color="carrot" @click="mergeIntoSimilar(match)">Merge</ion-button>
+              <!-- Product Details — barcode, name, status and category all in
+                   one card right after the uploader info, so reviewing
+                   doesn't take a long scroll through separate boxes. -->
+              <div class="review-card">
+                <!-- Barcode (now editable, re-checked against the live catalogue) -->
+                <div class="pill-row">
+                  <ion-input
+                    v-model="selectedProduct.barcode"
+                    fill="outline"
+                    label-placement="stacked"
+                    :label="$t('review.barcode')"
+                    class="pill-input"
+                  >
+                    <ion-icon
+                      v-if="barcodeCheck && !barcodeChecking"
+                      slot="end"
+                      :icon="barcodeCheckIcon"
+                      :color="barcodeCheckColor"
+                      class="barcode-check-icon"
+                      :title="barcodeCheck.message"
+                      @click="showBarcodeCheckInfo"
+                    />
+                  </ion-input>
+                  <ion-button
+                    fill="clear"
+                    size="small"
+                    title="Re-check"
+                    :disabled="barcodeChecking || similarChecking"
+                    @click="runProductChecks"
+                  >
+                    <ion-spinner v-if="barcodeChecking || similarChecking" name="dots" style="width: 20px;" />
+                    <ion-icon v-else slot="icon-only" :icon="refreshOutline" />
+                  </ion-button>
                 </div>
-              </div>
 
-              <!-- Product Name -->
-              <ion-item>
+                <!-- Fuzzy near-duplicates: same product under a different barcode,
+                     or a mistyped digit. Advisory — these are judgement calls.
+                     Opens in its own modal so there's room to actually compare. -->
+                <button
+                  v-if="similarProducts.length"
+                  type="button"
+                  class="duplicates-banner ion-margin-top"
+                  @click="showDuplicatesModal = true"
+                >
+                  <div class="duplicates-banner-header">
+                    <ion-icon :icon="closeCircle" />
+                    <span>{{ similarProducts.length }} possible duplicate{{ similarProducts.length > 1 ? 's' : '' }} — tap to review</span>
+                    <ion-icon :icon="chevronForwardOutline" class="duplicates-banner-chevron" />
+                  </div>
+                  <div class="duplicates-banner-thumbs">
+                    <div v-for="match in similarProducts.slice(0, 3)" :key="match.id" class="duplicates-banner-thumb">
+                      <img :src="match.photo_front_url || 'https://placehold.co/64x64?text=%20'" :alt="match.name" />
+                      <span>{{ match.name }}</span>
+                    </div>
+                    <div v-if="similarProducts.length > 3" class="duplicates-banner-more">
+                      +{{ similarProducts.length - 3 }}
+                    </div>
+                  </div>
+                </button>
+
+                <!-- Product Name -->
                 <ion-input
                   v-model="selectedProduct.name"
-                  label-placement="floating"
+                  fill="outline"
+                  label-placement="stacked"
                   :label="$t('review.name')"
+                  class="pill-input"
                 ></ion-input>
-              </ion-item>
+                <button type="button" class="fix-case-under" title="Title-case the product name" @click="fixNameCasing">
+                  <ion-icon :icon="sparklesOutline" />
+                  Fix capitalization
+                </button>
 
-              <!-- Status -->
-              <ion-item>
-                <ion-select v-model="selectedProduct.status" interface="popover" :label="$t('review.status')" label-placement="floating">
+                <!-- Status -->
+                <ion-select
+                  v-model="selectedProduct.status"
+                  interface="popover"
+                  fill="outline"
+                  label-placement="stacked"
+                  :label="$t('review.status')"
+                  class="pill-input"
+                >
                   <ion-select-option value="Halal">{{ $t('review.statusHalal') }}</ion-select-option>
                   <ion-select-option value="Muslim-friendly">{{ $t('review.statusMuslimFriendly') }}</ion-select-option>
                   <ion-select-option value="Syubhah">{{ $t('review.statusSyubhah') }}</ion-select-option>
                   <ion-select-option value="Haram">{{ $t('review.statusHaram') }}</ion-select-option>
                 </ion-select>
-              </ion-item>
 
-              <!-- Category -->
-              <ion-item lines="none" button @click="categoryModalOpen = true">
-                <ion-label>
-                  <h3 style="font-size: 13px; color: var(--ion-color-medium); margin-bottom: 4px;">
-                    {{ $t('review.category') }} <ion-text color="danger">*</ion-text>
-                  </h3>
-                  <p style="font-size: 15px; color: var(--ion-text-color); margin-top: 4px;">
-                    {{ selectedCategoryName || 'Select a Category...' }}
-                  </p>
-                </ion-label>
-              </ion-item>
+                <!-- Category -->
+                <button type="button" class="pill-input pill-category-btn" @click="categoryModalOpen = true">
+                  <span class="pill-category-label">{{ $t('review.category') }} <ion-text color="danger">*</ion-text></span>
+                  <span class="pill-category-value">{{ selectedCategoryName || 'Select a Category...' }}</span>
+                </button>
 
-              <!-- Ingredients -->
-              <ion-item>
+                <!-- Ingredients — kept in the same card as Category so there's
+                     no gap between the two closely-related fields. -->
                 <ion-textarea
                   v-model="selectedProduct.ingredients"
-                  label-placement="floating"
+                  fill="outline"
+                  label-placement="stacked"
                   :label="$t('review.ingredients')"
                   auto-grow
+                  class="pill-input pill-textarea"
                 ></ion-textarea>
-              </ion-item>
-              
-              <!-- Ingredients Highlights (Visual aid only) -->
-              <div class="ion-margin-top ion-padding-horizontal">
-                <ul style="margin:0; padding-left:1.2rem; font-size: 14px; opacity: 0.8">
-                  <li v-for="(ing, idx) in visibleIngredients"
-                      :key="idx"
-                      v-html="ing.html">
-                  </li>
-                </ul>
-                <div v-if="highlightedIngredients.length > maxVisible" class="ion-margin-top">
-                  <ion-button fill="clear" size="small" @click="showAllIngredients = !showAllIngredients">
-                    {{ !showAllIngredients ? $t('review.viewMore') : $t('review.viewLess') }}
-                  </ion-button>
+                <button type="button" class="fix-case-under" title="Title-case each ingredient" @click="fixIngredientsCasing">
+                  <ion-icon :icon="sparklesOutline" />
+                  Fix capitalization
+                </button>
+
+                <!-- Ingredients Highlights (Visual aid only) — haram (red) first,
+                     then syubhah (yellow), then muslim-friendly (blue). -->
+                <div class="ion-margin-top ion-padding-horizontal">
+                  <ul class="ingredient-highlight-list">
+                    <li v-for="(ing, idx) in visibleIngredients"
+                        :key="idx"
+                        v-html="ing.html">
+                    </li>
+                  </ul>
+                  <div v-if="highlightedIngredients.length > maxVisible" class="ion-margin-top">
+                    <ion-button fill="clear" size="small" @click="showAllIngredients = !showAllIngredients">
+                      {{ !showAllIngredients ? $t('review.viewMore') : $t('review.viewLess') }}
+                    </ion-button>
+                  </div>
                 </div>
               </div>
 
-              <!-- Stores Selection -->
-              <ion-item lines="none" class="ion-margin-top">
-                <ion-label position="stacked">{{ $t('addProduct.stores') }}</ion-label>
-                <StoreLogoBar
-                    :stores="sortedStores"
-                    mode="select"
-                    v-model:modelValue="selectedProduct.store_ids"
-                />
-              </ion-item>
+              <!-- Stores + Description -->
+              <div class="review-card">
+                <ion-item lines="none" class="store-picker-item">
+                  <StoreLogoBar
+                      :stores="sortedStores"
+                      mode="select"
+                      v-model:modelValue="selectedProduct.store_ids"
+                  />
+                </ion-item>
 
-              <!-- Description -->
-              <ion-item>
+                <!-- Description -->
                 <ion-textarea
                   v-model="selectedProduct.description"
-                  label-placement="floating"
+                  fill="outline"
+                  label-placement="stacked"
                   :label="$t('review.description')"
                   auto-grow
+                  class="pill-input pill-textarea"
                 ></ion-textarea>
-              </ion-item>
 
-              <!-- Tags Section -->
-              <ion-item>
+                <!-- Quick Insert Buttons -->
+                <div class="quick-scroll-container ion-padding-horizontal ion-padding-bottom">
+                  <ion-button size="small" fill="outline" color="success" @click="applyQuickDescription(quickDescriptions.halal)" class="quick-btn">Halal by</ion-button>
+                  <ion-button size="small" fill="outline" color="primary" @click="applyQuickDescription(quickDescriptions.muslimFriendly)" class="quick-btn">Friendly OK</ion-button>
+                  <ion-button size="small" fill="outline" color="warning" @click="applyQuickDescription(quickDescriptions.syubhah)" class="quick-btn">Syubhah found</ion-button>
+                  <ion-button size="small" fill="outline" color="danger" @click="applyQuickDescription(quickDescriptions.haram)" class="quick-btn">Haram found</ion-button>
+                </div>
+              </div>
+
+              <!-- Tags — Enter (or a trailing comma) adds the tag, no
+                   separate Add button needed. -->
+              <div class="review-card">
                 <ion-input
                     v-model="tagInput"
+                    fill="outline"
                     :label="$t('addPlace.addTagLabel', 'Add a tag')"
-                    label-placement="floating"
+                    label-placement="stacked"
                     :placeholder="$t('addPlace.tagPlaceholder', 'e.g. Snack, Spicy')"
+                    class="pill-input"
                     @ionInput="handleTagInput"
                     @keyup.enter="addTag"
                 />
-                <ion-button slot="end" fill="clear" @click="addTag" style="margin-top: 14px;">
-                  {{ $t('common.add', 'Add') }}
-                </ion-button>
-              </ion-item>
-              <div v-if="selectedProduct.tags && selectedProduct.tags.length > 0" class="tag-chips ion-padding-horizontal ion-padding-bottom" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px;">
-                <ion-chip v-for="tag in selectedProduct.tags" :key="tag" color="primary" outline class="tag-chip" style="margin: 0;">
-                  <ion-label>{{ tag }}</ion-label>
-                  <ion-icon :icon="closeCircle" @click="removeTag(tag)" />
-                </ion-chip>
-              </div>
-
-              <!-- Quick Insert Buttons -->
-              <div class="quick-scroll-container ion-padding-horizontal ion-padding-bottom">
-                <ion-button size="small" fill="outline" color="success" @click="applyQuickDescription(quickDescriptions.halal)" class="quick-btn">Halal by</ion-button>
-                <ion-button size="small" fill="outline" color="primary" @click="applyQuickDescription(quickDescriptions.muslimFriendly)" class="quick-btn">Friendly OK</ion-button>
-                <ion-button size="small" fill="outline" color="warning" @click="applyQuickDescription(quickDescriptions.syubhah)" class="quick-btn">Syubhah found</ion-button>
-                <ion-button size="small" fill="outline" color="danger" @click="applyQuickDescription(quickDescriptions.haram)" class="quick-btn">Haram found</ion-button>
+                <div v-if="selectedProduct.tags && selectedProduct.tags.length > 0" class="tag-chips ion-padding-horizontal ion-padding-bottom" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px;">
+                  <ion-chip v-for="tag in selectedProduct.tags" :key="tag" color="primary" outline class="tag-chip" style="margin: 0;">
+                    <ion-label>{{ tag }}</ion-label>
+                    <ion-icon :icon="closeCircle" @click="removeTag(tag)" />
+                  </ion-chip>
+                </div>
               </div>
 
               <!-- Images Preview -->
-              <div class="ion-margin-top ion-padding-horizontal">
-                <ion-label class="ion-padding-bottom">
-                  <strong>{{ $t('review.images') }}</strong>
-                </ion-label>
+              <div class="section-heading">
+                <div class="section-heading-title">
+                  <ion-icon :icon="imagesOutline" />
+                  <span>{{ $t('review.images') }}</span>
+                </div>
+              </div>
+              <div class="review-card ion-padding-horizontal ion-padding-bottom">
                 <div class="review-image-grid">
                   <!-- Front Image -->
                   <div class="img-preview-container">
@@ -507,6 +533,109 @@
           </ion-content>
         </ion-modal>
 
+        <!-- 🔍 Possible Duplicates Modal — a full window rather than a bottom
+             sheet, so there's no partial/dragged-down state cutting off the
+             comparison. -->
+        <ion-modal
+          :is-open="showDuplicatesModal"
+          @didDismiss="showDuplicatesModal = false"
+        >
+          <ion-header>
+            <app-header
+                title="Possible Duplicates"
+                icon="none"
+                :showBack="true"
+                :useRouterBack="false"
+                :showProfile="false"
+                :showNotifications="false"
+                @back="showDuplicatesModal = false"
+            />
+          </ion-header>
+
+          <ion-content class="ion-padding">
+            <div
+              v-for="match in similarProducts"
+              :key="match.id"
+              class="duplicate-card"
+            >
+              <div class="duplicate-compare-row">
+                <!-- This submission -->
+                <div class="duplicate-compare-col">
+                  <img
+                    class="duplicate-compare-thumb"
+                    :src="frontPreview || selectedProduct?.photo_front_url || 'https://placehold.co/200x200?text=No+Image'"
+                    :alt="selectedProduct?.name"
+                    @click="openFullscreenImage(frontPreview || selectedProduct?.photo_front_url)"
+                  />
+                  <span class="duplicate-compare-tag">This submission</span>
+                  <ion-badge :color="statusColor(selectedProduct?.status)" class="duplicate-status-badge">{{ selectedProduct?.status }}</ion-badge>
+                  <p class="duplicate-compare-name">{{ selectedProduct?.name }}</p>
+                  <p
+                    v-if="canDiffBarcode(match)"
+                    class="duplicate-compare-meta"
+                    v-html="diffBarcodeHtml(selectedProduct?.barcode || '', match.barcode)"
+                  ></p>
+                  <p v-else class="duplicate-compare-meta">{{ selectedProduct?.barcode }}</p>
+                </div>
+
+                <ion-icon :icon="swapHorizontalOutline" class="duplicate-compare-vs" />
+
+                <!-- Candidate match -->
+                <div class="duplicate-compare-col">
+                  <img
+                    class="duplicate-compare-thumb"
+                    :src="match.photo_front_url || 'https://placehold.co/200x200?text=No+Image'"
+                    :alt="match.name"
+                    @click="openFullscreenImage(match.photo_front_url)"
+                  />
+                  <span class="duplicate-compare-tag">{{ match.approved ? 'Published' : 'Pending' }}</span>
+                  <ion-badge :color="statusColor(match.status)" class="duplicate-status-badge">{{ match.status }}</ion-badge>
+                  <p class="duplicate-compare-name">{{ match.name }}</p>
+                  <p
+                    v-if="canDiffBarcode(match)"
+                    class="duplicate-compare-meta"
+                    v-html="diffBarcodeHtml(match.barcode, selectedProduct?.barcode || '')"
+                  ></p>
+                  <p v-else class="duplicate-compare-meta">{{ match.barcode }}</p>
+                </div>
+              </div>
+
+              <p class="duplicate-reason">
+                <ion-icon :icon="closeCircle" />
+                {{ similarReason(match) }}
+              </p>
+
+              <div class="duplicate-actions">
+                <ion-button fill="outline" size="small" @click="openSimilar(match); showDuplicatesModal = false">
+                  <ion-icon slot="start" :icon="eyeOutline" />
+                  View
+                </ion-button>
+                <ion-button fill="solid" color="carrot" size="small" @click="mergeIntoSimilar(match); showDuplicatesModal = false">
+                  <ion-icon slot="start" :icon="gitMergeOutline" />
+                  Merge
+                </ion-button>
+              </div>
+            </div>
+          </ion-content>
+        </ion-modal>
+
+        <!-- 🔎 Fullscreen viewer for a single duplicate-comparison photo -->
+        <ion-modal :is-open="!!fullscreenImageUrl" @didDismiss="closeFullscreenImage">
+          <ion-content fullscreen style="--background: black">
+            <ion-button
+                fill="solid"
+                color="carrot"
+                style="position: absolute; top: calc(env(safe-area-inset-top, 0px) + 16px); right: 16px; z-index: 9999;"
+                @click="closeFullscreenImage"
+            >
+              ✕
+            </ion-button>
+            <div class="fullscreen-single-image">
+              <img v-if="fullscreenImageUrl" :src="fullscreenImageUrl" />
+            </div>
+          </ion-content>
+        </ion-modal>
+
       </ion-modal>
     </ion-content>
   </ion-page>
@@ -528,7 +657,6 @@ import { ref, onMounted, computed, reactive, onUnmounted, watch } from 'vue'
 import { supabase } from '@/plugins/supabaseClient'
 import {
   checkmarkOutline,
-  closeOutline,
   closeCircle,
   listOutline,
   trashOutline,
@@ -537,10 +665,18 @@ import {
   cloudUploadOutline,
   timeOutline,
   checkmarkCircle,
+  helpCircleOutline,
   swapVerticalOutline,
   syncOutline,
   colorWandOutline,
-  refreshOutline
+  refreshOutline,
+  sparklesOutline,
+  imagesOutline,
+  personOutline,
+  eyeOutline,
+  gitMergeOutline,
+  chevronForwardOutline,
+  swapHorizontalOutline
 } from 'ionicons/icons'
 import AppHeader from '@/components/AppHeader.vue'
 import StoreLogoBar from '@/components/StoreLogoBar.vue'
@@ -555,6 +691,7 @@ import { useImageResizer } from "@/composables/useImageResizer";
 import { useBackgroundRemoval } from "@/composables/useBackgroundRemoval";
 import { highlightIngredients } from "@/utils/useIngredientHighlighter";
 import { isValidBarcodeFormat, normalizeBarcode } from "@/utils/barcodeValidator";
+import { computeImageHash, computeImageHashFromUrl } from "@/utils/useImageHash";
 import { useNotifier } from "@/composables/useNotifier";
 
 import { useI18n } from 'vue-i18n'
@@ -684,16 +821,60 @@ interface SimilarProduct {
   name_similarity: number
   barcode_distance: number | null
   match_reason: 'name' | 'barcode' | 'both'
+  image_similarity: number | null
+  photo_front_url?: string | null
 }
 
 const similarChecking = ref(false)
 const similarProducts = ref<SimilarProduct[]>([])
 let similarToken = 0
 
+// A near-miss image match (dHash Hamming distance) is a strong "this looks
+// like the same product" signal independent of name/barcode.
+async function getCurrentFrontImageHash(): Promise<string | null> {
+  // A newly-picked local file has no server-side hash yet — only the client
+  // can compute one for it.
+  if (frontFile.value) {
+    try {
+      return await computeImageHash(frontFile.value)
+    } catch (err) {
+      console.warn('⚠️ Failed to hash front image file:', err)
+      return null
+    }
+  }
+
+  // Prefer the hash already stored for this exact row over recomputing it
+  // client-side. Recomputing from the URL would run the browser's canvas
+  // resize, which is a different (and not bit-identical) resampling
+  // algorithm than e.g. the sharp-based backfill script used to populate
+  // existing rows — so a row's own freshly-recomputed hash can end up not
+  // matching its own stored value, silently breaking duplicate detection
+  // for anything that hashed through a different code path. Cast to text in
+  // the query itself: PostgREST returns bigint as a JSON number, which
+  // silently loses precision outside ±2^53.
+  const productId = selectedProduct.value?.id
+  if (productId) {
+    const { data } = await supabase
+      .from('products')
+      .select('image_hash_text:image_hash::text')
+      .eq('id', productId)
+      .maybeSingle()
+    if (data?.image_hash_text) return data.image_hash_text as string
+  }
+
+  // Legacy row with no stored hash yet (predates the image_hash column and
+  // wasn't caught by the backfill) — fall back to a fresh client-side hash.
+  const url = selectedProduct.value?.photo_front_url
+  if (!url) return null
+  return computeImageHashFromUrl(url)
+}
+
 // The exact check above can only catch a barcode that is literally taken, and
 // products.barcode is UNIQUE so that can never arrive from a contributor. The
 // duplicates that actually reach review are near-misses: same product under a
-// different barcode, or a mistyped digit. find_similar_products scores both.
+// different barcode, or a mistyped digit — plus, via image_hash, the same
+// photo resubmitted under an unrelated name and barcode entirely.
+// find_similar_products scores all three.
 async function checkSimilar() {
   const product = selectedProduct.value
   if (!product) return
@@ -702,10 +883,14 @@ async function checkSimilar() {
   similarChecking.value = true
 
   try {
+    const imageHash = await getCurrentFrontImageHash()
+    if (token !== similarToken) return
+
     const { data, error } = await supabase.rpc('find_similar_products', {
       p_product_id: product.id,
       p_name: product.name ?? '',
-      p_barcode: normalizeBarcode(String(product.barcode ?? ''))
+      p_barcode: normalizeBarcode(String(product.barcode ?? '')),
+      p_image_hash: imageHash
     })
 
     if (token !== similarToken) return
@@ -717,7 +902,22 @@ async function checkSimilar() {
       return
     }
 
-    similarProducts.value = (data ?? []) as SimilarProduct[]
+    const matches = (data ?? []) as SimilarProduct[]
+    similarProducts.value = matches
+
+    // The RPC returns only matching/scoring columns — fetch photos separately
+    // so admins can eyeball a duplicate instead of chasing the barcode.
+    if (matches.length) {
+      const { data: photos } = await supabase
+        .from('products')
+        .select('id, photo_front_url')
+        .in('id', matches.map(m => m.id))
+
+      if (token !== similarToken) return
+
+      const photoMap = Object.fromEntries((photos ?? []).map(p => [p.id, p.photo_front_url]))
+      similarProducts.value = matches.map(m => ({ ...m, photo_front_url: photoMap[m.id] || null }))
+    }
   } finally {
     if (token === similarToken) similarChecking.value = false
   }
@@ -729,10 +929,45 @@ function similarReason(match: SimilarProduct): string {
     match.barcode_distance != null && match.barcode_distance <= 2
       ? `barcode ${match.barcode_distance} digit${match.barcode_distance === 1 ? '' : 's'} off`
       : null
+  // Matches the RPC's own p_image_threshold default (0.85) — below that the
+  // RPC wouldn't have surfaced this row on image grounds at all.
+  const image =
+    match.image_similarity != null && match.image_similarity >= 0.85
+      ? `${Math.round(match.image_similarity * 100)}% photo match`
+      : null
 
-  if (match.match_reason === 'both' && barcode) return `${name}, ${barcode}`
-  if (match.match_reason === 'barcode' && barcode) return barcode
-  return name
+  let text: string
+  if (match.match_reason === 'both' && barcode) text = `${name}, ${barcode}`
+  else if (match.match_reason === 'barcode' && barcode) text = barcode
+  else text = name
+
+  return image ? `${image}, ${text}` : text
+}
+
+// Only worth diffing character-by-character when the RPC flagged this as a
+// near-miss barcode (distance 1-2) on a same-length pair — a genuine name-only
+// match or a length mismatch has no meaningful per-digit alignment to show.
+function canDiffBarcode(match: SimilarProduct): boolean {
+  const a = selectedProduct.value?.barcode
+  const b = match.barcode
+  return (
+    !!a && !!b &&
+    a.length === b.length &&
+    match.barcode_distance != null &&
+    match.barcode_distance <= 2
+  )
+}
+
+// Highlights the characters in `barcode` that differ from `other` at the same
+// position, so the admin can see exactly which digits were mistyped/misscanned
+// instead of just reading "2 digits off".
+function diffBarcodeHtml(barcode: string, other: string): string {
+  let html = ''
+  for (let i = 0; i < barcode.length; i++) {
+    const ch = barcode[i]
+    html += ch === other[i] ? ch : `<span class="barcode-diff-char">${ch}</span>`
+  }
+  return html
 }
 
 async function openSimilar(match: SimilarProduct) {
@@ -852,6 +1087,33 @@ const barcodeCheckColor = computed(() => {
   }
 })
 
+const barcodeCheckIcon = computed(() => {
+  switch (barcodeCheck.value?.state) {
+    case 'ok': return checkmarkCircle
+    case 'duplicate': return closeCircle
+    case 'invalid': return closeCircle
+    default: return helpCircleOutline
+  }
+})
+
+// The barcode check result used to sit as a full text line under the field;
+// collapsed to a single status icon so it doesn't add a row, with the actual
+// message surfaced on demand instead.
+async function showBarcodeCheckInfo() {
+  if (!barcodeCheck.value) return
+  const buttons: any[] = [{ text: 'OK', role: 'cancel' }]
+  const match = barcodeCheck.value.match
+  if (match) {
+    buttons.unshift({ text: 'View', handler: () => openDuplicate(match.id) })
+  }
+  const alert = await alertController.create({
+    header: 'Barcode Check',
+    message: barcodeCheck.value.message,
+    buttons
+  })
+  await alert.present()
+}
+
 // Auto re-check as the admin edits the barcode or name (debounced), on top of
 // the automatic check when a submission is opened and the manual button.
 watch(
@@ -908,6 +1170,18 @@ const publishing = ref(false)
 
 const categoryModalOpen = ref(false)
 const categoryQuery = ref('')
+const showDuplicatesModal = ref(false)
+
+const fullscreenImageUrl = ref<string | null>(null)
+
+function openFullscreenImage(url?: string | null) {
+  if (!url) return
+  fullscreenImageUrl.value = url
+}
+
+function closeFullscreenImage() {
+  fullscreenImageUrl.value = null
+}
 
 const filteredCategories = computed(() => {
   const q = categoryQuery.value.trim().toLowerCase()
@@ -940,6 +1214,28 @@ function applyQuickDescription(text: string) {
   if (selectedProduct.value) {
     selectedProduct.value.description = text
   }
+}
+
+// Contributor submissions often arrive as ALL CAPS (scanned off packaging) or
+// all lowercase. Title-cases each word while leaving acronyms like "MSG" or
+// "E621" alone, so admins don't have to retype them by hand.
+function toTitleCase(text: string): string {
+  return text.replace(/[A-Za-zÀ-ÖØ-öø-ÿ0-9]+(?:['’][A-Za-z]+)?/g, (word) => {
+    if (word.length > 1 && word === word.toUpperCase() && /[A-Z]/.test(word)) {
+      return word
+    }
+    return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+  })
+}
+
+function fixNameCasing() {
+  if (!selectedProduct.value?.name) return
+  selectedProduct.value.name = toTitleCase(selectedProduct.value.name)
+}
+
+function fixIngredientsCasing() {
+  if (!selectedProduct.value?.ingredients) return
+  selectedProduct.value.ingredients = toTitleCase(selectedProduct.value.ingredients)
 }
 const activeImageIndex = ref(0)
 const ingredientDictionary = ref<Record<string, string>>({})
@@ -1034,9 +1330,27 @@ const highlightedIngredients = computed<IngredientEntry[]>(() => {
     selectedProduct.value.status
   )
 
-  // ✅ sort so highlighted ones appear first
-  return [...processed].sort((a: any, b: any) => Number(b.highlighted) - Number(a.highlighted))
+  // Sort by severity so the ingredients most likely to need a second look are
+  // seen first: haram (red) at top, then syubhah (yellow), then muslim-friendly
+  // (blue); unhighlighted ingredients sink to the bottom.
+  return [...processed].sort(
+    (a: IngredientEntry, b: IngredientEntry) => ingredientSeverityRank(a) - ingredientSeverityRank(b)
+  )
 })
+
+const INGREDIENT_COLOR_RANK: Record<string, number> = {
+  '--ion-color-danger': 0,
+  '--ion-color-warning': 1,
+  '--ion-color-primary': 2,
+  '--ion-color-success': 3
+}
+
+function ingredientSeverityRank(entry: IngredientEntry): number {
+  if (!entry.highlighted) return 4
+  const match = entry.html.match(/var\((--ion-color-[^)]+)\)/)
+  const color = match?.[1]
+  return color && color in INGREDIENT_COLOR_RANK ? INGREDIENT_COLOR_RANK[color] : 4
+}
 
 const visibleIngredients = computed<IngredientEntry[]>(() => {
   return showAllIngredients.value
@@ -1069,6 +1383,18 @@ function colorToChipClass(color: string): string {
     case '--ion-color-warning': return 'chip-warning'
     case '--ion-color-danger': return 'chip-danger'
     default: return 'chip-medium'
+  }
+}
+
+// Same status → color mapping used by the ingredient highlighter, so the
+// review list badge matches what the admin sees inside the review modal.
+function statusColor(status: string | null | undefined): string {
+  switch (status) {
+    case 'Halal': return 'success'
+    case 'Muslim-friendly': return 'primary'
+    case 'Syubhah': return 'warning'
+    case 'Haram': return 'danger'
+    default: return 'medium'
   }
 }
 
@@ -1427,6 +1753,8 @@ function closeModal() {
   originalBackFile.value = null
   originalFrontPreview.value = null
   originalBackPreview.value = null
+  showDuplicatesModal.value = false
+  fullscreenImageUrl.value = null
   showModal.value = false
 }
 
@@ -1450,6 +1778,12 @@ async function approveProduct(product: any) {
   let frontUrl = product.photo_front_url
   let backUrl = product.photo_back_url
   const barcode = product.barcode
+
+  // Re-hash the front photo at publish time — it may have been replaced,
+  // rotated, or background-cleaned since the submission's own hash (if any)
+  // was stored, and this published row's hash is what future submissions
+  // get compared against.
+  const imageHash = await getCurrentFrontImageHash()
 
   // 1. Upload images if changed
   if (frontFile.value) {
@@ -1490,10 +1824,14 @@ async function approveProduct(product: any) {
         description: product.description,
         photo_front_url: frontUrl,
         photo_back_url: backUrl,
+        image_hash: imageHash,
         tags: product.tags || [],
         approved: true,
         approved_by: user.id,
-        approved_at: new Date().toISOString(),
+        // Only stamp approved_at on first publish — re-approving an edit to an
+        // already-published (e.g. archived) product shouldn't make it look
+        // like a brand new product in the "What's new" notification feed.
+        ...(product.approved ? {} : { approved_at: new Date().toISOString() }),
         is_rejected: false,
         rejection_reason: null
       })
@@ -1743,34 +2081,30 @@ onMounted( async () => {
 .header-main-actions {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
+  gap: 10px;
   padding: 8px 16px;
   width: 100%;
 }
 
-.classic-action-btn {
-  height: 50px;
+.view-segment {
+  flex: 1;
+  min-width: 0;
+}
+
+.sort-icon-btn {
+  height: 38px;
+  width: 38px;
   margin: 0;
+  flex-shrink: 0;
   --color: var(--ion-color-dark);
-  position: relative;
-  font-weight: 700;
-  text-transform: none;
+  --background: var(--ion-color-step-100);
+  --border-radius: 10px;
+  --padding-start: 0;
+  --padding-end: 0;
 }
 
-.classic-action-btn ion-icon {
-  font-size: 22px;
-}
-
-.sort-btn-wrapper {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.btn-label {
-  margin-left: 4px;
-  font-size: 13px;
+.sort-icon-btn ion-icon {
+  font-size: 19px;
 }
 
 .search-container {
@@ -1779,14 +2113,91 @@ onMounted( async () => {
 
 
 
-.width-190 {
-  --width: 190px;
+.sort-popover {
+  --width: 200px;
+}
+
+.sort-popover-list ion-item {
+  --min-height: 44px;
+}
+
+.sort-popover-list ion-label {
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Review queue list — the photo is what an admin actually judges a submission
+   by, so it's sized up while the (often messy, OCR-derived) name and barcode
+   are muted and clamped instead of dominating the row. */
+.product-row {
+  --min-height: 76px;
+  --padding-top: 10px;
+  --padding-bottom: 10px;
+}
+
+.product-thumb {
+  width: 64px;
+  height: 64px;
+  --border-radius: 10px;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.product-title-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.product-name {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.35;
+  color: var(--ion-color-medium);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.product-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 3px;
+}
+
+.product-barcode {
+  margin: 0;
+  font-size: 11px;
+  opacity: 0.55;
+}
+
+.status-badge {
+  font-size: 9.5px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.rejected-badge {
+  font-size: 10px;
+  padding: 3px 6px;
+  border-radius: 4px;
+  flex-shrink: 0;
 }
 
 /* Modal and form styles */
 .review-image-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  /* minmax(0, 1fr), not 1fr — a plain 1fr track won't shrink below the
+     intrinsic width of its content (the icon-button row below), which is
+     what was pushing the Back Image column off the right edge. */
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 12px;
   margin-top: 8px;
 }
@@ -1795,16 +2206,25 @@ onMounted( async () => {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  min-width: 0;
 }
 
 .img-controls {
   display: flex;
+  flex-wrap: wrap;
   justify-content: center;
-  gap: 8px;
+  gap: 4px;
+  padding: 4px;
   background: var(--ion-color-step-100);
   border-radius: 0 0 8px 8px;
   border: 1px solid var(--ion-color-step-150);
   border-top: none;
+}
+
+.img-controls ion-button {
+  --padding-start: 4px;
+  --padding-end: 4px;
+  margin: 0;
 }
 
 .img-preview-box {
@@ -1858,48 +2278,379 @@ onMounted( async () => {
   border-radius: 12px;
 }
 
-.similar-box {
+/* Compact banner in the review form — opens the full duplicates modal rather
+   than trying to cram photos + names + actions into the narrow form width.
+   A row of small photo previews gives a first glance before tapping in. */
+.duplicates-banner {
+  display: block;
+  width: 100%;
+  margin-top: 8px;
+  padding: 10px 12px;
   border: 1px solid var(--ion-color-warning);
   background: rgba(var(--ion-color-warning-rgb), 0.08);
   border-radius: 12px;
-  padding: 10px 12px;
-  margin: 8px 16px 0;
+  color: var(--ion-color-warning-shade);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
 }
 
-.similar-title {
+.duplicates-banner-header {
   display: flex;
   align-items: center;
-  gap: 6px;
-  margin: 0 0 6px;
+  gap: 8px;
   font-size: 13px;
   font-weight: 700;
-  color: var(--ion-color-warning-shade);
 }
 
-.similar-row {
+.duplicates-banner-header span {
+  flex: 1 1 auto;
+}
+
+.duplicates-banner-chevron {
+  font-size: 16px;
+  opacity: 0.7;
+}
+
+.duplicates-banner-thumbs {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 10px;
+  overflow-x: auto;
 }
 
-.similar-info {
+.duplicates-banner-thumb {
   display: flex;
   flex-direction: column;
-  min-width: 0;
+  align-items: center;
+  gap: 4px;
+  width: 52px;
+  flex-shrink: 0;
 }
 
-.similar-name {
-  font-size: 13.5px;
-  font-weight: 600;
+.duplicates-banner-thumb img {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 8px;
+  background: var(--ion-color-step-100);
+}
+
+.duplicates-banner-thumb span {
+  width: 100%;
+  font-size: 9.5px;
+  font-weight: 500;
+  text-align: center;
+  color: var(--ion-text-color);
+  opacity: 0.75;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.similar-meta {
-  font-size: 11.5px;
+.duplicates-banner-more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  background: var(--ion-color-step-100);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ion-text-color);
   opacity: 0.75;
+}
+
+/* Duplicates modal — this submission and the candidate sit side by side with
+   their photos, so an admin can actually tell whether they're the same
+   product instead of just reading two names. */
+.duplicate-card {
+  padding: 16px 0;
+  border-bottom: 1px solid var(--ion-color-step-150);
+}
+
+.duplicate-card:last-child {
+  border-bottom: none;
+}
+
+.duplicate-compare-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.duplicate-compare-col {
+  flex: 1 1 0;
+  min-width: 0;
+  text-align: center;
+}
+
+.duplicate-compare-thumb {
+  width: 100%;
+  aspect-ratio: 1;
+  max-width: 140px;
+  object-fit: cover;
+  border-radius: 10px;
+  background: var(--ion-color-step-100);
+  border: 1px solid var(--ion-color-step-150);
+  cursor: pointer;
+}
+
+.duplicate-compare-vs {
+  font-size: 18px;
+  opacity: 0.5;
+  flex-shrink: 0;
+}
+
+.duplicate-compare-tag {
+  display: inline-block;
+  margin-top: 8px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--ion-color-medium);
+}
+
+.duplicate-status-badge {
+  display: block;
+  margin: 4px auto 0;
+  width: fit-content;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.duplicate-compare-name {
+  margin: 2px 0 0;
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.duplicate-compare-meta {
+  margin: 2px 0 0;
+  font-size: 11.5px;
+  color: var(--ion-color-medium);
+}
+
+.duplicate-compare-meta :deep(.barcode-diff-char) {
+  color: var(--ion-color-danger);
+  background: rgba(var(--ion-color-danger-rgb), 0.18);
+  border-radius: 2px;
+  font-weight: 800;
+  padding: 0 1px;
+}
+
+.duplicate-reason {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 10px 0 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ion-color-warning-shade);
+}
+
+.duplicate-actions {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+/* Section grouping for the review modal — visual structure only, no new
+   colors or workflow: each field group gets a small labeled heading with a
+   separator line above it, so admins can scan the form instead of reading it
+   top to bottom. */
+.section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 20px 16px 8px;
+  padding-top: 16px;
+  border-top: 1px solid var(--ion-color-step-150);
+}
+
+/* The very first heading in the modal already gets its spacing from
+   ion-content's own padding — the separator's extra margin/padding/border
+   on top of that just doubled up the gap under the header. */
+.section-heading-first {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
+.section-heading-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--ion-color-medium);
+}
+
+.section-heading-title ion-icon {
+  font-size: 15px;
+}
+
+.barcode-check-icon {
+  font-size: 20px;
+  margin: 0 4px;
+  cursor: pointer;
+  align-self: center;
+}
+
+.fix-case-under {
+  display: flex;
+  align-items: center;
+  align-self: flex-end;
+  gap: 4px;
+  margin-top: -6px;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ion-color-carrot, var(--ion-color-primary));
+  cursor: pointer;
+}
+
+.fix-case-under ion-icon {
+  font-size: 14px;
+}
+
+.review-card {
+  margin: 20px 16px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* A card immediately under a heading already gets its gap from the
+   heading's own margin — avoid stacking both. */
+.section-heading + .review-card {
+  margin-top: 0;
+}
+
+/* Rounded-rectangle form fields via fill="outline" + --border-radius.
+   Deliberately not shape="round": Ionic's own internal stylesheet has
+   :host(.input-fill-outline.input-shape-round) { --border-radius: 28px }
+   at higher specificity than a single custom class, so shape="round"
+   silently overrode our --border-radius and always rendered a near-pill
+   regardless of the value set here. */
+.pill-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pill-row-top {
+  align-items: flex-start;
+}
+
+.pill-input {
+  flex: 1;
+  min-width: 0;
+  --border-radius: 16px;
+  --border-color: var(--card-border, var(--ion-color-step-150));
+  --border-width: 1.5px;
+  --box-shadow: none;
+  --highlight-color-focused: var(--ion-color-carrot);
+  --padding-start: 16px;
+  --padding-end: 16px;
+  --color: var(--ion-text-color);
+  --placeholder-color: var(--ion-color-medium);
+  /* --background (not plain `background`) fills the actual shadow-DOM
+     outline part Ionic draws the border/radius on — using the host's own
+     `background` instead leaves that inner part transparent, so the host's
+     box (same color, but not perfectly clipped to the inner shape) shows
+     through at the edges as a soft halo/shadow. */
+  --background: var(--card-inner-bg, var(--ion-color-step-50));
+  border-radius: 16px;
+  box-shadow: none;
+}
+
+.pill-textarea {
+  --border-radius: 16px;
+  --box-shadow: none;
+  border-radius: 16px;
+  box-shadow: none;
+}
+
+.pill-category-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 2px;
+  width: 100%;
+  min-height: 54px;
+  padding: 8px 16px;
+  /* Without appearance: none, some WebViews render native button chrome
+     (a light/white face) on top of the authored background below. */
+  appearance: none;
+  -webkit-appearance: none;
+  border: 1.5px solid var(--card-border, var(--ion-color-step-150));
+  background: var(--card-inner-bg, var(--ion-color-step-50));
+  border-radius: 16px !important;
+  box-shadow: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.pill-category-btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(var(--ion-color-carrot-rgb), 0.15);
+}
+
+.pill-category-label {
+  font-size: 13px;
+  color: var(--ion-color-medium);
+}
+
+.pill-category-value {
+  font-size: 15px;
+  color: var(--ion-text-color);
+}
+
+/* ion-item defaults to a solid --background, which reads as a boxed panel
+   behind the store logos — strip it so the row blends into the card. */
+.store-picker-item {
+  --background: transparent;
+  --padding-start: 0;
+  --padding-end: 0;
+  --inner-padding-end: 0;
+}
+
+/* .store-logo-wrapper/.store-logo are unscoped globals (variables.css) shared
+   by every store picker in the app — overridden with :deep() so only this
+   review modal gets rounded-rectangle logos, not Add Product/filters/etc. */
+.store-picker-item :deep(.store-logo-wrapper),
+.store-picker-item :deep(.store-logo) {
+  border-radius: 12px;
+}
+
+.ingredient-highlight-list {
+  margin: 0;
+  padding-left: 1.2rem;
+  font-size: 14px;
+  opacity: 0.85;
+}
+
+.ingredient-highlight-list li {
+  margin-bottom: 2px;
 }
 
 ion-header {
@@ -1955,7 +2706,10 @@ ion-header {
 
 .review-image-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  /* minmax(0, 1fr), not 1fr — a plain 1fr track won't shrink below the
+     intrinsic width of its content (the icon-button row below), which is
+     what was pushing the Back Image column off the right edge. */
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 12px;
   margin-top: 8px;
 }
@@ -1964,16 +2718,25 @@ ion-header {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  min-width: 0;
 }
 
 .img-controls {
   display: flex;
+  flex-wrap: wrap;
   justify-content: center;
-  gap: 8px;
+  gap: 4px;
+  padding: 4px;
   background: var(--ion-color-step-100);
   border-radius: 0 0 8px 8px;
   border: 1px solid var(--ion-color-step-150);
   border-top: none;
+}
+
+.img-controls ion-button {
+  --padding-start: 4px;
+  --padding-end: 4px;
+  margin: 0;
 }
 
 .img-preview-box {
@@ -2012,6 +2775,20 @@ ion-header {
 .fullscreen-swiper img {
   width: 100%;
   height: auto;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.fullscreen-single-image {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fullscreen-single-image img {
+  max-width: 100%;
   max-height: 100%;
   object-fit: contain;
 }
