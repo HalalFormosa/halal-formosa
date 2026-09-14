@@ -12,10 +12,16 @@
         <div class="header-main-actions">
           <ion-segment v-model="viewMode" mode="ios" class="view-segment">
             <ion-segment-button value="pending">
-              <ion-label>Review</ion-label>
+              <div class="segment-label-row">
+                <ion-label>Review</ion-label>
+                <ion-badge v-if="pendingCount" class="segment-count-badge">{{ pendingCount }}</ion-badge>
+              </div>
             </ion-segment-button>
             <ion-segment-button value="archived">
-              <ion-label>Archive</ion-label>
+              <div class="segment-label-row">
+                <ion-label>Archive</ion-label>
+                <ion-badge v-if="archivedCount" class="segment-count-badge">{{ archivedCount }}</ion-badge>
+              </div>
             </ion-segment-button>
           </ion-segment>
 
@@ -1478,6 +1484,9 @@ const sortLabel = computed(() => {
   return sortBy.value === 'recent' ? t('admin.sortRecent') : t('admin.sortAlpha')
 })
 
+const pendingCount = computed(() => pendingProducts.value.filter(p => !p.is_archived).length)
+const archivedCount = computed(() => pendingProducts.value.filter(p => p.is_archived).length)
+
 const filteredProducts = computed(() => {
   let result = [...pendingProducts.value]
 
@@ -2089,6 +2098,23 @@ onMounted( async () => {
 .view-segment {
   flex: 1;
   min-width: 0;
+}
+
+.segment-label-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.segment-count-badge {
+  font-size: 11px;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 5px;
 }
 
 .sort-icon-btn {
