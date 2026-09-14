@@ -125,7 +125,8 @@
     "displayName": "フルネーム",
     "confirmPassword": "パスワードを認証する",
     "signUpSuccessTitle": "登録に成功しました",
-    "signUpSuccessMessage": "ログインする前にメールをチェックしてアカウントを確認してください。"
+    "signUpSuccessMessage": "ログインする前にメールをチェックしてアカウントを確認してください。",
+    "invalidCredentials": "そのメールアドレスまたはパスワードが正しくないようです。もう一度お試しいただくか、パスワードをリセットしてください。"
   },
   "updatePassword": {
     "subtitle": "アカウントを保護するため、強力なパスワードを入力してください。",

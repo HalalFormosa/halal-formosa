@@ -183,7 +183,8 @@
     "displayName": "Full Name",
     "confirmPassword": "Confirm Password",
     "signUpSuccessTitle": "Registration Successful",
-    "signUpSuccessMessage": "Please check your email to confirm your account before logging in."
+    "signUpSuccessMessage": "Please check your email to confirm your account before logging in.",
+    "invalidCredentials": "That email or password doesn't look right. Try again or reset your password."
   },
   "updatePassword": {
     "title": "Set New Password",

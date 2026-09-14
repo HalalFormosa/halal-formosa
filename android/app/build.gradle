@@ -12,7 +12,7 @@ android {
         applicationId = "com.rcreative.halalformosa"
         minSdkVersion = rootProject.ext.minSdkVersion
         targetSdkVersion = rootProject.ext.targetSdkVersion
-        versionCode = 132
+        versionCode = 133
         versionName = '1.9.1'
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {

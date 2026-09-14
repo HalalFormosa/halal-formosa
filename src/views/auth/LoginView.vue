@@ -186,7 +186,7 @@ document.documentElement.classList.toggle(
 )
 
 const { locale, t } = useI18n()
-const { loadScript, execute, isExecuting, isCaptchaEnabled } = useRecaptcha()
+const { loadScript, execute, isExecuting, isCaptchaEnabled, activeSiteKey } = useRecaptcha()
 const showDisclosure = isCaptchaEnabled
 const isDev = import.meta.env.DEV
 
@@ -221,15 +221,20 @@ async function login() {
       captchaLoading.value = true
       const captchaToken = await execute('login')
 
-      // Step 2: Verify captcha token with Edge Function
-      const { data: verifyData, error: verifyError } = await supabase.functions.invoke('verify-captcha', {
-        body: { token: captchaToken }
-      })
+      // execute() resolves 'disabled' when there's no platform-appropriate check
+      // to run (e.g. iOS, which has no native reCAPTCHA key yet) — skip verification
+      // rather than sending that sentinel to the backend as if it were a real token.
+      if (captchaToken !== 'disabled') {
+        // Step 2: Verify captcha token with Edge Function
+        const { data: verifyData, error: verifyError } = await supabase.functions.invoke('verify-captcha', {
+          body: { token: captchaToken, action: 'login', siteKey: activeSiteKey }
+        })
 
-      if (verifyError || !verifyData?.success) {
-        errorMsg.value = 'Verification failed. Please try again.'
-        captchaLoading.value = false
-        return
+        if (verifyError || !verifyData?.success) {
+          errorMsg.value = 'Verification failed. Please try again.'
+          captchaLoading.value = false
+          return
+        }
       }
     } catch (err) {
       errorMsg.value = 'Captcha verification failed. Please try again.'
@@ -250,7 +255,7 @@ async function login() {
   loading.value = false
 
   if (error) {
-    errorMsg.value = error.message
+    errorMsg.value = error.code === 'invalid_credentials' ? t('auth.invalidCredentials') : error.message
     ActivityLogService.log('auth_login_failed', { error_message: error.message, method: 'email' })
   } else {
     ActivityLogService.log('auth_login_success', { method: 'email' })
@@ -273,15 +278,20 @@ async function handleForgotPassword() {
       captchaLoading.value = true;
       const captchaToken = await execute('forgot_password');
 
-      // Step 2: Verify captcha token with Edge Function
-      const { data: verifyData, error: verifyError } = await supabase.functions.invoke('verify-captcha', {
-        body: { token: captchaToken }
-      });
+      // execute() resolves 'disabled' when there's no platform-appropriate check
+      // to run (e.g. iOS, which has no native reCAPTCHA key yet) — skip verification
+      // rather than sending that sentinel to the backend as if it were a real token.
+      if (captchaToken !== 'disabled') {
+        // Step 2: Verify captcha token with Edge Function
+        const { data: verifyData, error: verifyError } = await supabase.functions.invoke('verify-captcha', {
+          body: { token: captchaToken, action: 'forgot_password', siteKey: activeSiteKey }
+        });
 
-      if (verifyError || !verifyData?.success) {
-        errorMsg.value = 'Verification failed. Please try again.';
-        captchaLoading.value = false;
-        return;
+        if (verifyError || !verifyData?.success) {
+          errorMsg.value = 'Verification failed. Please try again.';
+          captchaLoading.value = false;
+          return;
+        }
       }
     } catch (err) {
       errorMsg.value = 'Captcha verification failed. Please try again.';

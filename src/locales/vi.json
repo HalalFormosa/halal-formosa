@@ -125,7 +125,8 @@
     "displayName": "Tên đầy đủ",
     "confirmPassword": "Xác nhận mật khẩu",
     "signUpSuccessTitle": "Đăng ký thành công",
-    "signUpSuccessMessage": "Vui lòng kiểm tra email để xác nhận tài khoản trước khi đăng nhập."
+    "signUpSuccessMessage": "Vui lòng kiểm tra email để xác nhận tài khoản trước khi đăng nhập.",
+    "invalidCredentials": "Email hoặc mật khẩu đó có vẻ không đúng. Hãy thử lại hoặc đặt lại mật khẩu của bạn."
   },
   "updatePassword": {
     "subtitle": "Vui lòng nhập mật khẩu mạnh để bảo mật tài khoản của bạn.",

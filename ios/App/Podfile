@@ -41,7 +41,7 @@ end
 
 target 'App' do
   capacitor_pods
-  # Add your Pods here
+  pod 'RecaptchaEnterprise', '18.9.1'
 end
 
 target 'OneSignalNotificationServiceExtension' do

@@ -175,7 +175,8 @@
     "displayName": "全名",
     "confirmPassword": "確認密碼",
     "signUpSuccessTitle": "註冊成功",
-    "signUpSuccessMessage": "請在登入前檢查您的電子郵件以確認您的帳戶。"
+    "signUpSuccessMessage": "請在登入前檢查您的電子郵件以確認您的帳戶。",
+    "invalidCredentials": "該電子郵件或密碼不正確。請重試或重設密碼。"
   },
   "updatePassword": {
     "title": "設定新密碼",

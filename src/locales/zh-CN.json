@@ -169,7 +169,8 @@
     "displayName": "姓名",
     "confirmPassword": "确认密码",
     "signUpSuccessTitle": "注册成功",
-    "signUpSuccessMessage": "登录前请检查您的电子邮件以确认您的帐户。"
+    "signUpSuccessMessage": "登录前请检查您的电子邮件以确认您的帐户。",
+    "invalidCredentials": "该电子邮件或密码不正确。请重试或重置密码。"
   },
   "updatePassword": {
     "title": "设置新密码",

@@ -156,6 +156,11 @@ PODS:
   - PurchasesHybridCommonUI (17.41.1):
     - PurchasesHybridCommon (= 17.41.1)
     - RevenueCatUI (= 5.59.2)
+  - RecaptchaEnterprise (18.9.1):
+    - RecaptchaEnterpriseSDK (= 18.9.1)
+    - RecaptchaInterop (~> 101.0.0)
+  - RecaptchaEnterpriseSDK (18.9.1)
+  - RecaptchaInterop (101.0.0)
   - RevenueCat (5.59.2)
   - RevenuecatPurchasesCapacitor (12.2.0):
     - Capacitor
@@ -193,6 +198,7 @@ DEPENDENCIES:
   - "CapgoCapacitorNavigationBar (from `../../node_modules/@capgo/capacitor-navigation-bar`)"
   - CordovaPluginsStatic (from `../capacitor-cordova-ios-plugins`)
   - OneSignalXCFramework (= 5.4.1)
+  - RecaptchaEnterprise (= 18.9.1)
   - "RevenuecatPurchasesCapacitor (from `../../node_modules/@revenuecat/purchases-capacitor`)"
   - "RevenuecatPurchasesCapacitorUi (from `../../node_modules/@revenuecat/purchases-capacitor-ui`)"
 
@@ -216,6 +222,9 @@ SPEC REPOS:
     - PromisesObjC
     - PurchasesHybridCommon
     - PurchasesHybridCommonUI
+    - RecaptchaEnterprise
+    - RecaptchaEnterpriseSDK
+    - RecaptchaInterop
     - RevenueCat
     - RevenueCatUI
 
@@ -319,11 +328,14 @@ SPEC CHECKSUMS:
   PromisesObjC: f5707f49cb48b9636751c5b2e7d227e43fba9f47
   PurchasesHybridCommon: 8eb130ab98f8dab600dea932a2599dee79304bb5
   PurchasesHybridCommonUI: 59c7bf053558417dcabc06ec6ac072fa8181b865
+  RecaptchaEnterprise: a28429a5366cc0f687ac5e93a44c5caa2c685aa9
+  RecaptchaEnterpriseSDK: 72239ea30c486d9093918c7b31eb85629eff1a50
+  RecaptchaInterop: 11e0b637842dfb48308d242afc3f448062325aba
   RevenueCat: f352b3661288080bd8bf30bbb96e331940e73c88
   RevenuecatPurchasesCapacitor: a94a3691cbc02eeed9959c0ab8cb679976f8b365
   RevenuecatPurchasesCapacitorUi: 59851dc7076d29f5f010e3dca51902898659f2d1
   RevenueCatUI: 5f7b3496a7fd7a16a254a6b78de2e221c117d9d2
 
-PODFILE CHECKSUM: 6649ad7190c290704af8f8e6daf30b2d7854e0d0
+PODFILE CHECKSUM: 267109873bbc12733eb6b3e2709ec31baf9d9e6d
 
 COCOAPODS: 1.16.2
