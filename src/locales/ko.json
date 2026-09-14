@@ -125,7 +125,8 @@
     "displayName": "성명",
     "confirmPassword": "비밀번호 확인",
     "signUpSuccessTitle": "등록 성공",
-    "signUpSuccessMessage": "로그인하기 전에 이메일을 확인하여 계정을 확인하세요."
+    "signUpSuccessMessage": "로그인하기 전에 이메일을 확인하여 계정을 확인하세요.",
+    "invalidCredentials": "이메일 또는 비밀번호가 올바르지 않은 것 같습니다. 다시 시도하거나 비밀번호를 재설정하세요."
   },
   "updatePassword": {
     "subtitle": "계정을 보호하려면 강력한 비밀번호를 입력하세요.",

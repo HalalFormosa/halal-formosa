@@ -266,7 +266,7 @@ async function login() {
   loading.value = false
 
   if (error) {
-    errorMsg.value = error.message
+    errorMsg.value = error.code === 'invalid_credentials' ? t('auth.invalidCredentials') : error.message
     ActivityLogService.log('auth_login_failed', { error_message: error.message, method: 'email' })
   } else {
     ActivityLogService.log('auth_login_success', { method: 'email' })

@@ -125,7 +125,8 @@
     "displayName": "Ad Soyad",
     "confirmPassword": "Şifreyi Onayla",
     "signUpSuccessTitle": "Kayıt Başarılı",
-    "signUpSuccessMessage": "Lütfen giriş yapmadan önce hesabınızı onaylamak için e-postanızı kontrol edin."
+    "signUpSuccessMessage": "Lütfen giriş yapmadan önce hesabınızı onaylamak için e-postanızı kontrol edin.",
+    "invalidCredentials": "Bu e-posta veya şifre doğru görünmüyor. Tekrar deneyin veya şifrenizi sıfırlayın."
   },
   "updatePassword": {
     "subtitle": "Hesabınızın güvenliğini sağlamak için lütfen güçlü bir şifre girin.",

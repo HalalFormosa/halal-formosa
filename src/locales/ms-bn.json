@@ -125,7 +125,8 @@
     "displayName": "Nama Penuh",
     "confirmPassword": "Sahkan Kata Laluan",
     "signUpSuccessTitle": "Pendaftaran Berjaya",
-    "signUpSuccessMessage": "Sila semak e-mel anda untuk mengesahkan akaun anda sebelum log masuk."
+    "signUpSuccessMessage": "Sila semak e-mel anda untuk mengesahkan akaun anda sebelum log masuk.",
+    "invalidCredentials": "E-mel atau kata laluan itu kelihatan tidak betul. Cuba lagi atau tetapkan semula kata laluan anda."
   },
   "updatePassword": {
     "subtitle": "Sila masukkan kata laluan yang kukuh untuk melindungi akaun anda.",

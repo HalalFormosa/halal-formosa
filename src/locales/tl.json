@@ -125,7 +125,8 @@
     "displayName": "Buong Pangalan",
     "confirmPassword": "Kumpirmahin ang Password",
     "signUpSuccessTitle": "Matagumpay ang Pagpaparehistro",
-    "signUpSuccessMessage": "Mangyaring suriin ang iyong email upang kumpirmahin ang iyong account bago mag-log in."
+    "signUpSuccessMessage": "Mangyaring suriin ang iyong email upang kumpirmahin ang iyong account bago mag-log in.",
+    "invalidCredentials": "Mukhang mali ang email o password na iyan. Subukan muli o i-reset ang iyong password."
   },
   "updatePassword": {
     "subtitle": "Mangyaring magpasok ng malakas na password upang ma-secure ang iyong account.",
