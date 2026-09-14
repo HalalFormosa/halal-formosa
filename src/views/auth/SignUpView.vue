@@ -104,6 +104,26 @@
               </ion-input>
             </div>
 
+            <!-- Consent -->
+            <ion-item lines="none" class="consent-item">
+              <ion-checkbox
+                  :checked="agreedToTerms"
+                  @ionChange="agreedToTerms = $event.detail.checked"
+                  slot="start"
+                  color="carrot"
+              />
+              <ion-label class="ion-text-wrap consent-label">
+                <i18n-t keypath="auth.agreeToTerms" tag="span">
+                  <template #privacy>
+                    <a href="#" @click.prevent.stop="openLegal('https://halalformosa.com/privacy')">{{ $t('auth.privacyPolicy') }}</a>
+                  </template>
+                  <template #terms>
+                    <a href="#" @click.prevent.stop="openLegal('https://halalformosa.com/terms')">{{ $t('auth.termsOfService') }}</a>
+                  </template>
+                </i18n-t>
+              </ion-label>
+            </ion-item>
+
             <!-- Error -->
             <ion-text color="danger" v-if="errorMsg" class="error-text">
               {{ errorMsg }}
@@ -115,7 +135,7 @@
                 expand="block"
                 color="carrot"
                 class="primary-btn"
-                :disabled="loading || captchaLoading"
+                :disabled="loading || captchaLoading || !agreedToTerms"
             >
               <ion-icon :icon="personAddOutline" slot="start" v-if="!loading && !captchaLoading"></ion-icon>
               {{ captchaLoading ? 'Verifying...' : (loading ? $t('auth.signingUp') : $t('auth.signUp')) }}
@@ -128,17 +148,23 @@
 
             <!-- Social sign-up -->
             <div class="social-row">
-              <button type="button" class="social-circle" @click="signUpWithGoogle" :aria-label="$t('auth.continueWithGoogle')">
+              <button type="button" class="social-circle" :disabled="!agreedToTerms" @click="signUpWithGoogle" :aria-label="$t('auth.continueWithGoogle')">
                 <ion-icon :icon="logoGoogle" />
               </button>
               <button
                   v-if="showAppleSignIn"
                   type="button"
                   class="social-circle"
+                  :disabled="!agreedToTerms"
                   @click="signUpWithApple"
                   :aria-label="$t('auth.continueWithApple')"
               >
                 <ion-icon :icon="logoApple" />
+              </button>
+              <button type="button" class="social-circle" :disabled="!agreedToTerms" @click="signUpWithLine" :aria-label="$t('auth.continueWithLine')">
+                <svg viewBox="0 0 24 24" width="22" height="22" xmlns="http://www.w3.org/2000/svg" fill="#06C755">
+                  <path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63h2.386c.346 0 .627.285.627.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63.346 0 .628.285.628.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.282.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314"/>
+                </svg>
               </button>
             </div>
 
@@ -193,7 +219,8 @@ import {
   IonContent,
   IonIcon,
   alertController,
-  IonModal
+  IonModal,
+  IonCheckbox, IonItem, IonLabel
 } from '@ionic/vue';
 import { defineComponent } from 'vue';
 
@@ -205,7 +232,10 @@ export default defineComponent({
     IonText,
     IonInputPasswordToggle,
     IonContent,
-    IonIcon
+    IonIcon,
+    IonCheckbox,
+    IonItem,
+    IonLabel
   },
 });
 </script>
@@ -222,6 +252,7 @@ import { personAddOutline, personOutline, moonOutline, sunnyOutline, mailOutline
 import { AppleSignIn, SignInScope } from '@capawesome/capacitor-apple-sign-in';
 import { ActivityLogService } from '@/services/ActivityLogService'
 import { useRecaptcha } from '@/composables/useRecaptcha'
+import { startLineLogin } from '@/composables/useLineLogin'
 
 type Theme = 'dark' | 'light'
 
@@ -246,6 +277,11 @@ const confirmPassword = ref('');
 const errorMsg = ref('');
 const loading = ref(false);
 const captchaLoading = ref(false);
+const agreedToTerms = ref(false);
+
+async function openLegal(url: string) {
+  await Browser.open({ url });
+}
 const showSuccessModal = ref(false);
 const showAppleSignIn = computed(() => {
   return Capacitor.getPlatform() === 'ios';
@@ -262,6 +298,11 @@ onMounted(async () => {
 })
 
 async function signup() {
+  if (!agreedToTerms.value) {
+    errorMsg.value = t('auth.mustAgreeToTerms');
+    return;
+  }
+
   if (password.value !== confirmPassword.value) {
     errorMsg.value = t('updatePassword.mismatchError') || 'Passwords do not match';
     return;
@@ -349,6 +390,11 @@ function toggleTheme() {
 async function signUpWithGoogle() {
   errorMsg.value = '';
 
+  if (!agreedToTerms.value) {
+    errorMsg.value = t('auth.mustAgreeToTerms');
+    return;
+  }
+
   const r = route.query.redirect;
   const safeRedirect: string =
       typeof r === 'string'
@@ -384,8 +430,40 @@ async function signUpWithGoogle() {
   ActivityLogService.log('auth_signup_success', { method: 'google' })
 }
 
+// Google/Apple/LINE OAuth creates the account automatically if it doesn't
+// exist yet, so signup and login share the exact same flow here.
+async function signUpWithLine() {
+  errorMsg.value = '';
+
+  if (!agreedToTerms.value) {
+    errorMsg.value = t('auth.mustAgreeToTerms');
+    return;
+  }
+
+  const r = route.query.redirect;
+  const safeRedirect: string =
+      typeof r === 'string'
+          ? r
+          : Array.isArray(r) && r.length > 0
+              ? r[0] ?? '/'
+              : '/';
+
+  try {
+    await startLineLogin(safeRedirect);
+  } catch (e: any) {
+    errorMsg.value = e?.message ?? 'Failed to start LINE login.';
+    ActivityLogService.log('auth_signup_failed', { error_message: errorMsg.value, method: 'line' })
+  }
+}
+
 async function signUpWithApple() {
   errorMsg.value = '';
+
+  if (!agreedToTerms.value) {
+    errorMsg.value = t('auth.mustAgreeToTerms');
+    return;
+  }
+
   loading.value = true;
 
   try {
@@ -577,6 +655,27 @@ function goHome() {
 }
 
 /* =========================
+   CONSENT CHECKBOX
+========================= */
+.consent-item {
+  --padding-start: 0;
+  --inner-padding-end: 0;
+  --background: transparent;
+  margin: 4px 0 12px;
+}
+
+.consent-label {
+  font-size: 0.8rem;
+  color: var(--ion-color-medium);
+}
+
+.consent-label a {
+  color: var(--ion-color-carrot);
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+/* =========================
    DIVIDER
 ========================= */
 .divider {
@@ -633,6 +732,11 @@ function goHome() {
 
 .social-circle:active {
   transform: scale(0.94);
+}
+
+.social-circle:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 /* =========================

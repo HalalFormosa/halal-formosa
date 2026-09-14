@@ -219,6 +219,8 @@ const routes: Array<RouteRecordRaw> = [
     { path: '/credits', component: () => import('@/views/profile/CreditsView.vue') },
     { path: '/signup', component: () => import('@/views/auth/SignUpView.vue') },
     { path: '/login', component: () => import('@/views/auth/LoginView.vue') },
+    { path: '/auth/line/callback', component: () => import('@/views/auth/LineCallbackView.vue') },
+    { path: '/auth/line/native-callback', component: () => import('@/views/auth/LineNativeCallbackView.vue') },
     {
         path: '/update-password',
         name: 'UpdatePassword',

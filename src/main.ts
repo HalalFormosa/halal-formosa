@@ -8,6 +8,7 @@ import { Capacitor } from '@capacitor/core'
 import { Keyboard, KeyboardResize } from '@capacitor/keyboard'
 import { Browser } from '@capacitor/browser'
 import { supabase } from '@/plugins/supabaseClient'
+import { completeLineLogin } from '@/composables/useLineLogin'
 import { initAdMob } from '@/lib/admob'
 import { i18n } from '@/i18n'
 import '@ionic/vue/css/core.css'
@@ -543,7 +544,8 @@ const handleDeepLink = async (url: string, isColdBoot = false) => {
 
         // Handle OAuth callback
         if (url.startsWith('myapp://callback') || url.includes('/callback')) {
-            const hash = new URL(url).hash.substring(1);
+            const urlObj = new URL(url);
+            const hash = urlObj.hash.substring(1);
             const params = new URLSearchParams(hash);
             const access_token = params.get('access_token');
             const refresh_token = params.get('refresh_token');
@@ -551,6 +553,27 @@ const handleDeepLink = async (url: string, isColdBoot = false) => {
                 supabase.auth.setSession({ access_token, refresh_token });
                 console.log('🔐 [DeepLink] OAuth session restored.');
             }
+
+            // LINE login bounces back here as myapp://callback?code=...&state=...
+            // (see LineNativeCallbackView.vue) since LINE can't redirect to a
+            // custom scheme directly.
+            const lineCode = urlObj.searchParams.get('code');
+            const lineState = urlObj.searchParams.get('state');
+            const lineError = urlObj.searchParams.get('error');
+            if (lineCode && lineState) {
+                completeLineLogin(lineCode, lineState, { native: true })
+                    .then(async (redirectPath) => {
+                        console.log('🔐 [DeepLink] LINE session restored.');
+                        await router.isReady();
+                        router.push(redirectPath);
+                    })
+                    .catch((err) => {
+                        console.warn('⚠️ [DeepLink] LINE login failed:', err);
+                    });
+            } else if (lineError) {
+                console.warn('⚠️ [DeepLink] LINE login cancelled/error:', lineError);
+            }
+
             if (Capacitor.isNativePlatform()) {
                 Browser.close().catch(e => console.warn('Failed to close browser:', e));
             }

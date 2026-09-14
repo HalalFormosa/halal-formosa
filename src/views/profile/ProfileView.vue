@@ -778,21 +778,6 @@
           </ion-list>
         </ion-card>
 
-        <!-- Support Section -->
-        <ion-card v-if="donationProduct">
-          <div class="xp-section" style="text-align: center; padding-top: 10px; padding-bottom: 10px;">
-            <h3 style="font-weight: 700; margin-bottom: 12px;">{{ $t('profile.support') }}</h3>
-            <ion-item button style="text-align: left;" @click="donate">
-              <ion-label>
-                <strong>{{ donationProduct.title }}</strong>
-                <br/>
-                <small>{{ donationProduct.description }}</small>
-              </ion-label>
-              <ion-note slot="end">{{ donationProduct.priceString }}</ion-note>
-            </ion-item>
-          </div>
-        </ion-card>
-
         <!-- Social Media Card -->
         <ion-card>
           <div class="social-grid-premium">
@@ -1039,16 +1024,6 @@ const icons = {
   shieldCheckmarkOutline
 }
 
-interface RcProduct {
-  identifier: string;
-  price: number;
-  priceString: string;
-  title: string;
-  description: string;
-  currencyCode?: string;
-}
-
-
 // @ts-expect-error – injected global
 const appVersion = __APP_VERSION__;
 const isNative = Capacitor.isNativePlatform();
@@ -1088,7 +1063,6 @@ const router = useRouter();
 
 const userBio = editBio;
 const userNationality = editNationality;
-const donationProduct = ref<RcProduct | null>(null);
 const paywallOpening = ref(false);
 const showBenefits = ref(false);
 
@@ -1596,34 +1570,6 @@ onMounted(async () => {
     loadingAdmin.value = false;
   }
 });
-
-async function donate() {
-  ActivityLogService.log('donation_click', {
-    product: donationProduct.value?.identifier ?? null
-  })
-
-  const offerings = await Purchases.getOfferings();
-
-  if (!offerings.current) return;
-
-  const pkg = offerings.current.availablePackages.find(
-      (p) => p.identifier === "small_support"
-  );
-
-  if (!pkg) return;
-
-  try {
-    await Purchases.purchasePackage({aPackage: pkg});
-    alert(t('profile.supportSuccess'));
-
-    ActivityLogService.log('donation_success', {
-      product: donationProduct.value?.identifier ?? null
-    })
-
-  } catch (err) {
-    console.error("Donation failed:", err);
-  }
-}
 
 async function presentPaywall(): Promise<PAYWALL_RESULT> {
   if (!Capacitor.isNativePlatform()) {
