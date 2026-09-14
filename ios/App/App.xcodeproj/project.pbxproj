@@ -20,6 +20,7 @@
 		5D90D73B2FD83CFE0008B36C /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D90D7382FD83CFE0008B36C /* NotificationService.swift */; };
 		7182576EFFCCB2C51ADA53DC /* RecaptchaNativePlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = F17A02DBAC2D0A4D29F5868C /* RecaptchaNativePlugin.swift */; };
 		9C8AE8AA118ECD51C8A4BAA1 /* Pods_OneSignalNotificationServiceExtension.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 18B8AE9E163B72B2E83DDF34 /* Pods_OneSignalNotificationServiceExtension.framework */; };
+		E88917864B274810B8D6F86F /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED70E3254C284680B7C108CA /* ViewController.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -66,6 +67,7 @@
 		AF51FD2D460BCFE21FA515B2 /* Pods-App.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-App.release.xcconfig"; path = "Pods/Target Support Files/Pods-App/Pods-App.release.xcconfig"; sourceTree = "<group>"; };
 		D27511AEEECE366B88775EE0 /* Pods_App.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_App.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		E49DBDF92D34DA420CC9CB8F /* Pods-OneSignalNotificationServiceExtension.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-OneSignalNotificationServiceExtension.debug.xcconfig"; path = "Pods/Target Support Files/Pods-OneSignalNotificationServiceExtension/Pods-OneSignalNotificationServiceExtension.debug.xcconfig"; sourceTree = "<group>"; };
+		ED70E3254C284680B7C108CA /* ViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
 		F17A02DBAC2D0A4D29F5868C /* RecaptchaNativePlugin.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RecaptchaNativePlugin.swift; sourceTree = "<group>"; };
 		FC68EB0AF532CFC21C3344DD /* Pods-App.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-App.debug.xcconfig"; path = "Pods/Target Support Files/Pods-App/Pods-App.debug.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -134,6 +136,7 @@
 				2FAD9762203C412B000D30F8 /* config.xml */,
 				50B271D01FEDC1A000F3C39B /* public */,
 				F17A02DBAC2D0A4D29F5868C /* RecaptchaNativePlugin.swift */,
+				ED70E3254C284680B7C108CA /* ViewController.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -348,6 +351,7 @@
 			files = (
 				504EC3081FED79650016851F /* AppDelegate.swift in Sources */,
 				7182576EFFCCB2C51ADA53DC /* RecaptchaNativePlugin.swift in Sources */,
+				E88917864B274810B8D6F86F /* ViewController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -505,7 +509,7 @@
 				CODE_SIGN_ENTITLEMENTS = App/App.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 33;
+				CURRENT_PROJECT_VERSION = 38;
 				DEVELOPMENT_TEAM = W88L54499Q;
 				INFOPLIST_FILE = App/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Halal Formosa";
@@ -532,7 +536,7 @@
 				CODE_SIGN_ENTITLEMENTS = App/App.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 33;
+				CURRENT_PROJECT_VERSION = 38;
 				DEVELOPMENT_TEAM = W88L54499Q;
 				INFOPLIST_FILE = App/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Halal Formosa";
