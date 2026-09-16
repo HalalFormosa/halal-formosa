@@ -112,7 +112,7 @@
                   slot="start"
                   color="carrot"
               />
-              <ion-label class="ion-text-wrap consent-label">
+              <ion-label class="consent-label">
                 <i18n-t keypath="auth.agreeToTerms" tag="span">
                   <template #privacy>
                     <a href="#" @click.prevent.stop="openLegal('https://halalformosa.com/privacy')">{{ $t('auth.privacyPolicy') }}</a>
@@ -661,12 +661,20 @@ function goHome() {
   --padding-start: 0;
   --inner-padding-end: 0;
   --background: transparent;
+  --min-height: 0;
   margin: 4px 0 12px;
 }
 
-.consent-label {
-  font-size: 0.8rem;
+.consent-item ion-checkbox {
+  --size: 15px;
+  margin-inline-end: 6px;
+}
+
+ion-label.consent-label {
+  font-size: 0.72rem !important;
+  line-height: 1.3;
   color: var(--ion-color-medium);
+  white-space: nowrap;
 }
 
 .consent-label a {

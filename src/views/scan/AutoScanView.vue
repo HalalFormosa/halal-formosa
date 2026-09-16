@@ -3,6 +3,7 @@
     <auto-scan-camera
       active
       @detected="onDetected"
+      @stable-result="onStableResult"
       @close="onClose"
       @error="onError"
     />
@@ -23,7 +24,9 @@ import { ref } from 'vue'
 import { IonPage, IonToast } from '@ionic/vue'
 import { useRouter } from 'vue-router'
 import AutoScanCamera from '@/components/scan/AutoScanCamera.vue'
-import { useAutoScanStore } from '@/composables/useAutoScanStore'
+import { useAutoScanStore, type AutoScanResult } from '@/composables/useAutoScanStore'
+import { ActivityLogService } from '@/services/ActivityLogService'
+import { logIngredientScan } from '@/services/IngredientScanLogService'
 
 const router = useRouter()
 const { setResult } = useAutoScanStore()
@@ -32,6 +35,33 @@ const errorMsg = ref('')
 function onDetected(result: any) {
   setResult(result)
   router.back()
+}
+
+// Fires as soon as the live scanner gets a confident read — a successful detection
+// (e.g. "Muslim-friendly") already IS a completed scan, so it's counted and logged
+// here immediately, regardless of whether the user goes on to tap "View Details".
+// `result` is mutated with `loggedAsScan: true` so ScanIngredientsView.handleAutoDetected
+// (fired if the user does tap View Details) knows not to log/count it a second time.
+async function onStableResult(result: AutoScanResult) {
+  const { success } = await logIngredientScan({
+    source: 'camera',
+    productName: result.productName,
+    ingredientsTextZh: result.textZh,
+    ingredientsTextEn: result.textEn,
+    ocrRaw: result.ocrRaw,
+    autoStatus: result.autoStatus,
+    highlightSummary: result.highlights,
+  })
+
+  if (success) {
+    result.loggedAsScan = true
+    await ActivityLogService.log('scan_ingredients_success', {
+      product_name: result.productName || 'Unknown',
+      auto_status: result.autoStatus,
+      ingredient_count: result.highlights?.length ?? 0,
+      source: 'auto_scan',
+    })
+  }
 }
 
 function onClose() {

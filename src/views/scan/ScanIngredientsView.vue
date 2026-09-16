@@ -1469,7 +1469,24 @@ async function handleAutoDetected(result: any) {
   await ActivityLogService.log("scan_ingredients_start", {source: "auto_scan"});
 
   try {
-      await autoProcess(file, roi)
+      // 🔴 The live scanner already ran the full OCR/translation pipeline while the
+      // camera was open (see AutoScanCamera.vue) — reuse that result instead of
+      // re-analyzing the same image a second time.
+      if (result.autoStatus !== undefined) {
+        productName.value = result.productName || ''
+        ingredientsText.value = result.textEn || ''
+        ingredientsTextZh.value = result.textZh || ''
+        ingredientHighlights.value = result.highlights || []
+        autoStatus.value = result.autoStatus || ''
+        detectedLanguage.value = result.detectedLanguage || 'unknown'
+        ocrRaw.value = result.ocrRaw || ''
+        ocrImageWidth.value = result.ocrImageWidth || 0
+        ocrImageHeight.value = result.ocrImageHeight || 0
+        if (croppedPreviewUrl.value) URL.revokeObjectURL(croppedPreviewUrl.value)
+        croppedPreviewUrl.value = URL.createObjectURL(file)
+      } else {
+        await autoProcess(file, roi)
+      }
       isMovingToResults.value = true // ⚡ Show transition loader immediately
       
       const reflectionElapsed = Date.now() - reflectionStart
@@ -1480,19 +1497,23 @@ async function handleAutoDetected(result: any) {
       }
       
       if (ingredientsText.value?.trim() || ingredientsTextZh.value?.trim()) {
-          await ActivityLogService.log("scan_ingredients_success", {
-            product_name: productName.value || "Unknown",
-            auto_status: autoStatus.value,
-            ingredient_count: ingredientHighlights.value?.length ?? 0,
-            source: "auto_scan"
-          });
+          // Auto Scan already counted/logged this the moment the live detection
+          // succeeded (see AutoScanView.vue's onStableResult) — don't double it here.
+          if (!result.loggedAsScan) {
+            await ActivityLogService.log("scan_ingredients_success", {
+              product_name: productName.value || "Unknown",
+              auto_status: autoStatus.value,
+              ingredient_count: ingredientHighlights.value?.length ?? 0,
+              source: "auto_scan"
+            });
 
-          await logIngredientScan({
-            source: "camera",
-            startTime: ocrStartTime.value
-          })
+            await logIngredientScan({
+              source: "camera",
+              startTime: ocrStartTime.value
+            })
 
-          await loadTodayScanCount()
+            await loadTodayScanCount()
+          }
           isMovingToResults.value = false
           nextStep()
       }

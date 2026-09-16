@@ -787,6 +787,17 @@
     "login": "登入",
     "review": "產品審核",
     "settings": "設定",
+    "linkedAccounts": {
+      "title": "已連結帳號",
+      "subtitle": "查看目前與您帳號連結的登入方式。",
+      "email": "電子郵件與密碼",
+      "google": "Google",
+      "apple": "Apple",
+      "line": "LINE",
+      "connected": "已連結",
+      "notConnected": "尚未連結",
+      "note": "使用任一已連結的方式登入，都會進入同一個帳號。"
+    },
     "legal": "法律條款",
     "credits": "致謝與貢獻者",
     "support": "支持 Halal Formosa ❤️",

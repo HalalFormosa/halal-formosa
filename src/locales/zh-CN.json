@@ -757,6 +757,17 @@
     "login": "登录",
     "review": "产品评论",
     "settings": "设置",
+    "linkedAccounts": {
+      "title": "已关联账号",
+      "subtitle": "查看当前与您账号关联的登录方式。",
+      "email": "邮箱与密码",
+      "google": "Google",
+      "apple": "Apple",
+      "line": "LINE",
+      "connected": "已关联",
+      "notConnected": "尚未关联",
+      "note": "使用任一已关联的方式登录，都会进入同一个账号。"
+    },
     "legal": "合法的",
     "credits": "致谢与贡献者",
     "support": "支持福尔摩沙清真❤️",

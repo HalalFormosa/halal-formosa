@@ -807,6 +807,32 @@ const form = ref<{
 
 const tagInput = ref('')
 const isTagsManuallyEdited = ref(false)
+const addressTags = ref<string[]>([])
+
+// Districts/areas aren't part of Google's formatted_address in a consistent
+// place, so pull them out of the geocoder's address_components instead —
+// this is the only reliable source for "Da'an District" style names.
+const AREA_COMPONENT_TYPES = new Set([
+  'neighborhood',
+  'sublocality_level_2',
+  'sublocality_level_1',
+  'sublocality',
+  'administrative_area_level_3',
+])
+function extractAreaTagsFromComponents(components?: google.maps.GeocoderAddressComponent[] | null): string[] {
+  if (!components) return []
+  const seen = new Set<string>()
+  const tags: string[] = []
+  for (const c of components) {
+    if (!c.types.some(t => AREA_COMPONENT_TYPES.has(t))) continue
+    const name = c.long_name.trim().toLowerCase()
+    if (name && !seen.has(name)) {
+      seen.add(name)
+      tags.push(name)
+    }
+  }
+  return tags
+}
 
 function extractTagsFromName(name: string): string[] {
   if (!name) return []
@@ -841,8 +867,54 @@ function extractTagsFromName(name: string): string[] {
   return uniqueWords
 }
 
+// Colloquial night-market/area names aren't official administrative units, so
+// Google's geocoder never returns them (reverse-geocoding a Gongguan coordinate
+// yields "Da'an District", not "Gongguan"). This is a hand-maintained list of
+// well-known areas matched purely by proximity to the submitted coordinates.
+// Add more entries here as needed — no schema change required.
+const KNOWN_AREAS: { name: string; lat: number; lng: number; radiusMeters: number }[] = [
+  { name: 'Gongguan', lat: 25.0138, lng: 121.5348, radiusMeters: 500 },
+  { name: 'Shilin Night Market', lat: 25.0879, lng: 121.5241, radiusMeters: 500 },
+  { name: 'Raohe Street Night Market', lat: 25.0504, lng: 121.5771, radiusMeters: 400 },
+  { name: 'Ningxia Night Market', lat: 25.0574, lng: 121.5163, radiusMeters: 350 },
+  { name: 'Huaxi Street Night Market', lat: 25.0369, lng: 121.5001, radiusMeters: 350 },
+  { name: 'Tonghua Night Market', lat: 25.0298, lng: 121.5563, radiusMeters: 350 },
+  { name: 'Shida Night Market', lat: 25.0259, lng: 121.5285, radiusMeters: 350 },
+  { name: 'Ximending', lat: 25.0421, lng: 121.5079, radiusMeters: 500 },
+  { name: 'Keelung Miaokou Night Market', lat: 25.1289, lng: 121.7405, radiusMeters: 350 },
+  { name: 'Fengjia Night Market', lat: 24.1808, lng: 120.6469, radiusMeters: 500 },
+  { name: 'Liuhe Night Market', lat: 22.6297, lng: 120.3018, radiusMeters: 400 },
+  { name: 'Luodong Night Market', lat: 24.6775, lng: 121.7702, radiusMeters: 350 },
+]
+
+function distanceMeters(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371000
+  const toRad = (deg: number) => (deg * Math.PI) / 180
+  const dLat = toRad(lat2 - lat1)
+  const dLng = toRad(lng2 - lng1)
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2
+  return 2 * R * Math.asin(Math.sqrt(a))
+}
+
+function matchKnownAreaTags(lat: number | null, lng: number | null): string[] {
+  if (lat === null || lng === null) return []
+  return KNOWN_AREAS
+    .filter(area => distanceMeters(lat, lng, area.lat, area.lng) <= area.radiusMeters)
+    .map(area => area.name.toLowerCase())
+}
+
+const knownAreaTags = ref<string[]>([])
 watch(
-  () => [form.value.name, form.value.type_id],
+  () => [form.value.lat, form.value.lng],
+  () => {
+    knownAreaTags.value = matchKnownAreaTags(form.value.lat, form.value.lng)
+  }
+)
+
+watch(
+  () => [form.value.name, form.value.type_id, addressTags.value, knownAreaTags.value],
   () => {
     if (isEditing.value) return // Don't overwrite existing place tags
     if (isTagsManuallyEdited.value) return
@@ -853,7 +925,7 @@ watch(
       : []
 
     // Merge uniquely
-    const merged = Array.from(new Set([...nameTags, ...typeTags]))
+    const merged = Array.from(new Set([...nameTags, ...typeTags, ...addressTags.value, ...knownAreaTags.value]))
     form.value.tags = merged
   },
   { deep: true }
@@ -1277,8 +1349,10 @@ async function reverseGeocode(lat: number, lng: number) {
 
   return new Promise<string | null>((resolve) => {
     geocoder.value!.geocode({location: {lat, lng}}, (results, status) => {
-      if (status === 'OK' && results?.[0]) resolve(results[0].formatted_address)
-      else {
+      if (status === 'OK' && results?.[0]) {
+        addressTags.value = extractAreaTagsFromComponents(results[0].address_components)
+        resolve(results[0].formatted_address)
+      } else {
         console.warn('Geocode failed:', status)
         resolve(null)
       }
@@ -1301,6 +1375,7 @@ async function geocodeAddress(address: string) {
     }, (results, status) => {
       if (status === 'OK' && results?.[0]) {
         const loc = results[0].geometry.location
+        addressTags.value = extractAreaTagsFromComponents(results[0].address_components)
         resolve({
           lat: loc.lat(),
           lng: loc.lng()

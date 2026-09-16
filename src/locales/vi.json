@@ -667,6 +667,17 @@
     "login": "Đăng nhập",
     "review": "Đánh giá sản phẩm",
     "settings": "Cài đặt",
+    "linkedAccounts": {
+      "title": "Tài khoản đã liên kết",
+      "subtitle": "Xem các phương thức đăng nhập đã liên kết với tài khoản của bạn.",
+      "email": "Email & Mật khẩu",
+      "google": "Google",
+      "apple": "Apple",
+      "line": "LINE",
+      "connected": "Đã liên kết",
+      "notConnected": "Chưa liên kết",
+      "note": "Đăng nhập bằng bất kỳ phương thức đã liên kết nào cũng sẽ vào cùng một tài khoản này."
+    },
     "legal": "Hợp pháp",
     "credits": "Tín dụng & Người đóng góp",
     "support": "Ủng hộ Halal Formosa ❤️",

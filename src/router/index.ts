@@ -133,6 +133,12 @@ const routes: Array<RouteRecordRaw> = [
         meta: { requiresAuth: true, noTabs: true, noAds: true }
     },
     {
+        path: '/profile/linked-accounts',
+        name: 'LinkedAccounts',
+        component: () => import('@/views/profile/LinkedAccountsView.vue'),
+        meta: { requiresAuth: true, noTabs: true, noAds: true }
+    },
+    {
         path: '/profile/badge-shop',
         name: 'BadgeShop',
         component: () => import('@/views/profile/BadgeShopView.vue'),

@@ -667,6 +667,17 @@
     "login": "로그인",
     "review": "제품 리뷰",
     "settings": "설정",
+    "linkedAccounts": {
+      "title": "연결된 계정",
+      "subtitle": "내 계정에 연결된 로그인 방법을 확인하세요.",
+      "email": "이메일 및 비밀번호",
+      "google": "Google",
+      "apple": "Apple",
+      "line": "LINE",
+      "connected": "연결됨",
+      "notConnected": "연결되지 않음",
+      "note": "연결된 방법 중 하나로 로그인하면 동일한 계정으로 접속됩니다."
+    },
     "legal": "합법적인",
     "credits": "크레딧 및 기여자",
     "support": "할랄 포모사를 지지해주세요 ❤️",

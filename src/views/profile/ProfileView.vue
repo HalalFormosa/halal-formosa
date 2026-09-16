@@ -14,20 +14,61 @@
 
       <!-- ================= LOADING STATE ================= -->
       <template v-if="loadingProfile">
-        <ion-card>
+        <!-- Hero card skeleton -->
+        <div class="profile-hero-card">
           <div class="profile-header-premium">
-            <ion-skeleton-text animated class="skeleton-avatar-premium" />
-            <ion-skeleton-text animated style="width: 50%; height: 24px;" class="skeleton-text-center" />
-            <ion-skeleton-text animated style="width: 30%; height: 16px;" class="skeleton-text-center" />
-          </div>
-        </ion-card>
+            <div class="avatar-container">
+              <ion-skeleton-text animated class="skeleton-avatar-premium" style="--background: rgba(255,255,255,0.25); width: 100%; height: 100%; margin: 0;" />
+            </div>
 
+            <div class="profile-info text-center">
+              <ion-skeleton-text animated style="--background: rgba(255,255,255,0.25); width: 55%; height: 22px;" class="skeleton-text-center" />
+              <ion-skeleton-text animated style="--background: rgba(255,255,255,0.2); width: 38%; height: 14px;" class="skeleton-text-center" />
+
+              <div class="badge-row">
+                <ion-skeleton-text animated style="--background: rgba(255,255,255,0.2); width: 76px; height: 22px; border-radius: 12px;" />
+                <ion-skeleton-text animated style="--background: rgba(255,255,255,0.2); width: 96px; height: 22px; border-radius: 12px;" />
+              </div>
+
+              <div class="hero-stats-row">
+                <div class="hero-stat" v-for="n in 3" :key="'stat-'+n">
+                  <ion-skeleton-text animated style="--background: rgba(255,255,255,0.3); width: 28px; height: 16px;" />
+                  <ion-skeleton-text animated style="--background: rgba(255,255,255,0.2); width: 46px; height: 9px; margin-top: 4px;" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- XP card skeleton -->
         <ion-card>
           <div class="xp-section">
-            <ion-skeleton-text animated style="width: 40%; height: 20px; margin-bottom: 12px;" />
+            <div class="xp-header">
+              <ion-skeleton-text animated style="width: 84px; height: 32px; border-radius: var(--radius-md);" />
+              <ion-skeleton-text animated style="width: 64px; height: 18px;" />
+            </div>
             <ion-skeleton-text animated style="width: 100%; height: 12px; border-radius: 6px;" />
           </div>
         </ion-card>
+
+        <!-- Menu sections skeleton -->
+        <template v-for="section in 2" :key="'section-'+section">
+          <h3 class="menu-section-label">
+            <ion-skeleton-text animated style="width: 120px; height: 12px; display: inline-block;" />
+          </h3>
+          <ion-card class="menu-card">
+            <ion-list lines="none">
+              <ion-item v-for="row in 3" :key="'row-'+section+'-'+row">
+                <div class="icon-box" slot="start">
+                  <ion-skeleton-text animated style="width: 20px; height: 20px; border-radius: 5px;" />
+                </div>
+                <ion-label>
+                  <ion-skeleton-text animated :style="{ width: (row === 2 ? '45%' : '65%'), height: '14px' }" />
+                </ion-label>
+              </ion-item>
+            </ion-list>
+          </ion-card>
+        </template>
       </template>
 
       <!-- ================= ACTUAL CONTENT ================= -->
@@ -162,35 +203,44 @@
           <!-- Subscribed State -->
           <template v-if="isSubscribed">
             <div class="pro-active-banner">
+              <div class="pro-active-sheen"></div>
+
               <div class="pro-active-header">
-                <div class="pro-active-title-group">
-                  <div class="pro-active-icon">
-                    <ion-icon :icon="icons.bookmarkOutline" />
-                  </div>
-                  <div class="pro-active-title-info">
+                <div class="pro-active-crest">
+                  <ion-icon :icon="icons.diamondOutline" />
+                </div>
+
+                <div class="pro-active-title-info">
+                  <div class="pro-active-title-row">
                     <h3 class="pro-active-title">{{ $t('profile.pro.title') }}</h3>
-                    <div class="pro-status-chip">
+                    <span class="pro-status-chip">
                       <ion-icon :icon="icons.checkmarkCircle" />
-                      <span>{{ $t('profile.pro.active') }}</span>
-                    </div>
+                      {{ $t('profile.pro.active') }}
+                    </span>
                   </div>
                 </div>
-                
-                <ion-button fill="outline" class="pro-manage-btn" size="small" @click="openManageSubscription">
-                  {{ $t('profile.pro.manage') }}
-                </ion-button>
               </div>
 
+              <div class="pro-active-divider"></div>
+
               <div class="pro-active-footer">
-                <div class="pro-detail-item">
-                  <ion-icon :icon="willRenew ? icons.refreshOutline : icons.alertCircleOutline" :color="willRenew ? 'success' : 'warning'" />
+                <div class="pro-detail-item" :class="{ 'is-warning': !willRenew }">
+                  <div class="pro-detail-icon">
+                    <ion-icon :icon="willRenew ? icons.refreshOutline : icons.alertCircleOutline" />
+                  </div>
                   <span>{{ renewalMessage }}</span>
                 </div>
                 <div class="pro-detail-item">
-                  <ion-icon :icon="icons.timeOutline" />
+                  <div class="pro-detail-icon">
+                    <ion-icon :icon="icons.timeOutline" />
+                  </div>
                   <span>{{ $t('profile.pro.accessUntil') }} {{ formattedExpirationDate }}</span>
                 </div>
               </div>
+
+              <ion-button fill="clear" expand="block" class="pro-manage-btn" @click="openManageSubscription">
+                {{ $t('profile.pro.manage') }}
+              </ion-button>
             </div>
           </template>
 
@@ -299,6 +349,13 @@
                 <ion-icon :icon="icons.settingsOutline" />
               </div>
               <ion-label>{{ $t('profile.settings') }}</ion-label>
+            </ion-item>
+
+            <ion-item v-if="userEmail" button @click="$router.push('/profile/linked-accounts')">
+              <div class="icon-box" slot="start">
+                <ion-icon :icon="icons.linkOutline" />
+              </div>
+              <ion-label>{{ $t('profile.linkedAccounts.title') }}</ion-label>
             </ion-item>
 
             <ion-item v-if="userEmail" button @click="$router.push('/profile/badge-customize')">
@@ -947,7 +1004,9 @@ import {
   helpCircleOutline,
   colorPaletteOutline,
   trophyOutline,
-  shieldCheckmarkOutline
+  shieldCheckmarkOutline,
+  linkOutline,
+  diamondOutline
 } from "ionicons/icons";
 
 // ✅ Composables
@@ -1021,7 +1080,9 @@ const icons = {
   helpCircleOutline,
   colorPaletteOutline,
   trophyOutline,
-  shieldCheckmarkOutline
+  shieldCheckmarkOutline,
+  linkOutline,
+  diamondOutline
 }
 
 // @ts-expect-error – injected global
@@ -2280,119 +2341,152 @@ ion-card.menu-card ion-item:last-of-type {
   gap: 12px;
 }
 
-/* Subscribed Pro Banner */
+/* Subscribed Pro Banner — fixed dark/gold "membership card" look, independent of app theme */
 .pro-active-banner {
   padding: 24px;
-  background: linear-gradient(135deg, rgba(250, 204, 21, 0.08) 0%, rgba(217, 119, 6, 0.12) 100%);
+  background: linear-gradient(155deg, #26190a 0%, #1a1006 55%, #120b05 100%);
+  border: 1px solid rgba(250, 204, 21, 0.22);
   border-radius: var(--radius-lg);
   position: relative;
   overflow: hidden;
 }
 
+.pro-active-sheen {
+  position: absolute;
+  inset: 0;
+  background:
+      radial-gradient(circle at 100% 0%, rgba(250, 204, 21, 0.16), transparent 55%),
+      radial-gradient(circle at 0% 100%, rgba(217, 119, 6, 0.12), transparent 50%);
+  pointer-events: none;
+}
+
 .pro-active-header {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 20px;
-}
-
-.pro-active-title-group {
-  display: flex;
-  gap: 16px;
   align-items: center;
+  gap: 14px;
+  position: relative;
+  z-index: 1;
 }
 
-.pro-active-icon {
+.pro-active-crest {
+  flex-shrink: 0;
   width: 48px;
   height: 48px;
-  background: var(--ion-color-carrot);
+  background: linear-gradient(145deg, #fde68a, #ca8a04);
   border-radius: var(--radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: var(--card-shadow);
+  box-shadow: 0 4px 14px rgba(202, 138, 4, 0.35);
 }
 
-.pro-active-icon ion-icon {
+.pro-active-crest ion-icon {
   font-size: 24px;
-  color: white;
+  color: #2a1a02;
 }
 
 .pro-active-title-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.pro-active-title-row {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 10px;
 }
 
 .pro-active-title {
-  font-size: 1.25rem;
+  font-size: 1.15rem;
   font-weight: 800;
+  letter-spacing: -0.01em;
   margin: 0;
-  color: var(--ion-color-carrot-shade);
+  color: #fdf3d9;
 }
 
 .pro-status-chip {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 4px 10px;
-  background: var(--ion-color-success-tint);
-  color: var(--ion-color-success-shade);
+  padding: 3px 10px;
+  background: rgba(74, 222, 128, 0.15);
+  color: #86efac;
+  border: 1px solid rgba(74, 222, 128, 0.25);
   border-radius: 8px;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   font-weight: 700;
-  width: fit-content;
+  white-space: nowrap;
 }
 
-.pro-manage-btn {
-  --border-radius: 10px;
-  --border-color: var(--ion-color-step-300);
-  --color: var(--ion-color-step-600);
-  margin: 0;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  font-size: 0.7rem;
+.pro-status-chip ion-icon {
+  font-size: 13px;
+}
+
+.pro-active-divider {
+  height: 1px;
+  margin: 18px 0 14px;
+  background: linear-gradient(90deg, rgba(250, 204, 21, 0.28), rgba(250, 204, 21, 0.02));
+  position: relative;
+  z-index: 1;
 }
 
 .pro-active-footer {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  padding-top: 16px;
-  border-top: 1px solid rgba(var(--ion-color-carrot-rgb), 0.1);
+  position: relative;
+  z-index: 1;
 }
 
 .pro-detail-item {
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 0.85rem;
-  color: var(--ion-color-medium);
+  font-size: 0.82rem;
+  color: rgba(253, 243, 217, 0.75);
   font-weight: 600;
 }
 
-.pro-detail-item ion-icon {
-  font-size: 18px;
-  min-width: 18px;
+.pro-detail-icon {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
 }
 
-.ion-palette-dark .pro-active-banner {
-  background: linear-gradient(135deg, rgba(250, 204, 21, 0.05) 0%, rgba(217, 119, 6, 0.08) 100%);
+.pro-detail-icon ion-icon {
+  font-size: 15px;
+  color: #fde68a;
 }
 
-.ion-palette-dark .pro-active-title {
-  color: white;
+.pro-detail-item.is-warning .pro-detail-icon {
+  background: rgba(251, 191, 36, 0.12);
 }
 
-.ion-palette-dark .pro-status-chip {
-  background: rgba(var(--ion-color-success-rgb), 0.2);
-  color: var(--ion-color-success-tint);
+.pro-detail-item.is-warning .pro-detail-icon ion-icon {
+  color: var(--ion-color-warning);
 }
 
-.ion-palette-dark .pro-manage-btn {
-  --border-color: rgba(255, 255, 255, 0.1);
-  --color: var(--ion-color-step-400);
+.pro-manage-btn {
+  --border-radius: 10px;
+  --color: #fde68a;
+  --background: rgba(255, 255, 255, 0.05);
+  --background-activated: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(250, 204, 21, 0.3);
+  border-radius: 10px;
+  margin: 16px 0 0;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  font-size: 0.72rem;
+  height: 40px;
+  position: relative;
+  z-index: 1;
 }
 
 

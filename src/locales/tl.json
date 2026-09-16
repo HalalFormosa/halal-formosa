@@ -667,6 +667,17 @@
     "login": "Mag-login",
     "review": "Pagsusuri ng Produkto",
     "settings": "Mga setting",
+    "linkedAccounts": {
+      "title": "Mga Naka-link na Account",
+      "subtitle": "Tingnan kung aling mga paraan ng pag-sign in ang naka-link sa iyong account.",
+      "email": "Email at Password",
+      "google": "Google",
+      "apple": "Apple",
+      "line": "LINE",
+      "connected": "Naka-link",
+      "notConnected": "Hindi Naka-link",
+      "note": "Ang pag-login gamit ang alinmang naka-link na paraan ay papasok sa parehong account na ito."
+    },
     "legal": "Legal",
     "credits": "Mga Credit at Contributor",
     "support": "Suportahan ang Halal Formosa ❤️",

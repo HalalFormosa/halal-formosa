@@ -427,9 +427,14 @@
         "connecting": "Connecting HD Camera...",
         "searching": "Searching for ingredients...",
         "scanning": "AI Scanning...",
-        "found": "Ingredients Found! Focusing...",
+        "analyzing": "Got it! Reading ingredients...",
+        "found": "Ingredients Found!",
         "notFound": "Ingredients not found, keep holding..."
-      }
+      },
+      "analyzingHint": "Photo captured — you can lower the camera now",
+      "highlightsFound": "{count} ingredient(s) flagged",
+      "scanAgain": "Scan Again",
+      "viewDetails": "View Details"
     },
     "scan": {
       "camera": "Camera",
@@ -865,6 +870,17 @@
     "login": "Login",
     "review": "Product Review",
     "settings": "Settings",
+    "linkedAccounts": {
+      "title": "Linked Accounts",
+      "subtitle": "See which sign-in methods are connected to your account.",
+      "email": "Email & Password",
+      "google": "Google",
+      "apple": "Apple",
+      "line": "LINE",
+      "connected": "Connected",
+      "notConnected": "Not Connected",
+      "note": "Signing in with any connected method logs you into this same account."
+    },
     "legal": "Legal",
     "credits": "Credits & Contributor",
     "support": "Support Halal Formosa ❤️",

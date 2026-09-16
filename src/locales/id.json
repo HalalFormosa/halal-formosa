@@ -706,6 +706,17 @@
     "login": "Masuk",
     "review": "Review Produk",
     "settings": "Pengaturan",
+    "linkedAccounts": {
+      "title": "Akun Tertaut",
+      "subtitle": "Lihat metode masuk yang tertaut ke akun Anda.",
+      "email": "Email & Kata Sandi",
+      "google": "Google",
+      "apple": "Apple",
+      "line": "LINE",
+      "connected": "Tertaut",
+      "notConnected": "Belum Tertaut",
+      "note": "Masuk menggunakan metode mana pun yang tertaut akan membawa Anda ke akun yang sama ini."
+    },
     "legal": "Legal",
     "credits": "Kredit & Kontributor",
     "support": "Dukung Halal Formosa ❤️",

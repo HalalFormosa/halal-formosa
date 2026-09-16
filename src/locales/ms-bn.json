@@ -667,6 +667,17 @@
     "login": "Log masuk",
     "review": "Semakan Produk",
     "settings": "tetapan",
+    "linkedAccounts": {
+      "title": "Akaun Berpaut",
+      "subtitle": "Lihat kaedah log masuk yang dipautkan dengan akaun anda.",
+      "email": "E-mel & Kata Laluan",
+      "google": "Google",
+      "apple": "Apple",
+      "line": "LINE",
+      "connected": "Dipautkan",
+      "notConnected": "Tidak Dipautkan",
+      "note": "Log masuk menggunakan mana-mana kaedah yang dipautkan akan membawa anda ke akaun yang sama ini."
+    },
     "legal": "sah",
     "credits": "Kredit & Penyumbang",
     "support": "Sokong Halal Formosa ❤️",

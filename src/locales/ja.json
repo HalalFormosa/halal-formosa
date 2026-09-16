@@ -667,6 +667,17 @@
     "login": "ログイン",
     "review": "製品レビュー",
     "settings": "設定",
+    "linkedAccounts": {
+      "title": "連携アカウント",
+      "subtitle": "アカウントに連携されているログイン方法を確認できます。",
+      "email": "メールアドレスとパスワード",
+      "google": "Google",
+      "apple": "Apple",
+      "line": "LINE",
+      "connected": "連携済み",
+      "notConnected": "未連携",
+      "note": "連携済みのいずれかの方法でログインすると、同じアカウントにアクセスします。"
+    },
     "legal": "法律上の",
     "credits": "クレジットと寄稿者",
     "support": "ハラール・フォルモサをサポート❤️",

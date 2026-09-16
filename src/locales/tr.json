@@ -667,6 +667,17 @@
     "login": "Giriş yapmak",
     "review": "Ürün İncelemesi",
     "settings": "Ayarlar",
+    "linkedAccounts": {
+      "title": "Bağlı Hesaplar",
+      "subtitle": "Hesabınıza hangi giriş yöntemlerinin bağlı olduğunu görün.",
+      "email": "E-posta ve Şifre",
+      "google": "Google",
+      "apple": "Apple",
+      "line": "LINE",
+      "connected": "Bağlı",
+      "notConnected": "Bağlı Değil",
+      "note": "Bağlı yöntemlerden herhangi biriyle giriş yapmak sizi aynı hesaba yönlendirir."
+    },
     "legal": "Yasal",
     "credits": "Krediler ve Katkıda Bulunanlar",
     "support": "Helal Formosa'yı destekleyin ❤️",
