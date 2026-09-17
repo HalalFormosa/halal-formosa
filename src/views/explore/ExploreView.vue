@@ -382,8 +382,87 @@
               </div>
             </template>
 
+            <!-- Featured slot (index 0) gets its own subtle crossfade, keyed
+                 by place id, so the periodic/tab-switch rotation swap
+                 doesn't just snap to new content — the rest of the list
+                 below renders plainly, unaffected. No `mode="out-in"`: that
+                 fully faded the old card out (and briefly showed nothing)
+                 before fading the new one in. Simultaneous fade instead —
+                 the leaving card is pulled out of flow (position: absolute)
+                 so it overlaps the incoming one instead of leaving a gap. -->
+            <div class="featured-fade-wrapper">
+            <Transition name="featured-fade">
+              <div
+                v-if="listLocations[0]"
+                :key="listLocations[0].id"
+                class="modern-location-card list-mode-card"
+                :class="['tier-' + String(listLocations[0].partner_tier || 'basic').toLowerCase()]"
+                @click="goToDetail(listLocations[0].id)"
+              >
+                <div class="card-inner">
+                  <div class="card-image-section">
+                    <img
+                      loading="lazy"
+                      :src="listLocations[0].image || PLACEHOLDER"
+                      :alt="listLocations[0].name"
+                      @error="onImageError"
+                    />
+                    <!-- Floating Open/Closed Status Pill -->
+                    <div v-if="listLocations[0].opening_hours" :class="['floating-status-pill', 'bottom-left', isOpenNow(listLocations[0]) ? 'open' : 'closed']">
+                      <ion-icon :icon="timeOutline" style="font-size: 14px;" />
+                      <span>{{ isOpenNow(listLocations[0]) ? 'Open' : 'Closed' }}</span>
+                    </div>
+                    <div v-if="listLocations[0].partner_tier" class="floating-tier-badge">
+                      <div :class="['tier-pill', listLocations[0].partner_tier.toLowerCase()]">
+                        <ion-icon :icon="sparkles" />
+                        <span>{{ listLocations[0].partner_tier.toUpperCase() }}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="card-info-section">
+                    <div class="info-top">
+                      <h5 class="title-text">
+                        {{ listLocations[0].name }}
+                        <ion-icon v-if="listLocations[0].partner_tier" :icon="checkmarkCircle" class="verified-badge" />
+                        <ion-icon v-else-if="listLocations[0].is_claimed" :icon="checkmarkCircle" class="claimed-badge" />
+                      </h5>
+                      <div class="metas">
+                        <span class="meta type-badge">{{ listLocations[0].type }}</span>
+
+                        <span class="meta"><ion-icon :icon="eyeOutline" style="font-size: 14px; vertical-align: middle;" /> {{ listLocations[0].view_count || 0 }}</span>
+
+                        <span class="meta">
+                          <ion-icon :icon="calendarOutline" style="font-size: 14px; vertical-align: middle;" />
+                          {{ listLocations[0].createdFromNow }}
+                        </span>
+
+                        <span v-if="userLocation && (listLocations[0] as any).distance !== undefined" class="distance">
+                        <ion-icon :icon="locationOutline" style="font-size: 0.85rem; vertical-align: middle; margin-top: -2px;" /> {{ formatKm((listLocations[0] as any).distance) }} km
+                        </span>
+                      </div>
+
+
+                      <!-- Tags section (Horizontal Scroll) -->
+                      <div v-if="listLocations[0].tags && listLocations[0].tags.length > 0" class="card-tags-row horizontal-scroll">
+                        <span
+                          v-for="t in listLocations[0].tags"
+                          :key="t"
+                          class="card-tag"
+                          :class="{ highlight: t.toLowerCase() === activeTag?.toLowerCase() }"
+                        >
+                          #{{ t }}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <div v-if="['gold', 'silver'].includes(String(listLocations[0].partner_tier || '').toLowerCase())" class="premium-flare"></div>
+                </div>
+              </div>
+            </Transition>
+            </div>
+
             <div
-              v-for="place in listLocations"
+              v-for="place in listLocations.slice(1)"
               :key="place.id"
               class="modern-location-card list-mode-card"
               :class="['tier-' + String(place.partner_tier || 'basic').toLowerCase()]"
@@ -391,10 +470,10 @@
             >
               <div class="card-inner">
                 <div class="card-image-section">
-                  <img 
-                    loading="lazy" 
-                    :src="place.image || PLACEHOLDER" 
-                    :alt="place.name" 
+                  <img
+                    loading="lazy"
+                    :src="place.image || PLACEHOLDER"
+                    :alt="place.name"
                     @error="onImageError"
                   />
                   <!-- Floating Open/Closed Status Pill -->
@@ -418,9 +497,9 @@
                     </h5>
                     <div class="metas">
                       <span class="meta type-badge">{{ place.type }}</span>
-                      
+
                       <span class="meta"><ion-icon :icon="eyeOutline" style="font-size: 14px; vertical-align: middle;" /> {{ place.view_count || 0 }}</span>
-                      
+
                       <span class="meta">
                         <ion-icon :icon="calendarOutline" style="font-size: 14px; vertical-align: middle;" />
                         {{ place.createdFromNow }}
@@ -430,13 +509,13 @@
                       <ion-icon :icon="locationOutline" style="font-size: 0.85rem; vertical-align: middle; margin-top: -2px;" /> {{ formatKm((place as any).distance) }} km
                       </span>
                     </div>
-                    
+
 
                     <!-- Tags section (Horizontal Scroll) -->
                     <div v-if="place.tags && place.tags.length > 0" class="card-tags-row horizontal-scroll">
-                      <span 
-                        v-for="t in place.tags" 
-                        :key="t" 
+                      <span
+                        v-for="t in place.tags"
+                        :key="t"
                         class="card-tag"
                         :class="{ highlight: t.toLowerCase() === activeTag?.toLowerCase() }"
                       >
@@ -448,7 +527,7 @@
                 <div v-if="['gold', 'silver'].includes(String(place.partner_tier || '').toLowerCase())" class="premium-flare"></div>
               </div>
             </div>
-            
+
             <div v-if="boundsFilteredLocations.length === 0 && !loading" class="empty-state">
               <ion-icon :icon="informationCircleOutline" />
               <p>{{ $t('explore.noResults') }}</p>
@@ -543,13 +622,122 @@
 
           <!-- Real data after loaded -->
           <template v-else>
+            <!-- Featured slot (first card in the horizontal scroll) gets its
+                 own crossfade wrapper, same as the list view — otherwise the
+                 rotation (10s timer or tab-switch) just hard-cuts the
+                 leftmost card's content, which is the default map view most
+                 visits actually see. Wrapped in a sized, positioned slot
+                 (.featured-map-slot) since it's no longer a direct flex
+                 child of .cards-track, so it needs to hold that spot in the
+                 horizontal scroll itself. -->
+            <div class="featured-fade-wrapper featured-map-slot">
+            <Transition name="featured-fade">
+              <div
+                  v-if="visibleMapLocations[0]"
+                  :key="visibleMapLocations[0].id"
+                  :data-id="visibleMapLocations[0].id"
+                  :ref="setCardRef(visibleMapLocations[0].id)"
+                  :class="[
+                    'modern-location-card',
+                    'featured-map-card',
+                    { 'active-card': selectedPlace?.id === visibleMapLocations[0].id },
+                    visibleMapLocations[0].partner_tier ? 'tier-' + visibleMapLocations[0].partner_tier.toLowerCase() : ''
+                  ]"
+                  @click="selectPlace(visibleMapLocations[0])"
+              >
+                <div class="card-inner">
+                  <div class="card-image-section">
+                    <img
+                        loading="lazy"
+                        :src="visibleMapLocations[0].image || PLACEHOLDER"
+                        :alt="visibleMapLocations[0].name"
+                        @error="onImageError"
+                    />
+                    <!-- Floating Open/Closed Status Pill -->
+                    <div v-if="visibleMapLocations[0].opening_hours" :class="['floating-status-pill', 'bottom-left', isOpenNow(visibleMapLocations[0]) ? 'open' : 'closed']">
+                      <ion-icon :icon="timeOutline" style="font-size: 14px;" />
+                      <span>{{ isOpenNow(visibleMapLocations[0]) ? 'Open' : 'Closed' }}</span>
+                    </div>
+                    <!-- Floating Tier Badge -->
+                    <div v-if="visibleMapLocations[0].partner_tier" class="floating-tier-badge">
+                      <div :class="['tier-pill', visibleMapLocations[0].partner_tier.toLowerCase()]">
+                        <ion-icon :icon="sparkles" />
+                        <span>{{ (visibleMapLocations[0].partner_tier || '').toUpperCase() }}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="card-info-section">
+                    <div class="info-top">
+                      <h5 class="title-text">
+                        {{ visibleMapLocations[0].name }}
+                        <ion-icon v-if="visibleMapLocations[0].partner_tier" :icon="checkmarkCircle" class="verified-badge" />
+                        <ion-icon v-else-if="visibleMapLocations[0].is_claimed" :icon="checkmarkCircle" class="claimed-badge" />
+                      </h5>
+                      <div class="metas">
+                        <span class="meta"><ion-icon :icon="eyeOutline" style="font-size: 14px; vertical-align: middle;" /> {{ visibleMapLocations[0].view_count || 0 }}</span>
+
+                        <span class="meta">
+                          <ion-icon :icon="calendarOutline" style="font-size: 14px; vertical-align: middle;" />
+                          {{ visibleMapLocations[0].createdFromNow }}
+                        </span>
+
+                        <span v-if="userLocation && (visibleMapLocations[0] as any).distance !== undefined" class="distance">
+                        <ion-icon :icon="locationOutline" style="font-size: 0.85rem; vertical-align: middle; margin-top: -2px;" /> {{ formatKm((visibleMapLocations[0] as any).distance) }} km
+                        </span>
+                      </div>
+
+                    </div>
+                    <div class="info-actions">
+                      <div class="action-row">
+                        <ion-button
+                          v-if="isLoggedIn"
+                          fill="clear"
+                          size="small"
+                          :color="isLocationSaved(visibleMapLocations[0].id) ? 'carrot' : 'medium'"
+                          @click.stop="openSaveModal(visibleMapLocations[0])"
+                        >
+                          <ion-icon :icon="isLocationSaved(visibleMapLocations[0].id) ? bookmark : bookmarkOutline" slot="start" />
+                        </ion-button>
+                        <div class="action-icons">
+                          <ion-button
+                            fill="clear"
+                            size="small"
+                            color="carrot"
+                            @click.stop="sharePlace({ name: visibleMapLocations[0].name, type: visibleMapLocations[0].type, imageUrl: visibleMapLocations[0].image || 'https://placehold.co/200x100', lat: visibleMapLocations[0].position.lat, lng: visibleMapLocations[0].position.lng })"
+                            class="icon-btn"
+                          >
+                            <ion-icon :icon="shareSocialOutline" />
+                          </ion-button>
+                          <ion-button
+                            fill="clear"
+                            size="small"
+                            color="carrot"
+                            @click.stop="openNavigation(visibleMapLocations[0])"
+                            class="icon-btn"
+                          >
+                            <ion-icon :icon="navigateOutline" />
+                          </ion-button>
+                          <ion-button fill="clear" size="small" color="carrot" @click.stop="goToDetail(visibleMapLocations[0].id)" class="detail-btn">
+                            {{ $t('common.details') }}
+                          </ion-button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div v-if="['gold', 'silver'].includes(String(visibleMapLocations[0].partner_tier || '').toLowerCase())" class="premium-flare"></div>
+                </div>
+              </div>
+            </Transition>
+            </div>
+
             <div
-                v-for="place in visibleMapLocations"
+                v-for="place in visibleMapLocations.slice(1)"
                 :key="place.id"
                 :data-id="place.id"
                 :ref="setCardRef(place.id)"
                 :class="[
-                  'modern-location-card', 
+                  'modern-location-card',
                   { 'active-card': selectedPlace?.id === place.id },
                   place.partner_tier ? 'tier-' + place.partner_tier.toLowerCase() : ''
                 ]"
@@ -797,6 +985,10 @@ const {
 const locations = ref<Place[]>([])
 const selectedPlace = ref<Place | null>(null)
 const focusedPlaceId = ref<number | null>(null)
+// Gold partner locations within PARTNER_RADIUS_KM of the user — kept separate
+// from the viewport-bound `locations` fetch and re-merged into it on every
+// fetch so panning the map never drops them.
+const partnerRadiusLocations = ref<Place[]>([])
 
 const viewMode = ref<'map' | 'list'>('map')
 const activeTag = ref<string | null>(null)
@@ -890,6 +1082,12 @@ const isPageActive = ref(false)
 const MAP_ID = 'a40f1ec0ad0afbbb12694f19'
 const DEFAULT_CENTER: LatLng = {lat: 25.0343, lng: 121.5645}
 const PLACEHOLDER = 'https://placehold.co/200x100'
+// Only Gold partner locations bypass the map viewport and stay visible
+// city-wide — this is the radius used for that lookup. Silver/Bronze still
+// only surface when they're actually inside the current viewport, though
+// they're still eligible for the per-tier featured rotation within whatever
+// is on screen (see withFeaturedTierRotation below).
+const PARTNER_RADIUS_KM = 30
 
 /* ---------------- State ---------------- */
 const router = useRouter()
@@ -952,7 +1150,12 @@ const boundsFilteredLocations = computed(() => {
     { lat: ne.lat() + latDiff * buffer, lng: ne.lng() + lngDiff * buffer }
   )
 
-  return displayedLocations.value.filter(p => extendedBounds.contains(p.position))
+  // Gold partners bypass the viewport entirely (that's the whole point of
+  // the city-wide radius fetch) — everything else still respects it so the
+  // map and list stay in sync.
+  return displayedLocations.value.filter(p =>
+    p.partner_tier?.toLowerCase() === 'gold' || extendedBounds.contains(p.position)
+  )
 })
 
 const listLocations = computed(() => {
@@ -1175,6 +1378,16 @@ const isOpenNow = (place: Place): boolean => {
   return place.isOpen ?? false
 }
 
+// Re-run the partner-radius lookup once real GPS resolves, since the very
+// first call (at map init) may have used DEFAULT_CENTER as a fallback.
+let partnerRadiusRefetchedForGps = false
+watch(userLocation, (loc) => {
+  if (loc && !partnerRadiusRefetchedForGps) {
+    partnerRadiusRefetchedForGps = true
+    fetchPartnerLocationsInRadius()
+  }
+})
+
 // Sorting logic: if GPS succeeded, default to 'nearest'
 watch(locationAttemptFinished, (finished) => {
   if (finished && userLocation.value) {
@@ -1190,10 +1403,12 @@ watch([userLocation, mapReady], ([newLoc, isReady]) => {
 
   const userLoc = { lat: newLoc.lat, lng: newLoc.lng }
 
-  // 1. 🔥 CENTER MAP ON FIRST FIX
+  // 1. 🔥 CENTER MAP ON FIRST FIX — this is the initial focus: the user's
+  // own location, at a wider zoom so their surroundings are visible before
+  // anything else (a sponsored partner, a search result) pulls it anywhere.
   if (!hasAutoCentered.value) {
     mapInstance.panTo(userLoc)
-    mapInstance.setZoom(15)
+    mapInstance.setZoom(14)
     hasAutoCentered.value = true
   }
 
@@ -1753,7 +1968,14 @@ const visibleMapLocations = computed(() => {
     { lat: ne.lat() + latDiff * buffer, lng: ne.lng() + lngDiff * buffer }
   )
 
-  let filtered = displayedLocations.value.filter(p => extendedBounds.contains(p.position))
+  // Gold partners bypass the viewport here too (same rule as the list
+  // view's boundsFilteredLocations) — otherwise whichever gold partner the
+  // rotation timer picks next just vanishes from this carousel the moment
+  // it's outside the current map view, and a random regular place leads
+  // instead until rotation cycles back to a gold that happens to be visible.
+  let filtered = displayedLocations.value.filter(p =>
+    p.partner_tier?.toLowerCase() === 'gold' || extendedBounds.contains(p.position)
+  )
 
   // Limit to max 25 cards to keep DOM lightweight
   const maxCards = 25
@@ -2099,6 +2321,19 @@ const fetchLocations = async (mapBounds?: google.maps.LatLngBounds | null, force
       }
     }
 
+    // Partner locations bypass the viewport entirely (city-wide radius), so
+    // re-merge them here on every fetch — otherwise panning the map would
+    // wipe them out the moment this bounds-only query re-runs.
+    if (partnerRadiusLocations.value.length) {
+      const presentIds = new Set(mapped.map(p => p.id))
+      for (const pl of partnerRadiusLocations.value) {
+        if (!presentIds.has(pl.id)) {
+          mapped.push(pl)
+          presentIds.add(pl.id)
+        }
+      }
+    }
+
     locations.value = mapped
     lastFetchedBounds.value = paddedBounds
   } else if (error) {
@@ -2109,6 +2344,52 @@ const fetchLocations = async (mapBounds?: google.maps.LatLngBounds | null, force
 
   initMarkers()
   loadingPlaces.value = false
+}
+
+async function fetchPartnerLocationsInRadius() {
+  const center = userLocation.value
+      ? { lat: userLocation.value.lat, lng: userLocation.value.lng }
+      : (mapInstance?.getCenter() ? { lat: mapInstance.getCenter()!.lat(), lng: mapInstance.getCenter()!.lng() } : DEFAULT_CENTER)
+
+  const { data, error } = await supabase.rpc('nearby_partner_locations', {
+    center_lat: center.lat,
+    center_lng: center.lng,
+    radius_km: PARTNER_RADIUS_KM
+  })
+
+  if (error || !data) return
+
+  const mapped: Place[] = data.map((loc: any) => {
+    const p: Place = {
+      id: loc.id,
+      name: loc.name,
+      address: loc.address ?? null,
+      position: {lat: loc.lat, lng: loc.lng},
+      image: loc.image,
+      typeId: loc.type_id,
+      type: loc.location_type_name ?? '',
+      view_count: loc.view_count ?? 0,
+      partner_tier: loc.partner_tier,
+      is_claimed: loc.is_claimed ?? false,
+      created_at: loc.created_at,
+      tags: loc.tags || [],
+      opening_hours: loc.opening_hours
+    }
+    p.isOpen = calculateIsOpenStatus(p)
+    p.createdFromNow = fromNowToTaipei(loc.created_at)
+    return p
+  })
+
+  partnerRadiusLocations.value = mapped
+
+  // Merge immediately into whatever is already on screen so partners show up
+  // without waiting for the next viewport fetch/pan.
+  const presentIds = new Set(locations.value.map(p => p.id))
+  const toAdd = mapped.filter(p => !presentIds.has(p.id))
+  if (toAdd.length) {
+    locations.value = [...locations.value, ...toAdd]
+    initMarkers()
+  }
 }
 
 const fetchTrendingPlaces = async () => {
@@ -2193,7 +2474,7 @@ const initMap = async () => {
 
   // Check for pre-existing fix to provide an "instant" map center
   const initialCenter = userLocation.value ? { lat: userLocation.value.lat, lng: userLocation.value.lng } : DEFAULT_CENTER
-  const initialZoom = userLocation.value ? 15 : 14
+  const initialZoom = userLocation.value ? 14 : 13
 
   mapInstance = new Map(el, {
     center: initialCenter,
@@ -2265,6 +2546,7 @@ const initMap = async () => {
   if (mapInstance) {
     fetchLocations(mapInstance.getBounds())
   }
+  fetchPartnerLocationsInRadius()
 }
 
 /**
@@ -2746,6 +3028,91 @@ watch(searchQuery, (q) => {
   }
 })
 
+// Round-robin exposure for sponsored partners: at most ONE gold + ONE
+// silver + ONE bronze store lead the "Nearest" list per visit, cycling
+// independently through each tier's partners over successive visits
+// instead of stacking every sponsored store at the top together. A "visit"
+// is every time this tab is actually entered (onIonViewWillEnter below),
+// not just the first cold mount — Ionic keeps this view alive in memory
+// when you switch to another tab (e.g. Product) and back, so a plain
+// setup-time constant would never re-roll on tab-switches. Reactive (ref)
+// so sortedLocations recomputes the instant it bumps.
+const PARTNER_ROTATION_KEY = 'hf_partner_rotation_index'
+const partnerRotationIndex = ref(0)
+// Defensive debounce: Ionic-Vue can occasionally fire onIonViewWillEnter
+// twice in quick succession for the tab active on initial app load (once
+// from registerIonPage, once from the transition completing). 500ms is far
+// shorter than any legitimate gap between real bumps (10s timer, an actual
+// tab switch) but covers a near-simultaneous double-fire.
+let lastPartnerBumpAt = 0
+function bumpPartnerRotation() {
+  const now = Date.now()
+  if (now - lastPartnerBumpAt < 500) return
+  lastPartnerBumpAt = now
+  try {
+    const raw = Number(localStorage.getItem(PARTNER_ROTATION_KEY) || '0')
+    const next = Number.isFinite(raw) && raw >= 0 ? raw + 1 : 1
+    localStorage.setItem(PARTNER_ROTATION_KEY, String(next))
+    partnerRotationIndex.value = next
+  } catch {
+    partnerRotationIndex.value++
+  }
+}
+
+// Also keep rotating while the user just stays on Explore (not only on
+// tab-switch) — same 10s cadence as Product's featured-gold carousel
+// (SearchView.vue's goldRotationTimer), so a nearby gold/silver/bronze
+// partner still gets its turn even on a long single visit.
+const FEATURED_ROTATION_INTERVAL_MS = 10000
+let featuredRotationTimer: ReturnType<typeof setInterval> | null = null
+function startFeaturedRotationTimer() {
+  if (featuredRotationTimer) clearInterval(featuredRotationTimer)
+  featuredRotationTimer = setInterval(bumpPartnerRotation, FEATURED_ROTATION_INTERVAL_MS)
+}
+function stopFeaturedRotationTimer() {
+  if (featuredRotationTimer) {
+    clearInterval(featuredRotationTimer)
+    featuredRotationTimer = null
+  }
+}
+
+const FEATURED_TIER_ORDER = ['gold', 'silver', 'bronze'] as const
+
+// Picks one partner per tier (gold, then silver, then bronze — whichever
+// tiers actually have a match) to feature at the top this visit, each
+// rotating independently through that tier's own locations by id order
+// (stable regardless of the user's position, so "whose turn is next" is
+// predictable) — every other place, including same-tier partners not
+// featured this time, sorts purely by distance like a normal result.
+function withFeaturedTierRotation<T extends { id: number; partner_tier?: string | null; distance: number }>(list: T[]): T[] {
+  const byTier: Record<string, T[]> = { gold: [], silver: [], bronze: [] }
+  const rest: T[] = []
+
+  for (const p of list) {
+    const tier = p.partner_tier?.toLowerCase()
+    if (tier === 'gold' || tier === 'silver' || tier === 'bronze') {
+      byTier[tier].push(p)
+    } else {
+      rest.push(p)
+    }
+  }
+
+  const featured: T[] = []
+  const leftovers: T[] = [...rest]
+
+  for (const tier of FEATURED_TIER_ORDER) {
+    const group = byTier[tier]
+    if (!group.length) continue
+    group.sort((a, b) => a.id - b.id)
+    const featuredIndex = partnerRotationIndex.value % group.length
+    featured.push(group[featuredIndex])
+    leftovers.push(...group.filter((_, i) => i !== featuredIndex))
+  }
+
+  leftovers.sort((a, b) => a.distance - b.distance)
+  return [...featured, ...leftovers]
+}
+
 const sortedLocations = computed(() => {
   let base = [...locations.value]
 
@@ -2813,7 +3180,12 @@ const sortedLocations = computed(() => {
   }
 
   if (sortBy.value === 'nearest') {
-    mapped.sort((a, b) => a.distance - b.distance);
+    // At most one gold + one silver + one bronze partner lead the default
+    // nearby list (ranked in that tier order) — never a wall of same-tier
+    // cards. withFeaturedTierRotation() rotates who's featured per tier on
+    // each Explore visit; everyone else, including same-tier partners not
+    // featured this time, sorts purely by distance.
+    return withFeaturedTierRotation(mapped);
   } else if (sortBy.value === 'recent') {
     mapped.sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
   } else if (sortBy.value === 'popular') {
@@ -2899,10 +3271,15 @@ watch(filteredIdsHash, () => {
 })
 
 // CONSOLIDATED AUTO-SELECT WATCHER
+// The map's first focus is the user's own location (handled by the
+// userLocation/mapReady watcher above, at a wider zoom) — not a specific
+// place card. Auto-selecting sortedLocations[0] here used to yank the
+// camera onto whatever led the list (often a sponsored partner, possibly
+// far away) the instant Explore opened. This watcher is intentionally a
+// no-op now beyond marking auto-select as "handled" so it can't fire later;
+// selecting a place remains a deliberate user action (tap a card/pin).
 watch([() => sortedLocations.value.length, userLocation, loading, locationAttemptFinished, sortBy], ([count, loc, isLoading, finished, currentSort]) => {
   if (count > 0 && loc && !isLoading && !hasAutoSelected.value && !selectedPlace.value && finished && currentSort === 'nearest') {
-    // Select the first item once everything (Map, GPS, Data, and Sort Order) is ready
-    selectPlace(sortedLocations.value[0]);
     hasAutoSelected.value = true;
   }
 }, { immediate: true });
@@ -3066,6 +3443,7 @@ onUnmounted(() => {
   if (cardObserver) cardObserver.disconnect()
   if (infiniteObserver) infiniteObserver.disconnect()
   clearCampusOverlays()
+  stopFeaturedRotationTimer()
 })
 
 let firstEnter = true
@@ -3108,6 +3486,11 @@ onIonViewWillEnter(async () => {
   applyExploreStatusBar()
   hasAutoSelected.value = false; // allow re-highlighting when returning
   hasCenteredInitiallyVisible = false;
+  // Re-roll which sponsored partner is featured every time this tab is
+  // actually entered — including switching back from Product/Home, where
+  // Ionic keeps this view alive rather than remounting it.
+  bumpPartnerRotation();
+  startFeaturedRotationTimer();
 
   if (firstEnter) {
     firstEnter = false
@@ -3138,6 +3521,7 @@ onIonViewWillLeave(() => {
   restoreThemeStatusBar()
   clearCampusOverlays()
   lastStableLoc.value = null   // REQUIRED
+  stopFeaturedRotationTimer()
 })
 
 
@@ -4341,33 +4725,24 @@ button.gm-ui-hover-effect > span {
   --color: #ffffff;
 }
 
-/* Tier Specific Overrides - ensure contrast in both modes */
+/* Same "gold plating" design token Product's cards use (theme/variables.css
+   .tier-card-gold/-silver/-bronze): theme-aware --tier-*-bg gradient + a
+   solid tier-colored border. Reusing the shared tokens instead of a
+   one-off local color keeps this visually identical to Product and
+   correct in both light/dark mode. Size/shadow are untouched — only
+   background+border differ from a regular card. */
 .modern-location-card.tier-gold {
-  background: linear-gradient(135deg, rgba(255, 251, 235, 0.9) 0%, rgba(254, 243, 199, 0.9) 100%) !important;
-  border-color: rgba(251, 191, 36, 0.45) !important;
+  background: var(--tier-gold-bg) !important;
+  border: 1.5px solid #eab308 !important;
 }
-.modern-location-card.tier-gold .title-text { color: #451a03; }
-.modern-location-card.tier-gold .meta { color: #713f12; }
-
-/* Tiered Dark Mode Overrides */
-.ion-palette-dark .modern-location-card.tier-gold {
-  background: linear-gradient(135deg, rgba(66, 32, 6, 0.5) 0%, rgba(28, 28, 30, 0.8) 100%) !important;
-  border-color: rgba(251, 191, 36, 0.3) !important;
-}
-.ion-palette-dark .modern-location-card.tier-gold .title-text { color: #fef3c7; }
-.ion-palette-dark .modern-location-card.tier-gold .meta { color: #fde68a; }
-
 .modern-location-card.tier-silver {
-  background: linear-gradient(135deg, rgba(248, 250, 252, 0.9) 0%, rgba(226, 232, 240, 0.9) 100%) !important;
-  border-color: rgba(148, 163, 184, 0.4) !important;
+  background: var(--tier-silver-bg) !important;
+  border: 1.5px solid #cbd5e1 !important;
 }
-.modern-location-card.tier-silver .title-text { color: #0f172a; }
-
 .modern-location-card.tier-bronze {
-  background: linear-gradient(135deg, rgba(255, 251, 235, 0.9) 0%, rgba(255, 237, 213, 0.9) 100%) !important;
-  border-color: rgba(180, 83, 9, 0.4) !important;
+  background: var(--tier-bronze-bg) !important;
+  border: 1.2px solid #d97706 !important;
 }
-.modern-location-card.tier-bronze .title-text { color: #431407; }
 
 /* Metallic Flare Animation */
 .premium-flare {
@@ -4647,6 +5022,47 @@ button.gm-ui-hover-effect > span {
   max-width: none !important;
   width: 100% !important;
 }
+
+/* Subtle crossfade for the featured slot when auto-rotation (or a
+   tab-switch) swaps in a different sponsored partner — kept short and
+   opacity-only so it reads as a gentle refresh, not a flashy transition.
+   No transition `mode`, so the old and new card fade concurrently instead
+   of old-fades-out-THEN-new-fades-in (which left a visible blank gap).
+   The leaving card is taken out of flow so it overlaps the incoming one
+   in place, rather than both taking up space and doubling the height. */
+.featured-fade-wrapper {
+  position: relative;
+}
+.featured-fade-enter-active,
+.featured-fade-leave-active {
+  transition: opacity 0.4s ease;
+}
+.featured-fade-enter-from,
+.featured-fade-leave-to {
+  opacity: 0;
+}
+.featured-fade-leave-active {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+}
+
+/* The map view's featured slot sits inside a horizontal-scrolling flex
+   track (.cards-track), but wrapping it in .featured-fade-wrapper takes it
+   out of being a direct flex child — so this wrapper carries the same
+   flex-basis the carousel cards normally get, and the card inside it just
+   fills the wrapper instead of setting its own competing flex-basis. */
+.featured-map-slot {
+  flex: 0 0 85vw;
+  max-width: 380px;
+}
+.featured-map-card {
+  flex: none !important;
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
 
 .infinite-scroll-sentinel {
   display: flex;

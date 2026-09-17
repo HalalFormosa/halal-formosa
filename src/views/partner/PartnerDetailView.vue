@@ -183,7 +183,7 @@
         >
           <ion-card-header>
             <ion-card-title>
-              Certified Locations
+              {{ body.partner_type === 'halal_body' ? 'Certified Locations' : 'Affiliated Stores' }}
             </ion-card-title>
           </ion-card-header>
 
