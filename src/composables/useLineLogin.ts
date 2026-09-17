@@ -28,8 +28,14 @@ export function getLineWebCallbackUrl(): string {
   return window.location.origin + '/auth/line/callback';
 }
 
+// The native app's own origin (https://localhost inside the Capacitor
+// webview) isn't a real, reachable page and was never registered with LINE,
+// so this must point at the actual hosted deployment instead of
+// window.location.origin.
+const NATIVE_CALLBACK_ORIGIN = 'https://app.halalformosa.com';
+
 export function getLineNativeCallbackUrl(): string {
-  return window.location.origin + '/auth/line/native-callback';
+  return NATIVE_CALLBACK_ORIGIN + '/auth/line/native-callback';
 }
 
 export async function startLineLogin(afterLoginPath = '/'): Promise<void> {

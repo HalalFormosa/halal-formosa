@@ -251,6 +251,59 @@
                   Fix capitalization
                 </button>
 
+                <!-- OCR name check: re-reads the back (or optionally front)
+                     photo and flags if it doesn't agree with the typed name.
+                     Advisory only — never blocks Approve. -->
+                <div
+                  v-if="ocrChecking || ocrCheckResult || ocrCheckError"
+                  class="ocr-check-banner"
+                  :class="{
+                    'ocr-check-banner--match': ocrCheckResult?.name.verdict === 'match',
+                    'ocr-check-banner--close': ocrCheckResult?.name.verdict === 'close',
+                    'ocr-check-banner--mismatch': ocrCheckResult?.name.verdict === 'mismatch'
+                  }"
+                >
+                  <div class="ocr-check-banner-header" @click="showOcrNameDetail = !showOcrNameDetail">
+                    <ion-spinner v-if="ocrChecking" name="dots" style="width: 16px;" />
+                    <ion-icon
+                      v-else
+                      :icon="ocrCheckError ? helpCircleOutline : ocrVerdictIcon(ocrCheckResult?.name.verdict)"
+                    />
+                    <span v-if="ocrChecking">Checking photo for name…</span>
+                    <span v-else-if="ocrCheckError">Couldn't check photo text right now</span>
+                    <span v-else-if="ocrCheckResult?.name.verdict === 'match'">Name matches photo ({{ Math.round((ocrCheckResult.name.similarity ?? 0) * 100) }}%)</span>
+                    <span v-else-if="ocrCheckResult?.name.verdict === 'close'">Name may differ from photo ({{ Math.round((ocrCheckResult.name.similarity ?? 0) * 100) }}% similar) — tap to compare</span>
+                    <span v-else-if="ocrCheckResult?.name.verdict === 'mismatch'">Name differs from photo ({{ Math.round((ocrCheckResult.name.similarity ?? 0) * 100) }}% similar) — tap to compare</span>
+                    <span v-else>No labeled name field detected on back photo</span>
+                    <ion-icon
+                      v-if="ocrCheckResult?.name.ocrName"
+                      :icon="chevronForwardOutline"
+                      class="ocr-check-banner-chevron"
+                      :class="{ 'ocr-check-banner-chevron--open': showOcrNameDetail }"
+                    />
+                  </div>
+                  <div v-if="showOcrNameDetail && ocrCheckResult?.name.ocrName" class="ocr-check-banner-detail">
+                    <div>Photo says: "{{ ocrCheckResult.name.ocrName }}"</div>
+                    <ion-button
+                      v-if="ocrCheckResult.name.ocrName !== selectedProduct.name"
+                      size="small"
+                      fill="outline"
+                      @click="selectedProduct.name = ocrCheckResult!.name.ocrName!"
+                    >
+                      Use photo name
+                    </ion-button>
+                  </div>
+                  <ion-button
+                    v-if="ocrCheckResult && !ocrCheckResult.name.ocrName && !ocrCheckingFront"
+                    size="small"
+                    fill="clear"
+                    @click="runOcrFrontCheck({ frontPhotoUrl: frontPreview || selectedProduct.photo_front_url, submittedName: selectedProduct.name })"
+                  >
+                    Check front photo too
+                  </ion-button>
+                  <ion-spinner v-if="ocrCheckingFront" name="dots" style="width: 16px;" />
+                </div>
+
                 <!-- Status -->
                 <ion-select
                   v-model="selectedProduct.status"
@@ -286,6 +339,65 @@
                   <ion-icon :icon="sparklesOutline" />
                   Fix capitalization
                 </button>
+
+                <!-- OCR ingredients check: re-reads the back photo and diffs
+                     it against the typed ingredients — shows exactly what
+                     was added/removed rather than a bare score. Advisory
+                     only — never blocks Approve. -->
+                <div
+                  v-if="ocrChecking || ocrCheckResult || ocrCheckError"
+                  class="ocr-check-banner"
+                  :class="{
+                    'ocr-check-banner--match': ocrCheckResult?.ingredients.verdict === 'match',
+                    'ocr-check-banner--close': ocrCheckResult?.ingredients.verdict === 'close',
+                    'ocr-check-banner--mismatch': ocrCheckResult?.ingredients.verdict === 'mismatch'
+                  }"
+                >
+                  <div class="ocr-check-banner-header" @click="showOcrIngredientsDetail = !showOcrIngredientsDetail">
+                    <ion-spinner v-if="ocrChecking" name="dots" style="width: 16px;" />
+                    <ion-icon
+                      v-else
+                      :icon="ocrCheckError ? helpCircleOutline : ocrVerdictIcon(ocrCheckResult?.ingredients.verdict)"
+                    />
+                    <span v-if="ocrChecking">Checking photo for ingredients…</span>
+                    <span v-else-if="ocrCheckError">Couldn't check photo text right now</span>
+                    <span v-else-if="ocrCheckResult?.ingredients.verdict === 'match'">Ingredients match photo ({{ Math.round(ocrCheckResult.ingredients.diff.jaccard * 100) }}%)</span>
+                    <span v-else-if="ocrCheckResult?.ingredients.verdict === 'close'">Ingredients may differ from photo ({{ Math.round(ocrCheckResult.ingredients.diff.jaccard * 100) }}% overlap) — tap to compare</span>
+                    <span v-else-if="ocrCheckResult?.ingredients.verdict === 'mismatch'">Ingredients differ from photo ({{ Math.round(ocrCheckResult.ingredients.diff.jaccard * 100) }}% overlap) — tap to compare</span>
+                    <span v-else>No ingredients text detected on back photo</span>
+                    <ion-icon
+                      v-if="ocrCheckResult?.ingredients.ocrText"
+                      :icon="chevronForwardOutline"
+                      class="ocr-check-banner-chevron"
+                      :class="{ 'ocr-check-banner-chevron--open': showOcrIngredientsDetail }"
+                    />
+                  </div>
+                  <div v-if="showOcrIngredientsDetail && ocrCheckResult?.ingredients.diff" class="ocr-check-banner-detail">
+                    <div v-if="ocrCheckResult.ingredients.diff.missingFromPhoto.length">
+                      <strong>Entered but not found in photo:</strong>
+                      <span class="ocr-check-token ocr-check-token--removed">{{ ocrCheckResult.ingredients.diff.missingFromPhoto.join(', ') }}</span>
+                    </div>
+                    <div v-if="ocrCheckResult.ingredients.diff.extraInPhoto.length">
+                      <strong>Found in photo but not entered:</strong>
+                      <span class="ocr-check-token ocr-check-token--added">{{ ocrCheckResult.ingredients.diff.extraInPhoto.join(', ') }}</span>
+                    </div>
+                    <div v-if="!ocrCheckResult.ingredients.diff.missingFromPhoto.length && !ocrCheckResult.ingredients.diff.extraInPhoto.length">
+                      Only minor OCR-noise differences detected.
+                    </div>
+                    <ion-button
+                      v-if="ocrCheckResult.ingredients.ocrText && ocrCheckResult.ingredients.ocrText !== selectedProduct.ingredients"
+                      size="small"
+                      fill="outline"
+                      @click="selectedProduct.ingredients = ocrCheckResult!.ingredients.ocrText"
+                    >
+                      Use photo ingredients
+                    </ion-button>
+                  </div>
+                  <ion-button size="small" fill="clear" :disabled="ocrChecking" @click="rerunOcrCheck">
+                    <ion-icon :icon="refreshOutline" slot="start" />
+                    Re-check photo text
+                  </ion-button>
+                </div>
 
                 <!-- Ingredients Highlights (Visual aid only) — haram (red) first,
                      then syubhah (yellow), then muslim-friendly (blue). -->
@@ -330,6 +442,21 @@
                   <ion-button size="small" fill="outline" color="primary" @click="applyQuickDescription(quickDescriptions.muslimFriendly)" class="quick-btn">Friendly OK</ion-button>
                   <ion-button size="small" fill="outline" color="warning" @click="applyQuickDescription(quickDescriptions.syubhah)" class="quick-btn">Syubhah found</ion-button>
                   <ion-button size="small" fill="outline" color="danger" @click="applyQuickDescription(quickDescriptions.haram)" class="quick-btn">Haram found</ion-button>
+                </div>
+
+                <!-- Status/description consistency: a contradiction here
+                     (e.g. status "Muslim-friendly" but description still
+                     says "Syubhah ingredients found") is a real editing
+                     mistake, not an advisory OCR guess — so it's shown as a
+                     hard mismatch, not a tiered match/close/mismatch score. -->
+                <div v-if="descriptionStatusConflicts.length" class="ocr-check-banner ocr-check-banner--mismatch">
+                  <div class="ocr-check-banner-header">
+                    <ion-icon :icon="alertCircleOutline" />
+                    <span>Description mentions "{{ descriptionStatusConflicts.join('", "') }}" but status is set to "{{ selectedProduct.status }}"</span>
+                  </div>
+                  <ion-button size="small" fill="outline" @click="fixDescriptionToMatchStatus">
+                    Fix description to match status
+                  </ion-button>
                 </div>
               </div>
 
@@ -682,7 +809,8 @@ import {
   eyeOutline,
   gitMergeOutline,
   chevronForwardOutline,
-  swapHorizontalOutline
+  swapHorizontalOutline,
+  alertCircleOutline
 } from 'ionicons/icons'
 import AppHeader from '@/components/AppHeader.vue'
 import StoreLogoBar from '@/components/StoreLogoBar.vue'
@@ -699,6 +827,7 @@ import { highlightIngredients } from "@/utils/useIngredientHighlighter";
 import { isValidBarcodeFormat, normalizeBarcode } from "@/utils/barcodeValidator";
 import { computeImageHash, computeImageHashFromUrl } from "@/utils/useImageHash";
 import { useNotifier } from "@/composables/useNotifier";
+import { useAdminOcrRecheck } from "@/composables/useAdminOcrRecheck";
 
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
@@ -834,6 +963,47 @@ interface SimilarProduct {
 const similarChecking = ref(false)
 const similarProducts = ref<SimilarProduct[]>([])
 let similarToken = 0
+
+/* ---------------- OCR photo re-check (admin only) ----------------
+   Re-runs Vision OCR on the back photo and diffs it against the submitted
+   name/ingredients — advisory only, never gates Approve. Destructured (not
+   held as one object) so the template auto-unwraps these refs, matching how
+   similarChecking/similarProducts above are also flat top-level refs. */
+const {
+  checking: ocrChecking,
+  checkingFront: ocrCheckingFront,
+  error: ocrCheckError,
+  result: ocrCheckResult,
+  runCheck: runOcrCheck,
+  runFrontPhotoNameCheck: runOcrFrontCheck,
+  reset: resetOcrCheck,
+} = useAdminOcrRecheck()
+
+const showOcrNameDetail = ref(false)
+const showOcrIngredientsDetail = ref(false)
+
+function rerunOcrCheck() {
+  if (!selectedProduct.value) return
+  const backUrl = backPreview.value || selectedProduct.value.photo_back_url
+  if (!backUrl) return
+  showOcrNameDetail.value = false
+  showOcrIngredientsDetail.value = false
+  runOcrCheck({
+    backPhotoUrl: backUrl,
+    submittedName: selectedProduct.value.name || '',
+    submittedIngredients: selectedProduct.value.ingredients || '',
+  })
+}
+
+// Icon for the three similarity tiers shared by the name/ingredients OCR
+// banners — green "match" (checkmark), yellow "close" (alert), red
+// "mismatch" (close-circle), or an unresolved "unavailable" state.
+function ocrVerdictIcon(verdict?: string) {
+  if (verdict === 'match') return checkmarkCircle
+  if (verdict === 'close') return alertCircleOutline
+  if (verdict === 'mismatch') return closeCircle
+  return helpCircleOutline
+}
 
 // A near-miss image match (dHash Hamming distance) is a strong "this looks
 // like the same product" signal independent of name/barcode.
@@ -1220,6 +1390,44 @@ function applyQuickDescription(text: string) {
   if (selectedProduct.value) {
     selectedProduct.value.description = text
   }
+}
+
+/* ---------------- Status / description consistency check ----------------
+   Cheap, synchronous, no API call — the description often gets set via the
+   quick-insert chips below, but if an admin later changes Status without
+   re-applying a chip (or types a custom description), the two can silently
+   drift apart, e.g. status "Muslim-friendly" with a leftover "Syubhah
+   ingredients found." description. Flags only an explicit contradiction
+   (a DIFFERENT status's keyword appearing in the text), never a bare
+   absence of confirmation, to avoid nagging on legitimate custom text. */
+type StatusKey = 'Halal' | 'Muslim-friendly' | 'Syubhah' | 'Haram'
+
+const STATUS_KEYWORD_PATTERNS: Record<StatusKey, RegExp> = {
+  'Halal': /\bhalal\b/i,
+  'Muslim-friendly': /muslim[\s-]?friendly/i,
+  'Syubhah': /\bsyubhah\b/i,
+  'Haram': /\bharam\b/i,
+}
+
+const STATUS_TO_QUICK_KEY: Record<StatusKey, keyof typeof quickDescriptions> = {
+  'Halal': 'halal',
+  'Muslim-friendly': 'muslimFriendly',
+  'Syubhah': 'syubhah',
+  'Haram': 'haram',
+}
+
+const descriptionStatusConflicts = computed<StatusKey[]>(() => {
+  const status = selectedProduct.value?.status as StatusKey | undefined
+  const description = selectedProduct.value?.description as string | undefined
+  if (!status || !description?.trim() || !(status in STATUS_KEYWORD_PATTERNS)) return []
+  return (Object.keys(STATUS_KEYWORD_PATTERNS) as StatusKey[])
+    .filter(key => key !== status && STATUS_KEYWORD_PATTERNS[key].test(description))
+})
+
+function fixDescriptionToMatchStatus() {
+  const status = selectedProduct.value?.status as StatusKey | undefined
+  if (!status || !(status in STATUS_TO_QUICK_KEY)) return
+  applyQuickDescription(quickDescriptions[STATUS_TO_QUICK_KEY[status]])
 }
 
 // Contributor submissions often arrive as ALL CAPS (scanned off packaging) or
@@ -1743,6 +1951,12 @@ async function openProductModal(product: any) {
   barcodeCheck.value = null
   similarProducts.value = []
   runProductChecks()
+
+  // Fire-and-forget: re-run OCR on the stored back photo and diff it against
+  // what was submitted. Not awaited — the modal must open instantly, and the
+  // OCR banners fill in a few seconds later on their own.
+  resetOcrCheck()
+  rerunOcrCheck()
 }
 
 function closeModal() {
@@ -1753,6 +1967,7 @@ function closeModal() {
   similarChecking.value = false
   barcodeCheck.value = null
   similarProducts.value = []
+  resetOcrCheck()
   selectedProduct.value = null
   frontFile.value = null
   backFile.value = null
@@ -2388,6 +2603,84 @@ onMounted( async () => {
   font-weight: 700;
   color: var(--ion-text-color);
   opacity: 0.75;
+}
+
+/* OCR photo re-check: auto re-OCRs the back photo on open and diffs it
+   against the submitted name/ingredients so the admin doesn't have to
+   eyeball the photo and text field side by side. Advisory only — never
+   gates Approve; OCR isn't reliable enough to trust for a halal-status-
+   relevant field. Neutral by default, green once confirmed matching,
+   warning-colored on a mismatch — same visual language as .duplicates-banner. */
+.ocr-check-banner {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  margin-top: 8px;
+  margin-bottom: 12px;
+  border: 1px solid var(--ion-color-medium);
+  background: rgba(var(--ion-color-medium-rgb), 0.08);
+  color: var(--ion-color-medium-shade);
+}
+
+.ocr-check-banner--match {
+  border-color: var(--ion-color-success);
+  background: rgba(var(--ion-color-success-rgb), 0.08);
+  color: var(--ion-color-success-shade);
+}
+
+.ocr-check-banner--close {
+  border-color: var(--ion-color-warning);
+  background: rgba(var(--ion-color-warning-rgb), 0.08);
+  color: var(--ion-color-warning-shade);
+}
+
+.ocr-check-banner--mismatch {
+  border-color: var(--ion-color-danger);
+  background: rgba(var(--ion-color-danger-rgb), 0.08);
+  color: var(--ion-color-danger-shade);
+}
+
+.ocr-check-banner-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.ocr-check-banner-header span {
+  flex-grow: 1;
+}
+
+.ocr-check-banner-chevron {
+  flex-shrink: 0;
+  transition: transform 0.15s ease;
+}
+
+.ocr-check-banner-chevron--open {
+  transform: rotate(90deg);
+}
+
+.ocr-check-banner-detail {
+  font-size: 12px;
+  line-height: 1.5;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ocr-check-token {
+  display: block;
+}
+
+.ocr-check-token--added {
+  color: var(--ion-color-success-shade);
+}
+
+.ocr-check-token--removed {
+  color: var(--ion-color-danger-shade);
 }
 
 /* Duplicates modal — this submission and the candidate sit side by side with

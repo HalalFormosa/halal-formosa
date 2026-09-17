@@ -130,6 +130,10 @@ export default function useOcrPipeline(options: OcrPipelineOptions) {
             if (detectedLanguage.value === 'english') {
                 // ✅ Already English → no need to clean Chinese
                 translated = raw;
+                // 🟢 Extract product name directly from the raw English text
+                // (previously only ran in the Chinese/mixed branch below, so
+                // English labels never got a name suggestion at all)
+                productName.value = extractProductName(raw) || '';
             } else {
                 // ✅ Normalize and clean
                 raw = normalizeIngredients(raw);
@@ -807,6 +811,13 @@ export default function useOcrPipeline(options: OcrPipelineOptions) {
         checkingIngredients,
         detectedLanguage,
         cleanChineseOcrText,
+        // Exposed for the admin OCR re-check composable, which needs the raw
+        // low-level primitives (not the full contributor-facing runOcr flow)
+        // to run an opt-in front-photo name check.
+        extractTextFromImage,
+        translateToEnglish,
+        extractProductName,
+        detectLanguage,
         ocrRawText,
         ocrWords,
         ocrImageWidth,
