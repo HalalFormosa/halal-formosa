@@ -4,7 +4,7 @@ import {
   IonIcon, IonChip, IonLabel, IonSkeletonText
 } from '@ionic/vue'
 import {
-  pricetagOutline, closeCircleOutline, school, sparkles, businessOutline
+  pricetagOutline, closeCircleOutline, school, sparkles, businessOutline, bicycleOutline
 } from 'ionicons/icons'
 
 interface Category {
@@ -27,6 +27,7 @@ const props = defineProps<{
   activeCategoryIds: number[]
   campusPartners: Campus[]
   activeTag: string | null
+  hasDeliveryFilter: boolean
   loadingCategories: boolean
   categoryIconMap: Record<string, any>
   categoryImageMap: Record<string, string>
@@ -35,6 +36,7 @@ const props = defineProps<{
 defineEmits<{
   (e: 'toggleCategory', cat: Category): void
   (e: 'toggleTag', slug: string): void
+  (e: 'toggleDelivery'): void
   (e: 'clearFilters'): void
 }>()
 
@@ -101,6 +103,25 @@ const regularCategories = computed(() =>
           </span>
           <ion-icon v-else-if="categoryIconMap[cat.name]" :icon="categoryIconMap[cat.name]" class="category-icon" />
           <ion-label>{{ cat.name }}</ion-label>
+        </ion-chip>
+      </div>
+    </div>
+
+    <!-- Delivery -->
+    <div class="filter-section">
+      <h3 class="filter-section-title">
+        <ion-icon :icon="bicycleOutline" />
+        {{ $t('explore.delivery') }}
+      </h3>
+      <div class="category-bar">
+        <ion-chip
+            class="modern-category-chip"
+            :class="{ active: hasDeliveryFilter }"
+            style="--cat-color: var(--ion-color-carrot); --cat-bg: var(--ion-color-carrot);"
+            @click="$emit('toggleDelivery')"
+        >
+          <ion-icon :icon="bicycleOutline" class="category-icon" />
+          <ion-label>{{ $t('explore.deliveryFilter') }}</ion-label>
         </ion-chip>
       </div>
     </div>

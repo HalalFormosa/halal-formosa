@@ -144,6 +144,18 @@
               <ion-label>{{ cat.name }}</ion-label>
             </ion-chip>
             <ion-chip
+              class="quick-filter-chip"
+              :class="{ active: hasDeliveryFilter }"
+              :style="{
+                '--cat-color': 'var(--ion-color-carrot)',
+                '--cat-bg': hasDeliveryFilter ? 'var(--ion-color-carrot)' : hexToRgba('var(--ion-color-carrot)', 0.15)
+              }"
+              @click="hasDeliveryFilter = !hasDeliveryFilter"
+            >
+              <ion-icon :icon="bicycleOutline" class="category-icon" />
+              <ion-label>{{ $t('explore.deliveryFilter') }}</ion-label>
+            </ion-chip>
+            <ion-chip
               class="quick-filter-chip more-chip"
               @click="isFilterModalOpen = true"
             >
@@ -187,12 +199,25 @@
                 <ion-icon v-else-if="categoryIconMap[cat.name]" :icon="categoryIconMap[cat.name]" class="category-icon" />
                 <ion-label>{{ cat.name }}</ion-label>
               </ion-chip>
+
+              <ion-chip
+                  class="modern-category-chip"
+                  :class="{ active: hasDeliveryFilter }"
+                  :style="{
+                    '--cat-color': 'var(--ion-color-carrot)',
+                    '--cat-bg': hasDeliveryFilter ? 'var(--ion-color-carrot)' : 'transparent'
+                  }"
+                  @click="hasDeliveryFilter = !hasDeliveryFilter"
+              >
+                <ion-icon :icon="bicycleOutline" class="category-icon" />
+                <ion-label>{{ $t('explore.deliveryFilter') }}</ion-label>
+              </ion-chip>
             </div>
 
             <ion-chip
-                v-if="activeCategoryIds.length || activeTag"
+                v-if="activeCategoryIds.length || activeTag || hasDeliveryFilter"
                 class="clear-chip floating-clear"
-                @click="activeCategoryIds = []; activeTag = null; focusedPlaceId = null"
+                @click="activeCategoryIds = []; activeTag = null; hasDeliveryFilter = false; focusedPlaceId = null"
             >
               <ion-icon :icon="closeCircleOutline" style="margin-right: 4px; font-size: 16px;" />
               {{ $t('common.clear') }}
@@ -861,7 +886,7 @@
         <ion-toolbar>
           <ion-title>{{ $t('common.filter') || 'Filter' }}</ion-title>
           <ion-buttons slot="end">
-            <ion-button v-if="activeFiltersCount > 0" @click="() => { activeCategoryIds = []; activeTag = null; focusedPlaceId = null; }" color="carrot" class="modal-reset-btn">
+            <ion-button v-if="activeFiltersCount > 0" @click="() => { activeCategoryIds = []; activeTag = null; hasDeliveryFilter = false; focusedPlaceId = null; }" color="carrot" class="modal-reset-btn">
               {{ $t('common.reset') || 'Reset' }}
             </ion-button>
           </ion-buttons>
@@ -873,12 +898,14 @@
             :activeCategoryIds="activeCategoryIds"
             :campusPartners="campusPartners"
             :activeTag="activeTag"
+            :hasDeliveryFilter="hasDeliveryFilter"
             :loadingCategories="loadingCategories"
             :categoryIconMap="categoryIconMap"
             :categoryImageMap="categoryImageMap"
             @toggleCategory="toggleCategory"
             @toggleTag="(slug) => { activeTag = (activeTag === slug ? null : slug); focusedPlaceId = null; }"
-            @clearFilters="() => { activeCategoryIds = []; activeTag = null; focusedPlaceId = null; }"
+            @toggleDelivery="hasDeliveryFilter = !hasDeliveryFilter"
+            @clearFilters="() => { activeCategoryIds = []; activeTag = null; hasDeliveryFilter = false; focusedPlaceId = null; }"
         />
       </ion-content>
       <ion-footer class="ion-no-border filter-modal-footer">
@@ -931,7 +958,7 @@ import {
   eyeOutline, shareSocialOutline, navigateOutline, closeCircleOutline,
   calendarOutline, pricetagOutline, school, funnelOutline,
   bookmarkOutline, bookmark,
-  sparklesOutline
+  sparklesOutline, bicycleOutline
 } from 'ionicons/icons'
 import { ref, onMounted, onUnmounted, nextTick, watch, computed } from 'vue'
 import type {ComponentPublicInstance, VNodeRef} from 'vue'
@@ -993,6 +1020,7 @@ const partnerRadiusLocations = ref<Place[]>([])
 const viewMode = ref<'map' | 'list'>('map')
 const activeTag = ref<string | null>(null)
 const activeCategoryIds = ref<number[]>([])
+const hasDeliveryFilter = ref(false)
 const searchQuery = ref('')
 // The query actually filtered on — only updates when the user commits a
 // search (presses "Go" / Enter), so typing alone never re-filters results.
@@ -1039,6 +1067,8 @@ type Place = {
   description?: string | null
   isOpen?: boolean
   createdFromNow?: string
+  foodpanda_url?: string | null
+  ubereats_url?: string | null
   opening_hours?: {
     periods?: Array<{ open: { day: number; time: string }; close: { day: number; time: string } }>
     weekday_text?: string[]
@@ -1067,6 +1097,8 @@ type LocationRow = {
   created_at: string
   tags?: string[]
   description?: string | null
+  foodpanda_url?: string | null
+  ubereats_url?: string | null
 }
 
 // Local type for ion-content (no external import needed)
@@ -1217,7 +1249,7 @@ const handleResize = () => {
 }
 
 const activeFiltersCount = computed(() => {
-  return activeCategoryIds.value.length + (activeTag.value ? 1 : 0)
+  return activeCategoryIds.value.length + (activeTag.value ? 1 : 0) + (hasDeliveryFilter.value ? 1 : 0)
 })
 
 // For You computed properties
@@ -2274,6 +2306,8 @@ const fetchLocations = async (mapBounds?: google.maps.LatLngBounds | null, force
     tags,
     opening_hours,
     is_claimed,
+    foodpanda_url,
+    ubereats_url,
     location_types(name),
     partner:partners(partner_tier)
   `)
@@ -2303,7 +2337,9 @@ const fetchLocations = async (mapBounds?: google.maps.LatLngBounds | null, force
         is_claimed: loc.is_claimed ?? false,
         created_at: loc.created_at,
         tags: loc.tags || [],
-        opening_hours: loc.opening_hours
+        opening_hours: loc.opening_hours,
+        foodpanda_url: loc.foodpanda_url ?? null,
+        ubereats_url: loc.ubereats_url ?? null
       }
       p.isOpen = calculateIsOpenStatus(p)
       p.createdFromNow = fromNowToTaipei(loc.created_at)
@@ -2373,7 +2409,9 @@ async function fetchPartnerLocationsInRadius() {
       is_claimed: loc.is_claimed ?? false,
       created_at: loc.created_at,
       tags: loc.tags || [],
-      opening_hours: loc.opening_hours
+      opening_hours: loc.opening_hours,
+      foodpanda_url: loc.foodpanda_url ?? null,
+      ubereats_url: loc.ubereats_url ?? null
     }
     p.isOpen = calculateIsOpenStatus(p)
     p.createdFromNow = fromNowToTaipei(loc.created_at)
@@ -2970,6 +3008,8 @@ const runRemoteLocationSearchInner = async (q: string, logQuery: boolean): Promi
       created_at,
       tags,
       opening_hours,
+      foodpanda_url,
+      ubereats_url,
       location_types(name),
       partner:partners(partner_tier)
     `)
@@ -2994,7 +3034,9 @@ const runRemoteLocationSearchInner = async (q: string, logQuery: boolean): Promi
         partner_tier: Array.isArray(loc.partner) ? loc.partner[0]?.partner_tier : loc.partner?.partner_tier,
         created_at: loc.created_at,
         tags: loc.tags || [],
-        opening_hours: loc.opening_hours
+        opening_hours: loc.opening_hours,
+        foodpanda_url: loc.foodpanda_url ?? null,
+        ubereats_url: loc.ubereats_url ?? null
       }
       p.isOpen = calculateIsOpenStatus(p)
       p.createdFromNow = fromNowToTaipei(loc.created_at)
@@ -3135,6 +3177,11 @@ const sortedLocations = computed(() => {
     base = base.filter(l =>
         l.typeId && effectiveIds.has(l.typeId)
     )
+  }
+
+  // filter by delivery availability (Foodpanda or Uber Eats)
+  if (hasDeliveryFilter.value) {
+    base = base.filter(l => !!(l.foodpanda_url || l.ubereats_url))
   }
 
   // search only reflects the committed query — typing alone doesn't filter
