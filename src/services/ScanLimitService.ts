@@ -16,14 +16,20 @@ async function getBonusScans(userId: string): Promise<number> {
     return data.last_updated === today ? (data.bonus_scans ?? 0) : 0
 }
 
-// Mirrors ScanIngredientsView's checkDailyScanLimit, shared so the Auto Scan
-// camera can also stop once the user has hit their daily cap — not just when
-// they tap "View Details" on the manual flow.
-export async function checkDailyScanLimit(): Promise<boolean> {
-    if (isDonor.value) return true
+export interface ScanStatus {
+    used: number
+    limit: number
+    remaining: number
+    isDonor: boolean
+}
+
+// Mirrors ScanIngredientsView's daily counter, shared so the Auto Scan camera's
+// live overlay can show the same "used/limit" badge without duplicating the query.
+export async function getScanStatus(): Promise<ScanStatus | null> {
+    if (isDonor.value) return { used: 0, limit: Infinity, remaining: Infinity, isDonor: true }
 
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return true
+    if (!user) return null
 
     const today = new Date().toISOString().split('T')[0]
 
@@ -39,8 +45,20 @@ export async function checkDailyScanLimit(): Promise<boolean> {
 
     if (error) {
         console.error('Daily scan check error:', error)
-        return true // fail-open instead of blocking users
+        return null
     }
 
-    return data.length < (DAILY_SCAN_LIMIT + bonusScans)
+    const limit = DAILY_SCAN_LIMIT + bonusScans
+    const used = data.length
+    return { used, limit, remaining: Math.max(0, limit - used), isDonor: false }
+}
+
+// Mirrors ScanIngredientsView's checkDailyScanLimit, shared so the Auto Scan
+// camera can also stop once the user has hit their daily cap — not just when
+// they tap "View Details" on the manual flow.
+export async function checkDailyScanLimit(): Promise<boolean> {
+    const status = await getScanStatus()
+    // fail-open instead of blocking users (no session, or the query errored)
+    if (!status) return true
+    return status.remaining > 0
 }

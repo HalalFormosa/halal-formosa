@@ -676,7 +676,7 @@
 
 
       <!-- === Insights Horizontal Scroll === -->
-      <LazySection placeholderHeight="120px" @load="() => { fetchStats(); fetchLocationCategoryStats(); }">
+      <LazySection placeholderHeight="120px" rootMargin="1000px" @load="() => { fetchStats(); fetchLocationCategoryStats(); }">
       <div class="insights-container">
         <div class="insights-scroll">
           <!-- Card 1: Total Products -->
@@ -705,7 +705,7 @@
       </LazySection>
 
       <!-- === Leaderboard === -->
-      <LazySection placeholderHeight="300px" @load="fetchLeaderboard(leaderboardType, 10)">
+      <LazySection placeholderHeight="300px" rootMargin="1000px" @load="fetchLeaderboard(leaderboardType, 10)">
       <ion-card >
         <ion-card-header>
           <div class="card-header-row">
@@ -746,7 +746,16 @@
             <ion-icon :icon="chevronForwardOutline" class="hint-arrow" />
           </div>
 
-          <ion-list v-if="leaderboard.length > 0" class="leaderboard-list" :style="{ opacity: loadingLeaderboard ? 0.5 : 1, transition: 'opacity 0.2s ease', pointerEvents: loadingLeaderboard ? 'none' : 'auto' }">
+          <!-- 🔄 First-load spinner: nothing cached yet, list & empty-state are both hidden -->
+          <div v-if="loadingLeaderboard && leaderboard.length === 0" class="leaderboard-loading">
+            <ion-spinner name="crescent" color="carrot" />
+          </div>
+
+          <div v-if="leaderboard.length > 0" class="leaderboard-list-wrapper">
+            <div v-if="loadingLeaderboard" class="leaderboard-loading-overlay">
+              <ion-spinner name="crescent" color="carrot" />
+            </div>
+            <ion-list class="leaderboard-list" :style="{ opacity: loadingLeaderboard ? 0.5 : 1, transition: 'opacity 0.2s ease', pointerEvents: loadingLeaderboard ? 'none' : 'auto' }">
             <ion-item
                 v-for="(user, index) in leaderboard"
                 :key="user.id"
@@ -757,53 +766,50 @@
                 @click="openUserProfile(user, $event)"
             >
               <!-- Rank -->
-              <div slot="start" style="width: 24px; text-align: center; font-weight: 600; display: flex; align-items: center; justify-content: center; color: inherit; margin-right: 8px;">
-                <ion-icon v-if="index === 0" :icon="medalOutline" style="color: #FFD700; font-size: 1.2rem;" />
-                <ion-icon v-else-if="index === 1" :icon="medalOutline" style="color: #C0C0C0; font-size: 1.2rem;" />
-                <ion-icon v-else-if="index === 2" :icon="medalOutline" style="color: #CD7F32; font-size: 1.2rem;" />
-                <span v-else>{{ index + 1 }}</span>
+              <div slot="start" style="width: 18px; text-align: center; font-weight: 600; display: flex; align-items: center; justify-content: center; color: inherit; margin-right: 6px; flex-shrink: 0;">
+                <ion-icon v-if="index === 0" :icon="medalOutline" style="color: #FFD700; font-size: 1.1rem;" />
+                <ion-icon v-else-if="index === 1" :icon="medalOutline" style="color: #C0C0C0; font-size: 1.1rem;" />
+                <ion-icon v-else-if="index === 2" :icon="medalOutline" style="color: #CD7F32; font-size: 1.1rem;" />
+                <span v-else style="font-size: 0.85rem;">{{ index + 1 }}</span>
               </div>
 
               <!-- Avatar with Cosmetics -->
-              <div slot="start" class="leaderboard-avatar-cell" :style="getLeaderboardGlowStyle(user)" style="margin-right: 12px;">
-                <ion-avatar style="width: 40px; height: 40px;" :style="getLeaderboardFrameStyle(user)">
+              <div slot="start" class="leaderboard-avatar-cell" :style="getLeaderboardGlowStyle(user)" style="margin-right: 10px;">
+                <ion-avatar style="width: 36px; height: 36px; position: relative;" :style="getLeaderboardFrameStyle(user)">
                   <img
                       :src="(user.public_profile || currentUser?.id === user.id) ? (user.public_profile ? (user.avatar_url || 'https://placehold.co/64x64/e5e7eb/374151') : (currentUser?.user_metadata?.avatar_url || 'https://placehold.co/64x64/e5e7eb/374151')) : `https://placehold.co/64x64/e5e7eb/374151?text=${$t('home.unknownAvatar')}`"
                        :alt="$t('home.altAvatar')"
                        loading="lazy"/>
+                  <span v-if="user.donor_type && user.donor_type.toLowerCase().includes('pro')" class="avatar-pro-badge" :title="$t('home.pro') || 'Pro'">
+                    <ion-icon :icon="diamond" />
+                  </span>
                 </ion-avatar>
               </div>
 
               <!-- Info -->
-              <ion-label style="min-width: 0; flex: 1; overflow: hidden; width: 0; margin-right: 8px;">
-                <h2 style="margin: 0; font-weight: 600; font-size: 1rem; display: flex; align-items: center; gap: 6px; color: inherit; min-width: 0; overflow: hidden; width: 100%;">
+              <ion-label style="min-width: 0; flex: 1; overflow: hidden; width: 0; margin-right: 6px;">
+                <h2 style="margin: 0; font-weight: 700; font-size: 1rem; letter-spacing: -0.01em; display: flex; align-items: center; gap: 4px; color: inherit; min-width: 0; overflow: hidden; width: 100%;">
                   <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0; color: inherit;">
                     {{ formatDisplayName(currentUser?.id === user.id && !user.public_profile ? (currentUser?.user_metadata?.full_name || currentUser?.user_metadata?.display_name || 'Me') : user.display_name) }}
-                  </span>
-                  <span v-if="user.donor_type && user.donor_type.toLowerCase().includes('pro')" class="list-pro-badge">
-                    <ion-icon :icon="sparkles" style="font-size: 0.7rem; margin-right: 2px;" />
-                    PRO
-                  </span>
-                  <span v-if="user.showcase_achievement" class="list-trophy-badge" :title="$t('achievements.categories.' + user.showcase_achievement.category + '.tiers.' + user.showcase_achievement.tier)">
-                    {{ user.showcase_achievement.icon }}
                   </span>
                   <ion-badge v-if="currentUser?.id === user.id && !user.public_profile" color="medium" style="font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; flex-shrink: 0;" @click="showPrivateInfoAlert($event)">Private</ion-badge>
                 </h2>
                 <p style="margin: 0; font-size: 0.8rem; color: var(--sub-color, var(--ion-color-medium));">
-                  {{ $t('profile.level', { level: getLevelFromPoints(user.total_points || user.points) }) }}
+                  {{ $t('profile.levelShort', { level: getLevelFromPoints(user.total_points || user.points) }) }}
                 </p>
               </ion-label>
 
               <!-- Points Badge -->
               <ion-badge
                   slot="end"
-                  :color="getLevelColor(user.points)"
                   class="leaderboard-points-badge"
+                  :style="{ '--pts-rgb': getLevelAccentRgb(user.points) }"
               >
-                {{ $t('home.pointsCount', { points: user.points }) }}
+                {{ formatCompactPoints(user.points) }} pts
               </ion-badge>
             </ion-item>
-          </ion-list>
+            </ion-list>
+          </div>
 
           <!-- 📭 Empty state for Home Leaderboard -->
           <div v-if="!loadingLeaderboard && leaderboard.length === 0" class="home-leaderboard-empty">
@@ -875,10 +881,10 @@
             </div>
 
             <p class="mock-popover-stats">
-              {{ $t('profile.level', { level: getLevelFromPoints(selectedUser.total_points || selectedUser.points) }) }} •
+              {{ $t('profile.level', { level: getLevelFromPoints(selectedUser.total_points || selectedUser.points) }) }}
               <ion-badge
                 class="leaderboard-points-badge"
-                style="margin-left: 4px; border-radius: 8px; font-weight: bold; font-size: 0.75rem; padding: 4px 8px; display: inline-block; vertical-align: middle;"
+                style="margin-left: 6px; border-radius: 8px; font-weight: bold; font-size: 0.75rem; padding: 4px 8px; display: inline-block; vertical-align: middle;"
               >
                 {{ selectedUser.points }} pts
               </ion-badge>
@@ -914,10 +920,10 @@
             </h3>
 
             <p class="mock-popover-stats">
-              {{ $t('profile.level', { level: getLevelFromPoints(selectedUser.total_points || selectedUser.points) }) }} • 
+              {{ $t('profile.level', { level: getLevelFromPoints(selectedUser.total_points || selectedUser.points) }) }}
               <ion-badge
                 class="leaderboard-points-badge"
-                style="margin-left: 4px; border-radius: 8px; font-weight: bold; font-size: 0.75rem; padding: 4px 8px; display: inline-block; vertical-align: middle;"
+                style="margin-left: 6px; border-radius: 8px; font-weight: bold; font-size: 0.75rem; padding: 4px 8px; display: inline-block; vertical-align: middle;"
               >
                 {{ selectedUser.points }} pts
               </ion-badge>
@@ -985,7 +991,7 @@ import {
   IonPage, IonContent, IonCard, IonCardHeader, IonCardTitle,
   IonCardContent, IonButton, IonIcon, IonHeader, onIonViewWillEnter, IonLabel, IonChip, IonSkeletonText,
   IonList, IonBadge, IonAvatar, IonItem, IonPopover, IonModal, IonToolbar, IonTitle, IonButtons,
-  IonSegment, IonSegmentButton, alertController, toastController, IonSelect, IonSelectOption
+  IonSegment, IonSegmentButton, alertController, toastController, IonSelect, IonSelectOption, IonSpinner
 } from '@ionic/vue'
 import { useRouter } from 'vue-router'
 import { supabase } from '@/plugins/supabaseClient'
@@ -1001,6 +1007,7 @@ import {
   compassOutline,
   medalOutline,
   sparkles,
+  diamond,
   closeOutline,
   shieldCheckmarkOutline,
   locateOutline,
@@ -1018,7 +1025,7 @@ import {
   lockClosed
 } from "ionicons/icons"
 import { useLeaderboard } from "@/composables/useLeaderboard";
-import {getLevelColor} from "@/composables/useLevels";
+import {getLevelColor, getLevelAccentRgb, formatCompactPoints} from "@/composables/useLevels";
 import {getLevelFromPoints} from "@/utils/xp";
 import {formatDisplayName} from "@/utils/nameHelpers";
 import { isPublicProfile, currentUser } from '@/composables/userProfile';
@@ -2372,10 +2379,16 @@ async function fetchTrips() {
       .limit(6)
     
     if (error) throw error
-    return (data as any[]).map(t => ({
-      ...t,
-      provider: Array.isArray(t.provider) ? t.provider[0] : t.provider
-    }))
+    return (data as any[])
+      .map(t => ({
+        ...t,
+        provider: Array.isArray(t.provider) ? t.provider[0] : t.provider
+      }))
+      .sort((a, b) => {
+        const aTier = TIER_PRIORITY[String(a.provider?.partner_tier || '').toLowerCase()] || 0
+        const bTier = TIER_PRIORITY[String(b.provider?.partner_tier || '').toLowerCase()] || 0
+        return bTier - aTier
+      })
   })
 
   if (data) {
@@ -2513,7 +2526,7 @@ function goScan() {
 
 function goToSearchAndScan() {
   ActivityLogService.log("home_scan_barcode");
-  router.push({ path: '/search', query: { scan: 'true' } });
+  router.push('/scan/barcode');
 }
 
 function goQibla() {
@@ -3299,19 +3312,67 @@ ion-segment-button {
 }
 
 /* ========= Leaderboard Cosmetic Effects ========= */
+.leaderboard-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 32px 0;
+}
+.leaderboard-list-wrapper {
+  position: relative;
+}
+.leaderboard-loading-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1;
+}
 .leaderboard-list {
   overflow: visible;
 }
 .leaderboard-item {
   --overflow: visible;
-  overflow: visible;
-  contain: none;
+  overflow: visible !important;
+  contain: none !important;
+  margin: 8px 0;
+  border-radius: var(--radius-lg);
 }
 .leaderboard-item::part(native) {
   overflow: visible !important;
+  border-radius: var(--radius-lg) !important;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  box-shadow: var(--card-shadow);
+  transition: box-shadow 0.2s ease, transform 0.15s ease;
 }
 .leaderboard-item::part(inner) {
   overflow: visible !important;
+}
+
+/* Top-3 get stronger visual rhythm: elevated card + tier-colored accent edge */
+.leaderboard-list ion-item:nth-of-type(1)::part(native),
+.leaderboard-list ion-item:nth-of-type(2)::part(native),
+.leaderboard-list ion-item:nth-of-type(3)::part(native) {
+  box-shadow: var(--card-shadow-hover);
+  border-width: 1.5px;
+}
+
+.leaderboard-list ion-item:nth-of-type(1)::part(native) {
+  border-left: 4px solid #FFD700;
+}
+
+.leaderboard-list ion-item:nth-of-type(2)::part(native) {
+  border-left: 4px solid #C0C0C0;
+}
+
+.leaderboard-list ion-item:nth-of-type(3)::part(native) {
+  border-left: 4px solid #CD7F32;
+}
+
+.leaderboard-list ion-item:nth-of-type(n+4) {
+  margin: 6px 0;
 }
 
 .leaderboard-avatar-cell {
@@ -3324,22 +3385,41 @@ ion-segment-button {
 }
 
 .leaderboard-points-badge {
-  border-radius: 8px;
+  --pts-rgb: var(--pts-rgb, 245, 158, 11);
+  --background: rgba(var(--pts-rgb), 0.12);
+  --color: rgb(var(--pts-rgb));
+  background: rgba(var(--pts-rgb), 0.12);
+  color: rgb(var(--pts-rgb));
+  border: 1px solid rgba(var(--pts-rgb), 0.28);
+  border-radius: 20px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 4px 8px;
+  flex-shrink: 0;
+  white-space: nowrap;
+  box-shadow: none;
   transition: all 0.3s ease;
 }
 
-.list-pro-badge {
-  display: inline-flex;
+.avatar-pro-badge {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 15px;
+  height: 15px;
+  display: flex;
   align-items: center;
-  background: #ffd700;
-  color: #111;
-  padding: 1px 6px;
-  border-radius: 4px;
-  font-size: 0.65rem;
-  font-weight: 800;
-  text-transform: uppercase;
-  flex-shrink: 0;
-  box-shadow: 0 0 5px rgba(250, 204, 21, 0.4);
+  justify-content: center;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #fde68a 0%, #d4a017 100%);
+  border: 2px solid var(--card-bg, #18181a);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  z-index: 2;
+}
+
+.avatar-pro-badge ion-icon {
+  font-size: 8px;
+  color: #78350f;
 }
 
 .list-trophy-badge {
@@ -3558,6 +3638,7 @@ ion-segment-button {
   scroll-snap-type: x mandatory;
   padding: 4px 0 12px 0;
   -webkit-overflow-scrolling: touch;
+  min-height: 172px;
 }
 
 .scroller-spacer {

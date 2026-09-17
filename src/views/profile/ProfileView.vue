@@ -100,27 +100,27 @@
               </h2>
               <p class="profile-email-sub">{{ userEmail }}</p>
 
-              <div class="badge-row">
-                <ion-badge v-if="isAdmin" color="danger" style="border-radius: 12px; padding: 6px 12px;">
+              <div class="badge-row" :class="{ 'badge-row--wrap': showAllBadges }">
+                <ion-badge v-if="isAdmin && isBadgeVisible('admin')" color="danger" style="border-radius: 12px; padding: 6px 12px;">
                   <ion-icon :icon="icons.shieldCheckmarkOutline" style="margin-right: 4px" />
                   {{ $t('profile.admin.badge') }}
                 </ion-badge>
-                <ion-badge v-if="isSubscribed" class="badge-pro">
+                <ion-badge v-if="isSubscribed && isBadgeVisible('pro')" class="badge-pro">
                   <ion-icon :icon="icons.bookmarkOutline" style="margin-right: 4px" />
                   {{ $t('profile.proMember') }}
                 </ion-badge>
-                <ion-badge v-if="!isSubscribed" :color="donorBadge.color" style="border-radius: 12px; padding: 6px 12px;">
+                <ion-badge v-if="!isSubscribed && isBadgeVisible('donor')" :color="donorBadge.color" style="border-radius: 12px; padding: 6px 12px;">
                   {{ donorBadge.emoji }} {{ $t('profile.donors.' + donorBadge.label) }}
                 </ion-badge>
-                <ion-badge v-if="isSubscribed && isContributor" color="primary" style="border-radius: 12px; padding: 6px 12px;">
+                <ion-badge v-if="isSubscribed && isContributor && isBadgeVisible('contributor')" color="primary" style="border-radius: 12px; padding: 6px 12px;">
                   ⭐️ {{ $t('profile.donors.Contributor') }}
                 </ion-badge>
-                <ion-badge v-if="businessTier !== 'free'" class="badge-merchant" :class="'merchant-' + businessTier" style="cursor: pointer;" @click="openBusinessSubModal">
+                <ion-badge v-if="businessTier !== 'free' && isBadgeVisible('merchant')" class="badge-merchant" :class="'merchant-' + businessTier" style="cursor: pointer;" @click="openBusinessSubModal">
                   <ion-icon :icon="icons.storefrontOutline" style="margin-right: 4px" />
                   {{ $t('profile.merchantTier.' + businessTier) }}
                 </ion-badge>
                 <ion-badge
-                  v-if="showcaseAchievement"
+                  v-if="showcaseAchievement && isBadgeVisible('achievement')"
                   color="warning"
                   style="border-radius: 12px; padding: 6px 12px; cursor: pointer;"
                   @click="$router.push('/profile/achievements')"
@@ -128,12 +128,20 @@
                   {{ showcaseAchievement.icon }} {{ $t('achievements.categories.' + showcaseAchievement.category + '.tiers.' + showcaseAchievement.tier) }}
                 </ion-badge>
                 <ion-badge
-                  v-else-if="unlockedAchievementsCount > 0"
+                  v-else-if="unlockedAchievementsCount > 0 && isBadgeVisible('achievementCta')"
                   color="medium"
                   style="border-radius: 12px; padding: 6px 12px; cursor: pointer; opacity: 0.85;"
                   @click="$router.push('/profile/achievements')"
                 >
                   🏆 {{ $t('achievements.chooseTrophyCta') }}
+                </ion-badge>
+                <ion-badge
+                  v-if="hiddenBadgeCount > 0"
+                  class="badge-more"
+                  style="cursor: pointer;"
+                  @click="showAllBadges = true"
+                >
+                  +{{ hiddenBadgeCount }}
                 </ion-badge>
               </div>
 
@@ -305,25 +313,25 @@
               </div>
               <div class="xp-total">
                 <div style="display: flex; align-items: center; justify-content: flex-end; gap: 4px;">
-                  <span class="xp-val">{{ currentPoints || 0 }} XP</span>
+                  <span class="xp-val">{{ formatXp(currentPoints || 0) }} XP</span>
                   <ion-icon :icon="icons.helpCircleOutline" style="font-size: 1.1rem; color: var(--ion-color-carrot); cursor: pointer;" @click="showXpInfo" />
                 </div>
-                <span class="xp-next">{{ nextLevelXp }} {{ $t('profile.xp.toNextLevel') }}</span>
+                <span class="xp-next">{{ formatXp(nextLevelXp) }} {{ $t('profile.xp.toNextLevel') }}</span>
               </div>
             </div>
-            
+
             <div class="progress-container">
               <div class="progress-bar-fill" :style="{ width: progressPercent + '%' }"></div>
             </div>
 
-            <div class="xp-details-row" style="display: flex; justify-content: space-between; margin-top: 12px; font-size: 0.85rem; color: var(--ion-color-medium);">
-              <div>
+            <div class="xp-details-row">
+              <div class="xp-details-item">
                 <span>{{ $t('profile.xp.spendable') }}: </span>
-                <span style="font-weight: 600; color: var(--ion-color-carrot);">{{ spendablePoints || 0 }} XP</span>
+                <span class="xp-details-value" style="color: var(--ion-color-carrot);">{{ formatXp(spendablePoints || 0) }} XP</span>
               </div>
-              <div>
+              <div class="xp-details-item">
                 <span>{{ $t('profile.xp.spent') }}: </span>
-                <span style="font-weight: 600; color: var(--ion-color-medium);">{{ spentPoints }} XP</span>
+                <span class="xp-details-value" style="color: var(--ion-color-medium);">{{ formatXp(spentPoints) }} XP</span>
               </div>
             </div>
           </div>
@@ -1188,6 +1196,43 @@ const level = computed(() => {
 const nextLevelXp = computed(() => xpForLevel(level.value + 1))
 const prevLevelXp = computed(() => xpForLevel(level.value))
 
+// 🏅 Badge row: only show the first 2 badges, collapse the rest into a "+N" pill
+const MAX_VISIBLE_BADGES = 2
+const showAllBadges = ref(false)
+
+const badgeOrder = computed(() => {
+  const keys: string[] = []
+  if (isAdmin.value) keys.push('admin')
+  if (isSubscribed.value) keys.push('pro')
+  if (!isSubscribed.value) keys.push('donor')
+  if (isSubscribed.value && isContributor.value) keys.push('contributor')
+  if (businessTier.value !== 'free') keys.push('merchant')
+  if (showcaseAchievement.value) keys.push('achievement')
+  else if (unlockedAchievementsCount.value > 0) keys.push('achievementCta')
+  return keys
+})
+
+const visibleBadgeKeys = computed(() => {
+  const keys = showAllBadges.value ? badgeOrder.value : badgeOrder.value.slice(0, MAX_VISIBLE_BADGES)
+  return new Set(keys)
+})
+
+const hiddenBadgeCount = computed(() =>
+  showAllBadges.value ? 0 : Math.max(0, badgeOrder.value.length - MAX_VISIBLE_BADGES)
+)
+
+function isBadgeVisible(key: string) {
+  return visibleBadgeKeys.value.has(key)
+}
+
+function formatXp(value: number): string {
+  const n = value || 0
+  if (n >= 10000) {
+    return new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 }).format(n)
+  }
+  return n.toLocaleString()
+}
+
 const progressPercent = computed(() => {
   const points = currentPoints.value || 0
   return ((points - prevLevelXp.value) / (nextLevelXp.value - prevLevelXp.value)) * 100
@@ -1953,10 +1998,27 @@ async function fetchUnreadChatsCount() {
 
 .badge-row {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   justify-content: center;
   gap: 8px;
+}
+
+.badge-row--wrap {
+  flex-wrap: wrap;
+}
+
+.badge-more {
+  --background: rgba(255, 255, 255, 0.16);
+  --color: #ffffff;
+  padding: 5px 12px;
+  border-radius: var(--radius-md);
+  font-weight: 700;
+  font-size: 0.72rem;
+  letter-spacing: 0.3px;
+  box-shadow: none;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  flex-shrink: 0;
 }
 
 /* Stat row: products / places / XP */
@@ -2092,6 +2154,7 @@ async function fetchUnreadChatsCount() {
   font-size: 1.1rem;
   font-weight: 800;
   color: var(--ion-color-carrot);
+  white-space: nowrap;
 }
 
 .xp-next {
@@ -2101,6 +2164,24 @@ async function fetchUnreadChatsCount() {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+.xp-details-row {
+  display: flex;
+  justify-content: flex-end;
+  gap: 16px;
+  margin-top: 12px;
+  font-size: 0.85rem;
+  color: var(--ion-color-medium);
+}
+
+.xp-details-item {
+  white-space: nowrap;
+}
+
+.xp-details-value {
+  font-weight: 600;
 }
 
 .progress-container {

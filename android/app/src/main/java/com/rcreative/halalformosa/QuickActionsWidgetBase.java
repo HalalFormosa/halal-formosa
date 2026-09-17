@@ -12,8 +12,8 @@ import androidx.core.content.ContextCompat;
 
 abstract class QuickActionsWidgetBase extends AppWidgetProvider {
 
-    private static final String SCAN_URI = "myapp://scan";
-    private static final String BARCODE_URI = "myapp://search?scan=true";
+    private static final String SCAN_URI = "myapp://scan/auto";
+    private static final String BARCODE_URI = "myapp://scan/barcode";
     private static final String EXPLORE_URI = "myapp://explore";
 
     // Written by the app via @capacitor/preferences (default SharedPreferences group).

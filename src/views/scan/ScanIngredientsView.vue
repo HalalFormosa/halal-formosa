@@ -664,6 +664,7 @@ import { watch } from 'vue'
 import { showRewardedAd } from '@/lib/admobReward'
 import { Capacitor } from '@capacitor/core'
 import { ActivityLogService } from "@/services/ActivityLogService";
+import { isNetworkError } from '@/utils/offlineFeedback'
 
 import { RevenueCatUI, PAYWALL_RESULT } from '@revenuecat/purchases-capacitor-ui'
 import { refreshSubscriptionStatus } from '@/composables/useSubscriptionStatus'
@@ -749,6 +750,7 @@ const hiddenWebCameraInput = ref<HTMLInputElement | null>(null)
 function onWebCameraSelected(e: Event) {
   ActivityLogService.log("scan_ingredients_start", {source: "camera"});
   if (!canScan.value) {
+    ActivityLogService.log("scan_ingredients_limit_reached", {source: "camera"});
     showLimitToast.value = true;
     return;
   }
@@ -769,6 +771,7 @@ function onWebCameraSelected(e: Event) {
 function onWebFileSelected(e: Event) {
   ActivityLogService.log("scan_ingredients_start", {source: "gallery"});
   if (!canScan.value) {
+    ActivityLogService.log("scan_ingredients_limit_reached", {source: "gallery"});
     showLimitToast.value = true;
     return;
   }
@@ -1313,7 +1316,8 @@ async function handleConfirmCrop() {
 
     await ActivityLogService.log("scan_ingredients_error", {
       error: err.message || "OCR failed",
-      source: currentSource.value
+      source: currentSource.value,
+      offline: isNetworkError(err)
     });
 
     await logIngredientScan({
@@ -1365,6 +1369,7 @@ function scanFromCamera() {
   ActivityLogService.log("scan_ingredients_start", {source: "camera"});
 
   if (!canScan.value) {
+    ActivityLogService.log("scan_ingredients_limit_reached", {source: "camera"});
     showLimitToast.value = true;
     return;
   }
@@ -1406,6 +1411,7 @@ function scanFromGallery() {
   ActivityLogService.log("scan_ingredients_start", {source: "gallery"});
 
   if (!canScan.value) {
+    ActivityLogService.log("scan_ingredients_limit_reached", {source: "gallery"});
     showLimitToast.value = true;
     return;
   }
@@ -1447,6 +1453,7 @@ async function handleAutoDetected(result: any) {
   
   const allowed = await checkDailyScanLimit()
   if (!allowed) {
+    ActivityLogService.log("scan_ingredients_limit_reached", {source: "auto_scan"});
     showLimitToast.value = true
     return
   }
@@ -1523,7 +1530,8 @@ async function handleAutoDetected(result: any) {
 
       await ActivityLogService.log("scan_ingredients_error", {
         error: err.message || "Auto OCR failed",
-        source: "auto_scan"
+        source: "auto_scan",
+        offline: isNetworkError(err)
       });
 
       await logIngredientScan({

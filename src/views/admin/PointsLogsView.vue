@@ -86,6 +86,7 @@ import {
   IonBadge,
   IonText,
   IonButton,
+  IonIcon,
   IonRefresher,
   IonRefresherContent,
   IonInfiniteScroll,

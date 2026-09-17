@@ -332,6 +332,7 @@ import {
 } from 'ionicons/icons'
 import AppHeader from '@/components/AppHeader.vue'
 import { supabase } from '@/plugins/supabaseClient'
+import { notifyFetchError } from '@/utils/offlineFeedback'
 import { isAdmin } from '@/composables/userProfile'
 import { useStoreCart } from '@/composables/useStoreCart'
 import { useStoreChat } from '@/composables/useStoreChat'
@@ -600,13 +601,21 @@ async function fetchProducts(reset = true, silent = false) {
     if (products.value.length >= totalCount.value) {
       noMore.value = true
     }
+  } else if (error) {
+    notifyFetchError(error)
+    // Stop infinite scroll from hammering a dead connection — doRefresh resets
+    // noMore back to false once the user pulls to refresh.
+    if (!reset) noMore.value = true
   }
   if (!silent) loading.value = false
 }
 
 async function loadMore(event: any) {
-  await fetchProducts(false)
-  event.target.complete()
+  try {
+    await fetchProducts(false)
+  } finally {
+    event.target.complete()
+  }
 }
 
 async function doRefresh(event: any) {

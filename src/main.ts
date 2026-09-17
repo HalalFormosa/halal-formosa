@@ -8,6 +8,7 @@ import { Capacitor } from '@capacitor/core'
 import { Keyboard, KeyboardResize } from '@capacitor/keyboard'
 import { Browser } from '@capacitor/browser'
 import { supabase } from '@/plugins/supabaseClient'
+import { isDeviceOnline } from '@/utils/connectivity'
 import { completeLineLogin } from '@/composables/useLineLogin'
 import { initAdMob } from '@/lib/admob'
 import { i18n } from '@/i18n'
@@ -188,7 +189,10 @@ supabase.auth.getSession().then(({ data }) => {
         loadPublicLeaderboardFromCache(session.user.id);
         loadNearbyPromptsFromCache(session.user.id);
         // loadUserProfile and refreshSubscriptionStatus are moved to bootstrap
-    } else {
+    } else if (isDeviceOnline()) {
+        // Only trust an empty session as a real "logged out" when we're online —
+        // offline, this can just mean an expired-token refresh failed over a
+        // dead connection, not that the user actually logged out.
         currentUser.value = null;
     }
 });
@@ -414,6 +418,16 @@ async function syncRevenueCatUser(user: any) {
 supabase.auth.onAuthStateChange(async (event, session) => {
     console.log(`🔔 [Auth] Event: ${event}`, session?.user?.id);
     if (event === 'SIGNED_OUT') {
+        // supabase-js fires SIGNED_OUT not just on an explicit logout, but also
+        // when a background token-refresh attempt fails outright — which is
+        // exactly what happens on a cold launch offline with an expired access
+        // token. That's a connectivity problem, not a real logout, so don't
+        // wipe the session or bounce to /login for it; just wait for a real
+        // connection to retry the refresh.
+        if (!isDeviceOnline()) {
+            console.warn('📴 [Auth] SIGNED_OUT while offline — likely a failed token refresh, ignoring');
+            return;
+        }
         try { await Purchases.logOut() } catch { /* empty */ }
         syncOneSignalUser(null).catch(console.warn)
         resetUserProfileState()
@@ -606,28 +620,44 @@ async function bootstrap() {
     // 2️⃣ Background initialization (Native Plugins & Heavy Data)
     try {
         // We use a slight timeout on getSession to prevent complete freeze if auth lock hangs
+        // (e.g. it tries to refresh an expired access token over a dead connection).
+        const TIMED_OUT = Symbol('timed-out');
         const sessionPromise = supabase.auth.getSession();
-        const timeoutPromise = new Promise<{ data: { session: null } }>((resolve) => setTimeout(() => resolve({ data: { session: null } }), 2000));
+        const timeoutPromise = new Promise<typeof TIMED_OUT>((resolve) => setTimeout(() => resolve(TIMED_OUT), 2000));
 
-        const { data: { session } } = await Promise.race([sessionPromise, timeoutPromise]);
+        const raced = await Promise.race([sessionPromise, timeoutPromise]);
 
-        if (session?.user) {
+        const applySession = (session: any) => {
             currentUser.value = session.user;
-
-            // Logged in: Load profile data in background
             loadDonorFromCache(session.user.id);
             loadUserRoleFromCache(session.user.id);
             loadPublicLeaderboardFromCache(session.user.id);
             loadNearbyPromptsFromCache(session.user.id);
-
             loadUserProfile(session.user.id).catch(e => console.error("Profile load failed", e));
 
             if (Capacitor.isNativePlatform()) {
-                // Initialize RevenueCat & Subscriptions without blocking the mount
                 initRevenueCat(session.user.id)
                     .then(() => refreshSubscriptionStatus({ syncToServer: true }))
                     .catch(e => console.warn('RevenueCat/Sub init failed:', e));
             }
+        };
+
+        if (raced === TIMED_OUT) {
+            // The timeout fired first — this is most likely a hung token refresh
+            // on a dead connection, not a real "logged out" state. Don't wipe
+            // currentUser (that would force a real logout UI); just let the
+            // original call resolve whenever it can and apply it then.
+            console.warn('[Bootstrap] getSession timed out (likely offline) — deferring identity resolution');
+            sessionPromise.then(({ data }) => {
+                if (data.session?.user) applySession(data.session);
+            }).catch(e => console.warn('[Bootstrap] Deferred getSession failed:', e));
+            return;
+        }
+
+        const { data: { session } } = raced;
+
+        if (session?.user) {
+            applySession(session);
         } else {
             currentUser.value = null;
             if (Capacitor.isNativePlatform()) {

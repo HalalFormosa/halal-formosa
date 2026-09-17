@@ -12,13 +12,23 @@
       <template v-else>
         <!-- Daily mission nudge: not a real notification row, so it doesn't
              come from useNotifications — just a call-to-action while today's
-             missions aren't all done yet. -->
+             missions aren't all done yet, or a dedicated nudge once every
+             mission is done but the bonus itself hasn't been claimed. -->
         <div v-if="!dailyMissionsCompleted" class="feed-section">
           <ion-item button class="notif-item mission-item" @click="openDailyMissions">
             <ion-icon slot="start" :icon="icons.flashOutline" class="notif-icon color-carrot" />
             <ion-label>
               <h3 class="notif-title">{{ t('notifications.dailyMissionTitle', 'Daily Mission still available') }}</h3>
               <p class="notif-body">{{ t('notifications.dailyMissionBody', 'Finish it to get Extra XP!') }}</p>
+            </ion-label>
+          </ion-item>
+        </div>
+        <div v-else-if="!dailyBonusClaimed" class="feed-section">
+          <ion-item button class="notif-item mission-item" @click="openDailyMissions">
+            <ion-icon slot="start" :icon="icons.giftOutline" class="notif-icon color-carrot" />
+            <ion-label>
+              <h3 class="notif-title">{{ t('notifications.dailyBonusTitle', 'Daily bonus ready to claim') }}</h3>
+              <p class="notif-body">{{ t('notifications.dailyBonusBody', "All missions done — tap to claim your Extra XP!") }}</p>
             </ion-label>
           </ion-item>
         </div>
@@ -114,7 +124,7 @@ import {
 import {
   notificationsOutline, notificationsOffOutline, checkmarkCircleOutline,
   closeCircleOutline, chatbubbleEllipsesOutline, cubeOutline, locationOutline,
-  newspaperOutline, compassOutline, bagHandleOutline, flashOutline
+  newspaperOutline, compassOutline, bagHandleOutline, flashOutline, giftOutline
 } from 'ionicons/icons';
 import AppHeader from '@/components/AppHeader.vue';
 import { useI18n } from 'vue-i18n';
@@ -137,9 +147,9 @@ const {
   markAllSeen,
 } = useNotifications();
 
-const { allCompleted: dailyMissionsCompleted, requestOpenMissionsModal } = useDailyMissions();
+const { allCompleted: dailyMissionsCompleted, claimedBonus: dailyBonusClaimed, requestOpenMissionsModal } = useDailyMissions();
 
-const icons = { notificationsOutline, notificationsOffOutline, flashOutline };
+const icons = { notificationsOutline, notificationsOffOutline, flashOutline, giftOutline };
 
 const visibleBadges = computed(() => categoryBadges.value.filter(b => b.count > 0));
 // Small counts get listed as individual items instead of a vague "N new X" card.
@@ -162,7 +172,8 @@ const newItemEntries = computed<NewItemEntry[]>(() => {
 });
 
 const hasAnyContent = computed(() =>
-  personalNotifications.value.length > 0 || visibleBadges.value.length > 0 || !dailyMissionsCompleted.value
+  personalNotifications.value.length > 0 || visibleBadges.value.length > 0 ||
+  !dailyMissionsCompleted.value || !dailyBonusClaimed.value
 );
 
 function openDailyMissions() {
@@ -296,6 +307,7 @@ onUnmounted(() => {
 .notif-item {
   --background: var(--card-bg, #fff);
   --border-radius: 14px;
+  --inner-border-width: 0;
   margin-bottom: 8px;
   border: 1px solid var(--card-border);
   border-radius: 14px;

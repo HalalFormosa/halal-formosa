@@ -105,13 +105,16 @@ const profilePic = ref<string | null>(null)
 const isIos = ref(isPlatform('ios'))
 const router = useRouter()
 const { totalUnreadCount } = useNotifications()
-const { allCompleted: dailyMissionsCompleted } = useDailyMissions()
+const { allCompleted: dailyMissionsCompleted, claimedBonus } = useDailyMissions()
 
 // Daily missions aren't real notification rows, so they don't add to
 // totalUnreadCount itself — just fold a "+1" into the bell badge shown here
-// as a nudge while any mission is still outstanding today (MainView.vue
-// keeps the underlying mission state fresh app-wide via fetchProgress()).
-const displayBadgeCount = computed(() => totalUnreadCount.value + (dailyMissionsCompleted.value ? 0 : 1))
+// as a nudge while any mission is still outstanding today, or while every
+// mission is done but the daily bonus itself hasn't been claimed yet
+// (MainView.vue keeps the underlying mission state fresh app-wide via
+// fetchProgress()).
+const dailyMissionNudgePending = computed(() => !dailyMissionsCompleted.value || !claimedBonus.value)
+const displayBadgeCount = computed(() => totalUnreadCount.value + (dailyMissionNudgePending.value ? 1 : 0))
 
 function navigateToProfile() {
   if (document.activeElement instanceof HTMLElement) document.activeElement.blur()

@@ -106,14 +106,36 @@
            pill keeps its own background, so the product grid is visible
            (and later scrolls) behind them rather than a solid bar. -->
       <div class="header-main-actions" slot="fixed">
-        <ion-searchbar
-            :placeholder="$t('search.placeholder')"
-            :debounce="1000"
-            @ionInput="handleSearchInput($event)"
-            :value="searchQuery"
-            class="compact-searchbar inline-searchbar"
-            :animated="true"
-        ></ion-searchbar>
+        <ion-button
+            v-if="!searchExpanded"
+            fill="clear"
+            @click="expandSearch"
+            class="classic-action-btn search-toggle-btn"
+        >
+          <ion-icon :icon="searchOutline" />
+        </ion-button>
+
+        <div v-else class="searchbar-wrap inline-searchbar">
+          <ion-searchbar
+              ref="searchbarEl"
+              :placeholder="$t('search.placeholder')"
+              :debounce="1000"
+              @ionInput="handleSearchInput($event)"
+              @ionBlur="handleSearchBlur"
+              :value="searchQuery"
+              class="compact-searchbar searchbar-expanded"
+              :animated="true"
+          ></ion-searchbar>
+          <!-- Invisible hit-target over the searchbar's own leading icon so
+               tapping it again collapses the search, same spot the user
+               tapped to open it. -->
+          <button
+              class="searchbar-icon-hit"
+              type="button"
+              :aria-label="$t('common.close') || 'Close'"
+              @click="collapseSearch"
+          ></button>
+        </div>
 
         <div class="right-actions-group">
           <!-- 📱 Grid/List Toggle -->
@@ -135,23 +157,8 @@
         </div>
       </div>
 
-      <!-- ✅ Scanner Modal (WEB ONLY) -->
-      <ion-modal
-          v-if="!isNative"
-          ref="scannerModal"
-          :is-open="scanning"
-          @didPresent="onScannerModalPresented"
-          @didDismiss="handleDismiss"
-      >
-        <ion-content>
-          <div id="reader">
-            <div class="scan-line"></div>
-          </div>
-        </ion-content>
-      </ion-modal>
-
       <div>
-        <div v-if="!scanning" class="ion-padding search-results-wrap">
+        <div class="ion-padding search-results-wrap">
 
           <!-- Skeleton loader -->
           <template v-if="loadingProducts && results.length === 0 && !showForYouGate">
@@ -285,9 +292,10 @@
                     <div class="card-inner">
                       <!-- Left: Image -->
                       <div class="card-image-section">
-                        <img 
+                        <img
                           loading="lazy"
-                          :src="product.photo_front_url || 'https://via.placeholder.com/150x150.webp?text=No+Photo'" 
+                          decoding="async"
+                          :src="getOptimizedImageUrl(product.photo_front_url, 290, 320, 'cover')"
                         />
                         <div class="floating-status-pill bottom-left" :class="product.status.toLowerCase().replace(' ', '-')">
                           <component :is="getStatusIcon(product.status)" :size="14" />
@@ -342,14 +350,16 @@
                         <!-- Blurred background -->
                         <img
                             loading="lazy"
-                            :src="product.photo_front_url || 'https://via.placeholder.com/150x150.webp?text=No+Photo'"
+                            decoding="async"
+                            :src="getOptimizedImageUrl(product.photo_front_url, 100, 100, 'cover', 40)"
                             :alt="product.name"
                             class="featured-bg-blur"
                         />
                         <!-- Product photo -->
                         <img
                             loading="lazy"
-                            :src="product.photo_front_url || 'https://via.placeholder.com/150x150.webp?text=No+Photo'"
+                            decoding="async"
+                            :src="getOptimizedImageUrl(product.photo_front_url, 500, 500, 'cover', 65)"
                             :alt="product.name"
                             class="featured-fg-image"
                         />
@@ -438,7 +448,8 @@
                     <div class="card-image-section">
                       <img
                           loading="lazy"
-                          :src="product.photo_front_url || 'https://via.placeholder.com/150x150.webp?text=No+Photo'"
+                          decoding="async"
+                          :src="getOptimizedImageUrl(product.photo_front_url, 290, 320, 'cover')"
                           :alt="product.name"
                       />
                       <!-- Floating Status Pill on Image (Bottom Left) -->
@@ -507,7 +518,8 @@
                   <div class="grid-card-image">
                     <img
                         loading="lazy"
-                        :src="product.photo_front_url || 'https://via.placeholder.com/150x150.webp?text=No+Photo'"
+                        decoding="async"
+                        :src="getOptimizedImageUrl(product.photo_front_url, 400, 400, 'cover')"
                         :alt="product.name"
                     />
                     <!-- Floating Tier Badge (Top Left) -->
@@ -551,18 +563,14 @@
         />
       </ion-infinite-scroll>
 
-      <ion-text color="danger" v-if="errorMsg" class="ion-padding">
-        ❌ {{ errorMsg }}
-      </ion-text>
-
       <!-- 🟠 Stacked FABs: Add Product on top, Scan Barcode just below it.
            Built as our own fixed column rather than nested <ion-fab>s, since
            ion-fab only auto-positions a single direct button per anchor. -->
-      <div v-if="isAuthenticated || !scanning" class="stacked-fabs" slot="fixed">
+      <div class="stacked-fabs" slot="fixed">
         <ion-fab-button v-if="isAuthenticated" color="carrot" @click="goToAddProduct">
           <ion-icon :icon="addOutline"/>
         </ion-fab-button>
-        <ion-fab-button v-if="!scanning" color="carrot" @click="startScan">
+        <ion-fab-button color="carrot" @click="goToBarcodeScan">
           <ion-icon :icon="barcodeOutline"/>
         </ion-fab-button>
       </div>
@@ -595,6 +603,7 @@ import { ref, onMounted, onUnmounted, nextTick, watch, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter, useRoute } from 'vue-router'
 import {supabase} from '@/plugins/supabaseClient'
+import {notifyFetchError} from '@/utils/offlineFeedback'
 import {
   barcodeOutline,
   chevronDownCircleOutline,
@@ -607,7 +616,8 @@ import {
   warning, alertCircle, sparkles,
   eyeOutline,
   listOutline,
-  closeOutline
+  closeOutline,
+  searchOutline
 } from 'ionicons/icons'
 import {
   CheckCircle2,
@@ -620,13 +630,11 @@ import {
   Sparkles
 } from 'lucide-vue-next'
 import {Capacitor} from '@capacitor/core'
-import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
 import {Haptics, ImpactStyle} from '@capacitor/haptics'
 import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
 import timezone from 'dayjs/plugin/timezone'
 import relativeTime from 'dayjs/plugin/relativeTime'
-import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import { flagBot } from '@/utils/botShield';
 import { hasOrganicInteraction, delayForHuman } from '@/utils/interactionShield';
 import { useRecaptcha } from '@/composables/useRecaptcha';
@@ -638,6 +646,7 @@ import FilterContent from '@/components/FilterContent.vue'
 
 import StoreLogoBar from "@/components/StoreLogoBar.vue";
 import {ActivityLogService} from "@/services/ActivityLogService";
+import { scheduleBannerUpdate } from '@/plugins/admob'
 import {isDonor, refreshSubscriptionStatus} from "@/composables/useSubscriptionStatus";
 import {Purchases} from "@revenuecat/purchases-capacitor";
 import {PAYWALL_RESULT, RevenueCatUI} from "@revenuecat/purchases-capacitor-ui";
@@ -686,13 +695,19 @@ const totalProductsCount = ref(0)
 const allProducts = ref<Product[]>([])
 const results = ref<Product[]>([])
 const errorMsg = ref('')
-const scanning = ref(false)
+
+function setFetchError(err: { message?: string } | null | undefined) {
+  errorMsg.value = err?.message || t('common.error')
+  notifyFetchError(err)
+}
 const isScanning = ref(false)
 // Suppresses the "no product found" empty state during the brief window
 // between router.push(/item/...) and the page transition actually completing —
 // fetchProducts' finally block resets loadingProducts before that transition finishes.
 const isNavigatingToItem = ref(false)
 const searchQuery = ref('')
+const searchExpanded = ref(false)
+const searchbarEl = ref<any>(null)
 const categories = ref<{ id: number; name: string }[]>([])
 const activeCategories = ref<{ id: number; name: string }[]>([])
 
@@ -710,7 +725,6 @@ const currentPage = ref(0)
 const ingredientDictionary = ref<Record<string, string>>({})
 const infiniteScroll = ref<HTMLIonInfiniteScrollElement | null>(null)
 const suppressSortWatcher = ref(false)
-const html5QrCodeInstance = ref<Html5Qrcode | null>(null)
 const isNative = ref(Capacitor.isNativePlatform())
 
 const categoryIcons: Record<string, string> = {
@@ -1127,132 +1141,10 @@ function toggleStatus(status: string) {
 
 
 /* ---------------- Scanner ---------------- */
-function handleDismiss() {
-  scanning.value = false
-  stopScan()
-}
-
-async function stopScan() {
-  if (html5QrCodeInstance.value) {
-    try {
-      if (html5QrCodeInstance.value.isScanning) {
-        await html5QrCodeInstance.value.stop()
-      }
-      const reader = document.getElementById('reader')
-      if (reader) reader.innerHTML = ''
-    } catch (err) {
-      console.warn('Error stopping scanner:', err)
-    } finally {
-      html5QrCodeInstance.value = null
-    }
-  }
-}
-
-
-async function startScan() {
-  await ActivityLogService.log("barcode_scan_start");
-
-  if (scanning.value) return
-  scanning.value = true
-
-  if (isNative.value) {
-    try {
-      // 📱 Native → ML Kit
-      const { camera } = await BarcodeScanner.checkPermissions();
-      if (camera !== 'granted') {
-        const { camera: newStatus } = await BarcodeScanner.requestPermissions();
-        if (newStatus !== 'granted') {
-           scanning.value = false;
-           return;
-        }
-      }
-
-      const { barcodes } = await BarcodeScanner.scan();
-
-      if (barcodes.length > 0) {
-        const barcode = barcodes[0].rawValue;
-        if (barcode) {
-          await Haptics.impact({ style: ImpactStyle.Medium });
-          activeStores.value = [];
-          activeCategories.value = [];
-          activeStatuses.value = [];
-          isScanning.value = true;
-          searchQuery.value = barcode;
-
-          await ActivityLogService.log("barcode_scan_success", {
-            barcode: barcode
-          });
-        }
-      }
-    } catch (err) {
-      console.error('❌ Native scan failed:', err)
-      await ActivityLogService.log("barcode_scan_error", { error: err || "unknown" });
-    } finally {
-      scanning.value = false
-      if (route.query.scan === 'true') {
-        router.replace({path: '/search'})
-      }
-    }
-  }
-}
-
-async function onScannerModalPresented() {
-  // 🌐 Web init logic here
-  try {
-    let readerEl = null
-    // Retry finding element for up to 2 seconds
-    for (let i = 0; i < 20; i++) {
-      readerEl = document.getElementById('reader')
-      if (readerEl) break
-      await new Promise(r => setTimeout(r, 100))
-    }
-
-    if (!readerEl) {
-      console.error("❌ #reader container not found after modal present")
-      scanning.value = false
-      return
-    }
-
-    const html5QrCode = new Html5Qrcode('reader')
-    html5QrCodeInstance.value = html5QrCode
-
-    const config = {
-      fps: 15,
-      qrbox: { width: 250, height: 250 },
-      formatsToSupport: [
-        Html5QrcodeSupportedFormats.EAN_13,
-        Html5QrcodeSupportedFormats.EAN_8,
-        Html5QrcodeSupportedFormats.UPC_A,
-        Html5QrcodeSupportedFormats.UPC_E,
-        Html5QrcodeSupportedFormats.CODE_128,
-        Html5QrcodeSupportedFormats.QR_CODE
-      ]
-    }
-
-    await html5QrCode.start(
-        { facingMode: 'environment' },
-        config,
-        async (decodedText) => {
-          console.log('✅ Web barcode detected:', decodedText)
-          await Haptics.impact({style: ImpactStyle.Medium})
-          
-          activeStores.value = []
-          activeCategories.value = []
-          activeStatuses.value = []
-          isScanning.value = true
-          searchQuery.value = decodedText
-          
-          await ActivityLogService.log("barcode_scan_success", { barcode: decodedText });
-
-          await stopScan()
-          scanning.value = false
-        },
-        () => { /* Silent failure for each frame */ }
-    )
-  } catch (err) {
-    console.error('❌ Web scanner start failed:', err)
-    scanning.value = false
-  }
+// Live camera + result-preview scanning now lives in its own full-screen
+// route (see BarcodeScanCamera.vue) rather than an in-page modal.
+function goToBarcodeScan() {
+  router.push('/scan/barcode')
 }
 
 /* ---------------- Data Fetch ---------------- */
@@ -1291,6 +1183,7 @@ const fetchProducts = async (reset = false) => {
 
   if (isFetching.value || (allLoaded.value && !reset)) return
   isFetching.value = true
+  errorMsg.value = ''
 
   if (reset) {
     currentPage.value = 0
@@ -1401,7 +1294,7 @@ const fetchProducts = async (reset = false) => {
       })
 
       if (error) {
-        errorMsg.value = error.message
+        setFetchError(error)
       } else {
         if (!data || data.length < pageSize) {
           allLoaded.value = true
@@ -1514,7 +1407,7 @@ const fetchProducts = async (reset = false) => {
       )
 
       if (error) {
-        errorMsg.value = error.message
+        setFetchError(error)
       } else {
         if (!data || data.length < pageSize) {
           allLoaded.value = true
@@ -1552,7 +1445,7 @@ const fetchProducts = async (reset = false) => {
     })
 
     if (error) {
-      errorMsg.value = error.message
+      setFetchError(error)
     } else {
       if (!data || data.length < pageSize) {
         allLoaded.value = true
@@ -1584,7 +1477,7 @@ const fetchTotalCount = async () => {
       .select('barcode', {count: 'exact', head: true})
       .eq('is_archived', false)
   if (error) {
-    errorMsg.value = error.message
+    setFetchError(error)
   } else {
     totalProductsCount.value = count || 0
   }
@@ -1602,7 +1495,50 @@ const handleSearchInput = (event: Event) => {
   }
 };
 
+const expandSearch = () => {
+  searchExpanded.value = true;
+  nextTick(() => searchbarEl.value?.$el?.setFocus());
+};
+
+const collapseSearch = () => {
+  searchQuery.value = '';
+  searchExpanded.value = false;
+};
+
+const handleSearchBlur = () => {
+  if (!searchQuery.value) {
+    searchExpanded.value = false;
+  }
+};
+
 /* ---------------- UI helpers ---------------- */
+const PLACEHOLDER_IMAGE = 'https://via.placeholder.com/150x150.webp?text=No+Photo'
+
+// Requests a downsized/compressed rendition from Supabase Storage's image
+// transform endpoint instead of shipping the full ~1000px upload for a
+// thumbnail-sized slot — the main win on slow connections. Falls back to
+// the original URL untouched for anything that isn't one of our storage
+// object URLs (e.g. the placeholder).
+//
+// Both width AND height must be passed: giving the transform only a width
+// does NOT scale proportionally — it silently returns the image cropped to
+// that width while keeping the full original height, producing a mangled
+// sliver instead of a resize.
+function getOptimizedImageUrl(
+    url: string | undefined | null,
+    width: number,
+    height: number,
+    resize: 'contain' | 'cover' = 'contain',
+    quality = 60
+): string {
+  if (!url) return PLACEHOLDER_IMAGE
+  if (!url.includes('/storage/v1/object/public/')) return url
+
+  const transformed = url.replace('/storage/v1/object/public/', '/storage/v1/render/image/public/')
+  const separator = transformed.includes('?') ? '&' : '?'
+  return `${transformed}${separator}width=${width}&height=${height}&resize=${resize}&quality=${quality}`
+}
+
 function fromNowToTaipei(dateString?: string) {
   if (!dateString) return ''
   return dayjs.utc(dateString).tz('Asia/Taipei').fromNow()
@@ -1657,8 +1593,15 @@ function getStatusClass(status: string) {
 
 /* ---------------- Infinite Scroll ---------------- */
 const loadMore = async (event: Event) => {
-  await fetchProducts()
-  ;(event.target as HTMLIonInfiniteScrollElement).complete()
+  try {
+    await fetchProducts()
+    // A failed page (e.g. offline) leaves allLoaded=false — without this it would
+    // just keep re-triggering ionInfinite in a tight retry loop while still near
+    // the bottom of the list. Pull-to-refresh re-enables it once back online.
+    if (errorMsg.value) infiniteDisabled.value = true
+  } finally {
+    ;(event.target as HTMLIonInfiniteScrollElement).complete()
+  }
 }
 
 
@@ -1796,15 +1739,7 @@ onIonViewDidEnter(async () => {
   }
 
   // Refresh AdMob if needed
-  (window as any).scheduleBannerUpdate?.();
-
-  // Auto trigger scanner if route has scan=true
-  if (route.query.scan === "true") {
-    setTimeout(async () => {
-      await startScan();
-      router.replace({path: "/search"});
-    }, 300);
-  }
+  scheduleBannerUpdate();
 });
 
 
@@ -1858,23 +1793,6 @@ const getStatusIcon = (status: string) => {
   background: rgba(20, 20, 22, 0.65);
 }
 
-
-#reader {
-  width: 100%;
-  max-height: 100%;
-  border-radius: 8px;
-  overflow: hidden;
-  margin: 0 auto; /* center horizontally */
-}
-
-/* For larger screens */
-@media (min-width: 768px) {
-  #reader {
-    width: 400px; /* fixed width for better control */
-    height: 300px; /* fixed height */
-    border-radius: 8px; /* maybe larger radius for desktop */
-  }
-}
 
 ion-chip {
   border-radius: 999px !important;
@@ -2221,6 +2139,60 @@ ion-searchbar.rounded {
   min-width: 0;
 }
 
+/* Fade-in only — no animating width/flex-grow on the ion-searchbar itself.
+   Resizing that custom element mid-animation can leave its shadow-DOM icon
+   mispositioned on iOS WebKit (the icon doesn't reliably re-center while the
+   host's box is still changing size), so the bar is laid out at its final
+   width from the first frame and only opacity transitions. */
+.searchbar-expanded {
+  animation: searchbar-fade-in 0.2s ease-out;
+}
+
+@keyframes searchbar-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.search-toggle-btn {
+  flex-shrink: 0;
+}
+
+.searchbar-wrap {
+  position: relative;
+}
+
+/* Sits over the searchbar's own leading search icon so tapping it again
+   collapses the search — same spot the user tapped to open it. Placed
+   after the input in DOM order but pinned over the icon, so it never
+   covers the text/typing area. */
+.searchbar-icon-hit {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 44px;
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  z-index: 1;
+  -webkit-appearance: none;
+  appearance: none;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.searchbar-icon-hit:focus,
+.searchbar-icon-hit:active {
+  background: transparent;
+  outline: none;
+}
+
 /* Stacked FABs: Add Product (top) + Scan Barcode (just below it) */
 .stacked-fabs {
   position: absolute;
@@ -2280,6 +2252,7 @@ ion-searchbar.rounded {
   align-items: center;
   gap: 8px;
   flex-shrink: 0;
+  margin-left: auto;
 }
 
 .badge-dot {
@@ -2443,6 +2416,7 @@ ion-header {
   width: 100%;
   height: 100%;
   position: relative;
+  background: var(--ion-background-color-step-100, #f8fafc);
 }
 
 .grid-card-image img {

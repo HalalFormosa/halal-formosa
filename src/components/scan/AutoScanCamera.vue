@@ -14,10 +14,16 @@
     <!-- UI Overlay (Controls & Feedback) -->
     <div class="scanner-ui-overlay">
       <div class="top-controls">
-        <span class="scanner-title">✨ {{ $t('scanIngredients.autoScan.title', 'Auto Scanner') }}</span>
-        <button class="close-btn" @click="$emit('close')">
-          <ion-icon :icon="closeOutline" />
-        </button>
+        <span class="scanner-title">{{ $t('scanIngredients.autoScan.title', 'Auto Scanner') }}</span>
+        <div class="top-controls-actions">
+          <div v-if="scanStatus" class="scan-count-chip" :class="{ 'scan-count-empty': scanStatus.remaining <= 0 }">
+            <ion-icon :icon="scanOutline" />
+            <span>{{ scanStatus.isDonor ? '∞' : `${scanStatus.used}/${scanStatus.limit}` }}</span>
+          </div>
+          <button class="close-btn" @click="$emit('close')">
+            <ion-icon :icon="closeOutline" />
+          </button>
+        </div>
       </div>
 
       <div class="scan-frame-container">
@@ -97,14 +103,15 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
 import { IonIcon, IonSpinner } from '@ionic/vue'
-import { closeOutline } from 'ionicons/icons'
+import { closeOutline, scanOutline } from 'ionicons/icons'
 import { useI18n } from 'vue-i18n'
 import useHighlightCache from '@/composables/useHighlightCache'
 import { useOcrService } from '@/composables/useOcrService'
 import type { AutoScanResult } from '@/composables/useAutoScanStore'
 import IngredientHighlightImage from '@/components/scan/IngredientHighlightImage.vue'
 import { extractIonColor } from '@/utils/ingredientHelpers'
-import { checkDailyScanLimit } from '@/services/ScanLimitService'
+import { getScanStatus, type ScanStatus } from '@/services/ScanLimitService'
+import { ActivityLogService } from '@/services/ActivityLogService'
 
 const props = defineProps<{
   active: boolean
@@ -125,6 +132,9 @@ const scanAreaRef = ref<HTMLDivElement | null>(null)
 const scanning = ref(false)
 const isDetected = ref(false)
 const statusMessage = ref(t('scanIngredients.autoScan.status.init', 'Initializing HD Camera...'))
+// Today's usage/limit shown in the top-controls chip, kept in sync with the
+// same daily-cap check startAnalysis already runs before each detection.
+const scanStatus = ref<ScanStatus | null>(null)
 
 // 'searching' -> polling for the "ingredients" keyword
 // 'analyzing' -> running the full OCR/translation pipeline on a detected frame
@@ -198,12 +208,21 @@ const INGREDIENT_KEYWORDS = [
   'ingredients', 'ingredient', '成分', '成份', '配料', '原料', '材料', '內容物', '内容物'
 ]
 
+async function refreshScanStatus() {
+  try {
+    scanStatus.value = await getScanStatus()
+  } catch (e) {
+    console.warn('⚠️ [AutoScan] Failed to load scan status:', e)
+  }
+}
+
 async function initCamera() {
   if (stream) return;
-  
+
   console.log('📸 [AutoScan] Requesting HD camera access...');
   statusMessage.value = t('scanIngredients.autoScan.status.connecting', 'Connecting HD Camera...')
-  
+  refreshScanStatus()
+
   try {
     stream = await navigator.mediaDevices.getUserMedia({
       video: {
@@ -324,9 +343,15 @@ async function startAnalysis() {
         // A live detection is counted as a completed scan the moment it succeeds
         // (see AutoScanView.vue's onStableResult), so the daily cap has to be
         // enforced right here — not just when the user taps "View Details".
-        const allowed = await checkDailyScanLimit()
+        // Reuses the same status for the top-controls chip so it reflects reality
+        // right before the pipeline runs, rather than the (possibly stale) count
+        // fetched when the camera first opened.
+        const status = await getScanStatus()
+        scanStatus.value = status
+        const allowed = !status || status.remaining > 0
         if (!allowed) {
           console.log('🚫 [AutoScan] Daily scan limit reached, stopping.')
+          ActivityLogService.log('scan_ingredients_limit_reached', { source: 'auto_scan' })
           stopCamera()
           emit('error', t(
             'scanIngredients.limit.reached',
@@ -424,6 +449,17 @@ async function handleLiveDetection(canvas: HTMLCanvasElement) {
     statusMessage.value = t('scanIngredients.autoScan.status.found', 'Ingredients Found!')
 
     await triggerResultHaptics(payload.autoStatus)
+
+    // Reflect the just-completed scan in the chip immediately — the caller logs
+    // it to the DB asynchronously (see AutoScanView.onStableResult), so waiting
+    // on a refetch would leave the badge stale for a beat.
+    if (scanStatus.value && !scanStatus.value.isDonor) {
+      scanStatus.value = {
+        ...scanStatus.value,
+        used: scanStatus.value.used + 1,
+        remaining: Math.max(0, scanStatus.value.remaining - 1),
+      }
+    }
 
     // Let the caller log this as a successful detection even if the user never
     // taps "View Details" — the scan itself already succeeded.
@@ -527,6 +563,31 @@ onUnmounted(() => {
   font-weight: 700;
   font-size: 20px;
   text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+}
+
+.top-controls-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.scan-count-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 40px;
+  padding: 0 14px;
+  border-radius: 20px;
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  backdrop-filter: blur(10px);
+  white-space: nowrap;
+}
+
+.scan-count-chip.scan-count-empty {
+  background: var(--ion-color-danger);
 }
 
 .close-btn {

@@ -3,6 +3,7 @@ import { RouteRecordRaw } from 'vue-router';
 import { supabase } from '@/plugins/supabaseClient';
 import { performBotChecks } from '@/utils/botShield';
 import { Capacitor } from '@capacitor/core';
+import { isDeviceOnline } from '@/utils/connectivity';
 
 const isIos = Capacitor.getPlatform() === 'ios';
 const getAdId = (iosId: string, androidId: string) => isIos ? iosId : androidId;
@@ -13,7 +14,8 @@ import {
     isContributor,
     isProfileComplete,
     profileLoaded,
-    profileSkipped
+    profileSkipped,
+    currentUser
 } from '@/composables/userProfile'
 
 
@@ -212,6 +214,7 @@ const routes: Array<RouteRecordRaw> = [
       } 
     },
     { path: '/scan/auto', component: () => import('@/views/scan/AutoScanView.vue'), meta: { requiresAuth: true, noAds: true, noTabs: true } },
+    { path: '/scan/barcode', component: () => import('@/views/scan/BarcodeScanView.vue'), meta: { noAds: true, noTabs: true } },
 
     { path: '/news', component: () => import('@/views/news/NewsListView.vue') },
     { path: '/news/:id', name: 'news-detail', component: () => import('@/views/news/NewsDetailView.vue'), props: true, meta: { adSpaceId: 'ad-space-news-detail', adId: getAdId(import.meta.env.VITE_ADMOB_IOS_NEWS_BANNER_ID, import.meta.env.VITE_ADMOB_ANDROID_NEWS_BANNER_ID) } },
@@ -474,6 +477,14 @@ router.beforeEach(async (to, from, next) => {
         session = data.session;
     } catch (e) {
         console.warn('⚠️ [Router] getSession timeout/error:', e);
+    }
+
+    // getSession() can come back empty offline with an expired access token —
+    // it tries to refresh over the network, fails, and reports "no session"
+    // even though the user never logged out. Don't bounce them to /login for
+    // that; trust the already-restored in-memory user instead.
+    if (!session && !isDeviceOnline() && currentUser.value) {
+        session = { user: currentUser.value } as any;
     }
 
     // 🚫 Needs auth but not logged in

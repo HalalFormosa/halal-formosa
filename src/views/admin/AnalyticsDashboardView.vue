@@ -378,19 +378,52 @@ const funnelChartData = computed(() => {
   };
 });
 
+// A trendline drawn straight off the raw values just retraces every bar's
+// spikes/dips exactly (it "hugs the data"), so it never reads as a smooth
+// trend — a centered moving average washes out that noise while keeping the
+// overall shape, which is what actually looks like a predictable curve.
+function movingAverage(values: number[], window: number): number[] {
+  return values.map((_, i) => {
+    const half = Math.floor(window / 2);
+    const start = Math.max(0, i - half);
+    const end = Math.min(values.length, i + half + 1);
+    const slice = values.slice(start, end);
+    return slice.reduce((sum, v) => sum + v, 0) / slice.length;
+  });
+}
+
 const dailyChartData = computed(() => {
   if (!recentTrends.value?.daily) return null;
   const entries = Object.entries(recentTrends.value.daily as Record<string, number>).sort();
+  const values = entries.map(([, v]) => v);
+  const trend = movingAverage(values, 5);
   return {
     labels: entries.map(([d]) => d.split('-').slice(1).join('/')),
-    datasets: [{
-      label: t('admin.activity'),
-      data: entries.map(([,v]) => v),
-      backgroundColor: 'rgba(54, 162, 235, 0.5)',
-      borderColor: '#36A2EB',
-      borderWidth: 1,
-      type: 'bar' as const
-    }]
+    datasets: [
+      {
+        label: t('admin.activity'),
+        data: values,
+        backgroundColor: 'rgba(54, 162, 235, 0.5)',
+        borderColor: '#36A2EB',
+        borderWidth: 1,
+        type: 'bar' as const,
+        order: 1
+      },
+      {
+        label: t('admin.trend') || 'Trend',
+        data: trend,
+        type: 'line' as const,
+        borderColor: '#f39c12',
+        backgroundColor: 'transparent',
+        borderWidth: 2,
+        pointRadius: 0,
+        pointHoverRadius: 4,
+        pointBackgroundColor: '#f39c12',
+        tension: 0.45,
+        fill: false,
+        order: 0
+      }
+    ] as any
   };
 });
 
@@ -443,7 +476,10 @@ const hourlyChartOptions = computed(() => ({
   responsive: true,
   maintainAspectRatio: false,
   scales: {
-    x: { display: false },
+    x: {
+      grid: { display: false },
+      ticks: { color: chartTextColor.value, maxRotation: 0, autoSkip: true, maxTicksLimit: 12 }
+    },
     y: { display: false }
   },
   plugins: { legend: { display: false } }
@@ -470,13 +506,28 @@ async function fetchAnalytics() {
 
   const hours = Array(24).fill(0);
   Object.entries(analytics.trends.hourly || {}).forEach(([h, v]:any) => hours[Number(h)] = v);
-  hourlyChartData.value = { 
-    labels: hours.map((_, i) => `${i}h`), 
-    datasets: [{ 
-      data: hours as number[], 
-      backgroundColor: '#f39c12', 
-      borderRadius: 2 
-    }] 
+  hourlyChartData.value = {
+    labels: hours.map((_, i) => `${String(i).padStart(2, '0')}:00`),
+    datasets: [
+      {
+        data: hours as number[],
+        backgroundColor: '#f39c12',
+        borderRadius: 2,
+        order: 1
+      },
+      {
+        type: 'line' as const,
+        data: movingAverage(hours as number[], 3),
+        borderColor: '#ffffff',
+        backgroundColor: 'transparent',
+        borderWidth: 2,
+        pointRadius: 0,
+        pointHoverRadius: 4,
+        tension: 0.45,
+        fill: false,
+        order: 0
+      }
+    ]
   };
   generateInsightsList(analytics);
 }

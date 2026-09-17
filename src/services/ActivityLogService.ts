@@ -460,6 +460,7 @@ function resolveActivityGroup(activity: string): string | null {
         case 'scan_ingredients_start':
         case 'scan_ingredients_success':
         case 'scan_ingredients_error':
+        case 'scan_ingredients_limit_reached':
         case 'ai_summary_click':
         case 'ai_summary_used':
         case 'product_detail_open':

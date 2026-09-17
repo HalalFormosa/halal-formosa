@@ -1396,6 +1396,20 @@ ion-footer ion-toolbar {
     color: var(--ion-text-color);
 }
 
+/* Native barcode scanning (@capacitor-mlkit/barcode-scanning) renders the camera
+   as a native layer BELOW the WebView, so the WebView has to become fully
+   transparent for it to show through. Everything is hidden except the scanner's
+   own overlay UI, which opts back in with .barcode-scanner-ui. */
+body.barcode-scanner-active {
+    visibility: hidden;
+    --background: transparent;
+    background: transparent !important;
+}
+
+body.barcode-scanner-active .barcode-scanner-ui {
+    visibility: visible;
+}
+
 .premium-header .contrast {
     --color: white !important;
     color: white !important;

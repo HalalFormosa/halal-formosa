@@ -6,31 +6,64 @@
 
       <ion-toolbar class="header-search-toolbar">
         <!-- Search & Add Row -->
-        <div class="search-row-container">
+        <div class="search-row-container" ref="searchRowRef">
           <div class="search-bar-wrapper">
             <ion-searchbar
                 class="compact-searchbar"
-                :debounce="1000"
                 v-model="searchQuery"
                 @ionInput="onSearchInput"
+                @ionFocus="isSearchFocused = true"
+                @ionBlur="onSearchBlur"
                 @ionSearch="onSearchCommit"
                 @keyup.enter.capture="onSearchCommit"
                 :placeholder="$t('explore.placeholder')"
                 :disabled="isGeocoding"
+                show-clear-button="never"
+                :style="isSearchBusy ? { '--icon-color': 'transparent' } : undefined"
             />
+            <ion-spinner
+                v-if="isSearchBusy"
+                name="crescent"
+                color="carrot"
+                class="search-spinner"
+            />
+            <div v-if="!isSearchBusy" class="search-right-actions">
+              <button
+                  v-if="showGoButton"
+                  type="button"
+                  class="search-go-btn"
+                  :aria-label="$t('explore.go')"
+                  @click="onSearchCommit"
+              >
+                {{ $t('explore.go') }}
+              </button>
+              <button
+                  v-if="searchQuery"
+                  type="button"
+                  class="search-clear-btn"
+                  :aria-label="$t('common.clear')"
+                  @click="clearSearch"
+              >
+                <ion-icon :icon="closeCircleOutline" />
+              </button>
+            </div>
           </div>
 
           <div class="header-actions">
             <!-- Filter Button (Mobile only) -->
-            <ion-button
-                v-if="isSmallScreen"
-                @click="isFilterModalOpen = true"
-                class="header-btn filter-toggle-btn"
-                color="carrot"
-            >
-              <ion-icon :icon="funnelOutline"/>
+            <div v-if="isSmallScreen" class="filter-btn-wrapper">
+              <ion-button
+                  @click="isFilterModalOpen = true"
+                  class="header-btn filter-toggle-btn"
+                  color="carrot"
+              >
+                <ion-icon :icon="funnelOutline"/>
+              </ion-button>
+              <!-- Sibling of ion-button, not a child — ion-button clips its
+                   own content to its rounded shape, which was cutting the
+                   badge off instead of letting it float above the corner. -->
               <div v-if="activeFiltersCount > 0" class="badge-count">{{ activeFiltersCount }}</div>
-            </ion-button>
+            </div>
 
             <ion-button
                 @click="viewMode = viewMode === 'map' ? 'list' : 'map'"
@@ -41,6 +74,49 @@
             </ion-button>
 
           </div>
+
+          <!-- Autocomplete suggestions — purely local (search_locations RPC
+               against our own DB), no Google Places involved. Selecting one
+               fills the exact name and runs the normal committed search.
+               Teleported to <body>: ion-toolbar applies `contain: content`
+               (a Stencil/Ionic rendering-perf optimization), which hard-clips
+               painting at the toolbar's own box edge regardless of z-index,
+               overflow, or any CSS override — confirmed by disabling every
+               containment/overflow/clip property on the whole ancestor chain
+               and even maxing z-index, none of which stopped rows past the
+               first from being sliced off exactly at the toolbar's bottom
+               edge. Rendering outside that subtree entirely is the only
+               reliable fix (verified live in the browser). -->
+          <Teleport to="body">
+            <div
+                v-if="showSuggestions"
+                class="search-suggestions"
+                :style="{ top: suggestionsPos.top + 'px', left: suggestionsPos.left + 'px', width: suggestionsPos.width + 'px' }"
+            >
+              <button
+                  v-for="s in enrichedSuggestions"
+                  :key="s.id"
+                  type="button"
+                  class="suggestion-row"
+                  @mousedown.prevent="selectSuggestion(s)"
+              >
+                <img
+                    v-if="s.iconInfo.kind === 'image'"
+                    :src="(s.iconInfo as any).src"
+                    class="suggestion-icon suggestion-icon-img"
+                    alt=""
+                />
+                <span v-else-if="s.iconInfo.kind === 'emoji'" class="suggestion-icon suggestion-icon-emoji">
+                  {{ (s.iconInfo as any).value }}
+                </span>
+                <ion-icon v-else :icon="(s.iconInfo as any).icon" class="suggestion-icon" />
+                <span class="suggestion-text">
+                  <span class="suggestion-name">{{ s.name }}</span>
+                  <span v-if="s.address" class="suggestion-address">{{ s.address }}</span>
+                </span>
+              </button>
+            </div>
+          </Teleport>
         </div>
 
         <!-- Quick Filters Bar (Mobile Only) -->
@@ -279,25 +355,26 @@
               </ion-card-content>
             </ion-card>
 
-            <!-- Skeleton list while loading -->
+            <!-- Skeleton list while loading. See the map-mode skeleton above
+                 for why every line here zeroes ion-skeleton-text's default
+                 4px margins explicitly. -->
             <template v-if="loadingPlaces">
               <div v-for="n in 5" :key="'skeleton-list-' + n" class="modern-location-card list-mode-card">
                 <div class="card-inner">
                   <div class="card-image-section">
-                    <ion-skeleton-text animated style="width:100%; height:100%; border-radius:10px;" />
+                    <ion-skeleton-text animated style="width:100%; height:100%; border-radius:10px; margin:0;" />
                   </div>
                   <div class="card-info-section">
                     <div class="info-top">
-                      <ion-skeleton-text animated style="width:75%; height:20px; margin-bottom:12px;" />
+                      <ion-skeleton-text animated style="width:75%; height:18px; margin:0 0 8px;" />
                       <div class="metas">
-                        <ion-skeleton-text animated style="width:25%; height:14px;" />
-                        <ion-skeleton-text animated style="width:20%; height:14px;" />
-                        <ion-skeleton-text animated style="width:30%; height:14px;" />
+                        <ion-skeleton-text animated style="width:36px; height:12px; margin:0;" />
+                        <ion-skeleton-text animated style="width:44px; height:12px; margin:0;" />
+                        <ion-skeleton-text animated style="width:40px; height:12px; margin:0;" />
                       </div>
-                      <ion-skeleton-text animated style="width:35%; height:14px; margin-top:8px;" />
-                      <div class="card-tags-row horizontal-scroll" style="margin-top:8px;">
-                        <ion-skeleton-text animated style="width:50px; height:18px; border-radius:6px;" />
-                        <ion-skeleton-text animated style="width:60px; height:18px; border-radius:6px;" />
+                      <div class="card-tags-row horizontal-scroll" style="margin:8px 0 0;">
+                        <ion-skeleton-text animated style="width:50px; height:18px; border-radius:6px; margin:0;" />
+                        <ion-skeleton-text animated style="width:60px; height:18px; border-radius:6px; margin:0;" />
                       </div>
                     </div>
                   </div>
@@ -404,13 +481,17 @@
 
     <!-- 6. Bottom Results Slider (Map Only) -->
     <div 
-      v-if="viewMode === 'map' && (boundsFilteredLocations.length > 0 || !locationAttemptFinished || loadingPlaces)"
+      v-if="viewMode === 'map' && (boundsFilteredLocations.length > 0 || !locationAttemptFinished || loadingPlaces || isSearchBusy)"
       class="floating-results-bar"
     >
       <!-- Locating Status Badge (Floating above cards) -->
       <div v-if="!locationAttemptFinished" class="locating-status-badge">
         <div class="pulse-dot"></div>
         <span>{{ $t('explore.locating') }}</span>
+      </div>
+      <div v-else-if="isSearchBusy" class="locating-status-badge">
+        <div class="pulse-dot"></div>
+        <span>{{ $t('explore.searching') }}</span>
       </div>
 
       <div 
@@ -423,31 +504,36 @@
         @mouseleave="isUserScrollingList = false"
       >
         <div class="cards-track">
-          <!-- Skeleton list while locating OR loading data -->
+          <!-- Skeleton list while locating OR loading data. ion-skeleton-text
+               has a default 4px top/bottom margin unless zeroed — left in
+               place, the stacked lines silently added up to more than the
+               fixed --explore-card-height (160px) and got clipped by this
+               card's own overflow:hidden. Every line below sets margin:0
+               explicitly and mirrors the real card's actual single-row
+               metas layout instead of an extra fake line. -->
           <template v-if="!locationAttemptFinished || loadingPlaces">
             <div v-for="n in 5" :key="'skeleton-map-' + n" class="modern-location-card">
               <div class="card-inner">
                 <div class="card-image-section">
                   <ion-skeleton-text
                       animated
-                      style="width:100%; height:100%;"
+                      style="width:100%; height:100%; margin:0;"
                   />
                 </div>
                 <div class="card-info-section">
                   <div class="info-top">
-                    <ion-skeleton-text animated style="width:80%; height:20px; margin-bottom:12px;" />
+                    <ion-skeleton-text animated style="width:80%; height:18px; margin:0 0 8px;" />
                     <div class="metas">
-                      <ion-skeleton-text animated style="width:25%; height:14px;" />
-                      <ion-skeleton-text animated style="width:35%; height:14px;" />
+                      <ion-skeleton-text animated style="width:36px; height:12px; margin:0;" />
+                      <ion-skeleton-text animated style="width:52px; height:12px; margin:0;" />
+                      <ion-skeleton-text animated style="width:44px; height:12px; margin:0;" />
                     </div>
-                    <ion-skeleton-text animated style="width:40%; height:14px; margin-top:8px;" />
                   </div>
                   <div class="info-actions">
-                    <div class="action-row" style="display:flex; gap:8px; margin-top:12px;">
-                      <ion-skeleton-text animated style="width:36px; height:36px; border-radius:50%;" />
-                      <ion-skeleton-text animated style="width:36px; height:36px; border-radius:50%;" />
-                      <ion-skeleton-text animated style="width:36px; height:36px; border-radius:50%;" />
-                      <ion-skeleton-text animated style="width:70px; height:32px; border-radius:16px; margin-left:auto;" />
+                    <div class="action-row" style="margin:0;">
+                      <ion-skeleton-text animated style="width:32px; height:32px; border-radius:50%; margin:0;" />
+                      <ion-skeleton-text animated style="width:32px; height:32px; border-radius:50%; margin:0;" />
+                      <ion-skeleton-text animated style="width:64px; height:30px; border-radius:16px; margin:0;" />
                     </div>
                   </div>
                 </div>
@@ -668,6 +754,7 @@ import {Capacitor} from '@capacitor/core'
 import {Geolocation} from '@capacitor/geolocation'
 import { StatusBar, Style } from '@capacitor/status-bar'
 import {supabase} from '@/plugins/supabaseClient'
+import {notifyFetchError} from '@/utils/offlineFeedback'
 import { hasOrganicInteraction, delayForHuman } from '@/utils/interactionShield'
 import { useRecaptcha } from '@/composables/useRecaptcha'
 import { flagBot } from '@/utils/botShield'
@@ -715,6 +802,9 @@ const viewMode = ref<'map' | 'list'>('map')
 const activeTag = ref<string | null>(null)
 const activeCategoryIds = ref<number[]>([])
 const searchQuery = ref('')
+// The query actually filtered on — only updates when the user commits a
+// search (presses "Go" / Enter), so typing alone never re-filters results.
+const committedSearchQuery = ref('')
 const sortBy = ref<'nearest' | 'recent' | 'popular' | 'trending' | 'for_you'>(userLocation.value ? 'nearest' : 'recent')
 const listLimit = ref(20)
 // locations moved up
@@ -1181,11 +1271,160 @@ const lastGeocodeQuery = ref<string | null>(null)
 
 const GEOCODE_COOLDOWN_MS = 1500 // 1.5 seconds
 
+// Drives the searchbar's loading spinner — true while a committed DB search
+// or the geocode fallback is in flight.
+const isSearchingLocations = ref(false)
+const isSearchBusy = computed(() => isSearchingLocations.value || isGeocoding.value)
+// "Go" replaces the search icon once there's typed text waiting to be
+// committed — search never runs until the user presses it (or Enter).
+const showGoButton = computed(() => !isSearchBusy.value && searchQuery.value.trim().length > 0)
+
+// Autocomplete suggestions — lightweight, name-only lookups against our own
+// DB (via the same search_locations RPC), separate from the "real" committed
+// search. Intentionally skips the recaptcha/human-delay guard that the
+// committed search has, since a short debounce is enough for a read-only
+// 6-row lookup and adding that delay here would defeat the point of
+// instant-feeling suggestions.
+interface LocationSuggestion { id: number; name: string; address: string | null; typeId: number | null }
+const suggestions = ref<LocationSuggestion[]>([])
+
+// Reuses the same category icon/emoji/image data the category chips already
+// load (locationTypes), so a suggestion shows its assigned category's icon
+// instead of a generic pin.
+type SuggestionIcon =
+  | { kind: 'image'; src: string }
+  | { kind: 'emoji'; value: string }
+  | { kind: 'icon'; icon: any }
+
+const resolveSuggestionIcon = (typeId: number | null): SuggestionIcon => {
+  const t = typeId != null ? locationTypes.value.find(lt => lt.id === typeId) : undefined
+  if (t?.icon_url) return { kind: 'image', src: t.icon_url }
+  if (t?.emoji) return { kind: 'emoji', value: t.emoji }
+  if (t?.icon) return { kind: 'icon', icon: ionIconMap[t.icon] ?? locationOutline }
+  return { kind: 'icon', icon: locationOutline }
+}
+
+const enrichedSuggestions = computed(() =>
+  suggestions.value.map(s => ({ ...s, iconInfo: resolveSuggestionIcon(s.typeId) }))
+)
+const isSearchFocused = ref(false)
+let suggestionsTimeout: ReturnType<typeof setTimeout> | null = null
+
+const showSuggestions = computed(() =>
+  isSearchFocused.value &&
+  !isSearchBusy.value &&
+  searchQuery.value.trim().length >= 2 &&
+  suggestions.value.length > 0
+)
+
+// The dropdown is teleported to <body> (see the template), so its position
+// has to be computed in screen coordinates from the search row's own rect
+// instead of being anchored via CSS to a relative ancestor.
+const searchRowRef = ref<HTMLElement | null>(null)
+const suggestionsPos = ref({ top: 0, left: 0, width: 0 })
+
+const updateSuggestionsPosition = () => {
+  const el = searchRowRef.value
+  if (!el) return
+  const rect = el.getBoundingClientRect()
+  suggestionsPos.value = {
+    top: rect.bottom + 6,
+    left: rect.left + 16,
+    width: rect.width - 32
+  }
+}
+
+watch(showSuggestions, (visible) => {
+  if (visible) nextTick(updateSuggestionsPosition)
+})
+
+onMounted(() => {
+  window.addEventListener('resize', updateSuggestionsPosition)
+})
+onUnmounted(() => {
+  window.removeEventListener('resize', updateSuggestionsPosition)
+})
+
+const onSearchBlur = () => {
+  isSearchFocused.value = false
+}
+
+// Guards against out-of-order responses: if the user types fast enough that
+// two fetchSuggestions calls are in flight at once (network latency > the
+// debounce window), an older, slower request could resolve after a newer
+// one and stomp its results with a stale/shorter-query result set. Only the
+// most recently STARTED request is allowed to write to `suggestions`.
+let suggestionsRequestId = 0
+
+const fetchSuggestions = async (q: string) => {
+  const requestId = ++suggestionsRequestId
+
+  const { data: rankedIds, error: rankError } = await supabase
+    .rpc('search_locations', { p_query: q, p_limit: 6 })
+
+  if (requestId !== suggestionsRequestId) return // superseded by a newer keystroke
+
+  if (rankError || !rankedIds || rankedIds.length === 0) {
+    suggestions.value = []
+    return
+  }
+
+  const ids = rankedIds.map((r: { id: number }) => r.id)
+  const { data, error } = await supabase
+    .from('locations')
+    .select('id, name, address, type_id')
+    .eq('approved', true)
+    .eq('is_archived', false)
+    .in('id', ids)
+
+  if (requestId !== suggestionsRequestId) return // superseded by a newer keystroke
+
+  if (error || !data) {
+    suggestions.value = []
+    return
+  }
+
+  // Preserve the RPC's relevance order — .in() does not.
+  const mapped: LocationSuggestion[] = data.map((d: any) => ({
+    id: d.id,
+    name: d.name,
+    address: d.address,
+    typeId: d.type_id
+  }))
+  const byId = new Map(mapped.map(d => [d.id, d]))
+  suggestions.value = ids
+    .map((id: number) => byId.get(id))
+    .filter((s: LocationSuggestion | undefined): s is LocationSuggestion => !!s)
+}
+
+watch(searchQuery, (q) => {
+  if (suggestionsTimeout) clearTimeout(suggestionsTimeout)
+  const trimmed = q.trim()
+  if (trimmed.length < 2) {
+    suggestions.value = []
+    return
+  }
+  suggestionsTimeout = setTimeout(() => {
+    fetchSuggestions(trimmed)
+  }, 250)
+})
+
+const selectSuggestion = (s: LocationSuggestion) => {
+  searchQuery.value = s.name
+  suggestions.value = []
+  isSearchFocused.value = false
+  onSearchCommit()
+}
+
 const onSearchCommit = async () => {
   if (!mapInstance) return
 
   const q = searchQuery.value.trim()
   if (!q) return
+
+  // Committing a search always dismisses the suggestions dropdown.
+  isSearchFocused.value = false
+  suggestions.value = []
 
   // Log the committed search query
   ActivityLogService.log("explore_search_query", {
@@ -1193,7 +1432,17 @@ const onSearchCommit = async () => {
     committed: true
   });
 
-  // 1️⃣ Local DB match FIRST
+  // Search only runs on commit (Go / Enter) — typing alone never filters or
+  // queries anything, so results don't jump around as the user types.
+  committedSearchQuery.value = q
+
+  // 1️⃣ Local DB match FIRST. Always (re)run the DB search so results
+  // reflect the exact committed query rather than stale local state — and
+  // await the real result instead of racing ahead to the paid geocode
+  // fallback, which was showing an unrelated Google-geocoded pin for places
+  // that actually exist in our own DB (e.g. "kuo zhang" vs "Kuo Zang").
+  await runRemoteLocationSearch(q, false)
+
   const hasLocalMatch = sortedLocations.value.length > 0
   if (hasLocalMatch) {
     console.log('[SEARCH] Local DB match', {
@@ -1246,15 +1495,19 @@ const onSearchCommit = async () => {
 
 
 
-const showAddressToast = async () => {
+const showSearchToast = async (message: string) => {
   const toast = await toastController.create({
-    message: isGeocoding.value
-        ? t('explore.searchWait')
-        : t('explore.searchMap'),
-    duration: 1000,
+    message,
+    duration: 1500,
     position: 'top'
   })
   await toast.present()
+}
+
+const showAddressToast = async () => {
+  await showSearchToast(
+    isGeocoding.value ? t('explore.searchWait') : t('explore.searchMap')
+  )
 }
 
 
@@ -1270,7 +1523,10 @@ const geocodeAddress = async (query: string) => {
     })
 
     const place = res.results?.[0]
-    if (!place) return
+    if (!place) {
+      await showSearchToast(t('explore.searchNotFound', { query }))
+      return
+    }
 
     const loc = place.geometry.location
     const latLng = {lat: loc.lat(), lng: loc.lng()}
@@ -1845,6 +2101,10 @@ const fetchLocations = async (mapBounds?: google.maps.LatLngBounds | null, force
 
     locations.value = mapped
     lastFetchedBounds.value = paddedBounds
+  } else if (error) {
+    // Keep whatever markers are already on the map (e.g. offline) instead of
+    // clearing them — just let the user know the refresh didn't go through.
+    notifyFetchError(error)
   }
 
   initMarkers()
@@ -2350,98 +2610,141 @@ const onSearchInput = (event: CustomEvent) => {
   searchQuery.value = (event.detail?.value ?? '') as string
 }
 
+const clearSearch = () => {
+  searchQuery.value = ''
+}
+
 /* ---------------- Derived ---------------- */
 const remoteSearchIds = ref<number[] | null>(null)
-let remoteSearchTimeout: ReturnType<typeof setTimeout> | null = null
 
-watch(searchQuery, (q) => {
-  if (remoteSearchTimeout) clearTimeout(remoteSearchTimeout)
-  if (!q || q.length < 2) {
-    remoteSearchIds.value = null
-    return
+// Runs the DB search (full-text + trigram fuzzy fallback) for `q`, merging
+// any matches into `locations.value` and updating `remoteSearchIds`.
+// Returns true if at least one match was found. Shared by the debounced
+// live-typing search and onSearchCommit, so a committed search (Enter) can
+// await the real result instead of racing ahead to the paid geocode
+// fallback (and showing an unrelated pin) while a debounced search for the
+// same query is still in flight.
+const runRemoteLocationSearch = async (q: string, logQuery = true): Promise<boolean> => {
+  isSearchingLocations.value = true
+  try {
+    return await runRemoteLocationSearchInner(q, logQuery)
+  } finally {
+    isSearchingLocations.value = false
   }
-  
-  remoteSearchTimeout = setTimeout(async () => {
-    // Log the search query once typing stops
+}
+
+const runRemoteLocationSearchInner = async (q: string, logQuery: boolean): Promise<boolean> => {
+  if (logQuery) {
     ActivityLogService.log("explore_search_query", {
       query: q
     });
+  }
 
-    // 🛡️ Level 2 Interaction & hCaptcha Attestation Guard for Explore Search
-    if (!hasOrganicInteraction()) {
-      flagBot('no_organic_interaction');
-      return;
+  // 🛡️ Level 2 Interaction & hCaptcha Attestation Guard for Explore Search
+  if (!hasOrganicInteraction()) {
+    flagBot('no_organic_interaction');
+    return false;
+  }
+
+  // Execute reCAPTCHA invisibly
+  let captchaToken = 'disabled';
+  if (isCaptchaEnabled) {
+    try {
+      captchaToken = await executeRecaptcha('explore');
+    } catch (e) {
+      console.error('🚨 reCAPTCHA verification failed in explore:', e);
+      flagBot('captcha_challenge_failed');
+      return false;
     }
+  }
+  (window as any)._recaptchaToken = captchaToken;
 
-    // Execute reCAPTCHA invisibly
-    let captchaToken = 'disabled';
-    if (isCaptchaEnabled) {
-      try {
-        captchaToken = await executeRecaptcha('explore');
-      } catch (e) {
-        console.error('🚨 reCAPTCHA verification failed in explore:', e);
-        flagBot('captcha_challenge_failed');
-        return;
+  // Organic randomized human delay
+  await delayForHuman();
+
+  // RPC combines full-text search with trigram fuzzy matching, so
+  // near-miss spellings (e.g. "Zhang" vs "Zang") still resolve.
+  const { data: rankedIds, error: rankError } = await supabase
+    .rpc('search_locations', { p_query: q })
+
+  if (rankError || !rankedIds || rankedIds.length === 0) {
+    remoteSearchIds.value = rankError ? null : []
+    return false
+  }
+
+  const ids = rankedIds.map((r: { id: number }) => r.id)
+
+  const { data, error } = await supabase
+    .from('locations')
+    .select(`
+      id,
+      name,
+      lat,
+      lng,
+      image,
+      type_id,
+      address,
+      view_count,
+      created_at,
+      tags,
+      opening_hours,
+      location_types(name),
+      partner:partners(partner_tier)
+    `)
+    .eq('approved', true)
+    .eq('is_archived', false)
+    .in('id', ids)
+
+  if (!error && data && data.length > 0) {
+    const existingIds = new Set(locations.value.map(l => l.id))
+    //@ts-expect-error LocationRow
+    const typedData = data as LocationRow[]
+    const mapped = typedData.map((loc: any) => {
+      const p: Place = {
+        id: loc.id,
+        name: loc.name,
+        address: loc.address ?? null,
+        position: {lat: loc.lat, lng: loc.lng},
+        image: loc.image,
+        typeId: loc.type_id,
+        type: loc.location_types?.name ?? '',
+        view_count: loc.view_count ?? 0,
+        partner_tier: Array.isArray(loc.partner) ? loc.partner[0]?.partner_tier : loc.partner?.partner_tier,
+        created_at: loc.created_at,
+        tags: loc.tags || [],
+        opening_hours: loc.opening_hours
       }
-    }
-    (window as any)._recaptchaToken = captchaToken;
+      p.isOpen = calculateIsOpenStatus(p)
+      p.createdFromNow = fromNowToTaipei(loc.created_at)
+      return p
+    })
 
-    // Organic randomized human delay
-    await delayForHuman();
+    locations.value = [
+      ...locations.value,
+      ...mapped.filter(m => !existingIds.has(m.id))
+    ]
+    // `.in('id', ids)` does NOT preserve the order of `ids` — Postgres
+    // returns rows in its own order (roughly ascending id), which was
+    // silently discarding the RPC's relevance ranking (e.g. a closer but
+    // weaker match like "Chang's ..." outranking the actual best match).
+    // Re-derive the order from `ids` (already ranked) instead of `data`.
+    const returnedIds = new Set(typedData.map(d => d.id))
+    remoteSearchIds.value = ids.filter(id => returnedIds.has(id))
+    return true
+  }
 
-    const { data, error } = await supabase
-      .from('locations')
-      .select(`
-        id,
-        name,
-        lat,
-        lng,
-        image,
-        type_id,
-        address,
-        view_count,
-        created_at,
-        tags,
-        opening_hours,
-        location_types(name),
-        partner:partners(partner_tier)
-      `)
-      .eq('approved', true)
-      .eq('is_archived', false)
-      .textSearch('search_vector', q, { type: 'websearch' })
-      
-    if (!error && data) {
-      const existingIds = new Set(locations.value.map(l => l.id))
-      //@ts-expect-error LocationRow
-      const typedData = data as LocationRow[]
-      const mapped = typedData.map((loc: any) => {
-        const p: Place = {
-          id: loc.id,
-          name: loc.name,
-          address: loc.address ?? null,
-          position: {lat: loc.lat, lng: loc.lng},
-          image: loc.image,
-          typeId: loc.type_id,
-          type: loc.location_types?.name ?? '',
-          view_count: loc.view_count ?? 0,
-          partner_tier: Array.isArray(loc.partner) ? loc.partner[0]?.partner_tier : loc.partner?.partner_tier,
-          created_at: loc.created_at,
-          tags: loc.tags || [],
-          opening_hours: loc.opening_hours
-        }
-        p.isOpen = calculateIsOpenStatus(p)
-        p.createdFromNow = fromNowToTaipei(loc.created_at)
-        return p
-      })
+  remoteSearchIds.value = []
+  return false
+}
 
-      locations.value = [
-        ...locations.value,
-        ...mapped.filter(m => !existingIds.has(m.id))
-      ]
-      remoteSearchIds.value = data.map(d => d.id)
-    }
-  }, 500) // 500ms debounce
-}) // Added the missing }) here
+// Typing never searches on its own — clearing the box just resets back to
+// the unfiltered view. Actual searching only happens in onSearchCommit.
+watch(searchQuery, (q) => {
+  if (!q) {
+    remoteSearchIds.value = null
+    committedSearchQuery.value = ''
+  }
+})
 
 const sortedLocations = computed(() => {
   let base = [...locations.value]
@@ -2467,8 +2770,8 @@ const sortedLocations = computed(() => {
     )
   }
 
-  // search (this already works for all matches)
-  const q = searchQuery.value.toLowerCase().trim()
+  // search only reflects the committed query — typing alone doesn't filter
+  const q = committedSearchQuery.value.toLowerCase().trim()
 
   if (q) {
     if (remoteSearchIds.value !== null) {
@@ -2493,6 +2796,21 @@ const sortedLocations = computed(() => {
     const distance = lastCalcLocation.value ? getDistanceInKm(p.position) : Number.POSITIVE_INFINITY;
     return { ...p, distance };
   });
+
+  // While actively searching, relevance (from the search_locations RPC's
+  // ranking) always wins over the sortBy dropdown — otherwise e.g. "nearest"
+  // can push a closer, only loosely-related place (substring/address match)
+  // above the actual best text match for the typed query.
+  if (q && remoteSearchIds.value && remoteSearchIds.value.length > 0) {
+    const rankIndex = new Map(remoteSearchIds.value.map((id, i) => [id, i]))
+    mapped.sort((a, b) => {
+      const ra = rankIndex.has(a.id) ? rankIndex.get(a.id)! : Number.POSITIVE_INFINITY
+      const rb = rankIndex.has(b.id) ? rankIndex.get(b.id)! : Number.POSITIVE_INFINITY
+      if (ra !== rb) return ra - rb
+      return a.distance - b.distance
+    })
+    return mapped
+  }
 
   if (sortBy.value === 'nearest') {
     mapped.sort((a, b) => a.distance - b.distance);
@@ -3222,6 +3540,7 @@ button.gm-ui-hover-effect > span {
 }
 
 .search-row-container {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -3232,10 +3551,145 @@ button.gm-ui-hover-effect > span {
 }
 
 .search-bar-wrapper {
+  position: relative;
   flex: 1;
   min-width: 140px; /* Prevent search from disappearing */
   display: flex;
   align-items: center;
+}
+
+.search-spinner {
+  position: absolute;
+  left: 9px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  pointer-events: none;
+}
+
+.search-right-actions {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.search-go-btn {
+  height: 22px;
+  min-width: 30px;
+  padding: 0 8px;
+  border: none;
+  border-radius: 999px;
+  background: var(--ion-color-carrot, #f97316);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.search-clear-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--ion-color-medium, #92949c);
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.search-suggestions {
+  /* Teleported to <body> (see the template comment above), so it's
+     positioned via fixed + inline top/left/width computed in JS from the
+     search row's own screen position, rather than CSS anchored to a
+     relative ancestor. */
+  position: fixed;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--card-shadow-hover);
+  overflow-y: auto;
+  overflow-x: hidden;
+  max-height: 60vh;
+  z-index: 2500;
+}
+
+.suggestion-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 14px;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.suggestion-row + .suggestion-row {
+  border-top: 1px solid var(--card-border);
+}
+
+.suggestion-row:active {
+  background: var(--ion-background-color-step-100, rgba(0, 0, 0, 0.05));
+}
+
+.suggestion-icon {
+  flex-shrink: 0;
+  margin-top: 2px;
+  font-size: 16px;
+  color: var(--ion-color-carrot);
+}
+
+.suggestion-icon-img {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  border-radius: 4px;
+}
+
+.suggestion-icon-emoji {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.suggestion-text {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.suggestion-name {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--ion-color-dark);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.suggestion-address {
+  font-size: 0.7rem;
+  line-height: 1.35;
+  color: var(--ion-color-medium, #92949c);
+  /* No truncation — addresses just wrap to as many lines as they need.
+     .search-suggestions scrolls (max-height: 60vh) as a safety net instead
+     of clipping any individual row's text. */
+  white-space: normal;
+  word-break: break-word;
 }
 
 /* Scoped to .search-bar-wrapper (Explore's own container) rather than the
@@ -3247,7 +3701,7 @@ button.gm-ui-hover-effect > span {
   --border-radius: var(--radius-lg) !important;
   border-radius: var(--radius-lg) !important;
   --padding-start: 30px;
-  --padding-end: 12px;
+  --padding-end: 64px; /* room for the right-side Go / clear buttons */
   padding: 0;
   height: 46px !important;
   min-height: 46px !important;
@@ -3291,6 +3745,11 @@ button.gm-ui-hover-effect > span {
   align-items: center;
   gap: 8px;
   flex-shrink: 0;
+}
+
+.filter-btn-wrapper {
+  position: relative;
+  display: inline-flex;
 }
 
 .header-btn {
@@ -3656,7 +4115,9 @@ button.gm-ui-hover-effect > span {
   flex: 0 0 85vw;
   max-width: 380px;
   margin: 0;
-  background: var(--card-bg);
+  background: rgba(var(--card-bg-rgb), 0.88);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
   border-radius: var(--radius-lg);
   overflow: hidden;
   box-shadow: var(--card-shadow-hover);
@@ -4019,6 +4480,8 @@ button.gm-ui-hover-effect > span {
   border: 1px solid var(--card-border);
   pointer-events: none;
   animation: fadeIn 0.3s ease-out;
+  white-space: nowrap;
+  max-width: calc(100vw - 32px);
 }
 
 .pulse-dot {

@@ -87,6 +87,7 @@ import type { User } from '@supabase/supabase-js'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import {createOutline } from "ionicons/icons";
 import { isDonor } from "@/composables/useSubscriptionStatus";
+import { scheduleBannerUpdate } from '@/plugins/admob'
 
 const user = ref<User | null>(null)
 
@@ -104,7 +105,7 @@ const handleScroll = (ev: any) => {
 const showAds = computed(() => !isDonor.value)
 
 onIonViewDidEnter(() => {
-  (window as any).scheduleBannerUpdate?.()
+  scheduleBannerUpdate()
 })
 
 import dayjs from 'dayjs'
@@ -153,7 +154,7 @@ onMounted(async () => {
 
   loading.value = false;
   await nextTick()
-  setTimeout(() => (window as any).scheduleBannerUpdate?.(), 50)
+  setTimeout(() => scheduleBannerUpdate(), 50)
 });
 </script>
 

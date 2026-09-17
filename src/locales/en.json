@@ -35,6 +35,7 @@
     "noResults": "No results found",
     "success": "Success!",
     "error": "Error occurred.",
+    "offlineMessage": "You're offline. Check your connection and try again.",
     "notProvided": "Not provided",
     "noData": "No data found",
     "viewMore": "View More",
@@ -248,8 +249,8 @@
     "leaderboardAllTime": "All Time",
     "premiumPartner": "Premium Partner",
     "latestNews": "Latest News",
-    "totalProducts": "Total Products",
-    "totalLocations": "Total Locations",
+    "totalProducts": "Products",
+    "totalLocations": "Locations",
     "partnerTier": "{tier} PARTNER",
     "statuses": {
       "halal": "Halal",
@@ -510,10 +511,29 @@
       "Gifts & Hampers": "Gifts & Hampers"
     },
     "registeredProductCount": "Count",
+    "noResults": "No results found",
     "noProductFound": "Sorry, no product found...",
     "pullToRefresh": "Pull to refresh",
     "showingResults": "Showing {count} of {total} registered products",
     "loadingMoreProduct": "Loading more products...",
+    "barcodeScan": {
+      "title": "Scan Barcode",
+      "hint": "Align the barcode inside the frame",
+      "close": "Close",
+      "status": {
+        "init": "Starting camera...",
+        "searching": "Looking for a barcode...",
+        "checking": "Checking barcode..."
+      },
+      "scanAgain": "Scan Again",
+      "viewDetails": "View Details",
+      "notFound": {
+        "title": "Not in our database yet",
+        "message": "No product matches barcode {barcode}.",
+        "action": "Add this product"
+      },
+      "cameraError": "Could not access camera. Please check permissions."
+    },
     "details": {
       "title": "Product Details",
       "category": "Category",
@@ -640,6 +660,9 @@
     "gettingFix": "Getting fix...",
     "searchWait": "Please wait...",
     "searchMap": "Searching address on map...",
+    "go": "Go",
+    "searching": "Searching for locations...",
+    "searchNotFound": "No results for \"{query}\"",
     "types": {
       "Restaurant": "Restaurant",
       "Halal Restaurant": "Halal Restaurant",
@@ -712,6 +735,8 @@
     "emptyHint": "We'll let you know when something new happens.",
     "dailyMissionTitle": "Daily Mission still available",
     "dailyMissionBody": "Finish it to get Extra XP!",
+    "dailyBonusTitle": "Daily bonus ready to claim",
+    "dailyBonusBody": "All missions done — tap to claim your Extra XP!",
     "category": {
       "products": "New products added",
       "locations": "New places added",
@@ -786,6 +811,7 @@
     },
     "noBio": "No bio added yet",
     "level": "Level {level}",
+    "levelShort": "Lv. {level}",
     "savedItems": "Saved Items",
     "scanHistory": "Scan History",
     "submittedProducts": "Submitted Products",
@@ -950,8 +976,8 @@
       "toNextLevel": "XP TO NEXT LEVEL",
       "infoTitle": "About Experience (XP)",
       "infoMessage": "XP points represent credits given to you by Halal Formosa for your actions and contributions (like scanning products, submitting items, and reporting), which will also grade you on the leaderboard. In the future, these points can be traded for various conveniences, such as partner discounts, exclusive promos, and other customization options!",
-      "spendable": "Available to Spend",
-      "spent": "XP Spent"
+      "spendable": "Available",
+      "spent": "Spent"
     },
     "social": {
       "instagram": "Instagram",

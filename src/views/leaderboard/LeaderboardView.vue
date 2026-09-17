@@ -70,74 +70,84 @@
           @click="openUserProfile(user, $event)"
         >
           <!-- Rank -->
-          <div slot="start" style="width: 24px; text-align: center; font-weight: 600; display: flex; align-items: center; justify-content: center; color: inherit; margin-right: 8px;">
-            <ion-icon v-if="getDisplayRank(user, index) === 1" :icon="medalOutline" style="color: #FFD700; font-size: 1.2rem;" />
-            <ion-icon v-else-if="getDisplayRank(user, index) === 2" :icon="medalOutline" style="color: #C0C0C0; font-size: 1.2rem;" />
-            <ion-icon v-else-if="getDisplayRank(user, index) === 3" :icon="medalOutline" style="color: #CD7F32; font-size: 1.2rem;" />
-            <span v-else>{{ getDisplayRank(user, index) }}</span>
+          <div slot="start" style="width: 18px; text-align: center; font-weight: 600; display: flex; align-items: center; justify-content: center; color: inherit; margin-right: 6px; flex-shrink: 0;">
+            <ion-icon v-if="getDisplayRank(user, index) === 1" :icon="medalOutline" style="color: #FFD700; font-size: 1.1rem;" />
+            <ion-icon v-else-if="getDisplayRank(user, index) === 2" :icon="medalOutline" style="color: #C0C0C0; font-size: 1.1rem;" />
+            <ion-icon v-else-if="getDisplayRank(user, index) === 3" :icon="medalOutline" style="color: #CD7F32; font-size: 1.1rem;" />
+            <span v-else style="font-size: 0.85rem;">{{ getDisplayRank(user, index) }}</span>
           </div>
 
           <!-- Avatar with Cosmetics -->
-          <div slot="start" class="leaderboard-avatar-cell" :style="getLeaderboardGlowStyle(user)" style="margin-right: 12px;">
-            <ion-avatar style="width: 40px; height: 40px;" :style="getLeaderboardFrameStyle(user)">
+          <div slot="start" class="leaderboard-avatar-cell" :style="getLeaderboardGlowStyle(user)" style="margin-right: 10px;">
+            <ion-avatar style="width: 36px; height: 36px; position: relative;" :style="getLeaderboardFrameStyle(user)">
               <img
                 :src="(user.public_profile || currentUser?.id === user.id) ? (user.public_profile ? (user.avatar_url || 'https://placehold.co/64x64/e5e7eb/374151') : (currentUser?.user_metadata?.avatar_url || 'https://placehold.co/64x64/e5e7eb/374151')) : `https://placehold.co/64x64/e5e7eb/374151?text=${$t('home.unknownAvatar')}`"
                 :alt="$t('home.altAvatar')"
                 loading="lazy"
                 @error="handleImgError"
               />
+              <span v-if="user.donor_type && user.donor_type.toLowerCase().includes('pro')" class="avatar-pro-badge" :title="$t('home.pro') || 'Pro'">
+                <ion-icon :icon="diamond" />
+              </span>
             </ion-avatar>
           </div>
 
           <!-- Info -->
-          <ion-label style="min-width: 0; flex: 1; overflow: hidden; width: 0; margin-right: 8px;">
-            <h2 style="margin: 0; font-weight: 600; font-size: 1rem; display: flex; align-items: center; gap: 6px; color: inherit; min-width: 0; overflow: hidden; width: 100%;">
+          <ion-label style="min-width: 0; flex: 1; overflow: hidden; width: 0; margin-right: 6px;">
+            <h2 style="margin: 0; font-weight: 700; font-size: 1rem; letter-spacing: -0.01em; display: flex; align-items: center; gap: 4px; color: inherit; min-width: 0; overflow: hidden; width: 100%;">
               <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0; color: inherit;">
                 {{ user.public_profile ? user.display_name : formatDisplayName(currentUser?.id === user.id ? (currentUser?.user_metadata?.full_name || currentUser?.user_metadata?.display_name || 'Me') : user.display_name) }}
               </span>
-              <span v-if="user.donor_type && user.donor_type.toLowerCase().includes('pro')" class="list-pro-badge">
-                <ion-icon :icon="sparkles" style="font-size: 0.7rem; margin-right: 2px;" />
-                PRO
-              </span>
-              <span v-else-if="user.donor_type && user.donor_type.toLowerCase() === 'contributor'" class="list-contributor-badge">
-                <ion-icon :icon="star" style="font-size: 0.7rem; margin-right: 2px;" />
+              <span v-if="user.donor_type && user.donor_type.toLowerCase() === 'contributor'" class="list-contributor-badge">
+                <ion-icon :icon="star" style="font-size: 0.6rem; margin-right: 2px;" />
                 {{ $t('profile.donors.Contributor') }}
-              </span>
-              <span v-if="user.showcase_achievement" class="list-trophy-badge" :title="$t('achievements.categories.' + user.showcase_achievement.category + '.tiers.' + user.showcase_achievement.tier)">
-                {{ user.showcase_achievement.icon }}
               </span>
               <ion-badge v-if="currentUser?.id === user.id && !user.public_profile" color="medium" style="font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; flex-shrink: 0;" @click="showPrivateInfoAlert($event)">Private</ion-badge>
             </h2>
             <p style="margin: 0; font-size: 0.8rem; color: var(--sub-color, var(--ion-color-medium));">
-              {{ $t('profile.level', { level: getLevelFromPoints(user.total_points || user.points) }) }}
+              {{ $t('profile.levelShort', { level: getLevelFromPoints(user.total_points || user.points) }) }}
             </p>
           </ion-label>
 
           <!-- Points Badge -->
           <ion-badge
             slot="end"
-            :color="getLevelColor(user.points)"
             class="leaderboard-points-badge"
+            :style="{ '--pts-rgb': getLevelAccentRgb(user.points) }"
           >
-            {{ $t('home.pointsCount', { points: user.points }) }}
+            {{ formatCompactPoints(user.points) }} pts
           </ion-badge>
         </ion-item>
       </ion-list>
 
       <!-- 🔎 Loading skeletons -->
-      <ion-list v-if="loading && users.length === 0">
-        <ion-item v-for="n in 8" :key="n" lines="none" class="leaderboard-item">
-          <div style="display: flex; align-items: center; width: 100%;">
-            <ion-skeleton-text animated style="width: 20px; height: 20px; margin-right: 12px; border-radius: 4px;" />
-            <ion-avatar style="width: 40px; height: 40px; margin-right: 12px;">
+      <ion-list v-if="loading && users.length === 0" class="leaderboard-list">
+        <ion-item v-for="n in 8" :key="n" lines="none" class="leaderboard-item leaderboard-skeleton-item">
+          <!-- Rank -->
+          <div slot="start" style="width: 24px; display: flex; align-items: center; justify-content: center; margin-right: 8px;">
+            <ion-skeleton-text v-if="n <= 3" animated style="width: 19px; height: 19px; border-radius: 50%; margin: 0;" />
+            <ion-skeleton-text v-else animated style="width: 14px; height: 14px; border-radius: 3px; margin: 0;" />
+          </div>
+
+          <!-- Avatar -->
+          <div slot="start" class="leaderboard-avatar-cell" style="margin-right: 12px;">
+            <ion-avatar style="width: 40px; height: 40px;">
               <ion-skeleton-text animated />
             </ion-avatar>
-            <ion-label style="flex: 1;">
-              <ion-skeleton-text animated style="width: 60%; height: 16px; margin-bottom: 8px;" />
-              <ion-skeleton-text animated style="width: 40%; height: 12px;" />
-            </ion-label>
-            <ion-skeleton-text animated style="width: 60px; height: 24px; border-radius: 8px;" />
           </div>
+
+          <!-- Info -->
+          <ion-label style="min-width: 0; flex: 1; margin-right: 8px;">
+            <h2 style="margin: 0;">
+              <ion-skeleton-text animated style="width: 55%; height: 16px; margin: 0;" />
+            </h2>
+            <p style="margin: 6px 0 0;">
+              <ion-skeleton-text animated style="width: 35%; height: 12px; margin: 0;" />
+            </p>
+          </ion-label>
+
+          <!-- Points Badge -->
+          <ion-skeleton-text slot="end" animated style="width: 60px; height: 24px; border-radius: 8px; margin: 0;" />
         </ion-item>
       </ion-list>
 
@@ -185,7 +195,7 @@
       :style="getPopoverCardVariables(selectedUser)"
       @didDismiss="closePopover"
     >
-      <ion-content class="ion-padding popover-custom-content" style="text-align:center; min-width: 250px;" :style="getPopoverContentStyle(selectedUser)" :class="{ 'is-light-bg': isBackgroundLight(getCosmeticByCategory(selectedUser, 'background')) }">
+      <ion-content :scroll-y="false" class="ion-padding popover-custom-content" style="text-align:center; min-width: 250px;" :style="getPopoverContentStyle(selectedUser)" :class="{ 'is-light-bg': isBackgroundLight(getCosmeticByCategory(selectedUser, 'background')) }">
         <div v-if="selectedUser" style="position: relative;">
           <!-- Aura backdrop layer -->
           <div v-if="getCosmeticByCategory(selectedUser, 'aura')" class="popover-aura-backdrop" :style="getPopoverAuraStyle(selectedUser)"></div>
@@ -226,10 +236,10 @@
               </div>
 
               <p class="mock-popover-stats">
-                {{ $t('profile.level', { level: getLevelFromPoints(selectedUser.total_points || selectedUser.points) }) }} •
+                {{ $t('profile.level', { level: getLevelFromPoints(selectedUser.total_points || selectedUser.points) }) }}
                 <ion-badge
                   class="leaderboard-points-badge"
-                  style="margin-left: 4px; border-radius: 8px; font-weight: bold; font-size: 0.75rem; padding: 4px 8px; display: inline-block; vertical-align: middle;"
+                  style="margin-left: 6px; border-radius: 8px; font-weight: bold; font-size: 0.75rem; padding: 4px 8px; display: inline-block; vertical-align: middle;"
                 >
                   {{ selectedUser.points }} pts
                 </ion-badge>
@@ -265,10 +275,10 @@
               </h3>
 
               <p class="mock-popover-stats">
-                {{ $t('profile.level', { level: getLevelFromPoints(selectedUser.total_points || selectedUser.points) }) }} • 
+                {{ $t('profile.level', { level: getLevelFromPoints(selectedUser.total_points || selectedUser.points) }) }}
                 <ion-badge
                   class="leaderboard-points-badge"
-                  style="margin-left: 4px; border-radius: 8px; font-weight: bold; font-size: 0.75rem; padding: 4px 8px; display: inline-block; vertical-align: middle;"
+                  style="margin-left: 6px; border-radius: 8px; font-weight: bold; font-size: 0.75rem; padding: 4px 8px; display: inline-block; vertical-align: middle;"
                 >
                   {{ selectedUser.points }} pts
                 </ion-badge>
@@ -306,6 +316,7 @@ import AppHeader from '@/components/AppHeader.vue'
 import {
   medalOutline,
   sparkles,
+  diamond,
   star,
   chevronForwardOutline,
   scanOutline,
@@ -315,7 +326,7 @@ import {
 } from 'ionicons/icons'
 import { supabase } from '@/plugins/supabaseClient'
 import { getThemedAnonymousName } from '@/composables/useLeaderboard'
-import { getLevelColor } from '@/composables/useLevels'
+import { getLevelAccentRgb, formatCompactPoints } from '@/composables/useLevels'
 import { getLevelFromPoints } from '@/utils/xp'
 import { formatDisplayName } from '@/utils/nameHelpers'
 import { isPublicProfile, currentUser } from '@/composables/userProfile'
@@ -611,6 +622,9 @@ function resetAndFetch() {
   page.value = 0
   isInfiniteScrollDisabled.value = false
   infiniteScrollKey.value++
+  // Clear stale results so the loading skeleton shows immediately instead of
+  // leaving the previous tab's list on screen with no loading indicator.
+  users.value = []
   fetchUsersPage(false)
   fetchCurrentUserRank()
 }
@@ -904,6 +918,13 @@ ion-searchbar {
   box-shadow: var(--card-shadow);
   transition: box-shadow 0.2s ease, transform 0.15s ease;
 }
+
+/* Loading rows: no solid card fill, just the shimmering placeholders themselves */
+.leaderboard-skeleton-item::part(native) {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
 .leaderboard-item::part(inner) {
   overflow: visible !important;
 }
@@ -948,32 +969,52 @@ ion-searchbar {
 }
 
 .leaderboard-points-badge {
-  border-radius: 8px;
+  --pts-rgb: var(--pts-rgb, 245, 158, 11);
+  --background: rgba(var(--pts-rgb), 0.12);
+  --color: rgb(var(--pts-rgb));
+  background: rgba(var(--pts-rgb), 0.12);
+  color: rgb(var(--pts-rgb));
+  border: 1px solid rgba(var(--pts-rgb), 0.28);
+  border-radius: 20px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 4px 8px;
+  flex-shrink: 0;
+  white-space: nowrap;
+  box-shadow: none;
   transition: all 0.3s ease;
 }
 
-.list-pro-badge {
-  display: inline-flex;
+.avatar-pro-badge {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 15px;
+  height: 15px;
+  display: flex;
   align-items: center;
-  background: #ffd700;
-  color: #111;
-  padding: 1px 6px;
-  border-radius: 4px;
-  font-size: 0.65rem;
-  font-weight: 800;
-  text-transform: uppercase;
-  flex-shrink: 0;
-  box-shadow: 0 0 5px rgba(250, 204, 21, 0.4);
+  justify-content: center;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #fde68a 0%, #d4a017 100%);
+  border: 2px solid var(--card-bg, #18181a);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  z-index: 2;
+}
+
+.avatar-pro-badge ion-icon {
+  font-size: 8px;
+  color: #78350f;
 }
 
 .list-contributor-badge {
   display: inline-flex;
   align-items: center;
-  background: var(--ion-color-primary);
-  color: #fff;
+  background: rgba(var(--ion-color-primary-rgb), 0.14);
+  color: var(--ion-color-primary);
+  border: 1px solid rgba(var(--ion-color-primary-rgb), 0.32);
   padding: 1px 6px;
   border-radius: 4px;
-  font-size: 0.65rem;
+  font-size: 0.6rem;
   font-weight: 700;
   flex-shrink: 0;
 }

@@ -362,19 +362,6 @@
               </div>
 
 
-              <div v-if="scanning && cameras.length > 1" class="ion-padding">
-                <ion-item>
-                  <ion-label>Camera</ion-label>
-                  <ion-select v-model="selectedCameraId" @ionChange="switchCamera($event.detail.value)">
-                    <ion-select-option v-for="cam in cameras" :key="cam.id" :value="cam.id">
-                      {{ cam.label }}
-                    </ion-select-option>
-                  </ion-select>
-                </ion-item>
-              </div>
-
-              <div v-if="scanning && !Capacitor.isNativePlatform()" id="reader"></div>
-
               <!-- Manual Next Button (If needed) -->
               <div class="ion-padding-top">
                 <ion-button expand="block" @click="nextStep" :disabled="!barcodeValid || !!detectedProduct" fill="outline" color="carrot">
@@ -935,6 +922,14 @@
       </ion-modal>
       </div>
     </ion-content>
+
+    <barcode-scan-overlay
+      v-if="scanning"
+      :title="$t('addProduct.scanBarcodeTitle') || 'Find Product'"
+      @detected="onBarcodeOverlayDetected"
+      @close="onBarcodeOverlayClose"
+      @error="onBarcodeOverlayError"
+    />
   </ion-page>
 </template>
 
@@ -997,13 +992,11 @@ import {supabase, invokeFunction} from '@/plugins/supabaseClient'
 import { awardScanBonus, isContributionLimitReached } from '@/composables/useScanQuotaReward';
 import { isDonor } from '@/composables/useSubscriptionStatus';
 
-import { Capacitor } from '@capacitor/core'
-import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
-import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import { extractIonColor, colorMeaning } from '@/utils/ingredientHelpers'
 import { isValidBarcodeFormat } from '@/utils/barcodeValidator'
 import { pickAndDecodeBarcodeFromGallery } from '@/composables/useBarcodeImageScan'
+import BarcodeScanOverlay from '@/components/scan/BarcodeScanOverlay.vue'
 
 // Import Camera plugin and types
 import {Camera, CameraDirection, CameraResultType, CameraSource} from '@capacitor/camera'
@@ -1312,10 +1305,7 @@ function selectCategory(cat: { id: number; name: string }) {
 }
 const stores = ref<{ id: string; name: string; logo_url?: string }[]>([])
 const checkingIngredients = ref(false)
-const selectedCameraId = ref<string | null>(null)
-const cameras = ref<{ id: string; label: string }[]>([])
 const categoryRules = ref<Record<string, number>>({})
-const html5QrCodeInstance = ref<Html5Qrcode | null>(null)
 const barcodeLoading = ref(false)
 const derivedNameTags = ref<string[]>([]) // 🏷️ Track tags derived from name to update them dynamically
 const derivedCategoryTag = ref<string | null>(null) // 🏷️ Track tag derived from category to update dynamically
@@ -1363,7 +1353,7 @@ const nextStep = () => {
   console.log("🚶 Moving to next step. Current:", currentStep.value);
   if (currentStep.value < STEP_DETAILS) {
     if (currentStep.value === STEP_BARCODE) {
-      stopScanner()
+      scanning.value = false
     }
     currentStep.value++
     scrollToTop()
@@ -2090,199 +2080,39 @@ function scanIngredientsFromGallery() {
 
 // refs moved to top
 
-async function loadCameras() {
-  try {
-    const devices = await Html5Qrcode.getCameras()
-    cameras.value = devices.map(d => ({ id: d.id, label: d.label || `Camera ${d.id}` }))
-
-    // default: pick back camera if possible
-    const backCam = devices.find(d => /back|rear|environment/i.test(d.label))
-    selectedCameraId.value = backCam ? backCam.id : devices[0]?.id || null
-  } catch (err) {
-    console.error('❌ Failed to get cameras:', err)
-  }
-}
-
-async function stopScanner() {
-  if (html5QrCodeInstance.value) {
-    try {
-       await html5QrCodeInstance.value.stop()
-    } catch (e) {
-       console.warn('⚠️ Scanner stop error:', e)
-    } finally {
-       const reader = document.getElementById('reader')
-       if (reader) reader.innerHTML = ''
-       html5QrCodeInstance.value = null
-       scanning.value = false
-    }
-  }
-}
-
-async function switchCamera(camId: string) {
-  if (!html5QrCodeInstance.value) return
-
-  try {
-    await stopScanner()
-    
-    const config = {
-      fps: 15,
-      qrbox: { width: 300, height: 150 },
-      formatsToSupport: [
-        Html5QrcodeSupportedFormats.EAN_13,
-        Html5QrcodeSupportedFormats.EAN_8,
-        Html5QrcodeSupportedFormats.UPC_A,
-        Html5QrcodeSupportedFormats.UPC_E,
-      ],
-    }
-
-    await html5QrCodeInstance.value.start(
-        camId,
-        config,
-        async (decodedText) => {
-          console.log('✅ Web barcode detected:', decodedText)
-          form.value.barcode = decodedText
-          scannedOnce.value = true   // ✅ mark as scanned
-          await Haptics.impact({ style: ImpactStyle.Medium })
-
-          await html5QrCodeInstance.value?.stop()
-          document.getElementById('reader')!.innerHTML = ''
-          html5QrCodeInstance.value = null
-          scanning.value = false
-        },
-        (errorMessage) => {
-          console.log('📡 Scan error:', errorMessage)
-        }
-    )
-
-    selectedCameraId.value = camId
-  } catch (err) {
-    console.error('❌ Failed to switch camera:', err)
-  }
-}
-
-
-async function startBarcodeScan() {
+// Live scanning itself (native transparent-camera trick + web html5-qrcode)
+// lives in BarcodeScanOverlay.vue / useLiveBarcodeScanner — this view just
+// opens/closes it and reacts to what it reports.
+function startBarcodeScan() {
   if (scanning.value) {
-    // 🛑 If already scanning → stop. Remember this was a deliberate stop so
+    // 🛑 Already open → close it. Remember this was a deliberate stop so
     // re-entering the view (e.g. switching tabs and back) doesn't silently
-    // restart the camera on the user again.
+    // reopen the camera on the user again.
     userStoppedScanner.value = true
-    if (html5QrCodeInstance.value) {
-      await html5QrCodeInstance.value.stop()
-      document.getElementById('reader')!.innerHTML = ''
-      html5QrCodeInstance.value = null
-    }
     scanning.value = false
     return
   }
-
   scanning.value = true
+}
 
-  try {
-    if (Capacitor.isNativePlatform()) {
-      // 🟢 Native → MLKit
-      const { camera } = await BarcodeScanner.checkPermissions();
-      if (camera !== 'granted') {
-        const { camera: newStatus } = await BarcodeScanner.requestPermissions();
-        if (newStatus !== 'granted') {
-           scanning.value = false;
-           return;
-        }
-      }
+async function onBarcodeOverlayDetected(scannedBarcode: string) {
+  scanning.value = false
+  // Force Vue reactivity: clear first, then set after nextTick (the watcher
+  // that validates the barcode only fires on an actual value change).
+  form.value.barcode = ''
+  await nextTick()
+  form.value.barcode = scannedBarcode
+  scannedOnce.value = true
+}
 
-      const { barcodes } = await BarcodeScanner.scan();
-      console.log("📷 Native scan result:", JSON.stringify(barcodes));
+function onBarcodeOverlayClose() {
+  userStoppedScanner.value = true
+  scanning.value = false
+}
 
-      if (barcodes.length > 0) {
-        const scannedBarcode = barcodes[0].rawValue;
-        console.log("📷 Extracted rawValue:", scannedBarcode);
-        if (scannedBarcode) {
-          await Haptics.impact({ style: ImpactStyle.Medium })
-          
-          // Force Vue reactivity: clear first, then set after nextTick
-          form.value.barcode = ''
-          await nextTick()
-          form.value.barcode = scannedBarcode
-          scannedOnce.value = true
-          console.log("📷 form.value.barcode is now:", form.value.barcode);
-          // The watcher handles validation via the edge function
-        }
-      }
-      scanning.value = false
-    } else {
-      // 🌐 Web → html5-qrcode
-      await nextTick()
-
-      const readerEl = document.getElementById('reader')
-
-      if (!readerEl) {
-        console.error("❌ #reader container not found")
-        scanning.value = false
-        return
-      }
-
-      const html5QrCode = new Html5Qrcode('reader', { verbose: false }) // ✅ always inline, never fullscreen
-      html5QrCodeInstance.value = html5QrCode
-
-      const config = {
-        fps: 15,
-        qrbox: { width: 300, height: 150 },
-        formatsToSupport: [
-          Html5QrcodeSupportedFormats.EAN_13,
-          Html5QrcodeSupportedFormats.EAN_8,
-          Html5QrcodeSupportedFormats.UPC_A,
-          Html5QrcodeSupportedFormats.UPC_E,
-        ],
-      }
-
-      // 🔍 Get available cameras
-      const devices = await Html5Qrcode.getCameras()
-      if (!devices || !devices.length) {
-        console.error('❌ No cameras found')
-        scanning.value = false
-        return
-      }
-
-      // Pick rear/back/environment camera if available, else fallback to first
-      const backCam = devices.find(d => /back|rear|environment/i.test(d.label))
-      const camId = backCam ? backCam.id : devices[0].id
-
-      await loadCameras()
-      if (!selectedCameraId.value) {
-        console.error('❌ No camera available')
-        scanning.value = false
-        return
-      }
-
-      await html5QrCode.start(
-          camId, // 👈 use specific camera ID
-          config,
-          async (decodedText) => {
-            console.log('✅ Web barcode detected:', decodedText)
-            await Haptics.impact({ style: ImpactStyle.Medium })
-            form.value.barcode = decodedText
-            scannedOnce.value = true   // ✅ mark as scanned
-             // v-model handles the update
-
-            // auto stop after detection
-            await html5QrCode.stop()
-            document.getElementById('reader')!.innerHTML = ''
-            html5QrCodeInstance.value = null
-            scanning.value = false
-          },
-          (errorMessage) => {
-            // 🤫 Silence 'width is 0' errors that happen during transitions
-            if (errorMessage?.includes('IndexSizeError') || errorMessage?.includes('width is 0')) {
-              return
-            }
-            console.log('📡 Scan error:', errorMessage)
-          }
-      )
-    }
-  } catch (err: any) {
-    console.error('❌ Barcode scan failed:', err)
-    scanning.value = false
-  }
+function onBarcodeOverlayError(msg: string) {
+  scanning.value = false
+  setError(msg)
 }
 
 const scanningFromGallery = ref(false)
@@ -2313,7 +2143,8 @@ async function scanBarcodeFromGallery() {
 
 const isUnmounted = false
 onUnmounted(() => {
-  stopScanner() // 🛑 Ensure camera is dead when leaving page
+  // BarcodeScanOverlay (v-if="scanning") stops its own camera in its own
+  // onUnmounted when this view tears down — nothing to do here for it.
   if (cropperSrc.value) URL.revokeObjectURL(cropperSrc.value)
   if (croppedPreviewUrl.value) URL.revokeObjectURL(croppedPreviewUrl.value)
 })
@@ -2800,33 +2631,6 @@ onMounted(() => {
 
 ion-toast {
   transform: translateY(-55px);
-}
-
-#reader {
-  width: 100%;
-  height: 260px;       /* 🔹 fixed height so library doesn't auto-popup */
-  border-radius: 8px;
-  overflow: hidden;
-  margin: 12px auto;
-  background: #000;    /* black background behind video */
-  position: relative;  /* ensures inline placement */
-}
-
-/* kill any unwanted modal overlay injected by html5-qrcode */
-#reader__scan_region,
-#reader__dashboard_section_csr {
-  position: relative !important;
-  inset: auto !important;
-  max-width: 100% !important;
-}
-
-/* For larger screens */
-@media (min-width: 768px) {
-  #reader {
-    width: 400px;       /* fixed width for better control */
-    height: 300px;      /* fixed height */
-    border-radius: 8px; /* maybe larger radius for desktop */
-  }
 }
 
 ion-item {
@@ -3376,34 +3180,6 @@ ion-header {
 
 ion-toast {
   transform: translateY(-55px);
-}
-
-#reader {
-  width: 100%;
-  height: 260px;
-  border-radius: 8px;
-  overflow: hidden;
-  margin: 12px auto;
-  background: #000;
-  position: relative;
-}
-
-/* kill any unwanted modal overlay injected by html5-qrcode */
-#reader__scan_region,
-#reader__dashboard_section_csr {
-  position: relative !important;
-  inset: auto !important;
-  max-width: 100% !important;
-  border: none !important;
-}
-
-/* For larger screens */
-@media (min-width: 768px) {
-  #reader {
-    width: 400px;
-    height: 300px;
-    border-radius: 8px;
-  }
 }
 
 ion-item {

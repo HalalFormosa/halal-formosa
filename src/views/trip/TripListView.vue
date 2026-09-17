@@ -248,6 +248,7 @@ import AppHeader from '@/components/AppHeader.vue'
 import TripFilterContent from '@/components/TripFilterContent.vue'
 import { ActivityLogService } from '@/services/ActivityLogService'
 import { supabase } from '@/plugins/supabaseClient'
+import { notifyFetchError } from '@/utils/offlineFeedback'
 import { Browser } from '@capacitor/browser'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
@@ -324,6 +325,8 @@ async function fetchCities() {
 
   if (!error && data) {
     cities.value = data
+  } else if (error) {
+    notifyFetchError(error)
   }
 
   loadingCities.value = false
@@ -394,6 +397,7 @@ async function fetchTrips() {
 
   if (error) {
     console.error('[Trips]', error)
+    notifyFetchError(error)
     loading.value = false
     return
   }
