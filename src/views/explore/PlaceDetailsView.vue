@@ -183,8 +183,8 @@
             <!-- 🕌 Muslim Facilities / Features -->
             <div v-if="place && isReviewableType" class="facilities-container ion-margin-top ion-margin-bottom">
               <div class="consensus-squares" v-if="combinedFacilities.length > 0">
-                <div 
-                  v-for="fac in combinedFacilities" 
+                <div
+                  v-for="fac in (showAllBadges ? combinedFacilities : combinedFacilities.slice(0, 3))"
                   :key="fac.code"
                   class="consensus-square"
                   :class="[fac.status, fac.source === 'owner' ? 'owner-source' : 'visitor-source']"
@@ -194,6 +194,20 @@
                   <span class="square-label">{{ fac.customLabel || getShortLabel(fac.code) }}</span>
                   <!-- Verified owner checkmark icon -->
                   <ion-icon v-if="fac.source === 'owner'" :icon="checkmarkCircle" class="owner-verified-icon" />
+                </div>
+                <div
+                  v-if="!showAllBadges && combinedFacilities.length > 3"
+                  class="consensus-square more-square"
+                  @click="showAllBadges = true"
+                >
+                  <span class="square-label">+{{ combinedFacilities.length - 3 }} more</span>
+                </div>
+                <div
+                  v-if="showAllBadges && combinedFacilities.length > 3"
+                  class="consensus-square more-square"
+                  @click="showAllBadges = false"
+                >
+                  <span class="square-label">show less</span>
                 </div>
               </div>
               <p v-else class="no-consensus-text">
@@ -260,7 +274,7 @@
                 class="ion-margin-top"
             >
               <p class="section-title">
-                <strong><small>{{ $t('explore.details.certifiedBy') }}</small></strong>
+                <strong><small>{{ $t(certifications[0]?.partner.partner_type === 'halal_body' ? 'explore.details.certifiedBy' : 'explore.details.broughtBy') }}</small></strong>
               </p>
 
               <div
@@ -926,6 +940,7 @@ type LocationCertification = {
     name: string
     logo_url: string | null
     partner_tier: 'gold' | 'silver' | 'bronze' | null
+    partner_type: string | null
     verified: boolean
   }
 }
@@ -940,6 +955,7 @@ const router = useRouter()
 const place = ref<PlaceDetail | null>(null)
 const auditLogRef = ref<InstanceType<typeof AuditHistoryLog> | null>(null)
 const showAllTags = ref(false)
+const showAllBadges = ref(false)
 const canEdit = ref(false)
 const isOwner = ref(false)
 const ownerName = ref<string | null>(null)
@@ -1491,6 +1507,7 @@ async function fetchLocationCertifications(locationId: number) {
       name,
       logo_url,
       partner_tier,
+      partner_type,
       verified
     )
   `)
@@ -1781,8 +1798,11 @@ const combinedFacilities = computed(() => {
     }
   })
 
-  // Sort: Owner-reported (Official) first, then by code
+  // Sort: most relevant to Muslim visitors first (priority), then owner-reported (official) before visitor-reported, then by code
   list.sort((a, b) => {
+    if (a.priority !== b.priority) {
+      return a.priority - b.priority
+    }
     if (a.source !== b.source) {
       return a.source === 'owner' ? -1 : 1
     }
@@ -2690,6 +2710,13 @@ ion-item ion-label p:not(.text-gray-500) {
   letter-spacing: 0.3px;
   text-transform: uppercase;
   white-space: nowrap;
+}
+
+.consensus-square.more-square {
+  background: rgba(var(--ion-text-color-rgb), 0.06);
+  color: var(--ion-color-medium);
+  border: 1px dashed rgba(var(--ion-text-color-rgb), 0.2);
+  cursor: pointer;
 }
 
 .no-consensus-text {
