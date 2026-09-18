@@ -688,6 +688,7 @@ import FilterContent from '@/components/FilterContent.vue'
 
 import StoreLogoBar from "@/components/StoreLogoBar.vue";
 import {ActivityLogService} from "@/services/ActivityLogService";
+import { scheduleBannerUpdate } from '@/plugins/admob'
 import {isDonor, refreshSubscriptionStatus} from "@/composables/useSubscriptionStatus";
 import {Purchases} from "@revenuecat/purchases-capacitor";
 import {PAYWALL_RESULT, RevenueCatUI} from "@revenuecat/purchases-capacitor-ui";
@@ -1861,7 +1862,7 @@ onIonViewDidEnter(async () => {
   }
 
   // Refresh AdMob if needed
-  (window as any).scheduleBannerUpdate?.();
+  scheduleBannerUpdate();
 
   // Auto trigger scanner if route has scan=true
   if (route.query.scan === "true") {

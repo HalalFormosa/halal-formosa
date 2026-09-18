@@ -562,6 +562,7 @@ import AddProductView from "@/views/add-product/AddProductView.vue";
 import { userRole } from '@/composables/userProfile'
 import { isDonor, refreshSubscriptionStatus } from '@/composables/useSubscriptionStatus'
 import { ActivityLogService } from "@/services/ActivityLogService";
+import { scheduleBannerUpdate } from '@/plugins/admob'
 import { RevenueCatUI, PAYWALL_RESULT } from '@revenuecat/purchases-capacitor-ui'
 import { useNotifier } from "@/composables/useNotifier";
 
@@ -582,7 +583,7 @@ const handleScroll = (ev: any) => {
 }
 
 onIonViewDidEnter(() => {
-  (window as any).scheduleBannerUpdate?.()
+  scheduleBannerUpdate()
 })
 
 const loading = ref(true)
@@ -1282,7 +1283,7 @@ async function loadProductData() {
       // is secondary and loads in behind it instead of blocking the skeleton.
       loading.value = false
       await nextTick()
-      ;(window as any).scheduleBannerUpdate?.()
+      scheduleBannerUpdate()
 
       const secondary: Promise<void>[] = []
 
@@ -1369,7 +1370,7 @@ async function loadProductData() {
       showContributionPrompt.value = true
       loading.value = false
       await nextTick()
-      ;(window as any).scheduleBannerUpdate?.()
+      scheduleBannerUpdate()
 
       // 📝 Silently log the unknown scan. The weekly `scan-digest` function
       // aggregates & ranks these — no per-scan Discord spam.
