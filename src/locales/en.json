@@ -411,7 +411,8 @@
       "ocrFailed": "OCR analysis failed. Please try again with a clearer photo.",
       "noIngredients": "No ingredients detected. Please try cropping more closely.",
       "noKeywords": "No ingredient keywords detected. Please crop the ingredients section only.",
-      "couldNotAccessCamera": "Could not access camera. Please check permissions."
+      "couldNotAccessCamera": "Could not access camera. Please check permissions.",
+      "adFailed": "Could not load rewarded ad. Please try again."
     },
     "autoScan": {
       "label": "Auto Scan",
