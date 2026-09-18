@@ -248,30 +248,32 @@
                   {{ $t('addProduct.scanBarcodeDesc') || 'Scan the barcode on the product packaging to get started.' }}
                 </p>
 
-                <ion-button
-                  expand="block"
-                  :color="scanning ? 'medium' : 'carrot'"
-                  class="ion-margin-bottom"
-                  style="height: 56px; font-weight: 700;"
-                  @click="startBarcodeScan"
-                  :disabled="scanningFromGallery"
-                >
-                  <ion-icon slot="start" :icon="scanning ? stopCircle : barcodeOutline" />
-                  {{ scanning ? (($t('addProduct.tapToStop')) || 'Tap to Stop Camera') : $t('addProduct.camera') }}
-                </ion-button>
+                <div style="display: flex; gap: 10px;">
+                  <ion-button
+                    expand="block"
+                    fill="solid"
+                    :color="scanning ? 'medium' : 'carrot'"
+                    style="flex: 1; height: 56px; font-weight: 700; margin: 0;"
+                    @click="startBarcodeScan"
+                    :disabled="scanningFromGallery"
+                  >
+                    <ion-icon slot="start" :icon="scanning ? stopCircle : barcodeOutline" />
+                    {{ scanning ? (($t('addProduct.tapToStop')) || 'Tap to Stop Camera') : $t('addProduct.camera') }}
+                  </ion-button>
 
-                <ion-button
-                  expand="block"
-                  fill="outline"
-                  color="carrot"
-                  style="height: 48px;"
-                  @click="scanBarcodeFromGallery"
-                  :disabled="scanning || scanningFromGallery"
-                >
-                  <ion-spinner v-if="scanningFromGallery" name="crescent" slot="start" style="zoom: 0.7;" />
-                  <ion-icon v-else slot="start" :icon="cloudUploadOutline" />
-                  {{ scanningFromGallery ? 'Reading image...' : ($t('addProduct.scanBarcodeFromGallery') || 'Upload from Gallery') }}
-                </ion-button>
+                  <ion-button
+                    expand="block"
+                    fill="outline"
+                    color="carrot"
+                    style="flex: 1; height: 56px; margin: 0;"
+                    @click="scanBarcodeFromGallery"
+                    :disabled="scanning || scanningFromGallery"
+                  >
+                    <ion-spinner v-if="scanningFromGallery" name="crescent" slot="start" style="zoom: 0.7;" />
+                    <ion-icon v-else slot="start" :icon="cloudUploadOutline" />
+                    {{ scanningFromGallery ? 'Reading...' : ($t('addProduct.galleryShort') || 'Gallery') }}
+                  </ion-button>
+                </div>
               </div>
 
               <!-- Manual Entry Card -->
@@ -380,12 +382,12 @@
                   {{ $t('addProduct.scanIngredientsDesc') || 'Scan the ingredients list to automatically fill the form and capture the back photo.' }}
                 </p>
 
-                <div style="display: flex; gap: 12px; margin-bottom: 16px;">
-                  <ion-button fill="outline" color="carrot" style="flex: 1;" @click="scanIngredientsWithCamera">
+                <div style="display: flex; gap: 10px; margin-bottom: 16px;">
+                  <ion-button fill="solid" color="carrot" style="flex: 1; height: 56px; font-weight: 700; margin: 0;" @click="scanIngredientsWithCamera">
                     <ion-icon slot="start" :icon="cameraOutline" />
                     {{ $t('addProduct.camera') || 'Camera' }}
                   </ion-button>
-                  <ion-button fill="outline" color="carrot" style="flex: 1;" @click="scanIngredientsFromGallery">
+                  <ion-button fill="outline" color="carrot" style="flex: 1; height: 56px; margin: 0;" @click="scanIngredientsFromGallery">
                     <ion-icon slot="start" :icon="cloudUploadOutline" />
                     {{ $t('addProduct.gallery') || 'Gallery' }}
                   </ion-button>
@@ -480,6 +482,10 @@
                         </div>
                       </ion-textarea>
                     </ion-item>
+                    <button type="button" class="fix-case-under" title="Title-case each ingredient" @click="fixIngredientsCasing">
+                      <ion-icon :icon="sparklesOutline" />
+                      Fix capitalization
+                    </button>
 
                     <!-- Analysis Progress -->
                     <div class="analysis-indicators ion-padding-horizontal">
@@ -565,6 +571,10 @@
                         </div>
                       </ion-input>
                     </ion-item>
+                    <button type="button" class="fix-case-under" title="Title-case the product name" @click="fixNameCasing">
+                      <ion-icon :icon="sparklesOutline" />
+                      Fix capitalization
+                    </button>
 
                     <ion-item lines="none" button @click="categoryModalOpen = true">
                       <ion-label>
@@ -623,6 +633,20 @@
                       <ion-button size="small" fill="outline" color="primary" @click="applyQuickDescription(quickDescriptions.muslimFriendly)" class="quick-btn">Friendly OK</ion-button>
                       <ion-button size="small" fill="outline" color="warning" @click="applyQuickDescription(quickDescriptions.syubhah)" class="quick-btn">Syubhah found</ion-button>
                       <ion-button size="small" fill="outline" color="danger" @click="applyQuickDescription(quickDescriptions.haram)" class="quick-btn">Haram found</ion-button>
+                    </div>
+
+                    <!-- Status/description consistency: flags a contradiction
+                         (e.g. status "Muslim-friendly" but description still
+                         says "Syubhah ingredients found") as a hard mismatch,
+                         not an advisory score. -->
+                    <div v-if="descriptionStatusConflicts.length" class="ocr-check-banner ocr-check-banner--mismatch ion-margin-horizontal">
+                      <div class="ocr-check-banner-header">
+                        <ion-icon :icon="alertCircleOutline" />
+                        <span>Description mentions "{{ descriptionStatusConflicts.join('", "') }}" but status is set to "{{ form.status }}"</span>
+                      </div>
+                      <ion-button size="small" fill="outline" @click="fixDescriptionToMatchStatus">
+                        Fix description to match status
+                      </ion-button>
                     </div>
                   </ion-card-content>
                 </ion-card>
@@ -925,10 +949,13 @@
 
     <barcode-scan-overlay
       v-if="scanning"
-      :title="$t('addProduct.scanBarcodeTitle') || 'Find Product'"
+      :title="$t('addProduct.title') || 'Add Product'"
+      show-fallback-actions
       @detected="onBarcodeOverlayDetected"
       @close="onBarcodeOverlayClose"
       @error="onBarcodeOverlayError"
+      @manual-entry="onBarcodeOverlayManualEntry"
+      @gallery="onBarcodeOverlayGallery"
     />
   </ion-page>
 </template>
@@ -984,7 +1011,8 @@ import {
   refreshOutline,
   chevronForwardOutline,
   lockClosedOutline,
-  closeCircleOutline
+  closeCircleOutline,
+  alertCircleOutline
 } from 'ionicons/icons';
 import { computed, nextTick, onMounted, onUnmounted, ref, watch} from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -1030,6 +1058,10 @@ const { errorMsg, setError } = useError()
 const { t } = useI18n()
 const router = useRouter()
 const route = useRoute()
+
+const props = defineProps<{
+  editProduct?: Product
+}>()
 
 /** ---------- Wizard Steps ---------- */
 const STEP_BARCODE = 0
@@ -1155,7 +1187,16 @@ onIonViewWillEnter(async () => {
 /** ---------- State Variables Consistently Defined at Top ---------- */
 const barcodeValid = ref<null | boolean>(null)
 const barcodeMessage = ref<string>('') // feedback below input
-const scanning = ref(false)
+// New product, no barcode already known → open straight into the live camera
+// on first render, so the "Find Product" chooser screen never flashes on
+// screen behind it (it's still there as the fallback once the overlay closes).
+const scanning = ref(!props.editProduct && !route.query.barcode)
+// True while the *current* scan session is the instant auto-opened one (see
+// `scanning`'s initial value above) rather than one the user reopened later
+// via the "Camera" button — closing the auto-opened one with X should leave
+// Add Product entirely (back to Search) instead of dropping the user onto
+// the manual-entry step they never asked for.
+const autoOpenedScan = ref(scanning.value)
 // Once the user deliberately stops the live scanner, don't auto-restart it
 // for them again this session (e.g. if they switch tabs and come back).
 const userStoppedScanner = ref(false)
@@ -1428,11 +1469,6 @@ function statusChipColor(status?: string | null) {
   return STATUS_CHIP_CLASS[status ?? ''] ?? 'medium'
 }
 
-// props
-const props = defineProps<{
-  editProduct?: Product
-}>()
-
 // highlight + OCR pipeline
 const { allHighlights, blacklistPatterns, fetchHighlightsWithCache, incrementUsageCount } =
     useHighlightCache()
@@ -1568,13 +1604,9 @@ onMounted(async () => {
       console.log("📥 Pre-filled barcode detected:", form.value.barcode)
     }
 
-    // ⚡ Logic for "Contribute to Database" from ScanIngredientsView
-    // ⚡ Auto-start barcode scanner for new products ONLY if barcode is empty
-    setTimeout(() => {
-        if (currentStep.value === STEP_BARCODE && !scanning.value && !form.value.barcode && !userStoppedScanner.value) {
-            startBarcodeScan();
-        }
-    }, 800);
+    // ⚡ Auto-start barcode scanner for new products with no barcode yet is
+    // now handled synchronously by `scanning`'s initial value above, so the
+    // "Find Product" chooser screen never renders behind the camera first.
   }
 
   await fetchStores()
@@ -2092,10 +2124,14 @@ function startBarcodeScan() {
     scanning.value = false
     return
   }
+  // A manual (re)open via the "Camera" button, not the instant auto-open —
+  // closing this one with X should just return to this step, not leave the page.
+  autoOpenedScan.value = false
   scanning.value = true
 }
 
 async function onBarcodeOverlayDetected(scannedBarcode: string) {
+  autoOpenedScan.value = false
   scanning.value = false
   // Force Vue reactivity: clear first, then set after nextTick (the watcher
   // that validates the barcode only fires on an actual value change).
@@ -2105,14 +2141,46 @@ async function onBarcodeOverlayDetected(scannedBarcode: string) {
   scannedOnce.value = true
 }
 
+// X pressed on the overlay. If this was the instant auto-opened scan (see
+// `scanning`'s initial value), the user never asked to be on Add Product's
+// manual-entry step at all — leave the page entirely, back to Search.
+// Otherwise (they reopened the camera themselves), just fall back to the
+// Barcode step they were already on.
 function onBarcodeOverlayClose() {
+  if (autoOpenedScan.value) {
+    scanning.value = false
+    router.back()
+    return
+  }
   userStoppedScanner.value = true
   scanning.value = false
 }
 
 function onBarcodeOverlayError(msg: string) {
+  autoOpenedScan.value = false
   scanning.value = false
   setError(msg)
+}
+
+// "Manual Entry" tapped on the live scan overlay itself — close the camera
+// and drop the user onto the barcode input already on the Barcode step.
+async function onBarcodeOverlayManualEntry() {
+  autoOpenedScan.value = false
+  userStoppedScanner.value = true
+  scanning.value = false
+  await nextTick()
+  barcodeInput.value?.$el?.setFocus?.()
+}
+
+// "Upload from Gallery" tapped on the live scan overlay — close the camera
+// first (scanBarcodeFromGallery bails out early while scanning is still true)
+// then hand off to the same gallery picker the Barcode step button uses.
+async function onBarcodeOverlayGallery() {
+  autoOpenedScan.value = false
+  userStoppedScanner.value = true
+  scanning.value = false
+  await nextTick()
+  await scanBarcodeFromGallery()
 }
 
 const scanningFromGallery = ref(false)
@@ -2249,6 +2317,66 @@ function uploadBackFromGallery() {
 
 function applyQuickDescription(text: string) {
   form.value.description = text;
+}
+
+// Contributor submissions often arrive as ALL CAPS (scanned off packaging) or
+// all lowercase. Title-cases each word while leaving acronyms like "MSG" or
+// "E621" alone, so users don't have to retype them by hand.
+function toTitleCase(text: string): string {
+  return text.replace(/[A-Za-zÀ-ÖØ-öø-ÿ0-9]+(?:['’][A-Za-z]+)?/g, (word) => {
+    if (word.length > 1 && word === word.toUpperCase() && /[A-Z]/.test(word)) {
+      return word
+    }
+    return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+  })
+}
+
+function fixNameCasing() {
+  if (!form.value.name) return
+  form.value.name = toTitleCase(form.value.name)
+}
+
+function fixIngredientsCasing() {
+  if (!form.value.ingredients) return
+  form.value.ingredients = toTitleCase(form.value.ingredients)
+}
+
+/* ---------------- Status / description consistency check ----------------
+   Cheap, synchronous, no API call — the description often gets set via the
+   quick-insert chips above, but if the status is changed later without
+   re-applying a chip (or a custom description is typed), the two can
+   silently drift apart, e.g. status "Muslim-friendly" with a leftover
+   "Syubhah ingredients found." description. Flags only an explicit
+   contradiction (a DIFFERENT status's keyword appearing in the text), never
+   a bare absence of confirmation, to avoid nagging on legitimate custom text. */
+type StatusKey = 'Halal' | 'Muslim-friendly' | 'Syubhah' | 'Haram'
+
+const STATUS_KEYWORD_PATTERNS: Record<StatusKey, RegExp> = {
+  'Halal': /\bhalal\b/i,
+  'Muslim-friendly': /muslim[\s-]?friendly/i,
+  'Syubhah': /\bsyubhah\b/i,
+  'Haram': /\bharam\b/i,
+}
+
+const STATUS_TO_QUICK_KEY: Record<StatusKey, keyof typeof quickDescriptions> = {
+  'Halal': 'halal',
+  'Muslim-friendly': 'muslimFriendly',
+  'Syubhah': 'syubhah',
+  'Haram': 'haram',
+}
+
+const descriptionStatusConflicts = computed<StatusKey[]>(() => {
+  const status = form.value.status as StatusKey | undefined
+  const description = form.value.description as string | undefined
+  if (!status || !description?.trim() || !(status in STATUS_KEYWORD_PATTERNS)) return []
+  return (Object.keys(STATUS_KEYWORD_PATTERNS) as StatusKey[])
+    .filter(key => key !== status && STATUS_KEYWORD_PATTERNS[key].test(description))
+})
+
+function fixDescriptionToMatchStatus() {
+  const status = form.value.status as StatusKey | undefined
+  if (!status || !(status in STATUS_TO_QUICK_KEY)) return
+  applyQuickDescription(quickDescriptions[STATUS_TO_QUICK_KEY[status]])
 }
 
 /** Offline check for barcode format and checksum (used at validation & submit time) */
@@ -2800,6 +2928,58 @@ ion-item {
   --border-radius: 8px;
   font-size: 11px;
   margin: 0;
+}
+
+.fix-case-under {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: fit-content;
+  margin: 4px 16px 8px auto;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ion-color-carrot, var(--ion-color-primary));
+  cursor: pointer;
+}
+
+.fix-case-under ion-icon {
+  font-size: 14px;
+}
+
+/* Status/description mismatch banner — advisory-styled but reflects a hard
+   contradiction, not a tiered match/close/mismatch score. */
+.ocr-check-banner {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  margin-top: 8px;
+  margin-bottom: 12px;
+  border: 1px solid var(--ion-color-medium);
+  background: rgba(var(--ion-color-medium-rgb), 0.08);
+  color: var(--ion-color-medium-shade);
+}
+
+.ocr-check-banner--mismatch {
+  border-color: var(--ion-color-danger);
+  background: rgba(var(--ion-color-danger-rgb), 0.08);
+  color: var(--ion-color-danger-shade);
+}
+
+.ocr-check-banner-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ocr-check-banner-header span {
+  flex-grow: 1;
 }
 
 .photo-grid {

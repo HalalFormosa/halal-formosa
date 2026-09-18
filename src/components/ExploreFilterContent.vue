@@ -85,7 +85,7 @@ const regularCategories = computed(() =>
         <ion-skeleton-text animated style="width:85px; height:36px; border-radius:100px; margin: 0;"/>
         <ion-skeleton-text animated style="width:120px; height:36px; border-radius:100px; margin: 0;"/>
       </div>
-      <div v-else class="category-bar categories-scroll">
+      <div v-else class="category-bar">
         <ion-chip
             v-for="cat in regularCategories"
             :key="cat.id"
@@ -213,25 +213,10 @@ const regularCategories = computed(() =>
   padding: 0 16px 8px;
 }
 
-/* Bounded-height chip cloud: caps how tall the category list can grow as
-   more categories are added, instead of pushing "Show N results" further
-   down the modal. A partial next row peeks past the cutoff as a scroll cue. */
-.categories-scroll {
-  max-height: 146px;
-  overflow-y: auto;
-  align-content: flex-start;
-  scrollbar-width: thin;
-}
 
 .campus-bar {
-  flex-wrap: nowrap;
-  overflow-x: auto;
+  flex-wrap: wrap;
   align-items: flex-end;
-  scrollbar-width: none;
-}
-
-.campus-bar::-webkit-scrollbar {
-  display: none;
 }
 
 .campus-filter-wrapper {

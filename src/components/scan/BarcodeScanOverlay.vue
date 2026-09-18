@@ -37,6 +37,17 @@
           <span>{{ statusMessage }}</span>
         </div>
         <div v-if="!found" class="tips">{{ $t('search.barcodeScan.hint') }}</div>
+
+        <div v-if="props.showFallbackActions && !found" class="fallback-actions">
+          <button class="fallback-btn" @click="$emit('manual-entry')">
+            <ion-icon :icon="createOutline" />
+            <span>{{ $t('addProduct.manualEntryShort') || 'Manual' }}</span>
+          </button>
+          <button class="fallback-btn" @click="$emit('gallery')">
+            <ion-icon :icon="cloudUploadOutline" />
+            <span>{{ $t('addProduct.galleryShort') || 'Gallery' }}</span>
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -45,19 +56,25 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
 import { IonIcon, IonSpinner } from '@ionic/vue'
-import { closeOutline, flashOutline, flashOffOutline } from 'ionicons/icons'
+import { closeOutline, flashOutline, flashOffOutline, createOutline, cloudUploadOutline } from 'ionicons/icons'
 import { useI18n } from 'vue-i18n'
 import { Haptics, ImpactStyle } from '@capacitor/haptics'
 import { useLiveBarcodeScanner } from '@/composables/useLiveBarcodeScanner'
 
 const props = defineProps<{
   title?: string
+  // Optional "Manual Entry" / "Upload from Gallery" buttons for callers (like
+  // Add Product) that skip straight to the camera and need a way back to the
+  // other input methods without leaving the full-screen overlay first.
+  showFallbackActions?: boolean
 }>()
 
 const emit = defineEmits<{
   (e: 'detected', barcode: string): void
   (e: 'close'): void
   (e: 'error', message: string): void
+  (e: 'manual-entry'): void
+  (e: 'gallery'): void
 }>()
 
 const { t } = useI18n()
@@ -271,5 +288,34 @@ onUnmounted(() => {
   width: 85%;
   text-shadow: 0 1px 2px rgba(0,0,0,0.8);
   font-weight: 500;
+}
+
+.fallback-actions {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+  pointer-events: auto;
+}
+
+.fallback-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 44px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(10px);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.fallback-btn ion-icon {
+  font-size: 18px;
+  flex-shrink: 0;
 }
 </style>

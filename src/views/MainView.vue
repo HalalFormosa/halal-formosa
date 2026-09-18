@@ -4,7 +4,7 @@
       <ion-router-outlet />
 
       <!-- Bottom tab bar -->
-      <ion-tab-bar slot="bottom" id="footer-tabs" class="floating-tab-bar">
+      <ion-tab-bar v-show="!route.meta.noTabs" slot="bottom" id="footer-tabs" class="floating-tab-bar">
         <ion-tab-button tab="home" href="/home">
           <div class="tab-content">
             <div class="tab-icon-wrapper">
@@ -57,6 +57,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { useRoute } from 'vue-router'
 import {
   IonTabBar, IonTabButton, IonTabs, IonLabel, IonIcon, IonRouterOutlet, IonPage
 } from '@ionic/vue'
@@ -69,6 +70,8 @@ import {
 import { supabase } from '@/plugins/supabaseClient'
 import { useDailyMissions } from '@/composables/useDailyMissions'
 import { useNotifications } from '@/composables/useNotifications'
+
+const route = useRoute()
 
 const { missions, allCompleted, claimedBonus, fetchProgress } = useDailyMissions()
 const { totalUnreadCount } = useNotifications()

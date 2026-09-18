@@ -58,7 +58,7 @@ const routes: Array<RouteRecordRaw> = [
                     adId: getAdId(import.meta.env.VITE_ADMOB_IOS_STORE_BANNER_ID, import.meta.env.VITE_ADMOB_ANDROID_STORE_BANNER_ID)
                 }
             },
-            { path: 'add', component: () => import('@/views/add-product/AddProductView.vue'), meta: { requiresAuth: true } },
+            { path: 'add', component: () => import('@/views/add-product/AddProductView.vue'), meta: { requiresAuth: true, noTabs: true } },
             { path: 'profile', component: () => import('@/views/profile/ProfileView.vue'), meta: { noAds: true } },
             {
         path: '/reels',

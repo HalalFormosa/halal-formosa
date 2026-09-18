@@ -144,18 +144,6 @@
               <ion-label>{{ cat.name }}</ion-label>
             </ion-chip>
             <ion-chip
-              class="quick-filter-chip"
-              :class="{ active: hasDeliveryFilter }"
-              :style="{
-                '--cat-color': 'var(--ion-color-carrot)',
-                '--cat-bg': hasDeliveryFilter ? 'var(--ion-color-carrot)' : hexToRgba('var(--ion-color-carrot)', 0.15)
-              }"
-              @click="hasDeliveryFilter = !hasDeliveryFilter"
-            >
-              <ion-icon :icon="bicycleOutline" class="category-icon" />
-              <ion-label>{{ $t('explore.deliveryFilter') }}</ion-label>
-            </ion-chip>
-            <ion-chip
               class="quick-filter-chip more-chip"
               @click="isFilterModalOpen = true"
             >
@@ -397,7 +385,7 @@
                         <ion-skeleton-text animated style="width:44px; height:12px; margin:0;" />
                         <ion-skeleton-text animated style="width:40px; height:12px; margin:0;" />
                       </div>
-                      <div class="card-tags-row horizontal-scroll" style="margin:8px 0 0;">
+                      <div class="card-tags-row" style="margin:8px 0 0;">
                         <ion-skeleton-text animated style="width:50px; height:18px; border-radius:6px; margin:0;" />
                         <ion-skeleton-text animated style="width:60px; height:18px; border-radius:6px; margin:0;" />
                       </div>
@@ -467,15 +455,18 @@
                       </div>
 
 
-                      <!-- Tags section (Horizontal Scroll) -->
-                      <div v-if="listLocations[0].tags && listLocations[0].tags.length > 0" class="card-tags-row horizontal-scroll">
+                      <!-- Tags section (capped so it fits the device width) -->
+                      <div v-if="listLocations[0].tags && listLocations[0].tags.length > 0" class="card-tags-row">
                         <span
-                          v-for="t in listLocations[0].tags"
+                          v-for="t in visibleTags(listLocations[0].tags)"
                           :key="t"
                           class="card-tag"
                           :class="{ highlight: t.toLowerCase() === activeTag?.toLowerCase() }"
                         >
                           #{{ t }}
+                        </span>
+                        <span v-if="extraTagsCount(listLocations[0].tags) > 0" class="card-tag more-tags">
+                          +{{ extraTagsCount(listLocations[0].tags) }}
                         </span>
                       </div>
                     </div>
@@ -536,15 +527,18 @@
                     </div>
 
 
-                    <!-- Tags section (Horizontal Scroll) -->
-                    <div v-if="place.tags && place.tags.length > 0" class="card-tags-row horizontal-scroll">
+                    <!-- Tags section (capped so it fits the device width) -->
+                    <div v-if="place.tags && place.tags.length > 0" class="card-tags-row">
                       <span
-                        v-for="t in place.tags"
+                        v-for="t in visibleTags(place.tags)"
                         :key="t"
                         class="card-tag"
                         :class="{ highlight: t.toLowerCase() === activeTag?.toLowerCase() }"
                       >
                         #{{ t }}
+                      </span>
+                      <span v-if="extraTagsCount(place.tags) > 0" class="card-tag more-tags">
+                        +{{ extraTagsCount(place.tags) }}
                       </span>
                     </div>
                   </div>
@@ -1941,6 +1935,10 @@ const getDomEl = (node: Element | ComponentPublicInstance | null | undefined) =>
     ((node as ComponentPublicInstance | null)?.$el ?? node) as HTMLElement | null
 
 const formatKm = (n: number) => (Number.isFinite(n) ? n.toFixed(2) : '–')
+
+const MAX_VISIBLE_TAGS = 2
+const visibleTags = (tags: string[] | undefined | null) => (tags || []).slice(0, MAX_VISIBLE_TAGS)
+const extraTagsCount = (tags: string[] | undefined | null) => Math.max(0, (tags || []).length - MAX_VISIBLE_TAGS)
 
 const getDistanceInKm = (locPos: LatLng) => {
   const refLoc = lastCalcLocation.value
@@ -3725,6 +3723,10 @@ button.gm-ui-hover-effect > span {
   padding: 4px;
   width: fit-content;
   max-width: 100%;
+  /* Fade the trailing edge so a cut-off chip reads as "more to scroll",
+     not as a layout bug. */
+  mask-image: linear-gradient(to right, black calc(100% - 24px), transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, black calc(100% - 24px), transparent 100%);
 }
 
 .quick-filters-scroll::-webkit-scrollbar {
@@ -4337,7 +4339,7 @@ button.gm-ui-hover-effect > span {
 }
 
 .card-image-section {
-  width: 110px;
+  width: 100px;
   height: 100%;
   flex-shrink: 0;
   position: relative;
@@ -4573,7 +4575,7 @@ button.gm-ui-hover-effect > span {
 }
 
 .card-image-section {
-  width: 110px;
+  width: 100px;
   height: 100%;
   flex-shrink: 0;
   position: relative;
@@ -4957,21 +4959,11 @@ button.gm-ui-hover-effect > span {
 /* Card Tags */
 .card-tags-row {
   display: flex;
+  flex-wrap: nowrap;
   gap: 6px;
   margin-top: 6px;
   width: 100%;
-}
-
-.card-tags-row.horizontal-scroll {
-  overflow-x: auto;
-  flex-wrap: nowrap;
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE/Edge */
-  padding-bottom: 2px; /* Prevent shadow clipping */
-}
-
-.card-tags-row.horizontal-scroll::-webkit-scrollbar {
-  display: none; /* Chrome/Safari */
+  overflow: hidden;
 }
 
 .card-tag {
@@ -4984,6 +4976,16 @@ button.gm-ui-hover-effect > span {
   text-transform: lowercase;
   border: 1px solid var(--card-border);
   letter-spacing: 0.01em;
+  flex-shrink: 1;
+  min-width: 0;
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.card-tag.more-tags {
+  flex-shrink: 0;
 }
 
 .card-tag.highlight {

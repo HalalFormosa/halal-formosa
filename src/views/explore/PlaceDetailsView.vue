@@ -240,31 +240,37 @@
               <p class="section-title">
                 <strong><small>{{ $t('explore.details.orderVia') }}</small></strong>
               </p>
-              <div v-if="place.foodpanda_url" class="foodpanda-card" @click="logFoodpanda">
-                <img
-                  src="https://ph-test-11.slatic.net/p/9a66c3f38bcbb5940d790d9fd58855ee.png"
-                  alt="Foodpanda"
-                  class="foodpanda-card-logo"
-                />
-                <ion-button
-                    fill="solid"
-                    color="carrot"
-                    size="small"
-                    :href="place.foodpanda_url"
-                    target="_blank">
-                  {{ $t('explore.details.orderNow') }}
-                </ion-button>
-              </div>
-              <div v-if="place.ubereats_url" class="ubereats-card" @click="logUberEats">
-                <span class="ubereats-logo">Uber<b>Eats</b></span>
-                <ion-button
-                    fill="solid"
-                    color="carrot"
-                    size="small"
-                    :href="place.ubereats_url"
-                    target="_blank">
-                  {{ $t('explore.details.orderNow') }}
-                </ion-button>
+              <div class="order-via-row">
+                <div v-if="place.foodpanda_url" class="order-via-card">
+                  <img
+                    src="/social-logo/foodpanda-logo.svg"
+                    alt="Foodpanda"
+                    class="order-via-card-logo"
+                  />
+                  <a
+                      class="order-via-send-btn"
+                      :href="place.foodpanda_url"
+                      target="_blank"
+                      @click="logFoodpanda"
+                  >
+                    <ion-icon :icon="sendOutline" />
+                  </a>
+                </div>
+                <div v-if="place.ubereats_url" class="order-via-card">
+                  <img
+                    src="/social-logo/ubereats-logo.png"
+                    alt="Uber Eats"
+                    class="order-via-card-logo ubereats-card-logo"
+                  />
+                  <a
+                      class="order-via-send-btn"
+                      :href="place.ubereats_url"
+                      target="_blank"
+                      @click="logUberEats"
+                  >
+                    <ion-icon :icon="sendOutline" />
+                  </a>
+                </div>
               </div>
             </div>
 
@@ -847,7 +853,8 @@ import {
   logoFacebook,
   logoTiktok,
   globeOutline,
-  restaurantOutline
+  restaurantOutline,
+  sendOutline
 } from 'ionicons/icons'
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
@@ -2125,59 +2132,56 @@ const scrollToReviews = () => {
   object-fit: contain;
 }
 
-.foodpanda-card {
+.order-via-row {
+  display: flex;
+  gap: 8px;
+}
+
+.order-via-card {
+  flex: 1;
+  min-width: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 8px;
   background: var(--card-bg);
-  border-radius: var(--radius-lg);
-  padding: 16px;
+  border-radius: var(--radius-md);
+  padding: 8px 8px 8px 12px;
   box-shadow: var(--card-shadow);
   border: 1px solid var(--card-border);
-  cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.foodpanda-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--card-shadow-hover);
-}
-
-.ubereats-card {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: var(--card-bg);
-  border-radius: var(--radius-lg);
-  padding: 16px;
-  margin-top: 8px;
-  box-shadow: var(--card-shadow);
-  border: 1px solid var(--card-border);
-  cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.ubereats-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--card-shadow-hover);
-}
-
-.ubereats-logo {
-  font-size: 1.1rem;
-  font-weight: 800;
-  color: #06c167; /* Uber Eats green */
-  letter-spacing: -0.5px;
-}
-
-.ubereats-logo b {
-  color: var(--ion-color-dark);
-  font-weight: 800;
-}
-
-.foodpanda-card-logo {
-  height: 40px;
+.order-via-card-logo {
+  height: 20px;
   width: auto;
   object-fit: contain;
+}
+
+.ubereats-card-logo {
+  /* The wordmark's "Uber" half is near-black, unreadable on a dark card
+     background, so it needs its own light backing chip. */
+  height: 36px;
+  background: white;
+  border-radius: var(--radius-sm);
+  padding: 6px 12px;
+}
+
+.order-via-send-btn {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--ion-color-carrot);
+  color: white;
+  font-size: 16px;
+  transition: transform 0.2s ease;
+}
+
+.order-via-send-btn:active {
+  transform: scale(0.92);
 }
 
 .details-container {

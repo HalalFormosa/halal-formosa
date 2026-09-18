@@ -14,6 +14,17 @@
 /* Inter — modern minimal grotesque */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
+/* Hard guard against horizontal scroll/rubber-band: some mobile browsers
+   compute the pannable area from any element's layout box, even ones
+   clipped by an ancestor's overflow:hidden (e.g. Google Maps' internal
+   `left:50%; width:100%` panes on the Explore map). Force the app shell
+   itself to never scroll sideways. */
+html, body {
+    overflow-x: hidden;
+    overscroll-behavior-x: none;
+    max-width: 100vw;
+}
+
 /* This sets a different item border color for the default theme on ios and md */
 :root {
     --ion-font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;

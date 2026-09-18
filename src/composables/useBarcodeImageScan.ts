@@ -54,12 +54,31 @@ export async function pickAndDecodeBarcodeFromGallery(): Promise<string | null> 
 
     if (!image.path) return null
 
-    const { barcodes } = await BarcodeScanner.readBarcodesFromImage({
-      path: image.path,
-      formats: SUPPORTED_FORMATS,
-    })
+    try {
+      const { barcodes } = await BarcodeScanner.readBarcodesFromImage({
+        path: image.path,
+        formats: SUPPORTED_FORMATS,
+      })
+      if (barcodes[0]?.rawValue) return barcodes[0].rawValue
+    } catch (e) {
+      // ML Kit's on-device barcode module can be missing/not-yet-downloaded
+      // on some devices — fall through to the ZXing-based decoder below
+      // rather than failing outright.
+      console.warn('⚠️ [BarcodeImageScan] ML Kit read failed, falling back to ZXing:', e)
+    }
 
-    return barcodes[0]?.rawValue ?? null
+    // Fallback: ML Kit found nothing (or errored) — retry with the ZXing-based
+    // decoder (html5-qrcode), which uses a different algorithm and is more
+    // tolerant of small/clean synthetic barcode images (e.g. screenshots).
+    if (!image.webPath) return null
+    try {
+      const blob = await fetch(image.webPath).then((r) => r.blob())
+      const file = new File([blob], `gallery-barcode-${Date.now()}.jpg`, { type: blob.type || 'image/jpeg' })
+      return await decodeBarcodeFromFileWeb(file)
+    } catch (e) {
+      console.warn('⚠️ [BarcodeImageScan] ZXing fallback also failed:', e)
+      return null
+    }
   }
 
   // Web: prompt the user for an image file via a throwaway <input type="file">.

@@ -176,13 +176,40 @@ export function normalizeBarcode(barcode: string): string {
 }
 
 /**
+ * Catches placeholder/test input that can slip past a pure checksum check by
+ * coincidence — e.g. "6666666666666" (13 sixes) is a mathematically valid
+ * EAN-13 (repdigits of 0/2/4/6/8 satisfy the GS1 check-digit formula at that
+ * length), but no real product is ever printed with a literal repdigit or a
+ * straight ascending/descending run as its barcode.
+ */
+function isObviouslyFakePattern(digits: string): boolean {
+    if (/^(\d)\1+$/.test(digits)) return true; // all the same digit
+
+    let ascending = true;
+    let descending = true;
+    for (let i = 1; i < digits.length; i++) {
+        const prev = Number(digits[i - 1]);
+        const curr = Number(digits[i]);
+        if (curr !== (prev + 1) % 10) ascending = false;
+        if (curr !== (prev + 9) % 10) descending = false;
+    }
+    return ascending || descending;
+}
+
+/**
  * True if the barcode passes any of the supported symbologies' checksums.
  * Shared by the contributor form (AddProductView) and the admin review screen
  * (ReviewProductsView) so both judge a barcode identically.
+ *
+ * IMEI is deliberately excluded: it's a phone identifier, not something that
+ * appears on product packaging, and its 14/16-digit forms have no check
+ * digit at all — including it here let any 14-digit string (e.g. a repeated
+ * "66666666666666") pass as "valid".
  */
 export function isValidBarcodeFormat(barcode: string): boolean {
     const clean = normalizeBarcode(barcode);
     if (!clean) return false;
+    if (/^\d+$/.test(clean) && isObviouslyFakePattern(clean)) return false;
 
     return (
         BarcodeValidator.isValidEAN8(clean) ||
@@ -191,7 +218,6 @@ export function isValidBarcodeFormat(barcode: string): boolean {
         BarcodeValidator.isValidUPCA(clean) ||
         BarcodeValidator.isValidUPCE(clean) ||
         BarcodeValidator.isValidISBN(clean) ||
-        BarcodeValidator.isValidIMEI(clean) ||
         BarcodeValidator.isValidGSIN(clean) ||
         BarcodeValidator.isValidSSCC(clean) ||
         BarcodeValidator.isValidGLN(clean) ||
