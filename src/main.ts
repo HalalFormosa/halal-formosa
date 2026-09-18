@@ -11,6 +11,7 @@ import { supabase } from '@/plugins/supabaseClient'
 import { isDeviceOnline } from '@/utils/connectivity'
 import { completeLineLogin } from '@/composables/useLineLogin'
 import { initAdMob } from '@/lib/admob'
+import { initLevelPlay } from '@/lib/levelplay'
 import { i18n } from '@/i18n'
 import '@ionic/vue/css/core.css'
 import '@ionic/vue/css/normalize.css'
@@ -65,6 +66,7 @@ if (Capacitor.isNativePlatform()) {
     Keyboard.addListener('keyboardWillShow', () => document.body.classList.add('keyboard-visible'))
     Keyboard.addListener('keyboardWillHide', () => document.body.classList.remove('keyboard-visible'))
     initAdMob().catch((e) => console.warn('AdMob init skipped/failed:', e))
+    initLevelPlay().catch((e) => console.warn('LevelPlay init skipped/failed:', e))
 }
 
 // Set initial RTL direction

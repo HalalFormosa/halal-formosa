@@ -11,7 +11,16 @@
     "test:e2e": "cypress run",
     "test:unit": "vitest",
     "lint": "eslint .",
-    "postversion": "node scripts/update-native-version.js"
+    "postversion": "node scripts/update-native-version.js",
+    "capacitor:sync:after": "node node_modules/capacitor-levelplay-ads/scripts/levelplay-manifest.js"
+  },
+  "levelplay": {
+    "networks": ["admob"],
+    "userTrackingDescription": "This identifier is used to deliver personalized ads to you.",
+    "consentProvider": "custom",
+    "admob": {
+      "appId": "ca-app-pub-9588373061537955~6845513245"
+    }
   },
   "dependencies": {
     "@capacitor-community/admob": "^8.0.0",
@@ -59,6 +68,7 @@
     "@vercel/speed-insights": "^1.2.0",
     "@vueup/vue-quill": "^1.2.0",
     "canvas-confetti": "^1.9.3",
+    "capacitor-levelplay-ads": "^0.1.42",
     "capacitor-plugin-safe-area": "^5.0.0",
     "chart.js": "^4.5.0",
     "chartjs-chart-sankey": "^0.14.0",

@@ -33,6 +33,7 @@ dependencies {
     implementation project(':capgo-capacitor-navigation-bar')
     implementation project(':revenuecat-purchases-capacitor')
     implementation project(':revenuecat-purchases-capacitor-ui')
+    implementation project(':capacitor-levelplay-ads')
     implementation project(':capacitor-plugin-safe-area')
     implementation "com.onesignal:OneSignal:5.6.1"
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.7.10"

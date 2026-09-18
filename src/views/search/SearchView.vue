@@ -1,8 +1,8 @@
 <template>
   <ion-page>
     <ion-header>
-      <!-- Native (mobile) AdMob banner -->
-      <div v-if="isNative && !isDonor" id="ad-space-search" :style="{ height: '65px', paddingTop: 'var(--ion-safe-area-top, 0)' }"></div>
+      <!-- Native (mobile) banner ad — now handled by LevelPlay's own
+           TOP + isOverlap:false layout push, no placeholder div needed. -->
 
       <app-header
           :title="
@@ -596,7 +596,7 @@ import {
   IonPage, IonHeader, IonContent, IonSearchbar, IonText, IonModal, IonPopover, IonToolbar, IonButton, IonIcon, IonFooter, IonChip,
   IonInfiniteScroll, IonInfiniteScrollContent, IonRefresher, IonRefresherContent,
   IonSkeletonText, IonThumbnail, IonCard, IonCardContent,
-  onIonViewDidEnter, IonLabel, IonFab, IonFabButton, onIonViewWillEnter, IonList, IonItem,
+  onIonViewDidEnter, onIonViewWillLeave, IonLabel, IonFab, IonFabButton, onIonViewWillEnter, IonList, IonItem,
   toastController, IonTitle, IonButtons
 } from '@ionic/vue'
 import { ref, onMounted, onUnmounted, nextTick, watch, computed } from 'vue'
@@ -646,7 +646,7 @@ import FilterContent from '@/components/FilterContent.vue'
 
 import StoreLogoBar from "@/components/StoreLogoBar.vue";
 import {ActivityLogService} from "@/services/ActivityLogService";
-import { scheduleBannerUpdate } from '@/plugins/admob'
+import { showLevelPlayBanner, destroyLevelPlayBanner } from '@/lib/levelplay'
 import {isDonor, refreshSubscriptionStatus} from "@/composables/useSubscriptionStatus";
 import {Purchases} from "@revenuecat/purchases-capacitor";
 import {PAYWALL_RESULT, RevenueCatUI} from "@revenuecat/purchases-capacitor-ui";
@@ -1738,8 +1738,18 @@ onIonViewDidEnter(async () => {
     }
   }
 
-  // Refresh AdMob if needed
-  scheduleBannerUpdate();
+  // Proof-of-concept: Search's banner now goes through LevelPlay mediation
+  // instead of AdMob-direct. Every other view is untouched.
+  if (!isDonor.value) {
+    const levelPlayAdId = Capacitor.getPlatform() === 'ios'
+      ? import.meta.env.VITE_LEVELPLAY_IOS_SEARCH_BANNER_ID
+      : import.meta.env.VITE_LEVELPLAY_ANDROID_SEARCH_BANNER_ID
+    showLevelPlayBanner(levelPlayAdId).catch((e) => console.warn('LevelPlay banner skipped/failed:', e))
+  }
+});
+
+onIonViewWillLeave(() => {
+  destroyLevelPlayBanner().catch((e) => console.warn('LevelPlay banner teardown skipped/failed:', e))
 });
 
 

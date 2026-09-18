@@ -74,5 +74,8 @@ project(':revenuecat-purchases-capacitor').projectDir = new File('../node_module
 include ':revenuecat-purchases-capacitor-ui'
 project(':revenuecat-purchases-capacitor-ui').projectDir = new File('../node_modules/@revenuecat/purchases-capacitor-ui/android')
 
+include ':capacitor-levelplay-ads'
+project(':capacitor-levelplay-ads').projectDir = new File('../node_modules/capacitor-levelplay-ads/android')
+
 include ':capacitor-plugin-safe-area'
 project(':capacitor-plugin-safe-area').projectDir = new File('../node_modules/capacitor-plugin-safe-area/android')

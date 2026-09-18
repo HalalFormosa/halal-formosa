@@ -5,6 +5,19 @@ import { Capacitor } from '@capacitor/core'
 let initialized = false
 let jobId = 0 // increments to cancel in-flight updates
 
+// The native AdMob plugin resolves removeBanner()/showBanner() before their
+// underlying runOnUiThread work actually finishes, so two overlapping
+// moveBanner() calls can race on the plugin's shared mAdView field and crash
+// with a NullPointerException (assignIdToAdView on a since-nulled AdView).
+// Serializing every native banner call through this queue guarantees one
+// call's native work is done before the next one starts.
+let bannerQueue: Promise<void> = Promise.resolve()
+function enqueueBannerOp(op: () => Promise<void>): Promise<void> {
+    bannerQueue = bannerQueue.then(op, op)
+    return bannerQueue
+}
+const NATIVE_SETTLE_MS = 60
+
 export async function initAdMob() {
     if (!Capacitor.isNativePlatform() || initialized) return
     try { 
@@ -29,7 +42,12 @@ export async function initAdMob() {
 export async function hideBanner() {
     if (!Capacitor.isNativePlatform()) return
     jobId++ // cancel any in-flight move
-    try { await AdMob.removeBanner() } catch (e) { console.debug('AdMob remove skip', e) }
+    await enqueueBannerOp(async () => {
+        try { await AdMob.removeBanner() } catch (e) { console.debug('AdMob remove skip', e) }
+        // Let the plugin's own runOnUiThread cleanup actually finish before
+        // the next queued banner op is allowed to touch the native AdView.
+        await delay(NATIVE_SETTLE_MS)
+    })
 }
 
 function delay(ms: number) { return new Promise(r => setTimeout(r, ms)) }
@@ -60,8 +78,15 @@ export async function moveBanner(adId: string, spaceId: string, isTesting: boole
     if (!Capacitor.isNativePlatform()) return
     const myJob = ++jobId
 
-    // Hard reset immediately to clear any existing banner at the top
-    try { await AdMob.removeBanner() } catch (e) { console.debug('AdMob remove skip', e) }
+    // Hard reset immediately to clear any existing banner at the top.
+    // Routed through the same queue as showBanner() below so this removal's
+    // native runOnUiThread work fully completes before anything else touches
+    // the plugin's shared AdView.
+    await enqueueBannerOp(async () => {
+        try { await AdMob.removeBanner() } catch (e) { console.debug('AdMob remove skip', e) }
+        await delay(NATIVE_SETTLE_MS)
+    })
+    if (myJob !== jobId) return
 
     // wait until the slot exists
     const el = await waitForEl(spaceId)
@@ -70,7 +95,7 @@ export async function moveBanner(adId: string, spaceId: string, isTesting: boole
     // Let the page settle. Ionic transitions can take 400ms+.
     // We wait a bit longer to ensure the "details-container" has moved to its final spot.
     await delay(350)
-    
+
     if (myJob !== jobId) return
 
     const rect = el.getBoundingClientRect()
@@ -105,11 +130,14 @@ export async function moveBanner(adId: string, spaceId: string, isTesting: boole
         marginValue = Math.max(safeAreaTop, rectTop)
     }
 
-    await AdMob.showBanner({
-        adId: finalAdId,
-        adSize: BannerAdSize.ADAPTIVE_BANNER,
-        position: BannerAdPosition.TOP_CENTER,
-        margin: marginValue,
-        isTesting: testing,
+    await enqueueBannerOp(async () => {
+        if (myJob !== jobId) return
+        await AdMob.showBanner({
+            adId: finalAdId,
+            adSize: BannerAdSize.ADAPTIVE_BANNER,
+            position: BannerAdPosition.TOP_CENTER,
+            margin: marginValue,
+            isTesting: testing,
+        })
     })
 }
