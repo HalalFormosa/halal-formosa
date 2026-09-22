@@ -39,6 +39,9 @@
       </div>
     </div>
     <div v-if="item.tier === 'gold' || item.tier === 'silver'" class="premium-flare"></div>
+    <div class="house-ad-progress-track">
+      <div :class="['house-ad-progress-bar', item.tier]" :style="{ width: progressPercent + '%' }" />
+    </div>
   </div>
 
   <!-- GRID MODE — mirrors SearchView's .grid-product-card layout. -->
@@ -65,6 +68,9 @@
       <div class="house-ad-native-grid-title">{{ item.title }}</div>
     </div>
     <div v-if="item.tier === 'gold' || item.tier === 'silver'" class="premium-flare"></div>
+    <div class="house-ad-progress-track">
+      <div :class="['house-ad-progress-bar', item.tier]" :style="{ width: progressPercent + '%' }" />
+    </div>
   </div>
 
   <!-- LOCATION MODE — mirrors ExploreView's list-mode .modern-location-card
@@ -105,6 +111,9 @@
         </div>
       </div>
       <div v-if="item.tier === 'gold' || item.tier === 'silver'" class="premium-flare"></div>
+      <div class="house-ad-progress-track">
+        <div :class="['house-ad-progress-bar', item.tier]" :style="{ width: progressPercent + '%' }" />
+      </div>
     </div>
   </div>
 
@@ -143,6 +152,9 @@
     </div>
 
     <div v-if="item.tier === 'gold' || item.tier === 'silver'" class="premium-flare"></div>
+    <div class="house-ad-progress-track">
+      <div :class="['house-ad-progress-bar', item.tier]" :style="{ width: progressPercent + '%' }" />
+    </div>
   </div>
 
   <!-- STORE MODE — mirrors StoreView's .store-product-card layout. -->
@@ -175,17 +187,27 @@
         <span class="store-name-text">{{ providerLabel }}</span>
       </div>
     </div>
+    <div class="house-ad-progress-track">
+      <div :class="['house-ad-progress-bar', item.tier]" :style="{ width: progressPercent + '%' }" />
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { IonIcon } from '@ionic/vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { Browser } from '@capacitor/browser'
 import { checkmarkCircle, starOutline, storefront, pricetag, locationSharp, airplane } from 'ionicons/icons'
-import { useHouseAds, getHouseAdAtOffset, startHouseAdRotationTimer, type HouseAdKind } from '@/composables/useHouseAds'
+import {
+  useHouseAds,
+  getHouseAdAtOffset,
+  startHouseAdRotationTimer,
+  turnDurationForTier,
+  type HouseAdKind,
+  type HouseAdTier,
+} from '@/composables/useHouseAds'
 import { ActivityLogService } from '@/services/ActivityLogService'
 import { supabase } from '@/plugins/supabaseClient'
 
@@ -195,11 +217,23 @@ const props = defineProps<{
   // the feed shows a different item from the rotation, not the same one
   // repeated, by offsetting from the shared rotation index.
   slot: number
+  // Overrides the mode's default excluded kind (see EXCLUDE_KIND_BY_MODE
+  // below) — for reusing a mode's visual LAYOUT somewhere its usual
+  // exclusion rule doesn't apply, e.g. the tall "trip" card style used as
+  // a standalone placement on PlaceDetailsView, which should exclude
+  // 'location' (that page IS a location) rather than 'trip'.
+  excludeKind?: HouseAdKind
+  // Restricts the rotation to only these categories, e.g. Place Details
+  // wants partner/trip sponsors only, never another location or product.
+  onlyKinds?: HouseAdKind[]
+  // Restricts the rotation to only these tiers, e.g. Place Details wants
+  // gold-tier sponsors only, never silver/bronze.
+  onlyTiers?: HouseAdTier[]
 }>()
 
 const router = useRouter()
 const { t } = useI18n()
-const { rotationIndex, poolLoaded, loadHouseAdPool } = useHouseAds()
+const { rotationIndex, poolLoaded, loadHouseAdPool, turnStartedAt } = useHouseAds()
 
 // Never rotate in the kind that matches what this feed is already about —
 // e.g. Search's own gold products are already featured first at the top of
@@ -215,7 +249,28 @@ const EXCLUDE_KIND_BY_MODE: Record<typeof props.mode, HouseAdKind | undefined> =
 const item = computed(() => {
   void rotationIndex.value
   void poolLoaded.value
-  return getHouseAdAtOffset(props.slot, EXCLUDE_KIND_BY_MODE[props.mode])
+  const exclude = props.excludeKind ?? EXCLUDE_KIND_BY_MODE[props.mode]
+  return getHouseAdAtOffset(props.slot, {
+    excludeKind: exclude,
+    onlyKinds: props.onlyKinds,
+    onlyTiers: props.onlyTiers,
+  })
+})
+
+// Ticks every 500ms so progressPercent stays live — same approach as
+// HouseAdCard.vue's banner (see that file for why this is a plain JS
+// interval rather than a CSS animation: Ionic's <ion-tabs> keeps other
+// tabs' pages alive with display:none, which interrupts CSS animations
+// but not a running JS timer on a mounted-but-hidden component).
+const nowTick = ref(Date.now())
+let tickInterval: ReturnType<typeof setInterval> | null = null
+
+const progressPercent = computed(() => {
+  const ad = item.value
+  if (!ad) return 0
+  const total = turnDurationForTier(ad.tier)
+  const elapsed = nowTick.value - turnStartedAt.value
+  return Math.min(100, Math.max(0, (elapsed / total) * 100))
 })
 
 onMounted(() => {
@@ -226,6 +281,11 @@ onMounted(() => {
   // already-mounted card started it first.
   loadHouseAdPool()
   startHouseAdRotationTimer()
+  tickInterval = setInterval(() => { nowTick.value = Date.now() }, 500)
+})
+
+onUnmounted(() => {
+  if (tickInterval) clearInterval(tickInterval)
 })
 
 const KIND_ICONS = {
@@ -252,9 +312,25 @@ const providerLabel = computed(() => {
   return t('home.houseAdProvider.' + PROVIDER_KEY_BY_KIND[ad.kind], { name: ad.providerName })
 })
 
+function adLogDetail(ad: NonNullable<typeof item.value>) {
+  return {
+    ad_kind: ad.kind,
+    ad_id: ad.id,
+    ad_tier: ad.tier,
+    ad_title: ad.title,
+    provider_name: ad.providerName ?? null,
+    placement: 'native',
+    mode: props.mode,
+    slot: props.slot,
+    route: String(router.currentRoute.value.name ?? router.currentRoute.value.path),
+  }
+}
+
 async function onOpen() {
   const ad = item.value
   if (!ad) return
+
+  ActivityLogService.log('house_ad_click', adLogDetail(ad))
 
   if (ad.kind === 'trip' && ad.externalUrl) {
     ActivityLogService.log('trip_click', { trip_id: ad.id, trip_title: ad.title, source: 'house_ad_native' })
@@ -270,9 +346,37 @@ async function onOpen() {
 
   router.push(ad.to)
 }
+
+// Logs one impression each time a genuinely different ad rotates into this
+// slot — not on every re-render (progressPercent ticks every 500ms but
+// doesn't change `item`, so this watcher stays quiet in between turns).
+watch(item, (ad) => {
+  if (ad) ActivityLogService.log('house_ad_impression', adLogDetail(ad))
+}, { immediate: true })
 </script>
 
 <style scoped>
+/* Rotation progress bar — shared across every mode. Sits at the very
+   bottom edge of whichever root card is active; each root already has
+   position:relative + overflow:hidden (own or duplicated CSS above), so
+   this anchors correctly without extra wrapper markup. */
+.house-ad-progress-track {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+  background: rgba(0, 0, 0, 0.12);
+  z-index: 4;
+}
+.house-ad-progress-bar {
+  height: 100%;
+  transition: width 0.5s linear;
+}
+.house-ad-progress-bar.gold { background: #d4af37; }
+.house-ad-progress-bar.silver { background: #aaaaaa; }
+.house-ad-progress-bar.bronze { background: #b07438; }
+
 /* Trip/Store mode layout — duplicated (not imported) from
    TripListView.vue/StoreView.vue's own `<style scoped>` blocks. Vue's
    scoped CSS is per-component (it adds a unique data-v-* attribute
@@ -360,6 +464,7 @@ async function onOpen() {
 }
 
 .store-product-card {
+  position: relative;
   background: var(--card-bg);
   border-radius: var(--radius-lg);
   overflow: hidden;

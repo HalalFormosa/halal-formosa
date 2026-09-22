@@ -3,7 +3,10 @@
     <ion-header class="ion-no-border immersive-header" :class="{ 'is-scrolled': isScrolled, 'has-ads': isNative && showAds }">
        <!-- Native (mobile) AdMob banner -->
        <div v-if="isNative && showAds" id="ad-space-place-detail" :style="{ height: '65px', paddingTop: 'var(--ion-safe-area-top, 0)' }"></div>
-       <HouseAdCard v-if="showAds && (!isNative || failedAdSpaceId === 'ad-space-place-detail')" />
+       <!-- No house-ad fallback banner here — when there's no real ad, the
+            sponsored slot instead appears further down the page, right
+            before Rate & Review, so it doesn't delay the content someone
+            opened this page to see (see the floating HouseAdCard below). -->
        <app-header
            :title="$t('explore.details.title')"
            show-back
@@ -215,6 +218,26 @@
                 {{ $t('facilityReview.noConsensusYet') || 'No visitor reports yet. Be the first to share!' }}
               </p>
               
+              <!-- Sponsored card — appears here (scrolled into view) rather
+                   than glued to the top, so it doesn't delay the content
+                   someone opened this page to see. Reuses the tall
+                   image-top "trip" card layout (no side margin of its own,
+                   so it fills the page's ion-padding width like the
+                   surrounding Handling Details / Address cards). Restricted
+                   to partner/trip sponsors only (not another location or
+                   product) and gold tier only (not silver/bronze) — this
+                   placement is reserved for the most prominent sponsors.
+                   Skipped entirely when this place is itself a gold
+                   partner — showing another sponsor's ad on a gold
+                   partner's own page is redundant, not just duplicative. -->
+              <HouseAdNativeCard
+                  v-if="showAds && String(place?.partner_tier || '').toLowerCase() !== 'gold' && (!isNative || failedAdSpaceId === 'ad-space-place-detail')"
+                  mode="trip"
+                  :only-kinds="['partner', 'trip']"
+                  :only-tiers="['gold']"
+                  :slot="0"
+              />
+
               <!-- Rate & Review Button -->
               <div class="ion-text-center ion-margin-top" v-if="!isOwner && !userHasReviewed">
                 <ion-button 
@@ -822,7 +845,7 @@ import {
   alertController, toastController
 } from '@ionic/vue'
 import { Capacitor } from '@capacitor/core'
-import HouseAdCard from '@/components/ads/HouseAdCard.vue'
+import HouseAdNativeCard from '@/components/ads/HouseAdNativeCard.vue'
 import { failedAdSpaceId } from '@/composables/useAdFallback'
 import { isDonor } from "@/composables/useSubscriptionStatus"
 import { scheduleBannerUpdate } from '@/plugins/admob'

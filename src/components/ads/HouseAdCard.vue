@@ -56,7 +56,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { IonCard, IonIcon } from '@ionic/vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
@@ -138,9 +138,24 @@ const providerLabel = computed(() => {
   return t('home.houseAdProvider.' + PROVIDER_KEY_BY_KIND[ad.kind], { name: ad.providerName })
 })
 
+function adLogDetail(ad: NonNullable<typeof item.value>) {
+  return {
+    ad_kind: ad.kind,
+    ad_id: ad.id,
+    ad_tier: ad.tier,
+    ad_title: ad.title,
+    provider_name: ad.providerName ?? null,
+    placement: 'banner',
+    variant: props.variant,
+    route: String(router.currentRoute.value.name ?? router.currentRoute.value.path),
+  }
+}
+
 async function onOpen() {
   const ad = item.value
   if (!ad) return
+
+  ActivityLogService.log('house_ad_click', adLogDetail(ad))
 
   // Trips don't have an in-app detail page — mirror TripListView.vue's
   // openTrip: log the click, bump the view count, then hand off to the
@@ -159,6 +174,13 @@ async function onOpen() {
 
   router.push(ad.to)
 }
+
+// Logs one impression each time a genuinely different ad rotates into this
+// slot — not on every re-render (progressPercent ticks every 500ms but
+// doesn't change `item`, so this watcher stays quiet in between turns).
+watch(item, (ad) => {
+  if (ad) ActivityLogService.log('house_ad_impression', adLogDetail(ad))
+}, { immediate: true })
 
 onMounted(() => {
   loadHouseAdPool()
@@ -194,7 +216,7 @@ onUnmounted(() => {
    bar looks intrusive sitting directly over the map. Matches the visual
    language of ExploreView's own .modern-location-card (radius/shadow). */
 .house-ad-card.floating {
-  margin: 8px 12px 0;
+  margin: 8px 12px;
   width: auto;
   border-radius: 12px;
   box-shadow: var(--card-shadow-hover, 0 6px 20px rgba(0, 0, 0, 0.15));

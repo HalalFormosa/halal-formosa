@@ -3,7 +3,10 @@
     <ion-header class="ion-no-border immersive-header" :class="{ 'is-scrolled': isScrolled, 'has-ads': isNative && showAds }">
       <!-- Native (mobile) AdMob banner -->
       <div v-if="isNative && showAds" id="ad-space-item-details" :style="{ height: '65px', paddingTop: 'var(--ion-safe-area-top, 0)' }"></div>
-      <HouseAdCard v-if="showAds && (!isNative || failedAdSpaceId === 'ad-space-item-details')" />
+      <!-- No house-ad fallback banner here — when there's no real ad, the
+           sponsored slot instead appears further down the page, right
+           before Description, so it doesn't delay the content someone
+           opened this page to see (see the HouseAdNativeCard below). -->
 
       <app-header
         :title="$t('search.details.title')"
@@ -274,6 +277,19 @@
                     mode="readonly"
                 />
               </div>
+
+              <!-- Sponsored card — appears here (scrolled into view) rather
+                   than glued to the top, so it doesn't delay the content
+                   someone opened this page to see. Same as PlaceDetailsView:
+                   partner/trip sponsors only, gold tier only, and skipped
+                   entirely when this product is itself a gold partner's. -->
+              <HouseAdNativeCard
+                  v-if="showAds && String(item?.partner_tier || '').toLowerCase() !== 'gold' && (!isNative || failedAdSpaceId === 'ad-space-item-details')"
+                  mode="trip"
+                  :only-kinds="['partner', 'trip']"
+                  :only-tiers="['gold']"
+                  :slot="0"
+              />
 
               <!-- Description -->
               <div class="info-card">
@@ -548,7 +564,7 @@ import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { useIonRouter } from '@ionic/vue'
 import { Capacitor } from '@capacitor/core'
-import HouseAdCard from '@/components/ads/HouseAdCard.vue'
+import HouseAdNativeCard from '@/components/ads/HouseAdNativeCard.vue'
 import { failedAdSpaceId } from '@/composables/useAdFallback'
 import { supabase } from '@/plugins/supabaseClient'
 import {Swiper, SwiperSlide} from "swiper/vue";

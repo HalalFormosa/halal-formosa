@@ -233,6 +233,87 @@
         </ion-row>
       </ion-grid>
 
+      <!-- 📢 HOUSE ADS (Sponsored/Fallback Content) -->
+      <ion-card class="modern-card">
+        <ion-card-header>
+          <div class="title-with-icon">
+            <ion-icon :icon="megaphoneOutline" color="carrot" />
+            <ion-card-title>{{ $t('admin.houseAds') || 'House Ads (Sponsored Content)' }}</ion-card-title>
+          </div>
+        </ion-card-header>
+        <ion-card-content>
+          <div class="stats-grid">
+            <div class="stat-card">
+              <p class="stat-label">{{ $t('admin.adImpressions') || 'Impressions' }}</p>
+              <p class="stat-value">{{ houseAdImpressions.toLocaleString() }}</p>
+            </div>
+            <div class="stat-card">
+              <p class="stat-label">{{ $t('admin.adClicks') || 'Clicks' }}</p>
+              <p class="stat-value">{{ houseAdClicks.toLocaleString() }}</p>
+            </div>
+            <div class="stat-card">
+              <p class="stat-label">{{ $t('admin.adCtr') || 'CTR' }}</p>
+              <p class="stat-value">{{ houseAdCtr }}%</p>
+            </div>
+          </div>
+        </ion-card-content>
+      </ion-card>
+
+      <ion-grid class="ion-no-padding">
+        <ion-row>
+          <ion-col size="12" size-md="4">
+            <ion-card class="modern-card">
+              <ion-card-header><ion-card-title>🏆 {{ $t('admin.adsByTier') || 'Ads by Tier' }}</ion-card-title></ion-card-header>
+              <ion-card-content>
+                <ion-list lines="none">
+                  <ion-item v-for="(row, i) in houseAdByTier" :key="i">
+                    <ion-label>{{ row.tier.toUpperCase() }} — {{ row.clicks }} clicks</ion-label>
+                    <ion-badge slot="end" :color="row.tier === 'gold' ? 'warning' : row.tier === 'silver' ? 'medium' : 'tertiary'">
+                      {{ row.impressions }}
+                    </ion-badge>
+                  </ion-item>
+                  <p v-if="houseAdByTier.length === 0" class="ion-padding-start" style="opacity: 0.6;">
+                    {{ $t('admin.noData') || 'No data for this period.' }}
+                  </p>
+                </ion-list>
+              </ion-card-content>
+            </ion-card>
+          </ion-col>
+          <ion-col size="12" size-md="4">
+            <ion-card class="modern-card">
+              <ion-card-header><ion-card-title>🗂️ {{ $t('admin.adsByKind') || 'Ads by Category' }}</ion-card-title></ion-card-header>
+              <ion-card-content>
+                <ion-list lines="none">
+                  <ion-item v-for="(row, i) in houseAdByKind" :key="i">
+                    <ion-label class="ion-text-capitalize">{{ row.kind }} — {{ row.clicks }} clicks</ion-label>
+                    <ion-badge slot="end" color="primary">{{ row.impressions }}</ion-badge>
+                  </ion-item>
+                  <p v-if="houseAdByKind.length === 0" class="ion-padding-start" style="opacity: 0.6;">
+                    {{ $t('admin.noData') || 'No data for this period.' }}
+                  </p>
+                </ion-list>
+              </ion-card-content>
+            </ion-card>
+          </ion-col>
+          <ion-col size="12" size-md="4">
+            <ion-card class="modern-card">
+              <ion-card-header><ion-card-title>⭐ {{ $t('admin.topAds') || 'Top Sponsored Content' }}</ion-card-title></ion-card-header>
+              <ion-card-content>
+                <ion-list lines="none">
+                  <ion-item v-for="(ad, i) in houseAdTopAds" :key="i">
+                    <ion-label>{{ shortName(ad.title) }}</ion-label>
+                    <ion-badge slot="end" color="success">{{ ad.clicks }}</ion-badge>
+                  </ion-item>
+                  <p v-if="houseAdTopAds.length === 0" class="ion-padding-start" style="opacity: 0.6;">
+                    {{ $t('admin.noData') || 'No data for this period.' }}
+                  </p>
+                </ion-list>
+              </ion-card-content>
+            </ion-card>
+          </ion-col>
+        </ion-row>
+      </ion-grid>
+
       <!-- 📅 CUSTOM DATE MODAL -->
       <ion-modal :is-open="showDateModal" @didDismiss="showDateModal = false" class="date-selection-modal">
         <ion-header>
@@ -284,7 +365,8 @@ import { countries, loadCountries } from '@/composables/useCountries';
 import AppHeader from "@/components/AppHeader.vue";
 import {
   listOutline, trendingUpOutline, trendingDownOutline,
-  personAddOutline, sparklesOutline, checkmarkCircleOutline, calendarOutline
+  personAddOutline, sparklesOutline, checkmarkCircleOutline, calendarOutline,
+  megaphoneOutline
 } from "ionicons/icons";
 import {
   IonPage, IonHeader, IonContent, IonSegment, IonSegmentButton, IonLabel,
@@ -323,6 +405,16 @@ const topLocations = ref<any[]>([]);
 const topSearches = ref<any[]>([]);
 const hourlyChartData = ref<any>(null);
 const recentTrends = ref<any>(null);
+
+// House Ads (sponsored/fallback content) engagement — queried client-side
+// straight off activity_log rather than the analytics_dashboard_overhaul
+// RPC everything else here uses, since that RPC lives in Supabase and
+// extending it is a separate, riskier change from adding this section.
+const houseAdImpressions = ref(0);
+const houseAdClicks = ref(0);
+const houseAdByTier = ref<{ tier: string; impressions: number; clicks: number }[]>([]);
+const houseAdByKind = ref<{ kind: string; impressions: number; clicks: number }[]>([]);
+const houseAdTopAds = ref<{ title: string; kind: string; tier: string; clicks: number }[]>([]);
 
 // Date Handling
 const selectedRange = ref('daily');
@@ -430,6 +522,11 @@ const dailyChartData = computed(() => {
 const scanSuccessRate = computed(() => {
   if (!scanFunnel.value?.start) return 0;
   return Math.round((scanFunnel.value.success / scanFunnel.value.start) * 100);
+});
+
+const houseAdCtr = computed(() => {
+  if (!houseAdImpressions.value) return 0;
+  return Math.round((houseAdClicks.value / houseAdImpressions.value) * 1000) / 10;
 });
 
 /* Chart Options (Theme Responsive) */
@@ -558,6 +655,64 @@ function generateInsightsList(data: any) {
   generatedInsights.value = list.slice(0, 3);
 }
 
+async function fetchHouseAdAnalytics() {
+  const range = resolveDateRange();
+  const { data, error } = await supabase
+    .from("activity_log")
+    .select("activity_type, activity_detail")
+    .eq("activity_group", "advertising")
+    .gte("created_at", range.start)
+    .lte("created_at", range.end)
+    .limit(5000);
+  if (error || !data) return;
+
+  let impressions = 0;
+  let clicks = 0;
+  const tierMap = new Map<string, { impressions: number; clicks: number }>();
+  const kindMap = new Map<string, { impressions: number; clicks: number }>();
+  const adMap = new Map<string, { title: string; kind: string; tier: string; clicks: number }>();
+
+  for (const row of data as any[]) {
+    const detail = row.activity_detail || {};
+    const tier = detail.ad_tier || "unknown";
+    const kind = detail.ad_kind || "unknown";
+    const isImpression = row.activity_type === "house_ad_impression";
+    const isClick = row.activity_type === "house_ad_click";
+
+    if (isImpression) impressions++;
+    if (isClick) clicks++;
+
+    if (!tierMap.has(tier)) tierMap.set(tier, { impressions: 0, clicks: 0 });
+    const tierRow = tierMap.get(tier)!;
+    if (isImpression) tierRow.impressions++;
+    if (isClick) tierRow.clicks++;
+
+    if (!kindMap.has(kind)) kindMap.set(kind, { impressions: 0, clicks: 0 });
+    const kindRow = kindMap.get(kind)!;
+    if (isImpression) kindRow.impressions++;
+    if (isClick) kindRow.clicks++;
+
+    if (isClick) {
+      const key = String(detail.ad_id ?? detail.ad_title ?? "unknown");
+      const existing = adMap.get(key);
+      if (existing) existing.clicks++;
+      else adMap.set(key, { title: detail.ad_title || "(Untitled)", kind, tier, clicks: 1 });
+    }
+  }
+
+  houseAdImpressions.value = impressions;
+  houseAdClicks.value = clicks;
+  houseAdByTier.value = [...tierMap.entries()]
+    .map(([tier, v]) => ({ tier, ...v }))
+    .sort((a, b) => b.impressions - a.impressions);
+  houseAdByKind.value = [...kindMap.entries()]
+    .map(([kind, v]) => ({ kind, ...v }))
+    .sort((a, b) => b.impressions - a.impressions);
+  houseAdTopAds.value = [...adMap.values()]
+    .sort((a, b) => b.clicks - a.clicks)
+    .slice(0, 8);
+}
+
 function resolveDateRange() {
   const end = dayjs().endOf('day');
   let start;
@@ -574,7 +729,10 @@ function resolveDateRange() {
 
 const onRangeChange = () => {
   if (selectedRange.value === 'custom') showDateModal.value = true;
-  else fetchAnalytics();
+  else {
+    fetchAnalytics();
+    fetchHouseAdAnalytics();
+  }
 };
 
 const applyCustomDates = () => {
@@ -582,6 +740,7 @@ const applyCustomDates = () => {
   customEndDate.value = tempEndDate.value;
   showDateModal.value = false;
   fetchAnalytics();
+  fetchHouseAdAnalytics();
 };
 
 function shortName(name: string | null, max = 20) {
@@ -591,6 +750,7 @@ function shortName(name: string | null, max = 20) {
 
 onMounted(() => {
   fetchAnalytics();
+  fetchHouseAdAnalytics();
 });
 </script>
 

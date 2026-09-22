@@ -194,15 +194,30 @@ async function loadHouseAdPool(): Promise<void> {
     return poolPromise
 }
 
+export interface HouseAdPickOptions {
+    // Drops one category from the cycle entirely — used so a native ad
+    // woven into e.g. the product feed doesn't turn into "sponsored
+    // product" (redundant with the real gold products already featured
+    // first in that same feed).
+    excludeKind?: HouseAdKind
+    // Restricts the cycle to only these categories (e.g. Place Details
+    // only wants partner/trip sponsors, not another location or product).
+    // Applied together with excludeKind if both are given.
+    onlyKinds?: HouseAdKind[]
+    // Restricts which tiers are eligible at all — e.g. Place Details only
+    // wants gold-tier sponsors, never silver/bronze. Defaults to all three.
+    onlyTiers?: HouseAdTier[]
+}
+
 // Picks the item due for this category's own turn, gold -> silver -> bronze
-// weighted 3:2:1 (see TIER_WEIGHTS), within that category — skipping tiers
-// that have no eligible content in this category.
-function pickForKind(kind: HouseAdKind, kindTurn: number): HouseAdItem | null {
-    for (let attempt = 0; attempt < TIER_ORDER.length; attempt++) {
-        const tier = TIER_ORDER[(kindTurn + attempt) % TIER_ORDER.length]
+// weighted 3:2:1 (see TIER_WEIGHTS) by default — or restricted to `tiers`
+// — within that category, skipping tiers with no eligible content.
+function pickForKind(kind: HouseAdKind, kindTurn: number, tiers: readonly HouseAdTier[]): HouseAdItem | null {
+    for (let attempt = 0; attempt < tiers.length; attempt++) {
+        const tier = tiers[(kindTurn + attempt) % tiers.length]
         const group = pool.value[tier].filter(i => i.kind === kind)
         if (group.length) {
-            const itemIndex = Math.floor((kindTurn + attempt) / TIER_ORDER.length) % group.length
+            const itemIndex = Math.floor((kindTurn + attempt) / tiers.length) % group.length
             return group[itemIndex]
         }
     }
@@ -212,17 +227,15 @@ function pickForKind(kind: HouseAdKind, kindTurn: number): HouseAdItem | null {
 // Picks the item due at a given rotation position — category strictly
 // cycles partner -> product -> location -> trip -> partner -> ..., never
 // repeating back-to-back, skipping any category with no eligible content.
-// excludeKind drops one category from the cycle entirely — used so a
-// native ad woven into e.g. the product feed doesn't turn into "sponsored
-// product" (redundant with the real gold products already featured first
-// in that same feed); everywhere else still rotates all four.
-function pickAt(baseIdx: number, excludeKind?: HouseAdKind): HouseAdItem | null {
-    const kinds = excludeKind ? KIND_ORDER.filter(k => k !== excludeKind) : KIND_ORDER
+function pickAt(baseIdx: number, options?: HouseAdPickOptions): HouseAdItem | null {
+    let kinds: readonly HouseAdKind[] = options?.onlyKinds ?? KIND_ORDER
+    if (options?.excludeKind) kinds = kinds.filter(k => k !== options.excludeKind)
+    const tiers = options?.onlyTiers ?? TIER_ORDER
     for (let attempt = 0; attempt < kinds.length; attempt++) {
         const idx = baseIdx + attempt
         const kind = kinds[idx % kinds.length]
         const kindTurn = Math.floor(idx / kinds.length)
-        const picked = pickForKind(kind, kindTurn)
+        const picked = pickForKind(kind, kindTurn, tiers)
         if (picked) return picked
     }
     return null
@@ -239,8 +252,8 @@ export function getHouseAd(): HouseAdItem | null {
 // recurring feed slot) each show a different sponsor instead of all
 // repeating the same current turn, while still advancing together as the
 // shared rotation index ticks forward over time.
-export function getHouseAdAtOffset(offset: number, excludeKind?: HouseAdKind): HouseAdItem | null {
-    return pickAt(rotationIndex.value + offset, excludeKind)
+export function getHouseAdAtOffset(offset: number, options?: HouseAdPickOptions): HouseAdItem | null {
+    return pickAt(rotationIndex.value + offset, options)
 }
 
 export function useHouseAds() {

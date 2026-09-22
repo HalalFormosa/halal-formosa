@@ -180,6 +180,23 @@ function resolveEntity(activity: string, rawDetail: any): EntityResult {
                 entity_id: null
             }
 
+        // 🟢 HOUSE AD (sponsored/fallback content) interactions — the ad
+        // can point at any of four different entity types depending on
+        // which kind of content was actually featured (detail.ad_kind).
+        case 'house_ad_impression':
+        case 'house_ad_click': {
+            const AD_KIND_TO_ENTITY: Record<string, string> = {
+                partner: 'partner',
+                product: 'product',
+                location: 'place',
+                trip: 'trip',
+            }
+            return {
+                entity_type: AD_KIND_TO_ENTITY[detail.ad_kind] ?? null,
+                entity_id: detail.ad_id != null ? String(detail.ad_id) : null
+            }
+        }
+
 
         // 🟢 SEARCH interactions
         case 'search_query':
@@ -555,6 +572,13 @@ function resolveActivityGroup(activity: string): string | null {
         case 'profile_edit_open':
         case 'profile_logout':
             return 'profile'
+
+        /* -------------------------
+           ADVERTISING / HOUSE ADS
+        -------------------------- */
+        case 'house_ad_impression':
+        case 'house_ad_click':
+            return 'advertising'
 
         /* -------------------------
            MONETIZATION
