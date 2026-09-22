@@ -3072,8 +3072,8 @@ const runRemoteLocationSearchInner = async (q: string, logQuery: boolean): Promi
     // silently discarding the RPC's relevance ranking (e.g. a closer but
     // weaker match like "Chang's ..." outranking the actual best match).
     // Re-derive the order from `ids` (already ranked) instead of `data`.
-    const returnedIds = new Set(typedData.map(d => d.id))
-    remoteSearchIds.value = ids.filter(id => returnedIds.has(id))
+    const returnedIds = new Set(typedData.map((d: any) => d.id))
+    remoteSearchIds.value = ids.filter((id: number) => returnedIds.has(id))
     return true
   }
 
