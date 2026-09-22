@@ -769,8 +769,13 @@ onUnmounted(() => {
 }
 
 @keyframes liveResultIn {
-  from { opacity: 0; transform: translateY(16px) scale(0.96); }
-  to   { opacity: 1; transform: translateY(0) scale(1); }
+  /* Opacity-only: a translateY/scale bounce here used to leave the card
+     (and its "View Details" button) visually below/smaller than its final
+     resting spot for the first ~150ms, so a tap aimed at the button's
+     eventual position could land on empty space above it and appear to
+     do nothing. Fading in place keeps the hit target stationary. */
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 
 /* IngredientHighlightImage renders its own scoped template, so this reaches into

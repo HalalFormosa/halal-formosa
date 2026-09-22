@@ -17,45 +17,47 @@
     </div>
 
     <!-- 🎁 Global Subtle Reward Toast -->
-    <div v-if="rewardOpen" class="reward-overlay">
-      <div 
-        class="reward-toast" 
-        @click="closeReward"
-        @touchstart="onTouchStart"
-        @touchmove="onTouchMove"
-        @touchend="onTouchEnd"
-        :style="toastStyle"
-      >
-        <div class="reward-toast-left">
-          <ion-avatar class="reward-toast-avatar" v-if="rewardAvatar && !rewardIsAchievement">
-            <img :src="rewardAvatar" alt="Avatar" />
-          </ion-avatar>
-          <div v-else class="reward-toast-icon">{{ rewardIcon || '✨' }}</div>
-        </div>
-
-        <div class="reward-toast-body">
-          <div class="reward-toast-header">
-            <span class="reward-points-badge" :class="{ 'reward-points-badge--achievement': rewardIsAchievement }">
-              {{ rewardIsAchievement ? $t('achievements.unlockedBadge') : `+${rewardPoints} XP` }}
-            </span>
-            <span class="reward-action-text">{{ rewardAction }}</span>
+    <Transition name="reward-toast">
+      <div v-if="rewardOpen" class="reward-overlay">
+        <div
+          class="reward-toast"
+          @click="closeReward"
+          @touchstart="onTouchStart"
+          @touchmove="onTouchMove"
+          @touchend="onTouchEnd"
+          :style="toastStyle"
+        >
+          <div class="reward-toast-left">
+            <ion-avatar class="reward-toast-avatar" v-if="rewardAvatar && !rewardIsAchievement">
+              <img :src="rewardAvatar" alt="Avatar" />
+            </ion-avatar>
+            <div v-else class="reward-toast-icon">{{ rewardIcon || '✨' }}</div>
           </div>
 
-          <!-- Animated EXP progress -->
-          <div class="reward-toast-progress-container">
-            <ion-progress-bar
-                :value="rewardProgress"
-                color="success"
-                class="reward-progress-bar"
-            ></ion-progress-bar>
-          </div>
-          <div class="reward-toast-level-info">
-            <span>Level {{ rewardLevel }}</span>
-            <span>{{ rewardDisplay }} / {{ rewardNextXp }} XP</span>
+          <div class="reward-toast-body">
+            <div class="reward-toast-header">
+              <span class="reward-points-badge" :class="{ 'reward-points-badge--achievement': rewardIsAchievement }">
+                {{ rewardIsAchievement ? $t('achievements.unlockedBadge') : `+${rewardPoints} XP` }}
+              </span>
+              <span class="reward-action-text">{{ rewardAction }}</span>
+            </div>
+
+            <!-- Animated EXP progress -->
+            <div class="reward-toast-progress-container">
+              <ion-progress-bar
+                  :value="rewardProgress"
+                  color="success"
+                  class="reward-progress-bar"
+              ></ion-progress-bar>
+            </div>
+            <div class="reward-toast-level-info">
+              <span>Level {{ rewardLevel }}</span>
+              <span>{{ rewardDisplay }} / {{ rewardNextXp }} XP</span>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </Transition>
 
     <!-- Only UI responsibilities left -->
     <ion-alert

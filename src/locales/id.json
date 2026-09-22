@@ -205,6 +205,18 @@
     "totalProducts": "Total Produk",
     "totalLocations": "Total Lokasi",
     "partnerTier": "MITRA {tier}",
+    "sponsored": "Bersponsor",
+    "houseAdKind": {
+      "partner": "Mitra",
+      "product": "Produk",
+      "location": "Lokasi",
+      "trip": "Perjalanan"
+    },
+    "houseAdProvider": {
+      "soldBy": "Dijual oleh {name}",
+      "certifiedBy": "Disertifikasi oleh {name}",
+      "providedBy": "Oleh {name}"
+    },
     "statuses": {
       "halal": "Halal",
       "muslimFriendly": "Ramah Muslim",
@@ -922,6 +934,9 @@
     "scanIngredientsDesc": "Pindai daftar bahan untuk mengisi formulir secara otomatis dan mengambil foto belakang.",
     "camera": "Kamera",
     "gallery": "Galeri",
+    "enterIngredientsManually": "Tidak bisa dipindai? Masukkan bahan secara manual",
+    "noIngredientsDetected": "Tidak dapat mendeteksi daftar bahan pada foto tersebut. Coba lagi atau masukkan bahan secara manual di bawah.",
+    "analyzingIngredients": "Menganalisis bahan…",
     "skip": "Lewati dulu",
     "next": "Selanjutnya",
     "back": "Kembali",
@@ -1073,9 +1088,9 @@
       "website": "Situs Web"
     },
     "goldPartner": "MITRA GOLD",
-    "activeFilters": "目前篩選",
-    "verifiedLabelShort": "Verified",
-    "producedProducts": "Produced Products"
+    "activeFilters": "Filter aktif",
+    "verifiedLabelShort": "Terverifikasi",
+    "producedProducts": "Produk yang Diproduksi"
   },
   "points": {
     "title": "Tinjau Log Poin"

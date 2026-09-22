@@ -366,7 +366,7 @@
 
               <!-- Manual Next Button (If needed) -->
               <div class="ion-padding-top">
-                <ion-button expand="block" @click="nextStep" :disabled="!barcodeValid || !!detectedProduct" fill="outline" color="carrot">
+                <ion-button expand="block" @click="nextStep" :disabled="!barcodeValid || !!detectedProduct || autoAdvancePending" fill="outline" color="carrot">
                   {{ $t('addProduct.next') || 'Next' }}
                   <ion-icon slot="end" :icon="arrowForwardOutline" />
                 </ion-button>
@@ -392,6 +392,18 @@
                     {{ $t('addProduct.gallery') || 'Gallery' }}
                   </ion-button>
                 </div>
+
+                <!-- 🆘 Manual fallback — only offered once a scan has actually failed -->
+                <ion-button
+                    v-if="ocrFailedOnce && !manualIngredientsMode && !backPreview"
+                    fill="clear"
+                    color="medium"
+                    size="small"
+                    @click="enableManualIngredients"
+                >
+                  <ion-icon slot="start" :icon="createOutline" />
+                  {{ $t('addProduct.enterIngredientsManually') || "Can't scan it? Enter ingredients manually" }}
+                </ion-button>
 
               </div>
 
@@ -419,7 +431,7 @@
               </div>
 
               <!-- 🕌 Section 2: Halal Status (Segmented) -->
-              <div v-if="(backPreview || form.ingredients) && canScan" class="form-section ion-margin-top">
+              <div v-if="(backPreview || form.ingredients || manualIngredientsMode) && canScan" class="form-section ion-margin-top">
                 <ion-list-header>
                   <ion-label>{{ $t('addProduct.status') }} <ion-text color="danger">*</ion-text></ion-label>
                 </ion-list-header>
@@ -446,7 +458,7 @@
               </div>
 
               <!-- Locked status indicator when scan limit is reached -->
-              <div v-if="(backPreview || form.ingredients) && !canScan" class="form-section ion-margin-top">
+              <div v-if="(backPreview || form.ingredients || manualIngredientsMode) && !canScan" class="form-section ion-margin-top">
                 <ion-list-header>
                   <ion-label>{{ $t('addProduct.status') }} <ion-text color="danger">*</ion-text></ion-label>
                 </ion-list-header>
@@ -460,7 +472,7 @@
               </div>
 
               <!-- 🥬 Section 3: Ingredients & Analysis -->
-              <div v-if="backPreview || form.ingredients" class="form-section">
+              <div v-if="backPreview || form.ingredients || manualIngredientsMode" class="form-section">
                 <ion-list-header>
                   <ion-label>{{ $t('addProduct.sections.ingredients') || 'Ingredients & Analysis' }}</ion-label>
                 </ion-list-header>
@@ -490,7 +502,13 @@
                     <!-- Analysis Progress -->
                     <div class="analysis-indicators ion-padding-horizontal">
                        <ion-progress-bar v-if="ocrLoading" type="indeterminate" color="primary" class="mini-progress" />
-                       <ion-progress-bar v-if="checkingIngredients" type="indeterminate" color="primary" class="mini-progress" />
+                       <template v-if="checkingIngredients">
+                         <ion-progress-bar type="indeterminate" color="primary" class="mini-progress" />
+                         <p class="analyzing-label">
+                           <ion-spinner name="dots" color="primary" style="zoom: 0.6;"></ion-spinner>
+                           {{ $t('addProduct.analyzingIngredients') || 'Analyzing ingredients…' }}
+                         </p>
+                       </template>
                     </div>
 
                     <!-- Highlight Clips -->
@@ -824,7 +842,7 @@
              color="carrot" 
              style="flex: 1;" 
              @click="nextStep"
-             :disabled="currentStep === STEP_OCR && !backPreview"
+             :disabled="currentStep === STEP_OCR && !backPreview && !(manualIngredientsMode && form.ingredients.trim())"
             >
              {{ $t('addProduct.next') || 'Next' }}
              <ion-icon slot="end" :icon="arrowForwardOutline" />
@@ -1012,7 +1030,8 @@ import {
   chevronForwardOutline,
   lockClosedOutline,
   closeCircleOutline,
-  alertCircleOutline
+  alertCircleOutline,
+  createOutline
 } from 'ionicons/icons';
 import { computed, nextTick, onMounted, onUnmounted, ref, watch} from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -1069,6 +1088,15 @@ const STEP_OCR = 1
 const STEP_DETAILS = 2
 const currentStep = ref(STEP_BARCODE)
 const wizardStartTime = ref<number>(Date.now())
+
+// 🥬 Manual ingredients fallback — only offered after a first OCR attempt
+// fails, so users aren't shown "give up and type it" before even trying.
+const ocrFailedOnce = ref(false)
+const manualIngredientsMode = ref(false)
+
+function enableManualIngredients() {
+  manualIngredientsMode.value = true
+}
 
 const limitReached = ref(false)
 const todayScanCount = ref(0)
@@ -1187,6 +1215,10 @@ onIonViewWillEnter(async () => {
 /** ---------- State Variables Consistently Defined at Top ---------- */
 const barcodeValid = ref<null | boolean>(null)
 const barcodeMessage = ref<string>('') // feedback below input
+// True while a validated barcode is about to auto-advance the wizard (see the
+// watcher below) — keeps the manual "Next" button disabled during that
+// window so a tap doesn't fire nextStep() a second time and skip a step.
+const autoAdvancePending = ref(false)
 // New product, no barcode already known → open straight into the live camera
 // on first render, so the "Find Product" chooser screen never flashes on
 // screen behind it (it's still there as the fallback once the overlay closes).
@@ -1491,8 +1523,7 @@ const {
   productName,
   progress,
   progressLabel,
-  setAspectRatio,
-  recheckHighlightsSmart
+  setAspectRatio
 } = useCropperOcr({
   allHighlights,
   blacklistPatterns,
@@ -1919,6 +1950,7 @@ watch(() => form.value.barcode, async (newBarcode) => {
     barcodeValid.value = null;
     barcodeMessage.value = "";
     detectedProduct.value = null;
+    autoAdvancePending.value = false;
     return;
   }
 
@@ -1935,6 +1967,7 @@ watch(() => form.value.barcode, async (newBarcode) => {
       barcodeMessage.value = "❌ Invalid barcode format";
       detectedProduct.value = null;
       barcodeLoading.value = false;
+      autoAdvancePending.value = false;
       return;
     }
 
@@ -1954,6 +1987,7 @@ watch(() => form.value.barcode, async (newBarcode) => {
           photo_front_url: existingProduct.photo_front_url,
         };
         barcodeLoading.value = false;
+        autoAdvancePending.value = false;
         return;
       }
       detectedProduct.value = null;
@@ -1966,7 +2000,11 @@ watch(() => form.value.barcode, async (newBarcode) => {
     // Auto-advance to next step
     if (currentStep.value === STEP_BARCODE) {
       console.log("🚀 Auto-advancing to next step...");
-      setTimeout(() => { nextStep(); }, 500);
+      autoAdvancePending.value = true
+      setTimeout(() => {
+        autoAdvancePending.value = false
+        nextStep();
+      }, 500);
     }
   } catch (err) {
     console.error("❌ Barcode validation error:", err);
@@ -2020,15 +2058,75 @@ function onProductNameInput(ev: Event) {
   console.log("✏️ Product name typed:", target.value)
 }
 
-function handleIngredientsInput(ev: Event) {
-  const target = ev.target as HTMLTextAreaElement
-  console.log("🥬 Ingredients input:", target.value)
+let ingredientsInputDebounce: ReturnType<typeof setTimeout> | null = null
+
+function handleIngredientsInput() {
+  // ⏳ Flip the "analyzing" indicator on immediately so typing gets instant
+  // feedback, even though the actual match is debounced below.
+  checkingIngredients.value = true
+
+  // 🔴 Live-analyze as the user types, instead of waiting for blur — debounced
+  // so we're not re-matching against the highlight list on every keystroke.
+  if (ingredientsInputDebounce) clearTimeout(ingredientsInputDebounce)
+  ingredientsInputDebounce = setTimeout(() => {
+    recheckHighlights()
+  }, 400)
 }
 
-async function recheckHighlights() {
+// This field only ever holds English text (typed manually, or the translated
+// OCR result) — unlike ScanIngredientsView.vue it has no separate Chinese
+// field. The shared useOcrPipeline recheck helpers key their matching mode
+// off a single `detectedLanguage` ref though, which can still be left as
+// 'chinese'/'mixed' from an earlier scan; re-running them here to reflect a
+// manual edit could silently switch matching into the wrong mode. So this
+// view does its own lightweight, always-English match against the cached
+// highlight list instead of calling back into the OCR pipeline.
+function recheckHighlights() {
   checkingIngredients.value = true
   try {
-    await recheckHighlightsSmart()
+    const raw = form.value.ingredients.trim()
+    if (!raw || !allHighlights.value.length) {
+      ingredientHighlights.value = []
+      return
+    }
+
+    const parts = raw.split(/\s*,\s*/).map(x => x.trim()).filter(Boolean)
+    const highlights = [...allHighlights.value].sort((a, b) => b.keyword.length - a.keyword.length)
+    const found: IngredientHighlight[] = []
+
+    for (const part of parts) {
+      const normalized = part.replace(/[^a-z0-9]/gi, '').toLowerCase()
+      if (!normalized) continue
+
+      for (const h of highlights) {
+        const variants = h.keyword?.split('|').map(v => v.trim()) ?? []
+        for (const variant of variants) {
+          const normVariant = variant.replace(/[^a-z0-9]/gi, '').toLowerCase()
+          if (!normVariant) continue
+
+          let isMatch = false
+          try {
+            if (/[[\]|\\]/.test(variant)) {
+              isMatch = new RegExp(variant, 'i').test(normalized)
+            } else {
+              isMatch = normalized.includes(normVariant)
+            }
+          } catch (e) {
+            console.warn('⚠️ Invalid regex in keyword:', variant, e)
+          }
+
+          if (isMatch && !found.some(f => f.matchedVariant?.includes(normVariant))) {
+            found.push({ ...h, matchedVariant: variant })
+          }
+        }
+      }
+    }
+
+    ingredientHighlights.value = found
+
+    const hasHaram = found.some(h => extractIonColor(h.color) === 'danger')
+    const hasSyubhah = found.some(h => extractIonColor(h.color) === 'warning')
+    autoStatus.value = hasHaram ? 'Haram' : hasSyubhah ? 'Syubhah' : 'Muslim-friendly'
   } finally {
     checkingIngredients.value = false
   }
@@ -2215,6 +2313,7 @@ onUnmounted(() => {
   // onUnmounted when this view tears down — nothing to do here for it.
   if (cropperSrc.value) URL.revokeObjectURL(cropperSrc.value)
   if (croppedPreviewUrl.value) URL.revokeObjectURL(croppedPreviewUrl.value)
+  if (ingredientsInputDebounce) clearTimeout(ingredientsInputDebounce)
 })
 
 async function takeFrontPicture() {
@@ -2323,8 +2422,15 @@ function applyQuickDescription(text: string) {
 // all lowercase. Title-cases each word while leaving acronyms like "MSG" or
 // "E621" alone, so users don't have to retype them by hand.
 function toTitleCase(text: string): string {
+  // If the whole string is shouted in caps (e.g. "UNKOWN PRODUCT"), there's no
+  // acronym to protect — title-case every word. Only preserve individual
+  // all-caps words (like "MSG" or "E621") when they sit inside otherwise
+  // mixed-case text, where they're more likely deliberate acronyms.
+  const letters = text.replace(/[^A-Za-zÀ-ÖØ-öø-ÿ]/g, '')
+  const isAllCaps = letters.length > 1 && letters === letters.toUpperCase()
+
   return text.replace(/[A-Za-zÀ-ÖØ-öø-ÿ0-9]+(?:['’][A-Za-z]+)?/g, (word) => {
-    if (word.length > 1 && word === word.toUpperCase() && /[A-Z]/.test(word)) {
+    if (!isAllCaps && word.length > 1 && word === word.toUpperCase() && /[A-Z]/.test(word)) {
       return word
     }
     return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
@@ -2437,9 +2543,20 @@ async function handleConfirmCrop() {
     if (reflectionElapsed < minReflectionTime) {
       await new Promise(r => setTimeout(r, minReflectionTime - reflectionElapsed))
     }
-    
+
+    // 🛡️ A real back photo may have been captured even when no ingredients
+    // list could actually be read from it (e.g. a screenshot, or the wrong
+    // side of the package) — the pipeline leaves both text fields empty in
+    // that case. Don't let that silently pass as a successful scan.
+    if (!ingredientsText.value?.trim() && !ingredientsTextZh.value?.trim()) {
+      ocrFailedOnce.value = true
+      setError(t('addProduct.noIngredientsDetected') || "Couldn't detect an ingredients list in that photo. Try again or enter the ingredients manually below.")
+      return
+    }
+
     showOcrToast.value = true
   } catch (err: any) {
+    ocrFailedOnce.value = true
     setError(err.message || 'OCR failed')
   }
 }
@@ -2485,7 +2602,7 @@ async function handleSubmit() {
     if (!form.value.description.trim()) return setError('Description is required.')
 
     if (!props.editProduct && !frontFile.value) return setError('Front image is required.')
-    if (!props.editProduct && !backFile.value) return setError('Back image is required.')
+    if (!props.editProduct && !manualIngredientsMode.value && !backFile.value) return setError('Back image is required.')
 
     const { store_ids, ...productData } = form.value
 
@@ -2702,6 +2819,8 @@ async function handleSubmit() {
       rawChineseOcr.value = ''
       autoStatusApplied.value = false
       userTouchedDescription.value = false
+      ocrFailedOnce.value = false
+      manualIngredientsMode.value = false
       currentStep.value = STEP_BARCODE
       scrollToTop()
 
@@ -2865,6 +2984,15 @@ ion-item {
   height: 4px;
   border-radius: 2px;
   margin-top: 4px;
+}
+
+.analyzing-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: var(--ion-color-primary);
 }
 
 .highlights-preview {

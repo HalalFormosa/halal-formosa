@@ -3,6 +3,7 @@
     <ion-header class="ion-no-border immersive-header" :class="{ 'is-scrolled': isScrolled, 'has-ads': isNative && showAds }">
        <!-- Native (mobile) AdMob banner -->
        <div v-if="isNative && showAds" id="ad-space-place-detail" :style="{ height: '65px', paddingTop: 'var(--ion-safe-area-top, 0)' }"></div>
+       <HouseAdCard v-if="showAds && (!isNative || failedAdSpaceId === 'ad-space-place-detail')" />
        <app-header
            :title="$t('explore.details.title')"
            show-back
@@ -821,6 +822,8 @@ import {
   alertController, toastController
 } from '@ionic/vue'
 import { Capacitor } from '@capacitor/core'
+import HouseAdCard from '@/components/ads/HouseAdCard.vue'
+import { failedAdSpaceId } from '@/composables/useAdFallback'
 import { isDonor } from "@/composables/useSubscriptionStatus"
 import { scheduleBannerUpdate } from '@/plugins/admob'
 import {ref, onMounted, computed, nextTick, watch} from 'vue'

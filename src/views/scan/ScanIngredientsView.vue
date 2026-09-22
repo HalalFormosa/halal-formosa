@@ -3,6 +3,7 @@
     <ion-header :class="{ 'has-ads': isNative && !isDonor && currentStep === STEP_RESULTS }">
       <!-- Native (mobile) AdMob banner - shown only on results step -->
       <div v-if="isNative && !isDonor && currentStep === STEP_RESULTS" id="ad-space-scan-results" :style="{ height: '65px', paddingTop: 'var(--ion-safe-area-top, 0)' }"></div>
+      <HouseAdCard v-if="!isDonor && currentStep === STEP_RESULTS && (!isNative || failedAdSpaceId === 'ad-space-scan-results')" />
 
       <app-header
           :title="$t('scanIngredients.title')"
@@ -717,6 +718,8 @@ dayjs.extend(relativeTime)
 
 import { showRewardedAd } from '@/lib/admobReward'
 import { Capacitor } from '@capacitor/core'
+import HouseAdCard from '@/components/ads/HouseAdCard.vue'
+import { failedAdSpaceId } from '@/composables/useAdFallback'
 import { ActivityLogService } from "@/services/ActivityLogService";
 import { isNetworkError } from '@/utils/offlineFeedback'
 

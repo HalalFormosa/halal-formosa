@@ -385,7 +385,6 @@ ion-card {
 }
 
 ion-card:active {
-    transform: scale(0.99);
     box-shadow: var(--card-shadow-hover);
 }
 
@@ -637,7 +636,15 @@ ion-card:has(> ion-card-header .card-header-row) > ion-card-content {
     gap: 12px;
     max-width: 420px;
     width: 100%;
-    animation: rewardToastSlideDown 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    overflow: hidden;
+    /* Google Play Games-style reveal: the avatar/icon circle appears
+       first, then the pill grows out to its full width, then the body
+       text fades in once there's room for it. Only plays once per mount
+       (openReward() re-using an already-open toast just patches its
+       content, it doesn't remount this element, so this never replays
+       for consecutive grants in the same visible session). */
+    animation: rewardToastSlideDown 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards,
+               rewardToastExpand 0.45s 0.05s cubic-bezier(0.16, 1, 0.3, 1) both;
     cursor: pointer;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
@@ -661,6 +668,44 @@ ion-card:has(> ion-card-header .card-header-row) > ion-card-content {
     to {
         transform: translateY(0) scale(1);
         opacity: 1;
+    }
+}
+
+@keyframes rewardToastExpand {
+    /* ~58px shows just the avatar/icon circle + its left padding; the
+       body is clipped by overflow:hidden until the pill grows past it. */
+    from { width: 58px; }
+    to { width: 100%; }
+}
+
+/* Closing animation: the exact reverse of the opening reveal above —
+   the pill first collapses back down to just the avatar/icon circle,
+   then that circle slides up and fades out. Driven by Vue's <Transition
+   name="reward-toast">, which holds the DOM in place until this
+   animation finishes. */
+.reward-toast-leave-active {
+    pointer-events: none;
+}
+
+.reward-toast-leave-active .reward-toast {
+    animation: rewardToastCollapse 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes rewardToastCollapse {
+    0% {
+        width: 100%;
+        transform: translateY(0) scale(1);
+        opacity: 1;
+    }
+    55% {
+        width: 58px;
+        transform: translateY(0) scale(1);
+        opacity: 1;
+    }
+    100% {
+        width: 58px;
+        transform: translateY(-40px) scale(0.95);
+        opacity: 0;
     }
 }
 
@@ -696,6 +741,19 @@ ion-card:has(> ion-card-header .card-header-row) > ion-card-content {
     display: flex;
     flex-direction: column;
     gap: 3px;
+    opacity: 0;
+    animation: rewardToastBodyReveal 0.3s ease-out 0.3s both;
+}
+
+@keyframes rewardToastBodyReveal {
+    from {
+        opacity: 0;
+        transform: translateX(-6px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
 }
 
 .reward-toast-header {

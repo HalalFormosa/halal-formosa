@@ -426,6 +426,16 @@
               </ion-label>
             </ion-item>
 
+            <ion-item v-if="userEmail" button @click="$router.push('/profile/ingredient-encyclopedia')">
+              <div class="icon-box" slot="start">
+                <ion-icon :icon="icons.libraryOutline" />
+              </div>
+              <ion-label style="display: flex; align-items: center; gap: 8px;">
+                <span>{{ $t('profile.ingredientEncyclopedia') }}</span>
+                <span class="activity-pro-badge">PRO</span>
+              </ion-label>
+            </ion-item>
+
             <ion-item v-if="userEmail" button @click="$router.push('/profile/achievements')">
               <div class="icon-box" slot="start">
                 <ion-icon :icon="icons.trophyOutline" />
@@ -767,12 +777,7 @@
         <!-- Dedicated Contributor Application Modal -->
         <ion-modal :is-open="showContributorAppModal" @didDismiss="showContributorAppModal = false">
           <ion-header>
-            <ion-toolbar color="carrot">
-              <ion-title>Become a Contributor</ion-title>
-              <ion-buttons slot="end">
-                <ion-button @click="showContributorAppModal = false">Close</ion-button>
-              </ion-buttons>
-            </ion-toolbar>
+            <ModalHeader title="Become a Contributor" @close="showContributorAppModal = false" />
           </ion-header>
           
           <ion-content class="ion-padding">
@@ -976,6 +981,7 @@ import {
   alertController
 } from "@ionic/vue";
 import AppHeader from "@/components/AppHeader.vue";
+import ModalHeader from "@/components/ModalHeader.vue";
 import CosmeticBadge from "@/components/CosmeticBadge.vue";
 import { useBadgeCosmetics } from "@/composables/useBadgeCosmetics";
 
@@ -1014,7 +1020,8 @@ import {
   trophyOutline,
   shieldCheckmarkOutline,
   linkOutline,
-  diamondOutline
+  diamondOutline,
+  libraryOutline
 } from "ionicons/icons";
 
 // ✅ Composables
@@ -1090,7 +1097,8 @@ const icons = {
   trophyOutline,
   shieldCheckmarkOutline,
   linkOutline,
-  diamondOutline
+  diamondOutline,
+  libraryOutline
 }
 
 // @ts-expect-error – injected global

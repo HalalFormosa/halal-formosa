@@ -92,7 +92,7 @@
     </ion-card-content>
 
     <!-- Details Modal -->
-    <ion-modal :is-open="showModal" @didDismiss="showModal = false" :initial-breakpoint="0.75" :breakpoints="[0, 0.75, 1]">
+    <ion-modal :is-open="showModal" @didDismiss="showModal = false" :initial-breakpoint="0.75" :breakpoints="[0, 0.75, 0.95]" class="missions-modal">
       <ion-header>
         <ion-toolbar>
           <ion-title>{{ $t('dailyMissions.title') }}</ion-title>
@@ -252,6 +252,10 @@ onIonViewWillEnter(() => {
 </script>
 
 <style scoped>
+.missions-modal {
+  --border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+}
+
 .mission-icon-container {
   width: 100%;
   height: 70px;

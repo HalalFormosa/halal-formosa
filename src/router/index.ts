@@ -64,7 +64,7 @@ const routes: Array<RouteRecordRaw> = [
         path: '/reels',
         name: 'FullReels',
         component: () => import('@/views/home/FullReelsView.vue'),
-        meta: { noAds: true }
+        meta: { noAds: true, noTabs: true }
     },
     {
         path: '/analytics/:type',
@@ -96,6 +96,19 @@ const routes: Array<RouteRecordRaw> = [
         path: '/profile/scan-history',
         name: 'ScanHistory',
         component: () => import('@/views/profile/ScanHistoryView.vue'),
+        meta: { requiresAuth: true, noTabs: true, noAds: true }
+    },
+    {
+        path: '/profile/ingredient-encyclopedia',
+        name: 'IngredientEncyclopedia',
+        component: () => import('@/views/profile/IngredientEncyclopediaView.vue'),
+        meta: { requiresAuth: true, noTabs: true, noAds: true }
+    },
+    {
+        path: '/profile/ingredient-encyclopedia/:slug',
+        name: 'IngredientArticleDetail',
+        component: () => import('@/views/profile/IngredientArticleDetailView.vue'),
+        props: true,
         meta: { requiresAuth: true, noTabs: true, noAds: true }
     },
     {

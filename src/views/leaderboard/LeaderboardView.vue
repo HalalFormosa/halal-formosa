@@ -682,6 +682,9 @@ async function showPrivateInfoAlert(ev?: Event) {
 
 /* ---------------- Cosmetic Helpers ---------------- */
 function getCosmeticByCategory(user: any, category: string) {
+  if (category === 'background' || category === 'nameplate') {
+    return user?.equipped_cosmetics?.find((c: any) => c.category === 'background' || c.category === 'nameplate')
+  }
   return user?.equipped_cosmetics?.find((c: any) => c.category === category)
 }
 
@@ -713,9 +716,17 @@ function getLeaderboardRowStyle(user: any) {
     styles['--background'] = np.css_value.background
     styles.background = np.css_value.background
     
-    const isLight = isBackgroundLight(np)
-    const textColor = isLight ? '#121212' : '#ffffff'
-    const subTextColor = isLight ? '#444444' : 'rgba(255, 255, 255, 0.7)'
+    let textColor = ''
+    let subTextColor = ''
+    
+    if (np.css_value.color) {
+      textColor = np.css_value.color
+      subTextColor = np.css_value.color
+    } else {
+      const isLight = isBackgroundLight(np)
+      textColor = isLight ? '#121212' : '#ffffff'
+      subTextColor = isLight ? '#444444' : 'rgba(255, 255, 255, 0.7)'
+    }
     
     styles['--color'] = textColor
     styles.color = textColor
@@ -913,7 +924,8 @@ ion-searchbar {
 .leaderboard-item::part(native) {
   overflow: visible !important;
   border-radius: var(--radius-lg) !important;
-  background: var(--card-bg);
+  background: var(--background, var(--card-bg)) !important;
+  color: var(--color, var(--text-main, var(--ion-text-color))) !important;
   border: 1px solid var(--card-border);
   box-shadow: var(--card-shadow);
   transition: box-shadow 0.2s ease, transform 0.15s ease;

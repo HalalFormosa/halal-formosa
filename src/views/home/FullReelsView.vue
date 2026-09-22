@@ -4,8 +4,8 @@
     <ion-header class="ion-no-border floating-header">
       <ion-toolbar class="transparent-toolbar">
         <ion-buttons slot="start">
-          <div class="back-button-container">
-            <ion-back-button default-href="/home" :icon="chevronBack" text=""></ion-back-button>
+          <div class="back-button-container" @click="goBack">
+            <ion-icon :icon="chevronBack"></ion-icon>
           </div>
         </ion-buttons>
         <ion-title class="header-title">{{ $t('home.whatsNew') || "What's New" }}</ion-title>
@@ -207,9 +207,10 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, reactive } from 'vue'
-import { 
-  IonPage, IonContent, IonHeader, IonToolbar, IonTitle, 
-  IonButtons, IonBackButton, IonIcon, IonAvatar, IonButton, IonSpinner 
+import { useRouter } from 'vue-router'
+import {
+  IonPage, IonContent, IonHeader, IonToolbar, IonTitle,
+  IonButtons, IonIcon, IonAvatar, IonButton, IonSpinner
 } from '@ionic/vue'
 import { 
   logoInstagram, logoTiktok, chevronBack, lockClosedOutline, 
@@ -223,6 +224,16 @@ import { ActivityLogService } from '@/services/ActivityLogService'
 import { SocialMediaService } from '@/services/SocialMediaService'
 
 dayjs.extend(relativeTime)
+
+const router = useRouter()
+
+const goBack = () => {
+  if (window.history.state?.back) {
+    router.back()
+  } else {
+    router.replace('/home')
+  }
+}
 
 const combinedReels = ref<any[]>([])
 const loading = ref(true)
@@ -448,13 +459,17 @@ onUnmounted(() => {
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.back-button-container ion-back-button {
-  --color: #000;
-  margin-right: -2px; /* Visual center adjustment */
+.back-button-container {
+  cursor: pointer;
 }
 
-.ion-palette-dark .back-button-container ion-back-button {
-  --color: #fff;
+.back-button-container ion-icon {
+  font-size: 22px;
+  color: #000;
+}
+
+.ion-palette-dark .back-button-container ion-icon {
+  color: #fff;
 }
 
 .header-title {

@@ -3,6 +3,10 @@
     <ion-header class="explore-header" :class="{ 'is-native': isNative && !isDonor, 'solid-bg': viewMode === 'list' }">
       <!-- Native AdMob banner -->
       <div v-if="isNative && !isDonor" id="ad-space-explore" style="height:65px;"></div>
+      <!-- Floating fallback banner only in map mode — in list mode the
+           fallback instead becomes recurring native cards woven into the
+           location list itself (see the list-mode v-for below). -->
+      <HouseAdCard v-if="!isDonor && viewMode === 'map' && (!isNative || failedAdSpaceId === 'ad-space-explore')" variant="floating" />
 
       <ion-toolbar class="header-search-toolbar">
         <!-- Search & Add Row -->
@@ -57,7 +61,7 @@
                   class="header-btn filter-toggle-btn"
                   color="carrot"
               >
-                <ion-icon :icon="funnelOutline"/>
+                <ion-icon :icon="optionsOutline"/>
               </ion-button>
               <!-- Sibling of ion-button, not a child — ion-button clips its
                    own content to its rounded shape, which was cutting the
@@ -270,7 +274,7 @@
     <transition name="fade-slide">
       <div v-if="viewMode === 'list'" class="list-view-overlay" :style="{ paddingTop: listPaddingTop }">
         <div class="list-container">
-          <div class="list-header">
+          <div v-if="!isSmallScreen" class="list-header">
             <div class="list-sort-container">
               <ion-button
                   class="sort-btn-simple"
@@ -477,9 +481,8 @@
             </Transition>
             </div>
 
+            <template v-for="(place, placeIndex) in listLocations.slice(1)" :key="place.id">
             <div
-              v-for="place in listLocations.slice(1)"
-              :key="place.id"
               class="modern-location-card list-mode-card"
               :class="['tier-' + String(place.partner_tier || 'basic').toLowerCase()]"
               @click="goToDetail(place.id)"
@@ -546,6 +549,15 @@
                 <div v-if="['gold', 'silver'].includes(String(place.partner_tier || '').toLowerCase())" class="premium-flare"></div>
               </div>
             </div>
+
+            <!-- Recurring native sponsored card, woven into the location
+                 list every HOUSE_AD_NATIVE_INTERVAL places. -->
+            <HouseAdNativeCard
+                v-if="!isDonor && (placeIndex + 1) % HOUSE_AD_NATIVE_INTERVAL === 0"
+                mode="location"
+                :slot="Math.floor(placeIndex / HOUSE_AD_NATIVE_INTERVAL)"
+            />
+            </template>
 
             <div v-if="boundsFilteredLocations.length === 0 && !loading" class="empty-state">
               <ion-icon :icon="informationCircleOutline" />
@@ -896,10 +908,14 @@
             :loadingCategories="loadingCategories"
             :categoryIconMap="categoryIconMap"
             :categoryImageMap="categoryImageMap"
+            :sortBy="sortBy"
+            :canShowForYouSort="canShowForYouSort"
+            :isDonor="isDonor"
             @toggleCategory="toggleCategory"
             @toggleTag="(slug) => { activeTag = (activeTag === slug ? null : slug); focusedPlaceId = null; }"
             @toggleDelivery="hasDeliveryFilter = !hasDeliveryFilter"
             @clearFilters="() => { activeCategoryIds = []; activeTag = null; hasDeliveryFilter = false; focusedPlaceId = null; }"
+            @update:sortBy="sortBy = $event"
         />
       </ion-content>
       <ion-footer class="ion-no-border filter-modal-footer">
@@ -950,7 +966,7 @@ import {
   layersOutline, listOutline, gridOutline, mapOutline, sparkles, shieldCheckmarkOutline, checkmarkCircle,
   trendingUpOutline, flameOutline, timeOutline, locationOutline, filterOutline,
   eyeOutline, shareSocialOutline, navigateOutline, closeCircleOutline,
-  calendarOutline, pricetagOutline, school, funnelOutline,
+  calendarOutline, pricetagOutline, school, optionsOutline,
   bookmarkOutline, bookmark,
   sparklesOutline, bicycleOutline
 } from 'ionicons/icons'
@@ -960,6 +976,9 @@ import {useRouter} from 'vue-router'
 import ExploreFilterContent from '@/components/ExploreFilterContent.vue'
 import mapsLoader from '@/plugins/googleMapsLoader'
 import {Capacitor} from '@capacitor/core'
+import HouseAdCard from '@/components/ads/HouseAdCard.vue'
+import HouseAdNativeCard from '@/components/ads/HouseAdNativeCard.vue'
+import { failedAdSpaceId } from '@/composables/useAdFallback'
 import {Geolocation} from '@capacitor/geolocation'
 import { StatusBar, Style } from '@capacitor/status-bar'
 import {supabase} from '@/plugins/supabaseClient'
@@ -1012,6 +1031,9 @@ const focusedPlaceId = ref<number | null>(null)
 const partnerRadiusLocations = ref<Place[]>([])
 
 const viewMode = ref<'map' | 'list'>('map')
+// How often a native sponsored card appears in the list-mode location feed
+// (every Nth place), replacing the floating banner fallback used in map mode.
+const HOUSE_AD_NATIVE_INTERVAL = 6
 const activeTag = ref<string | null>(null)
 const activeCategoryIds = ref<number[]>([])
 const hasDeliveryFilter = ref(false)
@@ -3953,10 +3975,6 @@ button.gm-ui-hover-effect > span {
   background: transparent !important;
   box-shadow: none !important;
   transition: background 0.2s ease, border-bottom 0.2s ease;
-  /* Status-bar clearance is already handled by Ionic's
-     `ion-header ion-toolbar:first-of-type` safe-area padding.
-     Only add a small gap here so the search bar sits just under it. */
-  padding-top: 8px;
 }
 
 .explore-header.solid-bg {
@@ -3967,9 +3985,15 @@ button.gm-ui-hover-effect > span {
 .header-search-toolbar {
   --background: transparent !important;
   --border-width: 0 !important;
-  
+
   background: transparent !important;
   min-height: 70px;
+  /* Status-bar clearance is already handled by Ionic's
+     `ion-header ion-toolbar:first-of-type` safe-area padding.
+     This just adds a small gap so the search bar sits a bit further below
+     it — moved here (off .explore-header) so it no longer pushes the ad
+     slot / HouseAdCard above it down from the true top of the screen. */
+  margin-top: 8px;
 }
 
 .search-row-container {

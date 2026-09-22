@@ -2,7 +2,11 @@
   <ion-page>
     <ion-header>
       <!-- Native (mobile) banner ad — now handled by LevelPlay's own
-           TOP + isOverlap:false layout push, no placeholder div needed. -->
+           TOP + isOverlap:false layout push, no placeholder div needed.
+           No house-ad fallback banner here — when there's no real ad, the
+           sponsored slot moves into the product feed itself as recurring
+           native cards (see HouseAdNativeCard below) instead of an empty
+           banner-shaped placeholder. -->
 
       <app-header
           :title="
@@ -432,7 +436,7 @@
                 </a>
               </div>
 
-              <template v-for="product in displayedProducts" :key="product.barcode">
+              <template v-for="(product, productIndex) in displayedProducts" :key="product.barcode">
                 <!-- LIST MODE -->
                 <div
                     v-if="viewMode === 'list'"
@@ -538,6 +542,15 @@
                   <!-- Premium Flare for Gold/Silver -->
                   <div v-if="['gold', 'silver'].includes(String(product.partner_tier || '').toLowerCase())" class="premium-flare"></div>
                 </div>
+
+                <!-- Recurring native sponsored card, woven into the feed
+                     every HOUSE_AD_NATIVE_INTERVAL products instead of a
+                     separate banner slot. -->
+                <HouseAdNativeCard
+                    v-if="!isDonor && (productIndex + 1) % HOUSE_AD_NATIVE_INTERVAL === 0"
+                    :mode="viewMode"
+                    :slot="Math.floor(productIndex / HOUSE_AD_NATIVE_INTERVAL)"
+                />
               </template>
             </div>
           </template>
@@ -647,6 +660,7 @@ import FilterContent from '@/components/FilterContent.vue'
 import StoreLogoBar from "@/components/StoreLogoBar.vue";
 import {ActivityLogService} from "@/services/ActivityLogService";
 import { showLevelPlayBanner, destroyLevelPlayBanner } from '@/lib/levelplay'
+import HouseAdNativeCard from '@/components/ads/HouseAdNativeCard.vue'
 import {isDonor, refreshSubscriptionStatus} from "@/composables/useSubscriptionStatus";
 import {Purchases} from "@revenuecat/purchases-capacitor";
 import {PAYWALL_RESULT, RevenueCatUI} from "@revenuecat/purchases-capacitor-ui";
@@ -1042,6 +1056,10 @@ function dismissForYouInfo() {
 }
 
 const { t } = useI18n()
+
+// How often a native sponsored card appears in the product feed (every Nth
+// product), replacing the old fixed top-banner house-ad slot on this view.
+const HOUSE_AD_NATIVE_INTERVAL = 6
 
 /* ---------------- Product Groups ---------------- */
 const goldProducts = computed(() => {
@@ -1744,7 +1762,7 @@ onIonViewDidEnter(async () => {
     const levelPlayAdId = Capacitor.getPlatform() === 'ios'
       ? import.meta.env.VITE_LEVELPLAY_IOS_SEARCH_BANNER_ID
       : import.meta.env.VITE_LEVELPLAY_ANDROID_SEARCH_BANNER_ID
-    showLevelPlayBanner(levelPlayAdId).catch((e) => console.warn('LevelPlay banner skipped/failed:', e))
+    showLevelPlayBanner(levelPlayAdId, 'ad-space-search').catch((e) => console.warn('LevelPlay banner skipped/failed:', e))
   }
 });
 

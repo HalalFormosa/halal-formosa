@@ -4,7 +4,9 @@ import {
   IonIcon, IonChip, IonLabel, IonSkeletonText
 } from '@ionic/vue'
 import {
-  pricetagOutline, closeCircleOutline, school, sparkles, businessOutline, bicycleOutline
+  pricetagOutline, closeCircleOutline, school, sparkles, businessOutline, bicycleOutline,
+  swapVerticalOutline, locationOutline, timeOutline, trendingUpOutline, flameOutline,
+  sparklesOutline, lockClosedOutline
 } from 'ionicons/icons'
 
 interface Category {
@@ -22,7 +24,9 @@ interface Campus {
   slug: string
 }
 
-const props = defineProps<{
+type SortOption = 'nearest' | 'recent' | 'popular' | 'trending' | 'for_you'
+
+const props = withDefaults(defineProps<{
   categories: Category[]
   activeCategoryIds: number[]
   campusPartners: Campus[]
@@ -31,14 +35,30 @@ const props = defineProps<{
   loadingCategories: boolean
   categoryIconMap: Record<string, any>
   categoryImageMap: Record<string, string>
-}>()
+  sortBy?: SortOption
+  canShowForYouSort?: boolean
+  isDonor?: boolean
+}>(), {
+  sortBy: 'recent',
+  canShowForYouSort: false,
+  isDonor: false
+})
 
 defineEmits<{
   (e: 'toggleCategory', cat: Category): void
   (e: 'toggleTag', slug: string): void
   (e: 'toggleDelivery'): void
   (e: 'clearFilters'): void
+  (e: 'update:sortBy', value: SortOption): void
 }>()
+
+const sortOptions: { key: SortOption; icon: string; labelKey: string }[] = [
+  { key: 'nearest', icon: locationOutline, labelKey: 'search.sortNearest' },
+  { key: 'recent', icon: timeOutline, labelKey: 'search.sortRecent' },
+  { key: 'trending', icon: trendingUpOutline, labelKey: 'search.sortTrending' },
+  { key: 'popular', icon: flameOutline, labelKey: 'search.sortViews' },
+  { key: 'for_you', icon: sparklesOutline, labelKey: 'search.sortForYou' },
+]
 
 const GOV_PARTNER_CATEGORY_NAMES = ['Halal Indonesian Restaurant', 'Muslim-friendly Indonesian Restaurant']
 
@@ -55,6 +75,32 @@ const regularCategories = computed(() =>
 
 <template>
   <div class="filter-modal-inner">
+    <!-- Sort -->
+    <div class="filter-section">
+      <h3 class="filter-section-title">
+        <ion-icon :icon="swapVerticalOutline" />
+        {{ $t('search.filters.sort') || 'Sort' }}
+      </h3>
+      <div class="category-bar">
+        <template v-for="opt in sortOptions" :key="opt.key">
+          <ion-chip
+              v-if="opt.key !== 'for_you' || canShowForYouSort"
+              class="modern-category-chip"
+              :class="{ active: sortBy === opt.key, 'is-locked': opt.key === 'for_you' && !isDonor }"
+              :style="{
+                '--cat-color': 'var(--ion-color-carrot)',
+                '--cat-bg': sortBy === opt.key ? 'var(--ion-color-carrot)' : 'transparent'
+              }"
+              @click="$emit('update:sortBy', opt.key)"
+          >
+            <ion-icon :icon="opt.icon" class="category-icon" />
+            <ion-label>{{ $t(opt.labelKey) }}</ion-label>
+            <ion-icon v-if="opt.key === 'for_you' && !isDonor" :icon="lockClosedOutline" class="lock-icon" />
+          </ion-chip>
+        </template>
+      </div>
+    </div>
+
     <!-- Active Tags Row (Show only if not a campus partner tag) -->
     <div v-if="activeTag && !campusPartners.some(c => c.slug === activeTag)" class="filter-section">
       <h3 class="filter-section-title">
@@ -271,6 +317,18 @@ const regularCategories = computed(() =>
 }
 
 .category-emoji, .category-icon { margin-right: 6px; font-size: 1.1rem; }
+
+.modern-category-chip.is-locked {
+  opacity: 0.75;
+}
+
+.modern-category-chip .lock-icon {
+  margin-left: 6px;
+  margin-right: 0;
+  font-size: 0.85rem;
+  opacity: 0.7;
+}
+
 .category-image {
   width: 18px;
   height: 18px;

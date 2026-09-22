@@ -10,7 +10,10 @@ const REFRESH_TIMEOUT_MS = 6000;
 
 // Initialize from cache if available to prevent UI flicker/ads on bad internet
 const cachedStatus = localStorage.getItem(SUB_CACHE_KEY) === "true";
-export const isDonor = ref(import.meta.env.DEV ? true : cachedStatus);
+// Ads are ON by default in both Production and Development for non-pro/logged-out users.
+// Set VITE_DISABLE_ADS=true in .env if you want to suppress ads during local dev work.
+const disableDevAds = import.meta.env.DEV && (import.meta.env.VITE_DISABLE_ADS === "true" || import.meta.env.VITE_DISABLE_ADS === "1");
+export const isDonor = ref(disableDevAds ? true : cachedStatus);
 export const lastSyncedEntitlement = ref<string | null>(null);
 
 export async function refreshSubscriptionStatus(options?: {

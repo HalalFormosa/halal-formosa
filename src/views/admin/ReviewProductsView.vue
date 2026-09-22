@@ -630,12 +630,7 @@
           style="--border-radius: 16px;"
         >
           <ion-header>
-            <ion-toolbar color="carrot">
-              <ion-title>{{ $t('addProduct.selectCategory') || 'Select Category' }}</ion-title>
-              <ion-buttons slot="end">
-                <ion-button @click="categoryModalOpen = false">{{ $t('common.cancel') || 'Cancel' }}</ion-button>
-              </ion-buttons>
-            </ion-toolbar>
+            <ModalHeader :title="$t('addProduct.selectCategory') || 'Select Category'" @close="categoryModalOpen = false" />
             <ion-toolbar>
               <ion-searchbar
                 v-model="categoryQuery"
@@ -813,6 +808,7 @@ import {
   alertCircleOutline
 } from 'ionicons/icons'
 import AppHeader from '@/components/AppHeader.vue'
+import ModalHeader from '@/components/ModalHeader.vue'
 import StoreLogoBar from '@/components/StoreLogoBar.vue'
 import { Swiper, SwiperSlide } from 'swiper/vue'
 import { Pagination, Zoom } from 'swiper/modules'

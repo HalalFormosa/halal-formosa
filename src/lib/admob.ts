@@ -1,9 +1,35 @@
 // src/lib/admob.ts
-import { AdMob, BannerAdSize, BannerAdPosition } from '@capacitor-community/admob'
+import { AdMob, BannerAdSize, BannerAdPosition, BannerAdPluginEvents } from '@capacitor-community/admob'
 import { Capacitor } from '@capacitor/core'
+import { markAdFailed, clearAdFailed } from '@/composables/useAdFallback'
 
 let initialized = false
 let jobId = 0 // increments to cancel in-flight updates
+let listenersRegistered = false
+// The space the banner currently in flight/shown belongs to — the plugin's
+// load/fail events don't carry it back, so we track it ourselves.
+let activeSpaceId: string | null = null
+// Whether the current attempt has heard back (loaded or failed) from the
+// SDK yet — used by the settle-timeout below as a safety net for cases the
+// real events never fire for (init failure, plugin throwing, etc).
+let bannerSettled = false
+// If neither bannerAdLoaded nor bannerAdFailedToLoad fires within this long
+// after showBanner() was called, treat it as a no-fill so a house ad still
+// appears instead of leaving the slot permanently blank.
+const BANNER_SETTLE_TIMEOUT_MS = 4000
+
+function registerBannerListeners() {
+    if (listenersRegistered) return
+    listenersRegistered = true
+    AdMob.addListener(BannerAdPluginEvents.Loaded, () => {
+        bannerSettled = true
+        clearAdFailed(activeSpaceId ?? undefined)
+    })
+    AdMob.addListener(BannerAdPluginEvents.FailedToLoad, () => {
+        bannerSettled = true
+        markAdFailed(activeSpaceId)
+    })
+}
 
 // The native AdMob plugin resolves removeBanner()/showBanner() before their
 // underlying runOnUiThread work actually finishes, so two overlapping
@@ -32,9 +58,10 @@ export async function initAdMob() {
                 console.warn('⚠️ ATT tracking request failed or was not accepted:', attError);
             }
         }
-        await AdMob.initialize(); 
-        initialized = true 
-    } catch (e) { 
+        await AdMob.initialize();
+        registerBannerListeners();
+        initialized = true
+    } catch (e) {
         console.debug('AdMob init skip', e) 
     }
 }
@@ -42,6 +69,8 @@ export async function initAdMob() {
 export async function hideBanner() {
     if (!Capacitor.isNativePlatform()) return
     jobId++ // cancel any in-flight move
+    clearAdFailed(activeSpaceId ?? undefined)
+    activeSpaceId = null
     await enqueueBannerOp(async () => {
         try { await AdMob.removeBanner() } catch (e) { console.debug('AdMob remove skip', e) }
         // Let the plugin's own runOnUiThread cleanup actually finish before
@@ -77,6 +106,10 @@ function getSafeAreaTop(): number {
 export async function moveBanner(adId: string, spaceId: string, isTesting: boolean | string = false) {
     if (!Capacitor.isNativePlatform()) return
     const myJob = ++jobId
+    // A new space is loading — clear any stale failure from a previous space
+    // and stop attributing incoming load events to it.
+    clearAdFailed(activeSpaceId ?? undefined)
+    activeSpaceId = spaceId
 
     // Hard reset immediately to clear any existing banner at the top.
     // Routed through the same queue as showBanner() below so this removal's
@@ -132,12 +165,26 @@ export async function moveBanner(adId: string, spaceId: string, isTesting: boole
 
     await enqueueBannerOp(async () => {
         if (myJob !== jobId) return
-        await AdMob.showBanner({
-            adId: finalAdId,
-            adSize: BannerAdSize.ADAPTIVE_BANNER,
-            position: BannerAdPosition.TOP_CENTER,
-            margin: marginValue,
-            isTesting: testing,
-        })
+        bannerSettled = false
+        try {
+            await AdMob.showBanner({
+                adId: finalAdId,
+                adSize: BannerAdSize.ADAPTIVE_BANNER,
+                position: BannerAdPosition.TOP_CENTER,
+                margin: marginValue,
+                isTesting: testing,
+            })
+        } catch (e) {
+            console.debug('AdMob showBanner failed', e)
+            bannerSettled = true
+            markAdFailed(spaceId)
+            return
+        }
+        setTimeout(() => {
+            if (myJob === jobId && !bannerSettled) {
+                bannerSettled = true
+                markAdFailed(spaceId)
+            }
+        }, BANNER_SETTLE_TIMEOUT_MS)
     })
 }

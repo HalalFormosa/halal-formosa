@@ -3,6 +3,7 @@
     <ion-header class="ion-no-border immersive-header" :class="{ 'is-scrolled': isScrolled, 'has-ads': isNative && showAds }">
       <!-- Native (mobile) AdMob banner -->
       <div v-if="isNative && showAds" id="ad-space-item-details" :style="{ height: '65px', paddingTop: 'var(--ion-safe-area-top, 0)' }"></div>
+      <HouseAdCard v-if="showAds && (!isNative || failedAdSpaceId === 'ad-space-item-details')" />
 
       <app-header
         :title="$t('search.details.title')"
@@ -547,6 +548,8 @@ import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { useIonRouter } from '@ionic/vue'
 import { Capacitor } from '@capacitor/core'
+import HouseAdCard from '@/components/ads/HouseAdCard.vue'
+import { failedAdSpaceId } from '@/composables/useAdFallback'
 import { supabase } from '@/plugins/supabaseClient'
 import {Swiper, SwiperSlide} from "swiper/vue";
 import {Pagination, Zoom} from "swiper/modules";

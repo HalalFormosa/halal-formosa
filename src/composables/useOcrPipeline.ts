@@ -170,13 +170,17 @@ export default function useOcrPipeline(options: OcrPipelineOptions) {
             progress.value = 0.70
             progressLabel.value = t('scanIngredients.progress.extractingIng')
 
-            // ℹ️ No literal "ingredients"/"成分" header found — common when the user
-            // crops tightly around just the ingredient list itself, or OCR misreads
-            // the header characters. Don't hard-fail: fall through and let the
-            // cleaning/matching steps below work with whatever text was captured.
+            // ℹ️ No literal "ingredients"/"成分" header found anywhere in the OCR
+            // text — the photo almost certainly isn't an ingredients label (e.g. a
+            // screenshot or an unrelated part of the packaging). Treat this as a
+            // failed detection instead of silently handing back whatever text was
+            // captured, so callers can fall back to manual entry.
             const ingKeywords = /(ingredient|成分|成份|配料|原料|內容物|内容物|材料)/i;
             if (!ingKeywords.test(raw) && !ingKeywords.test(translated)) {
-                console.warn('⚠️ [OcrPipeline] No ingredient keyword found in OCR text — proceeding anyway with captured text.');
+                console.warn('⚠️ [OcrPipeline] No ingredient keyword found in OCR text — treating as a failed detection.');
+                ingredientsText.value = '';
+                ingredientsTextZh.value = '';
+                return setError(t('scanIngredients.errors.noIngredients'));
             }
 
             // ✅ Save Chinese ingredients ONLY if OCR is Chinese / Mixed

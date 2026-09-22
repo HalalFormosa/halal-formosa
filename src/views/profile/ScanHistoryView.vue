@@ -66,12 +66,7 @@
       <!-- Modal to show ingredient scan details -->
       <ion-modal :is-open="isDetailModalOpen" @didDismiss="isDetailModalOpen = false" class="ingredient-detail-modal">
         <ion-header>
-          <ion-toolbar color="carrot">
-            <ion-title>Ingredient Scan Detail</ion-title>
-            <ion-buttons slot="end">
-              <ion-button @click="isDetailModalOpen = false">Close</ion-button>
-            </ion-buttons>
-          </ion-toolbar>
+          <ModalHeader title="Ingredient Scan Detail" @close="isDetailModalOpen = false" />
         </ion-header>
         <ion-content class="ion-padding">
           <div v-if="selectedScan" class="detail-modal-content">
@@ -128,6 +123,7 @@ import {
 import { Capacitor } from '@capacitor/core'
 import { RevenueCatUI, PAYWALL_RESULT } from '@revenuecat/purchases-capacitor-ui'
 import AppHeader from '@/components/AppHeader.vue'
+import ModalHeader from '@/components/ModalHeader.vue'
 import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
 import timezone from 'dayjs/plugin/timezone'

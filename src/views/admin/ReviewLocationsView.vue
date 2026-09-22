@@ -108,20 +108,14 @@
       <!-- ✅ Location Detail Modal -->
       <ion-modal :is-open="showModal" @didDismiss="closeModal" class="review-modal">
         <ion-header>
-          <ion-toolbar color="carrot">
-            <ion-buttons slot="start">
-              <ion-button @click="closeModal">
-                <ion-icon :icon="closeOutline" />
-              </ion-button>
-            </ion-buttons>
-            <ion-title>{{ $t('admin.reviewLocation') }}</ion-title>
-            <ion-buttons slot="end">
+          <ModalHeader :title="$t('admin.reviewLocation')" @close="closeModal">
+            <template #end>
               <ion-button @click="approveLocation(selectedLocation)">
                 <ion-icon slot="start" :icon="checkmarkOutline" />
                 {{ $t('review.approve') }}
               </ion-button>
-            </ion-buttons>
-          </ion-toolbar>
+            </template>
+          </ModalHeader>
         </ion-header>
 
         <ion-content class="ion-padding">
@@ -355,12 +349,13 @@ import { ref, onMounted, reactive, computed } from 'vue'
 import { supabase } from '@/plugins/supabaseClient'
 import {
   listOutline, timeOutline, checkmarkCircle, swapVerticalOutline,
-  closeOutline, checkmarkOutline, cameraOutline, cloudUploadOutline,
+  checkmarkOutline, cameraOutline, cloudUploadOutline,
   trashOutline, callOutline, logoInstagram, chatboxEllipsesOutline,
   cashOutline, locationOutline, shieldCheckmarkOutline, sparkles,
   closeCircle
 } from 'ionicons/icons'
 import AppHeader from '@/components/AppHeader.vue'
+import ModalHeader from '@/components/ModalHeader.vue'
 import { useI18n } from 'vue-i18n'
 import { Camera, CameraDirection, CameraResultType, CameraSource } from '@capacitor/camera'
 import { useImageResizer } from "@/composables/useImageResizer"

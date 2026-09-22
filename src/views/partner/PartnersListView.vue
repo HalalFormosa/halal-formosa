@@ -124,10 +124,11 @@
               <div class="scope-chips">
                 <span
                     v-for="s in body.scopes.slice(0, 2)"
-                    :key="s"
+                    :key="s.id"
                     class="scope-tag"
+                    :style="scopeTagStyle(s.color)"
                 >
-                  {{ s }}
+                  {{ s.name }}
                 </span>
                 <span v-if="body.scopes.length > 2" class="scope-tag more">
                   +{{ body.scopes.length - 2 }}
@@ -246,7 +247,8 @@ async function fetchPartners() {
         scope_id,
         partner_scopes (
           id,
-          name
+          name,
+          color
         )
       )
     `)
@@ -265,9 +267,11 @@ async function fetchPartners() {
     scopeIds: (b.partners_scopes ?? []).map(
         (s: any) => s.scope_id as string
     ),
-    scopes: (b.partners_scopes ?? []).map(
-        (s: any) => s.partner_scopes.name as string
-    )
+    scopes: (b.partners_scopes ?? []).map((s: any) => ({
+      id: s.partner_scopes.id as string,
+      name: s.partner_scopes.name as string,
+      color: s.partner_scopes.color as string | null
+    }))
   }))
 }
 
@@ -308,6 +312,24 @@ const filteredBodies = computed(() => {
 
 
 
+
+/* ---------------- Helpers ---------------- */
+function hexToRgb(hex: string): string | null {
+  const match = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
+  if (!match) return null
+  const [r, g, b] = match.slice(1).map(v => parseInt(v, 16))
+  return `${r}, ${g}, ${b}`
+}
+
+function scopeTagStyle(color?: string | null) {
+  const rgb = color ? hexToRgb(color) : null
+  if (!rgb) return {}
+
+  return {
+    background: `rgba(${rgb}, 0.14)`,
+    color: color as string
+  }
+}
 
 /* ---------------- Methods ---------------- */
 function handleSearchInput(ev: Event) {

@@ -1,8 +1,28 @@
 // src/lib/levelplay.ts
 import { LevelPlayAds, AdEvent } from 'capacitor-levelplay-ads'
 import { Capacitor } from '@capacitor/core'
+import { markAdFailed, clearAdFailed } from '@/composables/useAdFallback'
 
 let initialized = false
+let bannerListenersRegistered = false
+let activeBannerSpaceId: string | null = null
+// Mirrors admob.ts's settle-timeout safety net — if neither BannerLoaded nor
+// BannerLoadFailed fires within this long, treat it as a no-fill.
+let bannerSettled = false
+const BANNER_SETTLE_TIMEOUT_MS = 4000
+
+function registerBannerListeners() {
+    if (bannerListenersRegistered) return
+    bannerListenersRegistered = true
+    LevelPlayAds.addListener(AdEvent.BannerLoaded, () => {
+        bannerSettled = true
+        clearAdFailed(activeBannerSpaceId ?? undefined)
+    }).catch((e) => console.debug('[LevelPlay] listener register skip', e))
+    LevelPlayAds.addListener(AdEvent.BannerLoadFailed, () => {
+        bannerSettled = true
+        markAdFailed(activeBannerSpaceId)
+    }).catch((e) => console.debug('[LevelPlay] listener register skip', e))
+}
 // Memoized so concurrent/early callers (e.g. a fast navigation to a screen
 // with a banner right after app launch) await the SAME in-flight init
 // instead of racing it and silently no-op'ing like the pre-fix AdMob code did.
@@ -42,10 +62,20 @@ export function initLevelPlay(): Promise<void> {
     return initPromise
 }
 
-export async function showLevelPlayBanner(adUnitId: string) {
+export async function showLevelPlayBanner(adUnitId: string, spaceId?: string) {
     if (!Capacitor.isNativePlatform()) return
     await initLevelPlay()
-    if (!initialized) return
+    if (!initialized) {
+        // SDK never came up (bad app key, network, etc) — no load/fail event
+        // will ever fire, so mark it failed ourselves rather than leaving
+        // the slot silently blank.
+        markAdFailed(spaceId)
+        return
+    }
+    registerBannerListeners()
+    clearAdFailed(activeBannerSpaceId ?? undefined)
+    activeBannerSpaceId = spaceId ?? null
+    bannerSettled = false
     try {
         await LevelPlayAds.createBanner({
             adUnitId,
@@ -54,7 +84,15 @@ export async function showLevelPlayBanner(adUnitId: string) {
             isOverlap: false, // Android: pushes the WebView down instead of overlaying it
         })
         console.log('[LevelPlay] Banner shown:', adUnitId)
+        setTimeout(() => {
+            if (activeBannerSpaceId === spaceId && !bannerSettled) {
+                bannerSettled = true
+                markAdFailed(spaceId)
+            }
+        }, BANNER_SETTLE_TIMEOUT_MS)
     } catch (e) {
+        bannerSettled = true
+        markAdFailed(spaceId)
         console.debug('[LevelPlay] banner skip', e)
     }
 }
@@ -75,6 +113,8 @@ export async function destroyLevelPlayBanner() {
     if (!Capacitor.isNativePlatform()) return
     await initLevelPlay()
     if (!initialized) return
+    clearAdFailed(activeBannerSpaceId ?? undefined)
+    activeBannerSpaceId = null
     try {
         await LevelPlayAds.destroyBanner()
         console.log('[LevelPlay] Banner destroyed')

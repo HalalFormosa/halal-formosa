@@ -3,6 +3,10 @@
     <ion-header>
       <!-- Native (mobile) AdMob banner -->
       <div v-if="isNative && !isDonor" id="ad-space-store" :style="{ height: '65px', paddingTop: 'var(--ion-safe-area-top, 0)' }"></div>
+      <!-- No house-ad fallback banner here — when there's no real ad, the
+           sponsored slot moves into the store product feed itself as
+           recurring native cards (see HouseAdNativeCard below) instead of
+           an empty banner-shaped placeholder. -->
 
       <app-header :title="$t('store.title')" :icon="bagHandleOutline" :showProfile="true" />
     </ion-header>
@@ -106,9 +110,8 @@
 
           <!-- Product Grid -->
           <div class="store-grid" v-if="!loading && products.length > 0">
+            <template v-for="(product, productIndex) in products" :key="product.id">
             <div
-              v-for="product in products"
-              :key="product.id"
               class="store-product-card"
               @click="navigateToProduct(product.id)"
             >
@@ -149,6 +152,15 @@
                 </div>
               </div>
             </div>
+
+            <!-- Recurring native sponsored card, woven into the store feed
+                 every HOUSE_AD_NATIVE_INTERVAL products. -->
+            <HouseAdNativeCard
+                v-if="!isDonor && (productIndex + 1) % HOUSE_AD_NATIVE_INTERVAL === 0"
+                mode="store"
+                :slot="Math.floor(productIndex / HOUSE_AD_NATIVE_INTERVAL)"
+            />
+            </template>
           </div>
 
           <!-- Skeleton loader -->
@@ -322,6 +334,7 @@ import {
   IonInput, IonToggle, onIonViewWillEnter, onIonViewDidEnter
 } from '@ionic/vue'
 import { Capacitor } from '@capacitor/core'
+import HouseAdNativeCard from '@/components/ads/HouseAdNativeCard.vue'
 import { isDonor } from "@/composables/useSubscriptionStatus"
 import { scheduleBannerUpdate } from '@/plugins/admob'
 import {
@@ -359,6 +372,10 @@ const promoScroll = ref<HTMLElement | null>(null)
 let autoScrollInterval: any = null
 const loading = ref(true)
 const products = ref<any[]>([])
+// How often a native sponsored card appears in the store product feed
+// (every Nth product), replacing the old fixed top-banner house-ad
+// fallback on this view.
+const HOUSE_AD_NATIVE_INTERVAL = 6
 const categories = ref<any[]>([])
 const promoBanners = ref<any[]>([])
 const searchQuery = ref('')

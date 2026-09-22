@@ -6,6 +6,10 @@
 
       <!-- Native (mobile) AdMob banner -->
       <div v-if="isNative && !isDonor" id="ad-space-trip" :style="{ height: '65px', paddingTop: 'var(--ion-safe-area-top, 0)' }"></div>
+      <!-- No house-ad fallback banner here — when there's no real ad, the
+           sponsored slot moves into the trip feed itself as recurring
+           native cards (see HouseAdNativeCard below) instead of an empty
+           banner-shaped placeholder. -->
 
       <!-- Top App Header -->
       <app-header
@@ -134,9 +138,8 @@
 
         <!-- Trip List -->
         <template v-else>
+          <template v-for="(trip, tripIndex) in filteredTrips" :key="trip.id">
           <div
-              v-for="trip in filteredTrips"
-              :key="trip.id"
               :class="[
                 'trip-card-v2', 
                 trip.provider?.partner_tier ? 'tier-card-' + trip.provider.partner_tier.toLowerCase() : ''
@@ -216,6 +219,15 @@
             <!-- Premium Flare for Gold/Silver -->
             <div v-if="['gold', 'silver'].includes(String(trip.provider?.partner_tier || '').toLowerCase())" class="premium-flare"></div>
           </div>
+
+          <!-- Recurring native sponsored card, woven into the trip feed
+               every HOUSE_AD_NATIVE_INTERVAL trips. -->
+          <HouseAdNativeCard
+              v-if="!isDonor && (tripIndex + 1) % HOUSE_AD_NATIVE_INTERVAL === 0"
+              mode="trip"
+              :slot="Math.floor(tripIndex / HOUSE_AD_NATIVE_INTERVAL)"
+          />
+          </template>
         </template>
       </div>
 
@@ -236,6 +248,7 @@ import {
   IonRefresher, IonRefresherContent
 } from '@ionic/vue'
 import { Capacitor } from '@capacitor/core'
+import HouseAdNativeCard from '@/components/ads/HouseAdNativeCard.vue'
 import { isDonor } from "@/composables/useSubscriptionStatus"
 import { scheduleBannerUpdate } from '@/plugins/admob'
 
@@ -261,6 +274,10 @@ import { useRecaptcha } from '@/composables/useRecaptcha'
 dayjs.extend(utc)
 dayjs.extend(timezone)
 dayjs.extend(relativeTime)
+
+// How often a native sponsored card appears in the trip feed (every Nth
+// trip), replacing the old fixed top-banner house-ad fallback on this view.
+const HOUSE_AD_NATIVE_INTERVAL = 4
 
 
 const loading = ref(true)

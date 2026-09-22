@@ -252,6 +252,18 @@
     "totalProducts": "Products",
     "totalLocations": "Locations",
     "partnerTier": "{tier} PARTNER",
+    "sponsored": "Sponsored",
+    "houseAdKind": {
+      "partner": "Partner",
+      "product": "Product",
+      "location": "Location",
+      "trip": "Trip"
+    },
+    "houseAdProvider": {
+      "soldBy": "Sold by {name}",
+      "certifiedBy": "Certified by {name}",
+      "providedBy": "By {name}"
+    },
     "statuses": {
       "halal": "Halal",
       "muslimFriendly": "Muslim-friendly",
@@ -1964,7 +1976,7 @@
     "button": "Update Now"
   },
   "store": {
-    "testPhaseDisclaimer": "⚠️ This store is in the testing phase. Please do NOT make actual purchases. We will make an official announcement once development is complete.",
+    "testPhaseDisclaimer": "Store is in testing — please don't make real purchases yet.",
     "purchasesDisabled": "Purchases are disabled during the testing phase",
     "underConstructionDesc": "We're brewing something amazing! The store will be back soon.",
     "title": "Halal Formosa Store",

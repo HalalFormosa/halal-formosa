@@ -245,7 +245,7 @@
 
         <ion-card-content>
           <!-- 🔹 Skeleton loader -->
-          <div v-if="loadingProducts" class="discover-grid">
+          <div v-if="loadingProducts" class="discover-grid discover-grid--products">
             <ion-card v-for="n in 5" :key="'skeleton-p-' + n" class="discover-item">
               <ion-skeleton-text animated style="width: 100%; height: 140px; border-radius: 12px;" />
               <ion-skeleton-text animated style="width: 95%; height: 30px; margin: 6px auto;" />
@@ -254,12 +254,58 @@
           </div>
 
           <!-- 🔹 Real content -->
-          <div v-else class="discover-grid">
+          <div v-else class="discover-grid discover-grid--products">
+            <!-- Featured gold slot — crossfades to the next rotated gold
+                 partner product instead of hard-cutting, same mechanic as
+                 Discover Locations' featured-fade above. -->
+            <div v-if="featuredProduct" class="featured-fade-wrapper">
+              <Transition name="featured-fade">
+                <ion-card
+                    :key="featuredProduct.barcode"
+                    :class="[
+                      'discover-item',
+                      featuredProduct.partner_tier ? 'tier-card-' + featuredProduct.partner_tier.toLowerCase() : ''
+                    ]"
+                    button
+                    @click="openProduct(featuredProduct)"
+                >
+                  <!-- Tier Badge -->
+                  <ion-badge
+                      v-if="featuredProduct.partner_tier"
+                      :class="['tier-badge', featuredProduct.partner_tier.toLowerCase()]"
+                  >
+                    <ion-icon :icon="sparkles" />
+                    <span>{{ $t('home.partnerTier', { tier: (featuredProduct.partner_tier || '').toUpperCase() }) }}</span>
+                  </ion-badge>
+
+                  <!-- Shine Effect (Gold ONLY) -->
+                  <div v-if="['gold', 'silver'].includes(String(featuredProduct.partner_tier || '').toLowerCase())" class="premium-flare"></div>
+
+                  <img :src="featuredProduct.image || 'https://placehold.co/200x200'" :alt="$t('home.altProduct')" class="discover-img" loading="lazy" />
+                  <ion-label class="discover-label">
+                    <div class="status-row">
+                      <ion-chip
+                          :class="featuredProduct.status === 'Halal' ? 'chip-success'
+                    : featuredProduct.status === 'Muslim-friendly' ? 'chip-primary'
+                    : featuredProduct.status === 'Syubhah' ? 'chip-warning'
+                    : featuredProduct.status === 'Haram' ? 'chip-danger'
+                    : 'chip-medium'"
+                          style="font-size: 14px; margin-bottom: 4px;"
+                      >
+                        {{ $t('search.status.' + featuredProduct.status) }}
+                      </ion-chip>
+                    </div>
+                    <p>{{ $t('home.added') }} {{ fromNowToTaipei(featuredProduct.created_at) }}</p>
+                  </ion-label>
+                </ion-card>
+              </Transition>
+            </div>
+
             <ion-card
-                v-for="p in recentProducts"
+                v-for="p in otherProducts"
                 :key="p.barcode"
                 :class="[
-                  'discover-item', 
+                  'discover-item',
                   p.partner_tier ? 'tier-card-' + p.partner_tier.toLowerCase() : ''
                 ]"
                 button
@@ -290,11 +336,6 @@
                   >
                     {{ $t('search.status.' + p.status) }}
                   </ion-chip>
-
-                  <!-- Official Partner Tag -->
-                  <div v-if="p.partner_tier" class="home-partner-verified">
-                    <ion-icon :icon="shieldCheckmarkOutline" />
-                  </div>
                 </div>
                 <p>{{ $t('home.added') }} {{ fromNowToTaipei(p.created_at) }}</p>
               </ion-label>
@@ -321,7 +362,7 @@
             </div>
           </ion-card-header>
           <ion-card-content>
-            <div v-if="loadingLocations" class="discover-grid">
+            <div v-if="loadingLocations" class="discover-grid discover-grid--locations">
               <ion-card v-for="n in 5" :key="'skeleton-l-' + n" class="discover-item">
                 <ion-skeleton-text animated style="width: 100%; height: 140px; border-radius: 12px;" />
                 <ion-skeleton-text animated style="width: 90%; height: 12px; margin: 6px auto;" />
@@ -330,12 +371,59 @@
               </ion-card>
             </div>
 
-          <div v-else class="discover-grid">
+          <div v-else class="discover-grid discover-grid--locations">
+            <!-- Featured gold slot — crossfades to the next rotated gold
+                 partner instead of hard-cutting, same mechanic as Explore's
+                 featured-fade (see ExploreView.vue). Taken out of the plain
+                 v-for below so swapping it never reflows the rest of the grid. -->
+            <div v-if="featuredLocation" class="featured-fade-wrapper">
+              <Transition name="featured-fade">
+                <ion-card
+                    :key="featuredLocation.id"
+                    :class="[
+                      'discover-item',
+                      featuredLocation.partner_tier ? 'tier-card-' + featuredLocation.partner_tier.toLowerCase() : ''
+                    ]"
+                    button
+                    @click="openLocation(featuredLocation)"
+                >
+                  <!-- Tier Badge -->
+                  <ion-badge
+                      v-if="featuredLocation.partner_tier"
+                      :class="['tier-badge', featuredLocation.partner_tier.toLowerCase()]"
+                  >
+                    <ion-icon :icon="sparkles" />
+                    <span>{{ $t('home.partnerTier', { tier: (featuredLocation.partner_tier || '').toUpperCase() }) }}</span>
+                  </ion-badge>
+
+                  <!-- Premium Flare for Gold/Silver -->
+                  <div v-if="['gold', 'silver'].includes(String(featuredLocation.partner_tier || '').toLowerCase())" class="premium-flare"></div>
+
+                  <img
+                      :src="featuredLocation.image || 'https://placehold.co/200x200'"
+                      :alt="$t('home.altLocation')"
+                      class="discover-img"
+                      loading="lazy"
+                  />
+                  <ion-label class="discover-label">
+                    <div class="name-row">
+                      <h3>{{ featuredLocation.name }}</h3>
+                      <!-- Official Partner Tag -->
+                      <div v-if="featuredLocation.partner_tier" class="home-partner-verified">
+                        <ion-icon :icon="shieldCheckmarkOutline" />
+                      </div>
+                    </div>
+                    <p>{{ $t('home.added') }} {{ fromNowToTaipei(featuredLocation.created_at) }}</p>
+                  </ion-label>
+                </ion-card>
+              </Transition>
+            </div>
+
             <ion-card
-                v-for="loc in recentLocations"
+                v-for="loc in otherLocations"
                 :key="loc.id"
                 :class="[
-                  'discover-item', 
+                  'discover-item',
                   loc.partner_tier ? 'tier-card-' + loc.partner_tier.toLowerCase() : ''
                 ]"
                 button
@@ -1541,6 +1629,9 @@ import CommunityReels from "@/components/CommunityReels.vue"
 
 // ✅ Cosmetic helpers for leaderboard
 function getCosmeticByCategory(user: any, category: string) {
+  if (category === 'background' || category === 'nameplate') {
+    return user?.equipped_cosmetics?.find((c: any) => c.category === 'background' || c.category === 'nameplate')
+  }
   return user?.equipped_cosmetics?.find((c: any) => c.category === category)
 }
 
@@ -1572,9 +1663,17 @@ function getLeaderboardRowStyle(user: any) {
     styles['--background'] = np.css_value.background
     styles.background = np.css_value.background
     
-    const isLight = isBackgroundLight(np)
-    const textColor = isLight ? '#121212' : '#ffffff'
-    const subTextColor = isLight ? '#444444' : 'rgba(255, 255, 255, 0.7)'
+    let textColor = ''
+    let subTextColor = ''
+    
+    if (np.css_value.color) {
+      textColor = np.css_value.color
+      subTextColor = np.css_value.color
+    } else {
+      const isLight = isBackgroundLight(np)
+      textColor = isLight ? '#121212' : '#ffffff'
+      subTextColor = isLight ? '#444444' : 'rgba(255, 255, 255, 0.7)'
+    }
     
     styles['--color'] = textColor
     styles.color = textColor
@@ -1685,6 +1784,28 @@ const loadingProducts = ref(true)
 const loadingLocations = ref(true)
 const recentProducts = ref<any[]>([])
 const recentLocations = ref<any[]>([])
+// Unweighted pool, sorted purely by recency — the "rest of the grid" part
+// of Discover Products.
+const recentProductsFull = ref<any[]>([])
+// All gold-tier products — the candidates the featured slot rotates through.
+const goldProductPool = ref<any[]>([])
+const productRotationTimer = ref<any>(null)
+// recentProducts[0] is the featured gold slot whenever one is being rotated
+// in — split out so its own crossfade doesn't reflow the rest of the grid.
+const featuredProduct = computed(() => goldProductPool.value.length ? recentProducts.value[0] : null)
+const otherProducts = computed(() => goldProductPool.value.length ? recentProducts.value.slice(1) : recentProducts.value)
+// Unweighted pool, sorted purely by recency — the "rest of the grid" part
+// of Discover Locations.
+const recentLocationsFull = ref<any[]>([])
+// All gold-tier locations (not just ones recent enough to be in the pool
+// above) — the candidates the featured slot rotates through.
+const goldLocationPool = ref<any[]>([])
+const locationRotationTimer = ref<any>(null)
+// recentLocations[0] is the featured gold slot whenever one is being
+// rotated in — split out so its own crossfade doesn't reflow the rest of
+// the grid below it.
+const featuredLocation = computed(() => goldLocationPool.value.length ? recentLocations.value[0] : null)
+const otherLocations = computed(() => goldLocationPool.value.length ? recentLocations.value.slice(1) : recentLocations.value)
 const loadingNews = ref(true)
 const recentNews = ref<any[]>([])
 const totalProductCount = ref(0)
@@ -2119,13 +2240,13 @@ async function fetchRecentProducts() {
     const { data, error } = await supabase
         .from("products")
         .select(`
-          barcode, 
-          name, 
-          status, 
-          photo_front_url, 
-          created_at, 
-          approved_at, 
-          updated_at, 
+          barcode,
+          name,
+          status,
+          photo_front_url,
+          created_at,
+          approved_at,
+          updated_at,
           product_categories(name),
           partner:partners(partner_tier)
         `)
@@ -2134,23 +2255,12 @@ async function fetchRecentProducts() {
         .limit(100)
 
     if (error) throw error
-    
-    const sevenDaysAgo = dayjs().subtract(7, 'day');
-    const sortedData = [...data].sort((a: any, b: any) => {
-      const getWeight = (p: any) => {
-        const t = Array.isArray(p.partner) ? p.partner[0]?.partner_tier : p.partner?.partner_tier;
-        const tier = String(t || '').toLowerCase();
-        const isNew = dayjs(p.created_at).isAfter(sevenDaysAgo) || (p.updated_at && dayjs(p.updated_at).isAfter(sevenDaysAgo));
-        if (tier === 'gold' && isNew) return 3;
-        if (tier === 'gold') return 2;
-        if (tier === 'silver' && isNew) return 1;
-        return 0;
-      };
-      const weightA = getWeight(a);
-      const weightB = getWeight(b);
-      if (weightA !== weightB) return weightB - weightA;
-      return dayjs(b.created_at).valueOf() - dayjs(a.created_at).valueOf();
-    }).slice(0, RECENT_DISCOVER_LIMIT);
+
+    // Purely chronological — no tier weighting here. updateProductRotation()
+    // below is what surfaces a single gold partner product up front, on rotation.
+    const sortedData = [...data]
+      .sort((a: any, b: any) => dayjs(b.created_at).valueOf() - dayjs(a.created_at).valueOf())
+      .slice(0, RECENT_DISCOVER_LIMIT);
 
     return sortedData.map(p => ({
       barcode: p.barcode,
@@ -2163,10 +2273,86 @@ async function fetchRecentProducts() {
     }))
   })
 
+  // Candidates for the featured slot — ALL gold-tier products, not just
+  // ones recent enough to land in the 15-item pool above.
+  const goldData = await withCache('discover_products_gold_pool', async () => {
+    const { data: golds, error: goldError } = await supabase
+        .from('products')
+        .select(`
+          barcode,
+          name,
+          status,
+          photo_front_url,
+          created_at,
+          product_categories(name),
+          partner:partners!inner(partner_tier)
+        `)
+        .eq('approved', true)
+        .eq('partner.partner_tier', 'gold')
+        .order('barcode', { ascending: true })
+        .limit(50)
+
+    if (goldError) throw goldError
+
+    return golds.map(p => ({
+      barcode: p.barcode,
+      name: p.name,
+      status: p.status,
+      category: (p.product_categories as any)?.name || "",
+      image: p.photo_front_url,
+      created_at: p.created_at,
+      partner_tier: Array.isArray(p.partner) ? p.partner[0]?.partner_tier : (p.partner as any)?.partner_tier
+    }))
+  })
+
   if (data) {
-    recentProducts.value = data
+    recentProductsFull.value = data
+  }
+  if (goldData) {
+    goldProductPool.value = goldData
+    // Warm the cache for every gold candidate's photo up front, so rotating
+    // the featured slot never shows a blank card while a fresh image loads.
+    goldData.forEach((p: any) => {
+      if (p.image) { const img = new Image(); img.src = p.image }
+    })
+  }
+  if (data || goldData) {
+    updateProductRotation()
   }
   loadingProducts.value = false
+}
+
+/**
+ * At most one gold partner product leads the Discover Products grid,
+ * rotating (same mechanic as updateLocationRotation()) on a timer — never a
+ * wall of gold cards. Everyone else, including gold products not featured
+ * this turn, is excluded from the chronological "rest" so it never shows
+ * twice.
+ */
+function updateProductRotation() {
+  if (productRotationTimer.value) clearTimeout(productRotationTimer.value)
+  if (recentProductsFull.value.length === 0) return
+
+  const goldPool = goldProductPool.value
+
+  if (goldPool.length === 0) {
+    recentProducts.value = recentProductsFull.value
+    return
+  }
+
+  const rotationIndexStr = localStorage.getItem('home_product_rotation_index') || '0'
+  const rotationIndex = parseInt(rotationIndexStr, 10)
+  const featured = goldPool[rotationIndex % goldPool.length]
+  const rest = recentProductsFull.value
+    .filter(p => String(p.partner_tier || '').toLowerCase() !== 'gold')
+    .slice(0, RECENT_DISCOVER_LIMIT - 1)
+
+  recentProducts.value = [featured, ...rest]
+  localStorage.setItem('home_product_rotation_index', (rotationIndex + 1).toString())
+
+  productRotationTimer.value = setTimeout(() => {
+    updateProductRotation()
+  }, 10000)
 }
 
 async function fetchRecentLocations() {
@@ -2190,23 +2376,12 @@ async function fetchRecentLocations() {
         .limit(100)
 
     if (error) throw error
-    
-    const sevenDaysAgo = dayjs().subtract(7, 'day');
-    const sortedData = [...data].sort((a: any, b: any) => {
-      const getWeight = (p: any) => {
-        const t = Array.isArray(p.partner) ? p.partner[0]?.partner_tier : p.partner?.partner_tier;
-        const tier = String(t || '').toLowerCase();
-        const isNew = dayjs(p.created_at).isAfter(sevenDaysAgo) || (p.updated_at && dayjs(p.updated_at).isAfter(sevenDaysAgo));
-        if (tier === 'gold' && isNew) return 3;
-        if (tier === 'gold') return 2;
-        if (tier === 'silver' && isNew) return 1;
-        return 0;
-      };
-      const weightA = getWeight(a);
-      const weightB = getWeight(b);
-      if (weightA !== weightB) return weightB - weightA;
-      return dayjs(b.created_at).valueOf() - dayjs(a.created_at).valueOf();
-    }).slice(0, RECENT_DISCOVER_LIMIT);
+
+    // Purely chronological — no tier weighting here. withFeaturedGoldRotation()
+    // below is what surfaces a single gold partner up front, on rotation.
+    const sortedData = [...data]
+      .sort((a: any, b: any) => dayjs(b.created_at).valueOf() - dayjs(a.created_at).valueOf())
+      .slice(0, RECENT_DISCOVER_LIMIT);
 
     return sortedData.map(l => ({
       id: l.id,
@@ -2218,10 +2393,91 @@ async function fetchRecentLocations() {
     }))
   })
 
+  // Candidates for the featured slot — ALL gold-tier locations, not just
+  // ones recent enough to land in the 15-item pool above (otherwise, on a
+  // slow week, there's only ever one gold location to "rotate" through).
+  const goldData = await withCache('discover_locations_gold_pool', async () => {
+    const { data: golds, error: goldError } = await supabase
+        .from('locations')
+        .select(`
+          id,
+          name,
+          image,
+          type_id,
+          location_types(name),
+          created_at,
+          partner:partners!inner(partner_tier)
+        `)
+        .eq('approved', true)
+        .eq('is_archived', false)
+        .eq('partner.partner_tier', 'gold')
+        .order('id', { ascending: true })
+        .limit(50)
+
+    if (goldError) throw goldError
+
+    return golds.map(l => ({
+      id: l.id,
+      name: l.name,
+      image: l.image,
+      type: (l.location_types as any)?.name || '',
+      created_at: l.created_at,
+      partner_tier: Array.isArray(l.partner) ? l.partner[0]?.partner_tier : (l.partner as any)?.partner_tier
+    }))
+  })
+
   if (data) {
-    recentLocations.value = data
+    recentLocationsFull.value = data
+  }
+  if (goldData) {
+    goldLocationPool.value = goldData
+    // Warm the browser cache for every gold candidate's photo up front, so
+    // rotating the featured slot never shows a blank card while a fresh
+    // image loads over the network — by the time its turn comes up the
+    // image is already cached and the crossfade is instant.
+    goldData.forEach((l: any) => {
+      if (l.image) { const img = new Image(); img.src = l.image }
+    })
+  }
+  if (data || goldData) {
+    updateLocationRotation()
   }
   loadingLocations.value = false
+}
+
+/**
+ * At most one gold partner leads the Discover Locations grid, rotating
+ * (Round-Robin, same mechanic as updatePartnerRotation() for Our Partners)
+ * on a timer — never a wall of gold cards. Everyone else, including gold
+ * locations not featured this turn, stays in actual chronological order.
+ */
+function updateLocationRotation() {
+  if (locationRotationTimer.value) clearTimeout(locationRotationTimer.value)
+  if (recentLocationsFull.value.length === 0) return
+
+  const goldPool = goldLocationPool.value
+
+  if (goldPool.length === 0) {
+    recentLocations.value = recentLocationsFull.value
+    return
+  }
+
+  const rotationIndexStr = localStorage.getItem('home_location_rotation_index') || '0'
+  const rotationIndex = parseInt(rotationIndexStr, 10)
+  const featured = goldPool[rotationIndex % goldPool.length]
+  // Exclude EVERY gold-tier location here, not just the featured one — a
+  // gold location that's also recent enough to land in this chronological
+  // pool would otherwise show up a second time with its own gold badge.
+  const rest = recentLocationsFull.value
+    .filter(l => String(l.partner_tier || '').toLowerCase() !== 'gold')
+    .slice(0, RECENT_DISCOVER_LIMIT - 1)
+
+  recentLocations.value = [featured, ...rest]
+  localStorage.setItem('home_location_rotation_index', (rotationIndex + 1).toString())
+
+  locationRotationTimer.value = setTimeout(() => {
+    updateLocationRotation()
+  }, 10000)
 }
 
 async function fetchStats() {
@@ -2299,35 +2555,61 @@ async function fetchHomePartners() {
   loadingPartners.value = false
 }
 
+const PARTNER_TIER_ORDER = ['gold', 'silver', 'bronze'] as const
+// Ionic can fire onMounted + onIonViewWillEnter back-to-back on first load,
+// each calling fetchHomePartners() -> updatePartnerRotation(). Two rotations
+// milliseconds apart retrigger a card's enter transition before its previous
+// one finishes, which the browser never resolves — transitionend never
+// fires, so <transition-group> never removes the stuck node and gold cards
+// pile up permanently. Debounce covers that near-simultaneous double-fire.
+let lastPartnerRotationAt = 0
+
 /**
- * Performs a fair (Round-Robin) shift of the partners list
- * and schedules the next rotation based on the top partner's tier.
+ * At most ONE partner per tier (gold, then silver, then bronze) leads the
+ * strip, each rotating independently through that tier's own partners —
+ * never a pile-up of several oversized gold cards back to back (which used
+ * to swallow the whole row and make it look stuck/cut off instead of
+ * cycling through partners). Everyone else, including same-tier partners
+ * not featured this turn, just fills out the rest normally.
  */
 function updatePartnerRotation() {
+  const now = Date.now()
+  if (now - lastPartnerRotationAt < 500) return
+  lastPartnerRotationAt = now
+
   if (rotationTimer.value) clearTimeout(rotationTimer.value)
   if (halalPartnersFull.value.length === 0) return
 
-  // --- "Universal Adil" (Fair) Rotation Logic ---
-  // We rotate the ENTIRE list together, so every partner eventually 
-  // reaches the front of the line.
   const rotationIndexStr = localStorage.getItem('partner_rotation_index') || '0'
   const rotationIndex = parseInt(rotationIndexStr, 10)
 
-  // 1. Create a stable, tiered base list
-  const tierWeights: Record<string, number> = { 'gold': 3, 'silver': 2, 'bronze': 1 }
-  const sortedFull = [...halalPartnersFull.value].sort((a, b) => {
-    // Sort by tier weight (desc), then by name (asc) for stability
-    if (b._weight !== a._weight) return b._weight - a._weight
-    return a.name.localeCompare(b.name)
-  })
+  const byTier: Record<string, any[]> = { gold: [], silver: [], bronze: [] }
+  const rest: any[] = []
+  for (const p of halalPartnersFull.value) {
+    const tier = (p.partner_tier || '').toLowerCase()
+    if (tier === 'gold' || tier === 'silver' || tier === 'bronze') {
+      byTier[tier].push(p)
+    } else {
+      rest.push(p)
+    }
+  }
+  Object.values(byTier).forEach(group => group.sort((a, b) => a.name.localeCompare(b.name)))
+  rest.sort((a, b) => a.name.localeCompare(b.name))
 
-  // 2. Rotate the entire list based on the global index
-  const length = sortedFull.length
-  const shift = rotationIndex % length
-  const rotatedFull = sortedFull.slice(shift).concat(sortedFull.slice(0, shift))
+  // Same-tier leftovers (other gold/silver/bronze partners not featured
+  // this turn) go right after the featured ones, ahead of the untiered
+  // "rest" — every partner still shows, none dropped, just not all up front.
+  const featured: any[] = []
+  const tierLeftovers: any[] = []
+  for (const tier of PARTNER_TIER_ORDER) {
+    const group = byTier[tier]
+    if (!group.length) continue
+    const featuredIndex = rotationIndex % group.length
+    featured.push(group[featuredIndex])
+    tierLeftovers.push(...group.filter((_, i) => i !== featuredIndex))
+  }
 
-  // 3. Take the first 6 for the Home grid
-  const finalSelection = rotatedFull.slice(0, 6)
+  const finalSelection = [...featured, ...tierLeftovers, ...rest]
   halalPartners.value = finalSelection
 
   // Increment rotation index for the next turn
@@ -2515,6 +2797,14 @@ onBeforeUnmount(() => {
     clearTimeout(rotationTimer.value)
     rotationTimer.value = null
   }
+  if (locationRotationTimer.value) {
+    clearTimeout(locationRotationTimer.value)
+    locationRotationTimer.value = null
+  }
+  if (productRotationTimer.value) {
+    clearTimeout(productRotationTimer.value)
+    productRotationTimer.value = null
+  }
 })
 
 
@@ -2657,7 +2947,6 @@ ion-segment-button {
 }
 
 .announcement-banner.clickable:active {
-  transform: scale(0.98);
   opacity: 0.9;
 }
 
@@ -2779,11 +3068,11 @@ ion-segment-button {
   flex-direction: column;
   align-items: flex-start;
   justify-content: space-between;
-  padding: 18px;
-  border-radius: var(--radius-lg);
-  border: none;
+  padding: 20px;
+  border-radius: var(--radius-xl);
+  border: 1px solid rgba(255, 255, 255, 0.14);
   text-align: left;
-  height: 148px;
+  height: 156px;
   width: 100%;
   margin: 0;
   box-sizing: border-box;
@@ -2791,31 +3080,39 @@ ion-segment-button {
   cursor: pointer;
   position: relative;
   overflow: hidden;
-  box-shadow: var(--card-shadow);
+  isolation: isolate;
 }
 
-.feature-card:active {
-  transform: scale(0.97);
+.feature-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0) 45%);
+  pointer-events: none;
+  z-index: 1;
 }
 
 .feature-primary {
-  background: linear-gradient(155deg, var(--ion-color-carrot) 0%, #ff9d4d 100%);
+  background: linear-gradient(150deg, #ff8a1e 0%, var(--ion-color-carrot, #d97706) 55%, #c2660a 100%);
   color: white;
-  box-shadow: 0 6px 18px rgba(217, 119, 6, 0.22);
+  box-shadow: 0 10px 28px -6px rgba(217, 119, 6, 0.5), 0 4px 10px rgba(217, 119, 6, 0.25);
 }
 
 .feature-secondary {
   /* Using a contrasting premium color for barcode */
-  background: linear-gradient(155deg, var(--ion-color-tertiary, #5260ff) 0%, #7b88ff 100%);
+  background: linear-gradient(150deg, #8b7cf6 0%, #6c5ce7 55%, #4b3fc4 100%);
   color: white;
-  box-shadow: 0 6px 18px rgba(82, 96, 255, 0.22);
+  box-shadow: 0 10px 28px -6px rgba(108, 92, 231, 0.5), 0 4px 10px rgba(108, 92, 231, 0.25);
 }
 
 .feature-icon-wrapper {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border: 1px solid rgba(255, 255, 255, 0.35);
   border-radius: var(--radius-md);
-  width: 40px;
-  height: 40px;
+  width: 42px;
+  height: 42px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2830,16 +3127,17 @@ ion-segment-button {
 
 .feature-text h3 {
   margin: 0 0 4px;
-  font-size: 1.08rem;
+  font-size: 1.1rem;
   font-weight: 800;
   letter-spacing: -0.01em;
   white-space: normal;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.15);
 }
 
 .feature-text p {
   margin: 0;
   font-size: 0.74rem;
-  opacity: 0.88;
+  opacity: 0.92;
   line-height: 1.3;
   white-space: normal;
   word-wrap: break-word;
@@ -2847,10 +3145,10 @@ ion-segment-button {
 
 .feature-bg-icon {
   position: absolute;
-  right: -12px;
-  bottom: -18px;
-  font-size: 84px;
-  opacity: 0.12;
+  right: -14px;
+  bottom: -20px;
+  font-size: 88px;
+  opacity: 0.14;
   z-index: 1;
   transform: rotate(-8deg);
   pointer-events: none;
@@ -3046,7 +3344,6 @@ ion-segment-button {
 }
 
 .insight-card:active {
-  transform: scale(0.98);
   background: var(--ion-color-step-50);
 }
 
@@ -3115,6 +3412,66 @@ ion-segment-button {
   transform: translateY(10px);
 }
 
+/* --- Featured Location Crossfade (same mechanic as Explore's featured-fade) ---
+   Opacity-only so it reads as a gentle refresh, not a flashy transition. No
+   transition `mode`, so old and new fade concurrently instead of leaving a
+   visible gap. The leaving card is taken out of flow so it overlaps the
+   incoming one in place, rather than both taking up space and doubling height. */
+.featured-fade-wrapper {
+  position: relative;
+}
+/* .discover-grid is a flex row of fixed-basis cards (.discover-item, wider
+   for gold via .tier-card-gold) — wrapping the featured card takes IT out of
+   being the direct flex child, so the wrapper needs the same basis the gold
+   card would normally claim, and the card inside just fills the wrapper. */
+.discover-grid .featured-fade-wrapper {
+  flex: 0 0 300px;
+}
+.discover-grid .featured-fade-wrapper .discover-item {
+  flex: none;
+  width: 100%;
+}
+/* Every Discover Locations card gets a locked height (fixed image + a
+   2-line-reserved title), whether featured or not — a 1-line name rotating
+   in for a 2-line one otherwise changes the row's height, which snaps
+   everything below (Discover Trips, etc.) up or down mid-crossfade instead
+   of a clean fade. */
+.discover-grid--locations .discover-item,
+.discover-grid--locations .featured-fade-wrapper {
+  height: 234px;
+}
+.discover-grid--locations .discover-label h3 {
+  min-height: 36px;
+}
+/* Same height-lock, for Discover Products' featured gold slot. */
+.discover-grid--products .discover-item,
+.discover-grid--products .featured-fade-wrapper {
+  height: 214px;
+}
+/* Same fix as .name-row (see below) — status-row/home-partner-verified were
+   plain, layout-less divs, so the shield stacked under the status chip
+   instead of sitting beside it. */
+.status-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+.featured-fade-enter-active,
+.featured-fade-leave-active {
+  transition: opacity 0.4s ease;
+}
+.featured-fade-enter-from,
+.featured-fade-leave-to {
+  opacity: 0;
+}
+.featured-fade-leave-active {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+}
+
 /* ===============================
    2.0 — Discover Card Refresh
    =============================== */
@@ -3129,7 +3486,6 @@ ion-segment-button {
 }
 
 .discover-item:active {
-  transform: scale(0.97);
   box-shadow: var(--card-shadow-hover);
 }
 
@@ -3145,6 +3501,38 @@ ion-segment-button {
 .discover-label h3,
 .discover-label .discover-name {
   letter-spacing: -0.01em;
+}
+
+/* Keeps the verified-partner shield on the same line as the title instead
+   of wrapping to its own row below (name-row/home-partner-verified have no
+   layout of their own otherwise, since they're plain divs). */
+/* align-items: flex-start (not center) — .discover-grid--locations reserves
+   2 lines of height on the title (min-height: 36px) so single-vs-double-line
+   names never resize the card, but that leaves empty space below a 1-line
+   name. Centering against the whole reserved box put the shield below the
+   actual (first) line of text; flex-start keeps it pinned to where that line
+   really is regardless of whether the name wraps to one line or two. */
+.name-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.name-row h3 {
+  margin: 0;
+  min-width: 0;
+}
+
+.home-partner-verified {
+  color: var(--ion-color-carrot);
+  font-size: 14px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  line-height: 0;
+  margin-top: 2px;
 }
 
 .discover-item--compact {
@@ -3275,7 +3663,6 @@ ion-segment-button {
 }
 
 .leaderboard-hint-banner:active {
-  transform: scale(0.98);
   opacity: 0.9;
 }
 
@@ -3342,7 +3729,8 @@ ion-segment-button {
 .leaderboard-item::part(native) {
   overflow: visible !important;
   border-radius: var(--radius-lg) !important;
-  background: var(--card-bg);
+  background: var(--background, var(--card-bg)) !important;
+  color: var(--color, var(--text-main, var(--ion-text-color))) !important;
   border: 1px solid var(--card-border);
   box-shadow: var(--card-shadow);
   transition: box-shadow 0.2s ease, transform 0.15s ease;
@@ -3951,7 +4339,6 @@ ion-segment-button {
 }
 
 .locked-content-placeholder:active {
-  transform: scale(0.98);
   background: var(--ion-color-step-150, #e2e8f0);
 }
 

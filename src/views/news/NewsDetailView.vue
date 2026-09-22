@@ -2,6 +2,7 @@
   <ion-page>
     <ion-header class="ion-no-border immersive-header" :class="{ 'is-scrolled': isScrolled, 'has-ads': isNative && showAds }">
       <div v-if="isNative && showAds" id="ad-space-news-detail" :style="{ height: '65px', paddingTop: 'var(--ion-safe-area-top, 0)' }"></div>
+      <HouseAdCard v-if="showAds && (!isNative || failedAdSpaceId === 'ad-space-news-detail')" />
       <app-header 
         :title="newsItem?.title || ''" 
         show-back 
@@ -112,6 +113,8 @@ import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
 import timezone from 'dayjs/plugin/timezone'
 import {Capacitor} from "@capacitor/core";
+import HouseAdCard from '@/components/ads/HouseAdCard.vue'
+import { failedAdSpaceId } from '@/composables/useAdFallback'
 import AppHeader from "@/components/AppHeader.vue";
 
 // Extend dayjs
