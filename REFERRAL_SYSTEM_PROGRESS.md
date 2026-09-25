@@ -36,5 +36,19 @@ Tracking doc for the referral/commission/free-Pro-days feature. Delete this file
 11. [x] Extended `supabase/functions/revenuecat-webhook/index.ts`: new branch for the Pro entitlement — upserts `pro_subscriptions` (active on ACTIVE-type events, expired on EXPIRATION), flips matching `referral_redemptions` to `converted` via `process_referral_conversion`, creates `referral_rewards` row(s) per current mode, calls RC promotional-grant API for `free_days` mode and records `granted`/`failed` per reward.
 12. [x] Deployed updated edge function (version 4) to project `svmlwnzmheiishkdwafk`. **Needs the `REVENUECAT_SECRET_API_KEY` secret set before free_days mode will actually grant anything — see action item above.**
 13. [ ] Add locale strings (`src/locales/en.json`) for new UI text.
-14. [ ] Manual smoke test: redeem a code in onboarding, simulate/trigger a webhook conversion event, verify rows + admin dashboard + user page all reflect it correctly in both modes.
+13. [x] Locale strings added to `en.json` for the onboarding referral step (`profile.editProfile.referral*`). Admin dashboard and Invite & Earn page mostly use plain English strings inline (consistent with other admin-only screens in this codebase, e.g. "Merge Duplicate Products").
+14. [ ] **Still TODO — not yet done:**
+    - Verified `vue-tsc --noEmit` and `eslint` are clean on all new/edited files (only pre-existing, unrelated warnings/errors remain in `App.vue`/`ProfileView.vue`).
+    - **Not yet done**: manual end-to-end smoke test (redeem a code in onboarding on a real/simulated device, trigger a real or synthetic RevenueCat webhook event for "Halal Formosa Pro", verify `referral_redemptions`/`referral_rewards` update correctly, verify both the user "Invite & Earn" page and `/admin/referrals` reflect it, in BOTH commission and free_days modes).
+    - **Action needed before free_days mode works**: set the `REVENUECAT_SECRET_API_KEY` Supabase Edge Function secret (see note above).
+    - **Action needed to verify**: confirm the RevenueCat entitlement identifier really is the literal string `"Halal Formosa Pro"` in the RC dashboard (assumed from `useSubscriptionStatus.ts`).
 15. [ ] Delete this progress file once everything above is done and verified.
+
+## Status as of this checkpoint
+
+All code is written, applied/deployed, and type/lint-clean:
+- DB migration `20260925000000_referral_system.sql` — applied live (plus a follow-up tweak adding `reward_id` to `admin_referral_list`, also applied live).
+- `supabase/functions/revenuecat-webhook/index.ts` — deployed live (version 4).
+- `src/main.ts`, `src/views/profile/EditProfileView.vue`, `src/views/profile/InviteEarnView.vue`, `src/views/admin/ReferralsView.vue`, `src/composables/useReferrals.ts`, `src/composables/useAdminReferrals.ts`, `src/router/index.ts`, `src/views/profile/ProfileView.vue`, `src/locales/en.json` — all committed to git.
+
+What's left is verification, not more building: the two action items above (RC secret key + confirming the entitlement identifier), then a real device/sandbox smoke test end-to-end in both reward modes.
