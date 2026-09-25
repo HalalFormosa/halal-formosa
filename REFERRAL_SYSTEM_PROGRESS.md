@@ -44,6 +44,14 @@ Tracking doc for the referral/commission/free-Pro-days feature. Delete this file
     - **Action needed to verify**: confirm the RevenueCat entitlement identifier really is the literal string `"Halal Formosa Pro"` in the RC dashboard (assumed from `useSubscriptionStatus.ts`).
 15. [ ] Delete this progress file once everything above is done and verified.
 
+## Follow-up: QR code sharing (added after initial build)
+
+- [x] Added `qrcode` + `@types/qrcode` npm packages (installed; **not yet committed** — see note below).
+- [x] `InviteEarnView.vue` now generates a QR code (client-side, offline-capable, no third-party API call) encoding `https://app.halalformosa.com/signup?ref=HFXXXX` — the same universal-link format `handleDeepLink()` in `main.ts` already parses `?ref=` from. Displayed inline under the code, plus a "Share QR code" button that (on native platforms) writes the PNG to `Directory.Cache` via `@capacitor/filesystem` and shares it as a file through `@capacitor/share`, mirroring the existing pattern in `useSharePlace.ts`. Falls back to the plain link share on web/desktop where there's no filesystem to hand the share sheet a file.
+- [x] Added `referral.*` locale namespace to `en.json`.
+- **NOTE — package.json/package-lock.json left uncommitted on purpose**: these files already had unrelated pending changes before this session started (an admob → levelplay migration in progress, visible in the initial git status). Adding `qrcode` landed in the same files, so committing them now would mix that unrelated in-progress work into a referral-feature commit. Left unstaged — review and commit `package.json`/`package-lock.json` yourself (they contain both the qrcode addition and your existing pending changes).
+- Fixed a bug on the way: the webhook read `REVENUECAT_SECRET_API_KEY`, which was never set — a secret already existed under `REVENUECAT_SECRET_KEY` (confirmed via `supabase secrets list`). Repointed the webhook at the existing name, redeployed as version 5. No new secret needed.
+
 ## Status as of this checkpoint
 
 All code is written, applied/deployed, and type/lint-clean:

@@ -9,9 +9,19 @@
         <ion-card-content class="ion-text-center">
           <p class="code-label">{{ $t('referral.yourCode') || 'Your referral code' }}</p>
           <h1 class="code-value">{{ summary.my_code }}</h1>
+
+          <div v-if="qrDataUrl" class="qr-wrapper">
+            <img :src="qrDataUrl" class="qr-image" alt="Referral QR code" />
+            <p class="qr-hint">{{ $t('referral.qrHint') || 'Scan to sign up with your code' }}</p>
+          </div>
+
           <ion-button expand="block" color="carrot" shape="round" @click="shareCode">
             <ion-icon :icon="shareSocialOutline" slot="start" />
             {{ $t('referral.share') || 'Share' }}
+          </ion-button>
+          <ion-button v-if="qrDataUrl" expand="block" fill="outline" color="light" @click="shareQrCode">
+            <ion-icon :icon="qrCodeOutline" slot="start" />
+            {{ $t('referral.shareQr') || 'Share QR code' }}
           </ion-button>
         </ion-card-content>
       </ion-card>
@@ -73,9 +83,12 @@ import {
   IonList, IonItem, IonLabel, IonBadge, IonSpinner
 } from '@ionic/vue';
 import AppHeader from '@/components/AppHeader.vue';
-import { shareSocialOutline } from 'ionicons/icons';
+import { shareSocialOutline, qrCodeOutline } from 'ionicons/icons';
 import { Share } from '@capacitor/share';
-import { computed, onMounted } from 'vue';
+import { Filesystem, Directory } from '@capacitor/filesystem';
+import { Capacitor } from '@capacitor/core';
+import QRCode from 'qrcode';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useReferrals } from '@/composables/useReferrals';
 
@@ -85,19 +98,57 @@ const { summary, config, loading, loadReferralConfig, loadMyReferralSummary } = 
 const isFreeDaysMode = computed(() => config.value?.mode === 'free_days');
 const pageTitle = computed(() => isFreeDaysMode.value ? (t('referral.titlePro') || 'Invite & Earn Pro') : (t('referral.titleCash') || 'Invite & Earn NT$'));
 
+// Same universal-link domain handleDeepLink() in main.ts already parses ?ref= from.
+const referralLink = computed(() => {
+  const code = summary.value?.my_code;
+  return code ? `https://app.halalformosa.com/signup?ref=${code}` : null;
+});
+
+const qrDataUrl = ref<string | null>(null);
+watch(referralLink, async (link) => {
+  qrDataUrl.value = link ? await QRCode.toDataURL(link, { width: 480, margin: 1 }) : null;
+}, { immediate: true });
+
 onMounted(async () => {
   await Promise.all([loadReferralConfig(), loadMyReferralSummary()]);
 });
 
 async function shareCode() {
   const code = summary.value?.my_code;
-  if (!code) return;
+  if (!code || !referralLink.value) return;
   try {
     await Share.share({
       title: 'Halal Formosa',
       text: t('referral.shareText', { code }) as string || `Use my referral code ${code} on Halal Formosa!`,
-      url: `https://app.halalformosa.com/signup?ref=${code}`,
+      url: referralLink.value,
       dialogTitle: t('referral.share') as string || 'Share',
+    });
+  } catch {
+    /* user cancelled share sheet — nothing to do */
+  }
+}
+
+async function shareQrCode() {
+  const code = summary.value?.my_code;
+  if (!code || !qrDataUrl.value) return;
+  const text = t('referral.shareText', { code }) as string || `Use my referral code ${code} on Halal Formosa!`;
+
+  if (!Capacitor.isNativePlatform()) {
+    // Web/desktop: no filesystem to hand the share sheet a file, fall back to the link share.
+    await shareCode();
+    return;
+  }
+
+  try {
+    const base64 = qrDataUrl.value.replace(/^data:image\/\w+;base64,/, '');
+    const path = `share/referral-qr-${Date.now()}.png`;
+    await Filesystem.writeFile({ path, data: base64, directory: Directory.Cache, recursive: true });
+    const { uri } = await Filesystem.getUri({ path, directory: Directory.Cache });
+    await Share.share({
+      title: 'Halal Formosa',
+      text,
+      files: [uri],
+      dialogTitle: t('referral.shareQr') as string || 'Share QR code',
     });
   } catch {
     /* user cancelled share sheet — nothing to do */
@@ -134,6 +185,22 @@ function statusColor(status: string) {
   margin: 4px 0 16px;
   letter-spacing: 2px;
   color: white;
+}
+.qr-wrapper {
+  margin: 0 0 16px;
+}
+.qr-image {
+  width: 180px;
+  height: 180px;
+  border-radius: 12px;
+  background: white;
+  padding: 8px;
+}
+.qr-hint {
+  margin: 8px 0 0;
+  color: white;
+  opacity: 0.85;
+  font-size: 0.85rem;
 }
 .section-label {
   margin: 0 0 8px;

@@ -790,6 +790,27 @@
     "nearbyPrompts": "Nearby review reminders",
     "nearbyPromptsNote": "Privately remind me to share Muslim facilities after I visit a mosque or halal eatery."
   },
+  "referral": {
+    "titleCash": "Invite & Earn NT$",
+    "titlePro": "Invite & Earn Pro",
+    "yourCode": "Your referral code",
+    "share": "Share",
+    "shareQr": "Share QR code",
+    "shareText": "Use my referral code {code} on Halal Formosa!",
+    "qrHint": "Scan to sign up with your code",
+    "referredBy": "You were referred by",
+    "someone": "Someone",
+    "yourRewardsPro": "Your Pro days earned",
+    "yourRewardsCash": "Your earnings",
+    "days": "days",
+    "pending": "Pending",
+    "paid": "Paid",
+    "peopleYouReferred": "People you've referred",
+    "noReferralsYet": "You haven't referred anyone yet.",
+    "statusConverted": "Converted",
+    "statusCanceled": "Canceled",
+    "statusSignedUp": "Signed up"
+  },
   "profile": {
     "sections": {
       "account": "Account & Preferences",
