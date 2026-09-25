@@ -797,6 +797,8 @@
     "share": "Share",
     "shareQr": "Share QR code",
     "linkCopied": "Link copied — paste it anywhere!",
+    "deadlinePrompt": "Earn NT$ for referrals made before:",
+    "deadlinePassed": "The NT$ earning period has ended.",
     "shareText": "Use my referral code {code} on Halal Formosa!",
     "qrHint": "Scan to sign up with your code",
     "referredBy": "You were referred by",

@@ -46,6 +46,19 @@
         </ion-card-content>
       </ion-card>
 
+      <ion-card v-if="!isFreeDaysMode && config?.commission_deadline" class="fade-in deadline-card" :class="{ 'deadline-expired': deadlineHasPassed }">
+        <ion-card-content class="ion-text-center">
+          <ion-icon :icon="timeOutline" class="deadline-icon" />
+          <p v-if="deadlineHasPassed" class="deadline-text">
+            {{ $t('referral.deadlinePassed') || 'The NT$ earning period has ended.' }}
+          </p>
+          <template v-else>
+            <p class="deadline-text">{{ $t('referral.deadlinePrompt') || 'Earn NT$ for referrals made before:' }}</p>
+            <p class="deadline-date">{{ formatDeadline(config.commission_deadline) }}</p>
+          </template>
+        </ion-card-content>
+      </ion-card>
+
       <ion-card v-if="summary?.referred_by" class="fade-in">
         <ion-card-content>
           <p class="section-label">{{ $t('referral.referredBy') || 'You were referred by' }}</p>
@@ -105,7 +118,7 @@ import {
 import AppHeader from '@/components/AppHeader.vue';
 import {
   shareSocialOutline, qrCodeOutline, copyOutline, chatbubbleEllipsesOutline,
-  logoWhatsapp, logoFacebook, logoX
+  logoWhatsapp, logoFacebook, logoX, timeOutline
 } from 'ionicons/icons';
 import { Share } from '@capacitor/share';
 import { Filesystem, Directory } from '@capacitor/filesystem';
@@ -123,6 +136,15 @@ const { summary, config, loading, loadReferralConfig, loadMyReferralSummary } = 
 
 const isFreeDaysMode = computed(() => config.value?.mode === 'free_days');
 const pageTitle = computed(() => isFreeDaysMode.value ? (t('referral.titlePro') || 'Invite & Earn Pro') : (t('referral.titleCash') || 'Invite & Earn NT$'));
+
+const deadlineHasPassed = computed(() => {
+  const deadline = config.value?.commission_deadline;
+  return !!deadline && new Date(deadline).getTime() < Date.now();
+});
+
+function formatDeadline(iso: string) {
+  return new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+}
 
 // Same universal-link domain handleDeepLink() in main.ts already parses ?ref= from.
 const referralLink = computed(() => {
@@ -297,6 +319,25 @@ function statusColor(status: string) {
 }
 .quick-share-btn:active {
   background: rgba(255, 255, 255, 0.4);
+}
+.deadline-card {
+  --background: var(--ion-color-warning-tint, #ffe08a);
+}
+.deadline-card.deadline-expired {
+  --background: var(--ion-color-medium-tint, #d7d8da);
+}
+.deadline-icon {
+  font-size: 1.6rem;
+  margin-bottom: 4px;
+}
+.deadline-text {
+  margin: 0;
+  font-size: 0.9rem;
+}
+.deadline-date {
+  margin: 4px 0 0;
+  font-weight: 700;
+  font-size: 1.1rem;
 }
 .section-label {
   margin: 0 0 8px;

@@ -25,6 +25,7 @@ export interface ReferralConfig {
   commission_amount_ntd: number;
   discount_days_referrer: number;
   discount_days_referred: number;
+  commission_deadline: string | null;
 }
 
 const config = ref<ReferralConfig | null>(null);
@@ -39,7 +40,7 @@ const inviteMenuLabel = computed(() =>
 async function loadReferralConfig() {
   const { data, error } = await supabase
     .from('referral_config')
-    .select('mode, commission_amount_ntd, discount_days_referrer, discount_days_referred')
+    .select('mode, commission_amount_ntd, discount_days_referrer, discount_days_referred, commission_deadline')
     .eq('id', true)
     .maybeSingle();
   if (!error && data) config.value = data as ReferralConfig;

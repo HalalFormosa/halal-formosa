@@ -30,6 +30,7 @@ export interface AdminReferralConfig {
   commission_amount_ntd: number;
   discount_days_referrer: number;
   discount_days_referred: number;
+  commission_deadline: string | null;
 }
 
 const funnel = ref<ReferralFunnel | null>(null);
@@ -57,19 +58,21 @@ async function loadReferralList() {
 async function loadConfig() {
   const { data, error } = await supabase
     .from('referral_config')
-    .select('mode, commission_amount_ntd, discount_days_referrer, discount_days_referred')
+    .select('mode, commission_amount_ntd, discount_days_referrer, discount_days_referred, commission_deadline')
     .eq('id', true)
     .maybeSingle();
   if (!error && data) config.value = data as AdminReferralConfig;
   return config.value;
 }
 
-async function updateConfig(patch: Partial<AdminReferralConfig>) {
+async function updateConfig(patch: Partial<AdminReferralConfig>, options?: { clearDeadline?: boolean }) {
   const { error } = await supabase.rpc('admin_update_referral_config', {
     p_mode: patch.mode ?? null,
     p_commission_amount_ntd: patch.commission_amount_ntd ?? null,
     p_discount_days_referrer: patch.discount_days_referrer ?? null,
     p_discount_days_referred: patch.discount_days_referred ?? null,
+    p_commission_deadline: patch.commission_deadline ?? null,
+    p_clear_deadline: options?.clearDeadline ?? false,
   });
   if (!error) await loadConfig();
   return error;

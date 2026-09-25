@@ -28,7 +28,28 @@
                   @ionChange="pendingCommission = Number(($event.target as any).value)"
               ></ion-input>
             </ion-item>
-            <ion-button size="small" fill="outline" color="carrot" @click="saveCommission">Save</ion-button>
+
+            <ion-item lines="none">
+              <div class="deadline-field">
+                <label class="deadline-label">Deadline (users can only earn NT$ before this)</label>
+                <input
+                    type="datetime-local"
+                    class="deadline-input"
+                    :value="deadlineInputValue"
+                    @change="pendingDeadline = ($event.target as HTMLInputElement).value"
+                />
+              </div>
+            </ion-item>
+            <p class="deadline-status">
+              <template v-if="!config?.commission_deadline">No deadline set — commission stays open indefinitely.</template>
+              <template v-else-if="isDeadlinePast(config.commission_deadline)">⚠️ Deadline passed on {{ formatDateTime(config.commission_deadline) }} — new conversions no longer earn commission.</template>
+              <template v-else>Open until {{ formatDateTime(config.commission_deadline) }}.</template>
+            </p>
+
+            <div class="button-row">
+              <ion-button size="small" fill="outline" color="carrot" @click="saveCommission">Save</ion-button>
+              <ion-button v-if="config?.commission_deadline" size="small" fill="clear" color="medium" @click="clearDeadline">Clear deadline</ion-button>
+            </div>
           </div>
 
           <div v-else class="config-fields">
@@ -118,7 +139,7 @@ import {
   IonLabel, IonItem, IonInput, IonButton, IonList, IonBadge, IonSpinner, toastController
 } from '@ionic/vue';
 import AppHeader from '@/components/AppHeader.vue';
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useAdminReferrals, type ReferralListRow } from '@/composables/useAdminReferrals';
 
 const { funnel, rows, config, loading, loadFunnel, loadReferralList, loadConfig, updateConfig, markCommissionPaid } = useAdminReferrals();
@@ -126,6 +147,18 @@ const { funnel, rows, config, loading, loadFunnel, loadReferralList, loadConfig,
 const pendingCommission = ref<number | null>(null);
 const pendingDaysReferrer = ref<number | null>(null);
 const pendingDaysReferred = ref<number | null>(null);
+const pendingDeadline = ref<string | null>(null); // datetime-local string, local time
+
+// datetime-local inputs need "YYYY-MM-DDTHH:mm" in LOCAL time, not the ISO
+// string's UTC representation — convert on the way in and back to a real
+// ISO/UTC instant on the way out.
+const deadlineInputValue = computed(() => {
+  if (pendingDeadline.value !== null) return pendingDeadline.value;
+  if (!config.value?.commission_deadline) return '';
+  const d = new Date(config.value.commission_deadline);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+});
 
 onMounted(async () => {
   await Promise.all([loadFunnel(), loadReferralList(), loadConfig()]);
@@ -138,9 +171,27 @@ async function onModeChange(ev: CustomEvent) {
 }
 
 async function saveCommission() {
-  if (pendingCommission.value === null) return;
-  const error = await updateConfig({ commission_amount_ntd: pendingCommission.value });
+  const patch: { commission_amount_ntd?: number; commission_deadline?: string } = {};
+  if (pendingCommission.value !== null) patch.commission_amount_ntd = pendingCommission.value;
+  if (pendingDeadline.value) patch.commission_deadline = new Date(pendingDeadline.value).toISOString();
+  if (Object.keys(patch).length === 0) return;
+  const error = await updateConfig(patch);
+  if (!error) pendingDeadline.value = null;
   await notify(error ? 'Failed to save.' : 'Saved.');
+}
+
+async function clearDeadline() {
+  const error = await updateConfig({}, { clearDeadline: true });
+  if (!error) pendingDeadline.value = null;
+  await notify(error ? 'Failed to clear deadline.' : 'Deadline cleared.');
+}
+
+function isDeadlinePast(iso: string) {
+  return new Date(iso).getTime() < Date.now();
+}
+
+function formatDateTime(iso: string) {
+  return new Date(iso).toLocaleString();
 }
 
 async function saveFreeDays() {
@@ -188,6 +239,35 @@ function statusColor(status: string) {
   flex-direction: column;
   gap: 8px;
   align-items: flex-start;
+}
+.deadline-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  padding: 8px 0;
+}
+.deadline-label {
+  font-size: 0.75rem;
+  opacity: 0.7;
+}
+.deadline-input {
+  border: 1px solid var(--ion-color-medium, #92949c);
+  border-radius: 8px;
+  padding: 8px;
+  font-size: 0.95rem;
+  background: transparent;
+  color: inherit;
+}
+.deadline-status {
+  margin: 4px 0 0;
+  font-size: 0.85rem;
+  opacity: 0.8;
+}
+.button-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
 }
 .funnel-row {
   display: flex;

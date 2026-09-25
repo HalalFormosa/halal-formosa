@@ -58,6 +58,16 @@ Tracking doc for the referral/commission/free-Pro-days feature. Delete this file
 - [x] Added a quick-share row (WhatsApp, LINE, Facebook, X, copy-link) using each platform's own share/compose URL, opened via `@capacitor/browser`'s `Browser.open()` (falls back to `window.open` if that throws) — guarantees one-tap sharing to the platforms most relevant to this app's audience regardless of whether the device's own share sheet lists them. No new dependencies needed (`@capacitor/browser` and `@capacitor/clipboard` were already used elsewhere in the app).
 - The primary "Share" button (native OS share sheet via `Share.share()`) still covers every other installed app on mobile — this is additive, not a replacement.
 
+## Follow-up: commission deadline (added after sharing improvements)
+
+- [x] `referral_config.commission_deadline` (timestamptz, nullable) — applied live via a follow-up migration (also folded into the base `20260925000000_referral_system.sql` file for a clean fresh-apply history).
+- [x] `admin_update_referral_config` extended with `p_commission_deadline` + `p_clear_deadline` (explicit clear, since a null deadline param on its own just means "leave unchanged"). Old 4-arg signature dropped live to avoid an ambiguous overload.
+- [x] `process_referral_conversion` now enforces the deadline: in commission mode, if `now() > commission_deadline`, the redemption still gets marked `converted` but **no commission reward is created** (`free_days` mode is unaffected). This was a judgment call — flagged to the user, no objection raised.
+- [x] Admin `/admin/referrals`: datetime-local input + status line ("Open until…" / "⚠️ Deadline passed…" / "No deadline set") + "Clear deadline" button, in the commission config section only.
+- [x] User `/profile/invite-earn`: a banner card (shown only in commission mode when a deadline is set) reading "Earn NT$ for referrals made before: <date>", switching to an expired-state message once passed.
+- [x] Locale strings added (`referral.deadlinePrompt`, `referral.deadlinePassed`).
+- Verified `vue-tsc --noEmit` and `eslint` clean; confirmed the new column live via `execute_sql`.
+
 ## Status as of this checkpoint
 
 All code is written, applied/deployed, and type/lint-clean:
