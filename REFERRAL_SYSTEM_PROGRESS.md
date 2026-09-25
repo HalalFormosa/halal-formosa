@@ -23,9 +23,9 @@ Tracking doc for the referral/commission/free-Pro-days feature. Delete this file
 ## Steps
 
 1. [ ] Read current `EditProfileView.vue`, `router/index.ts`, `main.ts` (relevant sections), `business_account_subscriptions` migration, `revenuecat-webhook/index.ts`, `AnalyticsDashboardView.vue` for exact conventions/patterns to match.
-2. [ ] Write migration: `referral_codes`, `referral_redemptions`, `referral_rewards`, `referral_config`, `pro_subscriptions` tables + RLS policies.
-3. [ ] Write RPCs: `generate_referral_code_for_user`, `redeem_referral_code`, `get_my_referral_summary`, `admin_set_referral_mode`, `admin_update_referral_config`, `admin_referral_funnel`, `admin_referral_list`, `admin_mark_commission_paid`.
-4. [ ] Apply migration to Supabase project (via MCP `apply_migration`).
+2. [x] Write migration: `referral_codes`, `referral_redemptions`, `referral_rewards`, `referral_config`, `pro_subscriptions` tables + RLS policies. File: `supabase/migrations/20260925000000_referral_system.sql`.
+3. [x] Write RPCs: `generate_referral_code_for_user`, `redeem_referral_code`, `get_my_referral_summary`, `admin_update_referral_config`, `admin_referral_funnel`, `admin_referral_list`, `admin_mark_commission_paid`, plus service-role-only `process_referral_conversion` + `apply_pro_subscription` (called from the webhook, not the client).
+4. [x] Applied migration to Supabase project `svmlwnzmheiishkdwafk` (via MCP `apply_migration`) — live in the DB already. Also revoked `anon`/`public` EXECUTE on the authenticated/admin RPCs (advisor flagged default PUBLIC grant; functions were already safe internally via `auth.uid()`/`is_admin()` checks, tightened anyway).
 5. [ ] Update `main.ts`: capture `?ref=CODE` deep link into localStorage; call `generate_referral_code_for_user` once per user (idempotent) alongside existing profile sync.
 6. [ ] Update `EditProfileView.vue` Step 1: add required referral-code choice (enter code / "I don't have a code"), pre-fill from captured deep link, call `redeem_referral_code` on wizard completion.
 7. [ ] New composable `src/composables/useReferrals.ts` (user-facing data).
