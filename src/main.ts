@@ -477,7 +477,7 @@ supabase.auth.onAuthStateChange(async (event, session) => {
         }
 
         // 🎟️ Idempotent — returns the existing code if one was already generated.
-        supabase.rpc('generate_referral_code_for_user').catch(e => console.warn('⚠️ Referral code generation failed:', e));
+        supabase.rpc('generate_referral_code_for_user').then(undefined, (e: any) => console.warn('⚠️ Referral code generation failed:', e));
     }
 })
 
@@ -661,7 +661,7 @@ async function bootstrap() {
             }
 
             // 🎟️ Idempotent — returns the existing code if one was already generated.
-            supabase.rpc('generate_referral_code_for_user').catch(e => console.warn('⚠️ Referral code generation failed:', e));
+            supabase.rpc('generate_referral_code_for_user').then(undefined, (e: any) => console.warn('⚠️ Referral code generation failed:', e));
         };
 
         if (raced === TIMED_OUT) {
