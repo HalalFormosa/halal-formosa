@@ -23,6 +23,26 @@
             <ion-icon :icon="qrCodeOutline" slot="start" />
             {{ $t('referral.shareQr') || 'Share QR code' }}
           </ion-button>
+
+          <!-- One-tap links for specific platforms, in case a device's own
+               share sheet doesn't list them (common on desktop browsers). -->
+          <div class="quick-share-row">
+            <button class="quick-share-btn" aria-label="Share on WhatsApp" @click="shareVia('whatsapp')">
+              <ion-icon :icon="logoWhatsapp" />
+            </button>
+            <button class="quick-share-btn" aria-label="Share on LINE" @click="shareVia('line')">
+              <ion-icon :icon="chatbubbleEllipsesOutline" />
+            </button>
+            <button class="quick-share-btn" aria-label="Share on Facebook" @click="shareVia('facebook')">
+              <ion-icon :icon="logoFacebook" />
+            </button>
+            <button class="quick-share-btn" aria-label="Share on X" @click="shareVia('x')">
+              <ion-icon :icon="logoX" />
+            </button>
+            <button class="quick-share-btn" aria-label="Copy link" @click="copyLink">
+              <ion-icon :icon="copyOutline" />
+            </button>
+          </div>
         </ion-card-content>
       </ion-card>
 
@@ -83,13 +103,19 @@ import {
   IonList, IonItem, IonLabel, IonBadge, IonSpinner
 } from '@ionic/vue';
 import AppHeader from '@/components/AppHeader.vue';
-import { shareSocialOutline, qrCodeOutline } from 'ionicons/icons';
+import {
+  shareSocialOutline, qrCodeOutline, copyOutline, chatbubbleEllipsesOutline,
+  logoWhatsapp, logoFacebook, logoX
+} from 'ionicons/icons';
 import { Share } from '@capacitor/share';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Capacitor } from '@capacitor/core';
+import { Browser } from '@capacitor/browser';
+import { Clipboard } from '@capacitor/clipboard';
 import QRCode from 'qrcode';
 import { computed, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { toastController } from '@ionic/vue';
 import { useReferrals } from '@/composables/useReferrals';
 
 const { t } = useI18n();
@@ -113,19 +139,67 @@ onMounted(async () => {
   await Promise.all([loadReferralConfig(), loadMyReferralSummary()]);
 });
 
+function shareTextFor(code: string) {
+  return t('referral.shareText', { code }) as string || `Use my referral code ${code} on Halal Formosa!`;
+}
+
 async function shareCode() {
   const code = summary.value?.my_code;
   if (!code || !referralLink.value) return;
   try {
     await Share.share({
       title: 'Halal Formosa',
-      text: t('referral.shareText', { code }) as string || `Use my referral code ${code} on Halal Formosa!`,
+      text: shareTextFor(code),
       url: referralLink.value,
       dialogTitle: t('referral.share') as string || 'Share',
     });
-  } catch {
-    /* user cancelled share sheet — nothing to do */
+  } catch (err: any) {
+    // On desktop web there's often no native/Web Share API at all — Capacitor's
+    // Share plugin throws rather than silently no-oping, so fall back to a
+    // copy-to-clipboard the user can paste into any app themselves. A real
+    // "user cancelled the sheet" case also lands here but a harmless extra
+    // clipboard copy is a fine trade-off for never leaving desktop users stuck.
+    if (String(err?.message ?? err).toLowerCase().includes('cancel')) return;
+    await copyLink();
   }
+}
+
+// One-tap deep links into specific platforms' own share/compose flows, for
+// devices/browsers whose native share sheet doesn't already list them.
+async function shareVia(platform: 'whatsapp' | 'line' | 'facebook' | 'x') {
+  const code = summary.value?.my_code;
+  if (!code || !referralLink.value) return;
+  const text = shareTextFor(code);
+  const link = referralLink.value;
+
+  const urls: Record<typeof platform, string> = {
+    whatsapp: `https://wa.me/?text=${encodeURIComponent(`${text} ${link}`)}`,
+    line: `https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(link)}&text=${encodeURIComponent(text)}`,
+    facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(link)}`,
+    x: `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(link)}`,
+  };
+
+  try {
+    await Browser.open({ url: urls[platform] });
+  } catch {
+    window.open(urls[platform], '_blank');
+  }
+}
+
+async function copyLink() {
+  const code = summary.value?.my_code;
+  if (!code || !referralLink.value) return;
+  try {
+    await Clipboard.write({ string: `${shareTextFor(code)} ${referralLink.value}` });
+  } catch {
+    /* clipboard unavailable — nothing more we can do */
+  }
+  const toast = await toastController.create({
+    message: t('referral.linkCopied') as string || 'Link copied — paste it anywhere!',
+    duration: 2000,
+    position: 'bottom',
+  });
+  await toast.present();
 }
 
 async function shareQrCode() {
@@ -201,6 +275,28 @@ function statusColor(status: string) {
   color: white;
   opacity: 0.85;
   font-size: 0.85rem;
+}
+.quick-share-row {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 12px;
+}
+.quick-share-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.25);
+  color: white;
+  font-size: 1.3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.quick-share-btn:active {
+  background: rgba(255, 255, 255, 0.4);
 }
 .section-label {
   margin: 0 0 8px;

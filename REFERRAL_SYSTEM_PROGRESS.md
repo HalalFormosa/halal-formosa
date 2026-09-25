@@ -52,6 +52,12 @@ Tracking doc for the referral/commission/free-Pro-days feature. Delete this file
 - **NOTE — package.json/package-lock.json left uncommitted on purpose**: these files already had unrelated pending changes before this session started (an admob → levelplay migration in progress, visible in the initial git status). Adding `qrcode` landed in the same files, so committing them now would mix that unrelated in-progress work into a referral-feature commit. Left unstaged — review and commit `package.json`/`package-lock.json` yourself (they contain both the qrcode addition and your existing pending changes).
 - Fixed a bug on the way: the webhook read `REVENUECAT_SECRET_API_KEY`, which was never set — a secret already existed under `REVENUECAT_SECRET_KEY` (confirmed via `supabase secrets list`). Repointed the webhook at the existing name, redeployed as version 5. No new secret needed.
 
+## Follow-up: broader social sharing (added after QR code)
+
+- [x] `shareCode()` now falls back to a clipboard copy + toast when the native/Web Share API throws (e.g. desktop browsers with no Web Share support), instead of silently doing nothing.
+- [x] Added a quick-share row (WhatsApp, LINE, Facebook, X, copy-link) using each platform's own share/compose URL, opened via `@capacitor/browser`'s `Browser.open()` (falls back to `window.open` if that throws) — guarantees one-tap sharing to the platforms most relevant to this app's audience regardless of whether the device's own share sheet lists them. No new dependencies needed (`@capacitor/browser` and `@capacitor/clipboard` were already used elsewhere in the app).
+- The primary "Share" button (native OS share sheet via `Share.share()`) still covers every other installed app on mobile — this is additive, not a replacement.
+
 ## Status as of this checkpoint
 
 All code is written, applied/deployed, and type/lint-clean:
