@@ -46,7 +46,32 @@
         </ion-card-content>
       </ion-card>
 
-      <ion-card v-if="!isFreeDaysMode && config?.commission_deadline" class="fade-in deadline-card" :class="{ 'deadline-expired': deadlineHasPassed }">
+      <!-- Milestone campaign: replaces the always-on reward while it runs, so
+           the plain deadline banner below is hidden in favor of this. -->
+      <ion-card v-if="summary?.active_campaign" class="fade-in campaign-card">
+        <ion-card-content>
+          <p class="section-label">{{ $t('referral.campaignActive') || 'Promotion running now' }}</p>
+          <p class="campaign-ends">{{ $t('referral.campaignEnds', { date: formatDeadline(summary.active_campaign.ends_at) }) || `Ends ${formatDeadline(summary.active_campaign.ends_at)}` }}</p>
+          <p class="campaign-count">{{ summary.active_campaign.my_valid_conversions }} {{ $t('referral.campaignValidReferrals') || 'valid referrals so far' }}</p>
+
+          <div class="tier-progress">
+            <div
+                v-for="tier in summary.active_campaign.tiers"
+                :key="tier.threshold"
+                class="tier-row"
+                :class="{ 'tier-reached': summary.active_campaign.my_valid_conversions >= tier.threshold }"
+            >
+              <ion-icon :icon="summary.active_campaign.my_valid_conversions >= tier.threshold ? checkmarkCircle : ellipseOutline" />
+              <span class="tier-threshold">{{ tier.threshold }} {{ $t('referral.people') || 'people' }}</span>
+              <span class="tier-reward">
+                {{ isFreeDaysMode ? `${tier.days_granted} ${$t('referral.days') || 'days'}` : `NT$ ${tier.amount_ntd}` }}
+              </span>
+            </div>
+          </div>
+        </ion-card-content>
+      </ion-card>
+
+      <ion-card v-else-if="!isFreeDaysMode && config?.commission_deadline" class="fade-in deadline-card" :class="{ 'deadline-expired': deadlineHasPassed }">
         <ion-card-content class="ion-text-center">
           <ion-icon :icon="timeOutline" class="deadline-icon" />
           <p v-if="deadlineHasPassed" class="deadline-text">
@@ -118,7 +143,7 @@ import {
 import AppHeader from '@/components/AppHeader.vue';
 import {
   shareSocialOutline, qrCodeOutline, copyOutline, chatbubbleEllipsesOutline,
-  logoWhatsapp, logoFacebook, logoX, timeOutline
+  logoWhatsapp, logoFacebook, logoX, timeOutline, checkmarkCircle, ellipseOutline
 } from 'ionicons/icons';
 import { Share } from '@capacitor/share';
 import { Filesystem, Directory } from '@capacitor/filesystem';
@@ -338,6 +363,37 @@ function statusColor(status: string) {
   margin: 4px 0 0;
   font-weight: 700;
   font-size: 1.1rem;
+}
+.campaign-card {
+  --background: var(--ion-color-carrot-tint, #ffd9b3);
+}
+.campaign-ends {
+  margin: 0 0 4px;
+  font-size: 0.85rem;
+  opacity: 0.8;
+}
+.campaign-count {
+  margin: 0 0 12px;
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+.tier-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.tier-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  opacity: 0.6;
+}
+.tier-row.tier-reached {
+  opacity: 1;
+  font-weight: 600;
+}
+.tier-threshold {
+  flex: 1;
 }
 .section-label {
   margin: 0 0 8px;

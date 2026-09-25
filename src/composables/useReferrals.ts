@@ -18,6 +18,15 @@ export interface ReferralSummary {
     paid_ntd: number;
     total_days_granted: number;
   };
+  active_campaign: ReferralCampaignProgress | null;
+}
+
+export interface ReferralCampaignProgress {
+  id: string;
+  starts_at: string;
+  ends_at: string;
+  my_valid_conversions: number;
+  tiers: Array<{ threshold: number; amount_ntd: number; days_granted: number }>;
 }
 
 export interface ReferralConfig {

@@ -68,6 +68,23 @@ Tracking doc for the referral/commission/free-Pro-days feature. Delete this file
 - [x] Locale strings added (`referral.deadlinePrompt`, `referral.deadlinePassed`).
 - Verified `vue-tsc --noEmit` and `eslint` clean; confirmed the new column live via `execute_sql`.
 
+## Follow-up: milestone campaigns (added after commission deadline)
+
+User showed a real promo table ("Halal Formosa 兩週推廣獎勵計畫") that's structurally different from the always-on per-conversion system: admin-launched fixed 2-week windows, tiered thresholds (5/10/20 new paying members), paid ONCE at the highest tier reached by window end (not per-conversion), excluding refunded/duplicate accounts. After comparing designs, user confirmed: **general per-conversion program stays as the default**, but **while an admin-launched campaign is active, it fully replaces (not stacks with) per-conversion rewards for conversions in its window** — milestone-only during a campaign. Reward mode (commission/free_days) stays the existing **global admin toggle** (not a per-user choice, despite the table implying that) — so a tier pays its NT$ value in commission mode or its day-value in free_days mode.
+
+- [x] New tables: `referral_campaigns` (starts_at/ends_at/cancelled_at/finalized_at), `referral_campaign_tiers` (threshold/amount_ntd/days_granted per campaign, admin-configurable count — not locked to exactly 3).
+- [x] `referral_rewards.redemption_id` is now nullable, added `campaign_id` + `source ('per_conversion'|'milestone')` — a milestone reward is tied to a referrer+campaign, not a single redemption. Constraint enforces exactly one of `redemption_id`/`campaign_id` set. Unique index on `(campaign_id, recipient_user_id)` prevents double-payout.
+- [x] `pro_subscriptions.refunded_at` added — "valid member" (per the table's own rule) excludes refunded conversions from milestone counts. `referral_valid_conversion_count()` is the shared counting helper.
+- [x] `process_referral_conversion` now checks for an active campaign first: if one covers the current moment, it suppresses the per-conversion reward entirely (just records the conversion) — the milestone payout happens later at finalize.
+- [x] `auto_finalize_referral_campaigns()` — for any campaign whose window has closed and isn't finalized yet: for each referrer, counts valid conversions in-window, finds the single highest tier reached, inserts ONE reward at that tier's value (current global mode decides NT$ vs. days), marks the campaign finalized. Idempotent (safe to call repeatedly). Cancelled campaigns are voided — never finalized, never paid. Called opportunistically (no cron) from `process_referral_conversion` and `get_my_referral_summary`.
+- [x] **Refund detection** (best-effort, verified against RC's webhook docs): `CANCELLATION` events check `cancel_reason === 'CUSTOMER_SUPPORT'` OR negative `price`/`price_in_purchased_currency` → calls new `set_pro_subscription_refunded(user, true)`. `REFUND_REVERSED` events un-flag it. Docs themselves note refunds on non-latest periods don't always fire `CANCELLATION` at all — flagged as a known best-effort limit, not something client-side code can close.
+- [x] **Gap caught and fixed during implementation**: milestone free-Pro-days rewards are created inside Postgres (`auto_finalize_referral_campaigns`), which has no network access to call RevenueCat's grant API — added `claim_pending_milestone_grants()` (service-role) + a sweep in the webhook (`revenuecat-webhook` version 6, redeployed) that grants any pending ones whenever a Pro-entitlement webhook fires, in lieu of a dedicated cron job.
+- [x] Admin `/admin/referrals`: new "Milestone campaigns" section — create a campaign (start/end + arbitrary tier rows), list past/active/cancelled campaigns with participant/payout totals, click through to a per-referrer progress leaderboard, cancel an unfinalized campaign.
+- [x] User `/profile/invite-earn`: when a campaign is active, a progress card replaces the plain deadline banner — shows valid-conversion count and each tier with a reached/not-reached indicator and its NT$-or-days value.
+- [x] Migration file: `supabase/migrations/20260925010000_referral_milestone_campaigns.sql` (separate file, matching this repo's one-migration-per-change convention — unlike earlier follow-ups which got folded into the base file).
+- Verified live: admin-gate gets correctly rejected outside an authenticated admin session; `auto_finalize_referral_campaigns()` correctly finalizes a test campaign with zero conversions and creates zero reward rows (test data cleaned up after).
+- `vue-tsc --noEmit` and `eslint` clean on all touched files.
+
 ## Status as of this checkpoint
 
 All code is written, applied/deployed, and type/lint-clean:
