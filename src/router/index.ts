@@ -295,6 +295,11 @@ const routes: Array<RouteRecordRaw> = [
         meta: { requiresAdmin: true }
     },
     {
+        path: '/admin/referrals',
+        component: () => import('@/views/admin/ReferralsView.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true, noAds: true }
+    },
+    {
         path: '/admin/duplicate-products',
         name: 'DuplicateProducts',
         component: () => import('@/views/admin/DuplicateProductsView.vue'),

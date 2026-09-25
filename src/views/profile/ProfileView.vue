@@ -750,6 +750,13 @@
               </div>
               <ion-label>Merge Duplicate Products</ion-label>
             </ion-item>
+
+            <ion-item button @click="$router.push('/admin/referrals')">
+              <div class="icon-box" slot="start">
+                <ion-icon :icon="icons.giftOutline" />
+              </div>
+              <ion-label>Referrals</ion-label>
+            </ion-item>
           </ion-list>
         </ion-card>
 
