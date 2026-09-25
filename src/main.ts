@@ -10,7 +10,6 @@ import { Browser } from '@capacitor/browser'
 import { supabase } from '@/plugins/supabaseClient'
 import { isDeviceOnline } from '@/utils/connectivity'
 import { completeLineLogin } from '@/composables/useLineLogin'
-import { initAdMob } from '@/lib/admob'
 import { initLevelPlay } from '@/lib/levelplay'
 import { i18n } from '@/i18n'
 import '@ionic/vue/css/core.css'
@@ -65,7 +64,14 @@ if (Capacitor.isNativePlatform()) {
     Keyboard.setScroll({ isDisabled: false })
     Keyboard.addListener('keyboardWillShow', () => document.body.classList.add('keyboard-visible'))
     Keyboard.addListener('keyboardWillHide', () => document.body.classList.remove('keyboard-visible'))
-    initAdMob().catch((e) => console.warn('AdMob init skipped/failed:', e))
+    // Defensive reset for a launch-timing edge case: if the OS still has the
+    // previous app's IME (e.g. the launcher's search box) open when this
+    // Activity's window first attaches, the very first WindowInsets callback
+    // can report a keyboard height even though nothing in THIS app ever
+    // requested one — leaving the resized 'body' stuck reserving space for a
+    // keyboard that visually never appears. No-ops harmlessly if no keyboard
+    // is actually showing.
+    Keyboard.hide().catch(() => { /* no keyboard open — nothing to do */ })
     initLevelPlay().catch((e) => console.warn('LevelPlay init skipped/failed:', e))
 }
 
@@ -113,15 +119,32 @@ if (Capacitor.isNativePlatform()) {
 
 
 
-/* Native: refresh on resume (LOG-ONLY VERSION) */
+/* Native: refresh on resume */
 if (Capacitor.isNativePlatform()) {
     CapacitorApp.addListener('appStateChange', ({ isActive }) => {
         if (!isActive) return;
 
         const startedAt = Date.now();
 
-        console.info('[Resume] appStateChange fired');
-        console.info('[Resume] navigator.onLine =', navigator.onLine);
+        // Defensive reset, same reasoning as the startup call above — but this
+        // is the one that actually matters for launchMode="singleTask": tapping
+        // the app icon from the launcher's own search (which has its own IME
+        // open) resumes the EXISTING backgrounded Activity rather than cold-
+        // launching a new one, so the startup-only call never re-fires here.
+        // If that leftover IME state left the WebView's 'body' resize stuck
+        // reserving keyboard-height space, this clears it on every resume.
+        //
+        // One call isn't enough: the OS's own stale "keyboard visible" insets
+        // signal from the previous app can settle a beat AFTER we resume and
+        // re-fire the native resize shrink right after our reset undoes it —
+        // a straight timing race a single fire-and-forget call can lose.
+        // Retrying over ~1s "wins" that race regardless of exactly when the
+        // stale signal finishes clearing.
+        for (const delay of [0, 150, 400, 800]) {
+            setTimeout(() => {
+                Keyboard.hide().catch(() => { /* no keyboard open — nothing to do */ })
+            }, delay)
+        }
 
         scheduleBannerUpdate();
 
@@ -135,42 +158,15 @@ if (Capacitor.isNativePlatform()) {
                     return;
                 }
 
-                console.info(
-                    '[Resume] getSession resolved after',
-                    elapsed,
-                    'ms'
-                );
-
-                console.info('[Resume] raw session =', data?.session);
-
                 const session = data?.session;
+                if (!session?.user) return;
 
-                if (!session) {
-                    console.info('[Resume] No session (user logged out)');
-                    return;
-                }
-
-                if (!session.user) {
-                    console.info('[Resume] Session exists but no user');
-                    return;
-                }
-
-                console.info(
-                    '[Resume] User restored:',
-                    session.user.id
-                );
+                console.info('[Resume] Session restored for', session.user.id, 'after', elapsed, 'ms');
 
                 currentUser.value = session.user;
 
-                // ⛔ do NOT await — just log when it finishes
+                // ⛔ do NOT await — just react if it fails
                 loadUserProfile(session.user.id)
-                    .then(() => {
-                        console.info(
-                            '[Resume] loadUserProfile finished after',
-                            Date.now() - startedAt,
-                            'ms'
-                        );
-                    })
                     .catch((e) => {
                         console.warn('[Resume] loadUserProfile failed:', e);
                     });
@@ -196,6 +192,7 @@ supabase.auth.getSession().then(({ data }) => {
         // offline, this can just mean an expired-token refresh failed over a
         // dead connection, not that the user actually logged out.
         currentUser.value = null;
+        resetUserProfileState();
     }
 });
 
@@ -478,6 +475,9 @@ supabase.auth.onAuthStateChange(async (event, session) => {
             refreshSubscriptionStatus({ syncToServer: true }).catch(console.warn)
             syncOneSignalUser(session.user).catch(console.warn)
         }
+
+        // 🎟️ Idempotent — returns the existing code if one was already generated.
+        supabase.rpc('generate_referral_code_for_user').catch(e => console.warn('⚠️ Referral code generation failed:', e));
     }
 })
 
@@ -532,12 +532,29 @@ document.addEventListener('deviceready', async () => {
     }
 });
 
+// 🎟️ Referral deep link (e.g. halalformosa.com/signup?ref=HF7K2M or
+// myapp://signup?ref=HF7K2M) — stashed so the onboarding wizard can pre-fill
+// the referral-code step even though the account may not exist yet at the
+// moment the link is opened.
+const REFERRAL_STORAGE_KEY = 'hf_pending_referral_code';
+function captureReferralCodeFromUrl(url: string) {
+    const match = url.match(/[?&]ref=([^&#]+)/i);
+    if (match) {
+        try {
+            localStorage.setItem(REFERRAL_STORAGE_KEY, decodeURIComponent(match[1]).toUpperCase());
+        } catch (err) {
+            console.warn('⚠️ Failed to store pending referral code:', err);
+        }
+    }
+}
+
 // 🔗 Unified Deep Link Handler
 const handleDeepLink = async (url: string, isColdBoot = false) => {
     if (!url) return;
     console.log(`🌐 [DeepLink] ${isColdBoot ? 'Cold Boot' : 'Open'}:`, url);
 
     lastHandledUrl = url;
+    captureReferralCodeFromUrl(url);
 
     try {
         let path = '';
@@ -642,6 +659,9 @@ async function bootstrap() {
                     .then(() => refreshSubscriptionStatus({ syncToServer: true }))
                     .catch(e => console.warn('RevenueCat/Sub init failed:', e));
             }
+
+            // 🎟️ Idempotent — returns the existing code if one was already generated.
+            supabase.rpc('generate_referral_code_for_user').catch(e => console.warn('⚠️ Referral code generation failed:', e));
         };
 
         if (raced === TIMED_OUT) {
@@ -662,9 +682,12 @@ async function bootstrap() {
             applySession(session);
         } else {
             currentUser.value = null;
+            resetUserProfileState();
             if (Capacitor.isNativePlatform()) {
-                // Anonymous initialization
-                initRevenueCat().catch(e => console.warn('Anon RevenueCat init failed:', e));
+                // Anonymous initialization & subscription status verification
+                initRevenueCat()
+                    .then(() => refreshSubscriptionStatus())
+                    .catch(e => console.warn('Anon RevenueCat init failed:', e));
             }
         }
     } catch (err) {
