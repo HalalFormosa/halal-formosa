@@ -17,8 +17,9 @@ Tracking doc for the referral/commission/free-Pro-days feature. Delete this file
 
 ## Open technical items to verify while implementing
 
-- [ ] Confirm exact RevenueCat "Grant a promotional entitlement" REST endpoint + accepted `duration` values (may be fixed buckets like daily/weekly/monthly/yearly rather than arbitrary day counts) — map configured day counts to nearest supported bucket if needed.
-- [ ] Confirm which RC secret API key is available as a Supabase Edge Function secret for server-to-server calls (separate from the client-side public keys in `.env`).
+- [x] Confirmed RevenueCat's promotional-entitlement grant API: `POST https://api.revenuecat.com/v1/subscribers/{app_user_id}/entitlements/{entitlement_identifier}/promotional`, `Authorization: Bearer <secret key>`, body `{ "end_time_ms": <epoch ms> }` — arbitrary day counts ARE supported this way (the `duration` enum is deprecated). Implemented in the webhook's `grantPromotionalDays()`.
+- [ ] **ACTION NEEDED (outside code, one-time setup):** set a new Supabase Edge Function secret `REVENUECAT_SECRET_API_KEY` = your RevenueCat **secret** key (starts `sk_`, from the RevenueCat dashboard → API Keys). Without it, `free_days` mode grants will fail with `"REVENUECAT_SECRET_API_KEY not configured"` (visible in `referral_rewards.rc_grant_error`) while `commission` mode is unaffected. Run: `supabase secrets set REVENUECAT_SECRET_API_KEY=sk_xxx --project-ref svmlwnzmheiishkdwafk`.
+- [ ] The RC entitlement identifier is assumed to be the literal string `"Halal Formosa Pro"` (matches the client-side check in `useSubscriptionStatus.ts`) — confirm this exactly matches the entitlement identifier configured in the RevenueCat dashboard (case/spacing-sensitive), otherwise the webhook will silently fall through to "not a business product" and never process Pro conversions.
 
 ## Steps
 
@@ -32,8 +33,8 @@ Tracking doc for the referral/commission/free-Pro-days feature. Delete this file
 8. [ ] New view `src/views/referral/InviteEarnView.vue` + route + dynamic menu label ("Invite & Earn NT$" / "Invite & Earn Pro").
 9. [ ] New composable `src/composables/useAdminReferrals.ts` (admin data).
 10. [ ] New view `src/views/admin/ReferralsView.vue` + route `/admin/referrals` (mode toggle, config, funnel, tables) + admin menu link.
-11. [ ] Extend `supabase/functions/revenuecat-webhook/index.ts`: new branch for the Pro entitlement — upsert `pro_subscriptions`, flip matching `referral_redemptions` to `converted`, create `referral_rewards` row(s) per current mode, call RC promotional-grant API for `free_days` mode.
-12. [ ] Deploy updated edge function.
+11. [x] Extended `supabase/functions/revenuecat-webhook/index.ts`: new branch for the Pro entitlement — upserts `pro_subscriptions` (active on ACTIVE-type events, expired on EXPIRATION), flips matching `referral_redemptions` to `converted` via `process_referral_conversion`, creates `referral_rewards` row(s) per current mode, calls RC promotional-grant API for `free_days` mode and records `granted`/`failed` per reward.
+12. [x] Deployed updated edge function (version 4) to project `svmlwnzmheiishkdwafk`. **Needs the `REVENUECAT_SECRET_API_KEY` secret set before free_days mode will actually grant anything — see action item above.**
 13. [ ] Add locale strings (`src/locales/en.json`) for new UI text.
 14. [ ] Manual smoke test: redeem a code in onboarding, simulate/trigger a webhook conversion event, verify rows + admin dashboard + user page all reflect it correctly in both modes.
 15. [ ] Delete this progress file once everything above is done and verified.
