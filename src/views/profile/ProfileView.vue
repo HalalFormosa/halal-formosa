@@ -443,6 +443,13 @@
               <ion-label>{{ $t('achievements.title') }}</ion-label>
             </ion-item>
 
+            <ion-item v-if="userEmail" button @click="$router.push('/profile/invite-earn')">
+              <div class="icon-box" slot="start">
+                <ion-icon :icon="icons.giftOutline" />
+              </div>
+              <ion-label>{{ inviteMenuLabel }}</ion-label>
+            </ion-item>
+
             <ion-item v-if="userEmail" button @click="$router.push('/store/my-orders')" :disabled="isStoreUnderConstruction">
               <div class="icon-box" slot="start">
                 <ion-icon :icon="icons.bagHandleOutline" />
@@ -984,6 +991,7 @@ import AppHeader from "@/components/AppHeader.vue";
 import ModalHeader from "@/components/ModalHeader.vue";
 import CosmeticBadge from "@/components/CosmeticBadge.vue";
 import { useBadgeCosmetics } from "@/composables/useBadgeCosmetics";
+import { useReferrals } from "@/composables/useReferrals";
 
 import {
   constructOutline,
@@ -1021,7 +1029,8 @@ import {
   shieldCheckmarkOutline,
   linkOutline,
   diamondOutline,
-  libraryOutline
+  libraryOutline,
+  giftOutline
 } from "ionicons/icons";
 
 // ✅ Composables
@@ -1098,7 +1107,8 @@ const icons = {
   shieldCheckmarkOutline,
   linkOutline,
   diamondOutline,
-  libraryOutline
+  libraryOutline,
+  giftOutline
 }
 
 // @ts-expect-error – injected global
@@ -1148,6 +1158,7 @@ const {currentPoints, fetchCurrentPoints} = usePoints();
 
 // 🎨 Cosmetics composable
 const { equippedCosmetics, fetchOwnedCosmetics, spendablePoints, fetchSpendablePoints } = useBadgeCosmetics();
+const { inviteMenuLabel, loadReferralConfig } = useReferrals();
 const spentPoints = computed(() => {
   const total = currentPoints.value || 0;
   const spendable = spendablePoints.value || 0;
@@ -1627,6 +1638,7 @@ async function logRevenueCatStatus() {
 onMounted(async () => {
   try {
     fetchCountries();
+    loadReferralConfig();
 
     const {data} = await supabase.auth.getUser();
     if (data?.user) {
