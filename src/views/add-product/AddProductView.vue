@@ -579,7 +579,6 @@
                           clear-input
                           label-placement="floating"
                           :placeholder="$t('addProduct.productNamePlaceholder')"
-                          @input="onProductNameInput"
                       >
                         <div slot="label" style="display: flex; align-items: center; gap: 8px; width: 100%;">
                           <span>{{ $t('addProduct.productName') }} <ion-text color="danger">*</ion-text></span>
@@ -1423,7 +1422,6 @@ const scrollToBottom = () => {
 }
 
 const nextStep = () => {
-  console.log("🚶 Moving to next step. Current:", currentStep.value);
   if (currentStep.value < STEP_DETAILS) {
     if (currentStep.value === STEP_BARCODE) {
       scanning.value = false
@@ -1842,7 +1840,6 @@ function syncNameTags(newName: string) {
   // 4. Update state
   form.value.tags = updatedTags;
   derivedNameTags.value = newNameTags;
-  console.log("🏷️ Tags synced with new name:", form.value.tags);
 }
 
 /** 🏷️ Update the tag derived from the category when it changes */
@@ -2052,11 +2049,6 @@ async function fetchRandomReflection() {
 
 // refs moved to top
 const emit = defineEmits(['updated', 'close'])
-
-function onProductNameInput(ev: Event) {
-  const target = ev.target as HTMLInputElement
-  console.log("✏️ Product name typed:", target.value)
-}
 
 let ingredientsInputDebounce: ReturnType<typeof setTimeout> | null = null
 
@@ -2633,7 +2625,6 @@ async function handleSubmit() {
           })
 
       if (error) {
-        console.log(error);
         setError('❌ Failed to upload front image.');
         return;
       }
@@ -2658,7 +2649,6 @@ async function handleSubmit() {
           })
 
       if (error) {
-        console.log(error);
         setError('❌ Failed to upload back image.');
         return;
       }

@@ -187,7 +187,6 @@ export default function useOcrPipeline(options: OcrPipelineOptions) {
             if (detectedLanguage.value === 'chinese' || detectedLanguage.value === 'mixed') {
                 ingredientsTextZh.value =
                     ingredientsOnlyZh || stripToIngredientsOnly(cleanedZh);
-                console.log('🀄 Final ingredients-only Chinese:', ingredientsTextZh.value);
             } else {
                 // 🔒 English-only OCR → never populate Chinese field
                 ingredientsTextZh.value = '';
@@ -197,9 +196,6 @@ export default function useOcrPipeline(options: OcrPipelineOptions) {
             ingredientsText.value = cleanTranslatedIngredients(translated)
                 .replace(/^(ingredients)[:：]?\s*/i, '')
                 .trim();
-
-            console.log("🏷 Product Name (EN):", productName.value);
-            console.log("🌍 Translated Ingredients:", ingredientsText.value);
 
             await nextTick();
 
@@ -353,7 +349,7 @@ export default function useOcrPipeline(options: OcrPipelineOptions) {
             } else {
                 setError('Failed to connect to OCR server. Please try again later.')
             }
-            console.error(e)
+            console.error('❌ [OcrPipeline] OCR request failed:', e)
             return { text: '', translatedText: '', words: [] as OcrWord[], imageWidth: 0, imageHeight: 0 }
         }
     }
