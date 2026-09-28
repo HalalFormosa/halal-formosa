@@ -551,7 +551,11 @@
         "message": "No product matches barcode {barcode}.",
         "action": "Add this product"
       },
-      "cameraError": "Could not access camera. Please check permissions."
+      "cameraError": "Could not access camera. Please check permissions.",
+      "unsupportedError": "Barcode scanning isn't supported on this device.",
+      "moduleUnavailableError": "Setting up the barcode scanner for the first time — please try again in a moment.",
+      "permissionError": "Camera permission is required to scan barcodes.",
+      "scanError": "Something went wrong while scanning. Please try again."
     },
     "details": {
       "title": "Product Details",

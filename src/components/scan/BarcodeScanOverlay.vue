@@ -59,7 +59,7 @@ import { IonIcon, IonSpinner } from '@ionic/vue'
 import { closeOutline, flashOutline, flashOffOutline, createOutline, cloudUploadOutline } from 'ionicons/icons'
 import { useI18n } from 'vue-i18n'
 import { Haptics, ImpactStyle } from '@capacitor/haptics'
-import { useLiveBarcodeScanner } from '@/composables/useLiveBarcodeScanner'
+import { useLiveBarcodeScanner, getBarcodeScanErrorCode } from '@/composables/useLiveBarcodeScanner'
 
 const props = defineProps<{
   title?: string
@@ -103,11 +103,14 @@ async function handleDetected(rawValue: string) {
 
 onMounted(async () => {
   try {
-    await startScanner('barcode-overlay-reader', handleDetected)
+    await startScanner('barcode-overlay-reader', handleDetected, (code) => {
+      console.error('❌ [BarcodeScanOverlay] Scan error:', code)
+      emit('error', t(`search.barcodeScan.${code}`))
+    })
     statusMessage.value = t('search.barcodeScan.status.searching')
   } catch (err) {
     console.error('❌ [BarcodeScanOverlay] Failed to start camera:', err)
-    emit('error', t('search.barcodeScan.cameraError'))
+    emit('error', t(`search.barcodeScan.${getBarcodeScanErrorCode(err)}`))
   }
 })
 

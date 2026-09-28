@@ -90,7 +90,7 @@ import { Haptics, ImpactStyle } from '@capacitor/haptics'
 import { supabase } from '@/plugins/supabaseClient'
 import { ActivityLogService } from '@/services/ActivityLogService'
 import { isNetworkError } from '@/utils/offlineFeedback'
-import { useLiveBarcodeScanner } from '@/composables/useLiveBarcodeScanner'
+import { useLiveBarcodeScanner, getBarcodeScanErrorCode } from '@/composables/useLiveBarcodeScanner'
 import type { Product } from '@/types/Product'
 
 const emit = defineEmits<{
@@ -189,12 +189,17 @@ function resetScan() {
 onMounted(async () => {
   await ActivityLogService.log('barcode_scan_start')
   try {
-    await startScanner('barcode-reader', handleDetected)
+    await startScanner('barcode-reader', handleDetected, async (code) => {
+      console.error('❌ [BarcodeScan] Scan error:', code)
+      await ActivityLogService.log('barcode_scan_error', { error: code })
+      emit('error', t(`search.barcodeScan.${code}`))
+    })
     statusMessage.value = t('search.barcodeScan.status.searching')
   } catch (err) {
+    const code = getBarcodeScanErrorCode(err)
     console.error('❌ [BarcodeScan] Failed to start camera:', err)
-    await ActivityLogService.log('barcode_scan_error', { error: String(err) })
-    emit('error', t('search.barcodeScan.cameraError'))
+    await ActivityLogService.log('barcode_scan_error', { error: code })
+    emit('error', t(`search.barcodeScan.${code}`))
   }
 })
 
