@@ -17,7 +17,7 @@
     </div>
 
     <!-- 🎁 Global Subtle Reward Toast -->
-    <Transition name="reward-toast">
+    <Transition name="reward-toast" :duration="{ leave: 500 }">
       <div v-if="rewardOpen" class="reward-overlay">
         <div
           class="reward-toast"
