@@ -3,7 +3,6 @@
     <ion-header :class="{ 'has-ads': isNative && !isDonor && currentStep === STEP_RESULTS }">
       <!-- Native (mobile) AdMob banner - shown only on results step -->
       <div v-if="isNative && !isDonor && currentStep === STEP_RESULTS" id="ad-space-scan-results" :style="{ height: '65px', paddingTop: 'var(--ion-safe-area-top, 0)' }"></div>
-      <HouseAdCard v-if="!isDonor && currentStep === STEP_RESULTS && (!isNative || failedAdSpaceId === 'ad-space-scan-results')" />
 
       <app-header
           :title="$t('scanIngredients.title')"
@@ -456,10 +455,10 @@
             </ion-button>
           </div>
 
-          <ion-button 
-            expand="block" 
-            fill="clear" 
-            color="primary" 
+          <ion-button
+            expand="block"
+            fill="clear"
+            color="primary"
             class="ion-margin-top"
             @click="goToAddProduct"
             style="font-weight: 600;"
@@ -467,6 +466,20 @@
             <ion-icon slot="start" :icon="addCircleOutline" />
             {{ $t('scanIngredients.scan.contribute') }}
           </ion-button>
+
+          <!-- Sponsored card — placed after every primary action (Unlock AI
+               Summary, Share/Scan Again, Contribute) so it never sits between
+               the result and the app's own conversion-critical PRO upsell
+               CTA above. Always shown alongside the real banner (not just as
+               a fallback when it fails to fill), same as Item Details/Place
+               Details. -->
+          <HouseAdNativeCard
+              v-if="!isDonor"
+              mode="trip"
+              :only-kinds="['partner', 'trip']"
+              :only-tiers="['gold', 'silver']"
+              :slot="0"
+          />
         </div>
       </div>
 
@@ -716,10 +729,9 @@ dayjs.extend(utc)
 dayjs.extend(timezone)
 dayjs.extend(relativeTime)
 
-import { showRewardedAd } from '@/lib/admobReward'
+import { showLevelPlayRewardedAd } from '@/lib/levelplay'
 import { Capacitor } from '@capacitor/core'
-import HouseAdCard from '@/components/ads/HouseAdCard.vue'
-import { failedAdSpaceId } from '@/composables/useAdFallback'
+import HouseAdNativeCard from '@/components/ads/HouseAdNativeCard.vue'
 import { ActivityLogService } from "@/services/ActivityLogService";
 import { isNetworkError } from '@/utils/offlineFeedback'
 
@@ -727,7 +739,7 @@ import { RevenueCatUI, PAYWALL_RESULT } from '@revenuecat/purchases-capacitor-ui
 import { refreshSubscriptionStatus } from '@/composables/useSubscriptionStatus'
 import { useRouter } from 'vue-router'
 import { scheduleBannerUpdate } from '@/plugins/admob'
-import { hideBanner } from '@/lib/admob'
+import { destroyLevelPlayBanner } from '@/lib/levelplay'
 import { onIonViewDidEnter } from '@ionic/vue'
 import { useAutoScanStore } from '@/composables/useAutoScanStore'
 import { useNotifier } from "@/composables/useNotifier"
@@ -749,7 +761,7 @@ onIonViewDidEnter(() => {
   if (currentStep.value === STEP_RESULTS) {
     scheduleBannerUpdate()
   } else {
-    hideBanner()
+    destroyLevelPlayBanner().catch(() => {})
   }
 })
 
@@ -761,7 +773,7 @@ watch([currentStep, isDonor], ([newStep, donorStatus]) => {
       scheduleBannerUpdate()
     }, 100)
   } else {
-    hideBanner()
+    destroyLevelPlayBanner().catch(() => {})
   }
 })
 
@@ -1371,12 +1383,12 @@ async function watchAdForExtraScans() {
   }
 
   const rewardAdId = Capacitor.getPlatform() === 'ios'
-    ? import.meta.env.VITE_ADMOB_IOS_REWARDED_AD_ID
-    : import.meta.env.VITE_ADMOB_ANDROID_REWARDED_AD_ID;
+    ? import.meta.env.VITE_LEVELPLAY_IOS_REWARDED_AD_ID
+    : import.meta.env.VITE_LEVELPLAY_ANDROID_REWARDED_AD_ID;
 
   loadingAd.value = true;
   try {
-    await showRewardedAd(rewardAdId, async () => {
+    await showLevelPlayRewardedAd(rewardAdId, async () => {
       bonusScans.value += 1;
       dailyAdUses.value += 1;
       const { data: { user } } = await supabase.auth.getUser();

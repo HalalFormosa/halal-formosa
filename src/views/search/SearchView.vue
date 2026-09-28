@@ -1,12 +1,14 @@
 <template>
   <ion-page>
     <ion-header>
-      <!-- Native (mobile) banner ad — now handled by LevelPlay's own
-           TOP + isOverlap:false layout push, no placeholder div needed.
-           No house-ad fallback banner here — when there's no real ad, the
-           sponsored slot moves into the product feed itself as recurring
-           native cards (see HouseAdNativeCard below) instead of an empty
-           banner-shaped placeholder. -->
+      <!-- Native (mobile) banner ad — LevelPlay renders with isOverlap:true,
+           so it draws on top of the WebView rather than pushing it down.
+           This reserved space keeps the ad from covering the header, same
+           pattern as Trip/Store. No house-ad fallback banner here — when
+           there's no real ad, the sponsored slot moves into the product
+           feed itself as recurring native cards (see HouseAdNativeCard
+           below) instead of an empty banner-shaped placeholder. -->
+      <div v-if="isNative && !isDonor" id="ad-space-search" :style="{ height: '65px', paddingTop: 'var(--ion-safe-area-top, 0)' }"></div>
 
       <app-header
           :title="
@@ -314,13 +316,13 @@
                           <div class="tier-header">
                             <div class="tier-badge gold">
                               <Sparkles :size="14" />
-                              <span>{{ $t('home.partnerTier', { tier: 'GOLD' }) }}</span>
+                              <span>GOLD</span>
                             </div>
                           </div>
                           <h3 class="name">{{ product.name }}</h3>
                           <div class="metas metas-indent">
                              <span v-if="product.product_categories?.name" class="meta">
-                               {{ $te('search.categoriesList.' + product.product_categories.name) ? $t('search.categoriesList.' + product.product_categories.name) : product.product_categories.name }}
+                                {{ $te('search.categoriesList.' + product.product_categories.name) ? $t('search.categoriesList.' + product.product_categories.name) : product.product_categories.name }}
                              </span>
                              
                              <span class="meta">
@@ -370,7 +372,7 @@
                         <!-- Mobile-only status/tier badges -->
                         <div class="grid-tier-badge gold mobile-only">
                           <Sparkles :size="14" />
-                          <span>{{ $t('home.partnerTier', { tier: 'GOLD' }) }}</span>
+                          <span>GOLD</span>
                         </div>
                         <div :class="['grid-status-label mobile-only', product.status.toLowerCase().replace(' ', '-')]">
                           <component :is="getStatusIcon(product.status)" :size="14" />
@@ -383,7 +385,7 @@
                         <div class="details-header">
                           <div class="grid-tier-badge gold">
                             <Sparkles :size="14" />
-                            <span>{{ $t('home.partnerTier', { tier: 'GOLD' }) }}</span>
+                            <span>GOLD</span>
                           </div>
                           <div :class="['status-badge-pill', product.status.toLowerCase().replace(' ', '-')]">
                             <component :is="getStatusIcon(product.status)" :size="12" />
@@ -473,7 +475,7 @@
                         <div v-if="product.partner_tier" class="tier-header">
                           <div :class="['tier-badge', product.partner_tier.toLowerCase()]">
                             <Sparkles :size="14" />
-                            <span>{{ $t('home.partnerTier', { tier: (product.partner_tier || '').toUpperCase() }) }}</span>
+                            <span>{{ (product.partner_tier || '').toUpperCase() }}</span>
                           </div>
                         </div>
                         <h3 class="name">{{ product.name }}</h3>
@@ -529,7 +531,7 @@
                     <!-- Floating Tier Badge (Top Left) -->
                     <div v-if="product.partner_tier" :class="['grid-tier-badge', product.partner_tier.toLowerCase()]">
                       <Sparkles :size="14" />
-                      <span>{{ $t('home.partnerTier', { tier: (product.partner_tier || '').toUpperCase() }) }}</span>
+                      <span>{{ (product.partner_tier || '').toUpperCase() }}</span>
                     </div>
 
                     <!-- Small Status Label -->
@@ -609,7 +611,7 @@ import {
   IonPage, IonHeader, IonContent, IonSearchbar, IonText, IonModal, IonPopover, IonToolbar, IonButton, IonIcon, IonFooter, IonChip,
   IonInfiniteScroll, IonInfiniteScrollContent, IonRefresher, IonRefresherContent,
   IonSkeletonText, IonThumbnail, IonCard, IonCardContent,
-  onIonViewDidEnter, onIonViewWillLeave, IonLabel, IonFab, IonFabButton, onIonViewWillEnter, IonList, IonItem,
+  onIonViewDidEnter, IonLabel, IonFab, IonFabButton, onIonViewWillEnter, IonList, IonItem,
   toastController, IonTitle, IonButtons
 } from '@ionic/vue'
 import { ref, onMounted, onUnmounted, nextTick, watch, computed } from 'vue'
@@ -659,7 +661,7 @@ import FilterContent from '@/components/FilterContent.vue'
 
 import StoreLogoBar from "@/components/StoreLogoBar.vue";
 import {ActivityLogService} from "@/services/ActivityLogService";
-import { showLevelPlayBanner, destroyLevelPlayBanner } from '@/lib/levelplay'
+import { scheduleBannerUpdate } from '@/plugins/admob'
 import HouseAdNativeCard from '@/components/ads/HouseAdNativeCard.vue'
 import {isDonor, refreshSubscriptionStatus} from "@/composables/useSubscriptionStatus";
 import {Purchases} from "@revenuecat/purchases-capacitor";
@@ -1756,18 +1758,9 @@ onIonViewDidEnter(async () => {
     }
   }
 
-  // Proof-of-concept: Search's banner now goes through LevelPlay mediation
-  // instead of AdMob-direct. Every other view is untouched.
-  if (!isDonor.value) {
-    const levelPlayAdId = Capacitor.getPlatform() === 'ios'
-      ? import.meta.env.VITE_LEVELPLAY_IOS_SEARCH_BANNER_ID
-      : import.meta.env.VITE_LEVELPLAY_ANDROID_SEARCH_BANNER_ID
-    showLevelPlayBanner(levelPlayAdId, 'ad-space-search').catch((e) => console.warn('LevelPlay banner skipped/failed:', e))
-  }
-});
-
-onIonViewWillLeave(() => {
-  destroyLevelPlayBanner().catch((e) => console.warn('LevelPlay banner teardown skipped/failed:', e))
+  // Banner now goes through the shared LevelPlay scheduler (same one every
+  // other ad-bearing view uses) instead of a bespoke show/destroy pair here.
+  scheduleBannerUpdate()
 });
 
 

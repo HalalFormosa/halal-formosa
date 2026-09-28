@@ -3,7 +3,6 @@
     <ion-header class="ion-no-border immersive-header" :class="{ 'is-scrolled': isScrolled, 'has-ads': isNative && showAds }">
       <!-- Native (mobile) AdMob banner -->
       <div v-if="isNative && showAds" id="ad-space-store-detail" :style="{ height: '65px', paddingTop: 'var(--ion-safe-area-top, 0)' }"></div>
-      <HouseAdCard v-if="showAds && (!isNative || failedAdSpaceId === 'ad-space-store-detail')" />
       <app-header 
           :title="product?.name || $t('store.title')" 
           :showBack="true" 
@@ -143,6 +142,19 @@
                 <span class="location-value">{{ localized(product.merchant_stores.cities.name_zh, product.merchant_stores.cities.name) }}</span>
               </div>
             </div>
+
+            <!-- Sponsored card — appears here (scrolled into view) rather
+                 than glued to the top, so it doesn't delay the product
+                 details someone opened this page to see. Always shown
+                 alongside the real banner (not just as a fallback when it
+                 fails to fill), same as Item Details/Place Details. -->
+            <HouseAdNativeCard
+                v-if="showAds"
+                mode="trip"
+                :only-kinds="['partner', 'trip']"
+                :only-tiers="['gold', 'silver']"
+                :slot="0"
+            />
 
             <!-- Quantity -->
             <div v-if="product.stock_quantity > 0" class="quantity-section">
@@ -379,11 +391,10 @@ import {
   IonList, IonItem, IonLabel, IonButtons, IonThumbnail, IonTextarea, IonBadge, onIonViewDidEnter
 } from '@ionic/vue'
 import { Capacitor } from '@capacitor/core'
-import HouseAdCard from '@/components/ads/HouseAdCard.vue'
-import { failedAdSpaceId } from '@/composables/useAdFallback'
+import HouseAdNativeCard from '@/components/ads/HouseAdNativeCard.vue'
 import { isDonor } from "@/composables/useSubscriptionStatus"
 import { scheduleBannerUpdate } from '@/plugins/admob'
-import { hideBanner } from '@/lib/admob'
+import { destroyLevelPlayBanner } from '@/lib/levelplay'
 import {
   imageOutline, cartOutline, bagHandleOutline, removeOutline, addOutline,
   checkmarkCircleOutline, closeCircleOutline, chatbubbleOutline, constructOutline,
@@ -457,10 +468,10 @@ function scrollToImage(index: number) {
 function openImageModal(index: number) {
   activeImageIndex.value = index
   showImageModal.value = true
-  // The native AdMob banner floats above the WebView, so it would cover the
+  // The native banner floats above the WebView, so it would cover the
   // fullscreen viewer's close button (and the top of the zoomed image). Hide it
   // while the viewer is open; restore it on close.
-  hideBanner().catch(() => {})
+  destroyLevelPlayBanner().catch(() => {})
 }
 
 function closeImageModal() {

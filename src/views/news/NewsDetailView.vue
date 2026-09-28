@@ -2,7 +2,6 @@
   <ion-page>
     <ion-header class="ion-no-border immersive-header" :class="{ 'is-scrolled': isScrolled, 'has-ads': isNative && showAds }">
       <div v-if="isNative && showAds" id="ad-space-news-detail" :style="{ height: '65px', paddingTop: 'var(--ion-safe-area-top, 0)' }"></div>
-      <HouseAdCard v-if="showAds && (!isNative || failedAdSpaceId === 'ad-space-news-detail')" />
       <app-header 
         :title="newsItem?.title || ''" 
         show-back 
@@ -39,6 +38,20 @@
               </template>
             </p>
             <div class="article-content" v-html="newsItem.content"></div>
+
+            <!-- Sponsored card — appears here (scrolled into view) rather
+                 than glued to the top, so it doesn't delay the article
+                 someone opened this page to read. Always shown alongside the
+                 real banner (not just as a fallback when it fails to fill),
+                 same as Item Details/Place Details. -->
+            <HouseAdNativeCard
+                v-if="showAds"
+                mode="trip"
+                :only-kinds="['partner', 'trip']"
+                :only-tiers="['gold', 'silver']"
+                :slot="0"
+            />
+
             <p
                 class="ion-text-end ion-margin-top"
                 style="color: var(--ion-color-shade); font-size: 0.8rem;"
@@ -113,8 +126,7 @@ import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
 import timezone from 'dayjs/plugin/timezone'
 import {Capacitor} from "@capacitor/core";
-import HouseAdCard from '@/components/ads/HouseAdCard.vue'
-import { failedAdSpaceId } from '@/composables/useAdFallback'
+import HouseAdNativeCard from '@/components/ads/HouseAdNativeCard.vue'
 import AppHeader from "@/components/AppHeader.vue";
 
 // Extend dayjs

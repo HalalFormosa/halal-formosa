@@ -146,7 +146,7 @@
                 <div v-if="item?.partner_tier" class="premium-badge-wrapper">
                   <div :class="['premium-badge-pill', item.partner_tier.toLowerCase()]">
                     <ion-icon :icon="sparkles" />
-                    <span>{{ $t('home.partnerTier', { tier: item.partner_tier.toUpperCase() }) }}</span>
+                    <span>{{ item.partner_tier.toUpperCase() }}</span>
                   </div>
                 </div>
               </div>
@@ -282,12 +282,15 @@
                    than glued to the top, so it doesn't delay the content
                    someone opened this page to see. Same as PlaceDetailsView:
                    partner/trip sponsors only, gold tier only, and skipped
-                   entirely when this product is itself a gold partner's. -->
+                   entirely when this product is itself a gold partner's.
+                   Always shown alongside the real banner (not just as a
+                   fallback when it fails to fill) — same always-on treatment
+                   as the recurring native cards in Search/Explore/Trip/Store. -->
               <HouseAdNativeCard
-                  v-if="showAds && String(item?.partner_tier || '').toLowerCase() !== 'gold' && (!isNative || failedAdSpaceId === 'ad-space-item-details')"
+                  v-if="showAds && String(item?.partner_tier || '').toLowerCase() !== 'gold'"
                   mode="trip"
                   :only-kinds="['partner', 'trip']"
-                  :only-tiers="['gold']"
+                  :only-tiers="['gold', 'silver']"
                   :slot="0"
               />
 
@@ -370,7 +373,7 @@
                 >
                   <div v-if="p.partner_tier" class="tier-badge" :class="p.partner_tier.toLowerCase()">
                     <ion-icon :icon="sparkles" />
-                    {{ $t('home.partnerTier', { tier: p.partner_tier.toUpperCase() }) }}
+                    {{ p.partner_tier.toUpperCase() }}
                   </div>
 
                   <div v-if="p.partner_tier === 'Gold' || p.partner_tier === 'Silver'" class="premium-flare"></div>
@@ -565,7 +568,6 @@ import { useRoute, useRouter } from 'vue-router'
 import { useIonRouter } from '@ionic/vue'
 import { Capacitor } from '@capacitor/core'
 import HouseAdNativeCard from '@/components/ads/HouseAdNativeCard.vue'
-import { failedAdSpaceId } from '@/composables/useAdFallback'
 import { supabase } from '@/plugins/supabaseClient'
 import {Swiper, SwiperSlide} from "swiper/vue";
 import {Pagination, Zoom} from "swiper/modules";

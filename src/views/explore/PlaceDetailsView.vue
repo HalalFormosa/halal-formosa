@@ -218,38 +218,42 @@
                 {{ $t('facilityReview.noConsensusYet') || 'No visitor reports yet. Be the first to share!' }}
               </p>
               
-              <!-- Sponsored card — appears here (scrolled into view) rather
-                   than glued to the top, so it doesn't delay the content
-                   someone opened this page to see. Reuses the tall
-                   image-top "trip" card layout (no side margin of its own,
-                   so it fills the page's ion-padding width like the
-                   surrounding Handling Details / Address cards). Restricted
-                   to partner/trip sponsors only (not another location or
-                   product) and gold tier only (not silver/bronze) — this
-                   placement is reserved for the most prominent sponsors.
-                   Skipped entirely when this place is itself a gold
-                   partner — showing another sponsor's ad on a gold
-                   partner's own page is redundant, not just duplicative. -->
-              <HouseAdNativeCard
-                  v-if="showAds && String(place?.partner_tier || '').toLowerCase() !== 'gold' && (!isNative || failedAdSpaceId === 'ad-space-place-detail')"
-                  mode="trip"
-                  :only-kinds="['partner', 'trip']"
-                  :only-tiers="['gold']"
-                  :slot="0"
-              />
-
               <!-- Rate & Review Button -->
               <div class="ion-text-center ion-margin-top" v-if="!isOwner && !userHasReviewed">
-                <ion-button 
-                  fill="outline" 
-                  color="carrot" 
-                  size="small" 
-                  class="rate-btn" 
+                <ion-button
+                  fill="outline"
+                  color="carrot"
+                  size="small"
+                  class="rate-btn"
                   @click="openFacilityReview"
                 >
                   {{ $t('facilityReview.rateReviewAction') || 'Rate & Review Facilities' }}
                 </ion-button>
               </div>
+
+              <!-- Sponsored card — placed after the Rate & Review CTA (not
+                   before it) so it doesn't sit between the user and the
+                   engagement action this page wants them to take. Reuses
+                   the tall image-top "trip" card layout (no side margin of
+                   its own, so it fills the page's ion-padding width like
+                   the surrounding Handling Details / Address cards).
+                   Restricted to partner/trip sponsors only (not another
+                   location or product) and gold/silver tier — reserved for
+                   the more prominent sponsors, but not gold-only anymore
+                   since that pool alone is too thin for good variety.
+                   Skipped entirely when this place is itself a gold
+                   partner — showing another sponsor's ad on a gold
+                   partner's own page is redundant, not just duplicative.
+                   Always shown alongside the real banner (not just as a
+                   fallback when it fails to fill) — same always-on treatment
+                   as the recurring native cards in Search/Explore/Trip/Store. -->
+              <HouseAdNativeCard
+                  v-if="showAds && String(place?.partner_tier || '').toLowerCase() !== 'gold'"
+                  mode="trip"
+                  :only-kinds="['partner', 'trip']"
+                  :only-tiers="['gold', 'silver']"
+                  :slot="0"
+              />
             </div>
 
             <p v-if="place?.author?.public_profile" class="attribution-text">
@@ -846,7 +850,6 @@ import {
 } from '@ionic/vue'
 import { Capacitor } from '@capacitor/core'
 import HouseAdNativeCard from '@/components/ads/HouseAdNativeCard.vue'
-import { failedAdSpaceId } from '@/composables/useAdFallback'
 import { isDonor } from "@/composables/useSubscriptionStatus"
 import { scheduleBannerUpdate } from '@/plugins/admob'
 import {ref, onMounted, computed, nextTick, watch} from 'vue'

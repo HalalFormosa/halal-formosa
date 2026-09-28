@@ -3,10 +3,13 @@
     <ion-header class="explore-header" :class="{ 'is-native': isNative && !isDonor, 'solid-bg': viewMode === 'list' }">
       <!-- Native AdMob banner -->
       <div v-if="isNative && !isDonor" id="ad-space-explore" style="height:65px;"></div>
-      <!-- Floating fallback banner only in map mode — in list mode the
-           fallback instead becomes recurring native cards woven into the
-           location list itself (see the list-mode v-for below). -->
+      <!-- Floating fallback banner in map mode; a flush banner-style one in
+           list mode so the reserved ad slot never sits empty when the real
+           banner fails to fill or drops out mid-session — list mode also
+           gets recurring native cards woven into the feed (see the
+           list-mode v-for below), but that doesn't cover this top slot. -->
       <HouseAdCard v-if="!isDonor && viewMode === 'map' && (!isNative || failedAdSpaceId === 'ad-space-explore')" variant="floating" />
+      <HouseAdCard v-if="!isDonor && viewMode === 'list' && (!isNative || failedAdSpaceId === 'ad-space-explore')" variant="banner" />
 
       <ion-toolbar class="header-search-toolbar">
         <!-- Search & Add Row -->
@@ -3327,9 +3330,11 @@ const sortedLocations = computed(() => {
 })
 
 /* ... */
-// Watch for actual changes in the FILTERED set of locations
+// Watch for actual changes in the FILTERED set of locations (ignoring simple re-ordering)
 const filteredIdsHash = computed(() => {
-  return sortedLocations.value.map(l => l.id).join(',');
+  const ids = sortedLocations.value.map(l => l.id);
+  ids.sort((a, b) => a - b);
+  return ids.join(',');
 });
 
 watch(filteredIdsHash, () => {

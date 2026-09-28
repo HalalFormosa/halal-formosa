@@ -22,6 +22,13 @@ function registerBannerListeners() {
         bannerSettled = true
         markAdFailed(activeBannerSpaceId)
     }).catch((e) => console.debug('[LevelPlay] listener register skip', e))
+    // A banner can load fine but then fail to actually render on a later
+    // internal refresh (onAdDisplayFailed) — without this, BannerLoaded had
+    // already cleared the fallback and nothing ever re-shows it, so the ad
+    // slot goes blank and stays blank until the next navigation.
+    LevelPlayAds.addListener(AdEvent.BannerDisplayFailed, () => {
+        markAdFailed(activeBannerSpaceId)
+    }).catch((e) => console.debug('[LevelPlay] listener register skip', e))
 }
 // Memoized so concurrent/early callers (e.g. a fast navigation to a screen
 // with a banner right after app launch) await the SAME in-flight init
@@ -81,7 +88,7 @@ export async function showLevelPlayBanner(adUnitId: string, spaceId?: string) {
             adUnitId,
             adSize: 'ADAPTIVE',
             position: 'TOP',
-            isOverlap: false, // Android: pushes the WebView down instead of overlaying it
+            isOverlap: true, // Native banner overlays the WebView in the space provided by Web UI
         })
         console.log('[LevelPlay] Banner shown:', adUnitId)
         setTimeout(() => {
