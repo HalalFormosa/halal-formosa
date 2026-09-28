@@ -1,4 +1,4 @@
-import { onUnmounted, ref } from 'vue'
+import { onUnmounted, ref, getCurrentInstance } from 'vue'
 import { onIonViewWillLeave } from "@ionic/vue";
 
 const KAABA_LAT = 21.422487;
@@ -6,7 +6,7 @@ const KAABA_LNG = 39.826206;
 const SMOOTHING = 0.12;
 const ALIGN_THRESHOLD = 5;
 
-function calculateQiblaBearing(lat: number, lng: number): number {
+export function calculateQiblaBearing(lat: number, lng: number): number {
     const toRad = (d: number) => (d * Math.PI) / 180;
     const toDeg = (r: number) => (r * 180) / Math.PI;
 
@@ -27,11 +27,13 @@ function shortestAngleDiff(a: number, b: number) {
 export function useQiblaCompass() {
     const loading = ref(false);
     const hasCompass = ref(false);
+    const sensorSupported = ref(true);
     const qiblaBearing = ref(0);
     const compassRotation = ref(0);
     const aligned = ref(false);
 
     let listener: ((e: any) => void) | null = null;
+    let timeoutId: any = null;
     let initialized = false;
     let vx = 0;
     let vy = 0;
@@ -44,7 +46,8 @@ export function useQiblaCompass() {
             try {
                 const res = await DeviceOrientation.requestPermission();
                 return res === 'granted';
-            } catch {
+            } catch (err) {
+                console.warn('[QiblaCompass] Permission error:', err);
                 return false;
             }
         }
@@ -55,26 +58,44 @@ export function useQiblaCompass() {
         if (listener) cleanup();
 
         loading.value = true;
+        sensorSupported.value = true;
         initialized = false;
         qiblaBearing.value = calculateQiblaBearing(lat, lng);
 
         const allowed = await requestPermission();
         if (!allowed) {
             loading.value = false;
-            return;
+            hasCompass.value = false;
+            return false;
         }
 
         listener = (e: any) => {
             let heading: number | null = null;
 
-            if (e.webkitCompassHeading != null) {
-                heading = e.webkitCompassHeading;
-            } else if (e.alpha != null) {
-                // For Android, we use 360 - alpha to get clockwise rotation
-                heading = 360 - e.alpha;
+            // 1. iOS Safari / WKWebView compass heading
+            if (e.webkitCompassHeading != null && !isNaN(e.webkitCompassHeading)) {
+                heading = Number(e.webkitCompassHeading);
+            }
+            // 2. Android absolute or relative alpha
+            else if (e.alpha != null && !isNaN(e.alpha)) {
+                let rawHeading = (360 - Number(e.alpha)) % 360;
+                
+                // Adjust for screen orientation angle (e.g. landscape vs portrait)
+                const screenAngle = typeof screen !== 'undefined' && screen.orientation?.angle != null
+                    ? screen.orientation.angle
+                    : (typeof window !== 'undefined' && (window as any).orientation != null
+                        ? Number((window as any).orientation)
+                        : 0);
+
+                heading = (rawHeading + screenAngle + 360) % 360;
             }
 
             if (heading === null) return;
+
+            if (timeoutId) {
+                clearTimeout(timeoutId);
+                timeoutId = null;
+            }
 
             // --- Vector Smoothing ---
             const rad = (heading * Math.PI) / 180;
@@ -88,6 +109,10 @@ export function useQiblaCompass() {
                 initialized = true;
                 loading.value = false;
                 hasCompass.value = true;
+                compassRotation.value = heading;
+
+                const diff = Math.abs(shortestAngleDiff(heading, qiblaBearing.value));
+                aligned.value = diff <= ALIGN_THRESHOLD;
                 return;
             }
 
@@ -105,28 +130,50 @@ export function useQiblaCompass() {
             aligned.value = diff <= ALIGN_THRESHOLD;
         };
 
-        // Define the event name based on browser support
-        const eventName = 'ondeviceorientationabsolute' in window
-            ? 'deviceorientationabsolute'
-            : 'deviceorientation';
-
-        // Use a type guard to ensure listener is not null
-        if (listener) {
-            (window as any).addEventListener(eventName, listener, true);
+        // Attach listeners for both deviceorientationabsolute (Android absolute) and deviceorientation (iOS/Fallback)
+        if (typeof window !== 'undefined') {
+            window.addEventListener('deviceorientationabsolute', listener, true);
+            window.addEventListener('deviceorientation', listener, true);
         }
+
+        // Set a 3.5s timeout: If no valid orientation event with heading arrives, update state gracefully
+        timeoutId = setTimeout(() => {
+            if (!initialized) {
+                loading.value = false;
+                hasCompass.value = false;
+                sensorSupported.value = false;
+            }
+        }, 3500);
+
+        return true;
     }
 
     function cleanup() {
-        if (listener) {
-            window.removeEventListener('deviceorientation', listener, true);
+        if (timeoutId) {
+            clearTimeout(timeoutId);
+            timeoutId = null;
+        }
+        if (listener && typeof window !== 'undefined') {
             window.removeEventListener('deviceorientationabsolute', listener, true);
+            window.removeEventListener('deviceorientation', listener, true);
             listener = null;
         }
     }
 
-    onIonViewWillLeave(cleanup);
+    if (getCurrentInstance()) {
+        onIonViewWillLeave(cleanup);
+        onUnmounted(cleanup);
+    }
 
-    onUnmounted(cleanup);
-
-    return { loading, hasCompass, qiblaBearing, compassRotation, aligned, start };
+    return {
+        loading,
+        hasCompass,
+        sensorSupported,
+        qiblaBearing,
+        compassRotation,
+        aligned,
+        start,
+        stop: cleanup,
+        requestPermission
+    };
 }
