@@ -11,10 +11,6 @@ PODS:
     - Capacitor
   - CapacitorClipboard (8.0.1):
     - Capacitor
-  - CapacitorCommunityAdmob (8.0.0):
-    - Capacitor
-    - Google-Mobile-Ads-SDK (~> 12.14)
-    - GoogleUserMessagingPlatform (~> 3.1)
   - CapacitorCommunityInAppReview (8.0.0):
     - Capacitor
   - CapacitorCommunityTextToSpeech (8.0.2):
@@ -32,9 +28,16 @@ PODS:
     - Capacitor
   - CapacitorKeyboard (8.0.1):
     - Capacitor
+  - CapacitorLevelplayAds (0.1.42):
+    - CapacitorLevelplayAds/Core (= 0.1.42)
+  - CapacitorLevelplayAds/Core (0.1.42):
+    - Capacitor
+    - IronSourceSDK
   - CapacitorMlkitBarcodeScanning (8.0.1):
     - Capacitor
     - GoogleMLKit/BarcodeScanning (~> 8.0.0)
+  - CapacitorNetwork (8.0.1):
+    - Capacitor
   - CapacitorPluginSafeArea (5.0.0):
     - Capacitor
   - CapacitorPreferences (8.0.1):
@@ -54,8 +57,6 @@ PODS:
   - CordovaPluginsStatic (8.1.0):
     - CapacitorCordova
     - OneSignalXCFramework (= 5.4.1)
-  - Google-Mobile-Ads-SDK (12.14.0):
-    - GoogleUserMessagingPlatform (>= 1.1)
   - GoogleDataTransport (10.1.0):
     - nanopb (~> 3.30910.0)
     - PromisesObjC (~> 2.4)
@@ -69,7 +70,6 @@ PODS:
     - GoogleToolboxForMac/Defines (= 4.2.1)
   - "GoogleToolboxForMac/NSData+zlib (4.2.1)":
     - GoogleToolboxForMac/Defines (= 4.2.1)
-  - GoogleUserMessagingPlatform (3.1.0)
   - GoogleUtilities/Environment (8.1.0):
     - GoogleUtilities/Privacy
   - GoogleUtilities/Logger (8.1.0):
@@ -82,6 +82,13 @@ PODS:
   - GTMSessionFetcher/Core (3.5.0)
   - IONFilesystemLib (1.1.1)
   - IONGeolocationLib (2.0.0)
+  - IronSourceAdQualitySDK (9.10.0)
+  - IronSourceSDK (9.6.0.0):
+    - IronSourceSDK/AdQuality (= 9.6.0.0)
+    - IronSourceSDK/Ads (= 9.6.0.0)
+  - IronSourceSDK/AdQuality (9.6.0.0):
+    - IronSourceAdQualitySDK (~> 9)
+  - IronSourceSDK/Ads (9.6.0.0)
   - MLImage (1.0.0-beta7)
   - MLKitBarcodeScanning (7.0.0):
     - MLKitCommon (~> 13.0)
@@ -178,7 +185,6 @@ DEPENDENCIES:
   - "CapacitorBrowser (from `../../node_modules/@capacitor/browser`)"
   - "CapacitorCamera (from `../../node_modules/@capacitor/camera`)"
   - "CapacitorClipboard (from `../../node_modules/@capacitor/clipboard`)"
-  - "CapacitorCommunityAdmob (from `../../node_modules/@capacitor-community/admob`)"
   - "CapacitorCommunityInAppReview (from `../../node_modules/@capacitor-community/in-app-review`)"
   - "CapacitorCommunityTextToSpeech (from `../../node_modules/@capacitor-community/text-to-speech`)"
   - "CapacitorCordova (from `../../node_modules/@capacitor/ios`)"
@@ -187,7 +193,9 @@ DEPENDENCIES:
   - "CapacitorGeolocation (from `../../node_modules/@capacitor/geolocation`)"
   - "CapacitorHaptics (from `../../node_modules/@capacitor/haptics`)"
   - "CapacitorKeyboard (from `../../node_modules/@capacitor/keyboard`)"
+  - CapacitorLevelplayAds (from `../../node_modules/capacitor-levelplay-ads`)
   - "CapacitorMlkitBarcodeScanning (from `../../node_modules/@capacitor-mlkit/barcode-scanning`)"
+  - "CapacitorNetwork (from `../../node_modules/@capacitor/network`)"
   - CapacitorPluginSafeArea (from `../../node_modules/capacitor-plugin-safe-area`)
   - "CapacitorPreferences (from `../../node_modules/@capacitor/preferences`)"
   - "CapacitorShare (from `../../node_modules/@capacitor/share`)"
@@ -204,15 +212,15 @@ DEPENDENCIES:
 
 SPEC REPOS:
   trunk:
-    - Google-Mobile-Ads-SDK
     - GoogleDataTransport
     - GoogleMLKit
     - GoogleToolboxForMac
-    - GoogleUserMessagingPlatform
     - GoogleUtilities
     - GTMSessionFetcher
     - IONFilesystemLib
     - IONGeolocationLib
+    - IronSourceAdQualitySDK
+    - IronSourceSDK
     - MLImage
     - MLKitBarcodeScanning
     - MLKitCommon
@@ -241,8 +249,6 @@ EXTERNAL SOURCES:
     :path: "../../node_modules/@capacitor/camera"
   CapacitorClipboard:
     :path: "../../node_modules/@capacitor/clipboard"
-  CapacitorCommunityAdmob:
-    :path: "../../node_modules/@capacitor-community/admob"
   CapacitorCommunityInAppReview:
     :path: "../../node_modules/@capacitor-community/in-app-review"
   CapacitorCommunityTextToSpeech:
@@ -259,8 +265,12 @@ EXTERNAL SOURCES:
     :path: "../../node_modules/@capacitor/haptics"
   CapacitorKeyboard:
     :path: "../../node_modules/@capacitor/keyboard"
+  CapacitorLevelplayAds:
+    :path: "../../node_modules/capacitor-levelplay-ads"
   CapacitorMlkitBarcodeScanning:
     :path: "../../node_modules/@capacitor-mlkit/barcode-scanning"
+  CapacitorNetwork:
+    :path: "../../node_modules/@capacitor/network"
   CapacitorPluginSafeArea:
     :path: "../../node_modules/capacitor-plugin-safe-area"
   CapacitorPreferences:
@@ -291,7 +301,6 @@ SPEC CHECKSUMS:
   CapacitorBrowser: e72e572d5dbdbb854fda5950586a2451e981f2d6
   CapacitorCamera: fcacb82cc319e62f8d8c93e20f3f70e2464efe5e
   CapacitorClipboard: c75fdaa6e622111119f35e7914ecfc67b05efecb
-  CapacitorCommunityAdmob: 9c36b466f46da413e5c105f7484e7603178c6223
   CapacitorCommunityInAppReview: 4492bdd34aad4d27ed87949376022cc93b294ea1
   CapacitorCommunityTextToSpeech: a9f7c5bcdc424197d11bb7ae3e9010b415e931b0
   CapacitorCordova: e8b76fd95fc1e157775abc484c59cc0de464095d
@@ -300,7 +309,9 @@ SPEC CHECKSUMS:
   CapacitorGeolocation: 7132de914f9d853ec4642dc1d36e4e2018a4e8a8
   CapacitorHaptics: 4df2c625445cef39b67ea635a21802bc92df3b82
   CapacitorKeyboard: 867eb4b3c901d9bb5c3d0c93b546185d52484e19
+  CapacitorLevelplayAds: 8f4b064e91a42662faf6d8fec5a455c5afcdac37
   CapacitorMlkitBarcodeScanning: d97b2398adb4a8686fce9b1c0c6f09623f1baae8
+  CapacitorNetwork: 8812ce60d11fb63d8f2e4ba51a49b2e59892ebe2
   CapacitorPluginSafeArea: 9d0682951c011bf0b36e513a89103c5fbff7ac49
   CapacitorPreferences: cca2021f386efb75947c850334447d9ff22b14f1
   CapacitorShare: 0c58305114538568059bfc07111f22dcb9cb2a82
@@ -310,15 +321,15 @@ SPEC CHECKSUMS:
   CapawesomeTeamCapacitorDatetimePicker: 859adffaef2ac2f43f8c530f5b182ea13d5678d6
   CapgoCapacitorNavigationBar: b38f5c3fda336ab2e8493f8cc0c8093aa1a385c5
   CordovaPluginsStatic: b1e0cb61738004841352e28a8dcf8629f495d919
-  Google-Mobile-Ads-SDK: 4534fd2dfcd3f705c5485a6633c5188d03d4eed2
   GoogleDataTransport: aae35b7ea0c09004c3797d53c8c41f66f219d6a7
   GoogleMLKit: ddd51d7dff36ff28defa69afedd9cdce684fd857
   GoogleToolboxForMac: d1a2cbf009c453f4d6ded37c105e2f67a32206d8
-  GoogleUserMessagingPlatform: befe603da6501006420c206222acd449bba45a9c
   GoogleUtilities: 00c88b9a86066ef77f0da2fab05f65d7768ed8e1
   GTMSessionFetcher: 5aea5ba6bd522a239e236100971f10cb71b96ab6
   IONFilesystemLib: dfa8706539ac9ab77ccfd6e5b3830ce9b5e57f6c
   IONGeolocationLib: a5e40b54edc2ee9902036eda5aaa41ddf07bb68d
+  IronSourceAdQualitySDK: 779fc3754f27b3d5fae8da52c5709a2dbdb502a6
+  IronSourceSDK: fd05921e1ed23cc69e6eb21477e6b86230c98e2e
   MLImage: 2ab9c968e75f57911c16f4c9d9e8a8e9604a86a1
   MLKitBarcodeScanning: 72c6437f13a900833b400136be53a8a5d86f42fa
   MLKitCommon: 26b779f072a182c1603d4c88a101c350cac837b1
@@ -336,6 +347,6 @@ SPEC CHECKSUMS:
   RevenuecatPurchasesCapacitorUi: 59851dc7076d29f5f010e3dca51902898659f2d1
   RevenueCatUI: 5f7b3496a7fd7a16a254a6b78de2e221c117d9d2
 
-PODFILE CHECKSUM: 267109873bbc12733eb6b3e2709ec31baf9d9e6d
+PODFILE CHECKSUM: fd9f14b5695a38e9a6b27a142e3c1237c751a4c8
 
 COCOAPODS: 1.16.2
