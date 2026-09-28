@@ -35,6 +35,7 @@
               <span>{{ providerLabel }}</span>
             </span>
           </div>
+          <p v-if="item.subtitle" class="house-ad-native-subtitle">{{ item.subtitle }}</p>
         </div>
       </div>
     </div>
@@ -108,6 +109,7 @@
               <span>{{ providerLabel }}</span>
             </span>
           </div>
+          <p v-if="item.subtitle" class="house-ad-native-subtitle">{{ item.subtitle }}</p>
         </div>
       </div>
       <div v-if="item.tier === 'gold' || item.tier === 'silver'" class="premium-flare"></div>
@@ -123,7 +125,7 @@
       :class="['trip-card-v2', 'tier-card-' + item.tier]"
       @click="onOpen"
   >
-    <div class="trip-cover-wrap">
+    <div :class="['trip-cover-wrap', { 'trip-cover-wrap--logo': item.kind === 'partner' }]">
       <img
           loading="lazy"
           :src="item.image || `https://placehold.co/600x380?text=${encodeURIComponent(item.title)}`"
@@ -409,6 +411,22 @@ watch(item, (ad) => {
   object-fit: cover;
   display: block;
 }
+/* A sponsored partner's asset is its logo (square/icon-shaped, often with
+   transparent padding) — never a wide landscape cover photo like a trip's.
+   Force-cropping it to fill this 190px-tall box would cut off the mark or
+   leave it looking blank. Contain it instead, letterboxed on the wrap's
+   existing neutral background, same idea as the logo treatment in
+   HouseAdCard.vue's banner. */
+.trip-cover-wrap--logo .trip-cover {
+  object-fit: contain;
+  padding: 32px;
+  box-sizing: border-box;
+}
+/* The bottom fade exists to keep overlay text legible over a photo — with
+   no photo (just a logo on a flat background) it's just noise. */
+.trip-cover-wrap--logo .trip-cover-gradient {
+  display: none;
+}
 .trip-cover-gradient {
   position: absolute;
   bottom: 0;
@@ -637,6 +655,22 @@ watch(item, (ad) => {
   line-height: 1.3;
   font-size: inherit;
   color: inherit;
+}
+
+/* Brief blurb about the sponsored partner/product/location — clamped to 2
+   lines with an ellipsis so a long bio/description never blows out the
+   card's height (these cards otherwise mirror a real content card's size). */
+.house-ad-native-subtitle {
+  margin: 3px 0 0;
+  font-size: 0.72rem;
+  line-height: 1.35;
+  color: var(--ion-color-medium);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .house-ad-native-grid-sponsored {

@@ -124,16 +124,16 @@ async function loadHouseAdPool(): Promise<void> {
 
         const [partnersRes, productsRes, locationsRes, tripsRes] = await Promise.all([
             supabase.from('partners')
-                .select('id, name, logo_url, partner_tier')
+                .select('id, name, logo_url, partner_tier, about')
                 .eq('is_active', true)
                 .in('partner_tier', TIER_ORDER),
             supabase.from('products')
-                .select('id, name, photo_front_url, partner_tier, barcode, partner:partners(name)')
+                .select('id, name, photo_front_url, partner_tier, barcode, description, partner:partners(name)')
                 .eq('approved', true)
                 .in('partner_tier', TIER_ORDER)
                 .limit(60),
             supabase.from('locations')
-                .select('id, name, image, partner_tier, partner:partners(name)')
+                .select('id, name, image, partner_tier, description, partner:partners(name)')
                 .in('partner_tier', TIER_ORDER)
                 .limit(60),
             supabase.from('trips')
@@ -148,6 +148,7 @@ async function loadHouseAdPool(): Promise<void> {
             byTier[tier].push({
                 kind: 'partner', id: p.id, tier, title: p.name, image: p.logo_url,
                 to: { name: 'PartnerDetail', params: { id: p.id } },
+                subtitle: p.about ?? null,
             })
         }
 
@@ -159,6 +160,7 @@ async function loadHouseAdPool(): Promise<void> {
                 kind: 'product', id: p.id, tier, title: p.name, image: p.photo_front_url,
                 to: { name: 'item-details', params: { barcode: p.barcode } },
                 providerName: partner?.name ?? null,
+                subtitle: (p as any).description ?? null,
             })
         }
 
@@ -170,6 +172,7 @@ async function loadHouseAdPool(): Promise<void> {
                 kind: 'location', id: l.id, tier, title: l.name, image: l.image,
                 to: { name: 'PlaceDetail', params: { id: l.id } },
                 providerName: partner?.name ?? null,
+                subtitle: (l as any).description ?? null,
             })
         }
 
