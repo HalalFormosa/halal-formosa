@@ -12,10 +12,13 @@
     "test:unit": "vitest",
     "lint": "eslint .",
     "postversion": "node scripts/update-native-version.js",
-    "capacitor:sync:after": "node node_modules/capacitor-levelplay-ads/scripts/levelplay-manifest.js"
+    "postinstall": "node scripts/patch-keyboard-resize.js",
+    "capacitor:sync:after": "node node_modules/capacitor-levelplay-ads/scripts/levelplay-manifest.js && node scripts/patch-keyboard-resize.js"
   },
   "levelplay": {
-    "networks": ["admob"],
+    "networks": [
+      "admob"
+    ],
     "userTrackingDescription": "This identifier is used to deliver personalized ads to you.",
     "consentProvider": "custom",
     "admob": {
@@ -23,7 +26,6 @@
     }
   },
   "dependencies": {
-    "@capacitor-community/admob": "^8.0.0",
     "@capacitor-community/in-app-review": "^8.0.0",
     "@capacitor-community/text-to-speech": "^8.0.2",
     "@capacitor-mlkit/barcode-scanning": "^8.0.1",
@@ -88,6 +90,7 @@
     "onesignal-cordova-plugin": "^5.3.1",
     "praytime": "^3.2.0",
     "puppeteer": "^24.42.0",
+    "qrcode": "^1.5.4",
     "swiper": "^12.1.2",
     "tesseract.js": "^6.0.1",
     "vue": "^3.5.29",
@@ -102,6 +105,7 @@
     "@eslint/js": "^10.0.1",
     "@types/canvas-confetti": "^1.9.0",
     "@types/google.maps": "^3.58.1",
+    "@types/qrcode": "^1.5.6",
     "@types/uuid": "^10.0.0",
     "@vitejs/plugin-legacy": "^7.2.1",
     "@vitejs/plugin-vue": "^6.0.4",
