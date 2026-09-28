@@ -258,31 +258,37 @@
             <!-- Featured gold slot — crossfades to the next rotated gold
                  partner product instead of hard-cutting, same mechanic as
                  Discover Locations' featured-fade above. -->
-            <div v-if="featuredProduct" class="featured-fade-wrapper">
-              <Transition name="featured-fade">
-                <ion-card
-                    :key="featuredProduct.barcode"
-                    :class="[
-                      'discover-item',
-                      featuredProduct.partner_tier ? 'tier-card-' + featuredProduct.partner_tier.toLowerCase() : ''
-                    ]"
-                    button
-                    @click="openProduct(featuredProduct)"
-                >
-                  <!-- Tier Badge -->
-                  <ion-badge
-                      v-if="featuredProduct.partner_tier"
-                      :class="['tier-badge', featuredProduct.partner_tier.toLowerCase()]"
-                  >
-                    <ion-icon :icon="sparkles" />
-                    <span>{{ $t('home.partnerTier', { tier: (featuredProduct.partner_tier || '').toUpperCase() }) }}</span>
-                  </ion-badge>
+            <div
+                v-if="featuredProduct"
+                :class="[
+                  'featured-fade-wrapper',
+                  'discover-item',
+                  featuredProduct.partner_tier ? 'tier-card-' + featuredProduct.partner_tier.toLowerCase() : ''
+                ]"
+                @click="openProduct(featuredProduct)"
+            >
+              <!-- Tier Badge (Fixed on frame) -->
+              <ion-badge
+                  v-if="featuredProduct.partner_tier"
+                  :class="['tier-badge', featuredProduct.partner_tier.toLowerCase()]"
+              >
+                <ion-icon :icon="sparkles" />
+                <span>{{ (featuredProduct.partner_tier || '').toUpperCase() }}</span>
+              </ion-badge>
 
-                  <!-- Shine Effect (Gold ONLY) -->
-                  <div v-if="['gold', 'silver'].includes(String(featuredProduct.partner_tier || '').toLowerCase())" class="premium-flare"></div>
-
+              <!-- Inner Content Crossfade -->
+              <Transition name="featured-content-fade">
+                <div :key="featuredProduct.barcode" class="featured-inner-content">
                   <img :src="featuredProduct.image || 'https://placehold.co/200x200'" :alt="$t('home.altProduct')" class="discover-img" loading="lazy" />
                   <ion-label class="discover-label">
+                    <div class="name-row">
+                      <h3 class="discover-name">
+                        {{ featuredProduct.name }}
+                        <span v-if="featuredProduct.partner_tier" class="home-partner-verified">
+                          <ion-icon :icon="shieldCheckmarkOutline" />
+                        </span>
+                      </h3>
+                    </div>
                     <div class="status-row">
                       <ion-chip
                           :class="featuredProduct.status === 'Halal' ? 'chip-success'
@@ -290,15 +296,17 @@
                     : featuredProduct.status === 'Syubhah' ? 'chip-warning'
                     : featuredProduct.status === 'Haram' ? 'chip-danger'
                     : 'chip-medium'"
-                          style="font-size: 14px; margin-bottom: 4px;"
                       >
                         {{ $t('search.status.' + featuredProduct.status) }}
                       </ion-chip>
                     </div>
-                    <p>{{ $t('home.added') }} {{ fromNowToTaipei(featuredProduct.created_at) }}</p>
+                    <p class="added-time">{{ $t('home.added') }} {{ fromNowToTaipei(featuredProduct.created_at) }}</p>
                   </ion-label>
-                </ion-card>
+                </div>
               </Transition>
+
+              <!-- Premium Flare (Fixed on frame) -->
+              <div v-if="['gold', 'silver'].includes(String(featuredProduct.partner_tier || '').toLowerCase())" class="premium-flare"></div>
             </div>
 
             <ion-card
@@ -317,7 +325,7 @@
                   :class="['tier-badge', p.partner_tier.toLowerCase()]"
               >
                 <ion-icon :icon="sparkles" />
-                <span>{{ $t('home.partnerTier', { tier: (p.partner_tier || '').toUpperCase() }) }}</span>
+                <span>{{ (p.partner_tier || '').toUpperCase() }}</span>
               </ion-badge>
 
               <!-- Shine Effect (Gold ONLY) -->
@@ -325,6 +333,14 @@
 
               <img :src="p.image || 'https://placehold.co/200x200'" :alt="$t('home.altProduct')" class="discover-img" loading="lazy" />
               <ion-label class="discover-label">
+                <div class="name-row">
+                  <h3 class="discover-name">
+                    {{ p.name }}
+                    <span v-if="p.partner_tier" class="home-partner-verified">
+                      <ion-icon :icon="shieldCheckmarkOutline" />
+                    </span>
+                  </h3>
+                </div>
                 <div class="status-row">
                   <ion-chip
                       :class="p.status === 'Halal' ? 'chip-success'
@@ -332,12 +348,12 @@
                 : p.status === 'Syubhah' ? 'chip-warning'
                 : p.status === 'Haram' ? 'chip-danger'
                 : 'chip-medium'"
-                      style="font-size: 14px; margin-bottom: 4px;"
+                      style="font-size: 13px; margin-bottom: 2px;"
                   >
                     {{ $t('search.status.' + p.status) }}
                   </ion-chip>
                 </div>
-                <p>{{ $t('home.added') }} {{ fromNowToTaipei(p.created_at) }}</p>
+                <p class="added-time">{{ $t('home.added') }} {{ fromNowToTaipei(p.created_at) }}</p>
               </ion-label>
             </ion-card>
           </div>
@@ -376,29 +392,27 @@
                  partner instead of hard-cutting, same mechanic as Explore's
                  featured-fade (see ExploreView.vue). Taken out of the plain
                  v-for below so swapping it never reflows the rest of the grid. -->
-            <div v-if="featuredLocation" class="featured-fade-wrapper">
-              <Transition name="featured-fade">
-                <ion-card
-                    :key="featuredLocation.id"
-                    :class="[
-                      'discover-item',
-                      featuredLocation.partner_tier ? 'tier-card-' + featuredLocation.partner_tier.toLowerCase() : ''
-                    ]"
-                    button
-                    @click="openLocation(featuredLocation)"
-                >
-                  <!-- Tier Badge -->
-                  <ion-badge
-                      v-if="featuredLocation.partner_tier"
-                      :class="['tier-badge', featuredLocation.partner_tier.toLowerCase()]"
-                  >
-                    <ion-icon :icon="sparkles" />
-                    <span>{{ $t('home.partnerTier', { tier: (featuredLocation.partner_tier || '').toUpperCase() }) }}</span>
-                  </ion-badge>
+            <div
+                v-if="featuredLocation"
+                :class="[
+                  'featured-fade-wrapper',
+                  'discover-item',
+                  featuredLocation.partner_tier ? 'tier-card-' + featuredLocation.partner_tier.toLowerCase() : ''
+                ]"
+                @click="openLocation(featuredLocation)"
+            >
+              <!-- Tier Badge (Fixed on frame) -->
+              <ion-badge
+                  v-if="featuredLocation.partner_tier"
+                  :class="['tier-badge', featuredLocation.partner_tier.toLowerCase()]"
+              >
+                <ion-icon :icon="sparkles" />
+                <span>{{ (featuredLocation.partner_tier || '').toUpperCase() }}</span>
+              </ion-badge>
 
-                  <!-- Premium Flare for Gold/Silver -->
-                  <div v-if="['gold', 'silver'].includes(String(featuredLocation.partner_tier || '').toLowerCase())" class="premium-flare"></div>
-
+              <!-- Inner Content Crossfade -->
+              <Transition name="featured-content-fade">
+                <div :key="featuredLocation.id" class="featured-inner-content">
                   <img
                       :src="featuredLocation.image || 'https://placehold.co/200x200'"
                       :alt="$t('home.altLocation')"
@@ -407,16 +421,25 @@
                   />
                   <ion-label class="discover-label">
                     <div class="name-row">
-                      <h3>{{ featuredLocation.name }}</h3>
-                      <!-- Official Partner Tag -->
-                      <div v-if="featuredLocation.partner_tier" class="home-partner-verified">
-                        <ion-icon :icon="shieldCheckmarkOutline" />
-                      </div>
+                      <h3>
+                        {{ featuredLocation.name }}
+                        <span v-if="featuredLocation.partner_tier" class="home-partner-verified">
+                          <ion-icon :icon="shieldCheckmarkOutline" />
+                        </span>
+                      </h3>
                     </div>
-                    <p>{{ $t('home.added') }} {{ fromNowToTaipei(featuredLocation.created_at) }}</p>
+                    <div v-if="featuredLocation.type" class="status-row">
+                      <ion-chip class="chip-medium location-type-chip">
+                        {{ featuredLocation.type }}
+                      </ion-chip>
+                    </div>
+                    <p class="added-time">{{ $t('home.added') }} {{ fromNowToTaipei(featuredLocation.created_at) }}</p>
                   </ion-label>
-                </ion-card>
+                </div>
               </Transition>
+
+              <!-- Premium Flare (Fixed on frame) -->
+              <div v-if="['gold', 'silver'].includes(String(featuredLocation.partner_tier || '').toLowerCase())" class="premium-flare"></div>
             </div>
 
             <ion-card
@@ -435,7 +458,7 @@
                   :class="['tier-badge', loc.partner_tier.toLowerCase()]"
               >
                 <ion-icon :icon="sparkles" />
-                <span>{{ $t('home.partnerTier', { tier: (loc.partner_tier || '').toUpperCase() }) }}</span>
+                <span>{{ (loc.partner_tier || '').toUpperCase() }}</span>
               </ion-badge>
 
               <!-- Premium Flare for Gold/Silver -->
@@ -449,13 +472,19 @@
               />
               <ion-label class="discover-label">
                 <div class="name-row">
-                  <h3>{{ loc.name }}</h3>
-                  <!-- Official Partner Tag -->
-                  <div v-if="loc.partner_tier" class="home-partner-verified">
-                    <ion-icon :icon="shieldCheckmarkOutline" />
-                  </div>
+                  <h3>
+                    {{ loc.name }}
+                    <span v-if="loc.partner_tier" class="home-partner-verified">
+                      <ion-icon :icon="shieldCheckmarkOutline" />
+                    </span>
+                  </h3>
                 </div>
-                <p>{{ $t('home.added') }} {{ fromNowToTaipei(loc.created_at) }}</p>
+                <div v-if="loc.type" class="status-row">
+                  <ion-chip class="chip-medium location-type-chip">
+                    {{ loc.type }}
+                  </ion-chip>
+                </div>
+                <p class="added-time">{{ $t('home.added') }} {{ fromNowToTaipei(loc.created_at) }}</p>
               </ion-label>
             </ion-card>
           </div>
@@ -768,7 +797,7 @@
       <div class="insights-container">
         <div class="insights-scroll">
           <!-- Card 1: Total Products -->
-          <div class="insight-card stat-card" @click="router.push('/analytics/products')">
+          <div class="insight-card stat-card">
             <div class="stat-icon-wrapper products">
               <ion-icon :icon="sparkles" />
             </div>
@@ -779,7 +808,7 @@
           </div>
 
           <!-- Card 2: Total Locations -->
-          <div class="insight-card stat-card" @click="router.push('/analytics/locations')">
+          <div class="insight-card stat-card">
             <div class="stat-icon-wrapper locations">
               <ion-icon :icon="locationOutline" />
             </div>
@@ -3340,11 +3369,7 @@ ion-segment-button {
   height: 90px;
   transition: transform 0.2s ease, background 0.2s ease;
   position: relative;
-  cursor: pointer;
-}
-
-.insight-card:active {
-  background: var(--ion-color-step-50);
+  cursor: default;
 }
 
 /* Stat Cards (Centered Icons) */
@@ -3400,76 +3425,140 @@ ion-segment-button {
 /* Dark mode handled by global variables */
 
 
-/* --- Partner List Transition --- */
+/* --- Partner List Transition ---
+   Smooth scale-fade crossfade across rotating gold placements. */
 .partner-list-move {
-  transition: transform 0.8s ease;
+  transition: transform 0.6s ease;
 }
 .partner-list-enter-active, .partner-list-leave-active {
-  transition: all 0.5s ease;
+  transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1), transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
-.partner-list-enter-from, .partner-list-leave-to {
+.partner-list-enter-from {
   opacity: 0;
-  transform: translateY(10px);
+  transform: scale(0.96);
+}
+.partner-list-leave-to {
+  opacity: 0;
+  transform: scale(1.02);
+}
+.partner-list-leave-active {
+  position: absolute;
 }
 
-/* --- Featured Location Crossfade (same mechanic as Explore's featured-fade) ---
-   Opacity-only so it reads as a gentle refresh, not a flashy transition. No
-   transition `mode`, so old and new fade concurrently instead of leaving a
-   visible gap. The leaving card is taken out of flow so it overlaps the
-   incoming one in place, rather than both taking up space and doubling height. */
+/* --- Featured Card Frame & Inner Content --- */
 .featured-fade-wrapper {
   position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  box-sizing: border-box;
 }
-/* .discover-grid is a flex row of fixed-basis cards (.discover-item, wider
-   for gold via .tier-card-gold) — wrapping the featured card takes IT out of
-   being the direct flex child, so the wrapper needs the same basis the gold
-   card would normally claim, and the card inside just fills the wrapper. */
+
 .discover-grid .featured-fade-wrapper {
   flex: 0 0 300px;
 }
-.discover-grid .featured-fade-wrapper .discover-item {
-  flex: none;
+
+.featured-inner-content {
   width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
-/* Every Discover Locations card gets a locked height (fixed image + a
-   2-line-reserved title), whether featured or not — a 1-line name rotating
-   in for a 2-line one otherwise changes the row's height, which snaps
-   everything below (Discover Trips, etc.) up or down mid-crossfade instead
-   of a clean fade. */
+
+/* Card Height Lock: 265px ensures title (2 lines), status chip, and timestamp fit with generous padding without any trimmed text */
 .discover-grid--locations .discover-item,
-.discover-grid--locations .featured-fade-wrapper {
-  height: 234px;
-}
-.discover-grid--locations .discover-label h3 {
-  min-height: 36px;
-}
-/* Same height-lock, for Discover Products' featured gold slot. */
+.discover-grid--locations .featured-fade-wrapper,
 .discover-grid--products .discover-item,
 .discover-grid--products .featured-fade-wrapper {
-  height: 214px;
+  height: 265px;
 }
-/* Same fix as .name-row (see below) — status-row/home-partner-verified were
-   plain, layout-less divs, so the shield stacked under the status chip
-   instead of sitting beside it. */
+
+.discover-grid .discover-img {
+  height: 135px;
+  width: 100%;
+  object-fit: cover;
+}
+
+.discover-label {
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+  box-sizing: border-box;
+  text-align: center;
+}
+
+.discover-label h3,
+.discover-label .discover-name {
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.25;
+  margin: 0;
+  max-height: 35px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-align: center;
+}
+
 .status-row {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 4px;
+  margin: 0;
+  width: 100%;
 }
-.featured-fade-enter-active,
-.featured-fade-leave-active {
-  transition: opacity 0.4s ease;
+
+.status-row ion-chip {
+  margin: 0 auto;
+  font-size: 12px;
+  height: 24px;
 }
-.featured-fade-enter-from,
-.featured-fade-leave-to {
+
+.location-type-chip {
+  --background: rgba(249, 115, 22, 0.12);
+  --color: var(--ion-color-carrot);
+  font-size: 11px;
+  font-weight: 700;
+  height: 22px;
+  border: 1px solid rgba(249, 115, 22, 0.25);
+  margin: 0 auto;
+}
+
+.ion-palette-dark .location-type-chip {
+  --background: rgba(249, 115, 22, 0.22);
+  --color: #ff9800;
+  border: 1px solid rgba(249, 115, 22, 0.4);
+}
+
+.added-time {
+  font-size: 11px;
+  color: var(--ion-color-medium);
+  margin: 0;
+  text-align: center;
+}
+
+/* In-place content crossfade inside the static gold frame */
+.featured-content-fade-enter-active,
+.featured-content-fade-leave-active {
+  transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.featured-content-fade-enter-from,
+.featured-content-fade-leave-to {
   opacity: 0;
 }
-.featured-fade-leave-active {
+.featured-content-fade-leave-active {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
+  height: 100%;
 }
 
 /* ===============================
@@ -3478,6 +3567,13 @@ ion-segment-button {
 .discover-grid {
   gap: 12px;
   padding: 2px 2px 6px;
+  /* Positioning context for .partner-list-leave-active's position:absolute
+     (standard Vue <TransitionGroup> pattern — lets the leaving card animate
+     out independently while the rest immediately shift into their final
+     slots, instead of it jumping to whatever ancestor happens to be
+     positioned). No visual effect on its own since nothing here sets an
+     offset. */
+  position: relative;
 }
 
 .discover-item {
@@ -3528,11 +3624,10 @@ ion-segment-button {
 .home-partner-verified {
   color: var(--ion-color-carrot);
   font-size: 14px;
-  flex-shrink: 0;
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  line-height: 0;
-  margin-top: 2px;
+  vertical-align: middle;
+  margin-left: 4px;
 }
 
 .discover-item--compact {
