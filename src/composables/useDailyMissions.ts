@@ -250,6 +250,12 @@ export function useDailyMissions() {
 
             claimedBonus.value = logActions.includes('daily_mission_bonus')
 
+            // Auto-award the completion bonus as soon as every mission is
+            // done, instead of waiting for the user to tap the bonus card.
+            if (allCompleted.value && !claimedBonus.value) {
+                await checkAndAwardBonus()
+            }
+
         } catch (err) {
             console.error('Error fetching mission progress:', err)
         } finally {
