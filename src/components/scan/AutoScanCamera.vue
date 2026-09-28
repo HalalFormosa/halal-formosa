@@ -54,8 +54,10 @@
         <div class="analyzing-hint">{{ $t('scanIngredients.autoScan.analyzingHint', 'Photo captured — you can lower the camera now') }}</div>
       </div>
 
-      <!-- 🟢 Live result card — shown instantly over the camera feed, Lens-style -->
-      <div v-if="phase === 'result' && lastResult" class="live-result-card">
+      <!-- 🟢 Live result card — shown instantly over the camera feed, Lens-style.
+           Tapping anywhere on the card (outside the buttons) pauses the auto-dismiss
+           countdown, since a tap signals the user is reading it, not done with it. -->
+      <div v-if="phase === 'result' && lastResult" class="live-result-card" @click="pauseResultDismiss">
         <IngredientHighlightImage
           v-if="resultPreviewUrl"
           :src="resultPreviewUrl"
@@ -68,16 +70,43 @@
           {{ $t(`search.status.${lastResult.autoStatus}`, lastResult.autoStatus || '') }}
         </div>
         <div class="live-result-name">
-          {{ lastResult.productName || $t('scanIngredients.scan.results') }}
+          {{ displayProductName || $t('scanIngredients.scan.results') }}
         </div>
         <div v-if="lastResult.highlights?.length" class="live-result-highlights">
           {{ $t('scanIngredients.autoScan.highlightsFound', { count: lastResult.highlights.length }) }}
         </div>
+
+        <!-- Named so the user can sight-read what's risky without tapping "View Details". -->
+        <div v-if="sortedFlaggedHighlights.length" class="live-result-flagged-chips">
+          <span
+            v-for="(h, idx) in visibleFlaggedHighlights"
+            :key="idx"
+            class="flagged-chip"
+            :class="'chip-' + extractIonColor(h.color)"
+          >
+            {{ formatHighlightName(h) }}
+          </span>
+          <span v-if="extraFlaggedCount > 0" class="flagged-chip chip-more">
+            +{{ extraFlaggedCount }}
+          </span>
+        </div>
+
+        <!-- Notice so the auto-dismiss doesn't feel like the result randomly vanished. -->
+        <div v-if="!dismissPaused" class="live-result-dismiss-notice">
+          <span>{{ $t('scanIngredients.autoScan.autoDismiss', { s: dismissSeconds }) }}</span>
+          <div class="dismiss-progress-track">
+            <div class="dismiss-progress-fill" :style="{ width: (dismissSeconds / RESULT_DISMISS_SECONDS * 100) + '%' }"></div>
+          </div>
+        </div>
+        <div v-else class="live-result-dismiss-notice paused">
+          {{ $t('scanIngredients.autoScan.dismissPaused', 'Paused — tap "Scan Again" to continue') }}
+        </div>
+
         <div class="live-result-actions">
-          <button class="live-btn secondary" @click="resetLiveScan">
+          <button class="live-btn secondary" @click.stop="resetLiveScan">
             {{ $t('scanIngredients.autoScan.scanAgain', 'Scan Again') }}
           </button>
-          <button class="live-btn primary" @click="viewDetails">
+          <button class="live-btn primary" @click.stop="viewDetails">
             {{ $t('scanIngredients.autoScan.viewDetails', 'View Details') }}
           </button>
         </div>
@@ -108,6 +137,7 @@ import { useI18n } from 'vue-i18n'
 import useHighlightCache from '@/composables/useHighlightCache'
 import { useOcrService } from '@/composables/useOcrService'
 import type { AutoScanResult } from '@/composables/useAutoScanStore'
+import type { IngredientHighlight } from '@/types/Ingredient'
 import IngredientHighlightImage from '@/components/scan/IngredientHighlightImage.vue'
 import { extractIonColor } from '@/utils/ingredientHelpers'
 import { getScanStatus, type ScanStatus } from '@/services/ScanLimitService'
@@ -152,6 +182,37 @@ const flaggedHighlights = computed(() => {
   })
 })
 
+// Named so the user can sight-read what's risky without opening "View Details" —
+// Haram (danger) ingredients surface first since they're the more severe verdict.
+const MAX_FLAGGED_NAMES_SHOWN = 4
+const sortedFlaggedHighlights = computed(() => {
+  return [...flaggedHighlights.value].sort((a, b) => {
+    const rank = (h: IngredientHighlight) => (extractIonColor(h.color) === 'danger' ? 0 : 1)
+    return rank(a) - rank(b)
+  })
+})
+const visibleFlaggedHighlights = computed(() => sortedFlaggedHighlights.value.slice(0, MAX_FLAGGED_NAMES_SHOWN))
+const extraFlaggedCount = computed(() => Math.max(0, sortedFlaggedHighlights.value.length - MAX_FLAGGED_NAMES_SHOWN))
+
+// OCR sometimes mistakes the whole ingredients list for the product name (no
+// clear "product name" line on the label) — cap it so the live result card
+// doesn't balloon to fill the screen.
+const MAX_PRODUCT_NAME_LENGTH = 60
+const displayProductName = computed(() => {
+  const name = lastResult.value?.productName?.trim()
+  if (!name) return ''
+  return name.length > MAX_PRODUCT_NAME_LENGTH
+    ? name.slice(0, MAX_PRODUCT_NAME_LENGTH).trimEnd() + '…'
+    : name
+})
+
+function formatHighlightName(h: IngredientHighlight): string {
+  if (h.keyword_zh && h.keyword && h.keyword_zh.trim().toLowerCase() !== h.keyword.trim().toLowerCase()) {
+    return `${h.keyword_zh} (${h.keyword})`
+  }
+  return h.keyword_zh || h.keyword
+}
+
 // Object URL for the actual cropped/captured frame the result is based on, so the
 // user can see what was scanned before deciding to view details or scan again.
 const resultPreviewUrl = ref<string | null>(null)
@@ -180,6 +241,41 @@ const hintImage = ref('/hints/hints1.png')
 
 let stream: MediaStream | null = null
 let analysisInterval: any = null
+let countdownInterval: any = null
+
+// Seconds left before the result card auto-dismisses and scanning resumes, plus
+// whether the user tapped the card to pause that countdown (see pauseResultDismiss).
+const RESULT_DISMISS_SECONDS = 10
+const dismissSeconds = ref(RESULT_DISMISS_SECONDS)
+const dismissPaused = ref(false)
+
+function clearResultTimers() {
+  if (countdownInterval) {
+    clearInterval(countdownInterval)
+    countdownInterval = null
+  }
+}
+
+function startResultDismissTimer() {
+  clearResultTimers()
+  dismissPaused.value = false
+  dismissSeconds.value = RESULT_DISMISS_SECONDS
+  countdownInterval = setInterval(() => {
+    dismissSeconds.value -= 1
+    if (dismissSeconds.value <= 0) {
+      clearResultTimers()
+      if (phase.value === 'result') resetLiveScan()
+    }
+  }, 1000)
+}
+
+// Tapping the result card signals the user is still reading it, so the auto-dismiss
+// is paused entirely — they resume continuous scanning by tapping "Scan Again" themselves.
+function pauseResultDismiss() {
+  if (phase.value !== 'result' || dismissPaused.value) return
+  dismissPaused.value = true
+  clearResultTimers()
+}
 
 const statusClass = computed(() => ({
   'status-scanning': scanning.value && !isDetected.value,
@@ -316,7 +412,6 @@ async function startAnalysis() {
     )
 
     try {
-      console.log('🔍 [AutoScan] AI Checking...');
       statusMessage.value = t('scanIngredients.autoScan.status.scanning', 'AI Scanning...')
 
       const base64 = canvas.toDataURL('image/jpeg', 0.8).split(',')[1]
@@ -331,7 +426,6 @@ async function startAnalysis() {
       })
 
       const json = await res.json()
-      console.log('📦 [AutoScan] OCR Response keys:', JSON.stringify(Object.keys(json)));
       const text = json.text || ''
       const lowerText = text.toLowerCase()
 
@@ -364,7 +458,6 @@ async function startAnalysis() {
         // no further keyword-position cropping needed.
         handleLiveDetection(canvas)
       } else {
-        console.log('⏳ [AutoScan] Ingredients not detected yet...');
         statusMessage.value = t('scanIngredients.autoScan.status.notFound', 'Ingredients not found, keep holding...')
       }
     } catch (e) {
@@ -464,6 +557,11 @@ async function handleLiveDetection(canvas: HTMLCanvasElement) {
     // Let the caller log this as a successful detection even if the user never
     // taps "View Details" — the scan itself already succeeded.
     emit('stable-result', payload)
+
+    // Continuous scanning: auto-dismiss the result and resume searching after a
+    // few seconds so the user can keep scanning the next ingredient list without
+    // tapping "Scan Again" every time (unless they tap the card to pause it).
+    startResultDismissTimer()
   } catch (e) {
     console.warn('⚠️ [AutoScan] Live analysis failed, resuming scan:', e)
     phase.value = 'searching'
@@ -473,6 +571,8 @@ async function handleLiveDetection(canvas: HTMLCanvasElement) {
 }
 
 function resetLiveScan() {
+  clearResultTimers()
+  dismissPaused.value = false
   phase.value = 'searching'
   isDetected.value = false
   lastResult.value = null
@@ -481,10 +581,12 @@ function resetLiveScan() {
 
 function viewDetails() {
   if (!lastResult.value) return
+  clearResultTimers()
   emit('detected', lastResult.value)
 }
 
 function stopCamera() {
+  clearResultTimers()
   if (stream) {
     stream.getTracks().forEach(track => track.stop())
     stream = null
@@ -810,12 +912,61 @@ onUnmounted(() => {
   font-size: 18px;
   font-weight: 700;
   margin-bottom: 4px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .live-result-highlights {
   color: rgba(255, 255, 255, 0.75);
   font-size: 13px;
   margin-bottom: 12px;
+}
+
+.live-result-flagged-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.flagged-chip {
+  padding: 4px 10px;
+  border-radius: 14px;
+  font-size: 12px;
+  font-weight: 700;
+  color: white;
+  white-space: nowrap;
+}
+
+.flagged-chip.chip-danger { background: var(--ion-color-danger); }
+.flagged-chip.chip-warning { background: var(--ion-color-warning); color: #2b2b2b; }
+.flagged-chip.chip-more { background: rgba(255, 255, 255, 0.15); }
+
+.live-result-dismiss-notice {
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.live-result-dismiss-notice.paused {
+  color: var(--ion-color-carrot);
+}
+
+.dismiss-progress-track {
+  margin-top: 6px;
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.15);
+  overflow: hidden;
+}
+
+.dismiss-progress-fill {
+  height: 100%;
+  background: var(--ion-color-carrot);
+  transition: width 1s linear;
 }
 
 .live-result-actions {
