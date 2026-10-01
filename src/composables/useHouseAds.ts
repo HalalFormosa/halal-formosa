@@ -246,8 +246,8 @@ function pickAt(baseIdx: number, options?: HouseAdPickOptions): HouseAdItem | nu
 
 // The item due for the CURRENT turn (used by the single rotating banner
 // fallback, HouseAdCard.vue).
-export function getHouseAd(): HouseAdItem | null {
-    return pickAt(rotationIndex.value)
+export function getHouseAd(options?: HouseAdPickOptions): HouseAdItem | null {
+    return pickAt(rotationIndex.value, options)
 }
 
 // The item due `offset` turns ahead of the current one — lets several

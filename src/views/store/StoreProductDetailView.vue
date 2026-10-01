@@ -1,8 +1,8 @@
 <template>
   <ion-page>
-    <ion-header class="ion-no-border immersive-header" :class="{ 'is-scrolled': isScrolled, 'has-ads': isNative && showAds }">
+    <ion-header class="ion-no-border immersive-header" :class="{ 'is-scrolled': isScrolled, 'has-ads': isNative && showAds, 'house-ad-top': adSlotCollapsed }">
       <!-- Native (mobile) AdMob banner -->
-      <div v-if="isNative && showAds" id="ad-space-store-detail" :style="{ height: '65px', paddingTop: 'var(--ion-safe-area-top, 0)' }"></div>
+      <div v-if="isNative && showAds" id="ad-space-store-detail" :style="adSpaceStyle(adSlotCollapsed)"></div>
       <app-header 
           :title="product?.name || $t('store.title')" 
           :showBack="true" 
@@ -393,6 +393,7 @@ import {
 import { Capacitor } from '@capacitor/core'
 import HouseAdNativeCard from '@/components/ads/HouseAdNativeCard.vue'
 import { isDonor } from "@/composables/useSubscriptionStatus"
+import { useAdSlotCollapsed, adSpaceStyle } from '@/composables/useAdFallback'
 import { scheduleBannerUpdate } from '@/plugins/admob'
 import { destroyLevelPlayBanner } from '@/lib/levelplay'
 import {
@@ -420,6 +421,7 @@ const { addItem, items: cartItems, cartCount, cartTotal } = useStoreCart()
 const { getOrCreateConversation, totalUnreadCount, initGlobalUnreadSubscription } = useStoreChat()
 
 const isNative = ref(Capacitor.isNativePlatform())
+const adSlotCollapsed = useAdSlotCollapsed('ad-space-store-detail', isDonor)
 
 const showAds = computed(() => !isDonor.value)
 

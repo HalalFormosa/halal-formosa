@@ -1,8 +1,11 @@
 <template>
   <ion-page>
-    <ion-header class="ion-no-border immersive-header" :class="{ 'is-scrolled': isScrolled, 'has-ads': isNative && showAds }">
-      <div v-if="isNative && showAds" id="ad-space-news-detail" :style="{ height: '65px', paddingTop: 'var(--ion-safe-area-top, 0)' }"></div>
-      <app-header 
+    <ion-header class="ion-no-border immersive-header" :class="{ 'is-scrolled': isScrolled, 'has-ads': isNative && showAds, 'house-ad-top': adSlotCollapsed }">
+      <!-- No house-ad banner up here — when there's no real ad the slot
+           collapses, and the sponsored slot is the in-article native card
+           below (HouseAdNativeCard), same as Item/Place Details. -->
+      <div v-if="isNative && showAds" id="ad-space-news-detail" :style="adSpaceStyle(adSlotCollapsed)"></div>
+      <app-header
         :title="newsItem?.title || ''" 
         show-back 
         back-route="/news" 
@@ -110,6 +113,7 @@ const newsItem = ref<any>(null);
 const authorProfile = ref<{ display_name: string | null; public_profile: boolean } | null>(null);
 const loading = ref(true);
 const isNative = ref(Capacitor.isNativePlatform())
+const adSlotCollapsed = useAdSlotCollapsed('ad-space-news-detail', isDonor)
 
 const isScrolled = ref(false)
 const handleScroll = (ev: any) => {
@@ -127,6 +131,7 @@ import utc from 'dayjs/plugin/utc'
 import timezone from 'dayjs/plugin/timezone'
 import {Capacitor} from "@capacitor/core";
 import HouseAdNativeCard from '@/components/ads/HouseAdNativeCard.vue'
+import { useAdSlotCollapsed, adSpaceStyle } from '@/composables/useAdFallback'
 import AppHeader from "@/components/AppHeader.vue";
 
 // Extend dayjs

@@ -1398,6 +1398,13 @@ ion-header ion-toolbar {
     box-shadow: none !important;
 }
 
+/* A house ad is showing at the very top (real banner failed to fill): the
+   reserved ad slot above already clears the status bar, so the first toolbar
+   must not add that clearance again. */
+ion-header.house-ad-top ion-toolbar {
+    --ion-safe-area-top: 0px;
+}
+
 /* ion-header itself has no bottom shadow/border */
 ion-header {
     --box-shadow: none !important;

@@ -62,7 +62,10 @@
     "noEditHistory": "No recent edits",
     "admin": "Admin",
     "seeOlderChanges": "See older changes",
-    "hideOlderChanges": "Hide older changes"
+    "hideOlderChanges": "Hide older changes",
+    "loginRequired": "Please log in to submit a review",
+    "unknown": "Unknown",
+    "sort": "Sort"
   },
   "review": {
     "title": "Review Submissions",
@@ -105,7 +108,14 @@
       "--ion-color-warning": "Syubhah",
       "--ion-color-danger": "Haram"
     },
-    "syncToOff": "Sync to Open Food Facts"
+    "syncToOff": "Sync to Open Food Facts",
+    "confirmRejectHeader": "Reject Submission",
+    "confirmRejectMsg": "Please provide a reason for rejecting this submission:",
+    "reasonPlaceholder": "e.g. Duplicate listing, incorrect location, not halal-relevant...",
+    "reasonRequired": "A reason is required to reject the submission.",
+    "confirmMergeHeader": "Merge into existing product?",
+    "confirmMergeMsg": "This submission will not be published separately. Its barcode becomes an alias of the existing product, and this submission is removed. This cannot be undone.",
+    "merge": "Merge"
   },
   "master": {
     "active": "Active",
@@ -320,7 +330,8 @@
       "asr": "Asr",
       "maghrib": "Maghrib",
       "isha": "Isha"
-    }
+    },
+    "pro": "Pro"
   },
   "analytics": {
     "productTitle": "Product Analytics",
@@ -421,6 +432,7 @@
     },
     "limit": {
       "reached": "Daily scan limit reached. Watch an ad or contribute a missing product/location to get more scans!",
+      "reachedContribute": "Daily scan limit reached. Contribute a missing product or location to get more scans!",
       "bonus": "Watch Ad +1 Scan",
       "adLimit": "You can only watch {count} ads per day.",
       "contributeTip": "Earn +1 daily scan for every product or location you contribute (max 3/day)."
@@ -665,11 +677,24 @@
       "verifiedGoldPartner": "Verified Gold Partner",
       "address": "Address",
       "noAddress": "No address available",
+      "similarPlaces": "Similar places",
+      "checkIn": "Check in",
+      "checkedIn": "Checked in",
+      "reviewed": "Reviewed",
+      "review": "Review",
+      "checkInSuccess": "Checked in!",
+      "checkInAlready": "You already checked in here recently",
+      "checkInRateLimited": "You checked in somewhere moments ago. Try again in a few minutes.",
+      "checkInTooFar": "You need to be at this place to check in",
+      "checkInNoLocation": "Turn on location to check in",
+      "checkInLogin": "Please log in to check in",
+      "checkInFailed": "Could not check in",
       "openingHours": "Opening Hours",
       "openNow": "Open Now",
       "closedNow": "Closed Now",
       "additionalDetails": "Additional Details",
-      "estimatedPrice": "Estimated Price"
+      "estimatedPrice": "Estimated Price",
+      "open24Hours": "24h"
     },
     "filters": {
       "priceRange": "Price Range"
@@ -942,7 +967,9 @@
         "unlimitedCollections": "Unlimited Collection Items",
         "unlimitedScans": "Unlimited Scans",
         "prioritySupport": "Priority Support 24/7"
-      }
+      },
+      "restoreSuccess": "Subscription successfully restored",
+      "errorOpening": "Failed to load subscription options. Please try again."
     },
     "aboutMe": "About Me",
     "edit": "Edit",
@@ -1044,7 +1071,9 @@
     "social": {
       "instagram": "Instagram",
       "line": "LINE",
-      "website": "Website"
+      "website": "Website",
+      "tiktok": "TikTok",
+      "facebook": "Facebook"
     },
     "badgeShop": {
       "title": "Badge Shop",
@@ -1089,9 +1118,10 @@
       "saved": "Changes saved!",
       "unsaved": "Unsaved"
     },
-    "defaultName": "User"
+    "defaultName": "User",
+    "anonymous": "Anonymous"
   },
-"achievements": {
+  "achievements": {
     "title": "My Achievements",
     "summaryLabel": "Trophies Unlocked",
     "nextTierHint": "{count} more to unlock \"{tier}\"",
@@ -1296,7 +1326,8 @@
       "backImageRequired": "Back image is required."
     },
     "selectCategory": "Select Category",
-    "searchCategoryPlaceholder": "Search categories..."
+    "searchCategoryPlaceholder": "Search categories...",
+    "cameraError": "Failed to capture image."
   },
   "addPlace": {
     "title": "Add New Place",
@@ -1415,7 +1446,8 @@
     "needsPermission": "Compass access is required to show direction.",
     "enableButton": "Enable Compass",
     "error": "Unable to initialize compass.",
-    "facing": "You are facing Qibla"
+    "facing": "You are facing Qibla",
+    "noSensor": "Compass hardware is not active on this device. Use the degree heading above."
   },
   "savedItems": {
     "freeTier": "Free Tier Usage",
@@ -1556,7 +1588,13 @@
       "addTag": "Add a tag"
     },
     "days": {
-      "mon": "Mon", "tue": "Tue", "wed": "Wed", "thu": "Thu", "fri": "Fri", "sat": "Sat", "sun": "Sun"
+      "mon": "Mon",
+      "tue": "Tue",
+      "wed": "Wed",
+      "thu": "Thu",
+      "fri": "Fri",
+      "sat": "Sat",
+      "sun": "Sun"
     },
     "photos": {
       "hint": "You can add up to {max} photos on your plan.",
@@ -1707,8 +1745,12 @@
     "analytics": "Analytics Dashboard",
     "masterData": "Master Data",
     "locationsReview": "Locations Review",
-    "locationReports": "Location Reports",
-    "productReports": "Product Reports",
+    "locationReports": {
+      "title": "Location Reports Management"
+    },
+    "productReports": {
+      "title": "Product Reports Management"
+    },
     "users": "Users",
     "productCategories": "Product Categories",
     "ingredientHighlights": "Ingredient Highlights",
@@ -1828,11 +1870,8 @@
       "resolved": "Resolved",
       "rejected": "Rejected"
     },
-    "masterData": "Master Data",
-    "productCategories": "Product Categories",
     "ingredient_highlights": "Ingredient Highlights",
     "location_types": "Location Types",
-    "stores": "Stores",
     "category_rules": "Category Rules",
     "dau": "Active Sessions",
     "activity": "Activity",
@@ -1984,12 +2023,6 @@
         "description": "Description"
       }
     },
-    "locationReports": {
-      "title": "Location Reports Management"
-    },
-    "productReports": {
-      "title": "Product Reports Management"
-    },
     "report": {
       "status": "Report Status",
       "noReports": "No reports.",
@@ -2003,7 +2036,11 @@
         "resolved": "Resolved",
         "rejected": "Rejected"
       }
-    }
+    },
+    "retractConfirm": "Retract this entry? This cannot be undone.",
+    "retractFailed": "Failed to retract: {error}",
+    "never": "Never",
+    "neverActive": "Never active"
   },
   "merchantApplications": {
     "title": "Merchant Applications",
@@ -2092,7 +2129,6 @@
     "saveFailed": "Failed to save product.",
     "adminOrders": "Store Orders",
     "noOrders": "No orders found.",
-
     "myOrders": "My Orders",
     "orderPending": "Pending",
     "orderPaid": "Paid",
@@ -2238,7 +2274,10 @@
     "homeDeliveryLogistics": "Home Delivery Logistics",
     "inStockShort": "In Stock Short",
     "shipViaTcat": "Ship Via Tcat",
-    "shippingFee": "Shipping Fee"
+    "shippingFee": "Shipping Fee",
+    "admin": {
+      "products": "Products"
+    }
   },
   "merchant": {
     "register": {
@@ -2400,6 +2439,7 @@
       "maybeLater": "Maybe Later",
       "yes": "Yes, I did",
       "no": "Not really"
-    }
+    },
+    "deleteConfirmMsg": "Are you sure you want to delete your review?"
   }
 }

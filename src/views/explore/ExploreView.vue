@@ -1,8 +1,10 @@
 <template>
   <ion-page>
-    <ion-header class="explore-header" :class="{ 'is-native': isNative && !isDonor, 'solid-bg': viewMode === 'list' }">
-      <!-- Native AdMob banner -->
-      <div v-if="isNative && !isDonor" id="ad-space-explore" style="height:65px;"></div>
+    <ion-header ref="exploreHeaderRef" class="explore-header" :class="{ 'is-native': isNative && !isDonor, 'solid-bg': viewMode === 'list', 'house-ad-top': houseAdAtTop }">
+      <!-- Native AdMob banner. When it fails and the house ad takes over,
+           shrink the reserved 65px slot to just the status-bar inset so the
+           house ad isn't pushed down by an empty gap. -->
+      <div v-if="isNative && !isDonor" id="ad-space-explore" :style="{ height: houseAdAtTop ? 'var(--ion-safe-area-top, 0px)' : '65px' }"></div>
       <!-- Floating fallback banner in map mode; a flush banner-style one in
            list mode so the reserved ad slot never sits empty when the real
            banner fails to fill or drops out mid-session — list mode also
@@ -730,8 +732,9 @@
                           size="small"
                           :color="isLocationSaved(visibleMapLocations[0].id) ? 'carrot' : 'medium'"
                           @click.stop="openSaveModal(visibleMapLocations[0])"
+                          class="icon-btn"
                         >
-                          <ion-icon :icon="isLocationSaved(visibleMapLocations[0].id) ? bookmark : bookmarkOutline" slot="start" />
+                          <ion-icon :icon="isLocationSaved(visibleMapLocations[0].id) ? bookmark : bookmarkOutline" slot="icon-only" />
                         </ion-button>
                         <div class="action-icons">
                           <ion-button
@@ -830,8 +833,9 @@
                         size="small" 
                         :color="isLocationSaved(place.id) ? 'carrot' : 'medium'" 
                         @click.stop="openSaveModal(place)"
+                          class="icon-btn"
                       >
-                        <ion-icon :icon="isLocationSaved(place.id) ? bookmark : bookmarkOutline" slot="start" />
+                        <ion-icon :icon="isLocationSaved(place.id) ? bookmark : bookmarkOutline" slot="icon-only" />
                       </ion-button>
                       <div class="action-icons">
                         <ion-button 
@@ -1160,6 +1164,9 @@ const infiniteSentinel = ref<HTMLElement | null>(null)
 let infiniteObserver: IntersectionObserver | null = null
 
 const isNative = ref(Capacitor.isNativePlatform())
+// True when the house-ad card is what's showing at the top (real banner
+// failed to fill) rather than the native AdMob banner overlay.
+const houseAdAtTop = computed(() => !isDonor.value && isNative.value && failedAdSpaceId.value === 'ad-space-explore')
 const loading = ref(true)
 const campusPartners = ref<{ id: string; name: string; slug: string }[]>([])
 const trendingPlaceIds = ref<number[]>([])
@@ -1175,13 +1182,43 @@ const hideForYouInfo = ref(
 )
 const visitedPlaceIds = ref<number[]>([])
 
-const listPaddingTop = computed(() => {
+// The header floats over the list (position:absolute), so the list needs top
+// padding equal to the header's real height. That height varies with the
+// status-bar inset, the ad slot (none for Pro/donor accounts, a house ad, or
+// the real banner), the category chips and the campus bar, so measure it
+// instead of summing guesses — summing under-counted for Pro accounts and
+// hid the first (gold) card under the header.
+const exploreHeaderRef = ref<any>(null)
+const measuredHeaderHeight = ref(0)
+let headerObserver: ResizeObserver | null = null
+
+const fallbackListPaddingTop = computed(() => {
   let base = 90; // search row
   if (isNative.value && !isDonor.value) base += 65; // Ad space
   if (!isSmallScreen.value) base += 60; // Categories
   if (campusPartners.value.length > 0) base += 50; // Campus bar
-  return `${base}px`;
+  return base;
 });
+
+const listPaddingTop = computed(() => {
+  const h = measuredHeaderHeight.value
+  return `${h > 0 ? Math.ceil(h) + 8 : fallbackListPaddingTop.value}px`
+});
+
+onMounted(() => {
+  const el: HTMLElement | undefined = exploreHeaderRef.value?.$el
+  if (!el) return
+  const measure = () => { measuredHeaderHeight.value = el.getBoundingClientRect().height }
+  measure()
+  if (typeof ResizeObserver !== 'undefined') {
+    headerObserver = new ResizeObserver(measure)
+    headerObserver.observe(el)
+  }
+})
+onUnmounted(() => {
+  headerObserver?.disconnect()
+  headerObserver = null
+})
 
 const boundsFilteredLocations = computed(() => {
   const bounds = currentMapBounds.value
@@ -4001,6 +4038,14 @@ button.gm-ui-hover-effect > span {
   margin-top: 8px;
 }
 
+/* House ad is already clear of the status bar (spacer above it), so don't
+   apply the status-bar clearance a second time between the ad and search. */
+.explore-header.house-ad-top .header-search-toolbar {
+  --ion-safe-area-top: 0px;
+  margin-top: 0;
+  min-height: 0;
+}
+
 .search-row-container {
   position: relative;
   display: flex;
@@ -4749,6 +4794,15 @@ button.gm-ui-hover-effect > span {
   align-items: center;
   justify-content: flex-end;
   gap: 8px;
+}
+
+/* Map/list card actions: save, share, navigate and Details all sit together
+   on the right (the earlier rule's space-between + negative left margin
+   pushed Save off to the far left). */
+.info-actions .action-row {
+  justify-content: flex-end;
+  margin-left: 0;
+  gap: 4px;
 }
 
 .action-icons {

@@ -6,7 +6,7 @@
       @click="onOpen"
   >
     <div class="house-ad-inner">
-      <div class="house-ad-image-section">
+      <div class="house-ad-image-section" :class="{ 'is-logo': item.kind === 'partner' }">
         <img
             loading="lazy"
             :src="item.image || `https://placehold.co/300x300?text=${encodeURIComponent(item.title)}`"
@@ -67,6 +67,7 @@ import {
   getHouseAd,
   startHouseAdRotationTimer,
   turnDurationForTier,
+  type HouseAdKind,
 } from '@/composables/useHouseAds'
 import { ActivityLogService } from '@/services/ActivityLogService'
 import { supabase } from '@/plugins/supabaseClient'
@@ -75,7 +76,13 @@ import { supabase } from '@/plugins/supabaseClient'
 // (used everywhere the real AdMob/LevelPlay banner would otherwise sit).
 // 'floating': a smaller, inset, rounded card — for views like Explore's
 // map where a full-bleed strip looks intrusive over the map itself.
-const props = withDefaults(defineProps<{ variant?: 'banner' | 'floating' }>(), {
+// `excludeKind` drops one category from the rotation — e.g. Products
+// (SearchView) passes 'product' so its banner shows partner/location/trip
+// sponsors rather than a product ad inside the product list itself.
+const props = withDefaults(defineProps<{
+  variant?: 'banner' | 'floating'
+  excludeKind?: HouseAdKind
+}>(), {
   variant: 'banner',
 })
 
@@ -90,7 +97,7 @@ const item = computed(() => {
   // touch reactive deps so this recomputes on rotation/pool updates
   void rotationIndex.value
   void poolLoaded.value
-  return getHouseAd()
+  return getHouseAd({ excludeKind: props.excludeKind })
 })
 
 // Ticks every 500ms so progressPercent stays live without depending on any
@@ -260,6 +267,16 @@ onUnmounted(() => {
   object-fit: cover;
 }
 
+/* Partner sponsors are logos, not photos — show the whole mark on white. */
+.house-ad-image-section.is-logo {
+  background: #fff;
+}
+.house-ad-image-section.is-logo img {
+  object-fit: contain;
+  padding: 3px;
+  box-sizing: border-box;
+}
+
 .house-ad-info-section {
   flex: 1;
   min-width: 0;
@@ -313,28 +330,31 @@ onUnmounted(() => {
   min-width: 0;
 }
 
+/* Solid tier "plates" (same gradients as the app's global .tier-badge) — the
+   old translucent tint washed out to a muddy brown on dark backgrounds. */
 .house-ad-tier-badge {
   display: inline-flex;
   align-items: center;
-  gap: 2px;
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-  padding: 1px 5px;
-  border-radius: 5px;
+  gap: 3px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  padding: 2px 7px;
+  border-radius: 6px;
   flex-shrink: 0;
 }
 .house-ad-tier-badge.gold {
-  color: #7a5b00;
-  background: rgba(212, 175, 55, 0.18);
+  color: #422006;
+  background: linear-gradient(135deg, #facc15 0%, #f59e0b 100%);
+  box-shadow: 0 0 6px rgba(250, 204, 21, 0.45);
 }
 .house-ad-tier-badge.silver {
-  color: #555;
-  background: rgba(170, 170, 170, 0.2);
+  color: #111827;
+  background: linear-gradient(135deg, #e5e7eb 0%, #9ca3af 100%);
 }
 .house-ad-tier-badge.bronze {
-  color: #7a4620;
-  background: rgba(176, 116, 56, 0.18);
+  color: #3b1d06;
+  background: linear-gradient(135deg, #f3b073 0%, #c2763a 100%);
 }
 
 .house-ad-kind {

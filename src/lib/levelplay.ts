@@ -1,7 +1,7 @@
 // src/lib/levelplay.ts
 import { LevelPlayAds, AdEvent } from 'capacitor-levelplay-ads'
 import { Capacitor } from '@capacitor/core'
-import { markAdFailed, clearAdFailed } from '@/composables/useAdFallback'
+import { markAdFailed, clearAdFailed, markAdLoaded, clearAdLoaded } from '@/composables/useAdFallback'
 
 let initialized = false
 let bannerListenersRegistered = false
@@ -17,6 +17,7 @@ function registerBannerListeners() {
     LevelPlayAds.addListener(AdEvent.BannerLoaded, () => {
         bannerSettled = true
         clearAdFailed(activeBannerSpaceId ?? undefined)
+        markAdLoaded(activeBannerSpaceId)
     }).catch((e) => console.debug('[LevelPlay] listener register skip', e))
     LevelPlayAds.addListener(AdEvent.BannerLoadFailed, () => {
         bannerSettled = true
@@ -95,6 +96,7 @@ export async function showLevelPlayBanner(adUnitId: string, spaceId?: string) {
     }
     registerBannerListeners()
     clearAdFailed(activeBannerSpaceId ?? undefined)
+    clearAdLoaded(activeBannerSpaceId ?? undefined)
     activeBannerSpaceId = spaceId ?? null
     bannerSettled = false
     try {
@@ -135,6 +137,7 @@ export async function destroyLevelPlayBanner() {
     await initLevelPlay()
     if (!initialized) return
     clearAdFailed(activeBannerSpaceId ?? undefined)
+    clearAdLoaded(activeBannerSpaceId ?? undefined)
     activeBannerSpaceId = null
     try {
         await LevelPlayAds.destroyBanner()

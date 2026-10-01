@@ -20,6 +20,9 @@
             <ion-icon :icon="scanOutline" />
             <span>{{ scanStatus.isDonor ? '∞' : `${scanStatus.used}/${scanStatus.limit}` }}</span>
           </div>
+          <button v-if="torchAvailable" class="close-btn" :class="{ 'torch-on': torchOn }" @click="toggleTorch">
+            <ion-icon :icon="torchOn ? flashOutline : flashOffOutline" />
+          </button>
           <button class="close-btn" @click="$emit('close')">
             <ion-icon :icon="closeOutline" />
           </button>
@@ -132,7 +135,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
 import { IonIcon, IonSpinner } from '@ionic/vue'
-import { closeOutline, scanOutline } from 'ionicons/icons'
+import { closeOutline, scanOutline, flashOutline, flashOffOutline } from 'ionicons/icons'
 import { useI18n } from 'vue-i18n'
 import useHighlightCache from '@/composables/useHighlightCache'
 import { useOcrService } from '@/composables/useOcrService'
@@ -240,6 +243,30 @@ const resultColor = computed(() => {
 const hintImage = ref('/hints/hints1.png')
 
 let stream: MediaStream | null = null
+
+// Flash / torch — only offered when the camera track reports torch support
+// (most Android back cameras do), same as the live barcode scanner's button.
+const torchAvailable = ref(false)
+const torchOn = ref(false)
+
+function detectTorch() {
+  const track = stream?.getVideoTracks()[0]
+  const caps: any = track && typeof track.getCapabilities === 'function' ? track.getCapabilities() : null
+  torchAvailable.value = !!caps?.torch
+  torchOn.value = false
+}
+
+async function toggleTorch() {
+  const track = stream?.getVideoTracks()[0]
+  if (!track) return
+  const next = !torchOn.value
+  try {
+    await track.applyConstraints({ advanced: [{ torch: next } as any] })
+    torchOn.value = next
+  } catch (err) {
+    console.warn('⚠️ [AutoScan] Torch toggle failed:', err)
+  }
+}
 let analysisInterval: any = null
 let countdownInterval: any = null
 
@@ -339,6 +366,7 @@ async function initCamera() {
       videoRef.value.setAttribute('playsinline', '');
       
       await videoRef.value.play()
+      detectTorch()
       
       // Log actual resolution received
       console.log(`✅ [AutoScan] Video started: ${videoRef.value.videoWidth}x${videoRef.value.videoHeight}`);
@@ -591,6 +619,8 @@ function stopCamera() {
     stream.getTracks().forEach(track => track.stop())
     stream = null
   }
+  torchAvailable.value = false
+  torchOn.value = false
   if (analysisInterval) {
     clearInterval(analysisInterval)
     analysisInterval = null
@@ -705,6 +735,11 @@ onUnmounted(() => {
   font-size: 24px;
   backdrop-filter: blur(10px);
   pointer-events: auto;
+}
+
+.close-btn.torch-on {
+  background: rgba(255, 193, 7, 0.85);
+  color: #000;
 }
 
 .scan-frame-container {

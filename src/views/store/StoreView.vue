@@ -1,12 +1,13 @@
 <template>
   <ion-page>
-    <ion-header>
+    <ion-header :class="{ 'house-ad-top': houseAdAtTop }">
       <!-- Native (mobile) AdMob banner -->
-      <div v-if="isNative && !isDonor" id="ad-space-store" :style="{ height: '65px', paddingTop: 'var(--ion-safe-area-top, 0)' }"></div>
-      <!-- No house-ad fallback banner here — when there's no real ad, the
-           sponsored slot moves into the store product feed itself as
-           recurring native cards (see HouseAdNativeCard below) instead of
-           an empty banner-shaped placeholder. -->
+      <div v-if="isNative && !isDonor" id="ad-space-store" :style="adSpaceStyle(houseAdAtTop)"></div>
+      <!-- House-ad fallback banner (web, or the real banner failed to fill /
+           LevelPlay is disabled), like Explore — minus the 'product' kind,
+           since this IS the product store. The feed also gets recurring
+           native cards (see HouseAdNativeCard below). -->
+      <HouseAdCard v-if="!isDonor && (!isNative || failedAdSpaceId === 'ad-space-store')" variant="banner" exclude-kind="product" />
 
       <app-header :title="$t('store.title')" :icon="bagHandleOutline" :showProfile="true" />
     </ion-header>
@@ -334,7 +335,9 @@ import {
   IonInput, IonToggle, onIonViewWillEnter, onIonViewDidEnter
 } from '@ionic/vue'
 import { Capacitor } from '@capacitor/core'
+import HouseAdCard from '@/components/ads/HouseAdCard.vue'
 import HouseAdNativeCard from '@/components/ads/HouseAdNativeCard.vue'
+import { failedAdSpaceId, useHouseAdAtTop, adSpaceStyle } from '@/composables/useAdFallback'
 import { isDonor } from "@/composables/useSubscriptionStatus"
 import { scheduleBannerUpdate } from '@/plugins/admob'
 import {
@@ -362,6 +365,7 @@ const { execute: executeRecaptcha, isCaptchaEnabled } = useRecaptcha()
 
 // State
 const isNative = ref(Capacitor.isNativePlatform())
+const houseAdAtTop = useHouseAdAtTop('ad-space-store', isDonor)
 
 onIonViewDidEnter(() => {
   scheduleBannerUpdate()
@@ -1345,7 +1349,7 @@ onBeforeUnmount(() => {
   position: absolute;
   left: 0;
   right: 0;
-  bottom: 2px;
+  bottom: calc(var(--floating-tab-bar-offset) + 8px);
   display: flex;
   justify-content: center;
   pointer-events: none;

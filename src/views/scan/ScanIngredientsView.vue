@@ -1,8 +1,17 @@
 <template>
   <ion-page>
-    <ion-header :class="{ 'has-ads': isNative && !isDonor && currentStep === STEP_RESULTS }">
+    <ion-header :class="{ 'has-ads': isNative && !isDonor && currentStep === STEP_RESULTS, 'house-ad-top': adSlotCollapsed && currentStep === STEP_RESULTS }">
       <!-- Native (mobile) AdMob banner - shown only on results step -->
-      <div v-if="isNative && !isDonor && currentStep === STEP_RESULTS" id="ad-space-scan-results" :style="{ height: '65px', paddingTop: 'var(--ion-safe-area-top, 0)' }"></div>
+      <div v-if="isNative && !isDonor && currentStep === STEP_RESULTS" id="ad-space-scan-results" :style="adSpaceStyle(adSlotCollapsed)"></div>
+      <!-- House-ad banner (web, or the real banner failed to fill / LevelPlay is
+           disabled), like Trip/Store/Search — minus 'product' ads, since this
+           IS the product/ingredient flow. Replaces the in-content native card
+           that used to sit under the result actions. -->
+      <HouseAdCard
+          v-if="!isDonor && currentStep === STEP_RESULTS && (!isNative || failedAdSpaceId === 'ad-space-scan-results')"
+          variant="banner"
+          exclude-kind="product"
+      />
 
       <app-header
           :title="$t('scanIngredients.title')"
@@ -183,8 +192,10 @@
             </ion-label>
           </ion-chip>
 
+          <!-- "Watch ad for +1 scan" is switched off for now (see
+               REWARDED_SCANS_ENABLED) — extra scans come from contributions only. -->
           <ion-button
-              v-if="isNative && !isDonor"
+              v-if="REWARDED_SCANS_ENABLED && isNative && !isDonor"
               color="warning"
               expand="block"
               size="small"
@@ -466,20 +477,6 @@
             <ion-icon slot="start" :icon="addCircleOutline" />
             {{ $t('scanIngredients.scan.contribute') }}
           </ion-button>
-
-          <!-- Sponsored card — placed after every primary action (Unlock AI
-               Summary, Share/Scan Again, Contribute) so it never sits between
-               the result and the app's own conversion-critical PRO upsell
-               CTA above. Always shown alongside the real banner (not just as
-               a fallback when it fails to fill), same as Item Details/Place
-               Details. -->
-          <HouseAdNativeCard
-              v-if="!isDonor"
-              mode="trip"
-              :only-kinds="['partner', 'trip']"
-              :only-tiers="['gold', 'silver']"
-              :slot="0"
-          />
         </div>
       </div>
 
@@ -586,7 +583,7 @@
       />
       <ion-toast
           :is-open="showLimitToast"
-          :message="$t('scanIngredients.limit.reached', { limit: DAILY_SCAN_LIMIT })"
+          :message="limitReachedMessage"
           :duration="2000"
           color="warning"
           position="bottom"
@@ -716,6 +713,7 @@ import { extractIonColor, colorMeaning } from '@/utils/ingredientHelpers'
 import type { IngredientHighlight, BlacklistPattern } from "@/types/Ingredient";
 import useAISummary from '@/composables/useAISummary'
 import { isDonor } from "@/composables/useSubscriptionStatus";
+import { failedAdSpaceId, useAdSlotCollapsed, adSpaceStyle } from '@/composables/useAdFallback'
 import { useCropperOcr } from "@/composables/useCropperOcr"
 import { Device } from '@capacitor/device'
 import { supabase } from '@/plugins/supabaseClient'
@@ -731,7 +729,7 @@ dayjs.extend(relativeTime)
 
 import { showLevelPlayRewardedAd } from '@/lib/levelplay'
 import { Capacitor } from '@capacitor/core'
-import HouseAdNativeCard from '@/components/ads/HouseAdNativeCard.vue'
+import HouseAdCard from '@/components/ads/HouseAdCard.vue'
 import { ActivityLogService } from "@/services/ActivityLogService";
 import { isNetworkError } from '@/utils/offlineFeedback'
 
@@ -746,7 +744,7 @@ import { useNotifier } from "@/composables/useNotifier"
 import { useI18n } from 'vue-i18n'
 import { syncScanWidget } from '@/composables/useWidgetSync'
 
-const { t } = useI18n()
+const { t, te } = useI18n()
 
 /** ---------- Constants ---------- */
 const DAILY_SCAN_LIMIT = 5
@@ -806,6 +804,17 @@ const showMuslimFriendly = ref(false)
 const showLimitToast = ref(false);
 const bonusScans = ref(0)
 const isNative = ref(Capacitor.isNativePlatform())
+
+// Flip to true to bring back the "Watch Ad +1 Scan" button. Off for now: the
+// rewarded-ad flow isn't ready, so bonus scans come from contributions only.
+const REWARDED_SCANS_ENABLED = false
+
+const limitReachedMessage = computed(() =>
+  !REWARDED_SCANS_ENABLED && te('scanIngredients.limit.reachedContribute')
+    ? t('scanIngredients.limit.reachedContribute', { limit: DAILY_SCAN_LIMIT })
+    : t('scanIngredients.limit.reached', { limit: DAILY_SCAN_LIMIT })
+)
+const adSlotCollapsed = useAdSlotCollapsed('ad-space-scan-results', isDonor)
 const dailyAdUses = ref(0);
 const loadingAd = ref(false);
 

@@ -2,14 +2,15 @@
   <ion-page>
 
     <!-- ================= HEADER ================= -->
-    <ion-header>
+    <ion-header :class="{ 'house-ad-top': houseAdAtTop }">
 
       <!-- Native (mobile) AdMob banner -->
-      <div v-if="isNative && !isDonor" id="ad-space-trip" :style="{ height: '65px', paddingTop: 'var(--ion-safe-area-top, 0)' }"></div>
-      <!-- No house-ad fallback banner here — when there's no real ad, the
-           sponsored slot moves into the trip feed itself as recurring
-           native cards (see HouseAdNativeCard below) instead of an empty
-           banner-shaped placeholder. -->
+      <div v-if="isNative && !isDonor" id="ad-space-trip" :style="adSpaceStyle(houseAdAtTop)"></div>
+      <!-- House-ad fallback banner (web, or the real banner failed to fill /
+           LevelPlay is disabled), like Explore — minus the 'trip' kind,
+           since this IS the trip list. The feed also gets recurring native
+           cards (see HouseAdNativeCard below). -->
+      <HouseAdCard v-if="!isDonor && (!isNative || failedAdSpaceId === 'ad-space-trip')" variant="banner" exclude-kind="trip" />
 
       <!-- Top App Header -->
       <app-header
@@ -248,7 +249,9 @@ import {
   IonRefresher, IonRefresherContent
 } from '@ionic/vue'
 import { Capacitor } from '@capacitor/core'
+import HouseAdCard from '@/components/ads/HouseAdCard.vue'
 import HouseAdNativeCard from '@/components/ads/HouseAdNativeCard.vue'
+import { failedAdSpaceId, useHouseAdAtTop, adSpaceStyle } from '@/composables/useAdFallback'
 import { isDonor } from "@/composables/useSubscriptionStatus"
 import { scheduleBannerUpdate } from '@/plugins/admob'
 
@@ -287,6 +290,7 @@ const isFilterModalOpen = ref(false)
 const activeCategoryIds = ref<number[]>([])
 const sortBy = ref<'recent' | 'views'>('recent')
 const isNative = ref(Capacitor.isNativePlatform())
+const houseAdAtTop = useHouseAdAtTop('ad-space-trip', isDonor)
 const { execute: executeRecaptcha, isCaptchaEnabled } = useRecaptcha()
 
 // Same tier weighting as Home's partner rotation, so "featured first" reads

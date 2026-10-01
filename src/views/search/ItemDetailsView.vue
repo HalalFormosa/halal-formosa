@@ -1,8 +1,8 @@
 <template>
   <ion-page>
-    <ion-header class="ion-no-border immersive-header" :class="{ 'is-scrolled': isScrolled, 'has-ads': isNative && showAds }">
+    <ion-header class="ion-no-border immersive-header" :class="{ 'is-scrolled': isScrolled, 'has-ads': isNative && showAds, 'house-ad-top': adSlotCollapsed }">
       <!-- Native (mobile) AdMob banner -->
-      <div v-if="isNative && showAds" id="ad-space-item-details" :style="{ height: '65px', paddingTop: 'var(--ion-safe-area-top, 0)' }"></div>
+      <div v-if="isNative && showAds" id="ad-space-item-details" :style="adSpaceStyle(adSlotCollapsed)"></div>
       <!-- No house-ad fallback banner here — when there's no real ad, the
            sponsored slot instead appears further down the page, right
            before Description, so it doesn't delay the content someone
@@ -288,6 +288,7 @@
                    as the recurring native cards in Search/Explore/Trip/Store. -->
               <HouseAdNativeCard
                   v-if="showAds && String(item?.partner_tier || '').toLowerCase() !== 'gold'"
+                  class="item-sponsored-card"
                   mode="trip"
                   :only-kinds="['partner', 'trip']"
                   :only-tiers="['gold', 'silver']"
@@ -593,6 +594,7 @@ import {
 import AddProductView from "@/views/add-product/AddProductView.vue";
 import { userRole } from '@/composables/userProfile'
 import { isDonor, refreshSubscriptionStatus } from '@/composables/useSubscriptionStatus'
+import { useAdSlotCollapsed, adSpaceStyle } from '@/composables/useAdFallback'
 import { ActivityLogService } from "@/services/ActivityLogService";
 import { scheduleBannerUpdate } from '@/plugins/admob'
 import { RevenueCatUI, PAYWALL_RESULT } from '@revenuecat/purchases-capacitor-ui'
@@ -620,6 +622,7 @@ onIonViewDidEnter(() => {
 
 const loading = ref(true)
 const isNative = ref(Capacitor.isNativePlatform())
+const adSlotCollapsed = useAdSlotCollapsed('ad-space-item-details', isDonor)
 const modules = [Pagination, Zoom];
 
 const showAllIngredients = ref(false)
@@ -1677,11 +1680,29 @@ const share = async () => {
 .legend-chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 4px;
+  gap: 4px;
+  margin-top: 2px;
+}
+
+/* Legend is a small key, not content — keep the chips compact */
+.legend-chips ion-chip {
+  margin: 0;
+  height: 20px;
+  min-height: 0;
+  padding: 0 8px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  line-height: 20px;
+  border-radius: 6px;
 }
 
 /* RELATED SECTION */
+/* Breathing room around the sponsored card, between "Available at" and Description */
+.item-sponsored-card.item-sponsored-card {
+  margin-top: 24px;
+  margin-bottom: 28px;
+}
+
 .related-section {
   margin-top: 24px;
   padding-top: 16px;

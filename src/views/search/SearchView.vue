@@ -1,14 +1,16 @@
 <template>
   <ion-page>
-    <ion-header>
+    <ion-header :class="{ 'house-ad-top': houseAdAtTop }">
       <!-- Native (mobile) banner ad — LevelPlay renders with isOverlap:true,
            so it draws on top of the WebView rather than pushing it down.
            This reserved space keeps the ad from covering the header, same
-           pattern as Trip/Store. No house-ad fallback banner here — when
-           there's no real ad, the sponsored slot moves into the product
-           feed itself as recurring native cards (see HouseAdNativeCard
-           below) instead of an empty banner-shaped placeholder. -->
-      <div v-if="isNative && !isDonor" id="ad-space-search" :style="{ height: '65px', paddingTop: 'var(--ion-safe-area-top, 0)' }"></div>
+           pattern as Trip/Store. When there's no real ad (web, or the
+           banner failed to fill / LevelPlay is disabled) a house-ad banner
+           takes the slot, like Explore — minus the 'product' kind, since
+           this IS the product list. The feed also gets recurring native
+           cards (see HouseAdNativeCard below). -->
+      <div v-if="isNative && !isDonor" id="ad-space-search" :style="adSpaceStyle(houseAdAtTop)"></div>
+      <HouseAdCard v-if="!isDonor && (!isNative || failedAdSpaceId === 'ad-space-search')" variant="banner" exclude-kind="product" />
 
       <app-header
           :title="
@@ -662,7 +664,9 @@ import FilterContent from '@/components/FilterContent.vue'
 import StoreLogoBar from "@/components/StoreLogoBar.vue";
 import {ActivityLogService} from "@/services/ActivityLogService";
 import { scheduleBannerUpdate } from '@/plugins/admob'
+import HouseAdCard from '@/components/ads/HouseAdCard.vue'
 import HouseAdNativeCard from '@/components/ads/HouseAdNativeCard.vue'
+import { failedAdSpaceId, useHouseAdAtTop, adSpaceStyle } from '@/composables/useAdFallback'
 import {isDonor, refreshSubscriptionStatus} from "@/composables/useSubscriptionStatus";
 import {Purchases} from "@revenuecat/purchases-capacitor";
 import {PAYWALL_RESULT, RevenueCatUI} from "@revenuecat/purchases-capacitor-ui";
@@ -742,6 +746,7 @@ const ingredientDictionary = ref<Record<string, string>>({})
 const infiniteScroll = ref<HTMLIonInfiniteScrollElement | null>(null)
 const suppressSortWatcher = ref(false)
 const isNative = ref(Capacitor.isNativePlatform())
+const houseAdAtTop = useHouseAdAtTop('ad-space-search', isDonor)
 
 const categoryIcons: Record<string, string> = {
   "Snacks": "🍿",

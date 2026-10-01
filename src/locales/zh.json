@@ -58,7 +58,10 @@
     "added": "新增於",
     "lastEdited": "最後修改",
     "noEditHistory": "無修改紀錄",
-    "admin": "管理員"
+    "admin": "管理員",
+    "loginRequired": "請登入後再提交評論",
+    "unknown": "未知",
+    "sort": "排序"
   },
   "review": {
     "title": "審核提交",
@@ -96,7 +99,14 @@
       "--ion-color-warning": "疑似",
       "--ion-color-danger": "非清真"
     },
-    "syncToOff": "同步到 Open Food Facts"
+    "syncToOff": "同步到 Open Food Facts",
+    "confirmRejectHeader": "拒絕提交",
+    "confirmRejectMsg": "請提供拒絕此提交的原因：",
+    "reasonPlaceholder": "例如：重複的清單、位置錯誤、與清真無關…",
+    "reasonRequired": "拒絕提交必須填寫原因。",
+    "confirmMergeHeader": "要合併到現有產品嗎？",
+    "confirmMergeMsg": "此提交不會單獨發布。其條碼將成為現有產品的別名，且此提交會被移除。此動作無法復原。",
+    "merge": "合併"
   },
   "master": {
     "active": "啟用",
@@ -302,7 +312,8 @@
       "isha": "宵禮"
     },
     "qibla": "Qibla",
-    "altProduct": "product"
+    "altProduct": "product",
+    "pro": "Pro"
   },
   "analytics": {
     "productTitle": "產品數據分析",
@@ -439,6 +450,7 @@
     },
     "limit": {
       "reached": "已達到每日掃描限制。觀看廣告或貢獻缺失的產品/地點以獲取更多掃描次數！",
+      "reachedContribute": "已達到每日掃描限制。貢獻缺失的產品或地點即可獲得更多掃描次數！",
       "bonus": "Watch Ad +1 Scan",
       "adLimit": "You can only watch {count} ads per day.",
       "contributeTip": "每貢獻一個新產品或地點可獲得 +1 每日掃描次數（每日最多 +3 次）。"
@@ -608,11 +620,24 @@
       "verifiedGoldPartner": "Verified Gold Partner",
       "address": "Address",
       "noAddress": "No address available",
+      "similarPlaces": "類似地點",
+      "checkIn": "打卡",
+      "checkedIn": "已打卡",
+      "reviewed": "已評論",
+      "review": "評論",
+      "checkInSuccess": "打卡成功！",
+      "checkInAlready": "你最近已在此打卡",
+      "checkInRateLimited": "你剛在其他地點打卡，請幾分鐘後再試。",
+      "checkInTooFar": "你需要在此地點才能打卡",
+      "checkInNoLocation": "請開啟定位以打卡",
+      "checkInLogin": "請登入後打卡",
+      "checkInFailed": "打卡失敗",
       "openingHours": "Opening Hours",
       "openNow": "Open Now",
       "closedNow": "Closed Now",
       "additionalDetails": "Additional Details",
-      "estimatedPrice": "Estimated Price"
+      "estimatedPrice": "Estimated Price",
+      "open24Hours": "24 小時"
     },
     "filters": {
       "priceRange": "價格範圍"
@@ -780,7 +805,9 @@
         "unlimitedCollections": "無限制收藏項目",
         "unlimitedScans": "無限制掃描次數",
         "prioritySupport": "24/7 優先技術支援"
-      }
+      },
+      "restoreSuccess": "訂閱已成功還原",
+      "errorOpening": "無法載入訂閱選項，請再試一次。"
     },
     "aboutMe": "關於我",
     "edit": "編輯",
@@ -866,7 +893,9 @@
     "social": {
       "instagram": "Instagram",
       "line": "LINE",
-      "website": "網站"
+      "website": "網站",
+      "tiktok": "TikTok",
+      "facebook": "Facebook"
     },
     "badgeShop": {
       "title": "徽章商店",
@@ -939,9 +968,10 @@
     "reports": {
       "noMessages": "尚未有任何訊息。",
       "typeMessage": "輸入訊息..."
-    }
+    },
+    "anonymous": "匿名"
   },
-"achievements": {
+  "achievements": {
     "title": "我的成就",
     "summaryLabel": "已解鎖獎盃",
     "nextTierHint": "再 {count} 次即可解鎖「{tier}」",
@@ -1136,7 +1166,8 @@
       "backImageRequired": "背面圖片為必填。"
     },
     "selectCategory": "選擇分類",
-    "searchCategoryPlaceholder": "搜尋分類..."
+    "searchCategoryPlaceholder": "搜尋分類...",
+    "cameraError": "無法擷取影像。"
   },
   "addPlace": {
     "title": "新增地點",
@@ -1255,7 +1286,8 @@
     "needsPermission": "需要指南針權限才能顯示方向。",
     "enableButton": "啟用指南針",
     "error": "無法初始化指南針。",
-    "facing": "您正對著朝向"
+    "facing": "您正對著朝向",
+    "noSensor": "此裝置的羅盤硬體未啟用，請參考上方的角度。"
   },
   "savedItems": {
     "freeTier": "免費版使用限制",
@@ -1290,10 +1322,14 @@
     "pointsLogs": "查看積分紀錄",
     "scanLogs": "成分掃描紀錄",
     "analytics": "數據分析儀表板",
-    "masterData": "主數據管理",
+    "masterData": "主數據",
     "locationsReview": "地點審核",
-    "locationReports": "地點回報",
-    "productReports": "產品回報",
+    "locationReports": {
+      "title": "地點回報管理"
+    },
+    "productReports": {
+      "title": "產品回報管理"
+    },
     "users": "用戶",
     "products": "產品管理",
     "scanDetails": "掃描詳情",
@@ -1347,19 +1383,12 @@
     "reason": "原因",
     "productName": "產品",
     "locationName": "地點",
-    "locationReports": {
-      "title": "地點回報管理"
-    },
-    "productReports": {
-      "title": "產品回報管理"
-    },
     "reportStatus": {
       "pending": "等待中",
       "reviewing": "審核中",
       "resolved": "已解決",
       "rejected": "已拒絕"
     },
-    "masterData": "主數據",
     "productCategories": "產品類別",
     "ingredientHighlights": "成分亮點",
     "locationTypes": "地點類型",
@@ -1542,7 +1571,11 @@
     "topLocations": "Top Locations",
     "insight_high_scan_success": "AI Scanner is performing exceptionally well (>70% success).",
     "insight_low_scan_success": "Scanner error rates are higher than usual. Check visibility/lighting logs.",
-    "searchHistory": "Search History"
+    "searchHistory": "Search History",
+    "retractConfirm": "要撤回此項目嗎？此動作無法復原。",
+    "retractFailed": "撤回失敗：{error}",
+    "never": "從未",
+    "neverActive": "從未活躍"
   },
   "merchantApplications": {
     "title": "申請管理",
@@ -1629,7 +1662,6 @@
     "deleteConfirm": "您確定要刪除此產品嗎？",
     "deleteSuccess": "產品已成功刪除。",
     "inStockShort": "件",
-
     "myOrders": "我的訂單",
     "orderPending": "待處理",
     "orderPaid": "已付款",
@@ -1777,7 +1809,10 @@
     "homeDeliveryLogistics": "Home Delivery Logistics",
     "shipViaTcat": "Ship Via Tcat",
     "shippingFee": "Shipping Fee",
-    "sortTopRated": "Top Rated"
+    "sortTopRated": "Top Rated",
+    "admin": {
+      "products": "商品"
+    }
   },
   "merchant": {
     "register": {
@@ -1970,6 +2005,7 @@
       "maybeLater": "稍後再說",
       "yes": "是的，我有去",
       "no": "沒有耶"
-    }
+    },
+    "deleteConfirmMsg": "確定要刪除你的評論嗎？"
   }
 }

@@ -1,8 +1,8 @@
 <template>
   <ion-page>
-    <ion-header class="ion-no-border immersive-header" :class="{ 'is-scrolled': isScrolled, 'has-ads': isNative && showAds }">
+    <ion-header class="ion-no-border immersive-header" :class="{ 'is-scrolled': isScrolled, 'has-ads': isNative && showAds, 'house-ad-top': adSlotCollapsed }">
        <!-- Native (mobile) AdMob banner -->
-       <div v-if="isNative && showAds" id="ad-space-place-detail" :style="{ height: '65px', paddingTop: 'var(--ion-safe-area-top, 0)' }"></div>
+       <div v-if="isNative && showAds" id="ad-space-place-detail" :style="adSpaceStyle(adSlotCollapsed)"></div>
        <!-- No house-ad fallback banner here — when there's no real ad, the
             sponsored slot instead appears further down the page, right
             before Rate & Review, so it doesn't delay the content someone
@@ -168,6 +168,13 @@
               </template>
             </div>
 
+            <p v-if="place?.author?.public_profile" class="attribution-text">
+              {{ $t('home.addedBy', { author: place.author.display_name }) }} - {{ fromNowToTaipei(place.created_at) }}
+            </p>
+            <p v-else class="attribution-text">
+              {{ $t('home.added') }} {{ fromNowToTaipei(place.created_at) }}
+            </p>
+
             <!-- ⚠️ Combined Muslim-friendly Disclaimer Banner -->
             <div
                 v-if="isMuslimFriendly"
@@ -218,16 +225,29 @@
                 {{ $t('facilityReview.noConsensusYet') || 'No visitor reports yet. Be the first to share!' }}
               </p>
               
-              <!-- Rate & Review Button -->
-              <div class="ion-text-center ion-margin-top" v-if="!isOwner && !userHasReviewed">
+              <!-- Check in + Review buttons -->
+              <div class="action-btn-row ion-margin-top" v-if="!isOwner">
+                <ion-button
+                  :fill="checkedIn ? 'solid' : 'outline'"
+                  color="carrot"
+                  size="small"
+                  class="rate-btn"
+                  :disabled="checkedIn || checkingIn"
+                  @click="checkIn"
+                >
+                  <ion-icon slot="start" :icon="checkedIn ? checkmarkCircle : locationOutline" />
+                  {{ checkedIn ? ($t('explore.details.checkedIn') || 'Checked in') : ($t('explore.details.checkIn') || 'Check in') }}
+                </ion-button>
                 <ion-button
                   fill="outline"
                   color="carrot"
                   size="small"
                   class="rate-btn"
+                  :disabled="userHasReviewed"
                   @click="openFacilityReview"
                 >
-                  {{ $t('facilityReview.rateReviewAction') || 'Rate & Review Facilities' }}
+                  <ion-icon v-if="userHasReviewed" slot="start" :icon="checkmarkCircle" />
+                  {{ userHasReviewed ? ($t('explore.details.reviewed') || 'Reviewed') : ($t('explore.details.review') || 'Review') }}
                 </ion-button>
               </div>
 
@@ -255,13 +275,6 @@
                   :slot="0"
               />
             </div>
-
-            <p v-if="place?.author?.public_profile" class="attribution-text">
-              {{ $t('home.addedBy', { author: place.author.display_name }) }} - {{ fromNowToTaipei(place.created_at) }}
-            </p>
-            <p v-else class="attribution-text">
-              {{ $t('home.added') }} {{ fromNowToTaipei(place.created_at) }}
-            </p>
 
             <!-- Order Via delivery apps -->
             <div v-if="place.foodpanda_url || place.ubereats_url" class="ion-margin-top ion-margin-bottom">
@@ -611,6 +624,50 @@
               </div>
             </div>
 
+            <!-- Similar Places -->
+            <div v-if="similarPlaces.length" class="related-section">
+              <p class="section-title">
+                <strong><small>{{ $t('explore.details.similarPlaces') }}</small></strong>
+              </p>
+              <div class="discover-grid">
+                <ion-card
+                    v-for="p in similarPlaces"
+                    :key="p.id"
+                    class="discover-item"
+                    :class="p.partner_tier ? 'tier-card-' + p.partner_tier.toLowerCase() : ''"
+                    button
+                    @click="openSimilar(p)"
+                >
+                  <div v-if="p.partner_tier" class="tier-badge" :class="p.partner_tier.toLowerCase()">
+                    <ion-icon :icon="sparkles" />
+                    {{ p.partner_tier.toUpperCase() }}
+                  </div>
+
+                  <img
+                      :src="p.image || 'https://placehold.co/200x200?text=No+Image'"
+                      alt="place"
+                      class="discover-img"
+                  />
+                  <ion-label class="discover-label">
+                    <div class="discover-meta-row">
+                      <ion-chip class="capitalize similar-type-chip">
+                        {{ p.type }}
+                      </ion-chip>
+                    </div>
+                    <h3 :class="p.partner_tier ? 'product-name-' + p.partner_tier.toLowerCase() : ''">
+                      {{ p.name }}
+                    </h3>
+                    <div class="discover-footer">
+                      <p>
+                        <span v-if="p.review_count">★ {{ (p.avg_rating || 0).toFixed(1) }} · </span>{{ formatDistance(p.distance) }}
+                      </p>
+                      <span v-if="p.partner_tier" class="premium-verified-tag">{{ $t('explore.details.officialPartner') }}</span>
+                    </div>
+                  </ion-label>
+                </ion-card>
+              </div>
+            </div>
+
             <!-- Audit History Log -->
             <AuditHistoryLog ref="auditLogRef" entityType="location" :entityId="place.id" :createdAt="place.created_at" />
           </div>
@@ -843,6 +900,7 @@ import {
   IonModal,
   IonButton, IonHeader, IonChip,
   IonList,
+  IonCard,
   IonAvatar,
   IonToolbar, IonTitle, IonButtons,
   popoverController, onIonViewDidEnter,
@@ -851,6 +909,7 @@ import {
 import { Capacitor } from '@capacitor/core'
 import HouseAdNativeCard from '@/components/ads/HouseAdNativeCard.vue'
 import { isDonor } from "@/composables/useSubscriptionStatus"
+import { useAdSlotCollapsed, adSpaceStyle } from '@/composables/useAdFallback'
 import { scheduleBannerUpdate } from '@/plugins/admob'
 import {ref, onMounted, computed, nextTick, watch} from 'vue'
 import {useI18n} from 'vue-i18n'
@@ -871,6 +930,7 @@ import {
   createOutline, documentTextOutline, logoInstagram,
   trashOutline,
   navigateOutline,
+  locationOutline,
   shareSocialOutline,
   sparkles,
   shieldCheckmarkOutline,
@@ -982,6 +1042,19 @@ type LocationCertification = {
 }
 
 
+type SimilarPlace = {
+  id: number
+  name: string
+  image: string | null
+  type: string
+  avg_rating: number | null
+  review_count: number | null
+  partner_tier: string | null
+  distance: number
+}
+
+const similarPlaces = ref<SimilarPlace[]>([])
+
 const certifications = ref<LocationCertification[]>([])
 const loadingCertifications = ref(false)
 
@@ -999,6 +1072,7 @@ const claimStatus = ref<'pending' | 'approved' | 'rejected' | null>(null)
 const modules = [Pagination, Zoom]
 const isLoggedIn = ref(false)
 const isNative = ref(Capacitor.isNativePlatform())
+const adSlotCollapsed = useAdSlotCollapsed('ad-space-place-detail', isDonor)
 
 const showAds = computed(() => !isDonor.value)
 
@@ -1085,7 +1159,13 @@ const initMap = async () => {
     disableDefaultUI: true,
     mapId: MAP_ID,
     clickableIcons: false,
-    gestureHandling: 'greedy'
+    // Display-only: no pan/zoom, so scrolling the page over the map just
+    // scrolls the page. "Open" next to the address launches full Google Maps.
+    gestureHandling: 'none',
+    keyboardShortcuts: false,
+    draggable: false,
+    scrollwheel: false,
+    disableDoubleClickZoom: true
   })
   
   // Create place marker with custom pin element
@@ -1517,6 +1597,11 @@ const loadPlace = async () => {
   })()
   promises.push(promosPromise)
 
+  // Similar places (same type, nearest first)
+  promises.push(fetchSimilarPlaces())
+
+  if (user) promises.push(loadCheckInState())
+
   // Non-blocking Activity Log fire
   ActivityLogService.log("explore_place_detail_view", {
     id: data.id,
@@ -1528,6 +1613,77 @@ const loadPlace = async () => {
   await Promise.all(promises)
 
   loading.value = false
+}
+
+function distanceKm(lat1: number, lng1: number, lat2: number, lng2: number) {
+  const rad = Math.PI / 180
+  const dLat = (lat2 - lat1) * rad
+  const dLng = (lng2 - lng1) * rad
+  const a = Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * rad) * Math.cos(lat2 * rad) * Math.sin(dLng / 2) ** 2
+  return 6371 * 2 * Math.asin(Math.sqrt(a))
+}
+
+function formatDistance(km: number) {
+  return km < 1 ? `${Math.round(km * 1000)} m` : `${km.toFixed(1)} km`
+}
+
+async function fetchSimilarPlaces() {
+  similarPlaces.value = []
+  const current = place.value
+  if (!current?.typeId || current.lat == null || current.lng == null) return
+
+  try {
+    const { data, error } = await supabase
+      .from('locations')
+      .select('id, name, image, lat, lng, avg_rating, review_count, location_types(name), partner:partners(partner_tier)')
+      .eq('approved', true)
+      .eq('type_id', current.typeId)
+      .neq('id', current.id)
+      .limit(100)
+
+    if (error || !data) return
+
+    const tierPriority: Record<string, number> = { gold: 1, silver: 2, bronze: 3 }
+
+    similarPlaces.value = data
+      .filter((p: any) => p.lat != null && p.lng != null)
+      .map((p: any): SimilarPlace => {
+        const type = Array.isArray(p.location_types) ? p.location_types[0] : p.location_types
+        const partner = Array.isArray(p.partner) ? p.partner[0] : p.partner
+        return {
+          id: p.id,
+          name: p.name,
+          image: p.image,
+          type: type?.name ?? current.type,
+          avg_rating: p.avg_rating,
+          review_count: p.review_count,
+          partner_tier: partner?.partner_tier ?? null,
+          distance: distanceKm(current.lat, current.lng, p.lat, p.lng)
+        }
+      })
+      .sort((a, b) => {
+        const tA = tierPriority[(a.partner_tier || '').toLowerCase()] || 4
+        const tB = tierPriority[(b.partner_tier || '').toLowerCase()] || 4
+        if (tA !== tB) return tA - tB
+        return a.distance - b.distance
+      })
+      .slice(0, 15)
+  } catch (err) {
+    console.error('Failed to load similar places:', err)
+  }
+}
+
+function openSimilar(p: SimilarPlace) {
+  if (place.value) {
+    ActivityLogService.log("related_place_click", {
+      from_id: place.value.id,
+      from_name: place.value.name,
+      clicked_id: p.id,
+      clicked_name: p.name,
+    })
+  }
+  router.replace(`/place/${p.id}`)
 }
 
 async function fetchLocationCertifications(locationId: number) {
@@ -1950,6 +2106,75 @@ const openFacilityReview = () => {
   facilityReviewModalOpen.value = true
 }
 
+/* ---------------- Check-in ---------------- */
+const checkedIn = ref(false)
+const checkingIn = ref(false)
+
+async function showCheckInToast(message: string, color: 'success' | 'warning' | 'danger') {
+  const toast = await toastController.create({ message, duration: 2500, position: 'bottom', color })
+  await toast.present()
+}
+
+async function loadCheckInState() {
+  checkedIn.value = false
+  if (!isLoggedIn.value || !place.value) return
+  const { data } = await supabase.rpc('get_checkin_next_at', { p_location_id: place.value.id })
+  checkedIn.value = !!data
+}
+
+async function checkIn() {
+  if (!place.value || checkingIn.value || checkedIn.value) return
+  if (!isLoggedIn.value) {
+    await showCheckInToast(t('explore.details.checkInLogin') || 'Please log in to check in', 'warning')
+    return
+  }
+
+  checkingIn.value = true
+  try {
+    // Fresh fix at tap time — the cached/watched location can be stale
+    const { Geolocation } = await import('@capacitor/geolocation')
+    let pos
+    try {
+      pos = await Geolocation.getCurrentPosition({ enableHighAccuracy: true, timeout: 10000 })
+    } catch {
+      await showCheckInToast(t('explore.details.checkInNoLocation') || 'Turn on location to check in', 'warning')
+      return
+    }
+
+    const { data, error } = await supabase.rpc('check_in_location', {
+      p_location_id: place.value.id,
+      p_lat: pos.coords.latitude,
+      p_lng: pos.coords.longitude
+    })
+    if (error) throw error
+
+    switch (data?.status) {
+      case 'ok':
+        checkedIn.value = true
+        ActivityLogService.log('location_check_in', { id: place.value.id, name: place.value.name })
+        await showCheckInToast(t('explore.details.checkInSuccess') || 'Checked in!', 'success')
+        break
+      case 'already_checked_in':
+        checkedIn.value = true
+        await showCheckInToast(t('explore.details.checkInAlready') || 'You already checked in here recently', 'warning')
+        break
+      case 'rate_limited':
+        await showCheckInToast(t('explore.details.checkInRateLimited') || 'You checked in somewhere moments ago. Try again in a few minutes.', 'warning')
+        break
+      case 'too_far':
+        await showCheckInToast(t('explore.details.checkInTooFar') || 'You need to be at this place to check in', 'warning')
+        break
+      default:
+        await showCheckInToast(t('explore.details.checkInFailed') || 'Could not check in', 'danger')
+    }
+  } catch (err) {
+    console.error('Check-in failed:', err)
+    await showCheckInToast(t('explore.details.checkInFailed') || 'Could not check in', 'danger')
+  } finally {
+    checkingIn.value = false
+  }
+}
+
 const handleReviewSuccess = async () => {
   await loadPlace()
 }
@@ -2344,8 +2569,47 @@ const scrollToReviews = () => {
 .attribution-text {
   font-size: 12px;
   color: var(--ion-color-medium);
-  margin: 2px 0 12px 0;
+  margin: 10px 0 12px 0;
 }
+
+.related-section {
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(var(--ion-color-dark-rgb), 0.08);
+}
+
+.discover-label h3 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  white-space: normal;
+  display: -webkit-box;
+  line-clamp: 2;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin: 4px 0;
+  color: var(--ion-color-dark);
+}
+
+.similar-type-chip {
+  margin: 0;
+  height: 18px;
+  min-height: 0;
+  max-width: 100%;
+  padding: 0 8px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  line-height: 18px;
+  border-radius: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: inline-block;
+}
+
+.product-name-gold   { color: #ca8a04 !important; }
+.product-name-silver { color: #475569 !important; }
+.product-name-bronze { color: #b45309 !important; }
 
 .section-title {
   margin-bottom: 4px;
@@ -2761,6 +3025,16 @@ ion-item ion-label p:not(.text-gray-500) {
 .rate-btn {
   margin: 0;
   --border-radius: 8px;
+}
+.action-btn-row {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.action-btn-row .rate-btn {
+  flex: 1 1 0;
+  max-width: 180px;
 }
 .reviews-section {
   border-top: 1px solid rgba(var(--ion-text-color-rgb), 0.08);

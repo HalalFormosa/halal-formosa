@@ -106,7 +106,6 @@
                   {{ $t('profile.admin.badge') }}
                 </ion-badge>
                 <ion-badge v-if="isSubscribed && isBadgeVisible('pro')" class="badge-pro">
-                  <ion-icon :icon="icons.bookmarkOutline" style="margin-right: 4px" />
                   {{ $t('profile.proMember') }}
                 </ion-badge>
                 <ion-badge v-if="!isSubscribed && isBadgeVisible('donor')" :color="donorBadge.color" style="border-radius: 12px; padding: 6px 12px;">
@@ -158,7 +157,7 @@
                 </div>
                 <div class="hero-stat-divider"></div>
                 <div class="hero-stat">
-                  <span class="hero-stat-value">{{ currentPoints || 0 }}</span>
+                  <span class="hero-stat-value">{{ formatXp(currentPoints || 0) }}</span>
                   <span class="hero-stat-label">{{ $t('profile.stats.xp') }}</span>
                 </div>
               </div>

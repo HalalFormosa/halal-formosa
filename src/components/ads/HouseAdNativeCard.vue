@@ -7,7 +7,7 @@
       @click="onOpen"
   >
     <div class="card-inner">
-      <div class="card-image-section">
+      <div class="card-image-section" :class="{ 'is-logo': item.kind === 'partner' }">
         <img
             loading="lazy"
             decoding="async"
@@ -51,7 +51,7 @@
       :class="['grid-product-card', 'tier-card-' + item.tier, item.tier === 'gold' ? 'grid-col-span-2' : '']"
       @click="onOpen"
   >
-    <div class="grid-card-image">
+    <div class="grid-card-image" :class="{ 'is-logo': item.kind === 'partner' }">
       <img
           loading="lazy"
           decoding="async"
@@ -83,7 +83,7 @@
       @click="onOpen"
   >
     <div class="card-inner">
-      <div class="card-image-section">
+      <div class="card-image-section" :class="{ 'is-logo': item.kind === 'partner' }">
         <img
             loading="lazy"
             :src="item.image || `https://placehold.co/300x300?text=${encodeURIComponent(item.title)}`"
@@ -95,7 +95,7 @@
             <span>{{ item.tier.toUpperCase() }}</span>
           </div>
         </div>
-        <div class="house-ad-native-sponsored house-ad-native-sponsored--overlay">
+        <div class="house-ad-native-sponsored house-ad-native-sponsored--overlay house-ad-native-sponsored--bottom">
           <ion-icon :icon="starOutline" />
           {{ $t('home.sponsored') }}
         </div>
@@ -417,6 +417,22 @@ watch(item, (ad) => {
    leave it looking blank. Contain it instead, letterboxed on the wrap's
    existing neutral background, same idea as the logo treatment in
    HouseAdCard.vue's banner. */
+/* Partner sponsors are logos, not photos: show the whole logo on a plain
+   white backdrop instead of cropping it to fill the image area (the card/grid
+   image rules live in the host views' unscoped styles, hence the extra
+   specificity here). */
+.card-image-section.is-logo,
+.grid-card-image.is-logo {
+  background: #fff;
+}
+.card-image-section.is-logo img,
+.grid-card-image.is-logo img {
+  object-fit: contain;
+  padding: 8px;
+  box-sizing: border-box;
+  background: #fff;
+}
+
 .trip-cover-wrap--logo .trip-cover {
   object-fit: contain;
   padding: 32px;
@@ -578,6 +594,16 @@ watch(item, (ad) => {
   background: rgba(0, 0, 0, 0.55);
   backdrop-filter: blur(4px);
   color: #fff;
+}
+
+/* Location (list) mode: the image is a narrow square with the tier pill at
+   the top-left, so a top-right tag collides with it. Sit it at the bottom-left
+   instead, in the same spot Explore's Open/Closed status chip uses. */
+.house-ad-native-sponsored--bottom {
+  top: auto;
+  right: auto;
+  left: 8px;
+  bottom: 8px;
 }
 
 /* Store mode: sponsored tag over the square product image (top-right),
