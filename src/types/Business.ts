@@ -110,6 +110,7 @@ export interface LocationEditRequest {
 export interface PlanFeatures {
   maxPhotos: number // -1 = unlimited
   menu: boolean
+  maxMenuItems: number // 0 when menu is off, -1 = unlimited
   maxPromotions: number // -1 = unlimited
   analytics: 'basic' | 'standard' | 'advanced' | 'pro'
 }

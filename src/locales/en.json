@@ -1610,7 +1610,8 @@
       "itemName": "Item name",
       "price": "Price",
       "itemDescription": "Description (optional)",
-      "addPhoto": "Photo"
+      "addPhoto": "Photo",
+      "limitReached": "You've reached your menu item limit ({max}). Remove an item to add another."
     },
     "halal": {
       "status": "Halal status",
@@ -1630,7 +1631,8 @@
     "promos": {
       "locked": "Promotions are available on the Bronze plan and above.",
       "titleField": "Offer title",
-      "bodyField": "Details (optional)"
+      "bodyField": "Details (optional)",
+      "limitReached": "You've reached your active promotion limit ({max}). Turn one off to add another."
     },
     "analytics": {
       "views": "Total views",

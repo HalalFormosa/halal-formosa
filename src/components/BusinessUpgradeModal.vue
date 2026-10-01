@@ -102,9 +102,9 @@ const PLAN_CARDS: { tier: PlanCardTier; name: string; recommended?: boolean }[] 
 // Feature comparison matrix. `true`/`false` render as check / dash; strings render
 // as-is. Kept in sync with app_config `business_plan_features`.
 const CMP_ROWS: { label: string; values: Record<PlanCardTier, string | boolean> }[] = [
-  { label: 'Photos',                values: { bronze: '5', silver: '10', gold: '∞' } },
-  { label: 'Menu showcase',         values: { bronze: false, silver: true, gold: true } },
-  { label: 'Promotions',            values: { bronze: '1', silver: '3', gold: '∞' } },
+  { label: 'Photos',                values: { bronze: '3', silver: '8', gold: '20' } },
+  { label: 'Menu showcase',         values: { bronze: false, silver: '30 items', gold: '60 items' } },
+  { label: 'Promotions',            values: { bronze: '1', silver: '3', gold: '10' } },
   { label: 'Standard analytics',    values: { bronze: true, silver: true, gold: true } },
   { label: 'Audience & peak times', values: { bronze: false, silver: true, gold: true } },
   { label: 'Funnel & benchmarking', values: { bronze: false, silver: false, gold: true } },

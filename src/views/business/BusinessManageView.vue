@@ -190,7 +190,11 @@
               </div>
 
               <!-- Add item -->
-              <div class="menu-add-card">
+              <div v-if="!canAddMenu" class="locked-note">
+                <ion-icon :icon="lockClosedOutline" />
+                <span>{{ $t('business.menu.limitReached', { max: features.maxMenuItems }) }}</span>
+              </div>
+              <div v-else class="menu-add-card">
                 <label class="menu-photo-picker">
                   <img v-if="newMenu.photoPreview" :src="newMenu.photoPreview" />
                   <template v-else>
@@ -329,7 +333,11 @@
                   <ion-icon :icon="trashOutline" @click="deletePromo(promo.id)" />
                 </div>
               </div>
-              <div class="add-inline column">
+              <div v-if="!canAddPromo" class="locked-note">
+                <ion-icon :icon="lockClosedOutline" />
+                <span>{{ $t('business.promos.limitReached', { max: features.maxPromotions }) }}</span>
+              </div>
+              <div v-else class="add-inline column">
                 <ion-input v-model="newPromo.title" :placeholder="$t('business.promos.titleField')" />
                 <ion-textarea v-model="newPromo.body" :placeholder="$t('business.promos.bodyField')" :rows="2" />
                 <ion-button color="carrot" size="small" :disabled="!newPromo.title" @click="addPromo">{{ $t('common.add') }}</ion-button>
@@ -693,6 +701,7 @@ import { useI18n } from 'vue-i18n'
 import { supabase } from '@/plugins/supabaseClient'
 import { useBusinessListings } from '@/composables/useBusinessListings'
 import { useLocationEntitlements } from '@/composables/useLocationEntitlements'
+import { useImageResizer } from '@/composables/useImageResizer'
 import { useLocationAnalytics, type BusinessAnalytics } from '@/composables/useLocationAnalytics'
 import { isAdmin } from '@/composables/userProfile'
 import { ActivityLogService } from '@/services/ActivityLogService'
@@ -706,13 +715,14 @@ const locationId = Number(route.params.locationId)
 
 const biz = useBusinessListings()
 const { getFeatures } = useLocationEntitlements()
+const { resizeImage } = useImageResizer()
 const { getAnalytics } = useLocationAnalytics()
 
 const loading = ref(true)
 const saving = ref(false)
 const tab = ref('info')
 const tier = ref<PlanTier>('free')
-const features = ref<PlanFeatures>({ maxPhotos: 1, menu: false, maxPromotions: 0, analytics: 'basic' })
+const features = ref<PlanFeatures>({ maxPhotos: 1, menu: false, maxMenuItems: 0, maxPromotions: 0, analytics: 'basic' })
 const locationName = ref('')
 
 // Draft / preview
@@ -846,6 +856,11 @@ const processedReviews = computed(() => {
   return list
 })
 
+const canAddMenu = computed(() => features.value.maxMenuItems === -1 || menu.value.length < features.value.maxMenuItems)
+const canAddPromo = computed(() => {
+  const max = features.value.maxPromotions
+  return max === -1 || promotions.value.filter(p => p.is_active).length < max
+})
 const canAddPhoto = computed(() => features.value.maxPhotos === -1 || photos.value.length < features.value.maxPhotos)
 
 onIonViewWillEnter(async () => {
@@ -1182,9 +1197,10 @@ async function onPhotoSelected(e: Event) {
   input.value = ''
   if (!file) return
   try {
-    const ext = file.name.split('.').pop() || 'jpg'
-    const path = `gallery/${locationId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
-    const { error } = await supabase.storage.from('location-image').upload(path, file, { upsert: false })
+    // Downscale + re-encode so gallery photos don't blow up storage/egress.
+    const resized = await resizeImage(file, 1600, 0.8)
+    const path = `gallery/${locationId}/${Date.now()}-${Math.random().toString(36).slice(2)}.jpg`
+    const { error } = await supabase.storage.from('location-image').upload(path, resized, { upsert: false, contentType: 'image/jpeg' })
     if (error) throw error
     const { data: pub } = supabase.storage.from('location-image').getPublicUrl(path)
     await biz.addPhoto(locationId, pub.publicUrl)
@@ -1206,9 +1222,9 @@ function onMenuPhotoSelected(e: Event) {
 }
 
 async function uploadMenuPhoto(file: File): Promise<string | null> {
-  const ext = file.name.split('.').pop() || 'jpg'
-  const path = `menu/${locationId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
-  const { error } = await supabase.storage.from('location-image').upload(path, file, { upsert: false })
+  const resized = await resizeImage(file, 1000, 0.75)
+  const path = `menu/${locationId}/${Date.now()}-${Math.random().toString(36).slice(2)}.jpg`
+  const { error } = await supabase.storage.from('location-image').upload(path, resized, { upsert: false, contentType: 'image/jpeg' })
   if (error) { console.error('[menu photo]', error); return null }
   const { data: pub } = supabase.storage.from('location-image').getPublicUrl(path)
   return pub?.publicUrl ?? null
