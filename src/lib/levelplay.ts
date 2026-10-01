@@ -35,8 +35,16 @@ function registerBannerListeners() {
 // instead of racing it and silently no-op'ing like the pre-fix AdMob code did.
 let initPromise: Promise<void> | null = null
 
+// Master kill switch for the whole mediation SDK — flip
+// VITE_LEVELPLAY_ENABLED=false to turn LevelPlay off (no init, no banners,
+// no rewarded ads) without touching house ads, which don't go through here
+// at all (HouseAdCard/HouseAdNativeCard read useHouseAds.ts directly).
+export function isLevelPlayEnabled(): boolean {
+    return import.meta.env.VITE_LEVELPLAY_ENABLED !== 'false'
+}
+
 export function initLevelPlay(): Promise<void> {
-    if (!Capacitor.isNativePlatform()) return Promise.resolve()
+    if (!Capacitor.isNativePlatform() || !isLevelPlayEnabled()) return Promise.resolve()
     if (!initPromise) {
         initPromise = (async () => {
             try {
@@ -71,6 +79,12 @@ export function initLevelPlay(): Promise<void> {
 
 export async function showLevelPlayBanner(adUnitId: string, spaceId?: string) {
     if (!Capacitor.isNativePlatform()) return
+    if (!isLevelPlayEnabled()) {
+        // LevelPlay is switched off — skip mediation entirely and go
+        // straight to the house-ad banner fallback (see markAdFailed).
+        markAdFailed(spaceId)
+        return
+    }
     await initLevelPlay()
     if (!initialized) {
         // SDK never came up (bad app key, network, etc) — no load/fail event
@@ -132,6 +146,12 @@ export async function destroyLevelPlayBanner() {
 
 export async function showLevelPlayRewardedAd(adUnitId: string, onReward: () => void): Promise<void> {
     if (!Capacitor.isNativePlatform()) return
+    if (!isLevelPlayEnabled()) {
+        // No house-ad equivalent for rewarded — surface a clear failure so
+        // callers (e.g. ScanIngredientsView's "watch ad" flow) show their
+        // existing "ad failed" error state instead of hanging.
+        throw new Error('LevelPlay is disabled')
+    }
     await initLevelPlay()
     if (!initialized) {
         console.warn('[LevelPlay] not ready — rewarded ad skipped')
