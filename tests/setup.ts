@@ -18,6 +18,11 @@ vi.mock('@/plugins/supabaseClient', () => {
     }
 })
 
+// jsdom has no canvas; lottie-web calls getContext('2d') at import time.
+if (typeof HTMLCanvasElement !== 'undefined') {
+    HTMLCanvasElement.prototype.getContext = vi.fn(() => ({ fillStyle: '', fillRect: vi.fn() })) as any
+}
+
 // Mock common browser globals if necessary
 if (typeof window !== 'undefined') {
     window.matchMedia = vi.fn().mockImplementation(query => ({

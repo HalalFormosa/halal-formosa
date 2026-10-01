@@ -11,6 +11,8 @@ const mocks = vi.hoisted(() => ({
     showRewarded: vi.fn().mockResolvedValue(undefined),
     markAdFailed: vi.fn(),
     clearAdFailed: vi.fn(),
+    markAdLoaded: vi.fn(),
+    clearAdLoaded: vi.fn(),
 }))
 
 vi.mock('capacitor-levelplay-ads', () => ({
@@ -43,6 +45,8 @@ vi.mock('@capacitor/core', () => ({
 vi.mock('@/composables/useAdFallback', () => ({
     markAdFailed: mocks.markAdFailed,
     clearAdFailed: mocks.clearAdFailed,
+    markAdLoaded: mocks.markAdLoaded,
+    clearAdLoaded: mocks.clearAdLoaded,
 }))
 
 // levelplay.ts keeps module-level state (initPromise etc.), so re-import fresh
