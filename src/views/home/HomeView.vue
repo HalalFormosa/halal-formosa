@@ -1157,6 +1157,7 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech'
 import { PrayTime } from 'praytime'
 import { useLocation, type LatLng } from '@/composables/useLocation'
 import { useHomeData } from '@/composables/useHomeData'
+import { syncPrayerWidget } from '@/composables/useWidgetSync'
 import LazySection from '@/components/LazySection.vue'
 import DailyMissions from "@/components/DailyMissions.vue"
 import { useDailyMissions } from '@/composables/useDailyMissions'
@@ -2064,6 +2065,8 @@ async function fetchPrayerTimes() {
   }
 
   loadingPrayerTimes.value = false
+
+  syncPrayerWidget(prayerTimes.value)
 }
 
 async function handleRefreshLocation() {
@@ -3345,6 +3348,63 @@ ion-segment-button {
   margin-bottom: 3px;
 }
 
+/* Compact prayer widget — tighter padding, smaller headline and pills so the
+   card takes less of the first screen and the scan buttons below stay in view. */
+.prayer-hero-card {
+  margin-block: 6px 4px;
+}
+
+.prayer-hero-card ion-card-header {
+  padding: 12px 14px 2px;
+}
+
+.prayer-hero-card ion-card-content {
+  padding: 2px 10px 6px;
+}
+
+.prayer-hero-card .prayer-eyebrow {
+  margin-bottom: 1px;
+}
+
+.prayer-hero-card .prayer-title-main {
+  font-size: 1.02rem;
+  line-height: 1.2;
+}
+
+.prayer-hero-card .prayer-title-location {
+  margin-top: 2px;
+  font-size: 0.72rem;
+}
+
+.prayer-hero-card .qibla-header-btn {
+  --padding-start: 6px;
+  --padding-end: 6px;
+  margin: 0;
+  font-size: 0.8rem;
+}
+
+.prayer-hero-card .prayer-horizontal {
+  gap: 8px;
+  padding: 2px 4px 8px;
+}
+
+.prayer-hero-card .prayer-pill {
+  flex: 0 0 74px;
+  padding: 5px 6px;
+}
+
+.prayer-hero-card .prayer-pill .label {
+  font-size: 0.66rem;
+}
+
+.prayer-hero-card .prayer-pill .time {
+  font-size: 0.92rem;
+}
+
+.prayer-hero-card .prayer-pill.active {
+  transform: scale(1.03);
+}
+
 /* === Insights Dashboard Section === */
 .insights-container {
   margin: 0px; /* Remove side margins here, handled by card margin + scroll padding */
@@ -3477,6 +3537,27 @@ ion-segment-button {
   height: 135px;
   width: 100%;
   object-fit: cover;
+}
+
+/* Partner logos: show the whole logo (not a cropped fill) on a plain
+   backdrop, like the compact card was meant to. */
+.discover-grid .discover-img.discover-img--compact {
+  object-fit: contain;
+  background: #fff;
+  padding: 6px;
+  box-sizing: border-box;
+  /* Compact heights (the generic 135px carousel image rule was making the
+     partner card tall enough to push the two scan buttons off the first
+     screen). Whole logo still shows — object-fit: contain. */
+  height: 76px;
+}
+
+.discover-grid .discover-item--compact.tier-card-gold .discover-img--compact {
+  height: 88px;
+}
+
+.discover-grid .discover-item--compact.tier-card-silver .discover-img--compact {
+  height: 80px;
 }
 
 .discover-label {

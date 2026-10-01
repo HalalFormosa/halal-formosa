@@ -28,4 +28,15 @@
     <string name="widget_quota_unlimited">Unlimited scans</string>
     <string name="widget_quota_remaining">%1$s scans left today</string>
     <string name="widget_quota_unknown">Open the app to see your scans</string>
+
+    <string name="widget_prayer_fajr">Fajr</string>
+    <string name="widget_prayer_dhuhr">Dhuhr</string>
+    <string name="widget_prayer_asr">Asr</string>
+    <string name="widget_prayer_maghrib">Maghrib</string>
+    <string name="widget_prayer_isha">Isha</string>
+    <string name="widget_prayer_sample_fajr" translatable="false">05:12</string>
+    <string name="widget_prayer_sample_dhuhr" translatable="false">12:04</string>
+    <string name="widget_prayer_sample_asr" translatable="false">15:28</string>
+    <string name="widget_prayer_sample_maghrib" translatable="false">17:51</string>
+    <string name="widget_prayer_sample_isha" translatable="false">19:08</string>
 </resources>

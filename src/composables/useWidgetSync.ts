@@ -34,3 +34,25 @@ export async function syncScanWidget(state: ScanWidgetState) {
     console.warn('[WidgetSync] Failed to sync widget state:', err)
   }
 }
+
+interface PrayerWidgetTimes {
+  fajr: string
+  dhuhr: string
+  asr: string
+  maghrib: string
+  isha: string
+}
+
+// Pushes today's prayer times ("HH:mm", 24h) to the Android widgets' prayer strip.
+export async function syncPrayerWidget(times: PrayerWidgetTimes) {
+  if (Capacitor.getPlatform() !== 'android') return
+
+  try {
+    for (const key of ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'] as const) {
+      await Preferences.set({ key: `widget_prayer_${key}`, value: times[key] })
+    }
+    await WidgetSync.refresh()
+  } catch (err) {
+    console.warn('[WidgetSync] Failed to sync prayer times:', err)
+  }
+}
