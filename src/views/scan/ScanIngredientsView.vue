@@ -743,6 +743,7 @@ import { useAutoScanStore } from '@/composables/useAutoScanStore'
 import { useNotifier } from "@/composables/useNotifier"
 import { useI18n } from 'vue-i18n'
 import { syncScanWidget } from '@/composables/useWidgetSync'
+import { getOptimizedImageUrl } from '@/utils/imageHelpers'
 
 const { t, te } = useI18n()
 
@@ -1071,25 +1072,6 @@ const statusChipColor = (status: string) => {
      case 'Haram': return 'danger'
      default: return 'medium'
    }
-}
-
-const PLACEHOLDER_IMAGE = 'https://via.placeholder.com/150x150.webp?text=No+Photo'
-
-// Requests a downsized rendition from Supabase Storage's image transform endpoint
-// instead of shipping the full-size upload for a thumbnail-sized slot.
-function getOptimizedImageUrl(
-    url: string | undefined | null,
-    width: number,
-    height: number,
-    resize: 'contain' | 'cover' = 'contain',
-    quality = 60
-): string {
-  if (!url) return PLACEHOLDER_IMAGE
-  if (!url.includes('/storage/v1/object/public/')) return url
-
-  const transformed = url.replace('/storage/v1/object/public/', '/storage/v1/render/image/public/')
-  const separator = transformed.includes('?') ? '&' : '?'
-  return `${transformed}${separator}width=${width}&height=${height}&resize=${resize}&quality=${quality}`
 }
 
 function fromNowToTaipei(dateString?: string | null) {

@@ -84,6 +84,25 @@
         </ion-card-content>
       </ion-card>
 
+      <ion-card v-if="summary && !summary.referred_by" class="fade-in">
+        <ion-card-content>
+          <p class="section-label">{{ $t('referral.haveReferrer') || 'Were you invited by someone?' }}</p>
+          <ion-item lines="none">
+            <ion-input
+              v-model="lateCode"
+              :label="$t('referral.enterTheirCode') || 'Their referral code'"
+              label-placement="stacked"
+              autocapitalize="characters"
+              @ionInput="lateCodeError = ''"
+            />
+          </ion-item>
+          <p v-if="lateCodeError" class="late-code-error">{{ lateCodeError }}</p>
+          <ion-button expand="block" color="carrot" shape="round" :disabled="!lateCode.trim() || lateCodeSubmitting" @click="applyLateCode">
+            {{ $t('referral.applyCode') || 'Apply code' }}
+          </ion-button>
+        </ion-card-content>
+      </ion-card>
+
       <ion-card v-if="summary?.referred_by" class="fade-in">
         <ion-card-content>
           <p class="section-label">{{ $t('referral.referredBy') || 'You were referred by' }}</p>
@@ -138,7 +157,7 @@
 <script setup lang="ts">
 import {
   IonPage, IonHeader, IonContent, IonCard, IonCardContent, IonButton, IonIcon,
-  IonList, IonItem, IonLabel, IonBadge, IonSpinner
+  IonList, IonItem, IonLabel, IonBadge, IonSpinner, IonInput
 } from '@ionic/vue';
 import AppHeader from '@/components/AppHeader.vue';
 import {
@@ -155,6 +174,7 @@ import { computed, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { toastController } from '@ionic/vue';
 import { useReferrals } from '@/composables/useReferrals';
+import { supabase } from '@/plugins/supabaseClient';
 
 const { t } = useI18n();
 const { summary, config, loading, loadReferralConfig, loadMyReferralSummary } = useReferrals();
@@ -185,6 +205,27 @@ watch(referralLink, async (link) => {
 onMounted(async () => {
   await Promise.all([loadReferralConfig(), loadMyReferralSummary()]);
 });
+
+const lateCode = ref('');
+const lateCodeError = ref('');
+const lateCodeSubmitting = ref(false);
+
+async function applyLateCode() {
+  lateCodeError.value = '';
+  lateCodeSubmitting.value = true;
+  try {
+    const { error } = await supabase.rpc('redeem_referral_code', { p_code: lateCode.value.trim() });
+    if (error) {
+      lateCodeError.value = error.message || (t('profile.editProfile.referralInvalid') as string) || 'Invalid referral code.';
+      return;
+    }
+    try { localStorage.removeItem('hf_pending_referral_code'); } catch { /* empty */ }
+    lateCode.value = '';
+    await loadMyReferralSummary();
+  } finally {
+    lateCodeSubmitting.value = false;
+  }
+}
 
 function shareTextFor(code: string) {
   return t('referral.shareText', { code }) as string || `Use my referral code ${code} on Halal Formosa!`;
@@ -402,6 +443,12 @@ function statusColor(status: string) {
   font-size: 0.85rem;
   text-transform: uppercase;
 }
+.late-code-error {
+  color: var(--ion-color-danger);
+  font-size: 13px;
+  margin: 4px 16px 8px;
+}
+
 .referred-by-name {
   margin: 0;
   font-size: 1.1rem;
