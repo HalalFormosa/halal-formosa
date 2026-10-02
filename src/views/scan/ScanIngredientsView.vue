@@ -301,6 +301,13 @@
             </h2>
           </div>
 
+          <!-- One-tap "what will you do?" (shown on a random subset of results) -->
+          <ScanDecisionPrompt
+              :scan-key="decisionPromptKey"
+              :status="autoStatus"
+              @answered="onDecisionAnswered"
+          />
+
           <!-- Matched Product Preview -->
           <div v-if="productFoundInDb && matchedDbProduct">
             <p class="matched-product-eyebrow">{{ $t('scanIngredients.scan.alreadyInDb') }}</p>
@@ -693,6 +700,8 @@ import {
 } from 'ionicons/icons'
 import AppHeader from '@/components/AppHeader.vue'
 import IngredientHighlightImage from '@/components/scan/IngredientHighlightImage.vue'
+import ScanDecisionPrompt from '@/components/ScanDecisionPrompt.vue'
+import { buildScanDecisionNotice, type ScanDecisionChoice } from '@/utils/scanDecisionNotice'
 import {ref, onUnmounted, computed, nextTick} from 'vue'
 import { Swiper, SwiperSlide } from 'swiper/vue'
 import { Autoplay, Pagination } from 'swiper/modules'
@@ -753,6 +762,24 @@ const DAILY_SCAN_LIMIT = 5
 /** ---------- Wizard Steps ---------- */
 const STEP_CAPTURE = 0
 const STEP_RESULTS = 1
+// Bumped once per new scan result; ScanDecisionPrompt re-rolls on each change.
+const decisionPromptKey = ref(0)
+
+// Tell the team (Discord only, no user identity) what was scanned and what the user decided.
+// The type contains "product" on purpose: notify-event routes those to the contributions channel.
+const onDecisionAnswered = (choice: ScanDecisionChoice) => {
+  const { title, message } = buildScanDecisionNotice({
+    productName: productName.value,
+    status: displayStatus.value || autoStatus.value,
+    choice,
+    flagged: dangerousHighlights.value.map((h: IngredientHighlight) => h.keyword),
+    ingredientsZh: ingredientsTextZh.value,
+    ingredients: ingredientsText.value,
+    inDatabase: productFoundInDb.value,
+    matchedName: matchedDbProduct.value?.name,
+  })
+  void notifyEvent('product_scan_decision', title, message, undefined, {}, ['discord']).catch(console.error)
+}
 const currentStep = ref(STEP_CAPTURE)
 const contentRef = ref<any>(null)
 
@@ -1475,6 +1502,7 @@ async function handleConfirmCrop() {
 
       await loadTodayScanCount()
       isMovingToResults.value = false
+      decisionPromptKey.value++
       nextStep()
 
       // 🔍 Proactively check if product exists in database by name
@@ -1722,6 +1750,7 @@ async function handleAutoDetected(result: any) {
             await loadTodayScanCount()
           }
           isMovingToResults.value = false
+          decisionPromptKey.value++
           nextStep()
       }
   } catch (err: any) {

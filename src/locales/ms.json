@@ -299,6 +299,15 @@
       "label": "Auto Scan"
     },
     "scan": {
+      "decision": {
+        "question": "Apakah tindakan anda terhadap produk ini?",
+        "use": "Beli / makan",
+        "skip": "Langkau",
+        "check": "Semak lagi",
+        "thanks": "Terima kasih, direkodkan",
+        "info": "Jawapan anda disimpan bersama imbasan ini untuk membantu kami menambah baik aplikasi, dan tidak pernah dipaparkan kepada pengguna lain. Dalam bentuk tanpa nama, ia juga mungkin digunakan dalam penyelidikan akademik. Anda boleh menarik diri pada bila-bila masa di Tetapan > Privasi.",
+        "infoLabel": "Bagaimana jawapan saya digunakan?"
+      },
       "camera": "Kamera",
       "gallery": "Galeri",
       "auto": "Imbas Auto (BETA)",
