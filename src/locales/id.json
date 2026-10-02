@@ -608,6 +608,15 @@
       "viewDetails": "Lihat Detail"
     },
     "scan": {
+      "decision": {
+        "question": "Apa yang akan Anda lakukan dengan produk ini?",
+        "use": "Beli / makan",
+        "skip": "Lewati",
+        "check": "Cek lagi",
+        "thanks": "Terima kasih, tercatat",
+        "info": "Jawaban Anda disimpan bersama pemindaian ini untuk membantu kami memperbaiki aplikasi, dan tidak pernah ditampilkan kepada pengguna lain. Dalam bentuk anonim, jawaban ini juga dapat digunakan dalam penelitian akademik. Anda dapat menolak kapan saja di Pengaturan > Privasi.",
+        "infoLabel": "Bagaimana jawaban saya digunakan?"
+      },
       "camera": "Kamera",
       "gallery": "Galeri",
       "auto": "Pindai Otomatis (BETA)",

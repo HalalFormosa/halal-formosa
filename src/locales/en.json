@@ -470,6 +470,15 @@
       "auto": "Auto Scan (BETA)",
       "reCrop": "Re-crop",
       "productName": "Detected Product Name",
+      "decision": {
+        "question": "What will you do with this product?",
+        "use": "Buy / eat it",
+        "skip": "Skip it",
+        "check": "Check further",
+        "thanks": "Thanks, noted",
+        "info": "Your answer is saved with this scan to help us improve the app, and is never shown to other users. In anonymised form it may also be used in academic research. You can opt out any time in Settings > Privacy.",
+        "infoLabel": "How is my answer used?"
+      },
       "alreadyInDb": "Already in our database",
       "verifiedListing": "Verified listing: {name}",
       "addedAgo": "Added {time}",
