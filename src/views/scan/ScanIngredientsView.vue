@@ -778,7 +778,11 @@ const onDecisionAnswered = (choice: ScanDecisionChoice) => {
     inDatabase: productFoundInDb.value,
     matchedName: matchedDbProduct.value?.name,
   })
-  void notifyEvent('product_scan_decision', title, message, undefined, {}, ['discord']).catch(console.error)
+  // Attach the database product's photo (public URL) like real contributions do. A product that is
+  // not in the database has no public photo: the scan crop only exists on this device.
+  const photo = productFoundInDb.value ? matchedDbProduct.value?.photo_front_url : null
+  const image = photo && /^https?:\/\//.test(photo) ? photo : undefined
+  void notifyEvent('product_scan_decision', title, message, image, {}, ['discord']).catch(console.error)
 }
 const currentStep = ref(STEP_CAPTURE)
 const contentRef = ref<any>(null)
