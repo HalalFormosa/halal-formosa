@@ -1,5 +1,21 @@
 import {supabase} from '@/plugins/supabaseClient'
 import SessionService from '@/services/SessionService'
+import { useDailyMissions } from '@/composables/useDailyMissions'
+
+// Activity types useDailyMissions.fetchProgress() actually scores (see its
+// switch statement). Re-checking mission progress right after one of these
+// is logged — rather than only on Home's own mount/enter — means a mission
+// completed while on Explore/Search/Scan/etc. gets detected and celebrated
+// immediately, not just the next time the user happens to visit Home.
+const MISSION_ACTIVITY_TYPES = new Set([
+    'home_page_open',
+    'scan_ingredients_success',
+    'barcode_scan_success',
+    'explore_place_detail_open',
+    'add_product_success',
+    'add_place_success',
+    'location_review_success',
+])
 
 // ðŸ”§ TEMPORARY GLOBAL SWITCH
 const ACTIVITY_LOG_ENABLED = true
@@ -164,6 +180,23 @@ function resolveEntity(activity: string, rawDetail: any): EntityResult {
                 entity_id: null
             }
 
+        // 🟢 HOUSE AD (sponsored/fallback content) interactions — the ad
+        // can point at any of four different entity types depending on
+        // which kind of content was actually featured (detail.ad_kind).
+        case 'house_ad_impression':
+        case 'house_ad_click': {
+            const AD_KIND_TO_ENTITY: Record<string, string> = {
+                partner: 'partner',
+                product: 'product',
+                location: 'place',
+                trip: 'trip',
+            }
+            return {
+                entity_type: AD_KIND_TO_ENTITY[detail.ad_kind] ?? null,
+                entity_id: detail.ad_id != null ? String(detail.ad_id) : null
+            }
+        }
+
 
         // 🟢 SEARCH interactions
         case 'search_query':
@@ -199,11 +232,12 @@ function resolveEntity(activity: string, rawDetail: any): EntityResult {
                         : null
             }
 
-        // Optional: keep status as non-entity
         case 'search_filter_status':
             return {
-                entity_type: null,
-                entity_id: null
+                entity_type: 'status',
+                entity_id: (detail.statuses && detail.statuses.length > 0)
+                    ? String(detail.statuses[detail.statuses.length - 1])
+                    : null
             }
 
         // ðŸŸ¢ CATEGORY interactions
@@ -352,6 +386,25 @@ function resolveEntity(activity: string, rawDetail: any): EntityResult {
                 entity_id: detail.barcode ? String(detail.barcode) : null
             }
 
+        // BUSINESS CLAIM
+        case 'business_claim_start':
+        case 'business_claim_step_view':
+        case 'business_claim_submit':
+        case 'business_claim_submit_error':
+        case 'business_claim_approve':
+        case 'business_claim_reject':
+            return {
+                entity_type: 'place',
+                entity_id: detail.location_id ? String(detail.location_id) : null
+            }
+
+        // NOTIFICATIONS
+        case 'notification_received':
+        case 'notification_opened':
+            return {
+                entity_type: 'notification',
+                entity_id: detail.notification_id ? String(detail.notification_id) : null
+            }
 
         // âŒ Everything else
         default:
@@ -424,6 +477,7 @@ function resolveActivityGroup(activity: string): string | null {
         case 'scan_ingredients_start':
         case 'scan_ingredients_success':
         case 'scan_ingredients_error':
+        case 'scan_ingredients_limit_reached':
         case 'ai_summary_click':
         case 'ai_summary_used':
         case 'product_detail_open':
@@ -520,6 +574,13 @@ function resolveActivityGroup(activity: string): string | null {
             return 'profile'
 
         /* -------------------------
+           ADVERTISING / HOUSE ADS
+        -------------------------- */
+        case 'house_ad_impression':
+        case 'house_ad_click':
+            return 'advertising'
+
+        /* -------------------------
            MONETIZATION
         -------------------------- */
         case 'pro_paywall_open':
@@ -569,7 +630,9 @@ function resolveActivityGroup(activity: string): string | null {
         case 'business_listing_publish':
         case 'business_promo_create':
         case 'business_claim_start':
+        case 'business_claim_step_view':
         case 'business_claim_submit':
+        case 'business_claim_submit_error':
         case 'business_claim_approve':
         case 'business_claim_reject':
         case 'business_edit_request_approve':
@@ -644,6 +707,15 @@ function resolveActivityGroup(activity: string): string | null {
             return 'admin'
 
         /* -------------------------
+           NOTIFICATIONS
+        -------------------------- */
+        case 'notification_received':
+        case 'notification_opened':
+        case 'notification_category_opened':
+        case 'notification_newitem_opened':
+            return 'notifications'
+
+        /* -------------------------
            FALLBACK
         -------------------------- */
         default:
@@ -666,11 +738,6 @@ export class ActivityLogService {
         const user = (await supabase.auth.getUser()).data.user
         const session_id = SessionService.getSessionId()
 
-        if (!user) {
-            console.warn('[ActivityLogService] No user logged in')
-            return
-        }
-
         const { entity_type, entity_id } = resolveEntity(activity, detail)
 
         const skipWarn = activity === 'add_product_start' || activity === 'add_product_ocr_start'; if (entity_type && !entity_id && !skipWarn) {
@@ -683,7 +750,7 @@ export class ActivityLogService {
         const activity_group = resolveActivityGroup(activity)
 
         const payload = {
-            user_id: user.id,
+            user_id: user?.id ?? null,
             session_id,
             activity_type: activity,
             activity_group,
@@ -698,6 +765,14 @@ export class ActivityLogService {
 
         if (error) {
             console.error('[ActivityLogService] Insert error:', error)
+            return
+        }
+
+        if (payload.user_id && MISSION_ACTIVITY_TYPES.has(activity)) {
+            // Fire-and-forget: don't make every log() call across the app
+            // wait on a full mission re-check + potential award/celebration
+            // round-trip.
+            useDailyMissions().fetchProgress()
         }
     }
 }

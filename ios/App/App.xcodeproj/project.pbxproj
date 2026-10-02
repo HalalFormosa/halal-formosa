@@ -7,8 +7,11 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		28B2B52EAD6D9D01481F42C3 /* HalalFormosaWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = BFD9EC6FBA2C0359BAD084EC /* HalalFormosaWidget.swift */; };
+		2DBC1EBFD2F6B0A2CA22A17C /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 09B22988DAEBE9F790E98A61 /* SwiftUI.framework */; };
 		2FAD9763203C412B000D30F8 /* config.xml in Resources */ = {isa = PBXBuildFile; fileRef = 2FAD9762203C412B000D30F8 /* config.xml */; };
 		30EA61000FE3983DB784716C /* Pods_App.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D27511AEEECE366B88775EE0 /* Pods_App.framework */; };
+		3E474F5525B94FC6D00520C8 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EB33B750B1CBB7AD5892548A /* WidgetKit.framework */; };
 		50379B232058CBB4000EE86E /* capacitor.config.json in Resources */ = {isa = PBXBuildFile; fileRef = 50379B222058CBB4000EE86E /* capacitor.config.json */; };
 		504EC3081FED79650016851F /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 504EC3071FED79650016851F /* AppDelegate.swift */; };
 		504EC30D1FED79650016851F /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 504EC30B1FED79650016851F /* Main.storyboard */; };
@@ -19,11 +22,21 @@
 		5D90D7312FD83CB20008B36C /* OneSignalNotificationServiceExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 5D90D72A2FD83CB20008B36C /* OneSignalNotificationServiceExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		5D90D73B2FD83CFE0008B36C /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D90D7382FD83CFE0008B36C /* NotificationService.swift */; };
 		7182576EFFCCB2C51ADA53DC /* RecaptchaNativePlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = F17A02DBAC2D0A4D29F5868C /* RecaptchaNativePlugin.swift */; };
+		83EF6771D8FF44FDC2971FDE /* HalalFormosaWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = FD83C8D3E39DB4A4B00464B8 /* HalalFormosaWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		995EBC172F0D78E493464102 /* WidgetSyncPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B73DF7B9358EA89A7D51434 /* WidgetSyncPlugin.swift */; };
 		9C8AE8AA118ECD51C8A4BAA1 /* Pods_OneSignalNotificationServiceExtension.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 18B8AE9E163B72B2E83DDF34 /* Pods_OneSignalNotificationServiceExtension.framework */; };
+		E439C333DC40C9C167B855CF /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 610350F28D9E01261C8C5B22 /* Foundation.framework */; };
 		E88917864B274810B8D6F86F /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED70E3254C284680B7C108CA /* ViewController.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		062DF0ADB84FA8EFB7D2C1ED /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 504EC2FC1FED79650016851F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = D095E36D9F706988B3F16BF7;
+			remoteInfo = HalalFormosaWidget;
+		};
 		5D90D72F2FD83CB20008B36C /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 504EC2FC1FED79650016851F /* Project object */;
@@ -41,6 +54,7 @@
 			dstSubfolderSpec = 13;
 			files = (
 				5D90D7312FD83CB20008B36C /* OneSignalNotificationServiceExtension.appex in Embed Foundation Extensions */,
+				83EF6771D8FF44FDC2971FDE /* HalalFormosaWidget.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -48,9 +62,11 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		09B22988DAEBE9F790E98A61 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		0DB7B3D97CF103DC54ED063B /* Pods-OneSignalNotificationServiceExtension.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-OneSignalNotificationServiceExtension.release.xcconfig"; path = "Pods/Target Support Files/Pods-OneSignalNotificationServiceExtension/Pods-OneSignalNotificationServiceExtension.release.xcconfig"; sourceTree = "<group>"; };
 		18B8AE9E163B72B2E83DDF34 /* Pods_OneSignalNotificationServiceExtension.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_OneSignalNotificationServiceExtension.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		2FAD9762203C412B000D30F8 /* config.xml */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = config.xml; sourceTree = "<group>"; };
+		36D7D9C5F64DE30B8F23F46C /* HalalFormosaWidget.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; path = HalalFormosaWidget.entitlements; sourceTree = "<group>"; };
 		50379B222058CBB4000EE86E /* capacitor.config.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = capacitor.config.json; sourceTree = "<group>"; };
 		504EC3041FED79650016851F /* App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = App.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		504EC3071FED79650016851F /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
@@ -64,15 +80,31 @@
 		5D90D72A2FD83CB20008B36C /* OneSignalNotificationServiceExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = OneSignalNotificationServiceExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		5D90D7372FD83CFE0008B36C /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		5D90D7382FD83CFE0008B36C /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
+		610350F28D9E01261C8C5B22 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
+		9B73DF7B9358EA89A7D51434 /* WidgetSyncPlugin.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WidgetSyncPlugin.swift; sourceTree = "<group>"; };
 		AF51FD2D460BCFE21FA515B2 /* Pods-App.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-App.release.xcconfig"; path = "Pods/Target Support Files/Pods-App/Pods-App.release.xcconfig"; sourceTree = "<group>"; };
+		BFD9EC6FBA2C0359BAD084EC /* HalalFormosaWidget.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HalalFormosaWidget.swift; sourceTree = "<group>"; };
 		D27511AEEECE366B88775EE0 /* Pods_App.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_App.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		D32AC63691D44E13F94A1662 /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		E49DBDF92D34DA420CC9CB8F /* Pods-OneSignalNotificationServiceExtension.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-OneSignalNotificationServiceExtension.debug.xcconfig"; path = "Pods/Target Support Files/Pods-OneSignalNotificationServiceExtension/Pods-OneSignalNotificationServiceExtension.debug.xcconfig"; sourceTree = "<group>"; };
+		EB33B750B1CBB7AD5892548A /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		ED70E3254C284680B7C108CA /* ViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
 		F17A02DBAC2D0A4D29F5868C /* RecaptchaNativePlugin.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RecaptchaNativePlugin.swift; sourceTree = "<group>"; };
 		FC68EB0AF532CFC21C3344DD /* Pods-App.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-App.debug.xcconfig"; path = "Pods/Target Support Files/Pods-App/Pods-App.debug.xcconfig"; sourceTree = "<group>"; };
+		FD83C8D3E39DB4A4B00464B8 /* HalalFormosaWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = HalalFormosaWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		076D66B1AA2A523BB43234B5 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E439C333DC40C9C167B855CF /* Foundation.framework in Frameworks */,
+				3E474F5525B94FC6D00520C8 /* WidgetKit.framework in Frameworks */,
+				2DBC1EBFD2F6B0A2CA22A17C /* SwiftUI.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		504EC3011FED79650016851F /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -99,6 +131,9 @@
 				5D7FFB192FD69B05006DD47E /* StoreKit.framework */,
 				D27511AEEECE366B88775EE0 /* Pods_App.framework */,
 				18B8AE9E163B72B2E83DDF34 /* Pods_OneSignalNotificationServiceExtension.framework */,
+				F95585AC45E7AD89412D7711 /* iOS */,
+				EB33B750B1CBB7AD5892548A /* WidgetKit.framework */,
+				09B22988DAEBE9F790E98A61 /* SwiftUI.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -111,6 +146,7 @@
 				504EC3051FED79650016851F /* Products */,
 				7F8756D8B27F46E3366F6CEA /* Pods */,
 				27E2DDA53C4D2A4D1A88CE4A /* Frameworks */,
+				EE6A7272D5C9A6007BAE6A6B /* HalalFormosaWidget */,
 			);
 			sourceTree = "<group>";
 		};
@@ -119,6 +155,7 @@
 			children = (
 				504EC3041FED79650016851F /* App.app */,
 				5D90D72A2FD83CB20008B36C /* OneSignalNotificationServiceExtension.appex */,
+				FD83C8D3E39DB4A4B00464B8 /* HalalFormosaWidget.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -137,6 +174,7 @@
 				50B271D01FEDC1A000F3C39B /* public */,
 				F17A02DBAC2D0A4D29F5868C /* RecaptchaNativePlugin.swift */,
 				ED70E3254C284680B7C108CA /* ViewController.swift */,
+				9B73DF7B9358EA89A7D51434 /* WidgetSyncPlugin.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -161,6 +199,24 @@
 			name = Pods;
 			sourceTree = "<group>";
 		};
+		EE6A7272D5C9A6007BAE6A6B /* HalalFormosaWidget */ = {
+			isa = PBXGroup;
+			children = (
+				BFD9EC6FBA2C0359BAD084EC /* HalalFormosaWidget.swift */,
+				D32AC63691D44E13F94A1662 /* Info.plist */,
+				36D7D9C5F64DE30B8F23F46C /* HalalFormosaWidget.entitlements */,
+			);
+			path = HalalFormosaWidget;
+			sourceTree = "<group>";
+		};
+		F95585AC45E7AD89412D7711 /* iOS */ = {
+			isa = PBXGroup;
+			children = (
+				610350F28D9E01261C8C5B22 /* Foundation.framework */,
+			);
+			name = iOS;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -180,6 +236,7 @@
 			);
 			dependencies = (
 				5D90D7302FD83CB20008B36C /* PBXTargetDependency */,
+				C27194955ED076823A0137C1 /* PBXTargetDependency */,
 			);
 			name = App;
 			productName = App;
@@ -202,6 +259,23 @@
 			name = OneSignalNotificationServiceExtension;
 			productName = OneSignalNotificationServiceExtension;
 			productReference = 5D90D72A2FD83CB20008B36C /* OneSignalNotificationServiceExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+		D095E36D9F706988B3F16BF7 /* HalalFormosaWidget */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = BC8005A77FD404F652A132BE /* Build configuration list for PBXNativeTarget "HalalFormosaWidget" */;
+			buildPhases = (
+				3921ABD1FC8CF72BF5790EA8 /* Sources */,
+				076D66B1AA2A523BB43234B5 /* Frameworks */,
+				264E6F07CC1D4547CC96D9C3 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = HalalFormosaWidget;
+			productName = HalalFormosaWidget;
+			productReference = FD83C8D3E39DB4A4B00464B8 /* HalalFormosaWidget.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
@@ -227,6 +301,9 @@
 						CreatedOnToolsVersion = 26.3;
 						ProvisioningStyle = Automatic;
 					};
+					D095E36D9F706988B3F16BF7 = {
+						ProvisioningStyle = Automatic;
+					};
 				};
 			};
 			buildConfigurationList = 504EC2FF1FED79650016851F /* Build configuration list for PBXProject "App" */;
@@ -244,11 +321,19 @@
 			targets = (
 				504EC3031FED79650016851F /* App */,
 				5D90D7292FD83CB20008B36C /* OneSignalNotificationServiceExtension */,
+				D095E36D9F706988B3F16BF7 /* HalalFormosaWidget */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		264E6F07CC1D4547CC96D9C3 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		504EC3021FED79650016851F /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -345,6 +430,14 @@
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		3921ABD1FC8CF72BF5790EA8 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				28B2B52EAD6D9D01481F42C3 /* HalalFormosaWidget.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		504EC3001FED79650016851F /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -352,6 +445,7 @@
 				504EC3081FED79650016851F /* AppDelegate.swift in Sources */,
 				7182576EFFCCB2C51ADA53DC /* RecaptchaNativePlugin.swift in Sources */,
 				E88917864B274810B8D6F86F /* ViewController.swift in Sources */,
+				995EBC172F0D78E493464102 /* WidgetSyncPlugin.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -370,6 +464,12 @@
 			isa = PBXTargetDependency;
 			target = 5D90D7292FD83CB20008B36C /* OneSignalNotificationServiceExtension */;
 			targetProxy = 5D90D72F2FD83CB20008B36C /* PBXContainerItemProxy */;
+		};
+		C27194955ED076823A0137C1 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = HalalFormosaWidget;
+			target = D095E36D9F706988B3F16BF7 /* HalalFormosaWidget */;
+			targetProxy = 062DF0ADB84FA8EFB7D2C1ED /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -393,6 +493,29 @@
 /* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
+		130AC0AA82DD73E9B6552903 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_ENTITLEMENTS = HalalFormosaWidget/HalalFormosaWidget.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 41;
+				DEVELOPMENT_TEAM = W88L54499Q;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = HalalFormosaWidget/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+				MARKETING_VERSION = 2.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.rcreative.halalformosa.ios.widget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
 		504EC3141FED79650016851F /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -509,14 +632,14 @@
 				CODE_SIGN_ENTITLEMENTS = App/App.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 39;
+				CURRENT_PROJECT_VERSION = 41;
 				DEVELOPMENT_TEAM = W88L54499Q;
 				INFOPLIST_FILE = App/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Halal Formosa";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.lifestyle";
 				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
-				MARKETING_VERSION = 1.9.2;
+				MARKETING_VERSION = 2.0.0;
 				OTHER_SWIFT_FLAGS = "$(inherited) \"-D\" \"COCOAPODS\" \"-DDEBUG\"";
 				PRODUCT_BUNDLE_IDENTIFIER = com.rcreative.halalformosa.ios;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -536,14 +659,14 @@
 				CODE_SIGN_ENTITLEMENTS = App/App.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 39;
+				CURRENT_PROJECT_VERSION = 41;
 				DEVELOPMENT_TEAM = W88L54499Q;
 				INFOPLIST_FILE = App/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Halal Formosa";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.lifestyle";
 				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
-				MARKETING_VERSION = 1.9.2;
+				MARKETING_VERSION = 2.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.rcreative.halalformosa.ios;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -565,7 +688,7 @@
 				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 26;
+				CURRENT_PROJECT_VERSION = 27;
 				DEVELOPMENT_TEAM = W88L54499Q;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
@@ -576,7 +699,7 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MARKETING_VERSION = 1.9.2;
+				MARKETING_VERSION = 2.0.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = com.rcreative.halalformosa.ios.OneSignalNotificationServiceExtension;
@@ -605,7 +728,7 @@
 				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 26;
+				CURRENT_PROJECT_VERSION = 27;
 				DEVELOPMENT_TEAM = W88L54499Q;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
@@ -616,7 +739,7 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MARKETING_VERSION = 1.9.2;
+				MARKETING_VERSION = 2.0.0;
 				MTL_FAST_MATH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = com.rcreative.halalformosa.ios.OneSignalNotificationServiceExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -630,6 +753,28 @@
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
+		};
+		D8836587774DF8F77E0E12E8 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_ENTITLEMENTS = HalalFormosaWidget/HalalFormosaWidget.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 41;
+				DEVELOPMENT_TEAM = W88L54499Q;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = HalalFormosaWidget/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+				MARKETING_VERSION = 2.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.rcreative.halalformosa.ios.widget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
 		};
 /* End XCBuildConfiguration section */
 
@@ -657,6 +802,15 @@
 			buildConfigurations = (
 				5D90D7342FD83CB20008B36C /* Debug */,
 				5D90D7352FD83CB20008B36C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		BC8005A77FD404F652A132BE /* Build configuration list for PBXNativeTarget "HalalFormosaWidget" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				130AC0AA82DD73E9B6552903 /* Release */,
+				D8836587774DF8F77E0E12E8 /* Debug */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

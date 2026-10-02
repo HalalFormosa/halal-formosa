@@ -38,8 +38,8 @@
               @click="openReport(report)"
               class="contribution-item"
             >
-              <ion-thumbnail slot="start" v-if="report.image_url">
-                <img :src="report.image_url" alt="Report Photo" />
+              <ion-thumbnail slot="start" v-if="report.image_url || report.products?.photo_front_url">
+                <img :src="report.image_url || report.products?.photo_front_url" alt="Product" />
               </ion-thumbnail>
               <ion-icon v-else slot="start" :icon="icons.cubeOutline" class="item-icon-placeholder" />
               
@@ -75,57 +75,53 @@
           <ion-toolbar>
             <ion-title>{{ $t('profile.reportDetail') }}</ion-title>
             <ion-buttons slot="end">
-              <ion-button @click="selectedReport = null">{{ $t('master.close') }}</ion-button>
+              <ion-button @click="selectedReport = null">
+                <ion-icon slot="icon-only" :icon="icons.closeOutline" />
+              </ion-button>
             </ion-buttons>
           </ion-toolbar>
         </ion-header>
         <ion-content class="ion-padding" v-if="selectedReport">
           <div class="modal-body">
-            <div class="detail-section">
-              <label>Product</label>
-              <div class="detail-value">
-                <strong>{{ selectedReport.products?.name }}</strong>
-                <p v-if="selectedReport.barcode">Barcode: {{ selectedReport.barcode }}</p>
+            <!-- Product summary card -->
+            <div class="summary-card">
+              <ion-thumbnail v-if="selectedReport.products?.photo_front_url" class="summary-thumb">
+                <img :src="selectedReport.products.photo_front_url" alt="Product" />
+              </ion-thumbnail>
+              <ion-icon v-else :icon="icons.cubeOutline" class="summary-icon-fallback" />
+
+              <div class="summary-info">
+                <h2 class="summary-name">{{ selectedReport.products?.name || 'Unknown Product' }}</h2>
+                <p v-if="selectedReport.barcode" class="summary-barcode">Barcode: {{ selectedReport.barcode }}</p>
+                <div class="summary-meta-row">
+                  <ion-chip size="small" :color="getStatusColor(selectedReport.status)" class="summary-status-chip">
+                    {{ $t(`admin.reportStatus.${selectedReport.status}`) }}
+                  </ion-chip>
+                  <span class="summary-date">{{ formatDate(selectedReport.created_at) }}</span>
+                </div>
               </div>
             </div>
 
-            <div class="detail-section">
-              <label>Status</label>
-              <div class="detail-value">
-                <ion-chip :color="getStatusColor(selectedReport.status)">
-                  {{ $t(`admin.reportStatus.${selectedReport.status}`) }}
-                </ion-chip>
-              </div>
-            </div>
-
-            <div class="detail-section">
-              <label>Description</label>
-              <div class="detail-value report-desc">
-                {{ selectedReport.description || 'No description provided' }}
-              </div>
-            </div>
-
-            <div v-if="selectedReport.image_url" class="detail-section">
-              <label>Photo Attachment</label>
-              <div class="report-image-container">
+            <!-- Report reason -->
+            <div class="section-block">
+              <label class="section-label">
+                <ion-icon :icon="icons.documentTextOutline" />
+                Report reason
+              </label>
+              <p class="report-desc">{{ selectedReport.description || 'No description provided' }}</p>
+              <div v-if="selectedReport.image_url" class="report-image-container">
                 <img :src="selectedReport.image_url" class="report-image" />
               </div>
             </div>
 
-            <div class="conversation-section">
-              <div class="conversation-header">
+            <!-- Conversation -->
+            <div class="section-block conversation-section">
+              <label class="section-label">
                 <ion-icon :icon="icons.chatbubblesOutline" />
-                <span>Conversation</span>
-              </div>
+                Conversation
+              </label>
               <div class="conversation-wrapper">
                 <report-conversation :product-report-id="selectedReport.id" :status="selectedReport.status" />
-              </div>
-            </div>
-
-            <div class="detail-section">
-              <label>Submitted On</label>
-              <div class="detail-value">
-                {{ formatDate(selectedReport.created_at) }}
               </div>
             </div>
           </div>
@@ -137,7 +133,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, watch, onUnmounted } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
 import { supabase } from '@/plugins/supabaseClient';
 import { 
   IonPage, IonHeader, IonContent, IonSpinner, IonList, IonItem, 
@@ -145,13 +141,14 @@ import {
   IonInfiniteScroll, IonInfiniteScrollContent, IonToolbar,
   IonSegment, IonSegmentButton, IonModal, IonTitle, IonButtons
 } from '@ionic/vue';
-import { flagOutline, checkmarkDoneOutline, cubeOutline, chatbubblesOutline } from 'ionicons/icons';
+import { flagOutline, checkmarkDoneOutline, cubeOutline, chatbubblesOutline, closeOutline, documentTextOutline } from 'ionicons/icons';
 import AppHeader from '@/components/AppHeader.vue';
 import ReportConversation from '@/components/ReportConversation.vue';
 import { useI18n } from 'vue-i18n';
 
 const { t } = useI18n();
 const router = useRouter();
+const route = useRoute();
 const loading = ref(true);
 const reports = ref<any[]>([]);
 const infiniteDisabled = ref(false);
@@ -164,7 +161,9 @@ const icons = {
   flagOutline,
   checkmarkDoneOutline,
   cubeOutline,
-  chatbubblesOutline
+  chatbubblesOutline,
+  closeOutline,
+  documentTextOutline
 };
 
 async function loadMyReports(reset = false) {
@@ -188,7 +187,7 @@ async function loadMyReports(reset = false) {
     .from('product_reports')
     .select(`
       *,
-      products!barcode (name)
+      products!barcode (name, photo_front_url)
     `)
     .eq('reported_by', user.id);
 
@@ -274,9 +273,21 @@ function setupRealtime() {
     .subscribe()
 }
 
+async function openReportById(reportId: string) {
+  const { data } = await supabase
+    .from('product_reports')
+    .select(`*, products!barcode (name, photo_front_url)`)
+    .eq('id', reportId)
+    .maybeSingle();
+  if (data) selectedReport.value = data;
+}
+
 onMounted(async () => {
   await loadMyReports(true);
   setupRealtime();
+
+  const reportId = route.query.reportId as string | undefined;
+  if (reportId) await openReportById(reportId);
 });
 
 onUnmounted(() => {
@@ -316,7 +327,7 @@ watch(viewMode, () => {
   margin-bottom: 12px;
   --border-radius: 16px;
   --background: var(--ion-color-step-50);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--card-shadow);
 }
 
 .product-name {
@@ -366,38 +377,116 @@ ion-thumbnail {
   padding-bottom: 32px;
 }
 
-.detail-section {
-  margin-bottom: 20px;
+/* Product summary card */
+.summary-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: var(--card-inner-bg, var(--ion-color-step-50));
+  border: 1px solid var(--card-border, rgba(0,0,0,0.06));
+  border-radius: 16px;
+  padding: 14px;
+  margin-bottom: 16px;
 }
 
-.detail-section label {
-  display: block;
-  font-size: 0.75rem;
-  text-transform: uppercase;
+.summary-thumb {
+  width: 56px;
+  height: 56px;
+  --border-radius: 10px;
+  flex-shrink: 0;
+}
+
+.summary-icon-fallback {
+  width: 56px;
+  height: 56px;
+  font-size: 28px;
   color: var(--ion-color-medium);
-  font-weight: 600;
-  margin-bottom: 4px;
-  letter-spacing: 0.05em;
+  background: rgba(0, 0, 0, 0.06);
+  border-radius: 10px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.detail-value {
-  font-size: 1rem;
-  color: var(--ion-text-color);
+.ion-palette-dark .summary-icon-fallback {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.summary-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.summary-name {
+  font-size: 1.05rem;
+  font-weight: 800;
+  margin: 0 0 2px 0;
+}
+
+.summary-barcode {
+  font-size: 0.8rem;
+  color: var(--ion-color-medium);
+  margin: 0 0 8px 0;
+}
+
+.summary-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.summary-status-chip {
+  margin: 0;
+  font-weight: 700;
+}
+
+.summary-date {
+  font-size: 0.78rem;
+  color: var(--ion-color-medium);
+}
+
+/* Section blocks (report reason / conversation) */
+.section-block {
+  margin-bottom: 16px;
+}
+
+.section-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ion-color-medium);
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.section-label ion-icon {
+  font-size: 16px;
+  color: var(--ion-color-carrot);
 }
 
 .report-desc {
   white-space: pre-wrap;
   line-height: 1.5;
-  background: var(--ion-color-step-50);
+  background: rgba(0, 0, 0, 0.06);
   padding: 12px;
   border-radius: 12px;
+  margin: 0;
+}
+
+.ion-palette-dark .report-desc {
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .report-image-container {
   margin-top: 8px;
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  box-shadow: var(--card-shadow);
 }
 
 .report-image {
@@ -420,29 +509,8 @@ ion-thumbnail {
   --border-width: 0;
   --min-height: auto;
 }
-.conversation-section {
-  margin-top: 8px;
-}
-
-.conversation-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--ion-color-step-600, #666);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  padding: 12px 4px 8px 4px;
-  border-top: 1px solid var(--ion-color-step-100, rgba(0,0,0,0.06));
-}
-
-.conversation-header ion-icon {
-  font-size: 18px;
-  color: var(--ion-color-primary);
-}
 
 .conversation-wrapper {
-  height: 380px;
+  height: 420px;
 }
 </style>

@@ -543,8 +543,8 @@ onMounted(() => {
 /* Material Card Style */
 .material-card {
   background: var(--ion-card-background, #fff);
-  border-radius: 20px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--card-shadow);
   margin-bottom: 24px;
   overflow: hidden;
 }
@@ -697,7 +697,7 @@ onMounted(() => {
 .card-item {
   background: var(--ion-card-background, #fff);
   border-radius: 18px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--card-shadow);
   margin-bottom: 16px;
   overflow: hidden;
 }
@@ -821,7 +821,7 @@ onMounted(() => {
 
 /* Search Modal */
 .search-modal {
-  --border-radius: 24px 24px 0 0;
+  --border-radius: var(--radius-xl) var(--radius-xl) 0 0;
   --background: var(--ion-background-color);
 }
 
@@ -875,9 +875,9 @@ onMounted(() => {
 .error-card {
   background: var(--ion-card-background);
   padding: 40px 20px;
-  border-radius: 20px;
+  border-radius: var(--radius-lg);
   text-align: center;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+  box-shadow: var(--card-shadow);
 }
 
 .error-icon {
@@ -889,7 +889,7 @@ onMounted(() => {
 /* Dark Palette refinements */
 .ion-palette-dark .card-item,
 .ion-palette-dark .material-card {
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+  box-shadow: var(--card-shadow);
   border: 1px solid rgba(255, 255, 255, 0.05);
 }
 

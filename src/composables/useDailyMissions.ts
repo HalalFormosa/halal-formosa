@@ -87,6 +87,17 @@ const missions = ref<Mission[]>([
 const loading = ref(false)
 const claimedBonus = ref(false)
 
+// Lets a caller elsewhere in the app (e.g. the notifications feed's "Daily
+// Mission still available" nudge) ask DailyMissions.vue to open its details
+// modal, without needing a route query param — a plain reactive flag avoids
+// any timing dependency on route-guard/auth-check/mount-order sequencing
+// across navigation, since DailyMissions.vue just watches it immediately at
+// setup regardless of when it was set.
+const openModalRequested = ref(false)
+function requestOpenMissionsModal() {
+  openModalRequested.value = true
+}
+
 const claimedMissions = ref<Record<string, boolean>>({})
 const awardingMissions = new Set<string>() // 🛡️ Prevent double-awarding during rapid refresh
 
@@ -239,6 +250,12 @@ export function useDailyMissions() {
 
             claimedBonus.value = logActions.includes('daily_mission_bonus')
 
+            // Auto-award the completion bonus as soon as every mission is
+            // done, instead of waiting for the user to tap the bonus card.
+            if (allCompleted.value && !claimedBonus.value) {
+                await checkAndAwardBonus()
+            }
+
         } catch (err) {
             console.error('Error fetching mission progress:', err)
         } finally {
@@ -269,6 +286,8 @@ export function useDailyMissions() {
         loading,
         claimedBonus,
         allCompleted,
+        openModalRequested,
+        requestOpenMissionsModal,
         fetchProgress,
         checkAndAwardBonus
     }

@@ -35,6 +35,7 @@
     "noResults": "No results found",
     "success": "Success!",
     "error": "Error occurred.",
+    "offlineMessage": "You're offline. Check your connection and try again.",
     "notProvided": "Not provided",
     "noData": "No data found",
     "viewMore": "View More",
@@ -61,7 +62,10 @@
     "noEditHistory": "No recent edits",
     "admin": "Admin",
     "seeOlderChanges": "See older changes",
-    "hideOlderChanges": "Hide older changes"
+    "hideOlderChanges": "Hide older changes",
+    "loginRequired": "Please log in to submit a review",
+    "unknown": "Unknown",
+    "sort": "Sort"
   },
   "review": {
     "title": "Review Submissions",
@@ -104,7 +108,14 @@
       "--ion-color-warning": "Syubhah",
       "--ion-color-danger": "Haram"
     },
-    "syncToOff": "Sync to Open Food Facts"
+    "syncToOff": "Sync to Open Food Facts",
+    "confirmRejectHeader": "Reject Submission",
+    "confirmRejectMsg": "Please provide a reason for rejecting this submission:",
+    "reasonPlaceholder": "e.g. Duplicate listing, incorrect location, not halal-relevant...",
+    "reasonRequired": "A reason is required to reject the submission.",
+    "confirmMergeHeader": "Merge into existing product?",
+    "confirmMergeMsg": "This submission will not be published separately. Its barcode becomes an alias of the existing product, and this submission is removed. This cannot be undone.",
+    "merge": "Merge"
   },
   "master": {
     "active": "Active",
@@ -172,6 +183,11 @@
     "loggingIn": "Logging in...",
     "continueWithGoogle": "Continue with Google",
     "continueWithApple": "Continue with Apple",
+    "continueWithLine": "Continue with LINE",
+    "agreeToTerms": "I agree to the {privacy} and {terms}",
+    "privacyPolicy": "Privacy Policy",
+    "termsOfService": "Terms of Service",
+    "mustAgreeToTerms": "Please agree to the Privacy Policy and Terms of Service to continue.",
     "appleDeviceRequired": "To sign in with Apple, you must use an iOS device.",
     "forgotPassword": "Forgot Password?",
     "resetEmailSent": "Password reset email sent! Please check your inbox.",
@@ -221,9 +237,9 @@
   "home": {
     "title": "Halal Formosa",
     "scan": "Scan Ingredients",
-    "scanDesc": "Analyze ingredients for Halal status instantly",
+    "scanDesc": "Check Halal status instantly",
     "scanBarcode": "Scan Barcode",
-    "scanBarcodeDesc": "Quick lookup by product barcode",
+    "scanBarcodeDesc": "Check product instantly",
     "productStatus": "Product Status",
     "productsCount": "Products",
     "locationsCount": "Locations",
@@ -243,9 +259,21 @@
     "leaderboardAllTime": "All Time",
     "premiumPartner": "Premium Partner",
     "latestNews": "Latest News",
-    "totalProducts": "Total Products",
-    "totalLocations": "Total Locations",
+    "totalProducts": "Products",
+    "totalLocations": "Locations",
     "partnerTier": "{tier} PARTNER",
+    "sponsored": "Sponsored",
+    "houseAdKind": {
+      "partner": "Partner",
+      "product": "Product",
+      "location": "Location",
+      "trip": "Trip"
+    },
+    "houseAdProvider": {
+      "soldBy": "Sold by {name}",
+      "certifiedBy": "Certified by {name}",
+      "providedBy": "By {name}"
+    },
     "statuses": {
       "halal": "Halal",
       "muslimFriendly": "Muslim-friendly",
@@ -302,7 +330,8 @@
       "asr": "Asr",
       "maghrib": "Maghrib",
       "isha": "Isha"
-    }
+    },
+    "pro": "Pro"
   },
   "analytics": {
     "productTitle": "Product Analytics",
@@ -403,6 +432,7 @@
     },
     "limit": {
       "reached": "Daily scan limit reached. Watch an ad or contribute a missing product/location to get more scans!",
+      "reachedContribute": "Daily scan limit reached. Contribute a missing product or location to get more scans!",
       "bonus": "Watch Ad +1 Scan",
       "adLimit": "You can only watch {count} ads per day.",
       "contributeTip": "Earn +1 daily scan for every product or location you contribute (max 3/day)."
@@ -423,9 +453,16 @@
         "connecting": "Connecting HD Camera...",
         "searching": "Searching for ingredients...",
         "scanning": "AI Scanning...",
-        "found": "Ingredients Found! Focusing...",
+        "analyzing": "Got it! Reading ingredients...",
+        "found": "Ingredients Found!",
         "notFound": "Ingredients not found, keep holding..."
-      }
+      },
+      "analyzingHint": "Photo captured — you can lower the camera now",
+      "highlightsFound": "{count} ingredient(s) found",
+      "autoDismiss": "Next scan in {s}s — tap to pause",
+      "dismissPaused": "Paused — tap \"Scan Again\" to continue",
+      "scanAgain": "Scan Again",
+      "viewDetails": "View Details"
     },
     "scan": {
       "camera": "Camera",
@@ -435,6 +472,10 @@
       "productName": "Detected Product Name",
       "alreadyInDb": "Already in our database",
       "verifiedListing": "Verified listing: {name}",
+      "addedAgo": "Added {time}",
+      "nameMatch": "{percent}% name match",
+      "ingredientsMatch": "{percent}% ingredients match",
+      "ingredientDetails": "Ingredient Details",
       "ingredientsZh": "Detected Ingredients (Chinese)",
       "ingredientsEn": "Translated Ingredients (English)",
       "originalImage": "Original Image",
@@ -470,6 +511,7 @@
     "filtersLabel": "Filters",
     "filters": {
       "title": "Filters",
+      "sort": "Sort",
       "stores": "Stores",
       "categories": "Categories",
       "statuses": "Statuses"
@@ -500,10 +542,33 @@
       "Gifts & Hampers": "Gifts & Hampers"
     },
     "registeredProductCount": "Count",
+    "noResults": "No results found",
     "noProductFound": "Sorry, no product found...",
     "pullToRefresh": "Pull to refresh",
     "showingResults": "Showing {count} of {total} registered products",
     "loadingMoreProduct": "Loading more products...",
+    "barcodeScan": {
+      "title": "Scan Barcode",
+      "hint": "Align the barcode inside the frame",
+      "close": "Close",
+      "status": {
+        "init": "Starting camera...",
+        "searching": "Looking for a barcode...",
+        "checking": "Checking barcode..."
+      },
+      "scanAgain": "Scan Again",
+      "viewDetails": "View Details",
+      "notFound": {
+        "title": "Not in our database yet",
+        "message": "No product matches barcode {barcode}.",
+        "action": "Add this product"
+      },
+      "cameraError": "Could not access camera. Please check permissions.",
+      "unsupportedError": "Barcode scanning isn't supported on this device.",
+      "moduleUnavailableError": "Setting up the barcode scanner for the first time — please try again in a moment.",
+      "permissionError": "Camera permission is required to scan barcodes.",
+      "scanError": "Something went wrong while scanning. Please try again."
+    },
     "details": {
       "title": "Product Details",
       "category": "Category",
@@ -590,9 +655,12 @@
     "activeFilters": "Active Filters",
     "categories": "Categories",
     "campusPartners": "Campus Partners",
+    "delivery": "Delivery",
+    "deliveryFilter": "Delivery Available",
     "clear": "Clear",
     "showingPlace": "Showing 1 place",
     "results": "Results",
+    "showResults": "Show {count} results",
     "showingResults": "Showing {count} of {total} locations",
     "loadingMoreLocations": "Loading more locations...",
     "details": {
@@ -605,14 +673,28 @@
       "orderVia": "Order Via",
       "orderNow": "Order Now",
       "certifiedBy": "Certified by",
+      "broughtBy": "Brought by",
       "verifiedGoldPartner": "Verified Gold Partner",
       "address": "Address",
       "noAddress": "No address available",
+      "similarPlaces": "Similar places",
+      "checkIn": "Check in",
+      "checkedIn": "Checked in",
+      "reviewed": "Reviewed",
+      "review": "Review",
+      "checkInSuccess": "Checked in!",
+      "checkInAlready": "You already checked in here recently",
+      "checkInRateLimited": "You checked in somewhere moments ago. Try again in a few minutes.",
+      "checkInTooFar": "You need to be at this place to check in",
+      "checkInNoLocation": "Turn on location to check in",
+      "checkInLogin": "Please log in to check in",
+      "checkInFailed": "Could not check in",
       "openingHours": "Opening Hours",
       "openNow": "Open Now",
       "closedNow": "Closed Now",
       "additionalDetails": "Additional Details",
-      "estimatedPrice": "Estimated Price"
+      "estimatedPrice": "Estimated Price",
+      "open24Hours": "24h"
     },
     "filters": {
       "priceRange": "Price Range"
@@ -629,6 +711,9 @@
     "gettingFix": "Getting fix...",
     "searchWait": "Please wait...",
     "searchMap": "Searching address on map...",
+    "go": "Go",
+    "searching": "Searching for locations...",
+    "searchNotFound": "No results for \"{query}\"",
     "types": {
       "Restaurant": "Restaurant",
       "Halal Restaurant": "Halal Restaurant",
@@ -692,6 +777,30 @@
     "placeholder": "Search news...",
     "loadingMoreNews": "Loading more news..."
   },
+  "notifications": {
+    "title": "Notifications",
+    "activity": "Activity",
+    "whatsNew": "What's new",
+    "markAllRead": "Mark all read",
+    "empty": "No notifications yet",
+    "emptyHint": "We'll let you know when something new happens.",
+    "dailyMissionTitle": "Daily Mission still available",
+    "dailyMissionBody": "Finish it to get Extra XP!",
+    "dailyBonusTitle": "Daily bonus ready to claim",
+    "dailyBonusBody": "All missions done — tap to claim your Extra XP!",
+    "category": {
+      "products": "New products added",
+      "locations": "New places added",
+      "news": "New announcements",
+      "trips": "New trips available",
+      "store": "New store items",
+      "productsSingle": "New product",
+      "locationsSingle": "New place",
+      "newsSingle": "New announcement",
+      "tripsSingle": "New trip",
+      "storeSingle": "New store item"
+    }
+  },
   "settings": {
     "title": "Settings",
     "appearance": "Appearance",
@@ -710,12 +819,48 @@
     "nearbyPrompts": "Nearby review reminders",
     "nearbyPromptsNote": "Privately remind me to share Muslim facilities after I visit a mosque or halal eatery."
   },
+  "referral": {
+    "titleCash": "Invite & Earn NT$",
+    "titlePro": "Invite & Earn Pro",
+    "yourCode": "Your referral code",
+    "haveReferrer": "Were you invited by someone?",
+    "enterTheirCode": "Their referral code",
+    "applyCode": "Apply code",
+    "share": "Share",
+    "shareQr": "Share QR code",
+    "linkCopied": "Link copied — paste it anywhere!",
+    "deadlinePrompt": "Earn NT$ for referrals made before:",
+    "deadlinePassed": "The NT$ earning period has ended.",
+    "campaignActive": "Promotion running now",
+    "campaignEnds": "Ends {date}",
+    "campaignValidReferrals": "valid referrals so far",
+    "people": "people",
+    "shareText": "Use my referral code {code} on Halal Formosa!",
+    "qrHint": "Scan to sign up with your code",
+    "referredBy": "You were referred by",
+    "someone": "Someone",
+    "yourRewardsPro": "Your Pro days earned",
+    "yourRewardsCash": "Your earnings",
+    "days": "days",
+    "pending": "Pending",
+    "paid": "Paid",
+    "peopleYouReferred": "People you've referred",
+    "noReferralsYet": "You haven't referred anyone yet.",
+    "statusConverted": "Converted",
+    "statusCanceled": "Canceled",
+    "statusSignedUp": "Signed up"
+  },
   "profile": {
     "sections": {
       "account": "Account & Preferences",
       "activity": "Activity",
       "contributions": "Contributions",
       "about": "About App"
+    },
+    "stats": {
+      "products": "Products",
+      "places": "Places",
+      "xp": "XP"
     },
     "title": "Profile",
     "incompleteNoticeTitle": "💡 Complete your \"About Me\"",
@@ -748,8 +893,10 @@
     },
     "noBio": "No bio added yet",
     "level": "Level {level}",
+    "levelShort": "Lv. {level}",
     "savedItems": "Saved Items",
     "scanHistory": "Scan History",
+    "ingredientEncyclopedia": "Ingredient Encyclopedia",
     "submittedProducts": "Submitted Products",
     "submittedLocations": "Submitted Locations",
     "myProducts": {
@@ -823,7 +970,9 @@
         "unlimitedCollections": "Unlimited Collection Items",
         "unlimitedScans": "Unlimited Scans",
         "prioritySupport": "Priority Support 24/7"
-      }
+      },
+      "restoreSuccess": "Subscription successfully restored",
+      "errorOpening": "Failed to load subscription options. Please try again."
     },
     "aboutMe": "About Me",
     "edit": "Edit",
@@ -832,6 +981,17 @@
     "login": "Login",
     "review": "Product Review",
     "settings": "Settings",
+    "linkedAccounts": {
+      "title": "Linked Accounts",
+      "subtitle": "See which sign-in methods are connected to your account.",
+      "email": "Email & Password",
+      "google": "Google",
+      "apple": "Apple",
+      "line": "LINE",
+      "connected": "Connected",
+      "notConnected": "Not Connected",
+      "note": "Signing in with any connected method logs you into this same account."
+    },
     "legal": "Legal",
     "credits": "Credits & Contributor",
     "support": "Support Halal Formosa ❤️",
@@ -857,6 +1017,13 @@
       "dobFuture": "Date of birth cannot be in the future.",
       "fixErrors": "Please fix the highlighted fields.",
       "saveFailed": "Could not save your profile.",
+      "referralPrompt": "Were you invited by someone?",
+      "referralHaveCode": "I have a code",
+      "referralNoCode": "I don't have a referral code",
+      "referralCodeLabel": "Referral code",
+      "referralApplied": "Referral code applied:",
+      "referralNoneRecorded": "No referral code — that's all set.",
+      "referralInvalid": "Invalid referral code.",
       "step1Label": "Step 1: Profile Picture & Bio",
       "step2Label": "Step 2: About Me (Optional)",
       "step3Label": "Step 3: Consent & Privacy",
@@ -901,13 +1068,15 @@
       "toNextLevel": "XP TO NEXT LEVEL",
       "infoTitle": "About Experience (XP)",
       "infoMessage": "XP points represent credits given to you by Halal Formosa for your actions and contributions (like scanning products, submitting items, and reporting), which will also grade you on the leaderboard. In the future, these points can be traded for various conveniences, such as partner discounts, exclusive promos, and other customization options!",
-      "spendable": "Available to Spend",
-      "spent": "XP Spent"
+      "spendable": "Available",
+      "spent": "Spent"
     },
     "social": {
       "instagram": "Instagram",
       "line": "LINE",
-      "website": "Website"
+      "website": "Website",
+      "tiktok": "TikTok",
+      "facebook": "Facebook"
     },
     "badgeShop": {
       "title": "Badge Shop",
@@ -952,9 +1121,10 @@
       "saved": "Changes saved!",
       "unsaved": "Unsaved"
     },
-    "defaultName": "User"
+    "defaultName": "User",
+    "anonymous": "Anonymous"
   },
-"achievements": {
+  "achievements": {
     "title": "My Achievements",
     "summaryLabel": "Trophies Unlocked",
     "nextTierHint": "{count} more to unlock \"{tier}\"",
@@ -1056,6 +1226,8 @@
     "coDeveloper": "Co-Developer",
     "uiUx": "UI/UX Contributor",
     "database": "Early Contributor",
+    "poweredBy": "Powered By",
+    "poweredByDescription": "Halal Formosa's platform publishing, registration, and operational requirements in Taiwan are supported by YiQi Global Consulting (藝啟文創行銷有限公司).",
     "specialThanks": "Special Thanks",
     "thankYou": "We sincerely thank all community members, testers, and supporters who helped make Halal Formosa possible. May Allah SWT reward your contributions with abundant goodness."
   },
@@ -1070,10 +1242,19 @@
     },
     "scanBarcodeTitle": "Find Product",
     "scanBarcodeDesc": "Scan the barcode on the product packaging to get started.",
+    "scanBarcodeFromGallery": "Upload from Gallery",
+    "manualEntry": "Manual Entry",
+    "manualEntryShort": "Manual",
+    "galleryShort": "Gallery",
+    "tapToStop": "Tap to Stop Camera",
+    "noBarcodeInImage": "No barcode found in that image.",
     "scanIngredientsTitle": "Scan Ingredients",
     "scanIngredientsDesc": "Scan the ingredients list to automatically fill the form and capture the back photo.",
     "camera": "Camera",
     "gallery": "Gallery",
+    "enterIngredientsManually": "Can't scan it? Enter ingredients manually",
+    "noIngredientsDetected": "Couldn't detect an ingredients list in that photo. Try again or enter the ingredients manually below.",
+    "analyzingIngredients": "Analyzing ingredients…",
     "skip": "Skip for now",
     "next": "Next",
     "back": "Back",
@@ -1148,7 +1329,8 @@
       "backImageRequired": "Back image is required."
     },
     "selectCategory": "Select Category",
-    "searchCategoryPlaceholder": "Search categories..."
+    "searchCategoryPlaceholder": "Search categories...",
+    "cameraError": "Failed to capture image."
   },
   "addPlace": {
     "title": "Add New Place",
@@ -1211,8 +1393,8 @@
   },
   "partner": {
     "title": "Our Partner",
-    "searchPlaceholder": "搜尋地點 (例如：清真寺)",
-    "activeFilters": "目前篩選",
+    "searchPlaceholder": "Search partners",
+    "activeFilters": "Active filters",
     "categories": "Categories",
     "actions": {
       "clearFilters": "Clear filters"
@@ -1264,7 +1446,11 @@
     "direction": "Qibla Direction",
     "fromNorth": "from True North",
     "preparing": "Preparing compass...",
-    "facing": "You are facing Qibla"
+    "needsPermission": "Compass access is required to show direction.",
+    "enableButton": "Enable Compass",
+    "error": "Unable to initialize compass.",
+    "facing": "You are facing Qibla",
+    "noSensor": "Compass hardware is not active on this device. Use the degree heading above."
   },
   "savedItems": {
     "freeTier": "Free Tier Usage",
@@ -1405,7 +1591,13 @@
       "addTag": "Add a tag"
     },
     "days": {
-      "mon": "Mon", "tue": "Tue", "wed": "Wed", "thu": "Thu", "fri": "Fri", "sat": "Sat", "sun": "Sun"
+      "mon": "Mon",
+      "tue": "Tue",
+      "wed": "Wed",
+      "thu": "Thu",
+      "fri": "Fri",
+      "sat": "Sat",
+      "sun": "Sun"
     },
     "photos": {
       "hint": "You can add up to {max} photos on your plan.",
@@ -1418,7 +1610,8 @@
       "itemName": "Item name",
       "price": "Price",
       "itemDescription": "Description (optional)",
-      "addPhoto": "Photo"
+      "addPhoto": "Photo",
+      "limitReached": "You've reached your menu item limit ({max}). Remove an item to add another."
     },
     "halal": {
       "status": "Halal status",
@@ -1438,7 +1631,8 @@
     "promos": {
       "locked": "Promotions are available on the Bronze plan and above.",
       "titleField": "Offer title",
-      "bodyField": "Details (optional)"
+      "bodyField": "Details (optional)",
+      "limitReached": "You've reached your active promotion limit ({max}). Turn one off to add another."
     },
     "analytics": {
       "views": "Total views",
@@ -1556,8 +1750,12 @@
     "analytics": "Analytics Dashboard",
     "masterData": "Master Data",
     "locationsReview": "Locations Review",
-    "locationReports": "Location Reports",
-    "productReports": "Product Reports",
+    "locationReports": {
+      "title": "Location Reports Management"
+    },
+    "productReports": {
+      "title": "Product Reports Management"
+    },
     "users": "Users",
     "productCategories": "Product Categories",
     "ingredientHighlights": "Ingredient Highlights",
@@ -1565,6 +1763,14 @@
     "stores": "Stores",
     "categoryRules": "Category Rules",
     "products": "Manage Products",
+    "houseAds": "House Ads (Sponsored Content)",
+    "adImpressions": "Impressions",
+    "adClicks": "Clicks",
+    "adCtr": "CTR",
+    "adsByTier": "Ads by Tier",
+    "adsByKind": "Ads by Category",
+    "topAds": "Top Sponsored Content",
+    "noData": "No data for this period.",
     "claims": {
       "title": "Business Claims",
       "noPending": "No pending claims",
@@ -1669,11 +1875,8 @@
       "resolved": "Resolved",
       "rejected": "Rejected"
     },
-    "masterData": "Master Data",
-    "productCategories": "Product Categories",
     "ingredient_highlights": "Ingredient Highlights",
     "location_types": "Location Types",
-    "stores": "Stores",
     "category_rules": "Category Rules",
     "dau": "Active Sessions",
     "activity": "Activity",
@@ -1709,8 +1912,8 @@
     "approve": "Approve",
     "reject": "Reject",
     "confirmArchive": "Are you sure you want to archive this location? It will be hidden from the public map and review queue.",
-    "sortRecent": "Recently Created",
-    "sortAlpha": "Alphabetical",
+    "sortRecent": "Recent",
+    "sortAlpha": "A-Z",
     "restore": "Restore",
     "confirmRestore": "Restore this location to the review queue?",
     "reviewProductsTitle": "Product Reviews",
@@ -1825,12 +2028,6 @@
         "description": "Description"
       }
     },
-    "locationReports": {
-      "title": "Location Reports Management"
-    },
-    "productReports": {
-      "title": "Product Reports Management"
-    },
     "report": {
       "status": "Report Status",
       "noReports": "No reports.",
@@ -1844,7 +2041,11 @@
         "resolved": "Resolved",
         "rejected": "Rejected"
       }
-    }
+    },
+    "retractConfirm": "Retract this entry? This cannot be undone.",
+    "retractFailed": "Failed to retract: {error}",
+    "never": "Never",
+    "neverActive": "Never active"
   },
   "merchantApplications": {
     "title": "Merchant Applications",
@@ -1866,7 +2067,7 @@
     "button": "Update Now"
   },
   "store": {
-    "testPhaseDisclaimer": "⚠️ This store is in the testing phase. Please do NOT make actual purchases. We will make an official announcement once development is complete.",
+    "testPhaseDisclaimer": "Store is in testing — please don't make real purchases yet.",
     "purchasesDisabled": "Purchases are disabled during the testing phase",
     "underConstructionDesc": "We're brewing something amazing! The store will be back soon.",
     "title": "Halal Formosa Store",
@@ -1933,7 +2134,6 @@
     "saveFailed": "Failed to save product.",
     "adminOrders": "Store Orders",
     "noOrders": "No orders found.",
-
     "myOrders": "My Orders",
     "orderPending": "Pending",
     "orderPaid": "Paid",
@@ -2079,7 +2279,10 @@
     "homeDeliveryLogistics": "Home Delivery Logistics",
     "inStockShort": "In Stock Short",
     "shipViaTcat": "Ship Via Tcat",
-    "shippingFee": "Shipping Fee"
+    "shippingFee": "Shipping Fee",
+    "admin": {
+      "products": "Products"
+    }
   },
   "merchant": {
     "register": {
@@ -2241,6 +2444,7 @@
       "maybeLater": "Maybe Later",
       "yes": "Yes, I did",
       "no": "Not really"
-    }
+    },
+    "deleteConfirmMsg": "Are you sure you want to delete your review?"
   }
 }

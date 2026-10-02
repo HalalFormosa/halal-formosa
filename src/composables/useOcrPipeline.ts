@@ -130,6 +130,10 @@ export default function useOcrPipeline(options: OcrPipelineOptions) {
             if (detectedLanguage.value === 'english') {
                 // ✅ Already English → no need to clean Chinese
                 translated = raw;
+                // 🟢 Extract product name directly from the raw English text
+                // (previously only ran in the Chinese/mixed branch below, so
+                // English labels never got a name suggestion at all)
+                productName.value = extractProductName(raw) || '';
             } else {
                 // ✅ Normalize and clean
                 raw = normalizeIngredients(raw);
@@ -166,17 +170,23 @@ export default function useOcrPipeline(options: OcrPipelineOptions) {
             progress.value = 0.70
             progressLabel.value = t('scanIngredients.progress.extractingIng')
 
-            // ✅ Guard: ensure we actually got a reasonable ingredient list
+            // ℹ️ No literal "ingredients"/"成分" header found anywhere in the OCR
+            // text — the photo almost certainly isn't an ingredients label (e.g. a
+            // screenshot or an unrelated part of the packaging). Treat this as a
+            // failed detection instead of silently handing back whatever text was
+            // captured, so callers can fall back to manual entry.
             const ingKeywords = /(ingredient|成分|成份|配料|原料|內容物|内容物|材料)/i;
             if (!ingKeywords.test(raw) && !ingKeywords.test(translated)) {
-                throw new Error(t('scanIngredients.errors.noKeywords'));
+                console.warn('⚠️ [OcrPipeline] No ingredient keyword found in OCR text — treating as a failed detection.');
+                ingredientsText.value = '';
+                ingredientsTextZh.value = '';
+                return setError(t('scanIngredients.errors.noIngredients'));
             }
 
             // ✅ Save Chinese ingredients ONLY if OCR is Chinese / Mixed
             if (detectedLanguage.value === 'chinese' || detectedLanguage.value === 'mixed') {
                 ingredientsTextZh.value =
                     ingredientsOnlyZh || stripToIngredientsOnly(cleanedZh);
-                console.log('🀄 Final ingredients-only Chinese:', ingredientsTextZh.value);
             } else {
                 // 🔒 English-only OCR → never populate Chinese field
                 ingredientsTextZh.value = '';
@@ -186,9 +196,6 @@ export default function useOcrPipeline(options: OcrPipelineOptions) {
             ingredientsText.value = cleanTranslatedIngredients(translated)
                 .replace(/^(ingredients)[:：]?\s*/i, '')
                 .trim();
-
-            console.log("🏷 Product Name (EN):", productName.value);
-            console.log("🌍 Translated Ingredients:", ingredientsText.value);
 
             await nextTick();
 
@@ -342,7 +349,7 @@ export default function useOcrPipeline(options: OcrPipelineOptions) {
             } else {
                 setError('Failed to connect to OCR server. Please try again later.')
             }
-            console.error(e)
+            console.error('❌ [OcrPipeline] OCR request failed:', e)
             return { text: '', translatedText: '', words: [] as OcrWord[], imageWidth: 0, imageHeight: 0 }
         }
     }
@@ -804,6 +811,13 @@ export default function useOcrPipeline(options: OcrPipelineOptions) {
         checkingIngredients,
         detectedLanguage,
         cleanChineseOcrText,
+        // Exposed for the admin OCR re-check composable, which needs the raw
+        // low-level primitives (not the full contributor-facing runOcr flow)
+        // to run an opt-in front-photo name check.
+        extractTextFromImage,
+        translateToEnglish,
+        extractProductName,
+        detectLanguage,
         ocrRawText,
         ocrWords,
         ocrImageWidth,

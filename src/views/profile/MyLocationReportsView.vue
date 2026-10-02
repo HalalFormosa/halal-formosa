@@ -38,7 +38,10 @@
               @click="openReport(report)"
               class="contribution-item"
             >
-              <ion-icon slot="start" :icon="icons.locationOutline" class="item-icon-placeholder" />
+              <ion-thumbnail slot="start" v-if="report.locations?.image">
+                <img :src="report.locations.image" alt="Location" />
+              </ion-thumbnail>
+              <ion-icon v-else slot="start" :icon="icons.locationOutline" class="item-icon-placeholder" />
               
               <ion-label>
                 <h3 class="product-name">{{ report.locations?.name || 'Unknown Location' }}</h3>
@@ -72,47 +75,47 @@
           <ion-toolbar>
             <ion-title>{{ $t('profile.reportDetail') }}</ion-title>
             <ion-buttons slot="end">
-              <ion-button @click="selectedReport = null">{{ $t('master.close') }}</ion-button>
+              <ion-button @click="selectedReport = null">
+                <ion-icon slot="icon-only" :icon="icons.closeOutline" />
+              </ion-button>
             </ion-buttons>
           </ion-toolbar>
         </ion-header>
         <ion-content class="ion-padding" v-if="selectedReport">
           <div class="modal-body">
-            <div class="detail-section">
-              <label>Location</label>
-              <div class="detail-value">
-                <strong>{{ selectedReport.locations?.name }}</strong>
+            <!-- Location summary card -->
+            <div class="summary-card">
+              <ion-thumbnail v-if="selectedReport.locations?.image" class="summary-thumb">
+                <img :src="selectedReport.locations.image" alt="Location" />
+              </ion-thumbnail>
+              <ion-icon v-else :icon="icons.locationOutline" class="summary-icon-fallback" />
+
+              <div class="summary-info">
+                <h2 class="summary-name">{{ selectedReport.locations?.name || 'Unknown Location' }}</h2>
+                <div class="summary-meta-row">
+                  <ion-chip size="small" :color="getStatusColor(selectedReport.status)" class="summary-status-chip">
+                    {{ $t(`admin.reportStatus.${selectedReport.status}`) }}
+                  </ion-chip>
+                  <span class="summary-date">{{ formatDate(selectedReport.created_at) }}</span>
+                </div>
               </div>
             </div>
 
-            <div class="detail-section">
-              <label>Status</label>
-              <div class="detail-value">
-                <ion-chip :color="getStatusColor(selectedReport.status)">
-                  {{ $t(`admin.reportStatus.${selectedReport.status}`) }}
-                </ion-chip>
-              </div>
+            <!-- Report reason -->
+            <div class="section-block">
+              <label class="section-label">
+                <ion-icon :icon="icons.documentTextOutline" />
+                Report reason
+              </label>
+              <p class="report-desc">{{ selectedReport.description || 'No description provided' }}</p>
             </div>
 
-            <div class="detail-section">
-              <label>Description</label>
-              <div class="detail-value report-desc">
-                {{ selectedReport.description || 'No description provided' }}
-              </div>
-            </div>
-
-            <div class="detail-section">
-              <label>Submitted On</label>
-              <div class="detail-value">
-                {{ formatDate(selectedReport.created_at) }}
-              </div>
-            </div>
-
-            <div class="conversation-section">
-              <div class="conversation-header">
+            <!-- Conversation -->
+            <div class="section-block conversation-section">
+              <label class="section-label">
                 <ion-icon :icon="icons.chatbubblesOutline" />
-                <span>Conversation</span>
-              </div>
+                Conversation
+              </label>
               <div class="conversation-wrapper">
                 <report-conversation :location-report-id="selectedReport.id" :status="selectedReport.status" />
               </div>
@@ -126,21 +129,22 @@
 
 <script setup lang="ts">
 import { ref, onMounted, watch, onUnmounted } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
 import { supabase } from '@/plugins/supabaseClient';
 import { 
-  IonPage, IonHeader, IonContent, IonSpinner, IonList, IonItem, 
-  IonLabel, IonChip, IonIcon, IonButton,
+  IonPage, IonHeader, IonContent, IonSpinner, IonList, IonItem,
+  IonLabel, IonChip, IonIcon, IonButton, IonThumbnail,
   IonInfiniteScroll, IonInfiniteScrollContent, IonToolbar,
   IonSegment, IonSegmentButton, IonModal, IonTitle, IonButtons
 } from '@ionic/vue';
-import { flagOutline, checkmarkDoneOutline, locationOutline, chatbubblesOutline } from 'ionicons/icons';
+import { flagOutline, checkmarkDoneOutline, locationOutline, chatbubblesOutline, closeOutline, documentTextOutline } from 'ionicons/icons';
 import AppHeader from '@/components/AppHeader.vue';
 import ReportConversation from '@/components/ReportConversation.vue';
 import { useI18n } from 'vue-i18n';
 
 const { t } = useI18n();
 const router = useRouter();
+const route = useRoute();
 const loading = ref(true);
 const reports = ref<any[]>([]);
 const infiniteDisabled = ref(false);
@@ -153,7 +157,9 @@ const icons = {
   flagOutline,
   checkmarkDoneOutline,
   locationOutline,
-  chatbubblesOutline
+  chatbubblesOutline,
+  closeOutline,
+  documentTextOutline
 };
 
 const currentUserId = ref<string | null>(null);
@@ -202,7 +208,7 @@ async function loadMyReports(reset = false) {
     .from('location_reports')
     .select(`
       *,
-      locations (name)
+      locations (name, image)
     `)
     .eq('reported_by', user.id);
 
@@ -265,9 +271,21 @@ function truncate(text: string, length: number) {
   return text.length > length ? text.substring(0, length) + '...' : text;
 }
 
+async function openReportById(reportId: string) {
+  const { data } = await supabase
+    .from('location_reports')
+    .select(`*, locations (name, image)`)
+    .eq('id', reportId)
+    .maybeSingle();
+  if (data) selectedReport.value = data;
+}
+
 onMounted(async () => {
   await loadMyReports(true);
   setupRealtime();
+
+  const reportId = route.query.reportId as string | undefined;
+  if (reportId) await openReportById(reportId);
 });
 
 onUnmounted(() => {
@@ -307,7 +325,7 @@ watch(viewMode, () => {
   margin-bottom: 12px;
   --border-radius: 16px;
   --background: var(--ion-color-step-50);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--card-shadow);
 }
 
 .product-name {
@@ -352,31 +370,103 @@ watch(viewMode, () => {
   padding-bottom: 32px;
 }
 
-.detail-section {
-  margin-bottom: 20px;
+/* Location summary card */
+.summary-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: var(--card-inner-bg, var(--ion-color-step-50));
+  border: 1px solid var(--card-border, rgba(0,0,0,0.06));
+  border-radius: 16px;
+  padding: 14px;
+  margin-bottom: 16px;
 }
 
-.detail-section label {
-  display: block;
-  font-size: 0.75rem;
-  text-transform: uppercase;
+.summary-thumb {
+  width: 56px;
+  height: 56px;
+  --border-radius: 10px;
+  flex-shrink: 0;
+}
+
+.summary-icon-fallback {
+  width: 56px;
+  height: 56px;
+  font-size: 28px;
   color: var(--ion-color-medium);
-  font-weight: 600;
-  margin-bottom: 4px;
-  letter-spacing: 0.05em;
+  background: rgba(0, 0, 0, 0.06);
+  border-radius: 10px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.detail-value {
-  font-size: 1rem;
-  color: var(--ion-text-color);
+.ion-palette-dark .summary-icon-fallback {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.summary-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.summary-name {
+  font-size: 1.05rem;
+  font-weight: 800;
+  margin: 0 0 8px 0;
+}
+
+.summary-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.summary-status-chip {
+  margin: 0;
+  font-weight: 700;
+}
+
+.summary-date {
+  font-size: 0.78rem;
+  color: var(--ion-color-medium);
+}
+
+/* Section blocks (report reason / conversation) */
+.section-block {
+  margin-bottom: 16px;
+}
+
+.section-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ion-color-medium);
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.section-label ion-icon {
+  font-size: 16px;
+  color: var(--ion-color-carrot);
 }
 
 .report-desc {
   white-space: pre-wrap;
   line-height: 1.5;
-  background: var(--ion-color-step-50);
+  background: rgba(0, 0, 0, 0.06);
   padding: 12px;
   border-radius: 12px;
+  margin: 0;
+}
+
+.ion-palette-dark .report-desc {
+  background: rgba(255, 255, 255, 0.1);
 }
 
 /* Header Action Styles */
@@ -394,29 +484,8 @@ watch(viewMode, () => {
   --border-width: 0;
   --min-height: auto;
 }
-.conversation-section {
-  margin-top: 8px;
-}
-
-.conversation-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--ion-color-step-600, #666);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  padding: 12px 4px 8px 4px;
-  border-top: 1px solid var(--ion-color-step-100, rgba(0,0,0,0.06));
-}
-
-.conversation-header ion-icon {
-  font-size: 18px;
-  color: var(--ion-color-primary);
-}
 
 .conversation-wrapper {
-  height: 380px;
+  height: 420px;
 }
 </style>

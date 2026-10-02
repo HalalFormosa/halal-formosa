@@ -14,87 +14,89 @@
           </div>
         </div>
 
-        <!-- Logo -->
-        <div class="logo-wrapper">
-          <img
-              src="/android-chrome-512x512.png"
-              alt="App logo"
-              class="app-logo"
-          />
+        <div class="auth-card">
+          <!-- Logo -->
+          <div class="logo-wrapper">
+            <img
+                src="/android-chrome-512x512.png"
+                alt="App logo"
+                class="app-logo"
+            />
+          </div>
+
+          <!-- Title -->
+          <h1 class="auth-title">{{ $t('updatePassword.title') }}</h1>
+          <p class="auth-subtitle">
+            {{ $t('updatePassword.subtitle') }}
+          </p>
+
+          <!-- Form -->
+          <form @submit.prevent="handleUpdatePassword">
+            <!-- Old Password (Optional) -->
+            <div class="input-card" v-if="mode === 'change' && !isSocialLogin">
+              <ion-input
+                  fill="outline"
+                  :label="$t('updatePassword.oldPassword')"
+                  label-placement="floating"
+                  type="password"
+                  v-model="oldPassword"
+                  required
+              >
+                <ion-input-password-toggle slot="end" />
+              </ion-input>
+            </div>
+            <!-- Password -->
+            <div class="input-card">
+              <ion-input
+                  fill="outline"
+                  :label="$t('updatePassword.newPassword')"
+                  label-placement="floating"
+                  type="password"
+                  v-model="password"
+                  required
+              >
+                <ion-input-password-toggle slot="end" />
+              </ion-input>
+            </div>
+
+            <!-- Confirm Password -->
+            <div class="input-card">
+              <ion-input
+                  fill="outline"
+                  :label="$t('updatePassword.confirmPassword')"
+                  label-placement="floating"
+                  type="password"
+                  v-model="confirmPassword"
+                  required
+              >
+                <ion-input-password-toggle slot="end" />
+              </ion-input>
+            </div>
+
+            <!-- Error -->
+            <ion-text color="danger" v-if="errorMsg" class="error-text">
+              {{ errorMsg }}
+            </ion-text>
+
+            <!-- Update button -->
+            <ion-button
+                type="submit"
+                expand="block"
+                color="carrot"
+                class="primary-btn"
+                :disabled="loading"
+            >
+              <ion-icon :icon="saveOutline" slot="start" v-if="!loading"></ion-icon>
+              {{ loading ? $t('updatePassword.updating') : $t('updatePassword.update') }}
+            </ion-button>
+
+            <!-- Back -->
+            <div class="back-divider" @click="goBack">
+              <span>{{ $t('updatePassword.backToProfile') }}</span>
+            </div>
+
+          </form>
         </div>
-
-        <!-- Title -->
-        <h1 class="auth-title">{{ $t('updatePassword.title') }}</h1>
-        <p class="auth-subtitle">
-          {{ $t('updatePassword.subtitle') }}
-        </p>
-
-        <!-- Form -->
-        <form @submit.prevent="handleUpdatePassword">
-          <!-- Old Password (Optional) -->
-          <div class="input-card" v-if="mode === 'change' && !isSocialLogin">
-            <ion-input
-                fill="outline"
-                :label="$t('updatePassword.oldPassword')"
-                label-placement="floating"
-                type="password"
-                v-model="oldPassword"
-                required
-            >
-              <ion-input-password-toggle slot="end" />
-            </ion-input>
-          </div>
-          <!-- Password -->
-          <div class="input-card">
-            <ion-input
-                fill="outline"
-                :label="$t('updatePassword.newPassword')"
-                label-placement="floating"
-                type="password"
-                v-model="password"
-                required
-            >
-              <ion-input-password-toggle slot="end" />
-            </ion-input>
-          </div>
-
-          <!-- Confirm Password -->
-          <div class="input-card">
-            <ion-input
-                fill="outline"
-                :label="$t('updatePassword.confirmPassword')"
-                label-placement="floating"
-                type="password"
-                v-model="confirmPassword"
-                required
-            >
-              <ion-input-password-toggle slot="end" />
-            </ion-input>
-          </div>
-
-          <!-- Error -->
-          <ion-text color="danger" v-if="errorMsg" class="error-text">
-            {{ errorMsg }}
-          </ion-text>
-
-          <!-- Update button -->
-          <ion-button
-              type="submit"
-              expand="block"
-              color="carrot"
-              class="primary-btn"
-              :disabled="loading"
-          >
-            <ion-icon :icon="saveOutline" slot="start" v-if="!loading"></ion-icon>
-            {{ loading ? $t('updatePassword.updating') : $t('updatePassword.update') }}
-          </ion-button>
-
-          <!-- Back -->
-          <div class="back-divider" @click="goBack">
-            <span>{{ $t('updatePassword.backToProfile') }}</span>
-          </div>
-
-        </form>
 
       </div>
     </ion-content>
@@ -253,10 +255,18 @@ html:not(.ion-palette-dark) .auth-page {
   min-height: 100%;
   max-width: 420px;
   margin: auto;
-  padding: calc(36px + var(--safe-area-inset-top, env(safe-area-inset-top))) 22px 32px;
+  padding: calc(36px + var(--safe-area-inset-top, env(safe-area-inset-top))) 18px 32px;
   display: flex;
   flex-direction: column;
   justify-content: center;
+}
+
+.auth-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--card-shadow-hover);
+  padding: 32px 24px 24px;
 }
 
 .logo-wrapper {
@@ -266,35 +276,72 @@ html:not(.ion-palette-dark) .auth-page {
 }
 
 .app-logo {
-  width: 120px;
-  height: 120px;
-  border-radius: 24px;
+  width: 96px;
+  height: 96px;
+  border-radius: var(--radius-xl);
+  box-shadow: var(--card-shadow);
 }
 
 .auth-title {
   margin-top: 6px;
   margin-bottom: 6px;
-  font-size: 28px;
-  font-weight: 700;
-  letter-spacing: 0.2px;
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
   text-align: center;
 }
 
 .auth-subtitle {
   font-size: 14px;
   line-height: 1.5;
-  margin-bottom: 40px;
+  margin-bottom: 32px;
   text-align: center;
-  color: #8f8f8f;
+  color: var(--ion-color-medium);
 }
 
 .input-card {
   margin-bottom: 16px;
 }
 
+ion-input {
+  --min-height: 54px;
+  --padding-start: 16px;
+  --padding-end: 16px;
+
+  --border-radius: var(--radius-lg);
+  --border-color: var(--card-border);
+  --border-width: 1.5px;
+  --highlight-color-focused: var(--ion-color-carrot);
+
+  --color: var(--ion-text-color);
+  --placeholder-color: var(--ion-color-medium);
+
+  background: var(--card-inner-bg);
+  border-radius: var(--radius-lg);
+  transition: box-shadow 0.15s ease;
+}
+
+ion-input.has-focus {
+  box-shadow: 0 0 0 3px rgba(var(--ion-color-carrot-rgb), 0.15);
+}
+
+ion-input::part(label) {
+  font-size: 14px;
+  color: var(--ion-color-medium);
+  transition: color 0.15s ease;
+}
+
+ion-input.has-focus::part(label),
+ion-input.has-value::part(label) {
+  color: var(--ion-color-carrot);
+}
+
 .primary-btn {
   margin-top: 22px;
-  font-weight: 600;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  --border-radius: var(--radius-lg);
+  --box-shadow: 0 8px 20px rgba(var(--ion-color-carrot-rgb), 0.3);
 }
 
 .back-divider {
@@ -303,7 +350,7 @@ html:not(.ion-palette-dark) .auth-page {
   justify-content: center;
   margin-top: 22px;
   font-size: 12px;
-  color: #8f8f8f;
+  color: var(--ion-color-medium);
   cursor: pointer;
 }
 
@@ -320,6 +367,16 @@ html:not(.ion-palette-dark) .auth-page {
 
 .back-btn-wrapper {
   margin-left: 0;
+}
+
+.top-bar ion-button {
+  --border-radius: 50%;
+  --background: var(--card-inner-bg);
+  --color: var(--ion-color-medium);
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--card-border);
+  border-radius: 50%;
 }
 
 .lang-select {

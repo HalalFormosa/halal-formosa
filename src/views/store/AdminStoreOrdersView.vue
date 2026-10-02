@@ -543,10 +543,10 @@ onMounted(async () => {
 }
 
 .order-card {
-  background: #ffffff;
-  border-radius: 16px;
+  background: var(--card-bg);
+  border-radius: var(--radius-lg);
   padding: 14px 16px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  box-shadow: var(--card-shadow);
   cursor: pointer;
   transition: transform 0.15s;
 }
@@ -731,7 +731,7 @@ onMounted(async () => {
 /* Dark mode */
 .ion-palette-dark .order-card {
   background: var(--ion-color-step-100, #1e1e1e);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--card-shadow);
 }
 
 .ion-palette-dark .order-details {
@@ -746,9 +746,9 @@ onMounted(async () => {
 .logistics-section {
   margin-top: 12px;
   padding: 12px;
-  background: rgba(var(--ion-color-primary-rgb, 56, 128, 255), 0.06);
+  background: rgba(var(--ion-color-carrot-rgb), 0.06);
   border-radius: 12px;
-  border: 1px solid rgba(var(--ion-color-primary-rgb, 56, 128, 255), 0.12);
+  border: 1px solid rgba(var(--ion-color-carrot-rgb), 0.12);
 }
 
 .logistics-header {
@@ -757,7 +757,7 @@ onMounted(async () => {
   gap: 6px;
   margin-bottom: 8px;
   font-size: 0.85rem;
-  color: var(--ion-color-primary);
+  color: var(--ion-color-carrot);
 }
 
 .logistics-code {

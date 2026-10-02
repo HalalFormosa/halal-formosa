@@ -2,12 +2,18 @@ import { ref } from "vue";
 import { Purchases } from "@revenuecat/purchases-capacitor";
 import { Capacitor } from "@capacitor/core";
 import { supabase } from "@/plugins/supabaseClient";
+import { withTimeout } from "@/plugins/RevenueCat";
+import { isDeviceOnline } from "@/utils/connectivity";
 
 const SUB_CACHE_KEY = "user_pro_status";
+const REFRESH_TIMEOUT_MS = 6000;
 
 // Initialize from cache if available to prevent UI flicker/ads on bad internet
 const cachedStatus = localStorage.getItem(SUB_CACHE_KEY) === "true";
-export const isDonor = ref(import.meta.env.DEV ? true : cachedStatus);
+// Ads are ON by default in both Production and Development for non-pro/logged-out users.
+// Set VITE_DISABLE_ADS=true in .env if you want to suppress ads during local dev work.
+const disableDevAds = import.meta.env.DEV && (import.meta.env.VITE_DISABLE_ADS === "true" || import.meta.env.VITE_DISABLE_ADS === "1");
+export const isDonor = ref(disableDevAds ? true : cachedStatus);
 export const lastSyncedEntitlement = ref<string | null>(null);
 
 export async function refreshSubscriptionStatus(options?: {
@@ -18,10 +24,20 @@ export async function refreshSubscriptionStatus(options?: {
         return;
     }
 
+    // Already offline — don't bother RevenueCat, just keep the cached entitlement.
+    if (!isDeviceOnline()) {
+        console.warn("📴 [Sub] Device offline, keeping cached Pro status:", isDonor.value);
+        return;
+    }
+
     try {
         console.log("🔄 [Sub] Fetching RevenueCat customer info...");
 
-        const { customerInfo } = await Purchases.getCustomerInfo();
+        const { customerInfo } = await withTimeout(
+            Purchases.getCustomerInfo(),
+            REFRESH_TIMEOUT_MS,
+            'RevenueCat getCustomerInfo'
+        );
 
         const hasPro = Boolean(
             customerInfo.entitlements.active["Halal Formosa Pro"]

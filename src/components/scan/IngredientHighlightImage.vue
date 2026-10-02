@@ -280,7 +280,7 @@ function handleClick() {
   position: relative;
   display: inline-block;
   width: 100%;
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
 }
 
 .ihi-wrapper.clickable {
@@ -318,8 +318,8 @@ function handleClick() {
   width: 100%;
   max-height: 300px;
   object-fit: contain;
-  border-radius: 16px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--card-shadow);
   background: var(--ion-color-step-100);
 }
 

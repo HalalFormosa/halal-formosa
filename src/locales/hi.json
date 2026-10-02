@@ -115,6 +115,11 @@
     "password": "पासवर्ड",
     "loggingIn": "प्रवेश किया...",
     "continueWithGoogle": "Google के साथ जारी रखें",
+    "continueWithLine": "LINE के साथ जारी रखें",
+    "agreeToTerms": "मैं {privacy} और {terms} से सहमत हूँ",
+    "privacyPolicy": "गोपनीयता नीति",
+    "termsOfService": "सेवा की शर्तें",
+    "mustAgreeToTerms": "जारी रखने के लिए कृपया गोपनीयता नीति और सेवा की शर्तों से सहमत हों।",
     "forgotPassword": "पासवर्ड भूल गए?",
     "resetEmailSent": "पासवर्ड रीसेट ईमेल भेजा गया! कृपया अपना इनबॉक्स जांचें.",
     "noAccount": "कोई खाता नहीं है?",
@@ -595,6 +600,11 @@
       "about": "ऐप के बारे में",
       "contributions": "Contributions"
     },
+    "stats": {
+      "products": "उत्पाद",
+      "places": "स्थान",
+      "xp": "एक्सपी"
+    },
     "title": "प्रोफ़ाइल",
     "logout": "लॉग आउट",
     "donor": "दाता स्थिति",
@@ -657,6 +667,17 @@
     "login": "लॉग इन करें",
     "review": "उत्पाद समीक्षा",
     "settings": "सेटिंग्स",
+    "linkedAccounts": {
+      "title": "लिंक किए गए खाते",
+      "subtitle": "देखें कि आपके खाते से कौन-से लॉगिन तरीके जुड़े हैं।",
+      "email": "ईमेल और पासवर्ड",
+      "google": "Google",
+      "apple": "Apple",
+      "line": "LINE",
+      "connected": "जुड़ा हुआ",
+      "notConnected": "जुड़ा नहीं है",
+      "note": "किसी भी जुड़े हुए तरीके से लॉगिन करने पर आप इसी खाते में प्रवेश करेंगे।"
+    },
     "legal": "कानूनी",
     "credits": "श्रेय एवं योगदानकर्ता",
     "support": "हलाल फॉर्मोसा का समर्थन करें ❤️",
@@ -1056,6 +1077,9 @@
     "direction": "किबला दिशा",
     "fromNorth": "ट्रू नॉर्थ से",
     "preparing": "कम्पास तैयार किया जा रहा है...",
+    "needsPermission": "दिशा दिखाने के लिए कंपास एक्सेस आवश्यक है।",
+    "enableButton": "कंपास सक्षम करें",
+    "error": "कंपास शुरू नहीं हो सका।",
     "facing": "आप किबला की ओर मुख कर रहे हैं"
   },
   "savedItems": {

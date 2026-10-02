@@ -663,7 +663,7 @@ function fireConfetti() {
   position: relative;
   padding: 20px 16px;
   margin-bottom: 12px;
-  border-radius: 20px;
+  border-radius: var(--radius-xl);
   background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
   color: #fff;
   overflow: hidden;
@@ -1053,7 +1053,7 @@ function fireConfetti() {
   max-width: 260px;
   background: #181818;
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 20px;
+  border-radius: var(--radius-lg);
   padding: 20px 16px;
   margin: 0 auto;
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);

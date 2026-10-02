@@ -158,6 +158,11 @@
     "loggingIn": "正在登录...",
     "continueWithGoogle": "继续使用谷歌",
     "continueWithApple": "继续使用 Apple",
+    "continueWithLine": "继续使用 LINE",
+    "agreeToTerms": "我同意{privacy}和{terms}",
+    "privacyPolicy": "隐私政策",
+    "termsOfService": "服务条款",
+    "mustAgreeToTerms": "请先同意隐私政策和服务条款才能继续。",
     "appleDeviceRequired": "要使用 Apple 帐号登录，您必须使用 iOS 设备。",
     "forgotPassword": "忘记密码？",
     "resetEmailSent": "密码重置电子邮件已发送！ 请检查您的收件箱。",
@@ -405,6 +410,7 @@
     },
     "limit": {
       "reached": "已达到每日扫描限制。观看广告或贡献缺失的产品/地点以获取更多扫描次数！",
+      "reachedContribute": "已达到每日扫描限制。贡献缺失的产品或地点即可获得更多扫描次数！",
       "bonus": "Watch Ad +1 Scan",
       "adLimit": "You can only watch {count} ads per day.",
       "contributeTip": "每贡献一个新产品或地点可获得 +1 每日扫描次数（每日最多 +3 次）。"
@@ -682,6 +688,11 @@
       "about": "关于应用程序",
       "contributions": "Contributions"
     },
+    "stats": {
+      "products": "商品",
+      "places": "地点",
+      "xp": "经验值"
+    },
     "title": "轮廓",
     "incompleteNoticeTitle": "💡 完善您的「关于我」",
     "incompleteNoticeDesc": "添加您的出生日期、国籍、性别或个人简介，以个性化您的资料。",
@@ -747,6 +758,17 @@
     "login": "登录",
     "review": "产品评论",
     "settings": "设置",
+    "linkedAccounts": {
+      "title": "已关联账号",
+      "subtitle": "查看当前与您账号关联的登录方式。",
+      "email": "邮箱与密码",
+      "google": "Google",
+      "apple": "Apple",
+      "line": "LINE",
+      "connected": "已关联",
+      "notConnected": "尚未关联",
+      "note": "使用任一已关联的方式登录，都会进入同一个账号。"
+    },
     "legal": "合法的",
     "credits": "致谢与贡献者",
     "support": "支持福尔摩沙清真❤️",
@@ -1134,6 +1156,9 @@
     "direction": "朝拜方向",
     "fromNorth": "从正北出发",
     "preparing": "准备指南针...",
+    "needsPermission": "需要指南针权限才能显示方向。",
+    "enableButton": "启用指南针",
+    "error": "无法初始化指南针。",
     "facing": "你面对着朝拜"
   },
   "savedItems": {
@@ -1427,7 +1452,7 @@
     "button": "立即更新"
   },
   "store": {
-    "testPhaseDisclaimer": "⚠️ 商店目前正处于测试阶段，请勿进行实际购买。开发完成后我们将正式公告！",
+    "testPhaseDisclaimer": "商店测试中，请勿实际购买。",
     "underConstructionDesc": "我们正在酝酿一些神奇的东西！ 商店很快就会回来。",
     "title": "清真福尔摩沙店",
     "searchPlaceholder": "搜索产品...",

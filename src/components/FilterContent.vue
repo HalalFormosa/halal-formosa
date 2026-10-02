@@ -4,7 +4,9 @@ import {
 } from '@ionic/vue'
 import { ref, onMounted, onUnmounted, nextTick, watch, computed } from 'vue'
 import {
-  storefrontOutline, pricetagsOutline, shieldCheckmarkOutline
+  storefrontOutline, pricetagsOutline, shieldCheckmarkOutline,
+  swapVerticalOutline, timeOutline, trendingUpOutline, flameOutline, sparklesOutline,
+  lockClosedOutline
 } from 'ionicons/icons'
 import StoreLogoBar from "@/components/StoreLogoBar.vue";
 
@@ -19,6 +21,8 @@ interface Category {
   name: string
 }
 
+type SortOption = 'recent' | 'views' | 'trending' | 'for_you'
+
 const props = withDefaults(defineProps<{
   loadingStores?: boolean
   stores?: Store[]
@@ -31,6 +35,9 @@ const props = withDefaults(defineProps<{
   hasActiveFilters?: boolean
   categoryIcons?: Record<string, string>
   STATUS_COLOR_MAP?: Record<string, string>
+  sortBy?: SortOption
+  canShowForYouSort?: boolean
+  isDonor?: boolean
 }>(), {
   loadingStores: false,
   stores: () => [],
@@ -42,7 +49,10 @@ const props = withDefaults(defineProps<{
   activeStatuses: () => [],
   hasActiveFilters: false,
   categoryIcons: () => ({}),
-  STATUS_COLOR_MAP: () => ({})
+  STATUS_COLOR_MAP: () => ({}),
+  sortBy: 'recent',
+  canShowForYouSort: false,
+  isDonor: false
 })
 
 const emit = defineEmits<{
@@ -50,7 +60,15 @@ const emit = defineEmits<{
   (e: 'toggleCategory', cat: Category): void
   (e: 'toggleStatus', status: string): void
   (e: 'clearAllFilters'): void
+  (e: 'update:sortBy', value: SortOption): void
 }>()
+
+const sortOptions: { key: SortOption; icon: string; labelKey: string }[] = [
+  { key: 'for_you', icon: sparklesOutline, labelKey: 'search.sortForYou' },
+  { key: 'recent', icon: timeOutline, labelKey: 'search.sortRecent' },
+  { key: 'trending', icon: trendingUpOutline, labelKey: 'search.sortTrending' },
+  { key: 'views', icon: flameOutline, labelKey: 'search.sortViews' },
+]
 
 function toggleCategory(cat: Category) {
   emit('toggleCategory', cat)
@@ -74,6 +92,32 @@ const localActiveStores = computed({
 
 <template>
   <div class="filter-modal-inner">
+    <!-- Sort -->
+    <div class="filter-section">
+      <h3 class="filter-section-title">
+        <ion-icon :icon="swapVerticalOutline"/>
+        {{ $t('search.filters.sort') || 'Sort' }}
+      </h3>
+      <div class="category-bar">
+        <template v-for="opt in sortOptions" :key="opt.key">
+          <ion-chip
+              class="modern-category-chip"
+              :class="{ active: sortBy === opt.key, 'is-locked': opt.key === 'for_you' && !isDonor }"
+              :style="{
+                        '--cat-color': 'var(--ion-color-carrot)',
+                        '--cat-contrast': 'var(--ion-color-carrot-contrast)',
+                        '--cat-bg': sortBy === opt.key ? 'var(--ion-color-carrot)' : 'transparent'
+                      }"
+              @click="emit('update:sortBy', opt.key)"
+          >
+            <ion-icon :icon="opt.icon" class="category-icon" />
+            <ion-label>{{ $t(opt.labelKey) }}</ion-label>
+            <ion-icon v-if="opt.key === 'for_you' && !isDonor" :icon="lockClosedOutline" class="lock-icon" />
+          </ion-chip>
+        </template>
+      </div>
+    </div>
+
     <!-- Stores -->
     <div class="filter-section">
       <h3 class="filter-section-title">
@@ -217,18 +261,33 @@ ion-chip.modern-category-chip {
   transition: all 0.2s ease;
   margin: 0;
   flex-shrink: 0;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--card-shadow);
 }
 
 .modern-category-chip.active {
   background: var(--cat-color) !important;
   color: var(--cat-contrast, #ffffff) !important;
   border-color: var(--cat-color) !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--card-shadow-hover);
   transform: translateY(-1px);
 }
 
-.category-emoji { margin-right: 6px; font-size: 1.1rem; }
+.category-emoji, .category-icon { margin-right: 6px; font-size: 1.1rem; }
+
+/* "For You" is a pro/donor-gated sort — kept visible (not hidden) so people
+   can see the feature exists, with a lock badge instead of disappearing.
+   Tapping it while locked still works: it routes into the app's existing
+   upsell/gate screen rather than doing nothing. */
+.modern-category-chip.is-locked {
+  opacity: 0.75;
+}
+
+.modern-category-chip .lock-icon {
+  margin-left: 6px;
+  margin-right: 0;
+  font-size: 0.85rem;
+  opacity: 0.7;
+}
 
 .store-scroll {
   display: flex;

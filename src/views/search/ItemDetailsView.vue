@@ -1,14 +1,19 @@
 <template>
   <ion-page>
-    <ion-header class="ion-no-border immersive-header" :class="{ 'is-scrolled': isScrolled, 'has-ads': isNative && showAds }">
+    <ion-header class="ion-no-border immersive-header" :class="{ 'is-scrolled': isScrolled, 'has-ads': isNative && showAds, 'house-ad-top': adSlotCollapsed }">
       <!-- Native (mobile) AdMob banner -->
-      <div v-if="isNative && showAds" id="ad-space-item-details" :style="{ height: '65px', paddingTop: 'var(--ion-safe-area-top, 0)' }"></div>
+      <div v-if="isNative && showAds" id="ad-space-item-details" :style="adSpaceStyle(adSlotCollapsed)"></div>
+      <!-- No house-ad fallback banner here — when there's no real ad, the
+           sponsored slot instead appears further down the page, right
+           before Description, so it doesn't delay the content someone
+           opened this page to see (see the HouseAdNativeCard below). -->
 
-      <app-header 
-        :title="$t('search.details.title')" 
-        show-back 
-        backRoute="/search" 
-        :icon="bagOutline"
+      <app-header
+        :title="$t('search.details.title')"
+        show-back
+        backRoute="/search"
+        icon="none"
+        :centerTitle="true"
         :transparent="!isScrolled"
         :contrast="!isScrolled"
       >
@@ -131,51 +136,57 @@
           <div v-if="['gold', 'silver'].includes(String(item?.partner_tier || '').toLowerCase())" class="premium-flare"></div>
 
           <div class="ion-padding" style="position: relative; z-index: 2;">
-            <div class="title-row">
-              <h2 class="product-title">{{ item?.name }}</h2>
-              <div v-if="item?.partner_tier" class="premium-badge-wrapper">
-                <div :class="['premium-badge-pill', item.partner_tier.toLowerCase()]">
-                  <ion-icon :icon="sparkles" />
-                  <span>{{ $t('home.partnerTier', { tier: item.partner_tier.toUpperCase() }) }}</span>
+            <!-- Details: one continuous sheet from title through ingredients,
+                 sections separated by spacing alone (no hairlines/boxes),
+                 closer to a flowing product-detail page. -->
+            <div class="details-flow">
+            <div class="hero-card info-card">
+              <div class="title-row">
+                <h2 class="product-title">{{ item?.name }}</h2>
+                <div v-if="item?.partner_tier" class="premium-badge-wrapper">
+                  <div :class="['premium-badge-pill', item.partner_tier.toLowerCase()]">
+                    <ion-icon :icon="sparkles" />
+                    <span>{{ item.partner_tier.toUpperCase() }}</span>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <!-- Barcode row -->
-            <p class="barcode-row">
-              <!-- Left side: barcode(s) -->
-              <span class="barcode-wrapper">
-                <ion-icon :icon="barcodeOutline" />
-                <small>{{ [item.barcode, ...alternateBarcodes].join(', ') }}</small>
-              </span>
+              <!-- Barcode row -->
+              <p class="barcode-row">
+                <!-- Left side: barcode(s) -->
+                <span class="barcode-wrapper">
+                  <ion-icon :icon="barcodeOutline" />
+                  <small>{{ [item.barcode, ...alternateBarcodes].join(', ') }}</small>
+                </span>
 
-              <!-- Right side: category -->
-              <small class="category-text">{{ $te('search.categoriesList.' + item.product_categories?.name) ? $t('search.categoriesList.' + item.product_categories?.name) : item.product_categories?.name }}</small>
-            </p>
+                <!-- Right side: category -->
+                <small class="category-text">{{ $te('search.categoriesList.' + item.product_categories?.name) ? $t('search.categoriesList.' + item.product_categories?.name) : item.product_categories?.name }}</small>
+              </p>
 
-            <p v-if="item.author?.public_profile" class="attribution-text">
-              {{ $t('home.addedBy', { author: item.author.display_name }) }} - {{ fromNowToTaipei(item.created_at) }}
-            </p>
-            <p v-else class="attribution-text">
-              {{ $t('home.added') }} {{ fromNowToTaipei(item.created_at) }}
-            </p>
+              <p v-if="item.author?.public_profile" class="attribution-text">
+                {{ $t('home.addedBy', { author: item.author.display_name }) }} - {{ fromNowToTaipei(item.created_at) }}
+              </p>
+              <p v-else class="attribution-text">
+                {{ $t('home.added') }} {{ fromNowToTaipei(item.created_at) }}
+              </p>
 
-            <!-- Status & Verified Tag -->
-            <div class="status-action-row">
-              <ion-chip :class="statusToChipClass(item?.status || '')">
-                {{ $t(`search.status.${item?.status}`) }}
-              </ion-chip>
-              
-              <div v-if="item?.partner_tier" class="official-verified-tag">
-                <ion-icon :icon="shieldCheckmarkOutline" />
-                <span>{{ $t('search.officialPartner') }}</span>
+              <!-- Status & Verified Tag -->
+              <div class="status-action-row">
+                <ion-chip :class="statusToChipClass(item?.status || '')" class="verdict-chip">
+                  {{ $t(`search.status.${item?.status}`) }}
+                </ion-chip>
+
+                <div v-if="item?.partner_tier" class="official-verified-tag">
+                  <ion-icon :icon="shieldCheckmarkOutline" />
+                  <span>{{ $t('search.officialPartner') }}</span>
+                </div>
               </div>
             </div>
 
             <!-- Produced By (Campus Partner) -->
             <div
                 v-if="item?.partner?.partner_type === 'campus' && item?.partner?.partner_tier === 'gold'"
-                class="ion-margin-top"
+                class="info-card"
             >
               <p class="section-title">
                 <strong><small>{{ $t('search.details.producedBy') }}</small></strong>
@@ -216,7 +227,7 @@
             <!-- Certified By (Gold Partner) -->
             <div
                 v-if="!loadingCertifications && certifications.length"
-                class="ion-margin-top"
+                class="info-card"
             >
               <p class="section-title">
                 <strong><small>{{ $t('search.details.certifiedBy') }}</small></strong>
@@ -256,72 +267,94 @@
               </div>
             </div>
 
-            <!-- Stores where this product is available -->
-            <div v-if="item.stores?.length" class="ion-margin-top">
-              <p class="section-title">
-                <strong><small>{{ $t('search.details.availableAt') }}</small></strong>
-              </p>
-              <StoreLogoBar
-                  :stores="item.stores"
-                  mode="readonly"
-              />
-            </div>
-
-            <!-- Description -->
-            <p class="section-title ion-margin-top">
-              <strong><small>{{ $t('search.details.description') }}</small></strong>
-            </p>
-            <h5
-                class="description-text ion-no-margin"
-                v-html="highlightedDescription"
-            ></h5>
-
-            <!-- Tags -->
-            <div v-if="item.tags && item.tags.length > 0" class="ion-margin-top">
-              <p class="section-title">
-                <strong><small>{{ $t('addPlace.tagsAndCategories', 'Tags') }}</small></strong>
-              </p>
-              <div class="tag-chips" style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px;">
-                <ion-chip v-for="tag in item.tags" :key="tag" style="margin: 0; font-size: 12px; height: 24px; padding: 0 10px;">
-                  <ion-label>{{ tag }}</ion-label>
-                </ion-chip>
+              <!-- Stores where this product is available -->
+              <div v-if="item.stores?.length" class="info-card">
+                <p class="section-title">
+                  <strong><small>{{ $t('search.details.availableAt') }}</small></strong>
+                </p>
+                <StoreLogoBar
+                    :stores="item.stores"
+                    mode="readonly"
+                />
               </div>
-            </div>
 
-            <!-- Ingredients -->
-            <p class="section-title ion-margin-top">
-              <strong><small>{{ $t('search.details.ingredients') }}</small></strong>
-            </p>
+              <!-- Sponsored card — appears here (scrolled into view) rather
+                   than glued to the top, so it doesn't delay the content
+                   someone opened this page to see. Same as PlaceDetailsView:
+                   partner/trip sponsors only, gold tier only, and skipped
+                   entirely when this product is itself a gold partner's.
+                   Always shown alongside the real banner (not just as a
+                   fallback when it fails to fill) — same always-on treatment
+                   as the recurring native cards in Search/Explore/Trip/Store. -->
+              <HouseAdNativeCard
+                  v-if="showAds && String(item?.partner_tier || '').toLowerCase() !== 'gold'"
+                  class="item-sponsored-card"
+                  mode="trip"
+                  :only-kinds="['partner', 'trip']"
+                  :only-tiers="['gold', 'silver']"
+                  :slot="0"
+              />
 
-            <ul class="ingredients-list">
-              <li v-for="(ing, idx) in visibleIngredients"
-                  :key="idx"
-                  v-html="ing.html">
-              </li>
-            </ul>
+              <!-- Description -->
+              <div class="info-card">
+                <p class="section-title">
+                  <strong><small>{{ $t('search.details.description') }}</small></strong>
+                </p>
+                <h5
+                    class="description-text ion-no-margin"
+                    v-html="highlightedDescription"
+                ></h5>
+              </div>
 
-            <!-- Toggle button -->
-            <div v-if="highlightedIngredients.length > maxVisible" class="ion-margin-top">
-              <ion-button
-                  fill="clear"
-                  size="small"
-                  @click="showAllIngredients = !showAllIngredients"
-              >
-                {{ !showAllIngredients ? $t('search.details.viewMore') : $t('search.details.viewLess') }}
-              </ion-button>
-            </div>
+              <!-- Tags -->
+              <div v-if="item.tags && item.tags.length > 0" class="info-card">
+                <p class="section-title">
+                  <strong><small>{{ $t('addPlace.tagsAndCategories', 'Tags') }}</small></strong>
+                </p>
+                <div class="tag-chips" style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px;">
+                  <ion-chip v-for="tag in item.tags" :key="tag" style="margin: 0; font-size: 12px; height: 24px; padding: 0 10px;">
+                    <ion-label>{{ tag }}</ion-label>
+                  </ion-chip>
+                </div>
+              </div>
 
-            <!-- Color Legend -->
-            <div v-if="usedColors.length" class="ion-margin-top ingredient-legend">
-              <p class="section-title"><strong><small>{{ $t('search.details.colorLegend') }}</small></strong></p>
-              <div class="legend-chips">
-                <ion-chip
-                    v-for="color in usedColors"
-                    :key="color"
-                    :class="colorToChipClass(color)"
-                >
-                  {{ $t(colorLabels[color]) }}
-                </ion-chip>
+              <!-- Ingredients -->
+              <div class="info-card ingredients-card">
+                <p class="section-title">
+                  <strong><small>{{ $t('search.details.ingredients') }}</small></strong>
+                </p>
+
+                <ul class="ingredients-list">
+                  <li v-for="(ing, idx) in visibleIngredients"
+                      :key="idx"
+                      v-html="ing.html">
+                  </li>
+                </ul>
+
+                <!-- Toggle button -->
+                <div v-if="highlightedIngredients.length > maxVisible" class="ion-margin-top">
+                  <ion-button
+                      fill="clear"
+                      size="small"
+                      @click="showAllIngredients = !showAllIngredients"
+                  >
+                    {{ !showAllIngredients ? $t('search.details.viewMore') : $t('search.details.viewLess') }}
+                  </ion-button>
+                </div>
+
+                <!-- Color Legend -->
+                <div v-if="usedColors.length" class="ion-margin-top ingredient-legend">
+                  <p class="section-title"><strong><small>{{ $t('search.details.colorLegend') }}</small></strong></p>
+                  <div class="legend-chips">
+                    <ion-chip
+                        v-for="color in usedColors"
+                        :key="color"
+                        :class="colorToChipClass(color)"
+                    >
+                      {{ $t(colorLabels[color]) }}
+                    </ion-chip>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -341,7 +374,7 @@
                 >
                   <div v-if="p.partner_tier" class="tier-badge" :class="p.partner_tier.toLowerCase()">
                     <ion-icon :icon="sparkles" />
-                    {{ $t('home.partnerTier', { tier: p.partner_tier.toUpperCase() }) }}
+                    {{ p.partner_tier.toUpperCase() }}
                   </div>
 
                   <div v-if="p.partner_tier === 'Gold' || p.partner_tier === 'Silver'" class="premium-flare"></div>
@@ -535,6 +568,7 @@ import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { useIonRouter } from '@ionic/vue'
 import { Capacitor } from '@capacitor/core'
+import HouseAdNativeCard from '@/components/ads/HouseAdNativeCard.vue'
 import { supabase } from '@/plugins/supabaseClient'
 import {Swiper, SwiperSlide} from "swiper/vue";
 import {Pagination, Zoom} from "swiper/modules";
@@ -545,7 +579,6 @@ import AppHeader from "@/components/AppHeader.vue";
 import AuditHistoryLog from "@/components/AuditHistoryLog.vue";
 import {
   alertCircleOutline,
-  bagOutline,
   barcodeOutline,
   createOutline,
   bookmarkOutline,
@@ -561,6 +594,7 @@ import {
 import AddProductView from "@/views/add-product/AddProductView.vue";
 import { userRole } from '@/composables/userProfile'
 import { isDonor, refreshSubscriptionStatus } from '@/composables/useSubscriptionStatus'
+import { useAdSlotCollapsed, adSpaceStyle } from '@/composables/useAdFallback'
 import { ActivityLogService } from "@/services/ActivityLogService";
 import { scheduleBannerUpdate } from '@/plugins/admob'
 import { RevenueCatUI, PAYWALL_RESULT } from '@revenuecat/purchases-capacitor-ui'
@@ -588,6 +622,7 @@ onIonViewDidEnter(() => {
 
 const loading = ref(true)
 const isNative = ref(Capacitor.isNativePlatform())
+const adSlotCollapsed = useAdSlotCollapsed('ad-space-item-details', isDonor)
 const modules = [Pagination, Zoom];
 
 const showAllIngredients = ref(false)
@@ -1389,6 +1424,12 @@ async function loadProductData() {
 onIonViewWillEnter(async () => {
   await loadProductData()
   auditLogRef.value?.fetchLogs()
+
+  // Deep-linked here from a rejection notification to fix and resubmit.
+  if (route.query.edit === 'true' && canEdit.value) {
+    showEditModal.value = true
+    router.replace({ path: route.path, query: {} })
+  }
 })
 
 
@@ -1425,6 +1466,58 @@ const share = async () => {
 </script>
 
 <style scoped>
+/* ===============================
+   Premium card-grouped sections
+   =============================== */
+.info-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--card-shadow);
+  padding: 14px 16px 16px;
+}
+
+.info-card .section-title {
+  margin-bottom: 6px;
+}
+
+/* Flowing details sheet: one card surface from title through ingredients.
+   Sections are told apart by spacing alone (no hairlines/nested boxes),
+   matching a reference design that uses generous whitespace instead of
+   dividers. */
+/* No card surface of its own — the outer .details-container sheet
+   (rounded top, curving over the hero image) already separates this
+   from the page; a second nested card here was redundant. */
+.details-flow {
+  background: transparent;
+  padding: 18px 0 20px;
+}
+
+.details-flow .info-card {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  border-radius: 0;
+  padding: 0 16px;
+}
+
+.details-flow .info-card + .info-card {
+  margin-top: 22px;
+}
+
+.ingredients-card .ingredient-legend {
+  margin-top: 16px;
+}
+
+/* Verdict chip: same semantic colors, bigger and bolder for a "hero" feel */
+.verdict-chip {
+  height: 34px;
+  padding: 0 16px;
+  font-size: 0.92rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
 /* TIERED PAGE STYLES - Inherit from global variables if needed, otherwise clean up redundant local backgrounds */
 .tier-gold .official-verified-tag {
   color: #ca8a04;
@@ -1474,7 +1567,8 @@ const share = async () => {
 .product-title {
   margin: 0;
   font-weight: 800;
-  font-size: 1.6rem;
+  font-size: 1.65rem;
+  letter-spacing: -0.02em;
   line-height: 1.2;
   /* A global, unscoped .product-title rule in SearchView.vue also targets this class
      and falls back to white text when --ion-text-color isn't set (i.e. outside dark
@@ -1586,11 +1680,29 @@ const share = async () => {
 .legend-chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 4px;
+  gap: 4px;
+  margin-top: 2px;
+}
+
+/* Legend is a small key, not content — keep the chips compact */
+.legend-chips ion-chip {
+  margin: 0;
+  height: 20px;
+  min-height: 0;
+  padding: 0 8px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  line-height: 20px;
+  border-radius: 6px;
 }
 
 /* RELATED SECTION */
+/* Breathing room around the sponsored card, between "Available at" and Description */
+.item-sponsored-card.item-sponsored-card {
+  margin-top: 24px;
+  margin-bottom: 28px;
+}
+
 .related-section {
   margin-top: 24px;
   padding-top: 16px;
@@ -1853,12 +1965,13 @@ ion-skeleton-text {
 }
 
 .contribution-modal .motivation-box {
-  background: var(--ion-color-step-50);
-  border-radius: 20px;
+  background: var(--card-inner-bg);
+  border-radius: var(--radius-lg);
   padding: 20px;
   text-align: center;
   margin-bottom: 32px;
   border: 1px dashed rgba(var(--ion-color-carrot-rgb), 0.3);
+  box-shadow: var(--card-shadow);
 }
 
 .contribution-modal .islamic-ornament {

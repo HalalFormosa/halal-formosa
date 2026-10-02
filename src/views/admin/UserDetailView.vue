@@ -597,7 +597,7 @@ function describeActivity(log: any) {
     case 'search_sort_change':
       return t('admin.activities_desc.search_sort_change', { sort: d.sort || '?' })
     case 'search_filter_status':
-      return t('admin.activities_desc.search_filter_status', { status: d.status || '?' })
+      return t('admin.activities_desc.search_filter_status', { status: (d.statuses && d.statuses.join(', ')) || '?' })
     case 'search_filter_category':
       return t('admin.activities_desc.search_filter_category', { category: d.category_name || '?' })
 

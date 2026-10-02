@@ -6,11 +6,13 @@
 
     <ion-content class="ion-padding">
       <!-- === Prayer Times Horizontal === -->
-      <ion-card>
+      <ion-card class="prayer-hero-card">
+        <div class="prayer-hero-glow" aria-hidden="true"></div>
         <ion-card-header>
           <div class="prayer-header-row">
-            <ion-card-title>
+            <ion-card-title class="prayer-hero-title">
               <template v-if="nextPrayer && userLocation">
+                <div class="prayer-eyebrow">{{ $t('home.prayerTimes') }}</div>
                 <div class="prayer-title-main">
                   {{ $t('home.prayerNotification', { label: nextPrayer.label, time: upcomingCountdown }) }}
                 </div>
@@ -114,38 +116,6 @@
 
 
 
-      <!-- === Main Feature: Scan === -->
-      <ion-card class="main-feature-section clear-card">
-        <div class="main-features-grid">
-          <button class="feature-card feature-primary" @click="goScan">
-            <div class="feature-icon-wrapper">
-              <ion-icon :icon="scanOutline" />
-            </div>
-            <div class="feature-text">
-              <h3>{{ $t('home.scan') }}</h3>
-              <p>{{ $t('home.scanDesc') }}</p>
-            </div>
-            <div class="feature-bg-icon">
-              <ion-icon :icon="scanOutline" />
-            </div>
-          </button>
-          
-          <button class="feature-card feature-secondary" @click="goToSearchAndScan">
-            <div class="feature-icon-wrapper">
-              <ion-icon :icon="barcodeOutline" />
-            </div>
-            <div class="feature-text">
-              <h3>{{ $t('home.scanBarcode') }}</h3>
-              <p>{{ $t('home.scanBarcodeDesc') }}</p>
-            </div>
-            <div class="feature-bg-icon">
-              <ion-icon :icon="barcodeOutline" />
-            </div>
-          </button>
-        </div>
-      </ion-card>
-
-
       <!-- === Our Partner=== -->
       <ion-card>
         <ion-card-header>
@@ -219,6 +189,38 @@
 
       </ion-card>
 
+
+      <!-- === Main Feature: Scan === -->
+      <ion-card class="main-feature-section clear-card">
+        <div class="main-features-grid">
+          <button class="feature-card feature-primary" @click="goScan">
+            <div class="feature-icon-wrapper">
+              <ion-icon :icon="scanOutline" />
+            </div>
+            <div class="feature-text">
+              <h3>{{ $t('home.scan') }}</h3>
+              <p>{{ $t('home.scanDesc') }}</p>
+            </div>
+            <div class="feature-bg-icon">
+              <ion-icon :icon="scanOutline" />
+            </div>
+          </button>
+
+          <button class="feature-card feature-secondary" @click="goToSearchAndScan">
+            <div class="feature-icon-wrapper">
+              <ion-icon :icon="barcodeOutline" />
+            </div>
+            <div class="feature-text">
+              <h3>{{ $t('home.scanBarcode') }}</h3>
+              <p>{{ $t('home.scanBarcodeDesc') }}</p>
+            </div>
+            <div class="feature-bg-icon">
+              <ion-icon :icon="barcodeOutline" />
+            </div>
+          </button>
+        </div>
+      </ion-card>
+
       <!-- === Daily Missions === -->
       <LazySection placeholderHeight="120px" @load="isAuthenticated && fetchProgress()">
         <DailyMissions v-if="isAuthenticated" />
@@ -243,7 +245,7 @@
 
         <ion-card-content>
           <!-- 🔹 Skeleton loader -->
-          <div v-if="loadingProducts" class="discover-grid">
+          <div v-if="loadingProducts" class="discover-grid discover-grid--products">
             <ion-card v-for="n in 5" :key="'skeleton-p-' + n" class="discover-item">
               <ion-skeleton-text animated style="width: 100%; height: 140px; border-radius: 12px;" />
               <ion-skeleton-text animated style="width: 95%; height: 30px; margin: 6px auto;" />
@@ -252,12 +254,66 @@
           </div>
 
           <!-- 🔹 Real content -->
-          <div v-else class="discover-grid">
+          <div v-else class="discover-grid discover-grid--products">
+            <!-- Featured gold slot — crossfades to the next rotated gold
+                 partner product instead of hard-cutting, same mechanic as
+                 Discover Locations' featured-fade above. -->
+            <div
+                v-if="featuredProduct"
+                :class="[
+                  'featured-fade-wrapper',
+                  'discover-item',
+                  featuredProduct.partner_tier ? 'tier-card-' + featuredProduct.partner_tier.toLowerCase() : ''
+                ]"
+                @click="openProduct(featuredProduct)"
+            >
+              <!-- Tier Badge (Fixed on frame) -->
+              <ion-badge
+                  v-if="featuredProduct.partner_tier"
+                  :class="['tier-badge', featuredProduct.partner_tier.toLowerCase()]"
+              >
+                <ion-icon :icon="sparkles" />
+                <span>{{ (featuredProduct.partner_tier || '').toUpperCase() }}</span>
+              </ion-badge>
+
+              <!-- Inner Content Crossfade -->
+              <Transition name="featured-content-fade">
+                <div :key="featuredProduct.barcode" class="featured-inner-content">
+                  <img :src="featuredProduct.image || 'https://placehold.co/200x200'" :alt="$t('home.altProduct')" class="discover-img" loading="lazy" />
+                  <ion-label class="discover-label">
+                    <div class="name-row">
+                      <h3 class="discover-name">
+                        {{ featuredProduct.name }}
+                        <span v-if="featuredProduct.partner_tier" class="home-partner-verified">
+                          <ion-icon :icon="shieldCheckmarkOutline" />
+                        </span>
+                      </h3>
+                    </div>
+                    <div class="status-row">
+                      <ion-chip
+                          :class="featuredProduct.status === 'Halal' ? 'chip-success'
+                    : featuredProduct.status === 'Muslim-friendly' ? 'chip-primary'
+                    : featuredProduct.status === 'Syubhah' ? 'chip-warning'
+                    : featuredProduct.status === 'Haram' ? 'chip-danger'
+                    : 'chip-medium'"
+                      >
+                        {{ $t('search.status.' + featuredProduct.status) }}
+                      </ion-chip>
+                    </div>
+                    <p class="added-time">{{ $t('home.added') }} {{ fromNowToTaipei(featuredProduct.created_at) }}</p>
+                  </ion-label>
+                </div>
+              </Transition>
+
+              <!-- Premium Flare (Fixed on frame) -->
+              <div v-if="['gold', 'silver'].includes(String(featuredProduct.partner_tier || '').toLowerCase())" class="premium-flare"></div>
+            </div>
+
             <ion-card
-                v-for="p in recentProducts"
+                v-for="p in otherProducts"
                 :key="p.barcode"
                 :class="[
-                  'discover-item', 
+                  'discover-item',
                   p.partner_tier ? 'tier-card-' + p.partner_tier.toLowerCase() : ''
                 ]"
                 button
@@ -269,7 +325,7 @@
                   :class="['tier-badge', p.partner_tier.toLowerCase()]"
               >
                 <ion-icon :icon="sparkles" />
-                <span>{{ $t('home.partnerTier', { tier: (p.partner_tier || '').toUpperCase() }) }}</span>
+                <span>{{ (p.partner_tier || '').toUpperCase() }}</span>
               </ion-badge>
 
               <!-- Shine Effect (Gold ONLY) -->
@@ -277,6 +333,14 @@
 
               <img :src="p.image || 'https://placehold.co/200x200'" :alt="$t('home.altProduct')" class="discover-img" loading="lazy" />
               <ion-label class="discover-label">
+                <div class="name-row">
+                  <h3 class="discover-name">
+                    {{ p.name }}
+                    <span v-if="p.partner_tier" class="home-partner-verified">
+                      <ion-icon :icon="shieldCheckmarkOutline" />
+                    </span>
+                  </h3>
+                </div>
                 <div class="status-row">
                   <ion-chip
                       :class="p.status === 'Halal' ? 'chip-success'
@@ -284,17 +348,12 @@
                 : p.status === 'Syubhah' ? 'chip-warning'
                 : p.status === 'Haram' ? 'chip-danger'
                 : 'chip-medium'"
-                      style="font-size: 14px; margin-bottom: 4px;"
+                      style="font-size: 13px; margin-bottom: 2px;"
                   >
                     {{ $t('search.status.' + p.status) }}
                   </ion-chip>
-
-                  <!-- Official Partner Tag -->
-                  <div v-if="p.partner_tier" class="home-partner-verified">
-                    <ion-icon :icon="shieldCheckmarkOutline" />
-                  </div>
                 </div>
-                <p>{{ $t('home.added') }} {{ fromNowToTaipei(p.created_at) }}</p>
+                <p class="added-time">{{ $t('home.added') }} {{ fromNowToTaipei(p.created_at) }}</p>
               </ion-label>
             </ion-card>
           </div>
@@ -319,7 +378,7 @@
             </div>
           </ion-card-header>
           <ion-card-content>
-            <div v-if="loadingLocations" class="discover-grid">
+            <div v-if="loadingLocations" class="discover-grid discover-grid--locations">
               <ion-card v-for="n in 5" :key="'skeleton-l-' + n" class="discover-item">
                 <ion-skeleton-text animated style="width: 100%; height: 140px; border-radius: 12px;" />
                 <ion-skeleton-text animated style="width: 90%; height: 12px; margin: 6px auto;" />
@@ -328,12 +387,66 @@
               </ion-card>
             </div>
 
-          <div v-else class="discover-grid">
+          <div v-else class="discover-grid discover-grid--locations">
+            <!-- Featured gold slot — crossfades to the next rotated gold
+                 partner instead of hard-cutting, same mechanic as Explore's
+                 featured-fade (see ExploreView.vue). Taken out of the plain
+                 v-for below so swapping it never reflows the rest of the grid. -->
+            <div
+                v-if="featuredLocation"
+                :class="[
+                  'featured-fade-wrapper',
+                  'discover-item',
+                  featuredLocation.partner_tier ? 'tier-card-' + featuredLocation.partner_tier.toLowerCase() : ''
+                ]"
+                @click="openLocation(featuredLocation)"
+            >
+              <!-- Tier Badge (Fixed on frame) -->
+              <ion-badge
+                  v-if="featuredLocation.partner_tier"
+                  :class="['tier-badge', featuredLocation.partner_tier.toLowerCase()]"
+              >
+                <ion-icon :icon="sparkles" />
+                <span>{{ (featuredLocation.partner_tier || '').toUpperCase() }}</span>
+              </ion-badge>
+
+              <!-- Inner Content Crossfade -->
+              <Transition name="featured-content-fade">
+                <div :key="featuredLocation.id" class="featured-inner-content">
+                  <img
+                      :src="featuredLocation.image || 'https://placehold.co/200x200'"
+                      :alt="$t('home.altLocation')"
+                      class="discover-img"
+                      loading="lazy"
+                  />
+                  <ion-label class="discover-label">
+                    <div class="name-row">
+                      <h3>
+                        {{ featuredLocation.name }}
+                        <span v-if="featuredLocation.partner_tier" class="home-partner-verified">
+                          <ion-icon :icon="shieldCheckmarkOutline" />
+                        </span>
+                      </h3>
+                    </div>
+                    <div v-if="featuredLocation.type" class="status-row">
+                      <ion-chip class="chip-medium location-type-chip">
+                        {{ featuredLocation.type }}
+                      </ion-chip>
+                    </div>
+                    <p class="added-time">{{ $t('home.added') }} {{ fromNowToTaipei(featuredLocation.created_at) }}</p>
+                  </ion-label>
+                </div>
+              </Transition>
+
+              <!-- Premium Flare (Fixed on frame) -->
+              <div v-if="['gold', 'silver'].includes(String(featuredLocation.partner_tier || '').toLowerCase())" class="premium-flare"></div>
+            </div>
+
             <ion-card
-                v-for="loc in recentLocations"
+                v-for="loc in otherLocations"
                 :key="loc.id"
                 :class="[
-                  'discover-item', 
+                  'discover-item',
                   loc.partner_tier ? 'tier-card-' + loc.partner_tier.toLowerCase() : ''
                 ]"
                 button
@@ -345,7 +458,7 @@
                   :class="['tier-badge', loc.partner_tier.toLowerCase()]"
               >
                 <ion-icon :icon="sparkles" />
-                <span>{{ $t('home.partnerTier', { tier: (loc.partner_tier || '').toUpperCase() }) }}</span>
+                <span>{{ (loc.partner_tier || '').toUpperCase() }}</span>
               </ion-badge>
 
               <!-- Premium Flare for Gold/Silver -->
@@ -359,13 +472,19 @@
               />
               <ion-label class="discover-label">
                 <div class="name-row">
-                  <h3>{{ loc.name }}</h3>
-                  <!-- Official Partner Tag -->
-                  <div v-if="loc.partner_tier" class="home-partner-verified">
-                    <ion-icon :icon="shieldCheckmarkOutline" />
-                  </div>
+                  <h3>
+                    {{ loc.name }}
+                    <span v-if="loc.partner_tier" class="home-partner-verified">
+                      <ion-icon :icon="shieldCheckmarkOutline" />
+                    </span>
+                  </h3>
                 </div>
-                <p>{{ $t('home.added') }} {{ fromNowToTaipei(loc.created_at) }}</p>
+                <div v-if="loc.type" class="status-row">
+                  <ion-chip class="chip-medium location-type-chip">
+                    {{ loc.type }}
+                  </ion-chip>
+                </div>
+                <p class="added-time">{{ $t('home.added') }} {{ fromNowToTaipei(loc.created_at) }}</p>
               </ion-label>
             </ion-card>
           </div>
@@ -430,10 +549,6 @@
       <!-- === Store === -->
       <LazySection placeholderHeight="200px" @load="fetchMarketplaceProducts">
       <ion-card style="position: relative;">
-        <div v-if="isUnderConstruction" class="test-phase-banner" style="margin: 12px 16px 0;">
-          <ion-icon :icon="warningOutline" class="test-phase-icon" />
-          <span style="font-size: 0.82rem;">{{ $t('store.testPhaseDisclaimer') }}</span>
-        </div>
         <ion-card-header>
           <div class="card-header-row">
             <ion-card-title>{{ $t('home.marketplace') }}</ion-card-title>
@@ -678,11 +793,11 @@
 
 
       <!-- === Insights Horizontal Scroll === -->
-      <LazySection placeholderHeight="120px" @load="() => { fetchStats(); fetchLocationCategoryStats(); }">
+      <LazySection placeholderHeight="120px" rootMargin="1000px" @load="() => { fetchStats(); fetchLocationCategoryStats(); }">
       <div class="insights-container">
         <div class="insights-scroll">
           <!-- Card 1: Total Products -->
-          <div class="insight-card stat-card" @click="router.push('/analytics/products')">
+          <div class="insight-card stat-card">
             <div class="stat-icon-wrapper products">
               <ion-icon :icon="sparkles" />
             </div>
@@ -690,11 +805,10 @@
               <span class="stat-label">{{ $t('home.totalProducts') }}</span>
               <h2 class="stat-value">{{ totalProductCount }}</h2>
             </div>
-            <ion-icon :icon="chevronForwardOutline" class="forward-icon" />
           </div>
 
           <!-- Card 2: Total Locations -->
-          <div class="insight-card stat-card" @click="router.push('/analytics/locations')">
+          <div class="insight-card stat-card">
             <div class="stat-icon-wrapper locations">
               <ion-icon :icon="locationOutline" />
             </div>
@@ -702,14 +816,13 @@
               <span class="stat-label">{{ $t('home.totalLocations') }}</span>
               <h2 class="stat-value">{{ totalLocationCount }}</h2>
             </div>
-            <ion-icon :icon="chevronForwardOutline" class="forward-icon" />
           </div>
         </div>
       </div>
       </LazySection>
 
       <!-- === Leaderboard === -->
-      <LazySection placeholderHeight="300px" @load="fetchLeaderboard(leaderboardType, 10)">
+      <LazySection placeholderHeight="300px" rootMargin="1000px" @load="fetchLeaderboard(leaderboardType, 10)">
       <ion-card >
         <ion-card-header>
           <div class="card-header-row">
@@ -750,7 +863,16 @@
             <ion-icon :icon="chevronForwardOutline" class="hint-arrow" />
           </div>
 
-          <ion-list v-if="leaderboard.length > 0" class="leaderboard-list" :style="{ opacity: loadingLeaderboard ? 0.5 : 1, transition: 'opacity 0.2s ease', pointerEvents: loadingLeaderboard ? 'none' : 'auto' }">
+          <!-- 🔄 First-load spinner: nothing cached yet, list & empty-state are both hidden -->
+          <div v-if="loadingLeaderboard && leaderboard.length === 0" class="leaderboard-loading">
+            <ion-spinner name="crescent" color="carrot" />
+          </div>
+
+          <div v-if="leaderboard.length > 0" class="leaderboard-list-wrapper">
+            <div v-if="loadingLeaderboard" class="leaderboard-loading-overlay">
+              <ion-spinner name="crescent" color="carrot" />
+            </div>
+            <ion-list class="leaderboard-list" :style="{ opacity: loadingLeaderboard ? 0.5 : 1, transition: 'opacity 0.2s ease', pointerEvents: loadingLeaderboard ? 'none' : 'auto' }">
             <ion-item
                 v-for="(user, index) in leaderboard"
                 :key="user.id"
@@ -761,53 +883,50 @@
                 @click="openUserProfile(user, $event)"
             >
               <!-- Rank -->
-              <div slot="start" style="width: 24px; text-align: center; font-weight: 600; display: flex; align-items: center; justify-content: center; color: inherit; margin-right: 8px;">
-                <ion-icon v-if="index === 0" :icon="medalOutline" style="color: #FFD700; font-size: 1.2rem;" />
-                <ion-icon v-else-if="index === 1" :icon="medalOutline" style="color: #C0C0C0; font-size: 1.2rem;" />
-                <ion-icon v-else-if="index === 2" :icon="medalOutline" style="color: #CD7F32; font-size: 1.2rem;" />
-                <span v-else>{{ index + 1 }}</span>
+              <div slot="start" style="width: 18px; text-align: center; font-weight: 600; display: flex; align-items: center; justify-content: center; color: inherit; margin-right: 6px; flex-shrink: 0;">
+                <ion-icon v-if="index === 0" :icon="medalOutline" style="color: #FFD700; font-size: 1.1rem;" />
+                <ion-icon v-else-if="index === 1" :icon="medalOutline" style="color: #C0C0C0; font-size: 1.1rem;" />
+                <ion-icon v-else-if="index === 2" :icon="medalOutline" style="color: #CD7F32; font-size: 1.1rem;" />
+                <span v-else style="font-size: 0.85rem;">{{ index + 1 }}</span>
               </div>
 
               <!-- Avatar with Cosmetics -->
-              <div slot="start" class="leaderboard-avatar-cell" :style="getLeaderboardGlowStyle(user)" style="margin-right: 12px;">
-                <ion-avatar style="width: 40px; height: 40px;" :style="getLeaderboardFrameStyle(user)">
+              <div slot="start" class="leaderboard-avatar-cell" :style="getLeaderboardGlowStyle(user)" style="margin-right: 10px;">
+                <ion-avatar style="width: 36px; height: 36px; position: relative;" :style="getLeaderboardFrameStyle(user)">
                   <img
                       :src="(user.public_profile || currentUser?.id === user.id) ? (user.public_profile ? (user.avatar_url || 'https://placehold.co/64x64/e5e7eb/374151') : (currentUser?.user_metadata?.avatar_url || 'https://placehold.co/64x64/e5e7eb/374151')) : `https://placehold.co/64x64/e5e7eb/374151?text=${$t('home.unknownAvatar')}`"
                        :alt="$t('home.altAvatar')"
                        loading="lazy"/>
+                  <span v-if="user.donor_type && user.donor_type.toLowerCase().includes('pro')" class="avatar-pro-badge" :title="$t('home.pro') || 'Pro'">
+                    <ion-icon :icon="diamond" />
+                  </span>
                 </ion-avatar>
               </div>
 
               <!-- Info -->
-              <ion-label style="min-width: 0; flex: 1; overflow: hidden; width: 0; margin-right: 8px;">
-                <h2 style="margin: 0; font-weight: 600; font-size: 1rem; display: flex; align-items: center; gap: 6px; color: inherit; min-width: 0; overflow: hidden; width: 100%;">
+              <ion-label style="min-width: 0; flex: 1; overflow: hidden; width: 0; margin-right: 6px;">
+                <h2 style="margin: 0; font-weight: 700; font-size: 1rem; letter-spacing: -0.01em; display: flex; align-items: center; gap: 4px; color: inherit; min-width: 0; overflow: hidden; width: 100%;">
                   <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0; color: inherit;">
                     {{ formatDisplayName(currentUser?.id === user.id && !user.public_profile ? (currentUser?.user_metadata?.full_name || currentUser?.user_metadata?.display_name || 'Me') : user.display_name) }}
-                  </span>
-                  <span v-if="user.donor_type && user.donor_type.toLowerCase().includes('pro')" class="list-pro-badge">
-                    <ion-icon :icon="sparkles" style="font-size: 0.7rem; margin-right: 2px;" />
-                    PRO
-                  </span>
-                  <span v-if="user.showcase_achievement" class="list-trophy-badge" :title="$t('achievements.categories.' + user.showcase_achievement.category + '.tiers.' + user.showcase_achievement.tier)">
-                    {{ user.showcase_achievement.icon }}
                   </span>
                   <ion-badge v-if="currentUser?.id === user.id && !user.public_profile" color="medium" style="font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; flex-shrink: 0;" @click="showPrivateInfoAlert($event)">Private</ion-badge>
                 </h2>
                 <p style="margin: 0; font-size: 0.8rem; color: var(--sub-color, var(--ion-color-medium));">
-                  {{ $t('profile.level', { level: getLevelFromPoints(user.total_points || user.points) }) }}
+                  {{ $t('profile.levelShort', { level: getLevelFromPoints(user.total_points || user.points) }) }}
                 </p>
               </ion-label>
 
               <!-- Points Badge -->
               <ion-badge
                   slot="end"
-                  :color="getLevelColor(user.points)"
                   class="leaderboard-points-badge"
+                  :style="{ '--pts-rgb': getLevelAccentRgb(user.points) }"
               >
-                {{ $t('home.pointsCount', { points: user.points }) }}
+                {{ formatCompactPoints(user.points) }} pts
               </ion-badge>
             </ion-item>
-          </ion-list>
+            </ion-list>
+          </div>
 
           <!-- 📭 Empty state for Home Leaderboard -->
           <div v-if="!loadingLeaderboard && leaderboard.length === 0" class="home-leaderboard-empty">
@@ -879,10 +998,10 @@
             </div>
 
             <p class="mock-popover-stats">
-              {{ $t('profile.level', { level: getLevelFromPoints(selectedUser.total_points || selectedUser.points) }) }} •
+              {{ $t('profile.level', { level: getLevelFromPoints(selectedUser.total_points || selectedUser.points) }) }}
               <ion-badge
                 class="leaderboard-points-badge"
-                style="margin-left: 4px; border-radius: 8px; font-weight: bold; font-size: 0.75rem; padding: 4px 8px; display: inline-block; vertical-align: middle;"
+                style="margin-left: 6px; border-radius: 8px; font-weight: bold; font-size: 0.75rem; padding: 4px 8px; display: inline-block; vertical-align: middle;"
               >
                 {{ selectedUser.points }} pts
               </ion-badge>
@@ -918,10 +1037,10 @@
             </h3>
 
             <p class="mock-popover-stats">
-              {{ $t('profile.level', { level: getLevelFromPoints(selectedUser.total_points || selectedUser.points) }) }} • 
+              {{ $t('profile.level', { level: getLevelFromPoints(selectedUser.total_points || selectedUser.points) }) }}
               <ion-badge
                 class="leaderboard-points-badge"
-                style="margin-left: 4px; border-radius: 8px; font-weight: bold; font-size: 0.75rem; padding: 4px 8px; display: inline-block; vertical-align: middle;"
+                style="margin-left: 6px; border-radius: 8px; font-weight: bold; font-size: 0.75rem; padding: 4px 8px; display: inline-block; vertical-align: middle;"
               >
                 {{ selectedUser.points }} pts
               </ion-badge>
@@ -989,7 +1108,7 @@ import {
   IonPage, IonContent, IonCard, IonCardHeader, IonCardTitle,
   IonCardContent, IonButton, IonIcon, IonHeader, onIonViewWillEnter, IonLabel, IonChip, IonSkeletonText,
   IonList, IonBadge, IonAvatar, IonItem, IonPopover, IonModal, IonToolbar, IonTitle, IonButtons,
-  IonSegment, IonSegmentButton, alertController, toastController, IonSelect, IonSelectOption
+  IonSegment, IonSegmentButton, alertController, toastController, IonSelect, IonSelectOption, IonSpinner
 } from '@ionic/vue'
 import { useRouter } from 'vue-router'
 import { supabase } from '@/plugins/supabaseClient'
@@ -1005,13 +1124,13 @@ import {
   compassOutline,
   medalOutline,
   sparkles,
+  diamond,
   closeOutline,
   shieldCheckmarkOutline,
   locateOutline,
   cartOutline,
   constructOutline,
   chevronForwardOutline,
-  warningOutline,
   addOutline,
   copyOutline,
   bookOutline,
@@ -1023,7 +1142,7 @@ import {
   lockClosed
 } from "ionicons/icons"
 import { useLeaderboard } from "@/composables/useLeaderboard";
-import {getLevelColor} from "@/composables/useLevels";
+import {getLevelColor, getLevelAccentRgb, formatCompactPoints} from "@/composables/useLevels";
 import {getLevelFromPoints} from "@/utils/xp";
 import {formatDisplayName} from "@/utils/nameHelpers";
 import { isPublicProfile, currentUser } from '@/composables/userProfile';
@@ -1038,6 +1157,7 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech'
 import { PrayTime } from 'praytime'
 import { useLocation, type LatLng } from '@/composables/useLocation'
 import { useHomeData } from '@/composables/useHomeData'
+import { syncPrayerWidget } from '@/composables/useWidgetSync'
 import LazySection from '@/components/LazySection.vue'
 import DailyMissions from "@/components/DailyMissions.vue"
 import { useDailyMissions } from '@/composables/useDailyMissions'
@@ -1539,6 +1659,9 @@ import CommunityReels from "@/components/CommunityReels.vue"
 
 // ✅ Cosmetic helpers for leaderboard
 function getCosmeticByCategory(user: any, category: string) {
+  if (category === 'background' || category === 'nameplate') {
+    return user?.equipped_cosmetics?.find((c: any) => c.category === 'background' || c.category === 'nameplate')
+  }
   return user?.equipped_cosmetics?.find((c: any) => c.category === category)
 }
 
@@ -1570,9 +1693,17 @@ function getLeaderboardRowStyle(user: any) {
     styles['--background'] = np.css_value.background
     styles.background = np.css_value.background
     
-    const isLight = isBackgroundLight(np)
-    const textColor = isLight ? '#121212' : '#ffffff'
-    const subTextColor = isLight ? '#444444' : 'rgba(255, 255, 255, 0.7)'
+    let textColor = ''
+    let subTextColor = ''
+    
+    if (np.css_value.color) {
+      textColor = np.css_value.color
+      subTextColor = np.css_value.color
+    } else {
+      const isLight = isBackgroundLight(np)
+      textColor = isLight ? '#121212' : '#ffffff'
+      subTextColor = isLight ? '#444444' : 'rgba(255, 255, 255, 0.7)'
+    }
     
     styles['--color'] = textColor
     styles.color = textColor
@@ -1679,11 +1810,32 @@ const { fetchProgress } = useDailyMissions()
 const RECENT_DISCOVER_LIMIT = 15
 const loadingStats = ref(true)
 
-const isUnderConstruction = computed(() => import.meta.env.VITE_STORE_UNDER_CONSTRUCTION === 'true')
 const loadingProducts = ref(true)
 const loadingLocations = ref(true)
 const recentProducts = ref<any[]>([])
 const recentLocations = ref<any[]>([])
+// Unweighted pool, sorted purely by recency — the "rest of the grid" part
+// of Discover Products.
+const recentProductsFull = ref<any[]>([])
+// All gold-tier products — the candidates the featured slot rotates through.
+const goldProductPool = ref<any[]>([])
+const productRotationTimer = ref<any>(null)
+// recentProducts[0] is the featured gold slot whenever one is being rotated
+// in — split out so its own crossfade doesn't reflow the rest of the grid.
+const featuredProduct = computed(() => goldProductPool.value.length ? recentProducts.value[0] : null)
+const otherProducts = computed(() => goldProductPool.value.length ? recentProducts.value.slice(1) : recentProducts.value)
+// Unweighted pool, sorted purely by recency — the "rest of the grid" part
+// of Discover Locations.
+const recentLocationsFull = ref<any[]>([])
+// All gold-tier locations (not just ones recent enough to be in the pool
+// above) — the candidates the featured slot rotates through.
+const goldLocationPool = ref<any[]>([])
+const locationRotationTimer = ref<any>(null)
+// recentLocations[0] is the featured gold slot whenever one is being
+// rotated in — split out so its own crossfade doesn't reflow the rest of
+// the grid below it.
+const featuredLocation = computed(() => goldLocationPool.value.length ? recentLocations.value[0] : null)
+const otherLocations = computed(() => goldLocationPool.value.length ? recentLocations.value.slice(1) : recentLocations.value)
 const loadingNews = ref(true)
 const recentNews = ref<any[]>([])
 const totalProductCount = ref(0)
@@ -1879,7 +2031,17 @@ async function getUserLocation(): Promise<LatLng> {
 }
 
 async function fetchPrayerTimes() {
-  loadingPrayerTimes.value = true
+  // Only show the skeleton on the very first load. `sharedLocation` keeps
+  // getting reassigned to a new object on every GPS watch ping (even when
+  // the coordinates haven't meaningfully changed), which re-triggers this
+  // function repeatedly in the background — toggling loadingPrayerTimes
+  // back to true on every refresh would remount the pill row (v-if/v-else)
+  // and reset its scrollLeft, undoing the auto-scroll-to-current-prayer
+  // effect below since that watcher only re-fires when the *key* changes,
+  // not on every recompute.
+  if (!prayerTimes.value) {
+    loadingPrayerTimes.value = true
+  }
 
   const location = await getUserLocation()
 
@@ -1903,6 +2065,8 @@ async function fetchPrayerTimes() {
   }
 
   loadingPrayerTimes.value = false
+
+  syncPrayerWidget(prayerTimes.value)
 }
 
 async function handleRefreshLocation() {
@@ -2001,35 +2165,52 @@ const scrollPrayerKey = computed(() => {
   return currentPrayerKey.value
 })
 
+function scrollToCurrentPrayer(smooth = true) {
+  const key = scrollPrayerKey.value
+  if (!key) return
+
+  const container = prayerScroll.value
+  if (!container) return
+
+  const target = container.querySelector(
+      `.prayer-pill[data-key="${key}"]`
+  ) as HTMLElement
+
+  if (!target) return
+
+  const offset =
+      target.offsetLeft -
+      container.clientWidth / 2 +
+      target.clientWidth / 2
+
+  container.scrollTo({
+    left: offset,
+    behavior: smooth ? 'smooth' : 'instant'
+  })
+}
+
+// Re-scroll whenever the active prayer changes...
 watch(
     () => scrollPrayerKey.value,
-    async (key) => {
-      if (!key) return
-
-      // wait for DOM + Ionic layout
+    async () => {
       await nextTick()
-      requestAnimationFrame(() => {
-        const container = prayerScroll.value
-        if (!container) return
-
-        const target = container.querySelector(
-            `.prayer-pill[data-key="${key}"]`
-        ) as HTMLElement
-
-        if (!target) return
-
-        const offset =
-            target.offsetLeft -
-            container.clientWidth / 2 +
-            target.clientWidth / 2
-
-        container.scrollTo({
-          left: offset,
-          behavior: 'smooth'
-        })
-      })
+      requestAnimationFrame(() => scrollToCurrentPrayer(true))
     },
     { immediate: true }
+)
+
+// ...and also whenever the pill row (re)mounts — `sharedLocation` keeps
+// getting reassigned on every GPS watch ping, and while fetchPrayerTimes
+// no longer remounts the list on every one of those refreshes, this is a
+// safety net so the scroll is always correct once the real content is on
+// screen, regardless of what triggered the mount.
+watch(
+    () => loadingPrayerTimes.value,
+    async (loading) => {
+      if (loading) return
+      await nextTick()
+      requestAnimationFrame(() => scrollToCurrentPrayer(false))
+    }
 )
 
 const upcomingCountdown = computed(() => {
@@ -2091,13 +2272,13 @@ async function fetchRecentProducts() {
     const { data, error } = await supabase
         .from("products")
         .select(`
-          barcode, 
-          name, 
-          status, 
-          photo_front_url, 
-          created_at, 
-          approved_at, 
-          updated_at, 
+          barcode,
+          name,
+          status,
+          photo_front_url,
+          created_at,
+          approved_at,
+          updated_at,
           product_categories(name),
           partner:partners(partner_tier)
         `)
@@ -2106,23 +2287,12 @@ async function fetchRecentProducts() {
         .limit(100)
 
     if (error) throw error
-    
-    const sevenDaysAgo = dayjs().subtract(7, 'day');
-    const sortedData = [...data].sort((a: any, b: any) => {
-      const getWeight = (p: any) => {
-        const t = Array.isArray(p.partner) ? p.partner[0]?.partner_tier : p.partner?.partner_tier;
-        const tier = String(t || '').toLowerCase();
-        const isNew = dayjs(p.created_at).isAfter(sevenDaysAgo) || (p.updated_at && dayjs(p.updated_at).isAfter(sevenDaysAgo));
-        if (tier === 'gold' && isNew) return 3;
-        if (tier === 'gold') return 2;
-        if (tier === 'silver' && isNew) return 1;
-        return 0;
-      };
-      const weightA = getWeight(a);
-      const weightB = getWeight(b);
-      if (weightA !== weightB) return weightB - weightA;
-      return dayjs(b.created_at).valueOf() - dayjs(a.created_at).valueOf();
-    }).slice(0, RECENT_DISCOVER_LIMIT);
+
+    // Purely chronological — no tier weighting here. updateProductRotation()
+    // below is what surfaces a single gold partner product up front, on rotation.
+    const sortedData = [...data]
+      .sort((a: any, b: any) => dayjs(b.created_at).valueOf() - dayjs(a.created_at).valueOf())
+      .slice(0, RECENT_DISCOVER_LIMIT);
 
     return sortedData.map(p => ({
       barcode: p.barcode,
@@ -2135,10 +2305,86 @@ async function fetchRecentProducts() {
     }))
   })
 
+  // Candidates for the featured slot — ALL gold-tier products, not just
+  // ones recent enough to land in the 15-item pool above.
+  const goldData = await withCache('discover_products_gold_pool', async () => {
+    const { data: golds, error: goldError } = await supabase
+        .from('products')
+        .select(`
+          barcode,
+          name,
+          status,
+          photo_front_url,
+          created_at,
+          product_categories(name),
+          partner:partners!inner(partner_tier)
+        `)
+        .eq('approved', true)
+        .eq('partner.partner_tier', 'gold')
+        .order('barcode', { ascending: true })
+        .limit(50)
+
+    if (goldError) throw goldError
+
+    return golds.map(p => ({
+      barcode: p.barcode,
+      name: p.name,
+      status: p.status,
+      category: (p.product_categories as any)?.name || "",
+      image: p.photo_front_url,
+      created_at: p.created_at,
+      partner_tier: Array.isArray(p.partner) ? p.partner[0]?.partner_tier : (p.partner as any)?.partner_tier
+    }))
+  })
+
   if (data) {
-    recentProducts.value = data
+    recentProductsFull.value = data
+  }
+  if (goldData) {
+    goldProductPool.value = goldData
+    // Warm the cache for every gold candidate's photo up front, so rotating
+    // the featured slot never shows a blank card while a fresh image loads.
+    goldData.forEach((p: any) => {
+      if (p.image) { const img = new Image(); img.src = p.image }
+    })
+  }
+  if (data || goldData) {
+    updateProductRotation()
   }
   loadingProducts.value = false
+}
+
+/**
+ * At most one gold partner product leads the Discover Products grid,
+ * rotating (same mechanic as updateLocationRotation()) on a timer — never a
+ * wall of gold cards. Everyone else, including gold products not featured
+ * this turn, is excluded from the chronological "rest" so it never shows
+ * twice.
+ */
+function updateProductRotation() {
+  if (productRotationTimer.value) clearTimeout(productRotationTimer.value)
+  if (recentProductsFull.value.length === 0) return
+
+  const goldPool = goldProductPool.value
+
+  if (goldPool.length === 0) {
+    recentProducts.value = recentProductsFull.value
+    return
+  }
+
+  const rotationIndexStr = localStorage.getItem('home_product_rotation_index') || '0'
+  const rotationIndex = parseInt(rotationIndexStr, 10)
+  const featured = goldPool[rotationIndex % goldPool.length]
+  const rest = recentProductsFull.value
+    .filter(p => String(p.partner_tier || '').toLowerCase() !== 'gold')
+    .slice(0, RECENT_DISCOVER_LIMIT - 1)
+
+  recentProducts.value = [featured, ...rest]
+  localStorage.setItem('home_product_rotation_index', (rotationIndex + 1).toString())
+
+  productRotationTimer.value = setTimeout(() => {
+    updateProductRotation()
+  }, 10000)
 }
 
 async function fetchRecentLocations() {
@@ -2162,23 +2408,12 @@ async function fetchRecentLocations() {
         .limit(100)
 
     if (error) throw error
-    
-    const sevenDaysAgo = dayjs().subtract(7, 'day');
-    const sortedData = [...data].sort((a: any, b: any) => {
-      const getWeight = (p: any) => {
-        const t = Array.isArray(p.partner) ? p.partner[0]?.partner_tier : p.partner?.partner_tier;
-        const tier = String(t || '').toLowerCase();
-        const isNew = dayjs(p.created_at).isAfter(sevenDaysAgo) || (p.updated_at && dayjs(p.updated_at).isAfter(sevenDaysAgo));
-        if (tier === 'gold' && isNew) return 3;
-        if (tier === 'gold') return 2;
-        if (tier === 'silver' && isNew) return 1;
-        return 0;
-      };
-      const weightA = getWeight(a);
-      const weightB = getWeight(b);
-      if (weightA !== weightB) return weightB - weightA;
-      return dayjs(b.created_at).valueOf() - dayjs(a.created_at).valueOf();
-    }).slice(0, RECENT_DISCOVER_LIMIT);
+
+    // Purely chronological — no tier weighting here. withFeaturedGoldRotation()
+    // below is what surfaces a single gold partner up front, on rotation.
+    const sortedData = [...data]
+      .sort((a: any, b: any) => dayjs(b.created_at).valueOf() - dayjs(a.created_at).valueOf())
+      .slice(0, RECENT_DISCOVER_LIMIT);
 
     return sortedData.map(l => ({
       id: l.id,
@@ -2190,10 +2425,91 @@ async function fetchRecentLocations() {
     }))
   })
 
+  // Candidates for the featured slot — ALL gold-tier locations, not just
+  // ones recent enough to land in the 15-item pool above (otherwise, on a
+  // slow week, there's only ever one gold location to "rotate" through).
+  const goldData = await withCache('discover_locations_gold_pool', async () => {
+    const { data: golds, error: goldError } = await supabase
+        .from('locations')
+        .select(`
+          id,
+          name,
+          image,
+          type_id,
+          location_types(name),
+          created_at,
+          partner:partners!inner(partner_tier)
+        `)
+        .eq('approved', true)
+        .eq('is_archived', false)
+        .eq('partner.partner_tier', 'gold')
+        .order('id', { ascending: true })
+        .limit(50)
+
+    if (goldError) throw goldError
+
+    return golds.map(l => ({
+      id: l.id,
+      name: l.name,
+      image: l.image,
+      type: (l.location_types as any)?.name || '',
+      created_at: l.created_at,
+      partner_tier: Array.isArray(l.partner) ? l.partner[0]?.partner_tier : (l.partner as any)?.partner_tier
+    }))
+  })
+
   if (data) {
-    recentLocations.value = data
+    recentLocationsFull.value = data
+  }
+  if (goldData) {
+    goldLocationPool.value = goldData
+    // Warm the browser cache for every gold candidate's photo up front, so
+    // rotating the featured slot never shows a blank card while a fresh
+    // image loads over the network — by the time its turn comes up the
+    // image is already cached and the crossfade is instant.
+    goldData.forEach((l: any) => {
+      if (l.image) { const img = new Image(); img.src = l.image }
+    })
+  }
+  if (data || goldData) {
+    updateLocationRotation()
   }
   loadingLocations.value = false
+}
+
+/**
+ * At most one gold partner leads the Discover Locations grid, rotating
+ * (Round-Robin, same mechanic as updatePartnerRotation() for Our Partners)
+ * on a timer — never a wall of gold cards. Everyone else, including gold
+ * locations not featured this turn, stays in actual chronological order.
+ */
+function updateLocationRotation() {
+  if (locationRotationTimer.value) clearTimeout(locationRotationTimer.value)
+  if (recentLocationsFull.value.length === 0) return
+
+  const goldPool = goldLocationPool.value
+
+  if (goldPool.length === 0) {
+    recentLocations.value = recentLocationsFull.value
+    return
+  }
+
+  const rotationIndexStr = localStorage.getItem('home_location_rotation_index') || '0'
+  const rotationIndex = parseInt(rotationIndexStr, 10)
+  const featured = goldPool[rotationIndex % goldPool.length]
+  // Exclude EVERY gold-tier location here, not just the featured one — a
+  // gold location that's also recent enough to land in this chronological
+  // pool would otherwise show up a second time with its own gold badge.
+  const rest = recentLocationsFull.value
+    .filter(l => String(l.partner_tier || '').toLowerCase() !== 'gold')
+    .slice(0, RECENT_DISCOVER_LIMIT - 1)
+
+  recentLocations.value = [featured, ...rest]
+  localStorage.setItem('home_location_rotation_index', (rotationIndex + 1).toString())
+
+  locationRotationTimer.value = setTimeout(() => {
+    updateLocationRotation()
+  }, 10000)
 }
 
 async function fetchStats() {
@@ -2271,35 +2587,61 @@ async function fetchHomePartners() {
   loadingPartners.value = false
 }
 
+const PARTNER_TIER_ORDER = ['gold', 'silver', 'bronze'] as const
+// Ionic can fire onMounted + onIonViewWillEnter back-to-back on first load,
+// each calling fetchHomePartners() -> updatePartnerRotation(). Two rotations
+// milliseconds apart retrigger a card's enter transition before its previous
+// one finishes, which the browser never resolves — transitionend never
+// fires, so <transition-group> never removes the stuck node and gold cards
+// pile up permanently. Debounce covers that near-simultaneous double-fire.
+let lastPartnerRotationAt = 0
+
 /**
- * Performs a fair (Round-Robin) shift of the partners list
- * and schedules the next rotation based on the top partner's tier.
+ * At most ONE partner per tier (gold, then silver, then bronze) leads the
+ * strip, each rotating independently through that tier's own partners —
+ * never a pile-up of several oversized gold cards back to back (which used
+ * to swallow the whole row and make it look stuck/cut off instead of
+ * cycling through partners). Everyone else, including same-tier partners
+ * not featured this turn, just fills out the rest normally.
  */
 function updatePartnerRotation() {
+  const now = Date.now()
+  if (now - lastPartnerRotationAt < 500) return
+  lastPartnerRotationAt = now
+
   if (rotationTimer.value) clearTimeout(rotationTimer.value)
   if (halalPartnersFull.value.length === 0) return
 
-  // --- "Universal Adil" (Fair) Rotation Logic ---
-  // We rotate the ENTIRE list together, so every partner eventually 
-  // reaches the front of the line.
   const rotationIndexStr = localStorage.getItem('partner_rotation_index') || '0'
   const rotationIndex = parseInt(rotationIndexStr, 10)
 
-  // 1. Create a stable, tiered base list
-  const tierWeights: Record<string, number> = { 'gold': 3, 'silver': 2, 'bronze': 1 }
-  const sortedFull = [...halalPartnersFull.value].sort((a, b) => {
-    // Sort by tier weight (desc), then by name (asc) for stability
-    if (b._weight !== a._weight) return b._weight - a._weight
-    return a.name.localeCompare(b.name)
-  })
+  const byTier: Record<string, any[]> = { gold: [], silver: [], bronze: [] }
+  const rest: any[] = []
+  for (const p of halalPartnersFull.value) {
+    const tier = (p.partner_tier || '').toLowerCase()
+    if (tier === 'gold' || tier === 'silver' || tier === 'bronze') {
+      byTier[tier].push(p)
+    } else {
+      rest.push(p)
+    }
+  }
+  Object.values(byTier).forEach(group => group.sort((a, b) => a.name.localeCompare(b.name)))
+  rest.sort((a, b) => a.name.localeCompare(b.name))
 
-  // 2. Rotate the entire list based on the global index
-  const length = sortedFull.length
-  const shift = rotationIndex % length
-  const rotatedFull = sortedFull.slice(shift).concat(sortedFull.slice(0, shift))
+  // Same-tier leftovers (other gold/silver/bronze partners not featured
+  // this turn) go right after the featured ones, ahead of the untiered
+  // "rest" — every partner still shows, none dropped, just not all up front.
+  const featured: any[] = []
+  const tierLeftovers: any[] = []
+  for (const tier of PARTNER_TIER_ORDER) {
+    const group = byTier[tier]
+    if (!group.length) continue
+    const featuredIndex = rotationIndex % group.length
+    featured.push(group[featuredIndex])
+    tierLeftovers.push(...group.filter((_, i) => i !== featuredIndex))
+  }
 
-  // 3. Take the first 6 for the Home grid
-  const finalSelection = rotatedFull.slice(0, 6)
+  const finalSelection = [...featured, ...tierLeftovers, ...rest]
   halalPartners.value = finalSelection
 
   // Increment rotation index for the next turn
@@ -2351,10 +2693,16 @@ async function fetchTrips() {
       .limit(6)
     
     if (error) throw error
-    return (data as any[]).map(t => ({
-      ...t,
-      provider: Array.isArray(t.provider) ? t.provider[0] : t.provider
-    }))
+    return (data as any[])
+      .map(t => ({
+        ...t,
+        provider: Array.isArray(t.provider) ? t.provider[0] : t.provider
+      }))
+      .sort((a, b) => {
+        const aTier = TIER_PRIORITY[String(a.provider?.partner_tier || '').toLowerCase()] || 0
+        const bTier = TIER_PRIORITY[String(b.provider?.partner_tier || '').toLowerCase()] || 0
+        return bTier - aTier
+      })
   })
 
   if (data) {
@@ -2481,6 +2829,14 @@ onBeforeUnmount(() => {
     clearTimeout(rotationTimer.value)
     rotationTimer.value = null
   }
+  if (locationRotationTimer.value) {
+    clearTimeout(locationRotationTimer.value)
+    locationRotationTimer.value = null
+  }
+  if (productRotationTimer.value) {
+    clearTimeout(productRotationTimer.value)
+    productRotationTimer.value = null
+  }
 })
 
 
@@ -2492,7 +2848,7 @@ function goScan() {
 
 function goToSearchAndScan() {
   ActivityLogService.log("home_scan_barcode");
-  router.push({ path: '/search', query: { scan: 'true' } });
+  router.push('/scan/barcode');
 }
 
 function goQibla() {
@@ -2579,6 +2935,12 @@ function openPartner(partner: any) {
 
 <style scoped>
 
+/* Section header typography (.card-header-row) and the flattened
+   section-wrapper ion-card treatment now live globally in
+   src/theme/variables.css so every component using this pattern
+   (Home's own sections, DailyMissions.vue, etc.) looks consistent —
+   see that file instead of duplicating the rules here. */
+
 /* === Compact Segment === */
 ion-segment {
   --background: var(--ion-color-step-100);
@@ -2608,7 +2970,7 @@ ion-segment-button {
   position: relative;
   overflow: hidden;
   border: 1px solid rgba(0,0,0,0.05);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  box-shadow: var(--card-shadow);
   transition: all 0.2s ease;
 }
 
@@ -2617,7 +2979,6 @@ ion-segment-button {
 }
 
 .announcement-banner.clickable:active {
-  transform: scale(0.98);
   opacity: 0.9;
 }
 
@@ -2724,14 +3085,14 @@ ion-segment-button {
 
 .main-feature-section {
   padding: 0;
-  margin-top: 10px;
-  margin-bottom: 10px;
+  margin-top: 14px;
+  margin-bottom: 22px;
 }
 
 .main-features-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 12px;
+  gap: 10px;
 }
 
 .feature-card {
@@ -2739,48 +3100,55 @@ ion-segment-button {
   flex-direction: column;
   align-items: flex-start;
   justify-content: space-between;
-  padding: 16px;
-  border-radius: 16px;
-  border: none;
+  padding: 20px;
+  border-radius: var(--radius-xl);
+  border: 1px solid rgba(255, 255, 255, 0.14);
   text-align: left;
-  height: 150px;
+  height: 156px;
   width: 100%;
   margin: 0;
   box-sizing: border-box;
-  transition: transform 0.2s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.2s;
+  transition: transform 0.18s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.18s;
   cursor: pointer;
   position: relative;
   overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  isolation: isolate;
 }
 
-.feature-card:active {
-  transform: scale(0.96);
+.feature-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0) 45%);
+  pointer-events: none;
+  z-index: 1;
 }
 
 .feature-primary {
-  background: linear-gradient(135deg, var(--ion-color-carrot) 0%, #ff8c3a 100%);
+  background: linear-gradient(150deg, #ff8a1e 0%, var(--ion-color-carrot, #d97706) 55%, #c2660a 100%);
   color: white;
-  box-shadow: 0 8px 16px rgba(217, 119, 6, 0.25);
+  box-shadow: 0 10px 28px -6px rgba(217, 119, 6, 0.5), 0 4px 10px rgba(217, 119, 6, 0.25);
 }
 
 .feature-secondary {
   /* Using a contrasting premium color for barcode */
-  background: linear-gradient(135deg, var(--ion-color-tertiary, #5260ff) 0%, #7b88ff 100%);
+  background: linear-gradient(150deg, #8b7cf6 0%, #6c5ce7 55%, #4b3fc4 100%);
   color: white;
-  box-shadow: 0 8px 16px rgba(82, 96, 255, 0.25);
+  box-shadow: 0 10px 28px -6px rgba(108, 92, 231, 0.5), 0 4px 10px rgba(108, 92, 231, 0.25);
 }
 
 .feature-icon-wrapper {
-  background: rgba(255, 255, 255, 0.25);
-  border-radius: 12px;
-  width: 44px;
-  height: 44px;
+  background: rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: var(--radius-md);
+  width: 42px;
+  height: 42px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 24px;
-  backdrop-filter: blur(4px);
+  font-size: 21px;
   z-index: 2;
 }
 
@@ -2792,15 +3160,16 @@ ion-segment-button {
 .feature-text h3 {
   margin: 0 0 4px;
   font-size: 1.1rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
+  font-weight: 800;
+  letter-spacing: -0.01em;
   white-space: normal;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.15);
 }
 
 .feature-text p {
   margin: 0;
-  font-size: 0.75rem;
-  opacity: 0.9;
+  font-size: 0.74rem;
+  opacity: 0.92;
   line-height: 1.3;
   white-space: normal;
   word-wrap: break-word;
@@ -2808,12 +3177,12 @@ ion-segment-button {
 
 .feature-bg-icon {
   position: absolute;
-  right: -10px;
-  bottom: -15px;
-  font-size: 90px;
-  opacity: 0.15;
+  right: -14px;
+  bottom: -20px;
+  font-size: 88px;
+  opacity: 0.14;
   z-index: 1;
-  transform: rotate(-10deg);
+  transform: rotate(-8deg);
   pointer-events: none;
 }
 
@@ -2875,8 +3244,9 @@ ion-segment-button {
   flex: 0 0 80px;
   scroll-snap-align: center;
 
-  border-radius: 6px;
-  padding: 7px 6px;
+  border-radius: var(--radius-md);
+  padding: 8px 6px;
+  background: rgba(var(--ion-color-dark-rgb, 0, 0, 0), 0.03);
 
   display: flex;
   flex-direction: column;
@@ -2920,14 +3290,119 @@ ion-segment-button {
 
 
 .prayer-title-main {
-  font-size: 1rem;
-  font-weight: 600;
+  font-size: 1.22rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  color: var(--ion-color-dark);
 }
 
 .prayer-title-location {
-  font-size: 0.75rem;
+  font-size: 0.78rem;
+  font-weight: 600;
   color: var(--ion-color-medium);
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+/* ===============================
+   2.0 — Prayer Hero Treatment
+   =============================== */
+.prayer-hero-card {
+  position: relative;
+  overflow: hidden;
+  margin-block: 10px 8px;
+  background: linear-gradient(165deg, rgba(var(--ion-color-carrot-rgb), 0.12) 0%, var(--card-bg) 60%);
+}
+
+.prayer-hero-glow {
+  position: absolute;
+  top: -70px;
+  right: -60px;
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(var(--ion-color-carrot-rgb), 0.28) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.prayer-hero-card ion-card-header,
+.prayer-hero-card ion-card-content {
+  position: relative;
+  z-index: 1;
+}
+
+.prayer-hero-title {
+  display: block !important;
+}
+
+.prayer-eyebrow {
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ion-color-carrot);
+  margin-bottom: 3px;
+}
+
+/* Compact prayer widget — tighter padding, smaller headline and pills so the
+   card takes less of the first screen and the scan buttons below stay in view. */
+.prayer-hero-card {
+  margin-block: 6px 4px;
+}
+
+.prayer-hero-card ion-card-header {
+  padding: 12px 14px 2px;
+}
+
+.prayer-hero-card ion-card-content {
+  padding: 2px 10px 6px;
+}
+
+.prayer-hero-card .prayer-eyebrow {
+  margin-bottom: 1px;
+}
+
+.prayer-hero-card .prayer-title-main {
+  font-size: 1.02rem;
+  line-height: 1.2;
+}
+
+.prayer-hero-card .prayer-title-location {
   margin-top: 2px;
+  font-size: 0.72rem;
+}
+
+.prayer-hero-card .qibla-header-btn {
+  --padding-start: 6px;
+  --padding-end: 6px;
+  margin: 0;
+  font-size: 0.8rem;
+}
+
+.prayer-hero-card .prayer-horizontal {
+  gap: 8px;
+  padding: 2px 4px 8px;
+}
+
+.prayer-hero-card .prayer-pill {
+  flex: 0 0 74px;
+  padding: 5px 6px;
+}
+
+.prayer-hero-card .prayer-pill .label {
+  font-size: 0.66rem;
+}
+
+.prayer-hero-card .prayer-pill .time {
+  font-size: 0.92rem;
+}
+
+.prayer-hero-card .prayer-pill.active {
+  transform: scale(1.03);
 }
 
 /* === Insights Dashboard Section === */
@@ -2936,31 +3411,13 @@ ion-segment-button {
 }
 
 .insights-scroll {
-  display: flex;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  padding: 0px; /* Allow card margins to breathe */
-  scrollbar-width: none;
-  -ms-overflow-style: none; 
-}
-
-/* 🖥️ Desktop: Transform Scroll to Grid */
-@media (min-width: 1024px) {
-  .insights-scroll {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    overflow-x: visible;
-    padding: 8px 16px; /* Match standard page margins */
-  }
-}
-
-.insights-scroll::-webkit-scrollbar {
-  display: none;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  padding: 0px;
 }
 
 .insight-card {
-  flex: 0 0 240px;
-  scroll-snap-align: center;
+  min-width: 0;
   margin: 12px 10px;
   background: var(--card-bg);
   border-radius: 16px; /* Match the exact 16px radius from the inspector */
@@ -2972,19 +3429,7 @@ ion-segment-button {
   height: 90px;
   transition: transform 0.2s ease, background 0.2s ease;
   position: relative;
-  cursor: pointer;
-}
-
-.insight-card:active {
-  transform: scale(0.98);
-  background: var(--ion-color-step-50);
-}
-
-@media (min-width: 1024px) {
-  .insight-card {
-    flex: 1; /* Fit width */
-    min-width: 0;
-  }
+  cursor: default;
 }
 
 /* Stat Cards (Centered Icons) */
@@ -2994,13 +3439,6 @@ ion-segment-button {
   justify-content: flex-start;
 }
 
-.forward-icon {
-  position: absolute;
-  right: 16px;
-  color: var(--ion-color-medium);
-  opacity: 0.5;
-  font-size: 1.1rem;
-}
 
 .stat-icon-wrapper {
   width: 48px;
@@ -3047,16 +3485,244 @@ ion-segment-button {
 /* Dark mode handled by global variables */
 
 
-/* --- Partner List Transition --- */
+/* --- Partner List Transition ---
+   Smooth scale-fade crossfade across rotating gold placements. */
 .partner-list-move {
-  transition: transform 0.8s ease;
+  transition: transform 0.6s ease;
 }
 .partner-list-enter-active, .partner-list-leave-active {
-  transition: all 0.5s ease;
+  transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1), transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
-.partner-list-enter-from, .partner-list-leave-to {
+.partner-list-enter-from {
   opacity: 0;
-  transform: translateY(10px);
+  transform: scale(0.96);
+}
+.partner-list-leave-to {
+  opacity: 0;
+  transform: scale(1.02);
+}
+.partner-list-leave-active {
+  position: absolute;
+}
+
+/* --- Featured Card Frame & Inner Content --- */
+.featured-fade-wrapper {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.discover-grid .featured-fade-wrapper {
+  flex: 0 0 300px;
+}
+
+.featured-inner-content {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Card Height Lock: 265px ensures title (2 lines), status chip, and timestamp fit with generous padding without any trimmed text */
+.discover-grid--locations .discover-item,
+.discover-grid--locations .featured-fade-wrapper,
+.discover-grid--products .discover-item,
+.discover-grid--products .featured-fade-wrapper {
+  height: 265px;
+}
+
+.discover-grid .discover-img {
+  height: 135px;
+  width: 100%;
+  object-fit: cover;
+}
+
+/* Partner logos: show the whole logo (not a cropped fill) on a plain
+   backdrop, like the compact card was meant to. */
+.discover-grid .discover-img.discover-img--compact {
+  object-fit: contain;
+  background: #fff;
+  padding: 6px;
+  box-sizing: border-box;
+  /* Compact heights (the generic 135px carousel image rule was making the
+     partner card tall enough to push the two scan buttons off the first
+     screen). Whole logo still shows — object-fit: contain. */
+  height: 76px;
+}
+
+.discover-grid .discover-item--compact.tier-card-gold .discover-img--compact {
+  height: 88px;
+}
+
+.discover-grid .discover-item--compact.tier-card-silver .discover-img--compact {
+  height: 80px;
+}
+
+.discover-label {
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+  box-sizing: border-box;
+  text-align: center;
+}
+
+.discover-label h3,
+.discover-label .discover-name {
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.25;
+  margin: 0;
+  max-height: 35px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-align: center;
+}
+
+.status-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin: 0;
+  width: 100%;
+}
+
+.status-row ion-chip {
+  margin: 0 auto;
+  font-size: 12px;
+  height: 24px;
+}
+
+.location-type-chip {
+  --background: rgba(249, 115, 22, 0.12);
+  --color: var(--ion-color-carrot);
+  font-size: 11px;
+  font-weight: 700;
+  height: 22px;
+  border: 1px solid rgba(249, 115, 22, 0.25);
+  margin: 0 auto;
+}
+
+.ion-palette-dark .location-type-chip {
+  --background: rgba(249, 115, 22, 0.22);
+  --color: #ff9800;
+  border: 1px solid rgba(249, 115, 22, 0.4);
+}
+
+.added-time {
+  font-size: 11px;
+  color: var(--ion-color-medium);
+  margin: 0;
+  text-align: center;
+}
+
+/* In-place content crossfade inside the static gold frame */
+.featured-content-fade-enter-active,
+.featured-content-fade-leave-active {
+  transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.featured-content-fade-enter-from,
+.featured-content-fade-leave-to {
+  opacity: 0;
+}
+.featured-content-fade-leave-active {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* ===============================
+   2.0 — Discover Card Refresh
+   =============================== */
+.discover-grid {
+  gap: 12px;
+  padding: 2px 2px 6px;
+  /* Positioning context for .partner-list-leave-active's position:absolute
+     (standard Vue <TransitionGroup> pattern — lets the leaving card animate
+     out independently while the rest immediately shift into their final
+     slots, instead of it jumping to whatever ancestor happens to be
+     positioned). No visual effect on its own since nothing here sets an
+     offset. */
+  position: relative;
+}
+
+.discover-item {
+  border-radius: var(--radius-lg);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.discover-item:active {
+  box-shadow: var(--card-shadow-hover);
+}
+
+.discover-img {
+  border-top-left-radius: var(--radius-lg);
+  border-top-right-radius: var(--radius-lg);
+}
+
+.discover-label {
+  padding: 13px 10px;
+}
+
+.discover-label h3,
+.discover-label .discover-name {
+  letter-spacing: -0.01em;
+}
+
+/* Keeps the verified-partner shield on the same line as the title instead
+   of wrapping to its own row below (name-row/home-partner-verified have no
+   layout of their own otherwise, since they're plain divs). */
+/* align-items: flex-start (not center) — .discover-grid--locations reserves
+   2 lines of height on the title (min-height: 36px) so single-vs-double-line
+   names never resize the card, but that leaves empty space below a 1-line
+   name. Centering against the whole reserved box put the shield below the
+   actual (first) line of text; flex-start keeps it pinned to where that line
+   really is regardless of whether the name wraps to one line or two. */
+.name-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.name-row h3 {
+  margin: 0;
+  min-width: 0;
+}
+
+.home-partner-verified {
+  color: var(--ion-color-carrot);
+  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+  margin-left: 4px;
+}
+
+.discover-item--compact {
+  border-radius: var(--radius-md);
+}
+
+.discover-img--compact {
+  border-radius: var(--radius-sm);
+}
+
+.tier-badge {
+  top: 8px;
+  left: 8px;
+  border-radius: var(--radius-sm);
 }
 
 /* === Community Reels / What's New === */
@@ -3083,7 +3749,7 @@ ion-segment-button {
 
 /* === Announcement Bottom Sheet Styles === */
 .announcement-sheet {
-  --border-radius: 24px 24px 0 0;
+  --border-radius: var(--radius-xl) var(--radius-xl) 0 0;
   --box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.12);
 }
 
@@ -3093,7 +3759,7 @@ ion-segment-button {
   overflow: hidden;
   border-radius: 16px;
   margin-bottom: 20px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--card-shadow);
 }
 
 .announcement-hero-img {
@@ -3173,7 +3839,6 @@ ion-segment-button {
 }
 
 .leaderboard-hint-banner:active {
-  transform: scale(0.98);
   opacity: 0.9;
 }
 
@@ -3210,19 +3875,68 @@ ion-segment-button {
 }
 
 /* ========= Leaderboard Cosmetic Effects ========= */
+.leaderboard-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 32px 0;
+}
+.leaderboard-list-wrapper {
+  position: relative;
+}
+.leaderboard-loading-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1;
+}
 .leaderboard-list {
   overflow: visible;
 }
 .leaderboard-item {
   --overflow: visible;
-  overflow: visible;
-  contain: none;
+  overflow: visible !important;
+  contain: none !important;
+  margin: 8px 0;
+  border-radius: var(--radius-lg);
 }
 .leaderboard-item::part(native) {
   overflow: visible !important;
+  border-radius: var(--radius-lg) !important;
+  background: var(--background, var(--card-bg)) !important;
+  color: var(--color, var(--text-main, var(--ion-text-color))) !important;
+  border: 1px solid var(--card-border);
+  box-shadow: var(--card-shadow);
+  transition: box-shadow 0.2s ease, transform 0.15s ease;
 }
 .leaderboard-item::part(inner) {
   overflow: visible !important;
+}
+
+/* Top-3 get stronger visual rhythm: elevated card + tier-colored accent edge */
+.leaderboard-list ion-item:nth-of-type(1)::part(native),
+.leaderboard-list ion-item:nth-of-type(2)::part(native),
+.leaderboard-list ion-item:nth-of-type(3)::part(native) {
+  box-shadow: var(--card-shadow-hover);
+  border-width: 1.5px;
+}
+
+.leaderboard-list ion-item:nth-of-type(1)::part(native) {
+  border-left: 4px solid #FFD700;
+}
+
+.leaderboard-list ion-item:nth-of-type(2)::part(native) {
+  border-left: 4px solid #C0C0C0;
+}
+
+.leaderboard-list ion-item:nth-of-type(3)::part(native) {
+  border-left: 4px solid #CD7F32;
+}
+
+.leaderboard-list ion-item:nth-of-type(n+4) {
+  margin: 6px 0;
 }
 
 .leaderboard-avatar-cell {
@@ -3235,22 +3949,41 @@ ion-segment-button {
 }
 
 .leaderboard-points-badge {
-  border-radius: 8px;
+  --pts-rgb: var(--pts-rgb, 245, 158, 11);
+  --background: rgba(var(--pts-rgb), 0.12);
+  --color: rgb(var(--pts-rgb));
+  background: rgba(var(--pts-rgb), 0.12);
+  color: rgb(var(--pts-rgb));
+  border: 1px solid rgba(var(--pts-rgb), 0.28);
+  border-radius: 20px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 4px 8px;
+  flex-shrink: 0;
+  white-space: nowrap;
+  box-shadow: none;
   transition: all 0.3s ease;
 }
 
-.list-pro-badge {
-  display: inline-flex;
+.avatar-pro-badge {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 15px;
+  height: 15px;
+  display: flex;
   align-items: center;
-  background: #ffd700;
-  color: #111;
-  padding: 1px 6px;
-  border-radius: 4px;
-  font-size: 0.65rem;
-  font-weight: 800;
-  text-transform: uppercase;
-  flex-shrink: 0;
-  box-shadow: 0 0 5px rgba(250, 204, 21, 0.4);
+  justify-content: center;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #fde68a 0%, #d4a017 100%);
+  border: 2px solid var(--card-bg, #18181a);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  z-index: 2;
+}
+
+.avatar-pro-badge ion-icon {
+  font-size: 8px;
+  color: #78350f;
 }
 
 .list-trophy-badge {
@@ -3273,9 +4006,9 @@ ion-segment-button {
 }
 
 .popover-custom-content {
-  border-radius: 20px;
+  border-radius: var(--radius-xl);
   overflow: hidden;
-  --border-radius: 20px;
+  --border-radius: var(--radius-xl);
   --padding-start: 20px !important;
   --padding-end: 20px !important;
   --padding-top: 20px !important;
@@ -3469,6 +4202,7 @@ ion-segment-button {
   scroll-snap-type: x mandatory;
   padding: 4px 0 12px 0;
   -webkit-overflow-scrolling: touch;
+  min-height: 172px;
 }
 
 .scroller-spacer {
@@ -3499,13 +4233,13 @@ ion-segment-button {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.03);
+  box-shadow: var(--card-shadow);
 }
 
 .ion-palette-dark .phrase-card {
   background: var(--ion-color-step-100, #1e1e1e);
   border-color: var(--ion-color-step-200, #2d2d2d);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--card-shadow);
 }
 
 .phrase-header {
@@ -3781,7 +4515,6 @@ ion-segment-button {
 }
 
 .locked-content-placeholder:active {
-  transform: scale(0.98);
   background: var(--ion-color-step-150, #e2e8f0);
 }
 

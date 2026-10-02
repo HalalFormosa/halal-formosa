@@ -115,6 +115,11 @@
     "password": "Şifre",
     "loggingIn": "Giriş yapılıyor...",
     "continueWithGoogle": "Google ile devam et",
+    "continueWithLine": "LINE ile devam et",
+    "agreeToTerms": "{privacy} ve {terms} kabul ediyorum",
+    "privacyPolicy": "Gizlilik Politikası",
+    "termsOfService": "Hizmet Şartları",
+    "mustAgreeToTerms": "Devam etmek için lütfen Gizlilik Politikası ve Hizmet Şartlarını kabul edin.",
     "forgotPassword": "Parolanızı mı unuttunuz?",
     "resetEmailSent": "Şifre sıfırlama e-postası gönderildi! Lütfen gelen kutunuzu kontrol edin.",
     "noAccount": "Hesabınız yok mu?",
@@ -595,6 +600,11 @@
       "about": "Uygulama Hakkında",
       "contributions": "Contributions"
     },
+    "stats": {
+      "products": "Ürünler",
+      "places": "Yerler",
+      "xp": "XP"
+    },
     "title": "Profil",
     "logout": "Oturumu kapat",
     "donor": "Donör Durumu",
@@ -657,6 +667,17 @@
     "login": "Giriş yapmak",
     "review": "Ürün İncelemesi",
     "settings": "Ayarlar",
+    "linkedAccounts": {
+      "title": "Bağlı Hesaplar",
+      "subtitle": "Hesabınıza hangi giriş yöntemlerinin bağlı olduğunu görün.",
+      "email": "E-posta ve Şifre",
+      "google": "Google",
+      "apple": "Apple",
+      "line": "LINE",
+      "connected": "Bağlı",
+      "notConnected": "Bağlı Değil",
+      "note": "Bağlı yöntemlerden herhangi biriyle giriş yapmak sizi aynı hesaba yönlendirir."
+    },
     "legal": "Yasal",
     "credits": "Krediler ve Katkıda Bulunanlar",
     "support": "Helal Formosa'yı destekleyin ❤️",
@@ -1056,6 +1077,9 @@
     "direction": "Kıble Yönü",
     "fromNorth": "Gerçek Kuzey'den",
     "preparing": "Pusula hazırlanıyor...",
+    "needsPermission": "Yönü göstermek için pusula erişimi gereklidir.",
+    "enableButton": "Pusulayı Etkinleştir",
+    "error": "Pusula başlatılamadı.",
     "facing": "Kıbleye dönüksün"
   },
   "savedItems": {

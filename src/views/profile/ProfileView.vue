@@ -14,26 +14,76 @@
 
       <!-- ================= LOADING STATE ================= -->
       <template v-if="loadingProfile">
-        <ion-card>
+        <!-- Hero card skeleton -->
+        <div class="profile-hero-card">
           <div class="profile-header-premium">
-            <ion-skeleton-text animated class="skeleton-avatar-premium" />
-            <ion-skeleton-text animated style="width: 50%; height: 24px;" class="skeleton-text-center" />
-            <ion-skeleton-text animated style="width: 30%; height: 16px;" class="skeleton-text-center" />
-          </div>
-        </ion-card>
+            <div class="avatar-container">
+              <ion-skeleton-text animated class="skeleton-avatar-premium" style="--background: rgba(255,255,255,0.25); width: 100%; height: 100%; margin: 0;" />
+            </div>
 
+            <div class="profile-info text-center">
+              <ion-skeleton-text animated style="--background: rgba(255,255,255,0.25); width: 55%; height: 22px;" class="skeleton-text-center" />
+              <ion-skeleton-text animated style="--background: rgba(255,255,255,0.2); width: 38%; height: 14px;" class="skeleton-text-center" />
+
+              <div class="badge-row">
+                <ion-skeleton-text animated style="--background: rgba(255,255,255,0.2); width: 76px; height: 22px; border-radius: 12px;" />
+                <ion-skeleton-text animated style="--background: rgba(255,255,255,0.2); width: 96px; height: 22px; border-radius: 12px;" />
+              </div>
+
+              <div class="hero-stats-row">
+                <div class="hero-stat" v-for="n in 3" :key="'stat-'+n">
+                  <ion-skeleton-text animated style="--background: rgba(255,255,255,0.3); width: 28px; height: 16px;" />
+                  <ion-skeleton-text animated style="--background: rgba(255,255,255,0.2); width: 46px; height: 9px; margin-top: 4px;" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- XP card skeleton -->
         <ion-card>
           <div class="xp-section">
-            <ion-skeleton-text animated style="width: 40%; height: 20px; margin-bottom: 12px;" />
+            <div class="xp-header">
+              <ion-skeleton-text animated style="width: 84px; height: 32px; border-radius: var(--radius-md);" />
+              <ion-skeleton-text animated style="width: 64px; height: 18px;" />
+            </div>
             <ion-skeleton-text animated style="width: 100%; height: 12px; border-radius: 6px;" />
           </div>
         </ion-card>
+
+        <!-- Menu sections skeleton -->
+        <template v-for="section in 2" :key="'section-'+section">
+          <h3 class="menu-section-label">
+            <ion-skeleton-text animated style="width: 120px; height: 12px; display: inline-block;" />
+          </h3>
+          <ion-card class="menu-card">
+            <ion-list lines="none">
+              <ion-item v-for="row in 3" :key="'row-'+section+'-'+row">
+                <div class="icon-box" slot="start">
+                  <ion-skeleton-text animated style="width: 20px; height: 20px; border-radius: 5px;" />
+                </div>
+                <ion-label>
+                  <ion-skeleton-text animated :style="{ width: (row === 2 ? '45%' : '65%'), height: '14px' }" />
+                </ion-label>
+              </ion-item>
+            </ion-list>
+          </ion-card>
+        </template>
       </template>
 
       <!-- ================= ACTUAL CONTENT ================= -->
       <template v-else>
         <!-- Profile Header Card -->
-        <ion-card>
+        <div class="profile-hero-card" :class="{ 'no-user': !userEmail }">
+          <ion-button
+              v-if="userEmail"
+              fill="clear"
+              class="hero-edit-btn"
+              @click="goToEditProfile"
+          >
+            <ion-icon :icon="icons.createOutline" slot="icon-only" />
+          </ion-button>
+
           <div class="profile-header-premium">
             <div class="avatar-container" :class="{ 'default-avatar-border': !hasFrameOrOutline }">
               <CosmeticBadge
@@ -45,37 +95,31 @@
             </div>
 
             <div class="profile-info text-center" v-if="userEmail">
-              <h2 class="profile-name-main" style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+              <h2 class="profile-name-main">
                 {{ userDisplayName || $t('profile.defaultName') }}
-                <ion-icon 
-                  :icon="icons.createOutline" 
-                  style="font-size: 1.1rem; color: var(--ion-color-carrot); cursor: pointer;" 
-                  @click="goToEditProfile" 
-                />
               </h2>
               <p class="profile-email-sub">{{ userEmail }}</p>
-              
-              <div class="badge-row">
-                <ion-badge v-if="isAdmin" color="danger" style="border-radius: 12px; padding: 6px 12px;">
+
+              <div class="badge-row" :class="{ 'badge-row--wrap': showAllBadges }">
+                <ion-badge v-if="isAdmin && isBadgeVisible('admin')" color="danger" style="border-radius: 12px; padding: 6px 12px;">
                   <ion-icon :icon="icons.shieldCheckmarkOutline" style="margin-right: 4px" />
                   {{ $t('profile.admin.badge') }}
                 </ion-badge>
-                <ion-badge v-if="isSubscribed" class="badge-pro">
-                  <ion-icon :icon="icons.bookmarkOutline" style="margin-right: 4px" />
+                <ion-badge v-if="isSubscribed && isBadgeVisible('pro')" class="badge-pro">
                   {{ $t('profile.proMember') }}
                 </ion-badge>
-                <ion-badge v-if="!isSubscribed" :color="donorBadge.color" style="border-radius: 12px; padding: 6px 12px;">
+                <ion-badge v-if="!isSubscribed && isBadgeVisible('donor')" :color="donorBadge.color" style="border-radius: 12px; padding: 6px 12px;">
                   {{ donorBadge.emoji }} {{ $t('profile.donors.' + donorBadge.label) }}
                 </ion-badge>
-                <ion-badge v-if="isSubscribed && isContributor" color="primary" style="border-radius: 12px; padding: 6px 12px;">
+                <ion-badge v-if="isSubscribed && isContributor && isBadgeVisible('contributor')" color="primary" style="border-radius: 12px; padding: 6px 12px;">
                   ⭐️ {{ $t('profile.donors.Contributor') }}
                 </ion-badge>
-                <ion-badge v-if="businessTier !== 'free'" class="badge-merchant" :class="'merchant-' + businessTier" style="cursor: pointer;" @click="openBusinessSubModal">
+                <ion-badge v-if="businessTier !== 'free' && isBadgeVisible('merchant')" class="badge-merchant" :class="'merchant-' + businessTier" style="cursor: pointer;" @click="openBusinessSubModal">
                   <ion-icon :icon="icons.storefrontOutline" style="margin-right: 4px" />
                   {{ $t('profile.merchantTier.' + businessTier) }}
                 </ion-badge>
                 <ion-badge
-                  v-if="showcaseAchievement"
+                  v-if="showcaseAchievement && isBadgeVisible('achievement')"
                   color="warning"
                   style="border-radius: 12px; padding: 6px 12px; cursor: pointer;"
                   @click="$router.push('/profile/achievements')"
@@ -83,13 +127,39 @@
                   {{ showcaseAchievement.icon }} {{ $t('achievements.categories.' + showcaseAchievement.category + '.tiers.' + showcaseAchievement.tier) }}
                 </ion-badge>
                 <ion-badge
-                  v-else-if="unlockedAchievementsCount > 0"
+                  v-else-if="unlockedAchievementsCount > 0 && isBadgeVisible('achievementCta')"
                   color="medium"
                   style="border-radius: 12px; padding: 6px 12px; cursor: pointer; opacity: 0.85;"
                   @click="$router.push('/profile/achievements')"
                 >
                   🏆 {{ $t('achievements.chooseTrophyCta') }}
                 </ion-badge>
+                <ion-badge
+                  v-if="hiddenBadgeCount > 0"
+                  class="badge-more"
+                  style="cursor: pointer;"
+                  @click="showAllBadges = true"
+                >
+                  +{{ hiddenBadgeCount }}
+                </ion-badge>
+              </div>
+
+              <!-- Stat row: contributions + XP -->
+              <div class="hero-stats-row">
+                <div class="hero-stat">
+                  <span class="hero-stat-value">{{ myProductsCount ?? 0 }}</span>
+                  <span class="hero-stat-label">{{ $t('profile.stats.products') }}</span>
+                </div>
+                <div class="hero-stat-divider"></div>
+                <div class="hero-stat">
+                  <span class="hero-stat-value">{{ myLocationsCount ?? 0 }}</span>
+                  <span class="hero-stat-label">{{ $t('profile.stats.places') }}</span>
+                </div>
+                <div class="hero-stat-divider"></div>
+                <div class="hero-stat">
+                  <span class="hero-stat-value">{{ formatXp(currentPoints || 0) }}</span>
+                  <span class="hero-stat-label">{{ $t('profile.stats.xp') }}</span>
+                </div>
               </div>
             </div>
 
@@ -100,7 +170,7 @@
               </ion-button>
             </div>
           </div>
-        </ion-card>
+        </div>
 
         <!-- 💡 Optional profile completion notice banner -->
         <ion-card
@@ -140,35 +210,44 @@
           <!-- Subscribed State -->
           <template v-if="isSubscribed">
             <div class="pro-active-banner">
+              <div class="pro-active-sheen"></div>
+
               <div class="pro-active-header">
-                <div class="pro-active-title-group">
-                  <div class="pro-active-icon">
-                    <ion-icon :icon="icons.bookmarkOutline" />
-                  </div>
-                  <div class="pro-active-title-info">
+                <div class="pro-active-crest">
+                  <ion-icon :icon="icons.diamondOutline" />
+                </div>
+
+                <div class="pro-active-title-info">
+                  <div class="pro-active-title-row">
                     <h3 class="pro-active-title">{{ $t('profile.pro.title') }}</h3>
-                    <div class="pro-status-chip">
+                    <span class="pro-status-chip">
                       <ion-icon :icon="icons.checkmarkCircle" />
-                      <span>{{ $t('profile.pro.active') }}</span>
-                    </div>
+                      {{ $t('profile.pro.active') }}
+                    </span>
                   </div>
                 </div>
-                
-                <ion-button fill="outline" class="pro-manage-btn" size="small" @click="openManageSubscription">
-                  {{ $t('profile.pro.manage') }}
-                </ion-button>
               </div>
 
+              <div class="pro-active-divider"></div>
+
               <div class="pro-active-footer">
-                <div class="pro-detail-item">
-                  <ion-icon :icon="willRenew ? icons.refreshOutline : icons.alertCircleOutline" :color="willRenew ? 'success' : 'warning'" />
+                <div class="pro-detail-item" :class="{ 'is-warning': !willRenew }">
+                  <div class="pro-detail-icon">
+                    <ion-icon :icon="willRenew ? icons.refreshOutline : icons.alertCircleOutline" />
+                  </div>
                   <span>{{ renewalMessage }}</span>
                 </div>
                 <div class="pro-detail-item">
-                  <ion-icon :icon="icons.timeOutline" />
+                  <div class="pro-detail-icon">
+                    <ion-icon :icon="icons.timeOutline" />
+                  </div>
                   <span>{{ $t('profile.pro.accessUntil') }} {{ formattedExpirationDate }}</span>
                 </div>
               </div>
+
+              <ion-button fill="clear" expand="block" class="pro-manage-btn" @click="openManageSubscription">
+                {{ $t('profile.pro.manage') }}
+              </ion-button>
             </div>
           </template>
 
@@ -233,37 +312,34 @@
               </div>
               <div class="xp-total">
                 <div style="display: flex; align-items: center; justify-content: flex-end; gap: 4px;">
-                  <span class="xp-val">{{ currentPoints || 0 }} XP</span>
+                  <span class="xp-val">{{ formatXp(currentPoints || 0) }} XP</span>
                   <ion-icon :icon="icons.helpCircleOutline" style="font-size: 1.1rem; color: var(--ion-color-carrot); cursor: pointer;" @click="showXpInfo" />
                 </div>
-                <span class="xp-next">{{ nextLevelXp }} {{ $t('profile.xp.toNextLevel') }}</span>
+                <span class="xp-next">{{ formatXp(nextLevelXp) }} {{ $t('profile.xp.toNextLevel') }}</span>
               </div>
             </div>
-            
+
             <div class="progress-container">
               <div class="progress-bar-fill" :style="{ width: progressPercent + '%' }"></div>
             </div>
 
-            <div class="xp-details-row" style="display: flex; justify-content: space-between; margin-top: 12px; font-size: 0.85rem; color: var(--ion-color-medium);">
-              <div>
+            <div class="xp-details-row">
+              <div class="xp-details-item">
                 <span>{{ $t('profile.xp.spendable') }}: </span>
-                <span style="font-weight: 600; color: var(--ion-color-carrot);">{{ spendablePoints || 0 }} XP</span>
+                <span class="xp-details-value" style="color: var(--ion-color-carrot);">{{ formatXp(spendablePoints || 0) }} XP</span>
               </div>
-              <div>
+              <div class="xp-details-item">
                 <span>{{ $t('profile.xp.spent') }}: </span>
-                <span style="font-weight: 600; color: var(--ion-color-medium);">{{ spentPoints }} XP</span>
+                <span class="xp-details-value" style="color: var(--ion-color-medium);">{{ formatXp(spentPoints) }} XP</span>
               </div>
             </div>
           </div>
         </ion-card>
 
         <!-- Account & Preferences Section -->
-        <ion-card>
+        <h3 class="menu-section-label">{{ $t('profile.sections.account') }}</h3>
+        <ion-card class="menu-card">
           <ion-list lines="none">
-            <ion-list-header style="min-height: 32px; padding-bottom: 4px;">
-              <ion-label style="font-size: 0.85rem; color: var(--ion-color-medium); margin-top: 0; text-transform: uppercase;">{{ $t('profile.sections.account') }}</ion-label>
-            </ion-list-header>
-
             <ion-item v-if="userEmail" button @click="goToEditProfile">
               <div class="icon-box" slot="start">
                 <ion-icon :icon="icons.createOutline" />
@@ -280,6 +356,13 @@
                 <ion-icon :icon="icons.settingsOutline" />
               </div>
               <ion-label>{{ $t('profile.settings') }}</ion-label>
+            </ion-item>
+
+            <ion-item v-if="userEmail" button @click="$router.push('/profile/linked-accounts')">
+              <div class="icon-box" slot="start">
+                <ion-icon :icon="icons.linkOutline" />
+              </div>
+              <ion-label>{{ $t('profile.linkedAccounts.title') }}</ion-label>
             </ion-item>
 
             <ion-item v-if="userEmail" button @click="$router.push('/profile/badge-customize')">
@@ -315,12 +398,9 @@
         </ion-card>
 
         <!-- General Activity Section -->
-        <ion-card v-if="userEmail">
+        <h3 class="menu-section-label" v-if="userEmail">{{ $t('profile.sections.activity') }}</h3>
+        <ion-card class="menu-card" v-if="userEmail">
           <ion-list lines="none">
-            <ion-list-header style="min-height: 32px; padding-bottom: 4px;">
-              <ion-label style="font-size: 0.85rem; color: var(--ion-color-medium); margin-top: 0; text-transform: uppercase;">{{ $t('profile.sections.activity') }}</ion-label>
-            </ion-list-header>
-
             <ion-item v-if="userEmail" button @click="goToSavedItems">
               <div class="icon-box" slot="start">
                 <ion-icon :icon="icons.bookmarkOutline" />
@@ -345,11 +425,28 @@
               </ion-label>
             </ion-item>
 
+            <ion-item v-if="userEmail" button @click="$router.push('/profile/ingredient-encyclopedia')">
+              <div class="icon-box" slot="start">
+                <ion-icon :icon="icons.libraryOutline" />
+              </div>
+              <ion-label style="display: flex; align-items: center; gap: 8px;">
+                <span>{{ $t('profile.ingredientEncyclopedia') }}</span>
+                <span class="activity-pro-badge">PRO</span>
+              </ion-label>
+            </ion-item>
+
             <ion-item v-if="userEmail" button @click="$router.push('/profile/achievements')">
               <div class="icon-box" slot="start">
                 <ion-icon :icon="icons.trophyOutline" />
               </div>
               <ion-label>{{ $t('achievements.title') }}</ion-label>
+            </ion-item>
+
+            <ion-item v-if="userEmail" button @click="$router.push('/profile/invite-earn')">
+              <div class="icon-box" slot="start">
+                <ion-icon :icon="icons.giftOutline" />
+              </div>
+              <ion-label>{{ inviteMenuLabel }}</ion-label>
             </ion-item>
 
             <ion-item v-if="userEmail" button @click="$router.push('/store/my-orders')" :disabled="isStoreUnderConstruction">
@@ -365,12 +462,9 @@
         </ion-card>
 
         <!-- Contributions Section -->
-        <ion-card v-if="userEmail">
+        <h3 class="menu-section-label" v-if="userEmail">{{ $t('profile.sections.contributions') }}</h3>
+        <ion-card class="menu-card" v-if="userEmail">
           <ion-list lines="none">
-            <ion-list-header style="min-height: 32px; padding-bottom: 4px;">
-              <ion-label style="font-size: 0.85rem; color: var(--ion-color-medium); margin-top: 0; text-transform: uppercase;">{{ $t('profile.sections.contributions') }}</ion-label>
-            </ion-list-header>
-
             <ion-item button @click="$router.push('/submissions/products')">
               <div class="icon-box" slot="start">
                 <ion-icon :icon="icons.bagHandleOutline" />
@@ -427,13 +521,8 @@
         </ion-card>
 
         <!-- Become a Merchant Section -->
-        <ion-card v-if="userEmail && !merchantStore">
-          <ion-list lines="none" style="padding-bottom: 0;">
-            <ion-list-header style="min-height: 32px; padding-bottom: 4px;">
-              <ion-label style="font-size: 0.85rem; color: var(--ion-color-medium); margin-top: 0; text-transform: uppercase;">{{ $t('merchant.register.sectionTitle') }}</ion-label>
-            </ion-list-header>
-          </ion-list>
-
+        <h3 class="menu-section-label" v-if="userEmail && !merchantStore">{{ $t('merchant.register.sectionTitle') }}</h3>
+        <ion-card class="menu-card" v-if="userEmail && !merchantStore">
           <div v-if="isStoreUnderConstruction" class="xp-section vendor-onboarding construction">
             <div class="pending-status-box">
               <div class="icon-pulse">
@@ -495,7 +584,8 @@
           </template>
         </ion-card>
 
-        <ion-card v-if="merchantStore">
+        <h3 class="menu-section-label" v-if="merchantStore && !isStoreUnderConstruction">{{ $t('store.sellerCenter.title') }}</h3>
+        <ion-card class="menu-card" v-if="merchantStore">
           <div v-if="isStoreUnderConstruction" class="xp-section vendor-onboarding construction">
             <div class="pending-status-box">
               <div class="icon-pulse">
@@ -507,12 +597,8 @@
               </div>
             </div>
           </div>
-          
-          <ion-list v-else lines="none">
-            <ion-list-header style="min-height: 32px; padding-bottom: 4px;">
-              <ion-label style="font-size: 0.85rem; color: var(--ion-color-primary); margin-top: 0; text-transform: uppercase;">{{ $t('store.sellerCenter.title') }}</ion-label>
-            </ion-list-header>
 
+          <ion-list v-else lines="none">
             <ion-item button @click="$router.push('/merchant/store/settings')">
               <div class="icon-box" slot="start" style="background: rgba(var(--ion-color-primary-rgb), 0.1);">
                 <ion-icon :icon="icons.settingsOutline" color="primary" />
@@ -549,12 +635,10 @@
         </ion-card>
 
         <!-- Admin Section -->
-        <ion-card v-if="isAdmin">
+        <template v-if="isAdmin">
+        <h3 class="menu-section-label admin-label">{{ $t('profile.admin.sections.content') }}</h3>
+        <ion-card class="menu-card">
           <ion-list lines="none">
-            <ion-list-header style="min-height: 32px; padding-bottom: 4px;">
-              <ion-label style="font-size: 0.85rem; color: var(--ion-color-carrot); margin-top: 0; text-transform: uppercase;">{{ $t('profile.admin.sections.content') }}</ion-label>
-            </ion-list-header>
-
             <ion-item button @click="goToReviewSubmissions">
               <div class="icon-box" slot="start">
                 <ion-icon :icon="icons.listOutline" />
@@ -586,11 +670,12 @@
               <ion-label>{{ $t('profile.admin.locationReports') }}</ion-label>
               <ion-badge v-if="pendingLocationReportsCount > 0" color="danger" slot="end" style="border-radius: 8px;">{{ pendingLocationReportsCount }}</ion-badge>
             </ion-item>
+          </ion-list>
+        </ion-card>
 
-            <ion-list-header style="min-height: 32px; padding-bottom: 4px; border-top: 1px solid var(--ion-color-step-100); margin-top: 8px; padding-top: 8px;">
-              <ion-label style="font-size: 0.85rem; color: var(--ion-color-carrot); margin-top: 0; text-transform: uppercase;">{{ $t('profile.admin.sections.store') }}</ion-label>
-            </ion-list-header>
-
+        <h3 class="menu-section-label admin-label">{{ $t('profile.admin.sections.store') }}</h3>
+        <ion-card class="menu-card">
+          <ion-list lines="none">
             <ion-item button @click="goToStoreOrders">
               <div class="icon-box" slot="start">
                 <ion-icon :icon="icons.bagHandleOutline" />
@@ -606,11 +691,12 @@
               <ion-label>{{ $t('store.chat.storeMessages') }}</ion-label>
               <ion-badge v-if="unreadChatsCount > 0" color="danger" slot="end" style="border-radius: 8px;">{{ unreadChatsCount }}</ion-badge>
             </ion-item>
+          </ion-list>
+        </ion-card>
 
-            <ion-list-header style="min-height: 32px; padding-bottom: 4px; border-top: 1px solid var(--ion-color-step-100); margin-top: 8px; padding-top: 8px;">
-              <ion-label style="font-size: 0.85rem; color: var(--ion-color-carrot); margin-top: 0; text-transform: uppercase;">{{ $t('profile.admin.sections.management') }}</ion-label>
-            </ion-list-header>
-
+        <h3 class="menu-section-label admin-label">{{ $t('profile.admin.sections.management') }}</h3>
+        <ion-card class="menu-card">
+          <ion-list lines="none">
             <ion-item button @click="goToUsersList">
               <div class="icon-box" slot="start">
                 <ion-icon :icon="icons.peopleOutline" />
@@ -664,10 +750,18 @@
               <ion-label>Merge Duplicate Products</ion-label>
             </ion-item>
 
-            <ion-list-header style="min-height: 32px; padding-bottom: 4px; border-top: 1px solid var(--ion-color-step-100); margin-top: 8px; padding-top: 8px;">
-              <ion-label style="font-size: 0.85rem; color: var(--ion-color-carrot); margin-top: 0; text-transform: uppercase;">{{ $t('profile.admin.sections.system') }}</ion-label>
-            </ion-list-header>
+            <ion-item button @click="$router.push('/admin/referrals')">
+              <div class="icon-box" slot="start">
+                <ion-icon :icon="icons.giftOutline" />
+              </div>
+              <ion-label>Referrals</ion-label>
+            </ion-item>
+          </ion-list>
+        </ion-card>
 
+        <h3 class="menu-section-label admin-label">{{ $t('profile.admin.sections.system') }}</h3>
+        <ion-card class="menu-card">
+          <ion-list lines="none">
             <ion-item button @click="goToPointsLogs">
               <div class="icon-box" slot="start">
                 <ion-icon :icon="icons.listOutline" />
@@ -690,18 +784,13 @@
             </ion-item>
           </ion-list>
         </ion-card>
-
+        </template>
 
 
         <!-- Dedicated Contributor Application Modal -->
         <ion-modal :is-open="showContributorAppModal" @didDismiss="showContributorAppModal = false">
           <ion-header>
-            <ion-toolbar color="carrot">
-              <ion-title>Become a Contributor</ion-title>
-              <ion-buttons slot="end">
-                <ion-button @click="showContributorAppModal = false">Close</ion-button>
-              </ion-buttons>
-            </ion-toolbar>
+            <ModalHeader title="Become a Contributor" @close="showContributorAppModal = false" />
           </ion-header>
           
           <ion-content class="ion-padding">
@@ -753,12 +842,9 @@
         </ion-modal>
 
         <!-- Information & About Section -->
-        <ion-card>
+        <h3 class="menu-section-label">{{ $t('profile.sections.about') }}</h3>
+        <ion-card class="menu-card">
           <ion-list lines="none">
-            <ion-list-header style="min-height: 32px; padding-bottom: 4px;">
-              <ion-label style="font-size: 0.85rem; color: var(--ion-color-medium); margin-top: 0; text-transform: uppercase;">{{ $t('profile.sections.about') }}</ion-label>
-            </ion-list-header>
-
             <ion-item button @click="goToLegal">
               <div class="icon-box" slot="start">
                 <ion-icon :icon="icons.documentTextOutline" />
@@ -773,21 +859,6 @@
               <ion-label>{{ $t('profile.credits') }}</ion-label>
             </ion-item>
           </ion-list>
-        </ion-card>
-
-        <!-- Support Section -->
-        <ion-card v-if="donationProduct">
-          <div class="xp-section" style="text-align: center; padding-top: 10px; padding-bottom: 10px;">
-            <h3 style="font-weight: 700; margin-bottom: 12px;">{{ $t('profile.support') }}</h3>
-            <ion-item button style="text-align: left;" @click="donate">
-              <ion-label>
-                <strong>{{ donationProduct.title }}</strong>
-                <br/>
-                <small>{{ donationProduct.description }}</small>
-              </ion-label>
-              <ion-note slot="end">{{ donationProduct.priceString }}</ion-note>
-            </ion-item>
-          </div>
         </ion-card>
 
         <!-- Social Media Card -->
@@ -923,8 +994,10 @@ import {
   alertController
 } from "@ionic/vue";
 import AppHeader from "@/components/AppHeader.vue";
+import ModalHeader from "@/components/ModalHeader.vue";
 import CosmeticBadge from "@/components/CosmeticBadge.vue";
 import { useBadgeCosmetics } from "@/composables/useBadgeCosmetics";
+import { useReferrals } from "@/composables/useReferrals";
 
 import {
   constructOutline,
@@ -959,7 +1032,11 @@ import {
   helpCircleOutline,
   colorPaletteOutline,
   trophyOutline,
-  shieldCheckmarkOutline
+  shieldCheckmarkOutline,
+  linkOutline,
+  diamondOutline,
+  libraryOutline,
+  giftOutline
 } from "ionicons/icons";
 
 // ✅ Composables
@@ -1033,18 +1110,12 @@ const icons = {
   helpCircleOutline,
   colorPaletteOutline,
   trophyOutline,
-  shieldCheckmarkOutline
+  shieldCheckmarkOutline,
+  linkOutline,
+  diamondOutline,
+  libraryOutline,
+  giftOutline
 }
-
-interface RcProduct {
-  identifier: string;
-  price: number;
-  priceString: string;
-  title: string;
-  description: string;
-  currencyCode?: string;
-}
-
 
 // @ts-expect-error – injected global
 const appVersion = __APP_VERSION__;
@@ -1085,7 +1156,6 @@ const router = useRouter();
 
 const userBio = editBio;
 const userNationality = editNationality;
-const donationProduct = ref<RcProduct | null>(null);
 const paywallOpening = ref(false);
 const showBenefits = ref(false);
 
@@ -1094,6 +1164,7 @@ const {currentPoints, fetchCurrentPoints} = usePoints();
 
 // 🎨 Cosmetics composable
 const { equippedCosmetics, fetchOwnedCosmetics, spendablePoints, fetchSpendablePoints } = useBadgeCosmetics();
+const { inviteMenuLabel, loadReferralConfig } = useReferrals();
 const spentPoints = computed(() => {
   const total = currentPoints.value || 0;
   const spendable = spendablePoints.value || 0;
@@ -1149,6 +1220,43 @@ const level = computed(() => {
 
 const nextLevelXp = computed(() => xpForLevel(level.value + 1))
 const prevLevelXp = computed(() => xpForLevel(level.value))
+
+// 🏅 Badge row: only show the first 2 badges, collapse the rest into a "+N" pill
+const MAX_VISIBLE_BADGES = 2
+const showAllBadges = ref(false)
+
+const badgeOrder = computed(() => {
+  const keys: string[] = []
+  if (isAdmin.value) keys.push('admin')
+  if (isSubscribed.value) keys.push('pro')
+  if (!isSubscribed.value) keys.push('donor')
+  if (isSubscribed.value && isContributor.value) keys.push('contributor')
+  if (businessTier.value !== 'free') keys.push('merchant')
+  if (showcaseAchievement.value) keys.push('achievement')
+  else if (unlockedAchievementsCount.value > 0) keys.push('achievementCta')
+  return keys
+})
+
+const visibleBadgeKeys = computed(() => {
+  const keys = showAllBadges.value ? badgeOrder.value : badgeOrder.value.slice(0, MAX_VISIBLE_BADGES)
+  return new Set(keys)
+})
+
+const hiddenBadgeCount = computed(() =>
+  showAllBadges.value ? 0 : Math.max(0, badgeOrder.value.length - MAX_VISIBLE_BADGES)
+)
+
+function isBadgeVisible(key: string) {
+  return visibleBadgeKeys.value.has(key)
+}
+
+function formatXp(value: number): string {
+  const n = value || 0
+  if (n >= 10000) {
+    return new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 }).format(n)
+  }
+  return n.toLocaleString()
+}
 
 const progressPercent = computed(() => {
   const points = currentPoints.value || 0
@@ -1536,6 +1644,7 @@ async function logRevenueCatStatus() {
 onMounted(async () => {
   try {
     fetchCountries();
+    loadReferralConfig();
 
     const {data} = await supabase.auth.getUser();
     if (data?.user) {
@@ -1593,34 +1702,6 @@ onMounted(async () => {
     loadingAdmin.value = false;
   }
 });
-
-async function donate() {
-  ActivityLogService.log('donation_click', {
-    product: donationProduct.value?.identifier ?? null
-  })
-
-  const offerings = await Purchases.getOfferings();
-
-  if (!offerings.current) return;
-
-  const pkg = offerings.current.availablePackages.find(
-      (p) => p.identifier === "small_support"
-  );
-
-  if (!pkg) return;
-
-  try {
-    await Purchases.purchasePackage({aPackage: pkg});
-    alert(t('profile.supportSuccess'));
-
-    ActivityLogService.log('donation_success', {
-      product: donationProduct.value?.identifier ?? null
-    })
-
-  } catch (err) {
-    console.error("Donation failed:", err);
-  }
-}
 
 async function presentPaywall(): Promise<PAYWALL_RESULT> {
   if (!Capacitor.isNativePlatform()) {
@@ -1856,6 +1937,40 @@ async function fetchUnreadChatsCount() {
   --accent-gradient: linear-gradient(135deg, #ff9f43, var(--ion-color-carrot));
 }
 
+/* =========================
+   PROFILE HERO (gradient card wrapping avatar + name + stats)
+========================= */
+.profile-hero-card {
+  position: relative;
+  margin: 10px 12px 16px;
+  border-radius: var(--radius-xl);
+  background: linear-gradient(155deg, var(--ion-color-carrot) 0%, #a8500f 55%, #241206 100%);
+  box-shadow: var(--card-shadow-hover);
+  overflow: hidden;
+}
+
+.profile-hero-card.no-user {
+  background: var(--card-bg);
+  box-shadow: var(--card-shadow);
+}
+
+.hero-edit-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+  --padding-start: 8px;
+  --padding-end: 8px;
+  --color: #ffffff;
+  --background: rgba(255, 255, 255, 0.16);
+  --border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  margin: 0;
+}
+
 /* Profile Header Section */
 .profile-header-premium {
   padding: 32px 16px 24px;
@@ -1874,11 +1989,11 @@ async function fetchUnreadChatsCount() {
   width: 100%;
   height: 100%;
   border-radius: 50%;
-  border: 4px solid var(--ion-color-carrot);
+  border: 3px solid var(--ion-color-carrot);
   object-fit: cover;
   position: relative;
   z-index: 1;
-  box-shadow: 0 4px 12px rgba(var(--ion-color-carrot-rgb), 0.3);
+  box-shadow: var(--card-shadow-hover);
 }
 
 .profile-info {
@@ -1886,49 +2001,122 @@ async function fetchUnreadChatsCount() {
 }
 
 .profile-name-main {
-  font-size: 1.6rem;
+  font-size: 1.5rem;
   font-weight: 800;
+  letter-spacing: -0.02em;
   margin: 0;
-  background: linear-gradient(to bottom, var(--ion-color-carrot), var(--ion-color-carrot-shade));
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: var(--ion-text-color);
+}
+
+.profile-hero-card:not(.no-user) .profile-name-main {
+  color: #ffffff;
 }
 
 .profile-email-sub {
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   color: var(--ion-color-medium);
   margin: 4px 0 16px;
 }
 
+.profile-hero-card:not(.no-user) .profile-email-sub {
+  color: rgba(255, 255, 255, 0.8);
+}
+
 .badge-row {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   justify-content: center;
   gap: 8px;
 }
 
-.badge-pro {
-  --background: var(--accent-gradient);
-  --color: #fff;
-  padding: 6px 12px;
-  border-radius: 12px;
+.badge-row--wrap {
+  flex-wrap: wrap;
+}
+
+.badge-more {
+  --background: rgba(255, 255, 255, 0.16);
+  --color: #ffffff;
+  padding: 5px 12px;
+  border-radius: var(--radius-md);
   font-weight: 700;
-  font-size: 0.75rem;
-  letter-spacing: 0.5px;
-  box-shadow: 0 4px 12px rgba(230, 126, 34, 0.3);
+  font-size: 0.72rem;
+  letter-spacing: 0.3px;
+  box-shadow: none;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  flex-shrink: 0;
+}
+
+/* Stat row: products / places / XP */
+.hero-stats-row {
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  gap: 4px;
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.hero-stat {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+}
+
+.hero-stat-value {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.02em;
+}
+
+.hero-stat-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.75);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.hero-stat-divider {
+  width: 1px;
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.badge-pro {
+  --background: rgba(var(--ion-color-carrot-rgb), 0.12);
+  --color: var(--ion-color-carrot-shade);
+  padding: 5px 12px;
+  border-radius: var(--radius-md);
+  font-weight: 700;
+  font-size: 0.72rem;
+  letter-spacing: 0.3px;
+  box-shadow: none;
+  border: 1px solid rgba(var(--ion-color-carrot-rgb), 0.25);
+}
+
+/* On the orange hero gradient, the tinted-orange badge styles lose all
+   contrast — switch them to a translucent white chip instead. */
+.profile-hero-card:not(.no-user) .badge-pro {
+  --background: rgba(255, 255, 255, 0.16);
+  --color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.35);
 }
 
 .badge-merchant {
   --color: #fff;
   display: inline-flex;
   align-items: center;
-  padding: 6px 12px;
-  border-radius: 12px;
+  padding: 5px 12px;
+  border-radius: var(--radius-md);
   font-weight: 700;
-  font-size: 0.75rem;
-  letter-spacing: 0.5px;
+  font-size: 0.72rem;
+  letter-spacing: 0.3px;
+  box-shadow: none;
 }
 .badge-merchant.merchant-bronze { --background: #cd7f32; }
 .badge-merchant.merchant-silver { --background: #8a94a6; }
@@ -1936,7 +2124,7 @@ async function fetchUnreadChatsCount() {
 
 /* Business subscription detail modal */
 .bsub-head { display: flex; align-items: center; gap: 14px; margin: 4px 0 20px; }
-.bsub-icon { width: 52px; height: 52px; border-radius: 14px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 26px; flex-shrink: 0; }
+.bsub-icon { width: 52px; height: 52px; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 26px; flex-shrink: 0; }
 .bsub-icon.merchant-bronze { background: #cd7f32; }
 .bsub-icon.merchant-silver { background: #8a94a6; }
 .bsub-icon.merchant-gold   { background: #c99700; }
@@ -1965,10 +2153,11 @@ async function fetchUnreadChatsCount() {
 }
 
 .level-badge {
-  background: var(--primary-gradient);
+  background: rgba(var(--ion-color-carrot-rgb), 0.12);
+  border: 1px solid rgba(var(--ion-color-carrot-rgb), 0.22);
   padding: 8px 16px;
-  border-radius: 16px;
-  color: #fff;
+  border-radius: var(--radius-md);
+  color: var(--ion-color-carrot-shade);
 }
 
 .level-num {
@@ -1991,6 +2180,7 @@ async function fetchUnreadChatsCount() {
   font-size: 1.1rem;
   font-weight: 800;
   color: var(--ion-color-carrot);
+  white-space: nowrap;
 }
 
 .xp-next {
@@ -2000,6 +2190,24 @@ async function fetchUnreadChatsCount() {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+.xp-details-row {
+  display: flex;
+  justify-content: flex-end;
+  gap: 16px;
+  margin-top: 12px;
+  font-size: 0.85rem;
+  color: var(--ion-color-medium);
+}
+
+.xp-details-item {
+  white-space: nowrap;
+}
+
+.xp-details-value {
+  font-weight: 600;
 }
 
 .progress-container {
@@ -2021,9 +2229,6 @@ async function fetchUnreadChatsCount() {
   background: linear-gradient(90deg, var(--ion-color-carrot-tint), var(--ion-color-carrot));
   border-radius: 6px;
   transition: width 1s ease-out;
-  box-shadow: 
-    0 0 10px rgba(var(--ion-color-carrot-rgb), 0.5),
-    0 0 20px rgba(var(--ion-color-carrot-rgb), 0.3);
   position: relative;
   overflow: hidden;
 }
@@ -2046,10 +2251,54 @@ ion-item {
   --inner-padding-bottom: 12px;
 }
 
+/* =========================
+   FLAT GROUPED-LIST SECTIONS
+   Section label sits as plain text directly on the page; only the row
+   group below it (.menu-card) is boxed — matching the reference where
+   the heading is outside the card and just the list is.
+========================= */
+.menu-section-label {
+  margin: 22px 16px 8px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--ion-color-medium);
+}
+
+.menu-section-label.admin-label {
+  color: var(--ion-color-carrot);
+}
+
+/* Admin's 4 label+card pairs sit right after each other — tighten the
+   gap between one card and the next section's label. */
+.menu-card + .admin-label {
+  margin-top: 18px;
+}
+
+ion-card.menu-card {
+  margin: 0 12px 4px;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--card-shadow);
+}
+
+ion-card.menu-card ion-list {
+  padding: 4px 0;
+}
+
+ion-card.menu-card ion-item {
+  --border-color: var(--card-border);
+  --inner-border-width: 0 0 1px 0;
+}
+
+ion-card.menu-card ion-item:last-of-type {
+  --inner-border-width: 0;
+}
+
 .icon-box {
   width: 36px;
   height: 36px;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2077,9 +2326,9 @@ ion-item {
   align-items: center;
   gap: 8px;
   padding: 12px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 16px;
+  background: var(--card-inner-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-lg);
   text-decoration: none;
   transition: all 0.2s ease;
 }
@@ -2109,14 +2358,14 @@ ion-item {
   padding: 12px 20px;
   border-radius: 16px;
   text-decoration: none;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  box-shadow: var(--card-shadow);
   transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   max-width: fit-content;
 }
 
 .boba-button:active {
   transform: scale(0.95);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  box-shadow: var(--card-shadow-hover);
 }
 
 .boba-img-premium {
@@ -2140,12 +2389,12 @@ ion-item {
   background: rgba(255, 215, 0, 0.15);
   width: 64px;
   height: 64px;
-  border-radius: 20px;
+  border-radius: var(--radius-lg);
   display: flex;
   align-items: center;
   justify-content: center;
   margin: 0 auto 12px;
-  box-shadow: 0 4px 12px rgba(250, 204, 21, 0.2);
+  box-shadow: var(--card-shadow);
 }
 
 .pro-icon-hero ion-icon {
@@ -2199,119 +2448,152 @@ ion-item {
   gap: 12px;
 }
 
-/* Subscribed Pro Banner */
+/* Subscribed Pro Banner — fixed dark/gold "membership card" look, independent of app theme */
 .pro-active-banner {
   padding: 24px;
-  background: linear-gradient(135deg, rgba(250, 204, 21, 0.08) 0%, rgba(217, 119, 6, 0.12) 100%);
-  border-radius: 20px;
+  background: linear-gradient(155deg, #26190a 0%, #1a1006 55%, #120b05 100%);
+  border: 1px solid rgba(250, 204, 21, 0.22);
+  border-radius: var(--radius-lg);
   position: relative;
   overflow: hidden;
 }
 
+.pro-active-sheen {
+  position: absolute;
+  inset: 0;
+  background:
+      radial-gradient(circle at 100% 0%, rgba(250, 204, 21, 0.16), transparent 55%),
+      radial-gradient(circle at 0% 100%, rgba(217, 119, 6, 0.12), transparent 50%);
+  pointer-events: none;
+}
+
 .pro-active-header {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 20px;
-}
-
-.pro-active-title-group {
-  display: flex;
-  gap: 16px;
   align-items: center;
+  gap: 14px;
+  position: relative;
+  z-index: 1;
 }
 
-.pro-active-icon {
+.pro-active-crest {
+  flex-shrink: 0;
   width: 48px;
   height: 48px;
-  background: var(--ion-color-carrot);
-  border-radius: 14px;
+  background: linear-gradient(145deg, #fde68a, #ca8a04);
+  border-radius: var(--radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 12px rgba(var(--ion-color-carrot-rgb), 0.3);
+  box-shadow: 0 4px 14px rgba(202, 138, 4, 0.35);
 }
 
-.pro-active-icon ion-icon {
+.pro-active-crest ion-icon {
   font-size: 24px;
-  color: white;
+  color: #2a1a02;
 }
 
 .pro-active-title-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.pro-active-title-row {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 10px;
 }
 
 .pro-active-title {
-  font-size: 1.25rem;
+  font-size: 1.15rem;
   font-weight: 800;
+  letter-spacing: -0.01em;
   margin: 0;
-  color: var(--ion-color-carrot-shade);
+  color: #fdf3d9;
 }
 
 .pro-status-chip {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 4px 10px;
-  background: var(--ion-color-success-tint);
-  color: var(--ion-color-success-shade);
+  padding: 3px 10px;
+  background: rgba(74, 222, 128, 0.15);
+  color: #86efac;
+  border: 1px solid rgba(74, 222, 128, 0.25);
   border-radius: 8px;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   font-weight: 700;
-  width: fit-content;
+  white-space: nowrap;
 }
 
-.pro-manage-btn {
-  --border-radius: 10px;
-  --border-color: var(--ion-color-step-300);
-  --color: var(--ion-color-step-600);
-  margin: 0;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  font-size: 0.7rem;
+.pro-status-chip ion-icon {
+  font-size: 13px;
+}
+
+.pro-active-divider {
+  height: 1px;
+  margin: 18px 0 14px;
+  background: linear-gradient(90deg, rgba(250, 204, 21, 0.28), rgba(250, 204, 21, 0.02));
+  position: relative;
+  z-index: 1;
 }
 
 .pro-active-footer {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  padding-top: 16px;
-  border-top: 1px solid rgba(var(--ion-color-carrot-rgb), 0.1);
+  position: relative;
+  z-index: 1;
 }
 
 .pro-detail-item {
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 0.85rem;
-  color: var(--ion-color-medium);
+  font-size: 0.82rem;
+  color: rgba(253, 243, 217, 0.75);
   font-weight: 600;
 }
 
-.pro-detail-item ion-icon {
-  font-size: 18px;
-  min-width: 18px;
+.pro-detail-icon {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
 }
 
-.ion-palette-dark .pro-active-banner {
-  background: linear-gradient(135deg, rgba(250, 204, 21, 0.05) 0%, rgba(217, 119, 6, 0.08) 100%);
+.pro-detail-icon ion-icon {
+  font-size: 15px;
+  color: #fde68a;
 }
 
-.ion-palette-dark .pro-active-title {
-  color: white;
+.pro-detail-item.is-warning .pro-detail-icon {
+  background: rgba(251, 191, 36, 0.12);
 }
 
-.ion-palette-dark .pro-status-chip {
-  background: rgba(var(--ion-color-success-rgb), 0.2);
-  color: var(--ion-color-success-tint);
+.pro-detail-item.is-warning .pro-detail-icon ion-icon {
+  color: var(--ion-color-warning);
 }
 
-.ion-palette-dark .pro-manage-btn {
-  --border-color: rgba(255, 255, 255, 0.1);
-  --color: var(--ion-color-step-400);
+.pro-manage-btn {
+  --border-radius: 10px;
+  --color: #fde68a;
+  --background: rgba(255, 255, 255, 0.05);
+  --background-activated: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(250, 204, 21, 0.3);
+  border-radius: 10px;
+  margin: 16px 0 0;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  font-size: 0.72rem;
+  height: 40px;
+  position: relative;
+  z-index: 1;
 }
 
 
@@ -2384,15 +2666,6 @@ ion-item {
 }
 
 
-@media (prefers-color-scheme: light) {
-  .profile-name-main {
-    background: linear-gradient(to bottom, var(--ion-color-carrot), var(--ion-color-carrot-shade));
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-  }
-}
-
 /* System Section & Logout */
 .system-section {
   margin: 40px 16px;
@@ -2418,7 +2691,7 @@ ion-item {
   color: var(--ion-color-danger);
   border: 1px solid rgba(var(--ion-color-danger-rgb), 0.15);
   padding: 12px 24px;
-  border-radius: 14px;
+  border-radius: var(--radius-md);
   font-size: 0.95rem;
   font-weight: 700;
   transition: all 0.2s ease;
@@ -2528,7 +2801,7 @@ ion-header {
 .icon-pulse {
   background: rgba(var(--ion-color-carrot-rgb), 0.1);
   padding: 12px;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   animation: pulse 2s infinite ease-in-out;
 }
 
@@ -2539,7 +2812,7 @@ ion-header {
 .icon-pulse-red {
   background: rgba(var(--ion-color-danger-rgb), 0.1);
   padding: 12px;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2605,8 +2878,8 @@ ion-header {
 }
 
 .default-avatar-border :deep(.cosmetic-avatar-wrapper) {
-  border: 4px solid var(--ion-color-carrot);
-  box-shadow: 0 4px 12px rgba(var(--ion-color-carrot-rgb), 0.3);
+  border: 3px solid var(--ion-color-carrot);
+  box-shadow: var(--card-shadow-hover);
 }
 
 .activity-pro-badge {

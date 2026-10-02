@@ -30,11 +30,23 @@ describe('BarcodeValidator', () => {
             expect(BarcodeValidator.isValidUPCA('036000291450')).toBe(false)
         })
 
-        it('should correctly validate UPC-E barcodes', () => {
-            // The current implementation is simple length checking for UPC-E
-            expect(BarcodeValidator.isValidUPCE('123456')).toBe(true)
-            expect(BarcodeValidator.isValidUPCE('12345678')).toBe(true)
+        it('should correctly validate UPC-E barcodes via checksum', () => {
+            // System digit 0, compressed digits 123450 -> expands to UPC-A body
+            // 01200000345, whose GS1 check digit is 5.
+            expect(BarcodeValidator.isValidUPCE('01234505')).toBe(true)
+            // Wrong check digit
+            expect(BarcodeValidator.isValidUPCE('01234509')).toBe(false)
+        })
+
+        it('should reject bare 6-digit codes — no check digit to verify against', () => {
+            expect(BarcodeValidator.isValidUPCE('123456')).toBe(false)
+        })
+
+        it('should reject the wrong length or non-numeric UPC-E input', () => {
+            expect(BarcodeValidator.isValidUPCE('12345678')).toBe(false) // fails checksum
             expect(BarcodeValidator.isValidUPCE('12345')).toBe(false)
+            expect(BarcodeValidator.isValidUPCE('1234567')).toBe(false)
+            expect(BarcodeValidator.isValidUPCE('1234567A')).toBe(false)
         })
     })
 

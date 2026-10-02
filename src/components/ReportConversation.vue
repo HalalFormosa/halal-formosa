@@ -257,9 +257,9 @@ onUnmounted(() => {
   flex-direction: column;
   height: 100%;
   background: var(--ion-background-color);
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   overflow: hidden;
-  border: 1px solid var(--ion-color-step-100, rgba(0,0,0,0.08));
+  border: 1px solid var(--card-border, rgba(0,0,0,0.08));
 }
 
 /* ── Messages area ── */
@@ -284,19 +284,19 @@ onUnmounted(() => {
 
 .empty-icon {
   font-size: 48px;
-  color: var(--ion-color-step-300, #bbb);
+  color: var(--ion-color-medium);
 }
 
 .empty-text {
   font-size: 15px;
   font-weight: 600;
-  color: var(--ion-color-step-500, #888);
+  color: var(--ion-color-medium);
   margin: 0;
 }
 
 .empty-hint {
   font-size: 13px;
-  color: var(--ion-color-step-400, #999);
+  color: var(--ion-color-medium);
   margin: 0;
 }
 
@@ -336,7 +336,7 @@ onUnmounted(() => {
 }
 
 .avatar-user {
-  background: var(--ion-color-step-400, #999);
+  background: var(--ion-color-medium);
 }
 
 /* ── Bubble column ── */
@@ -359,7 +359,7 @@ onUnmounted(() => {
 .sender-name {
   font-size: 12px;
   font-weight: 600;
-  color: var(--ion-color-step-600, #666);
+  color: var(--ion-color-medium);
 }
 
 .sender-admin {
@@ -375,17 +375,20 @@ onUnmounted(() => {
 }
 
 .bubble-mine {
-  background: var(--ion-background-color, #fff);
-  color: var(--ion-text-color, #1a1a1a);
-  border: 1.5px solid var(--ion-color-carrot, #e67e22);
+  background: var(--ion-color-carrot, #e67e22);
+  color: #fff;
   border-bottom-right-radius: 6px;
   margin-left: auto;
 }
 
 .bubble-theirs {
-  background: var(--ion-color-carrot, #e67e22);
-  color: #fff;
+  background: rgba(0, 0, 0, 0.06);
+  color: var(--ion-text-color, #1a1a1a);
   border-bottom-left-radius: 6px;
+}
+
+.ion-palette-dark .bubble-theirs {
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .bubble-text {
@@ -404,12 +407,12 @@ onUnmounted(() => {
 }
 
 .bubble-mine .bubble-link {
-  color: var(--ion-color-carrot, #e67e22);
+  color: #fff;
+  opacity: 0.9;
 }
 
 .bubble-theirs .bubble-link {
-  color: #fff;
-  opacity: 0.9;
+  color: var(--ion-color-carrot, #e67e22);
 }
 
 .previews-container {
@@ -428,16 +431,16 @@ onUnmounted(() => {
 }
 
 .bubble-mine .bubble-time {
-  color: var(--ion-color-step-500, #888);
+  color: rgba(255,255,255,0.7);
 }
 
 .bubble-theirs .bubble-time {
-  color: rgba(255,255,255,0.7);
+  color: var(--ion-color-medium);
 }
 
 /* ── Input area ── */
 .input-area {
-  border-top: 1px solid var(--ion-color-step-100, rgba(0,0,0,0.08));
+  border-top: 1px solid var(--card-border, rgba(0,0,0,0.08));
   padding: 10px 14px;
   background: var(--ion-background-color);
 }
@@ -446,11 +449,15 @@ onUnmounted(() => {
   display: flex;
   align-items: flex-end;
   gap: 8px;
-  background: var(--ion-color-step-100, #f0f0f0);
+  background: rgba(0, 0, 0, 0.05);
   border-radius: 24px;
   padding: 4px 4px 4px 16px;
-  border: 1.5px solid var(--ion-color-step-150, rgba(0,0,0,0.1));
+  border: 1.5px solid var(--card-border, rgba(0,0,0,0.1));
   transition: all 0.2s ease;
+}
+
+.ion-palette-dark .input-row {
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .input-row:focus-within {
@@ -474,7 +481,7 @@ onUnmounted(() => {
 }
 
 .msg-input::placeholder {
-  color: var(--ion-color-step-450, #999);
+  color: var(--ion-color-medium);
 }
 
 .send-btn {
@@ -522,8 +529,8 @@ onUnmounted(() => {
   gap: 8px;
   padding: 14px 16px;
   background: var(--ion-background-color);
-  border-top: 1px solid var(--ion-color-step-100, rgba(0,0,0,0.08));
-  color: var(--ion-color-step-500, #888);
+  border-top: 1px solid var(--card-border, rgba(0,0,0,0.08));
+  color: var(--ion-color-medium);
   font-size: 13px;
   font-weight: 500;
 }

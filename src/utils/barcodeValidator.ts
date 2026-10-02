@@ -94,9 +94,49 @@ export class BarcodeValidator {
         return this.validateEANCheckDigit(code, 12);
     }
 
-    // Simplified UPC-E (full expansion requires more detailed rules)
+    /**
+     * Expands the 6 compressed digits of a UPC-E code (plus its number-system
+     * digit) back into the 11-digit manufacturer+product body of the UPC-A
+     * code it represents, per the standard GS1 UPC-E↔UPC-A conversion table.
+     */
+    private static expandUPCEToUPCABody(numberSystem: string, six: string): string {
+        const d = six.split("");
+        const last = d[5];
+        let mfr: string;
+        let product: string;
+
+        if (last === "0" || last === "1" || last === "2") {
+            mfr = d[0] + d[1] + last + "00";
+            product = "00" + d[2] + d[3] + d[4];
+        } else if (last === "3") {
+            mfr = d[0] + d[1] + d[2] + "00";
+            product = "000" + d[3] + d[4];
+        } else if (last === "4") {
+            mfr = d[0] + d[1] + d[2] + d[3] + "0";
+            product = "0000" + d[4];
+        } else {
+            mfr = d[0] + d[1] + d[2] + d[3] + d[4];
+            product = "0000" + last;
+        }
+
+        return numberSystem + mfr + product; // 11 digits
+    }
+
+    // UPC-E only carries a real checksum in its 8-digit form (number system +
+    // 6 compressed digits + check digit) — a bare 6-digit code has no check
+    // digit to validate against, so it can't be trusted as a genuine barcode.
     static isValidUPCE(code: string): boolean {
-        return /^\d{6,8}$/.test(code); // accepts 6–8 digits
+        if (!/^\d{8}$/.test(code)) return false;
+
+        const numberSystem = code[0];
+        if (numberSystem !== "0" && numberSystem !== "1") return false;
+
+        const six = code.slice(1, 7);
+        const providedCheck = code[7];
+
+        const upcABody = this.expandUPCEToUPCABody(numberSystem, six);
+        const expectedCheck = this.calculateEANCheckDigit(upcABody);
+        return String(expectedCheck) === providedCheck;
     }
 
     static isValidISBN(code: string): boolean {
@@ -136,13 +176,40 @@ export function normalizeBarcode(barcode: string): string {
 }
 
 /**
+ * Catches placeholder/test input that can slip past a pure checksum check by
+ * coincidence — e.g. "6666666666666" (13 sixes) is a mathematically valid
+ * EAN-13 (repdigits of 0/2/4/6/8 satisfy the GS1 check-digit formula at that
+ * length), but no real product is ever printed with a literal repdigit or a
+ * straight ascending/descending run as its barcode.
+ */
+function isObviouslyFakePattern(digits: string): boolean {
+    if (/^(\d)\1+$/.test(digits)) return true; // all the same digit
+
+    let ascending = true;
+    let descending = true;
+    for (let i = 1; i < digits.length; i++) {
+        const prev = Number(digits[i - 1]);
+        const curr = Number(digits[i]);
+        if (curr !== (prev + 1) % 10) ascending = false;
+        if (curr !== (prev + 9) % 10) descending = false;
+    }
+    return ascending || descending;
+}
+
+/**
  * True if the barcode passes any of the supported symbologies' checksums.
  * Shared by the contributor form (AddProductView) and the admin review screen
  * (ReviewProductsView) so both judge a barcode identically.
+ *
+ * IMEI is deliberately excluded: it's a phone identifier, not something that
+ * appears on product packaging, and its 14/16-digit forms have no check
+ * digit at all — including it here let any 14-digit string (e.g. a repeated
+ * "66666666666666") pass as "valid".
  */
 export function isValidBarcodeFormat(barcode: string): boolean {
     const clean = normalizeBarcode(barcode);
     if (!clean) return false;
+    if (/^\d+$/.test(clean) && isObviouslyFakePattern(clean)) return false;
 
     return (
         BarcodeValidator.isValidEAN8(clean) ||
@@ -151,7 +218,6 @@ export function isValidBarcodeFormat(barcode: string): boolean {
         BarcodeValidator.isValidUPCA(clean) ||
         BarcodeValidator.isValidUPCE(clean) ||
         BarcodeValidator.isValidISBN(clean) ||
-        BarcodeValidator.isValidIMEI(clean) ||
         BarcodeValidator.isValidGSIN(clean) ||
         BarcodeValidator.isValidSSCC(clean) ||
         BarcodeValidator.isValidGLN(clean) ||

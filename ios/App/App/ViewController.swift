@@ -9,5 +9,6 @@ import Capacitor
 class ViewController: CAPBridgeViewController {
     override func capacitorDidLoad() {
         bridge?.registerPluginInstance(RecaptchaNativePlugin())
+        bridge?.registerPluginInstance(WidgetSyncPlugin())
     }
 }

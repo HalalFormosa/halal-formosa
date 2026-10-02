@@ -1,4 +1,34 @@
 // composables/useImageResizer.ts
+
+// Some Android WebView builds can't decode HEIC/HEIF via the <img> element
+// (common on phones that save camera photos in a "high efficiency" format),
+// even though the file itself is valid. createImageBitmap() goes through the
+// platform's native image codecs instead of Blink's <img> decode path and
+// succeeds on more devices, so it's used as a fallback rather than the
+// primary path (it's not universally supported either, e.g. older Safari).
+async function loadDrawableImage(blob: Blob): Promise<HTMLImageElement | ImageBitmap> {
+    try {
+        return await new Promise<HTMLImageElement>((resolve, reject) => {
+            const tempImg = new Image();
+            const url = URL.createObjectURL(blob);
+            tempImg.onload = () => {
+                URL.revokeObjectURL(url);
+                resolve(tempImg);
+            };
+            tempImg.onerror = () => {
+                URL.revokeObjectURL(url);
+                reject(new Error("Failed to load image element"));
+            };
+            tempImg.src = url;
+        });
+    } catch (err) {
+        if (typeof createImageBitmap === "function") {
+            return await createImageBitmap(blob);
+        }
+        throw err;
+    }
+}
+
 export function useImageResizer() {
     async function resizeImage(
         webPath: string | File,
@@ -14,31 +44,20 @@ export function useImageResizer() {
             blob = webPath;
         }
 
-        const img = await new Promise<HTMLImageElement>((resolve, reject) => {
-            const tempImg = new Image();
-            const url = URL.createObjectURL(blob);
-            tempImg.onload = () => resolve(tempImg);
-            tempImg.onerror = (err) => {
-                URL.revokeObjectURL(url);
-                reject(new Error("❌ Failed to load image element"));
-            };
-            tempImg.src = url;
-        });
-
-        const objectUrl = img.src;
+        const source = await loadDrawableImage(blob);
 
         const canvas = document.createElement("canvas");
         const ctx = canvas.getContext("2d")!;
 
-        const w = img.naturalWidth || img.width;
-        const h = img.naturalHeight || img.height;
+        const w = "naturalWidth" in source ? (source.naturalWidth || source.width) : source.width;
+        const h = "naturalHeight" in source ? (source.naturalHeight || source.height) : source.height;
         const ratio = w / h;
         canvas.width = Math.min(w, maxWidth);
         canvas.height = canvas.width / ratio;
 
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        ctx.drawImage(source, 0, 0, canvas.width, canvas.height);
 
-        URL.revokeObjectURL(objectUrl);
+        if ("close" in source) source.close();
 
         return new Promise((resolve, reject) => {
             canvas.toBlob(

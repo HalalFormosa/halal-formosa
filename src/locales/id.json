@@ -1,5 +1,226 @@
 {
+  "business": {
+    "claim": {
+      "action": "Klaim bisnis ini",
+      "reviewBannerTitle": "Klaim Anda sedang ditinjau",
+      "reviewBannerText": "Kami sedang memverifikasi klaim bisnis Anda. Anda dapat mengelola listing ini setelah disetujui.",
+      "title": "Klaim bisnis",
+      "successTitle": "Klaim terkirim",
+      "successSubtitle": "Kami akan segera meninjaunya",
+      "successText": "Tim kami akan memverifikasi datamu dan menghubungi kembali. Setelah disetujui, kamu bisa mengelola listing ini dari dasbor bisnismu.",
+      "backToListing": "Kembali ke listing",
+      "claiming": "Kamu mengklaim",
+      "pendingTitle": "Klaim sedang ditinjau",
+      "pendingText": "Kamu sudah memiliki klaim yang menunggu untuk bisnis ini. Kami akan memberi tahu setelah ditinjau.",
+      "steps": {
+        "role": "Peranmu",
+        "contact": "Detail kontak",
+        "business": "Nomor bisnis",
+        "proof": "Bukti kepemilikan",
+        "review": "Tinjau & kirim"
+      },
+      "hints": {
+        "role": "Ceritakan hubunganmu dengan bisnis ini.",
+        "contact": "Kami mungkin menghubungimu untuk memverifikasi klaim.",
+        "ubn": "Opsional, tetapi mempercepat verifikasi (bisnis di Taiwan).",
+        "proof": "Unggah surat izin usaha, foto tampak depan toko, atau apa pun yang membuktikan kamu mewakili tempat ini.",
+        "note": "Ada hal lain yang perlu kami ketahui?",
+        "review": "Harap konfirmasi datamu sebelum mengirim.",
+        "reviewNote": "Dengan mengirim, kamu menyatakan informasi ini akurat dan kamu berwenang mewakili bisnis ini."
+      },
+      "fields": {
+        "phone": "Telepon kontak",
+        "name": "Namamu",
+        "ubn": "Nomor Bisnis Terpadu (8 digit)",
+        "note": "Catatan untuk peninjau",
+        "email": "Email kontak"
+      },
+      "addProof": "Tambah foto",
+      "filesAttached": "file terlampir",
+      "roles": {
+        "owner": "Pemilik",
+        "manager": "Manajer",
+        "staff": "Staf"
+      }
+    },
+    "claimedBadge": "Terverifikasi",
+    "info": {
+      "facebook": "Facebook",
+      "tiktok": "TikTok",
+      "website": "Situs web",
+      "reviewBadge": "Tinjau",
+      "legendReview": "Ditinjau tim kami sebelum tayang",
+      "legendInstant": "Kolom lainnya diperbarui langsung",
+      "name": "Nama bisnis",
+      "reviewNeeded": "Perubahan pada kolom ini ditinjau sebelum tayang",
+      "address": "Alamat",
+      "mapHint": "Geser pin atau ketuk peta untuk menyesuaikan lokasi yang tepat",
+      "coordinates": "Koordinat",
+      "phone": "Telepon",
+      "instagram": "Instagram",
+      "lineId": "ID LINE",
+      "foodpanda": "Tautan Foodpanda",
+      "ubereats": "Tautan Uber Eats",
+      "priceRange": "Kisaran harga",
+      "priceRangePlaceholder": "Pilih kisaran harga",
+      "description": "Deskripsi",
+      "openingHours": "Jam buka",
+      "closed": "Tutup",
+      "tags": "Tag",
+      "addTag": "Tambah tag",
+      "saved": "Tersimpan",
+      "savedQueued": "Tersimpan. Bagian ini perlu ditinjau sebelum tayang: {fields}"
+    },
+    "manage": "Kelola bisnis",
+    "ownedBy": "Dimiliki oleh {name}",
+    "reviews": {
+      "ownerReplyBadge": "Tanggapan Pemilik",
+      "ownerCannotReview": "Pemilik tidak diperbolehkan mengulas bisnisnya sendiri",
+      "replyPlaceholder": "Tulis tanggapanmu untuk pelanggan ini...",
+      "yourResponse": "Tanggapanmu",
+      "replyAction": "Balas Ulasan",
+      "none": "Belum ada ulasan untuk lokasi ini."
+    },
+    "tabs": {
+      "menu": "Menu",
+      "promos": "Penawaran",
+      "info": "Info",
+      "photos": "Foto",
+      "halal": "Halal",
+      "analytics": "Insight",
+      "reports": "Laporan",
+      "reviews": "Ulasan"
+    },
+    "plan": {
+      "upgradeTitle": "Tingkatkan paketmu",
+      "upgradeSub": "Paketmu berlaku untuk semua bisnis yang kamu kelola.",
+      "previewNote": "Hanya pratinjau — paket dan harga sebenarnya berasal dari App Store / Play Store.",
+      "popular": "Paling populer",
+      "currentTag": "Saat ini",
+      "perMonth": "/bln",
+      "choose": "Pilih {name}",
+      "yourPlan": "Paketmu saat ini",
+      "restore": "Pulihkan pembelian",
+      "upgradeUnavailable": "Paket tidak tersedia di perangkat ini saat ini. Silakan coba dari aplikasi seluler.",
+      "upgradeSuccess": "Paketmu sudah ditingkatkan! Berlaku untuk semua bisnismu.",
+      "restored": "Pembelian dipulihkan",
+      "yourPlanLabel": "Paketmu",
+      "accountWide": "Berlaku untuk semua bisnismu",
+      "upgrade": "Tingkatkan",
+      "current": "Paket",
+      "previewPaywall": "Pratinjau paywall",
+      "tierUpdated": "Paket diatur ke {tier}",
+      "upgradeHint": "Tingkatkan untuk lebih banyak"
+    },
+    "dashboard": {
+      "title": "Bisnis Saya",
+      "empty": "Kamu belum mengelola bisnis apa pun.",
+      "emptyHint": "Temukan tempatmu di Jelajah lalu ketuk \"Klaim bisnis ini\".",
+      "explore": "Ke Jelajah",
+      "pendingClaims": "Klaim menunggu",
+      "underReview": "Sedang ditinjau",
+      "yourBusinesses": "Bisnismu",
+      "manageCta": "Kelola"
+    },
+    "draft": {
+      "unpublished": "Ada perubahan yang belum dipublikasikan. Perubahan disimpan sebagai draf dan belum terlihat oleh publik.",
+      "preview": "Pratinjau",
+      "save": "Simpan draf",
+      "publish": "Publikasikan",
+      "previewTitle": "Pratinjau publik",
+      "previewHint": "Seperti inilah tampilan listing-mu setelah dipublikasikan.",
+      "saved": "Disimpan sebagai draf — belum terlihat oleh publik.",
+      "publishedQueued": "Dipublikasikan. Bagian ini perlu ditinjau admin sebelum tayang: {fields}",
+      "published": "Dipublikasikan! Listing-mu kini tayang."
+    },
+    "photos": {
+      "hint": "Kamu bisa menambahkan hingga {max} foto di paketmu.",
+      "main": "Utama",
+      "limitReached": "Kamu sudah mencapai batas foto. Tingkatkan paket untuk menambah.",
+      "locked": "Foto tambahan tersedia di paket yang lebih tinggi."
+    },
+    "locked": {
+      "title": "Terkunci"
+    },
+    "menu": {
+      "locked": "Menu tersedia di paket Silver ke atas.",
+      "addPhoto": "Foto",
+      "itemName": "Nama item",
+      "price": "Harga",
+      "itemDescription": "Deskripsi (opsional)"
+    },
+    "halal": {
+      "status": "Status halal",
+      "certified": "Bersertifikat halal",
+      "selfReported": "Halal (klaim sendiri)",
+      "muslimFriendly": "Ramah Muslim",
+      "certProofTitle": "Sertifikat halal",
+      "certProofHint": "Unggah foto sertifikat halal resmi kamu. Ini ditampilkan kepada pelanggan sebagai bukti.",
+      "materialsTitle": "Foto bahan baku",
+      "materialsHint": "Unggah foto bahan utama / bahan baku agar pelanggan tahu apa yang kamu gunakan. Kamu bisa menambahkan beberapa.",
+      "certRequired": "Silakan unggah sertifikat halal sebelum mempublikasikan.",
+      "materialsRequired": "Silakan unggah minimal satu foto bahan baku sebelum mempublikasikan.",
+      "prayerRoom": "Tersedia musholla",
+      "wudu": "Fasilitas wudu",
+      "alcoholFree": "Bebas alkohol"
+    },
+    "promos": {
+      "locked": "Promosi tersedia di paket Bronze ke atas.",
+      "titleField": "Judul penawaran",
+      "bodyField": "Detail (opsional)"
+    },
+    "reports": {
+      "none": "Tidak ada laporan untuk listing-mu."
+    },
+    "analytics": {
+      "digestOn": "Ringkasan email mingguan aktif",
+      "exportCsv": "Ekspor CSV",
+      "views": "Total tampilan",
+      "opens30": "Dibuka (30 hr)",
+      "uniqueViewers": "Pengunjung unik (30 hr)",
+      "impressions": "Tayangan (30 hr)",
+      "premiumInsights": "Insight Pengunjung & Ulasan (Paket Gold)",
+      "visits30d": "Kunjungan (30 Hari Terakhir)",
+      "reviews30d": "Ulasan (30 Hari Terakhir)",
+      "actions30": "Aksi (30 hari terakhir)",
+      "saves": "Disimpan",
+      "audience": "Audiens berdasarkan kewarganegaraan",
+      "noAudience": "Data belum cukup.",
+      "peakDays": "Hari tersibuk",
+      "peakHours": "Jam tersibuk",
+      "viewsTrend": "Tren tampilan (30 hr)",
+      "funnel": "Corong konversi (30 hr)",
+      "fImpressions": "Dilihat",
+      "fOpens": "Dibuka",
+      "fActions": "Ditindaklanjuti",
+      "benchmark": "Peringkatmu",
+      "ofCategory": "dari {total} {category} di sekitar",
+      "topPercent": "Kamu berada di {pct}% teratas kategorimu",
+      "yourOpens": "Kamu: {n} dibuka",
+      "categoryAvg": "Rata-rata kategori: {n}",
+      "searchTerms": "Kata pencarian tempat kamu muncul",
+      "noTerms": "Belum ada kemunculan di pencarian.",
+      "directions": "Petunjuk arah",
+      "callTaps": "Panggilan",
+      "shares": "Dibagikan",
+      "photoViews": "Tampilan foto",
+      "upgradeStandard": "Tingkatkan ke Bronze untuk simpanan, ketukan pesan, dan petunjuk arah.",
+      "upgradeAdvanced": "Tingkatkan ke Silver untuk kewarganegaraan audiens, gender, dan jam sibuk.",
+      "upgradePro": "Tingkatkan ke Gold untuk corong konversi, perbandingan kategori, dan kata pencarian."
+    },
+    "days": {
+      "mon": "Sen",
+      "tue": "Sel",
+      "wed": "Rab",
+      "thu": "Kam",
+      "fri": "Jum",
+      "sat": "Sab",
+      "sun": "Min"
+    }
+  },
   "common": {
+    "seeOlderChanges": "Lihat perubahan lama",
+    "hideOlderChanges": "Sembunyikan perubahan lama",
     "or": "ATAU",
     "underConstruction": "Sedang Dalam Pembangunan",
     "backToHome": "KEMBALI KE BERANDA",
@@ -58,7 +279,12 @@
     "added": "Ditambahkan",
     "lastEdited": "Terakhir diedit",
     "noEditHistory": "Belum ada riwayat editan",
-    "admin": "Admin"
+    "admin": "Admin",
+    "offlineMessage": "Kamu sedang offline. Periksa koneksi lalu coba lagi.",
+    "sessionExpired": "Sesi kamu telah berakhir. Silakan masuk lagi.",
+    "loginRequired": "Silakan masuk untuk mengirim ulasan",
+    "unknown": "Tidak diketahui",
+    "sort": "Urutkan"
   },
   "review": {
     "title": "Tinjau Kiriman",
@@ -90,7 +316,25 @@
       "--ion-color-primary": "Ramah Muslim",
       "--ion-color-warning": "Syubhah",
       "--ion-color-danger": "Haram"
-    }
+    },
+    "publishSuccess": "Berhasil dipublikasikan!",
+    "approveFailed": "Gagal mempublikasikan. Silakan coba lagi.",
+    "restoreOriginal": "Kembalikan Foto Asli",
+    "takePhoto": "Ambil Foto",
+    "uploadPhoto": "Unggah Foto",
+    "rotatePhoto": "Putar Foto",
+    "cleanBackground": "Hapus Latar Belakang",
+    "publishing": "Mempublikasikan...",
+    "publish": "Publikasikan",
+    "actionFailed": "Aksi gagal. Silakan coba lagi.",
+    "confirmRejectHeader": "Tolak Kiriman",
+    "confirmRejectMsg": "Mohon berikan alasan penolakan kiriman ini:",
+    "reasonPlaceholder": "mis. Listing ganda, lokasi salah, tidak relevan dengan halal...",
+    "reasonRequired": "Alasan wajib diisi untuk menolak kiriman.",
+    "confirmMergeHeader": "Gabungkan ke produk yang sudah ada?",
+    "confirmMergeMsg": "Kiriman ini tidak akan dipublikasikan terpisah. Barcode-nya menjadi alias produk yang sudah ada, dan kiriman ini dihapus. Tindakan ini tidak dapat dibatalkan.",
+    "merge": "Gabungkan",
+    "syncToOff": "Sinkronkan ke Open Food Facts"
   },
   "dailyMissions": {
     "title": "Misi Harian",
@@ -127,6 +371,11 @@
     "loggingIn": "Sedang masuk...",
     "continueWithGoogle": "Lanjutkan dengan Google",
     "continueWithApple": "Lanjutkan dengan Apple",
+    "continueWithLine": "Lanjutkan dengan LINE",
+    "agreeToTerms": "Saya menyetujui {privacy} dan {terms}",
+    "privacyPolicy": "Kebijakan Privasi",
+    "termsOfService": "Ketentuan Layanan",
+    "mustAgreeToTerms": "Harap setujui Kebijakan Privasi dan Ketentuan Layanan untuk melanjutkan.",
     "appleDeviceRequired": "Untuk masuk dengan Apple, Anda harus menggunakan perangkat iOS.",
     "forgotPassword": "Lupa Kata Sandi?",
     "resetEmailSent": "Email reset kata sandi telah dikirim! Silakan periksa kotak masuk Anda.",
@@ -200,6 +449,18 @@
     "totalProducts": "Total Produk",
     "totalLocations": "Total Lokasi",
     "partnerTier": "MITRA {tier}",
+    "sponsored": "Bersponsor",
+    "houseAdKind": {
+      "partner": "Mitra",
+      "product": "Produk",
+      "location": "Lokasi",
+      "trip": "Perjalanan"
+    },
+    "houseAdProvider": {
+      "soldBy": "Dijual oleh {name}",
+      "certifiedBy": "Disertifikasi oleh {name}",
+      "providedBy": "Oleh {name}"
+    },
     "statuses": {
       "halal": "Halal",
       "muslimFriendly": "Ramah Muslim",
@@ -257,7 +518,10 @@
       "pro": "Pro",
       "productUploads": "Product Uploads: {count}",
       "locationUploads": "Location Uploads: {count}"
-    }
+    },
+    "leaderboard_privacy_hint": "Ingin namamu tampil di papan peringkat? Buka Pengaturan dan jadikan profilmu publik.",
+    "leaderboardShowing": "Menampilkan {count} dari {total} anggota",
+    "pro": "Pro"
   },
   "scanIngredients": {
     "title": "Scan Komposisi",
@@ -332,9 +596,16 @@
         "searching": "Mencari komposisi...",
         "scanning": "Pemindaian AI...",
         "found": "Komposisi Ditemukan! Memfokuskan...",
-        "notFound": "Komposisi tidak ditemukan, tahan posisi..."
+        "notFound": "Komposisi tidak ditemukan, tahan posisi...",
+        "analyzing": "Oke! Membaca bahan..."
       },
-      "label": "Auto Scan"
+      "label": "Auto Scan",
+      "analyzingHint": "Foto diambil — kamu bisa menurunkan kamera sekarang",
+      "highlightsFound": "{count} bahan ditemukan",
+      "autoDismiss": "Pindai berikutnya dalam {s} dtk — ketuk untuk jeda",
+      "dismissPaused": "Dijeda — ketuk \"Pindai Lagi\" untuk melanjutkan",
+      "scanAgain": "Pindai Lagi",
+      "viewDetails": "Lihat Detail"
     },
     "scan": {
       "camera": "Kamera",
@@ -359,8 +630,16 @@
         "message": "Produk \"{name}\" statusnya {status}, namun sepertinya belum ada di database kami.",
         "motivation": "Dengan kontribusi Anda, Anda membantu ribuan umat Muslim yang menggunakan Halal Formosa untuk menemukan lebih banyak produk. Membantu orang lain adalah amal mulia: \"Dan tolong-menolonglah kamu dalam (mengerjakan) kebajikan dan takwa\" (Quran 5:2). Rasulullah SAW bersabda: \"Sebaik-baik manusia adalah yang paling bermanfaat bagi manusia lainnya.\" (HR. At-Tabarani)",
         "action": "Kontribusi Sekarang",
-        "skip": "Mungkin nanti"
-      }
+        "skip": "Mungkin nanti",
+        "motivationQuote": "Membantu sesama adalah perbuatan mulia: \"Tolong-menolonglah kamu dalam (mengerjakan) kebajikan dan takwa\" (QS. Al-Ma'idah: 2). Nabi (SAW) bersabda: \"Sebaik-baik manusia adalah yang paling bermanfaat bagi orang lain.\" (At-Tabrani)"
+      },
+      "tapToEnlarge": "Cubit atau ketuk dua kali untuk memperbesar",
+      "alreadyInDb": "Sudah ada di database kami",
+      "nameMatch": "{percent}% nama cocok",
+      "ingredientsMatch": "{percent}% bahan cocok",
+      "addedAgo": "Ditambahkan {time}",
+      "ingredientDetails": "Detail Bahan",
+      "verifiedListing": "Listing terverifikasi: {name}"
     },
     "toast": {
       "ok": "✅ Komposisi berhasil diekstrak!",
@@ -379,6 +658,7 @@
     },
     "limit": {
       "reached": "Batas pemindaian harian tercapai. Tonton iklan atau kontribusikan produk/lokasi yang belum terdaftar untuk mendapatkan lebih banyak pemindaian!",
+      "reachedContribute": "Batas pemindaian harian tercapai. Kontribusikan produk/lokasi yang belum terdaftar untuk mendapatkan lebih banyak pemindaian!",
       "bonus": "Watch Ad +1 Scan",
       "adLimit": "You can only watch {count} ads per day.",
       "contributeTip": "Dapatkan +1 pemindaian harian untuk setiap produk atau lokasi yang Anda kontribusikan (maks 3/hari)."
@@ -399,7 +679,11 @@
       "ocrFailed": "OCR analysis failed. Please try again with a clearer photo.",
       "noIngredients": "No ingredients detected. Please try cropping more closely.",
       "noKeywords": "No ingredient keywords detected. Please crop the ingredients section only.",
-      "couldNotAccessCamera": "Could not access camera. Please check permissions."
+      "couldNotAccessCamera": "Could not access camera. Please check permissions.",
+      "adFailed": "Tidak dapat memuat iklan hadiah. Silakan coba lagi."
+    },
+    "steps": {
+      "scan": "Pindai"
     }
   },
   "search": {
@@ -411,7 +695,8 @@
       "title": "Filter",
       "stores": "Toko",
       "categories": "Kategori",
-      "statuses": "Status"
+      "statuses": "Status",
+      "sort": "Urutkan"
     },
     "categoriesList": {
       "Snacks": "Camilan",
@@ -480,7 +765,27 @@
       "Muslim-friendly": "Ramah Muslim",
       "Syubhah": "Syubhah",
       "Haram": "Haram",
-      "Unknown": "Tidak Diketahui"
+      "Unknown": "Tidak Diketahui",
+      "Restaurant": "Restoran",
+      "Halal Restaurant": "Restoran Halal",
+      "Muslim-friendly Restaurant": "Restoran Ramah Muslim",
+      "Butcher Shop": "Toko Daging",
+      "Market": "Pasar",
+      "Store": "Toko",
+      "Hotel": "Hotel",
+      "Muslim-friendly Accomodation": "Akomodasi Ramah Muslim",
+      "Muslim-friendly Environment": "Lingkungan Ramah Muslim",
+      "Masjid": "Masjid",
+      "Musholla": "Musholla",
+      "Mosque": "Masjid",
+      "Prayer Room": "Musholla",
+      "Vegan Restaurant": "Restoran Vegan",
+      "Muslim-friendly Stall": "Warung Ramah Muslim",
+      "Halal Stall": "Warung Halal",
+      "Muslim-friendly Souvenirs": "Suvenir Ramah Muslim",
+      "Halal Kitchen": "Dapur Halal",
+      "Attraction": "Objek Wisata",
+      "Others": "Lainnya"
     },
     "sortNearest": "Terdekat",
     "sortRecent": "Baru Ditambahkan",
@@ -501,7 +806,30 @@
     "viewedCount": "👁️ Dilihat {count} kali",
     "addedDate": "Ditambahkan {date}",
     "endOfList": "🙏 Maaf, Anda telah mencapai akhir",
-    "scanInstructions": "Sejajarkan barcode di dalam bingkai"
+    "scanInstructions": "Sejajarkan barcode di dalam bingkai",
+    "barcodeScan": {
+      "title": "Pindai Barcode",
+      "hint": "Posisikan barcode di dalam bingkai",
+      "scanAgain": "Pindai Lagi",
+      "viewDetails": "Lihat Detail",
+      "notFound": {
+        "title": "Belum ada di database kami",
+        "message": "Tidak ada produk dengan barcode {barcode}.",
+        "action": "Tambahkan produk ini"
+      },
+      "status": {
+        "init": "Memulai kamera...",
+        "checking": "Memeriksa barcode...",
+        "searching": "Mencari barcode..."
+      },
+      "close": "Tutup",
+      "cameraError": "Tidak dapat mengakses kamera. Silakan periksa izin.",
+      "unsupportedError": "Pemindaian barcode tidak didukung di perangkat ini.",
+      "moduleUnavailableError": "Sedang menyiapkan pemindai barcode untuk pertama kali — silakan coba lagi sebentar lagi.",
+      "permissionError": "Izin kamera diperlukan untuk memindai barcode.",
+      "scanError": "Terjadi kesalahan saat memindai. Silakan coba lagi."
+    },
+    "noResults": "Tidak ada hasil ditemukan"
   },
   "explore": {
     "title": "Jelajah",
@@ -521,14 +849,28 @@
       "orderVia": "Order Via",
       "orderNow": "Order Now",
       "certifiedBy": "Certified by",
+      "broughtBy": "Dibawa oleh",
       "verifiedGoldPartner": "Verified Gold Partner",
       "address": "Address",
       "noAddress": "No address available",
+      "similarPlaces": "Tempat serupa",
+      "checkIn": "Check in",
+      "checkedIn": "Sudah check in",
+      "reviewed": "Sudah diulas",
+      "review": "Ulasan",
+      "checkInSuccess": "Berhasil check in!",
+      "checkInAlready": "Kamu sudah check in di sini baru-baru ini",
+      "checkInRateLimited": "Kamu baru saja check in di tempat lain. Coba lagi beberapa menit lagi.",
+      "checkInTooFar": "Kamu harus berada di tempat ini untuk check in",
+      "checkInNoLocation": "Aktifkan lokasi untuk check in",
+      "checkInLogin": "Silakan masuk untuk check in",
+      "checkInFailed": "Gagal check in",
       "openingHours": "Opening Hours",
       "openNow": "Open Now",
       "closedNow": "Closed Now",
       "additionalDetails": "Additional Details",
-      "estimatedPrice": "Estimated Price"
+      "estimatedPrice": "Estimated Price",
+      "open24Hours": "24 jam"
     },
     "filters": {
       "priceRange": "Rentang Harga"
@@ -551,7 +893,12 @@
       "Mosque": "Masjid",
       "Prayer Room": "Musholla",
       "Attraction": "Objek Wisata",
-      "Others": "Lainnya"
+      "Others": "Lainnya",
+      "Vegan Restaurant": "Restoran Vegan",
+      "Muslim-friendly Stall": "Warung Ramah Muslim",
+      "Halal Stall": "Warung Halal",
+      "Muslim-friendly Souvenirs": "Suvenir Ramah Muslim",
+      "Halal Kitchen": "Dapur Halal"
     },
     "specialPromo": "Gold Partner",
     "campusFilter": "{name} Muslim-friendly Campus",
@@ -566,6 +913,8 @@
     "activeFilters": "Active Filters",
     "categories": "Categories",
     "campusPartners": "Campus Partners",
+    "delivery": "Pengantaran",
+    "deliveryFilter": "Tersedia Delivery",
     "forYou": {
       "title": "For You",
       "gateDesc": "You're viewing For You. This personalized feed unlocks with Halal Formosa Pro and adapts to your explore activity over time.",
@@ -578,7 +927,11 @@
       "searchTerms": "Recent searches",
       "tags": "Places you view"
     },
-    "noResults": "No results found"
+    "noResults": "No results found",
+    "go": "Cari",
+    "searching": "Mencari lokasi...",
+    "showResults": "Tampilkan {count} hasil",
+    "searchNotFound": "Tidak ada hasil untuk \"{query}\""
   },
   "trip": {
     "title": "Wisata Ramah Muslim",
@@ -631,6 +984,11 @@
       "about": "Tentang Aplikasi",
       "contributions": "Contributions"
     },
+    "stats": {
+      "products": "Produk",
+      "places": "Tempat",
+      "xp": "XP"
+    },
     "title": "Profil",
     "incompleteNoticeTitle": "💡 Lengkapi \"Tentang Saya\"",
     "incompleteNoticeDesc": "Tambahkan Tanggal Lahir, Kewarganegaraan, Jenis Kelamin, atau Bio Anda untuk mempersonalisasi profil Anda.",
@@ -638,7 +996,7 @@
     "logout": "Keluar",
     "donor": "Status Donatur",
     "noUserLogged": "Tidak ada pengguna masuk",
-    "proMember": "⭐ Anggota Pro",
+    "proMember": "⭐ Pro",
     "noBio": "Belum ada bio",
     "level": "Level {level}",
     "savedItems": "Item Tersimpan",
@@ -687,7 +1045,9 @@
         "unlimitedCollections": "Koleksi Tanpa Batas",
         "unlimitedScans": "Scan Tanpa Batas",
         "prioritySupport": "Dukungan Prioritas 24/7"
-      }
+      },
+      "restoreSuccess": "Langganan berhasil dipulihkan",
+      "errorOpening": "Gagal memuat opsi langganan. Silakan coba lagi."
     },
     "aboutMe": "Tentang Saya",
     "edit": "Ubah",
@@ -696,6 +1056,17 @@
     "login": "Masuk",
     "review": "Review Produk",
     "settings": "Pengaturan",
+    "linkedAccounts": {
+      "title": "Akun Tertaut",
+      "subtitle": "Lihat metode masuk yang tertaut ke akun Anda.",
+      "email": "Email & Kata Sandi",
+      "google": "Google",
+      "apple": "Apple",
+      "line": "LINE",
+      "connected": "Tertaut",
+      "notConnected": "Belum Tertaut",
+      "note": "Masuk menggunakan metode mana pun yang tertaut akan membawa Anda ke akun yang sama ini."
+    },
     "legal": "Legal",
     "credits": "Kredit & Kontributor",
     "support": "Dukung Halal Formosa ❤️",
@@ -745,7 +1116,23 @@
       "avatarOptionsTitle": "Ubah Foto Profil",
       "selectDate": "Pilih tanggal",
       "selectDob": "Pilih Tanggal Lahir",
-      "clearNationality": "Hapus Kewarganegaraan"
+      "clearNationality": "Hapus Kewarganegaraan",
+      "nameRequiredHint": "Wajib — minimal 1 karakter.",
+      "referralApplied": "Kode referral diterapkan:",
+      "referralNoneRecorded": "Tidak ada kode referral — semua sudah siap.",
+      "referralPrompt": "Apakah kamu diundang seseorang?",
+      "referralHaveCode": "Saya punya kode",
+      "referralNoCode": "Saya tidak punya kode referral",
+      "referralCodeLabel": "Kode referral",
+      "nameRequired": "Silakan masukkan nama tampilan.",
+      "nameTooLong": "Nama tampilan maksimal 40 karakter.",
+      "bioTooLong": "Bio maksimal 300 karakter.",
+      "phoneInvalid": "Masukkan nomor telepon yang valid (7–15 digit).",
+      "dobInvalid": "Silakan masukkan tanggal lahir yang valid.",
+      "dobFuture": "Tanggal lahir tidak boleh di masa depan.",
+      "referralInvalid": "Kode referral tidak valid.",
+      "fixErrors": "Silakan perbaiki kolom yang ditandai.",
+      "saveFailed": "Tidak dapat menyimpan profilmu."
     },
     "merchant": {
       "startSelling": "Mulai Berjualan",
@@ -755,16 +1142,18 @@
     },
     "xp": {
       "levelLabel": "LEVEL",
-      "toNextLevel": "XP UNTUK LEVEL BERIKUTNYA",
+      "toNextLevel": "XP Naik Level",
       "infoTitle": "Tentang Poin Pengalaman (XP)",
       "infoMessage": "Poin XP mewakili kredit yang diberikan kepada Anda oleh Halal Formosa atas tindakan dan kontribusi Anda (seperti memindai produk, mengirimkan item, dan melaporkan), yang juga akan menentukan peringkat Anda di papan peringkat. Di masa depan, poin ini dapat ditukar dengan berbagai kemudahan, seperti diskon mitra, promo eksklusif, dan opsi kustomisasi lainnya!",
-      "spendable": "Tersedia untuk Dibelanjakan",
-      "spent": "XP Dibelanjakan"
+      "spendable": "Tersedia",
+      "spent": "Dipakai"
     },
     "social": {
       "instagram": "Instagram",
       "line": "LINE",
-      "website": "Situs Web"
+      "website": "Situs Web",
+      "tiktok": "TikTok",
+      "facebook": "Facebook"
     },
     "defaultName": "Pengguna",
     "submittedProducts": "Submitted Products",
@@ -778,9 +1167,93 @@
     "myLocations": {
       "title": "My Submitted Locations",
       "noLocations": "You haven't submitted any locations yet."
+    },
+    "reports": {
+      "noMessages": "Belum ada pesan.",
+      "typeMessage": "Ketik pesan..."
+    },
+    "levelShort": "Lv. {level}",
+    "badgeCustomize": {
+      "title": "Kustomisasi Lencana",
+      "livePreview": "Pratinjau Langsung",
+      "unsaved": "Belum disimpan",
+      "noEffects": "Belum ada efek yang dipakai. Ketuk item untuk memakainya!",
+      "noItems": "Belum ada kosmetik. Kunjungi toko!",
+      "goToShop": "Ke Toko",
+      "subtitle": "Cahaya, aura, garis tepi & lainnya",
+      "ownedItems": "Item Kamu",
+      "saved": "Perubahan disimpan!"
+    },
+    "badgeShop": {
+      "title": "Toko Lencana",
+      "reset": "Atur Ulang Pratinjau",
+      "equipped": "Dipakai",
+      "owned": "Dimiliki",
+      "tiers": {
+        "free": "Gratis",
+        "pro": "Khusus Pro",
+        "xp": "{cost} XP"
+      },
+      "unequip": "Lepas",
+      "equip": "Pakai",
+      "insufficientXp": "XP tidak cukup",
+      "purchase": "Beli",
+      "confirmTitle": "Konfirmasi Pembelian",
+      "confirmFree": "Klaim \"{name}\" gratis?",
+      "confirmPurchase": "Gunakan {cost} XP untuk \"{name}\"?",
+      "purchaseSuccess": "🎉 Kamu mendapatkan \"{name}\"!",
+      "menuSubtitle": "Tukar XP dengan cahaya, aura & lainnya",
+      "subtitle": "Tampil beda di papan peringkat!",
+      "available": "tersedia",
+      "categories": {
+        "glow": "Cahaya",
+        "aura": "Aura",
+        "outline": "Garis Tepi",
+        "background": "Latar",
+        "nameplate": "Papan Nama",
+        "frame": "Bingkai"
+      },
+      "proRequired": "Tingkatkan ke Pro untuk membuka item ini",
+      "preview": "Pratinjau"
+    },
+    "ingredientEncyclopedia": "Ensiklopedia Bahan",
+    "myLocationReports": {
+      "title": "Laporan Lokasi Saya",
+      "noReports": "Kamu belum mengirim laporan lokasi."
+    },
+    "activeReports": "Aktif",
+    "historyReports": "Riwayat",
+    "reportDetail": "Detail Laporan",
+    "myProductReports": {
+      "title": "Laporan Produk Saya",
+      "noReports": "Kamu belum mengirim laporan produk."
+    },
+    "scanHistory": "Riwayat Pindai",
+    "reportsCount": "Laporan",
+    "businessSub": {
+      "cancelsSoon": "Berhenti di akhir periode",
+      "active": "Aktif",
+      "plan": "Paket",
+      "autoRenew": "Perpanjang otomatis",
+      "on": "Aktif",
+      "off": "Nonaktif",
+      "renewsOn": "Diperpanjang pada",
+      "accessUntil": "Akses hingga",
+      "source": "Sumber",
+      "complimentary": "Gratis dari kami",
+      "manage": "Kelola atau batalkan langganan",
+      "cancelNote": "Untuk membatalkan, kelola langgananmu di App Store atau Google Play. Paketmu tetap aktif hingga akhir periode berjalan.",
+      "webNote": "Buka aplikasi seluler Halal Formosa untuk mengelola atau membatalkan langganan ini.",
+      "complimentaryNote": "Paket ini diberikan oleh tim kami — tidak ada yang perlu dibayar atau dibatalkan."
+    },
+    "anonymous": "Anonim",
+    "merchantTier": {
+      "bronze": "Merchant Bronze",
+      "silver": "Merchant Silver",
+      "gold": "Merchant Gold"
     }
   },
-"achievements": {
+  "achievements": {
     "title": "Pencapaian Saya",
     "summaryLabel": "Trofi Terbuka",
     "nextTierHint": "{count} lagi untuk membuka \"{tier}\"",
@@ -861,7 +1334,8 @@
           "6": "Veteran Halal Formosa"
         }
       }
-    }
+    },
+    "unlockedBadge": "Trofi Terbuka!"
   },
   "appReview": {
     "title": "Suka Halal Formosa?",
@@ -882,7 +1356,9 @@
     "uiUx": "Kontributor UI/UX",
     "database": "Kontributor Database",
     "specialThanks": "Terima Kasih Khusus",
-    "thankYou": "Kami berterima kasih kepada semua anggota komunitas, penguji, dan pendukung yang membuat Halal Formosa terwujud. Semoga Allah SWT membalas kontribusi Anda dengan kebaikan yang berlimpah."
+    "thankYou": "Kami berterima kasih kepada semua anggota komunitas, penguji, dan pendukung yang membuat Halal Formosa terwujud. Semoga Allah SWT membalas kontribusi Anda dengan kebaikan yang berlimpah.",
+    "poweredBy": "Didukung oleh",
+    "poweredByDescription": "Penerbitan platform, pendaftaran, dan kebutuhan operasional Halal Formosa di Taiwan didukung oleh YiQi Global Consulting (藝啟文創行銷有限公司)."
   },
   "addProduct": {
     "title": "Tambah Produk",
@@ -899,6 +1375,9 @@
     "scanIngredientsDesc": "Pindai daftar bahan untuk mengisi formulir secara otomatis dan mengambil foto belakang.",
     "camera": "Kamera",
     "gallery": "Galeri",
+    "enterIngredientsManually": "Tidak bisa dipindai? Masukkan bahan secara manual",
+    "noIngredientsDetected": "Tidak dapat mendeteksi daftar bahan pada foto tersebut. Coba lagi atau masukkan bahan secara manual di bawah.",
+    "analyzingIngredients": "Menganalisis bahan…",
     "skip": "Lewati dulu",
     "next": "Selanjutnya",
     "back": "Kembali",
@@ -969,7 +1448,18 @@
       "backImageRequired": "Gambar belakang wajib diisi."
     },
     "selectCategory": "Pilih Kategori",
-    "searchCategoryPlaceholder": "Cari kategori..."
+    "searchCategoryPlaceholder": "Cari kategori...",
+    "manualEntryShort": "Manual",
+    "galleryShort": "Galeri",
+    "tapToStop": "Ketuk untuk Menghentikan Kamera",
+    "verifyingBarcode": "Memverifikasi barcode...",
+    "noBarcodeInImage": "Tidak ada barcode pada gambar tersebut.",
+    "cameraError": "Gagal mengambil gambar.",
+    "scanBarcodeFromGallery": "Unggah dari Galeri",
+    "manualEntry": "Input Manual",
+    "offProductFound": "Info Produk Ditemukan!",
+    "useThisInfo": "Gunakan Info Ini",
+    "skipInfo": "Lewati"
   },
   "addPlace": {
     "title": "Tambah Tempat Baru",
@@ -1050,9 +1540,9 @@
       "website": "Situs Web"
     },
     "goldPartner": "MITRA GOLD",
-    "activeFilters": "目前篩選",
-    "verifiedLabelShort": "Verified",
-    "producedProducts": "Produced Products"
+    "activeFilters": "Filter aktif",
+    "verifiedLabelShort": "Terverifikasi",
+    "producedProducts": "Produk yang Diproduksi"
   },
   "points": {
     "title": "Tinjau Log Poin"
@@ -1085,7 +1575,11 @@
     "direction": "Arah Kiblat",
     "fromNorth": "dari Utara Sejati",
     "preparing": "Menyiapkan kompas...",
-    "facing": "Anda sedang menghadap Kiblat"
+    "needsPermission": "Akses kompas diperlukan untuk menampilkan arah.",
+    "enableButton": "Aktifkan Kompas",
+    "error": "Tidak dapat menginisialisasi kompas.",
+    "facing": "Anda sedang menghadap Kiblat",
+    "noSensor": "Sensor kompas tidak aktif di perangkat ini. Gunakan arah derajat di atas."
   },
   "savedItems": {
     "freeTier": "Penggunaan Paket Gratis",
@@ -1181,6 +1675,14 @@
     "productCategories": "Kategori Produk",
     "stores": "Toko",
     "categoryRules": "Aturan Kategori",
+    "houseAds": "Iklan Internal (Konten Bersponsor)",
+    "adImpressions": "Tayangan",
+    "adClicks": "Klik",
+    "adCtr": "CTR",
+    "adsByTier": "Iklan berdasarkan Tingkat",
+    "adsByKind": "Iklan berdasarkan Kategori",
+    "topAds": "Konten Sponsor Teratas",
+    "noData": "Tidak ada data untuk periode ini.",
     "verifiedPartner": "Mitra Resmi Terverifikasi",
     "loadingMoreLogs": "Memuat lebih banyak log...",
     "ocrChinese": "OCR Mandarin",
@@ -1352,7 +1854,69 @@
     "topLocations": "Top Locations",
     "insight_high_scan_success": "AI Scanner is performing exceptionally well (>70% success).",
     "insight_low_scan_success": "Scanner error rates are higher than usual. Check visibility/lighting logs.",
-    "searchHistory": "Search History"
+    "searchHistory": "Search History",
+    "retractConfirm": "Tarik kembali entri ini? Tindakan ini tidak dapat dibatalkan.",
+    "retractFailed": "Gagal menarik kembali: {error}",
+    "never": "Tidak pernah",
+    "neverActive": "Tidak pernah aktif",
+    "ingredientHighlights": "Sorotan Bahan",
+    "locationTypes": "Jenis Lokasi",
+    "claims": {
+      "title": "Klaim Bisnis",
+      "noPending": "Tidak ada klaim yang menunggu",
+      "pending": "Menunggu",
+      "reject": "Tolak",
+      "approve": "Setujui",
+      "confirmApprove": "Setujui klaim?",
+      "confirmApproveMsg": "Berikan kepemilikan {name} kepada pengguna ini?",
+      "approveSuccess": "Klaim disetujui — kepemilikan diberikan",
+      "confirmReject": "Tolak klaim?",
+      "confirmRejectMsg": "Beri tahu pemohon alasan klaimnya ditolak.",
+      "reasonPlaceholder": "Alasan penolakan",
+      "reasonRequired": "Mohon berikan alasan",
+      "rejectSuccess": "Klaim ditolak"
+    },
+    "editRequests": {
+      "title": "Perubahan Bisnis",
+      "noPending": "Tidak ada permintaan perubahan yang menunggu",
+      "pending": "Menunggu",
+      "submitted": "Dikirim {date}",
+      "reject": "Tolak",
+      "approve": "Setujui",
+      "confirmApprove": "Setujui perubahan?",
+      "confirmApproveMsg": "Terapkan perubahan ini ke {name}?",
+      "approveSuccess": "Perubahan diterapkan",
+      "confirmReject": "Tolak perubahan?",
+      "confirmRejectMsg": "Beri tahu pemilik alasan perubahannya ditolak.",
+      "reasonPlaceholder": "Alasan penolakan",
+      "reasonRequired": "Mohon berikan alasan",
+      "rejectSuccess": "Permintaan perubahan ditolak",
+      "fields": {
+        "name": "Nama",
+        "address": "Alamat",
+        "type_id": "Kategori",
+        "halal_status": "Status halal",
+        "lat": "Lintang",
+        "lng": "Bujur"
+      },
+      "halalStatus": {
+        "certified": "Bersertifikat",
+        "self_reported": "Klaim sendiri",
+        "muslim_friendly": "Ramah Muslim"
+      }
+    },
+    "sections": {
+      "content": "Tinjauan Konten",
+      "store": "Admin Toko Platform",
+      "management": "Manajemen",
+      "system": "Sistem & Log"
+    },
+    "pointsLogs": "Lihat Log Poin",
+    "scanLogs": "Log Pindai Bahan",
+    "analytics": "Dasbor Analitik",
+    "locationsReview": "Tinjauan Lokasi",
+    "users": "Pengguna",
+    "products": "Kelola Produk"
   },
   "update": {
     "required_title": "Pembaruan Diperlukan",
@@ -1573,7 +2137,9 @@
     "noReviews": "No reviews yet. Be the first!",
     "noReviewsYet": "No reviews yet.",
     "ratingCount": "({count} reviews)",
-    "loginToReview": "Log in to write a review"
+    "loginToReview": "Log in to write a review",
+    "purchasesDisabled": "Pembelian dinonaktifkan selama masa uji coba",
+    "testPhaseDisclaimer": "Toko sedang diuji — mohon jangan melakukan pembelian sungguhan dulu."
   },
   "master": {
     "active": "Aktif",
@@ -1779,6 +2345,7 @@
     "seeAllLocations": "See All Locations"
   },
   "facilityReview": {
+    "ownerVerified": "Diverifikasi oleh pemilik bisnis",
     "title": "Tinjauan Fasilitas Muslim",
     "editTitle": "Edit Tinjauan Fasilitas",
     "subtitle": "Bantu pelancong lain dengan membagikan fasilitas Muslim yang Anda temukan di sini.",
@@ -1824,6 +2391,59 @@
       "maybeLater": "Mungkin Nanti",
       "yes": "Ya, benar",
       "no": "Tidak juga"
+    },
+    "deleteConfirmMsg": "Yakin ingin menghapus ulasanmu?"
+  },
+  "notifications": {
+    "title": "Notifikasi",
+    "dailyMissionTitle": "Misi harian masih tersedia",
+    "dailyMissionBody": "Selesaikan untuk mendapat XP Ekstra!",
+    "dailyBonusTitle": "Bonus harian siap diklaim",
+    "dailyBonusBody": "Semua misi selesai — ketuk untuk klaim XP Ekstra!",
+    "whatsNew": "Yang baru",
+    "activity": "Aktivitas",
+    "markAllRead": "Tandai semua dibaca",
+    "empty": "Belum ada notifikasi",
+    "emptyHint": "Kami akan memberi tahu kamu saat ada hal baru.",
+    "category": {
+      "products": "Produk baru ditambahkan",
+      "locations": "Tempat baru ditambahkan",
+      "news": "Pengumuman baru",
+      "trips": "Trip baru tersedia",
+      "store": "Item toko baru",
+      "productsSingle": "Produk baru",
+      "locationsSingle": "Tempat baru",
+      "newsSingle": "Pengumuman baru",
+      "tripsSingle": "Trip baru",
+      "storeSingle": "Item toko baru"
     }
+  },
+  "referral": {
+    "yourCode": "Kode referralmu",
+    "qrHint": "Pindai untuk mendaftar dengan kodemu",
+    "share": "Bagikan",
+    "shareQr": "Bagikan kode QR",
+    "campaignActive": "Promosi sedang berlangsung",
+    "campaignEnds": "Berakhir {date}",
+    "campaignValidReferrals": "referral valid sejauh ini",
+    "people": "orang",
+    "days": "hari",
+    "deadlinePassed": "Periode penghasilan NT$ telah berakhir.",
+    "deadlinePrompt": "Dapatkan NT$ untuk referral yang dibuat sebelum:",
+    "referredBy": "Kamu direferensikan oleh",
+    "someone": "Seseorang",
+    "yourRewardsPro": "Hari Pro yang kamu dapatkan",
+    "yourRewardsCash": "Penghasilanmu",
+    "pending": "Menunggu",
+    "paid": "Dibayar",
+    "peopleYouReferred": "Orang yang kamu referensikan",
+    "noReferralsYet": "Kamu belum mereferensikan siapa pun.",
+    "titlePro": "Undang & Dapatkan Pro",
+    "titleCash": "Undang & Dapatkan NT$",
+    "shareText": "Gunakan kode referral saya {code} di Halal Formosa!",
+    "linkCopied": "Tautan disalin — tempel di mana saja!",
+    "statusConverted": "Berhasil",
+    "statusCanceled": "Dibatalkan",
+    "statusSignedUp": "Sudah mendaftar"
   }
 }

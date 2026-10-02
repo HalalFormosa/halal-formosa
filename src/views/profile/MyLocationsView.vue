@@ -63,13 +63,16 @@
                     {{ location.location_types.name }}
                   </ion-chip>
                   
-                  <ion-badge 
-                    :color="location.approved ? 'success' : 'warning'"
+                  <ion-badge
+                    :color="location.approved ? 'success' : (location.is_rejected ? 'danger' : 'warning')"
                     class="approval-badge"
                   >
-                    {{ location.approved ? $t('master.published') : 'Pending' }}
+                    {{ location.approved ? $t('master.published') : (location.is_rejected ? 'Rejected' : 'Pending') }}
                   </ion-badge>
                 </div>
+                <p v-if="location.is_rejected && location.rejection_reason" class="rejection-reason-text" style="color: var(--ion-color-danger); font-size: 0.85rem; margin-top: 4px; margin-bottom: 4px; font-weight: 500;">
+                  <strong>Reason:</strong> {{ location.rejection_reason }}
+                </p>
                 <p class="address-text">{{ location.address }}</p>
                 <p class="date-text">{{ formatDate(location.created_at) }}</p>
               </ion-label>
@@ -145,7 +148,7 @@ async function loadMyLocations(reset = false) {
 
   let query = supabase
     .from('locations')
-    .select('id, name, location_types(name), image, approved, address, created_at')
+    .select('id, name, location_types(name), image, approved, address, created_at, is_rejected, rejection_reason')
     .eq('created_by', user.id);
 
   if (searchQuery.value) {
@@ -231,7 +234,7 @@ watch(viewMode, () => {
   margin-bottom: 12px;
   --border-radius: 16px;
   --background: var(--ion-color-step-50);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--card-shadow);
 }
 
 .location-name {

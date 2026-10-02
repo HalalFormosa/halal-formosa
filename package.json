@@ -1,7 +1,7 @@
 {
   "name": "halal-formosa",
   "private": true,
-  "version": "1.9.2",
+  "version": "2.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite --mode development",
@@ -11,10 +11,21 @@
     "test:e2e": "cypress run",
     "test:unit": "vitest",
     "lint": "eslint .",
-    "postversion": "node scripts/update-native-version.js"
+    "postversion": "node scripts/update-native-version.js",
+    "postinstall": "node scripts/patch-keyboard-resize.js",
+    "capacitor:sync:after": "node node_modules/capacitor-levelplay-ads/scripts/levelplay-manifest.js && node scripts/patch-keyboard-resize.js"
+  },
+  "levelplay": {
+    "networks": [
+      "admob"
+    ],
+    "userTrackingDescription": "This identifier is used to deliver personalized ads to you.",
+    "consentProvider": "custom",
+    "admob": {
+      "appId": "ca-app-pub-9588373061537955~6845513245"
+    }
   },
   "dependencies": {
-    "@capacitor-community/admob": "^8.0.0",
     "@capacitor-community/in-app-review": "^8.0.0",
     "@capacitor-community/text-to-speech": "^8.0.2",
     "@capacitor-mlkit/barcode-scanning": "^8.0.1",
@@ -32,6 +43,7 @@
     "@capacitor/ios": "^8.0.0",
     "@capacitor/keyboard": "^8.0.0",
     "@capacitor/motion": "^8.0.0",
+    "@capacitor/network": "^8.0.1",
     "@capacitor/preferences": "^8.0.0",
     "@capacitor/share": "^8.0.0",
     "@capacitor/status-bar": "^8.0.0",
@@ -58,6 +70,7 @@
     "@vercel/speed-insights": "^1.2.0",
     "@vueup/vue-quill": "^1.2.0",
     "canvas-confetti": "^1.9.3",
+    "capacitor-levelplay-ads": "^0.1.42",
     "capacitor-plugin-safe-area": "^5.0.0",
     "chart.js": "^4.5.0",
     "chartjs-chart-sankey": "^0.14.0",
@@ -77,6 +90,7 @@
     "onesignal-cordova-plugin": "^5.3.1",
     "praytime": "^3.2.0",
     "puppeteer": "^24.42.0",
+    "qrcode": "^1.5.4",
     "swiper": "^12.1.2",
     "tesseract.js": "^6.0.1",
     "vue": "^3.5.29",
@@ -91,6 +105,7 @@
     "@eslint/js": "^10.0.1",
     "@types/canvas-confetti": "^1.9.0",
     "@types/google.maps": "^3.58.1",
+    "@types/qrcode": "^1.5.6",
     "@types/uuid": "^10.0.0",
     "@vitejs/plugin-legacy": "^7.2.1",
     "@vitejs/plugin-vue": "^6.0.4",

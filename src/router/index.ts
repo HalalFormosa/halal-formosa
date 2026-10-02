@@ -3,9 +3,12 @@ import { RouteRecordRaw } from 'vue-router';
 import { supabase } from '@/plugins/supabaseClient';
 import { performBotChecks } from '@/utils/botShield';
 import { Capacitor } from '@capacitor/core';
+import { isDeviceOnline } from '@/utils/connectivity';
 
 const isIos = Capacitor.getPlatform() === 'ios';
-const getAdId = (iosId: string, androidId: string) => isIos ? iosId : androidId;
+// LevelPlay mediation (ironSource, with AdMob wired in as one of its mediated
+// networks) serves every banner placement — see src/plugins/admob.ts.
+const getLevelPlayAdId = (iosId: string, androidId: string) => isIos ? iosId : androidId;
 
 
 import {
@@ -13,7 +16,8 @@ import {
     isContributor,
     isProfileComplete,
     profileLoaded,
-    profileSkipped
+    profileSkipped,
+    currentUser
 } from '@/composables/userProfile'
 
 
@@ -37,32 +41,32 @@ const routes: Array<RouteRecordRaw> = [
         children: [
             { path: '', redirect: '/home' },
             { path: 'home', component: () => import('@/views/home/HomeView.vue') },
-            { path: 'search', component: SearchView, meta: { adSpaceId: 'ad-space-search', adId: getAdId(import.meta.env.VITE_ADMOB_IOS_SEARCH_BANNER_ID, import.meta.env.VITE_ADMOB_ANDROID_SEARCH_BANNER_ID) } },
-            { path: 'explore', component: ExploreView, meta: { adSpaceId: 'ad-space-explore', adId: getAdId(import.meta.env.VITE_ADMOB_IOS_EXPLORE_BANNER_ID, import.meta.env.VITE_ADMOB_ANDROID_EXPLORE_BANNER_ID) } },
+            { path: 'search', component: SearchView, meta: { adSpaceId: 'ad-space-search', levelPlayAdId: getLevelPlayAdId(import.meta.env.VITE_LEVELPLAY_IOS_SEARCH_BANNER_ID, import.meta.env.VITE_LEVELPLAY_ANDROID_SEARCH_BANNER_ID) } },
+            { path: 'explore', component: ExploreView, meta: { adSpaceId: 'ad-space-explore', levelPlayAdId: getLevelPlayAdId(import.meta.env.VITE_LEVELPLAY_IOS_EXPLORE_BANNER_ID, import.meta.env.VITE_LEVELPLAY_ANDROID_EXPLORE_BANNER_ID) } },
             { path: 'explore/add', name: 'ExploreAdd', component: () => import('@/views/explore/AddPlaceView.vue'), meta: { requiresAuth: true } },
             {
                 path: 'trip',
                 component: () => import('@/views/trip/TripListView.vue'),
-                meta: { 
+                meta: {
                     adSpaceId: 'ad-space-trip',
-                    adId: getAdId(import.meta.env.VITE_ADMOB_IOS_TRIP_BANNER_ID, import.meta.env.VITE_ADMOB_ANDROID_TRIP_BANNER_ID)
+                    levelPlayAdId: getLevelPlayAdId(import.meta.env.VITE_LEVELPLAY_IOS_TRIP_BANNER_ID, import.meta.env.VITE_LEVELPLAY_ANDROID_TRIP_BANNER_ID)
                 }
             },
             {
                 path: 'store',
                 component: () => import('@/views/store/StoreView.vue'),
-                meta: { 
+                meta: {
                     adSpaceId: 'ad-space-store',
-                    adId: getAdId(import.meta.env.VITE_ADMOB_IOS_STORE_BANNER_ID, import.meta.env.VITE_ADMOB_ANDROID_STORE_BANNER_ID)
+                    levelPlayAdId: getLevelPlayAdId(import.meta.env.VITE_LEVELPLAY_IOS_STORE_BANNER_ID, import.meta.env.VITE_LEVELPLAY_ANDROID_STORE_BANNER_ID)
                 }
             },
-            { path: 'add', component: () => import('@/views/add-product/AddProductView.vue'), meta: { requiresAuth: true } },
+            { path: 'add', component: () => import('@/views/add-product/AddProductView.vue'), meta: { requiresAuth: true, noTabs: true } },
             { path: 'profile', component: () => import('@/views/profile/ProfileView.vue'), meta: { noAds: true } },
             {
         path: '/reels',
         name: 'FullReels',
         component: () => import('@/views/home/FullReelsView.vue'),
-        meta: { noAds: true }
+        meta: { noAds: true, noTabs: true }
     },
     {
         path: '/analytics/:type',
@@ -97,9 +101,34 @@ const routes: Array<RouteRecordRaw> = [
         meta: { requiresAuth: true, noTabs: true, noAds: true }
     },
     {
+        path: '/profile/ingredient-encyclopedia',
+        name: 'IngredientEncyclopedia',
+        component: () => import('@/views/profile/IngredientEncyclopediaView.vue'),
+        meta: { requiresAuth: true, noTabs: true, noAds: true }
+    },
+    {
+        path: '/profile/ingredient-encyclopedia/:slug',
+        name: 'IngredientArticleDetail',
+        component: () => import('@/views/profile/IngredientArticleDetailView.vue'),
+        props: true,
+        meta: { requiresAuth: true, noTabs: true, noAds: true }
+    },
+    {
         path: '/profile/achievements',
         name: 'Achievements',
         component: () => import('@/views/profile/AchievementsView.vue'),
+        meta: { requiresAuth: true, noTabs: true, noAds: true }
+    },
+    {
+        path: '/profile/invite-earn',
+        name: 'InviteEarn',
+        component: () => import('@/views/profile/InviteEarnView.vue'),
+        meta: { requiresAuth: true, noTabs: true, noAds: true }
+    },
+    {
+        path: '/notifications',
+        name: 'Notifications',
+        component: () => import('@/views/notifications/NotificationsView.vue'),
         meta: { requiresAuth: true, noTabs: true, noAds: true }
     },
     {
@@ -127,6 +156,12 @@ const routes: Array<RouteRecordRaw> = [
         meta: { requiresAuth: true, noTabs: true, noAds: true }
     },
     {
+        path: '/profile/linked-accounts',
+        name: 'LinkedAccounts',
+        component: () => import('@/views/profile/LinkedAccountsView.vue'),
+        meta: { requiresAuth: true, noTabs: true, noAds: true }
+    },
+    {
         path: '/profile/badge-shop',
         name: 'BadgeShop',
         component: () => import('@/views/profile/BadgeShopView.vue'),
@@ -150,10 +185,10 @@ const routes: Array<RouteRecordRaw> = [
         name: 'PlaceDetail', 
         component: () => import('@/views/explore/PlaceDetailsView.vue'), 
         props: true, 
-        meta: { 
+        meta: {
             adSpaceId: 'ad-space-place-detail',
-            adId: getAdId(import.meta.env.VITE_ADMOB_IOS_PLACE_DETAIL_BANNER_ID, import.meta.env.VITE_ADMOB_ANDROID_PLACE_DETAIL_BANNER_ID)
-        } 
+            levelPlayAdId: getLevelPlayAdId(import.meta.env.VITE_LEVELPLAY_IOS_PLACE_DETAIL_BANNER_ID, import.meta.env.VITE_LEVELPLAY_ANDROID_PLACE_DETAIL_BANNER_ID)
+        }
     },
     { path: '/place/:id/edit', name: 'EditPlace', component: () => import('@/views/explore/AddPlaceView.vue'), },
     { path: '/place/:id/report', name: 'ReportPlaceView', component: () => import('@/views/explore/ReportPlaceView.vue'), props: true },
@@ -163,7 +198,7 @@ const routes: Array<RouteRecordRaw> = [
     { path: '/business', name: 'BusinessDashboard', component: () => import('@/views/business/BusinessDashboardView.vue'), meta: { requiresAuth: true, noAds: true } },
     { path: '/business/:locationId', name: 'BusinessManage', component: () => import('@/views/business/BusinessManageView.vue'), props: true, meta: { requiresAuth: true, noTabs: true, noAds: true } },
 
-    { path: '/item/:barcode', name: 'item-details', component: () => import('@/views/search/ItemDetailsView.vue'), meta: { adSpaceId: 'ad-space-item-details', adId: getAdId(import.meta.env.VITE_ADMOB_IOS_ITEM_DETAILS_BANNER_ID, import.meta.env.VITE_ADMOB_ANDROID_ITEM_DETAILS_BANNER_ID) } },
+    { path: '/item/:barcode', name: 'item-details', component: () => import('@/views/search/ItemDetailsView.vue'), meta: { adSpaceId: 'ad-space-item-details', levelPlayAdId: getLevelPlayAdId(import.meta.env.VITE_LEVELPLAY_IOS_ITEM_DETAILS_BANNER_ID, import.meta.env.VITE_LEVELPLAY_ANDROID_ITEM_DETAILS_BANNER_ID) } },
 
     {
         path: '/partners',
@@ -193,16 +228,17 @@ const routes: Array<RouteRecordRaw> = [
     { 
       path: '/scan', 
       component: ScanIngredientsView, 
-      meta: { 
-        requiresAuth: true, 
-        adSpaceId: 'ad-space-scan-results', 
-        adId: getAdId(import.meta.env.VITE_ADMOB_IOS_SCAN_RESULTS_BANNER_ID, import.meta.env.VITE_ADMOB_ANDROID_SCAN_RESULTS_BANNER_ID)
-      } 
+      meta: {
+        requiresAuth: true,
+        adSpaceId: 'ad-space-scan-results',
+        levelPlayAdId: getLevelPlayAdId(import.meta.env.VITE_LEVELPLAY_IOS_SCAN_RESULTS_BANNER_ID, import.meta.env.VITE_LEVELPLAY_ANDROID_SCAN_RESULTS_BANNER_ID)
+      }
     },
     { path: '/scan/auto', component: () => import('@/views/scan/AutoScanView.vue'), meta: { requiresAuth: true, noAds: true, noTabs: true } },
+    { path: '/scan/barcode', component: () => import('@/views/scan/BarcodeScanView.vue'), meta: { noAds: true, noTabs: true } },
 
     { path: '/news', component: () => import('@/views/news/NewsListView.vue') },
-    { path: '/news/:id', name: 'news-detail', component: () => import('@/views/news/NewsDetailView.vue'), props: true, meta: { adSpaceId: 'ad-space-news-detail', adId: getAdId(import.meta.env.VITE_ADMOB_IOS_NEWS_BANNER_ID, import.meta.env.VITE_ADMOB_ANDROID_NEWS_BANNER_ID) } },
+    { path: '/news/:id', name: 'news-detail', component: () => import('@/views/news/NewsDetailView.vue'), props: true, meta: { adSpaceId: 'ad-space-news-detail', levelPlayAdId: getLevelPlayAdId(import.meta.env.VITE_LEVELPLAY_IOS_NEWS_BANNER_ID, import.meta.env.VITE_LEVELPLAY_ANDROID_NEWS_BANNER_ID) } },
     { path: '/news/add', component: () => import('@/views/news/AddNewsView.vue'), meta: { requiresAuth: true, requiresAdmin: true } },
     { path: '/news/edit/:id', component: () => import('@/views/news/AddNewsView.vue'), meta: { requiresAuth: true, requiresAdmin: true } },
 
@@ -213,6 +249,8 @@ const routes: Array<RouteRecordRaw> = [
     { path: '/credits', component: () => import('@/views/profile/CreditsView.vue') },
     { path: '/signup', component: () => import('@/views/auth/SignUpView.vue') },
     { path: '/login', component: () => import('@/views/auth/LoginView.vue') },
+    { path: '/auth/line/callback', component: () => import('@/views/auth/LineCallbackView.vue') },
+    { path: '/auth/line/native-callback', component: () => import('@/views/auth/LineNativeCallbackView.vue') },
     {
         path: '/update-password',
         name: 'UpdatePassword',
@@ -255,6 +293,11 @@ const routes: Array<RouteRecordRaw> = [
         path: '/admin/master-data/:table',
         component: () => import('@/views/admin/AdminMasterDataEditor.vue'),
         meta: { requiresAdmin: true }
+    },
+    {
+        path: '/admin/referrals',
+        component: () => import('@/views/admin/ReferralsView.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true, noAds: true }
     },
     {
         path: '/admin/duplicate-products',
@@ -324,9 +367,9 @@ const routes: Array<RouteRecordRaw> = [
         name: 'StoreProductDetail',
         component: () => import('@/views/store/StoreProductDetailView.vue'),
         props: true,
-        meta: { 
+        meta: {
             adSpaceId: 'ad-space-store-detail',
-            adId: getAdId(import.meta.env.VITE_ADMOB_IOS_STORE_DETAIL_BANNER_ID, import.meta.env.VITE_ADMOB_ANDROID_STORE_DETAIL_BANNER_ID)
+            levelPlayAdId: getLevelPlayAdId(import.meta.env.VITE_LEVELPLAY_IOS_STORE_DETAIL_BANNER_ID, import.meta.env.VITE_LEVELPLAY_ANDROID_STORE_DETAIL_BANNER_ID)
         }
     },
     {
@@ -460,6 +503,14 @@ router.beforeEach(async (to, from, next) => {
         session = data.session;
     } catch (e) {
         console.warn('⚠️ [Router] getSession timeout/error:', e);
+    }
+
+    // getSession() can come back empty offline with an expired access token —
+    // it tries to refresh over the network, fails, and reports "no session"
+    // even though the user never logged out. Don't bounce them to /login for
+    // that; trust the already-restored in-memory user instead.
+    if (!session && !isDeviceOnline() && currentUser.value) {
+        session = { user: currentUser.value } as any;
     }
 
     // 🚫 Needs auth but not logged in

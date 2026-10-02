@@ -80,16 +80,71 @@
                 ></ion-textarea>
               </ion-item>
             </ion-list>
-            
-            <div class="button-row-onboarding ion-padding">
-              <ion-button expand="block" fill="clear" color="medium" @click="skipOnboarding">
-                {{ $t('common.skip') || 'Skip' }}
-              </ion-button>
-              <ion-button expand="block" color="carrot" shape="round" :disabled="!hasValidDisplayName" @click="currentStep = 2">
-                {{ $t('common.next') || 'Next' }}
-              </ion-button>
-            </div>
           </ion-card>
+
+          <!-- 🎟️ Referral code — required choice, no silent skip -->
+          <ion-card class="fade-in">
+            <ion-card-content>
+              <template v-if="referralMode === 'applied'">
+                <p class="referral-status-line">
+                  ✅ {{ $t('profile.editProfile.referralApplied') || 'Referral code applied:' }}
+                  <strong>{{ referralAppliedCode }}</strong>
+                </p>
+              </template>
+              <template v-else-if="referralMode === 'none'">
+                <p class="referral-status-line">
+                  {{ $t('profile.editProfile.referralNoneRecorded') || "No referral code — that's all set." }}
+                </p>
+              </template>
+              <template v-else>
+                <p class="referral-prompt">
+                  {{ $t('profile.editProfile.referralPrompt') || 'Were you invited by someone?' }}
+                </p>
+
+                <template v-if="referralMode === 'choose'">
+                  <div class="button-row-onboarding">
+                    <ion-button expand="block" fill="outline" color="carrot" @click="referralMode = 'code'">
+                      {{ $t('profile.editProfile.referralHaveCode') || 'I have a code' }}
+                    </ion-button>
+                    <ion-button expand="block" fill="clear" color="medium" :disabled="referralSubmitting" @click="declineReferralCode">
+                      {{ $t('profile.editProfile.referralNoCode') || "I don't have a referral code" }}
+                    </ion-button>
+                  </div>
+                </template>
+
+                <template v-else-if="referralMode === 'code'">
+                  <ion-item lines="none">
+                    <ion-input
+                        v-model="referralCodeInput"
+                        label-placement="stacked"
+                        :label="$t('profile.editProfile.referralCodeLabel') || 'Referral code'"
+                        placeholder="HF7K2M"
+                        :maxlength="6"
+                        @ionInput="referralError = ''"
+                    ></ion-input>
+                  </ion-item>
+                  <p v-if="referralError" class="referral-error">{{ referralError }}</p>
+                  <div class="button-row-onboarding">
+                    <ion-button expand="block" color="carrot" shape="round" :disabled="!referralCodeInput.trim() || referralSubmitting" @click="applyReferralCodeInput">
+                      {{ $t('common.apply') || 'Apply' }}
+                    </ion-button>
+                    <ion-button v-if="!referralPrefilled" expand="block" fill="clear" color="medium" :disabled="referralSubmitting" @click="referralMode = 'choose'">
+                      {{ $t('common.back') || 'Back' }}
+                    </ion-button>
+                  </div>
+                </template>
+              </template>
+            </ion-card-content>
+          </ion-card>
+
+          <div class="button-row-onboarding ion-padding">
+            <ion-button expand="block" fill="clear" color="medium" :disabled="!referralChoiceMade" @click="skipOnboarding">
+              {{ $t('common.skip') || 'Skip' }}
+            </ion-button>
+            <ion-button expand="block" color="carrot" shape="round" :disabled="!hasValidDisplayName || !referralChoiceMade" @click="currentStep = 2">
+              {{ $t('common.next') || 'Next' }}
+            </ion-button>
+          </div>
         </div>
 
         <!-- STEP 2: Optional Details (DOB, Nationality, Gender, Phone) -->
@@ -402,7 +457,7 @@
                 shape="round"
                 @click="saveProfile"
                 :disabled="!acknowledged || !hasValidDisplayName"
-                style="--box-shadow: 0 4px 12px rgba(var(--ion-color-carrot-rgb), 0.3);"
+                style="--box-shadow: var(--card-shadow-hover);"
             >
               {{ $t('profile.editProfile.save') }}
             </ion-button>
@@ -691,6 +746,69 @@ let userId: string | null = null;
 
 const wasComplete = ref(false);
 
+/* ---------------- Referral code (onboarding, Step 1) ----------------
+ * Required choice: enter a referral code, or explicitly say "I don't have
+ * one" — no silent skip, so attribution isn't lost. Pre-filled and locked
+ * in if a ?ref=CODE deep link was captured (see main.ts captureReferralCodeFromUrl). */
+const REFERRAL_STORAGE_KEY = 'hf_pending_referral_code';
+const referralChoiceMade = ref(false); // true once a redemption row exists (either a code or 'no_code')
+const referralMode = ref<'choose' | 'code' | 'applied' | 'none'>('choose');
+const referralCodeInput = ref('');
+const referralAppliedCode = ref('');
+const referralError = ref('');
+const referralPrefilled = ref(false);
+const referralSubmitting = ref(false);
+
+async function checkExistingReferralChoice() {
+  if (!userId) return;
+  const { data } = await supabase
+    .from('referral_redemptions')
+    .select('status, code')
+    .eq('referred_user_id', userId)
+    .maybeSingle();
+  if (data) {
+    referralChoiceMade.value = true;
+    if (data.status === 'no_code') {
+      referralMode.value = 'none';
+    } else {
+      referralMode.value = 'applied';
+      referralAppliedCode.value = data.code || '';
+    }
+  }
+}
+
+async function submitReferralCode(code: string | null) {
+  referralError.value = '';
+  referralSubmitting.value = true;
+  try {
+    const { error } = await supabase.rpc('redeem_referral_code', { p_code: code });
+    if (error && !/already recorded/i.test(error.message)) {
+      referralError.value = error.message || (t('profile.editProfile.referralInvalid') as string) || 'Invalid referral code.';
+      return;
+    }
+    referralChoiceMade.value = true;
+    if (code) {
+      referralMode.value = 'applied';
+      referralAppliedCode.value = code.toUpperCase();
+    } else {
+      referralMode.value = 'none';
+    }
+    try { localStorage.removeItem(REFERRAL_STORAGE_KEY); } catch { /* empty */ }
+  } finally {
+    referralSubmitting.value = false;
+  }
+}
+
+function applyReferralCodeInput() {
+  const code = referralCodeInput.value.trim();
+  if (!code) return;
+  submitReferralCode(code);
+}
+
+function declineReferralCode() {
+  submitReferralCode(null);
+}
+
 // country modal state
 const showCountryModal = ref(false);
 const searchQuery = ref("");
@@ -765,6 +883,27 @@ onBeforeMount(async () => {
   userId = userData.user.id
   await loadUserProfile(userId)
   wasComplete.value = isProfileComplete.value
+
+  if (!wasComplete.value) {
+    await checkExistingReferralChoice();
+    if (!referralChoiceMade.value) {
+      try {
+        const pending = localStorage.getItem(REFERRAL_STORAGE_KEY);
+        if (pending) {
+          referralPrefilled.value = true;
+          referralCodeInput.value = pending;
+          referralMode.value = 'code';
+          await submitReferralCode(pending);
+          // If the prefilled code turned out invalid (e.g. edited/expired), fall
+          // back to letting the user choose manually instead of getting stuck.
+          if (!referralChoiceMade.value) {
+            referralPrefilled.value = false;
+            referralMode.value = 'choose';
+          }
+        }
+      } catch { /* empty */ }
+    }
+  }
 
   // If countries already in memory, skip fetch
   if (!countries.value.length) {
@@ -910,8 +1049,8 @@ async function saveProfile() {
 <style scoped>
 ion-card {
   margin: 16px 0 24px;
-  border-radius: 20px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--card-shadow);
   overflow: hidden;
 }
 
@@ -924,7 +1063,7 @@ ion-card {
 .icon-box {
   width: 36px;
   height: 36px;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -985,7 +1124,7 @@ ion-toolbar {
   height: 120px;
   border-radius: 50%;
   cursor: pointer;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--card-shadow);
 }
 
 .profile-avatar-img {
@@ -1009,7 +1148,7 @@ ion-toolbar {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 12px rgba(var(--ion-color-carrot-rgb), 0.35);
+  box-shadow: var(--card-shadow-hover);
   border: 2px solid var(--ion-card-background, #fff);
 }
 
@@ -1080,14 +1219,14 @@ ion-toolbar {
   font-weight: 700;
   font-size: 0.9rem;
   transition: all 0.3s ease;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--card-shadow);
 }
 
 .step-badge.active {
   background: var(--ion-color-carrot);
   border-color: var(--ion-color-carrot);
   color: #fff;
-  box-shadow: 0 4px 10px rgba(var(--ion-color-carrot-rgb), 0.3);
+  box-shadow: var(--card-shadow-hover);
 }
 
 .step-label {
@@ -1108,6 +1247,21 @@ ion-toolbar {
   flex: 1;
   margin: 0;
   height: 44px;
+}
+
+.referral-prompt {
+  margin: 0 0 12px;
+  font-weight: 500;
+}
+
+.referral-status-line {
+  margin: 0;
+}
+
+.referral-error {
+  color: var(--ion-color-danger, #eb445a);
+  font-size: 0.85rem;
+  margin: 4px 0 12px;
 }
 </style>
 

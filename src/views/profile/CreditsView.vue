@@ -99,6 +99,22 @@
         </ion-card-content>
       </ion-card>
 
+      <!-- Powered By -->
+      <ion-card>
+        <ion-card-header>
+          <ion-card-title>{{ $t('credits.poweredBy') }}</ion-card-title>
+        </ion-card-header>
+        <ion-card-content>
+          <div class="powered-by-logo-wrapper" @click="openYiQiWebsite">
+            <img src="/social-logo/yiqi-logo.png" alt="YiQi Global Consulting Logo" class="powered-by-logo" />
+          </div>
+          <p class="powered-by-name clickable-contributor" @click="openYiQiWebsite">
+            YiQi Global Consulting (藝啟文創行銷有限公司) <ion-icon :icon="sparkles" class="link-spark" />
+          </p>
+          <p class="powered-by-description">{{ $t('credits.poweredByDescription') }}</p>
+        </ion-card-content>
+      </ion-card>
+
       <!-- Special Thanks -->
       <div class="special-thanks ion-padding-horizontal">
         <h3>{{ $t('credits.specialThanks') }}</h3>
@@ -224,6 +240,10 @@ const closePopover = () => {
   popoverEvent.value = null
 }
 
+const openYiQiWebsite = () => {
+  window.open('https://www.yiqiconsultant.com/', '_blank')
+}
+
 function isHighSimilarity(dbName: string, contributorName: string): boolean {
   const cleanDb = dbName.toLowerCase().replace(/[^a-z0-9 ]/g, '').trim()
   const cleanCont = contributorName.toLowerCase().replace(/[^a-z0-9 ]/g, '').trim()
@@ -297,6 +317,30 @@ ion-card-content li {
   height: auto;
 }
 
+.powered-by-logo-wrapper {
+  display: flex;
+  justify-content: center;
+  cursor: pointer;
+  margin-bottom: 12px;
+}
+
+.powered-by-logo {
+  max-width: 120px;
+  height: auto;
+}
+
+.powered-by-name {
+  font-weight: 600;
+  color: var(--ion-text-color);
+  margin: 0 0 4px;
+}
+
+.powered-by-description {
+  font-size: 0.9rem;
+  color: var(--ion-color-medium);
+  margin: 0;
+}
+
 .special-thanks {
   margin-top: 24px;
   text-align: justify;
@@ -330,9 +374,9 @@ ion-card-content li {
 
 /* Premium Popover Styles */
 .popover-custom-content {
-  border-radius: 20px;
+  border-radius: var(--radius-xl);
   overflow: hidden;
-  --border-radius: 20px;
+  --border-radius: var(--radius-xl);
 }
 
 .mock-popover-pro-badge {

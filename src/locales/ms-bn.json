@@ -115,6 +115,11 @@
     "password": "Kata laluan",
     "loggingIn": "Log masuk...",
     "continueWithGoogle": "Teruskan dengan Google",
+    "continueWithLine": "Teruskan dengan LINE",
+    "agreeToTerms": "Saya bersetuju dengan {privacy} dan {terms}",
+    "privacyPolicy": "Dasar Privasi",
+    "termsOfService": "Terma Perkhidmatan",
+    "mustAgreeToTerms": "Sila bersetuju dengan Dasar Privasi dan Terma Perkhidmatan untuk meneruskan.",
     "forgotPassword": "Lupa Kata Laluan?",
     "resetEmailSent": "E-mel tetapan semula kata laluan dihantar! Sila semak peti masuk anda.",
     "noAccount": "Tiada akaun?",
@@ -595,6 +600,11 @@
       "about": "Perihal App",
       "contributions": "Contributions"
     },
+    "stats": {
+      "products": "Produk",
+      "places": "Tempat",
+      "xp": "XP"
+    },
     "title": "Profil",
     "logout": "Log keluar",
     "donor": "Status Penderma",
@@ -657,6 +667,17 @@
     "login": "Log masuk",
     "review": "Semakan Produk",
     "settings": "tetapan",
+    "linkedAccounts": {
+      "title": "Akaun Berpaut",
+      "subtitle": "Lihat kaedah log masuk yang dipautkan dengan akaun anda.",
+      "email": "E-mel & Kata Laluan",
+      "google": "Google",
+      "apple": "Apple",
+      "line": "LINE",
+      "connected": "Dipautkan",
+      "notConnected": "Tidak Dipautkan",
+      "note": "Log masuk menggunakan mana-mana kaedah yang dipautkan akan membawa anda ke akaun yang sama ini."
+    },
     "legal": "sah",
     "credits": "Kredit & Penyumbang",
     "support": "Sokong Halal Formosa ❤️",
@@ -1056,6 +1077,9 @@
     "direction": "Arah Kiblat",
     "fromNorth": "dari True North",
     "preparing": "Menyediakan kompas...",
+    "needsPermission": "Akses kompas diperlukan untuk menunjukkan arah.",
+    "enableButton": "Aktifkan Kompas",
+    "error": "Tidak dapat memulakan kompas.",
     "facing": "Anda menghadap kiblat"
   },
   "savedItems": {

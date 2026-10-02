@@ -17,45 +17,47 @@
     </div>
 
     <!-- 🎁 Global Subtle Reward Toast -->
-    <div v-if="rewardOpen" class="reward-overlay">
-      <div 
-        class="reward-toast" 
-        @click="closeReward"
-        @touchstart="onTouchStart"
-        @touchmove="onTouchMove"
-        @touchend="onTouchEnd"
-        :style="toastStyle"
-      >
-        <div class="reward-toast-left">
-          <ion-avatar class="reward-toast-avatar" v-if="rewardAvatar && !rewardIsAchievement">
-            <img :src="rewardAvatar" alt="Avatar" />
-          </ion-avatar>
-          <div v-else class="reward-toast-icon">{{ rewardIcon || '✨' }}</div>
-        </div>
-
-        <div class="reward-toast-body">
-          <div class="reward-toast-header">
-            <span class="reward-points-badge" :class="{ 'reward-points-badge--achievement': rewardIsAchievement }">
-              {{ rewardIsAchievement ? $t('achievements.unlockedBadge') : `+${rewardPoints} XP` }}
-            </span>
-            <span class="reward-action-text">{{ rewardAction }}</span>
+    <Transition name="reward-toast" :duration="{ enter: 0, leave: 500 }">
+      <div v-if="rewardOpen" class="reward-overlay">
+        <div
+          class="reward-toast"
+          @click="closeReward"
+          @touchstart="onTouchStart"
+          @touchmove="onTouchMove"
+          @touchend="onTouchEnd"
+          :style="toastStyle"
+        >
+          <div class="reward-toast-left">
+            <ion-avatar class="reward-toast-avatar" v-if="rewardAvatar && !rewardIsAchievement">
+              <img :src="rewardAvatar" alt="Avatar" />
+            </ion-avatar>
+            <div v-else class="reward-toast-icon">{{ rewardIcon || '✨' }}</div>
           </div>
 
-          <!-- Animated EXP progress -->
-          <div class="reward-toast-progress-container">
-            <ion-progress-bar
-                :value="rewardProgress"
-                color="success"
-                class="reward-progress-bar"
-            ></ion-progress-bar>
-          </div>
-          <div class="reward-toast-level-info">
-            <span>Level {{ rewardLevel }}</span>
-            <span>{{ rewardDisplay }} / {{ rewardNextXp }} XP</span>
+          <div class="reward-toast-body">
+            <div class="reward-toast-header">
+              <span class="reward-points-badge" :class="{ 'reward-points-badge--achievement': rewardIsAchievement }">
+                {{ rewardIsAchievement ? $t('achievements.unlockedBadge') : `+${rewardPoints} XP` }}
+              </span>
+              <span class="reward-action-text">{{ rewardAction }}</span>
+            </div>
+
+            <!-- Animated EXP progress -->
+            <div class="reward-toast-progress-container">
+              <ion-progress-bar
+                  :value="rewardProgress"
+                  color="success"
+                  class="reward-progress-bar"
+              ></ion-progress-bar>
+            </div>
+            <div class="reward-toast-level-info">
+              <span>Level {{ rewardLevel }}</span>
+              <span>{{ rewardDisplay }} / {{ rewardNextXp }} XP</span>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </Transition>
 
     <!-- Only UI responsibilities left -->
     <ion-alert
@@ -151,6 +153,7 @@ import { navigateOutline } from 'ionicons/icons';
 import { onMounted, ref, computed } from 'vue';
 import { performBotChecks, isBotDetected } from '@/utils/botShield';
 import { initInteractionMonitor } from '@/utils/interactionShield';
+import { useNotifications } from '@/composables/useNotifications';
 
 
 import { Analytics } from "@vercel/analytics/vue";
@@ -247,6 +250,7 @@ const toastStyle = computed(() => {
 });
 import { updateLastSeen, currentUser, hasReviewedApp, setHasReviewedApp, profileLoaded, isProfileComplete, profileSkipped } from '@/composables/userProfile';
 import { supabase } from '@/plugins/supabaseClient';
+import { usePoints } from '@/composables/usePoints';
 const { initTheme } = useTheme();
 const { t } = useI18n();
 const { isUpdateRequired, storeUrl, currentVersion, minVersion } = useAppUpdate();
@@ -445,6 +449,18 @@ onMounted(async () => {
   // 🛡️ Perform Bot Defense checks on mount
   performBotChecks();
 
+  const { initNotifications, refreshAll: refreshNotifications } = useNotifications();
+  const { fetchCurrentPoints } = usePoints();
+  if (currentUser.value?.id) {
+    initNotifications();
+    // Populate currentPoints proactively — it otherwise stays null until the
+    // user visits Profile, and an award earned before that (e.g. straight
+    // from Explore) would compute its optimistic toast total as just the
+    // point delta on top of null, flashing "Level 1" before the confirmed
+    // backend total corrects it a moment later.
+    fetchCurrentPoints(currentUser.value.id);
+  }
+
   initTheme();
   await askGeolocationPermission();
   await checkAppUpdate();
@@ -463,6 +479,7 @@ onMounted(async () => {
         updateLastSeen();
       }
       startProximityTracking();
+      if (currentUser.value?.id) refreshNotifications();
     } else {
       // Foreground-only by design: the app holds no background location
       // permission, so Android suspends the watcher anyway. Stopping here also
@@ -482,6 +499,10 @@ onMounted(async () => {
     if (event === 'PASSWORD_RECOVERY') {
       console.log('🔄 Password recovery event detected. Redirecting...');
       router.push('/update-password');
+    }
+    if (event === 'SIGNED_IN') {
+      initNotifications();
+      if (currentUser.value?.id) fetchCurrentPoints(currentUser.value.id);
     }
   });
 });

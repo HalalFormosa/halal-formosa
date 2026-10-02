@@ -9,28 +9,7 @@
       />
       <ion-toolbar class="actions-toolbar">
         <div class="header-main-actions">
-          <ion-button fill="clear" class="classic-action-btn sort-btn-wrapper" id="sort-trigger">
-            <ion-icon :icon="sortIcon" />
-            <span class="btn-label">{{ sortLabel }}</span>
-          </ion-button>
-
-          <ion-popover trigger="sort-trigger" trigger-action="click" :dismiss-on-select="true" class="width-190">
-            <ion-list lines="none">
-              <ion-item button :detail="false" @click="sortBy = 'recent'">
-                <ion-icon :icon="timeOutline" slot="start" />
-                <ion-label>{{ $t('admin.sortRecent') }}</ion-label>
-                <ion-icon v-if="sortBy === 'recent'" :icon="checkmarkCircle" slot="end" color="success" style="font-size: 14px;" />
-              </ion-item>
-              
-              <ion-item button :detail="false" @click="sortBy = 'alpha'">
-                <ion-icon :icon="listOutline" slot="start" />
-                <ion-label>{{ $t('admin.sortAlpha') }}</ion-label>
-                <ion-icon v-if="sortBy === 'alpha'" :icon="checkmarkCircle" slot="end" color="success" style="font-size: 14px;" />
-              </ion-item>
-            </ion-list>
-          </ion-popover>
-
-          <ion-segment v-model="viewMode" mode="ios" style="width: 140px;">
+          <ion-segment v-model="viewMode" mode="ios" class="view-segment">
             <ion-segment-button value="pending">
               <ion-label>{{ $t('admin.review') }}</ion-label>
             </ion-segment-button>
@@ -38,6 +17,26 @@
               <ion-label>{{ $t('admin.archive') }}</ion-label>
             </ion-segment-button>
           </ion-segment>
+
+          <ion-button fill="clear" class="sort-icon-btn" id="sort-trigger" :title="sortLabel">
+            <ion-icon :icon="sortIcon" slot="icon-only" />
+          </ion-button>
+
+          <ion-popover trigger="sort-trigger" trigger-action="click" :dismiss-on-select="true" class="sort-popover">
+            <ion-list lines="none" class="sort-popover-list">
+              <ion-item button :detail="false" @click="sortBy = 'recent'">
+                <ion-icon :icon="timeOutline" slot="start" />
+                <ion-label>{{ $t('admin.sortRecent') }}</ion-label>
+                <ion-icon v-if="sortBy === 'recent'" :icon="checkmarkCircle" slot="end" color="success" style="font-size: 14px;" />
+              </ion-item>
+
+              <ion-item button :detail="false" @click="sortBy = 'alpha'">
+                <ion-icon :icon="listOutline" slot="start" />
+                <ion-label>{{ $t('admin.sortAlpha') }}</ion-label>
+                <ion-icon v-if="sortBy === 'alpha'" :icon="checkmarkCircle" slot="end" color="success" style="font-size: 14px;" />
+              </ion-item>
+            </ion-list>
+          </ion-popover>
         </div>
       </ion-toolbar>
 
@@ -109,20 +108,14 @@
       <!-- ✅ Location Detail Modal -->
       <ion-modal :is-open="showModal" @didDismiss="closeModal" class="review-modal">
         <ion-header>
-          <ion-toolbar color="carrot">
-            <ion-buttons slot="start">
-              <ion-button @click="closeModal">
-                <ion-icon :icon="closeOutline" />
-              </ion-button>
-            </ion-buttons>
-            <ion-title>{{ $t('admin.reviewLocation') }}</ion-title>
-            <ion-buttons slot="end">
+          <ModalHeader :title="$t('admin.reviewLocation')" @close="closeModal">
+            <template #end>
               <ion-button @click="approveLocation(selectedLocation)">
                 <ion-icon slot="start" :icon="checkmarkOutline" />
                 {{ $t('review.approve') }}
               </ion-button>
-            </ion-buttons>
-          </ion-toolbar>
+            </template>
+          </ModalHeader>
         </ion-header>
 
         <ion-content class="ion-padding">
@@ -349,19 +342,20 @@ import {
   IonButton, IonInput, IonTextarea, IonSkeletonText, IonSelect, IonSelectOption,
   IonSearchbar, IonSegment, IonSegmentButton, IonPopover, IonIcon,
   IonItemDivider, IonChip, IonCheckbox, toastController,
-  IonCard, IonListHeader
+  IonCard, IonListHeader, alertController
 } from '@ionic/vue'
 
 import { ref, onMounted, reactive, computed } from 'vue'
 import { supabase } from '@/plugins/supabaseClient'
 import {
   listOutline, timeOutline, checkmarkCircle, swapVerticalOutline,
-  closeOutline, checkmarkOutline, cameraOutline, cloudUploadOutline,
+  checkmarkOutline, cameraOutline, cloudUploadOutline,
   trashOutline, callOutline, logoInstagram, chatboxEllipsesOutline,
   cashOutline, locationOutline, shieldCheckmarkOutline, sparkles,
   closeCircle
 } from 'ionicons/icons'
 import AppHeader from '@/components/AppHeader.vue'
+import ModalHeader from '@/components/ModalHeader.vue'
 import { useI18n } from 'vue-i18n'
 import { Camera, CameraDirection, CameraResultType, CameraSource } from '@capacitor/camera'
 import { useImageResizer } from "@/composables/useImageResizer"
@@ -462,7 +456,7 @@ const filteredLocations = computed(() => {
 
   // View Mode Filter
   if (viewMode.value === 'pending') {
-    result = result.filter(loc => !loc.approved && !loc.is_archived)
+    result = result.filter(loc => !loc.approved && !loc.is_archived && !loc.is_rejected)
   } else {
     result = result.filter(loc => loc.is_archived)
   }
@@ -658,7 +652,10 @@ async function approveLocation(loc: any) {
         image: imageUrl,
         approved: true,
         approved_by: user.id,
-        approved_at: new Date().toISOString()
+        // Only stamp approved_at on first publish — re-approving an edit to an
+        // already-published (e.g. archived) location shouldn't make it look
+        // like a brand new place in the "What's new" notification feed.
+        ...(loc.approved ? {} : { approved_at: new Date().toISOString() })
       })
       .eq('id', loc.id)
 
@@ -709,15 +706,46 @@ async function restoreLocation(id: number) {
 }
 
 async function rejectLocation(id: number) {
-  if (!confirm(t('admin.confirmDeletePlace'))) return
-  
-  await supabase
-      .from('locations')
-      .delete()
-      .eq('id', id)
+  const alert = await alertController.create({
+    header: t('review.confirmRejectHeader', 'Reject Submission'),
+    message: t('review.confirmRejectMsg', 'Please provide a reason for rejecting this submission:'),
+    inputs: [
+      {
+        name: 'reason',
+        type: 'textarea',
+        placeholder: t('review.reasonPlaceholder', 'e.g. Duplicate listing, incorrect location, not halal-relevant...')
+      }
+    ],
+    buttons: [
+      { text: t('common.cancel', 'Cancel'), role: 'cancel' },
+      {
+        text: t('review.reject', 'Reject'),
+        handler: async (data) => {
+          if (!data.reason || !data.reason.trim()) {
+            alert.message = t('review.reasonRequired', 'A reason is required to reject the submission.');
+            return false // Keep alert open
+          }
 
-  closeModal()
-  await loadPendingLocations()
+          const { error } = await supabase
+              .from('locations')
+              .update({
+                approved: false,
+                is_rejected: true,
+                rejection_reason: data.reason.trim()
+              })
+              .eq('id', id)
+
+          if (!error) {
+            closeModal()
+            await loadPendingLocations()
+          } else {
+            console.error('Error rejecting location:', error)
+          }
+        }
+      }
+    ]
+  })
+  await alert.present()
 }
 
 onMounted(() => {
@@ -730,34 +758,30 @@ onMounted(() => {
 .header-main-actions {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
+  gap: 10px;
   padding: 8px 16px;
   width: 100%;
 }
 
-.classic-action-btn {
-  height: 50px;
+.view-segment {
+  flex: 1;
+  min-width: 0;
+}
+
+.sort-icon-btn {
+  height: 38px;
+  width: 38px;
   margin: 0;
+  flex-shrink: 0;
   --color: var(--ion-color-dark);
-  position: relative;
-  font-weight: 700;
-  text-transform: none;
+  --background: var(--ion-color-step-100);
+  --border-radius: 10px;
+  --padding-start: 0;
+  --padding-end: 0;
 }
 
-.classic-action-btn ion-icon {
-  font-size: 22px;
-}
-
-.sort-btn-wrapper {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.btn-label {
-  margin-left: 4px;
-  font-size: 13px;
+.sort-icon-btn ion-icon {
+  font-size: 19px;
 }
 
 .search-container {
@@ -776,8 +800,19 @@ onMounted(() => {
   --border-width: 0;
 }
 
-.width-190 {
-  --width: 190px;
+.sort-popover {
+  --width: 200px;
+}
+
+.sort-popover-list ion-item {
+  --min-height: 44px;
+}
+
+.sort-popover-list ion-label {
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 ion-header {
@@ -938,7 +973,7 @@ ion-header {
 .input-card {
   margin: 0 12px;
   border-radius: 16px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--card-shadow);
   background: var(--ion-card-background, white);
   border: 1px solid var(--ion-color-light-shade);
 }

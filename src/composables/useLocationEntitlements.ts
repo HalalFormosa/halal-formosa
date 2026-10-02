@@ -4,10 +4,10 @@ import type { PlanTier, PlanFeatures } from '@/types/Business'
 // Default matrix — mirrors the app_config 'business_plan_features' seed so the UI
 // still works if the config row is missing.
 const DEFAULT_FEATURES: Record<PlanTier, PlanFeatures> = {
-  free:   { maxPhotos: 1,  menu: false, maxPromotions: 0,  analytics: 'basic' },
-  bronze: { maxPhotos: 5,  menu: false, maxPromotions: 1,  analytics: 'standard' },
-  silver: { maxPhotos: 10, menu: true,  maxPromotions: 3,  analytics: 'advanced' },
-  gold:   { maxPhotos: -1, menu: true,  maxPromotions: -1, analytics: 'pro' },
+  free:   { maxPhotos: 1,  menu: false, maxMenuItems: 0,  maxPromotions: 0,  analytics: 'basic' },
+  bronze: { maxPhotos: 3,  menu: false, maxMenuItems: 0,  maxPromotions: 1,  analytics: 'standard' },
+  silver: { maxPhotos: 8,  menu: true,  maxMenuItems: 30, maxPromotions: 3,  analytics: 'advanced' },
+  gold:   { maxPhotos: 20, menu: true,  maxMenuItems: 60, maxPromotions: 10, analytics: 'pro' },
 }
 
 let matrixCache: Record<string, PlanFeatures> | null = null

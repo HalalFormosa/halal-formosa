@@ -85,6 +85,11 @@
     "loggingIn": "Sedang log masuk...",
     "continueWithGoogle": "Teruskan dengan Google",
     "continueWithApple": "Teruskan dengan Apple",
+    "continueWithLine": "Teruskan dengan LINE",
+    "agreeToTerms": "Saya bersetuju dengan {privacy} dan {terms}",
+    "privacyPolicy": "Dasar Privasi",
+    "termsOfService": "Terma Perkhidmatan",
+    "mustAgreeToTerms": "Sila bersetuju dengan Dasar Privasi dan Terma Perkhidmatan untuk meneruskan.",
     "appleDeviceRequired": "Untuk log masuk dengan Apple, anda mesti menggunakan peranti iOS.",
     "forgotPassword": "Lupa Kata Laluan?",
     "resetEmailSent": "Emel set semula kata laluan telah dihantar! Sila semak peti masuk anda.",
@@ -178,6 +183,18 @@
     "prayerTimes": "Waktu Solat",
     "qibla": "Kiblat",
     "partnerTier": "RAKAN KONGSI {tier}",
+    "sponsored": "Ditaja",
+    "houseAdKind": {
+      "partner": "Rakan Kongsi",
+      "product": "Produk",
+      "location": "Lokasi",
+      "trip": "Perjalanan"
+    },
+    "houseAdProvider": {
+      "soldBy": "Dijual oleh {name}",
+      "certifiedBy": "Disahkan oleh {name}",
+      "providedBy": "Oleh {name}"
+    },
     "altProduct": "produk",
     "altLocation": "lokasi",
     "altNews": "berita",
@@ -324,6 +341,7 @@
     },
     "limit": {
       "reached": "Had imbasan harian dicapai. Tonton iklan atau sumbangkan produk/lokasi yang tiada untuk imbasan tambahan!",
+      "reachedContribute": "Had imbasan harian dicapai. Sumbangkan produk/lokasi yang tiada untuk imbasan tambahan!",
       "bonus": "Watch Ad +1 Scan",
       "adLimit": "You can only watch {count} ads per day.",
       "contributeTip": "Dapatkan +1 imbasan harian bagi setiap produk atau lokasi yang anda sumbangkan (maks 3/hari)."
@@ -574,6 +592,11 @@
       "about": "Mengenai Aplikasi",
       "contributions": "Contributions"
     },
+    "stats": {
+      "products": "Produk",
+      "places": "Tempat",
+      "xp": "XP"
+    },
     "title": "Profil",
     "logout": "Log Keluar",
     "donor": "Status Penderma",
@@ -636,6 +659,17 @@
     "login": "Log Masuk",
     "review": "Semakan Produk",
     "settings": "Tetapan",
+    "linkedAccounts": {
+      "title": "Akaun Berpaut",
+      "subtitle": "Lihat kaedah log masuk yang dipautkan dengan akaun anda.",
+      "email": "E-mel & Kata Laluan",
+      "google": "Google",
+      "apple": "Apple",
+      "line": "LINE",
+      "connected": "Dipautkan",
+      "notConnected": "Tidak Dipautkan",
+      "note": "Log masuk menggunakan mana-mana kaedah yang dipautkan akan membawa anda ke akaun yang sama ini."
+    },
     "legal": "Undang-undang",
     "credits": "Kredit & Penyumbang",
     "support": "Sokong Halal Formosa ❤️",
@@ -827,6 +861,9 @@
     "scanIngredientsDesc": "Imbas senarai ramuan untuk mengisi borang secara automatik dan mengambil foto belakang.",
     "camera": "Kamera",
     "gallery": "Galeri",
+    "enterIngredientsManually": "Tidak boleh diimbas? Masukkan ramuan secara manual",
+    "noIngredientsDetected": "Tidak dapat mengesan senarai ramuan pada foto itu. Cuba lagi atau masukkan ramuan secara manual di bawah.",
+    "analyzingIngredients": "Menganalisis ramuan…",
     "skip": "Langkau buat masa ini",
     "next": "Seterusnya",
     "back": "Kembali",
@@ -1003,9 +1040,9 @@
       "website": "Laman Web"
     },
     "goldPartner": "RAKAN KONGSI EMAS",
-    "activeFilters": "目前篩選",
-    "verifiedLabelShort": "Verified",
-    "producedProducts": "Produced Products"
+    "activeFilters": "Penapis semasa",
+    "verifiedLabelShort": "Disahkan",
+    "producedProducts": "Produk Dihasilkan"
   },
   "points": {
     "title": "Semak Log Mata"
@@ -1038,6 +1075,9 @@
     "direction": "Arah Kiblat",
     "fromNorth": "dari Utara Sebenar",
     "preparing": "Menyediakan kompas...",
+    "needsPermission": "Akses kompas diperlukan untuk menunjukkan arah.",
+    "enableButton": "Aktifkan Kompas",
+    "error": "Tidak dapat memulakan kompas.",
     "facing": "Anda sedang menghadap Kiblat"
   },
   "savedItems": {

@@ -208,7 +208,7 @@ onMounted(fetchRequests)
 
 <style scoped>
 .admin-container { max-width: 800px; margin: 0 auto; }
-.application-card { border-radius: 20px; margin-bottom: 16px; box-shadow: 0 4px 16px rgba(0,0,0,.08); }
+.application-card { border-radius: var(--radius-lg); margin-bottom: 16px; box-shadow: var(--card-shadow); }
 .card-title-row { display: flex; justify-content: space-between; align-items: flex-start; }
 .submitted-at { margin: 6px 0 0; font-size: .75rem; color: var(--ion-color-medium); }
 .diff-list { display: flex; flex-direction: column; gap: 14px; }

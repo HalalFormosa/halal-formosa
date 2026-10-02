@@ -3,7 +3,7 @@ import {
   IonIcon, IonChip, IonLabel
 } from '@ionic/vue'
 import {
-  mapOutline, locationOutline
+  mapOutline, locationOutline, swapVerticalOutline, timeOutline, flameOutline
 } from 'ionicons/icons'
 
 interface Category {
@@ -19,23 +19,59 @@ interface City {
   emoji: string
 }
 
-defineProps<{
+type SortOption = 'recent' | 'views'
+
+withDefaults(defineProps<{
   categories: Category[]
   activeCategoryIds: number[]
   cities: City[]
   activeCityIds: string[]
   hasActiveFilters: boolean
-}>()
+  sortBy?: SortOption
+}>(), {
+  sortBy: 'recent'
+})
 
 defineEmits<{
   (e: 'toggleCategory', id: number): void
   (e: 'toggleCity', slug: string): void
   (e: 'clearFilters'): void
+  (e: 'update:sortBy', value: SortOption): void
 }>()
+
+const sortOptions: { key: SortOption; icon: string; labelKey: string }[] = [
+  { key: 'recent', icon: timeOutline, labelKey: 'trip.sortRecentShort' },
+  { key: 'views', icon: flameOutline, labelKey: 'trip.sortViewsShort' },
+]
 </script>
 
 <template>
   <div class="filter-modal-inner">
+    <!-- Sort -->
+    <div class="filter-section">
+      <h3 class="filter-section-title">
+        <ion-icon :icon="swapVerticalOutline" />
+        {{ $t('search.filters.sort') }}
+      </h3>
+      <div class="category-bar">
+        <ion-chip
+            v-for="opt in sortOptions"
+            :key="opt.key"
+            class="modern-category-chip"
+            :class="{ active: sortBy === opt.key }"
+            :style="{
+                      '--cat-color': 'var(--ion-color-carrot)',
+                      '--cat-contrast': 'var(--ion-color-carrot-contrast)',
+                      '--cat-bg': sortBy === opt.key ? 'var(--ion-color-carrot)' : 'transparent'
+                    }"
+            @click="$emit('update:sortBy', opt.key)"
+        >
+          <ion-icon :icon="opt.icon" class="category-icon" />
+          <ion-label>{{ $t(opt.labelKey) }}</ion-label>
+        </ion-chip>
+      </div>
+    </div>
+
     <!-- Categories -->
     <div class="filter-section">
       <h3 class="filter-section-title">
@@ -144,16 +180,16 @@ ion-chip.modern-category-chip {
   transition: all 0.2s ease;
   margin: 0;
   flex-shrink: 0;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--card-shadow);
 }
 
 .modern-category-chip.active {
   background: var(--cat-color) !important;
   color: var(--cat-contrast, #ffffff) !important;
   border-color: var(--cat-color) !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--card-shadow-hover);
   transform: translateY(-1px);
 }
 
-.category-emoji { margin-right: 6px; font-size: 1.1rem; }
+.category-emoji, .category-icon { margin-right: 6px; font-size: 1.1rem; }
 </style>

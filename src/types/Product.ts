@@ -17,6 +17,8 @@ export interface Product {
     // 🟢 new fields
     approved_by?: string | null   // uuid of the approver (admin/contributor)
     approved_at?: string | null   // ISO timestamp when approved
+    is_rejected?: boolean
+    rejection_reason?: string | null
 
     // ✅ relation
     product_categories: { id: number; name: string }

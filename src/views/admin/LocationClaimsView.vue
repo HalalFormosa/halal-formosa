@@ -199,7 +199,7 @@ onMounted(fetchClaims)
 
 <style scoped>
 .admin-container { max-width: 800px; margin: 0 auto; }
-.application-card { border-radius: 20px; margin-bottom: 16px; box-shadow: 0 4px 16px rgba(0,0,0,.08); }
+.application-card { border-radius: var(--radius-lg); margin-bottom: 16px; box-shadow: var(--card-shadow); }
 .card-title-row { display: flex; justify-content: space-between; align-items: flex-start; }
 .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 8px; }
 .info-item label { display: block; font-size: .7rem; color: var(--ion-color-medium); text-transform: uppercase; font-weight: 700; margin-bottom: 4px; }

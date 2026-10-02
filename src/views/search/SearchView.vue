@@ -1,8 +1,16 @@
 <template>
   <ion-page>
-    <ion-header>
-      <!-- Native (mobile) AdMob banner -->
-      <div v-if="isNative && !isDonor" id="ad-space-search" :style="{ height: '65px', paddingTop: 'var(--ion-safe-area-top, 0)' }"></div>
+    <ion-header :class="{ 'house-ad-top': houseAdAtTop }">
+      <!-- Native (mobile) banner ad — LevelPlay renders with isOverlap:true,
+           so it draws on top of the WebView rather than pushing it down.
+           This reserved space keeps the ad from covering the header, same
+           pattern as Trip/Store. When there's no real ad (web, or the
+           banner failed to fill / LevelPlay is disabled) a house-ad banner
+           takes the slot, like Explore — minus the 'product' kind, since
+           this IS the product list. The feed also gets recurring native
+           cards (see HouseAdNativeCard below). -->
+      <div v-if="isNative && !isDonor" id="ad-space-search" :style="adSpaceStyle(houseAdAtTop)"></div>
+      <HouseAdCard v-if="!isDonor && (!isNative || failedAdSpaceId === 'ad-space-search')" variant="banner" exclude-kind="product" />
 
       <app-header
           :title="
@@ -16,98 +24,6 @@
           :showProfile="true"
       />
 
-      <ion-toolbar class="actions-toolbar">
-        <div class="header-main-actions">
-          <!-- 🎚️ Sort Button (Left Side) -->
-          <ion-button fill="clear" class="classic-action-btn sort-btn-wrapper" id="sort-trigger">
-            <ion-icon :icon="sortIcon" />
-            <span class="btn-label">{{ sortLabel }}</span>
-          </ion-button>
-
-          <ion-popover trigger="sort-trigger" trigger-action="click" :dismiss-on-select="true" class="width-190">
-            <ion-list lines="none">
-              <ion-item button :detail="false" @click="sortBy = 'recent'">
-                <ion-icon :icon="timeOutline" slot="start" />
-                <ion-label>{{ $t('search.sortRecent') }}</ion-label>
-                <ion-icon v-if="sortBy === 'recent'" :icon="checkmarkCircle" slot="end" color="success" style="font-size: 14px;" />
-              </ion-item>
-              
-              <ion-item button :detail="false" @click="sortBy = 'trending'">
-                <ion-icon :icon="trendingUpOutline" slot="start" />
-                <ion-label>{{ $t('search.sortTrending') }}</ion-label>
-                <ion-icon v-if="sortBy === 'trending'" :icon="checkmarkCircle" slot="end" color="success" style="font-size: 14px;" />
-              </ion-item>
-
-              <ion-item button :detail="false" @click="sortBy = 'views'">
-                <ion-icon :icon="flameOutline" slot="start" />
-                <ion-label>{{ $t('search.sortViews') }}</ion-label>
-                <ion-icon v-if="sortBy === 'views'" :icon="checkmarkCircle" slot="end" color="success" style="font-size: 14px;" />
-              </ion-item>
-
-              <ion-item v-if="canShowForYouSort" button :detail="false" @click="sortBy = 'for_you'">
-                <ion-icon :icon="sparklesOutline" slot="start" />
-                <ion-label>{{ $t('search.sortForYou') }}</ion-label>
-                <ion-icon v-if="sortBy === 'for_you'" :icon="checkmarkCircle" slot="end" color="success" style="font-size: 14px;" />
-              </ion-item>
-            </ion-list>
-          </ion-popover>
-
-
-          <div class="right-actions-group">
-            <!-- 🔍 Search Toggle Button -->
-            <ion-button
-                fill="clear"
-                @click="showSearchbar = !showSearchbar"
-                :color="showSearchbar ? 'carrot' : 'dark'"
-                class="classic-action-btn"
-            >
-              <ion-icon :icon="showSearchbar ? closeCircle : searchOutline" />
-            </ion-button>
-
-            <!-- 📱 Grid/List Toggle -->
-            <ion-button
-                fill="clear"
-                @click="toggleViewMode"
-                class="classic-action-btn"
-            >
-              <ion-icon :icon="viewMode === 'grid' ? listOutline : gridOutline" />
-            </ion-button>
-
-            <!-- 📷 Scan Button (Classic Style) -->
-            <ion-button
-                @click="startScan"
-                v-if="!scanning"
-                color="carrot"
-                class="classic-scan-btn"
-            >
-              <ion-icon :icon="barcodeOutline" />
-            </ion-button>
-
-            <!-- 🌪️ Filter Toggle -->
-            <ion-button fill="clear" @click="toggleFilters" class="classic-action-btn">
-              <ion-icon :icon="funnelOutline" />
-              <div v-if="activeFiltersCount > 0" class="badge-dot">
-                <span class="badge-count">{{ activeFiltersCount }}</span>
-              </div>
-            </ion-button>
-          </div>
-        </div>
-      </ion-toolbar>
-
-      <transition name="fade-down">
-        <ion-toolbar v-if="showSearchbar" class="search-row-toolbar">
-          <div class="search-container">
-            <ion-searchbar
-                :placeholder="$t('search.placeholder')"
-                :debounce="1000"
-                @ionInput="handleSearchInput($event)"
-                :value="searchQuery"
-                class="compact-searchbar"
-                :animated="true"
-            ></ion-searchbar>
-          </div>
-        </ion-toolbar>
-      </transition>
       <!-- Filter Section (Desktop: Toolbar expansion) -->
       <transition name="collapse">
         <ion-toolbar v-show="showFilters && !isSmallScreen" class="filter-toolbar">
@@ -127,6 +43,10 @@
                 @clearAllFilters="clearAllFilters"
                 :categoryIcons="categoryIcons"
                 :STATUS_COLOR_MAP="STATUS_COLOR_MAP"
+                :sortBy="sortBy"
+                @update:sortBy="sortBy = $event"
+                :canShowForYouSort="canShowForYouSort"
+                :isDonor="isDonor"
             />
           </div>
         </ion-toolbar>
@@ -137,7 +57,7 @@
           :is-open="isFilterModalOpen"
           @didDismiss="isFilterModalOpen = false"
           :initial-breakpoint="0.5"
-          :breakpoints="[0, 0.5, 0.8, 1]"
+          :breakpoints="[0, 0.5, 0.8]"
           handle-behavior="cycle"
           class="filter-modal"
       >
@@ -170,13 +90,17 @@
               @clearAllFilters="clearAllFilters"
               :categoryIcons="categoryIcons"
               :STATUS_COLOR_MAP="STATUS_COLOR_MAP"
+              :sortBy="sortBy"
+              @update:sortBy="sortBy = $event"
+              :canShowForYouSort="canShowForYouSort"
+              :isDonor="isDonor"
           />
         </ion-content>
       </ion-modal>
 
     </ion-header>
     <ion-content ref="contentRef">
-      <ion-refresher style="margin-top: 15px;" slot="fixed" @ionRefresh="refreshList">
+      <ion-refresher style="margin-top: 78px;" slot="fixed" @ionRefresh="refreshList">
         <ion-refresher-content
             :pulling-icon="chevronDownCircleOutline"
             :pullingText="$t('search.pullToRefresh')"
@@ -185,23 +109,64 @@
         </ion-refresher-content>
       </ion-refresher>
 
-      <!-- ✅ Scanner Modal (WEB ONLY) -->
-      <ion-modal
-          v-if="!isNative"
-          ref="scannerModal"
-          :is-open="scanning"
-          @didPresent="onScannerModalPresented"
-          @didDismiss="handleDismiss"
-      >
-        <ion-content>
-          <div id="reader">
-            <div class="scan-line"></div>
-          </div>
-        </ion-content>
-      </ion-modal>
+      <!-- Search bar + grid/filter buttons float over the content instead of
+           sitting in their own ion-toolbar — transparent surroundings, each
+           pill keeps its own background, so the product grid is visible
+           (and later scrolls) behind them rather than a solid bar. -->
+      <div class="header-main-actions" slot="fixed">
+        <ion-button
+            v-if="!searchExpanded"
+            fill="clear"
+            @click="expandSearch"
+            class="classic-action-btn search-toggle-btn"
+        >
+          <ion-icon :icon="searchOutline" />
+        </ion-button>
+
+        <div v-else class="searchbar-wrap inline-searchbar">
+          <ion-searchbar
+              ref="searchbarEl"
+              :placeholder="$t('search.placeholder')"
+              :debounce="1000"
+              @ionInput="handleSearchInput($event)"
+              @ionBlur="handleSearchBlur"
+              :value="searchQuery"
+              class="compact-searchbar searchbar-expanded"
+              :animated="true"
+          ></ion-searchbar>
+          <!-- Invisible hit-target over the searchbar's own leading icon so
+               tapping it again collapses the search, same spot the user
+               tapped to open it. -->
+          <button
+              class="searchbar-icon-hit"
+              type="button"
+              :aria-label="$t('common.close') || 'Close'"
+              @click="collapseSearch"
+          ></button>
+        </div>
+
+        <div class="right-actions-group">
+          <!-- 📱 Grid/List Toggle -->
+          <ion-button
+              fill="clear"
+              @click="toggleViewMode"
+              class="classic-action-btn"
+          >
+            <ion-icon :icon="viewMode === 'grid' ? listOutline : gridOutline" />
+          </ion-button>
+
+          <!-- 🎚️ Filter Toggle (sort now lives inside here too) -->
+          <ion-button fill="clear" @click="toggleFilters" class="classic-action-btn">
+            <ion-icon :icon="optionsOutline" />
+            <div v-if="activeFiltersCount > 0" class="badge-dot">
+              <span class="badge-count">{{ activeFiltersCount }}</span>
+            </div>
+          </ion-button>
+        </div>
+      </div>
 
       <div>
-        <div v-if="!scanning" class="ion-padding" style="padding-top: 5px;">
+        <div class="ion-padding search-results-wrap">
 
           <!-- Skeleton loader -->
           <template v-if="loadingProducts && results.length === 0 && !showForYouGate">
@@ -335,9 +300,10 @@
                     <div class="card-inner">
                       <!-- Left: Image -->
                       <div class="card-image-section">
-                        <img 
+                        <img
                           loading="lazy"
-                          :src="product.photo_front_url || 'https://via.placeholder.com/150x150.webp?text=No+Photo'" 
+                          decoding="async"
+                          :src="getOptimizedImageUrl(product.photo_front_url, 290, 320, 'cover')"
                         />
                         <div class="floating-status-pill bottom-left" :class="product.status.toLowerCase().replace(' ', '-')">
                           <component :is="getStatusIcon(product.status)" :size="14" />
@@ -352,13 +318,13 @@
                           <div class="tier-header">
                             <div class="tier-badge gold">
                               <Sparkles :size="14" />
-                              <span>{{ $t('home.partnerTier', { tier: 'GOLD' }) }}</span>
+                              <span>GOLD</span>
                             </div>
                           </div>
                           <h3 class="name">{{ product.name }}</h3>
                           <div class="metas metas-indent">
                              <span v-if="product.product_categories?.name" class="meta">
-                               {{ $te('search.categoriesList.' + product.product_categories.name) ? $t('search.categoriesList.' + product.product_categories.name) : product.product_categories.name }}
+                                {{ $te('search.categoriesList.' + product.product_categories.name) ? $t('search.categoriesList.' + product.product_categories.name) : product.product_categories.name }}
                              </span>
                              
                              <span class="meta">
@@ -392,21 +358,23 @@
                         <!-- Blurred background -->
                         <img
                             loading="lazy"
-                            :src="product.photo_front_url || 'https://via.placeholder.com/150x150.webp?text=No+Photo'"
+                            decoding="async"
+                            :src="getOptimizedImageUrl(product.photo_front_url, 100, 100, 'cover', 40)"
                             :alt="product.name"
                             class="featured-bg-blur"
                         />
                         <!-- Product photo -->
                         <img
                             loading="lazy"
-                            :src="product.photo_front_url || 'https://via.placeholder.com/150x150.webp?text=No+Photo'"
+                            decoding="async"
+                            :src="getOptimizedImageUrl(product.photo_front_url, 500, 500, 'cover', 65)"
                             :alt="product.name"
                             class="featured-fg-image"
                         />
                         <!-- Mobile-only status/tier badges -->
                         <div class="grid-tier-badge gold mobile-only">
                           <Sparkles :size="14" />
-                          <span>{{ $t('home.partnerTier', { tier: 'GOLD' }) }}</span>
+                          <span>GOLD</span>
                         </div>
                         <div :class="['grid-status-label mobile-only', product.status.toLowerCase().replace(' ', '-')]">
                           <component :is="getStatusIcon(product.status)" :size="14" />
@@ -419,7 +387,7 @@
                         <div class="details-header">
                           <div class="grid-tier-badge gold">
                             <Sparkles :size="14" />
-                            <span>{{ $t('home.partnerTier', { tier: 'GOLD' }) }}</span>
+                            <span>GOLD</span>
                           </div>
                           <div :class="['status-badge-pill', product.status.toLowerCase().replace(' ', '-')]">
                             <component :is="getStatusIcon(product.status)" :size="12" />
@@ -472,7 +440,7 @@
                 </a>
               </div>
 
-              <template v-for="product in displayedProducts" :key="product.barcode">
+              <template v-for="(product, productIndex) in displayedProducts" :key="product.barcode">
                 <!-- LIST MODE -->
                 <div
                     v-if="viewMode === 'list'"
@@ -488,7 +456,8 @@
                     <div class="card-image-section">
                       <img
                           loading="lazy"
-                          :src="product.photo_front_url || 'https://via.placeholder.com/150x150.webp?text=No+Photo'"
+                          decoding="async"
+                          :src="getOptimizedImageUrl(product.photo_front_url, 290, 320, 'cover')"
                           :alt="product.name"
                       />
                       <!-- Floating Status Pill on Image (Bottom Left) -->
@@ -508,7 +477,7 @@
                         <div v-if="product.partner_tier" class="tier-header">
                           <div :class="['tier-badge', product.partner_tier.toLowerCase()]">
                             <Sparkles :size="14" />
-                            <span>{{ $t('home.partnerTier', { tier: (product.partner_tier || '').toUpperCase() }) }}</span>
+                            <span>{{ (product.partner_tier || '').toUpperCase() }}</span>
                           </div>
                         </div>
                         <h3 class="name">{{ product.name }}</h3>
@@ -557,13 +526,14 @@
                   <div class="grid-card-image">
                     <img
                         loading="lazy"
-                        :src="product.photo_front_url || 'https://via.placeholder.com/150x150.webp?text=No+Photo'"
+                        decoding="async"
+                        :src="getOptimizedImageUrl(product.photo_front_url, 400, 400, 'cover')"
                         :alt="product.name"
                     />
                     <!-- Floating Tier Badge (Top Left) -->
                     <div v-if="product.partner_tier" :class="['grid-tier-badge', product.partner_tier.toLowerCase()]">
                       <Sparkles :size="14" />
-                      <span>{{ $t('home.partnerTier', { tier: (product.partner_tier || '').toUpperCase() }) }}</span>
+                      <span>{{ (product.partner_tier || '').toUpperCase() }}</span>
                     </div>
 
                     <!-- Small Status Label -->
@@ -576,6 +546,15 @@
                   <!-- Premium Flare for Gold/Silver -->
                   <div v-if="['gold', 'silver'].includes(String(product.partner_tier || '').toLowerCase())" class="premium-flare"></div>
                 </div>
+
+                <!-- Recurring native sponsored card, woven into the feed
+                     every HOUSE_AD_NATIVE_INTERVAL products instead of a
+                     separate banner slot. -->
+                <HouseAdNativeCard
+                    v-if="!isDonor && (productIndex + 1) % HOUSE_AD_NATIVE_INTERVAL === 0"
+                    :mode="viewMode"
+                    :slot="Math.floor(productIndex / HOUSE_AD_NATIVE_INTERVAL)"
+                />
               </template>
             </div>
           </template>
@@ -601,27 +580,29 @@
         />
       </ion-infinite-scroll>
 
-      <ion-text color="danger" v-if="errorMsg" class="ion-padding">
-        ❌ {{ errorMsg }}
-      </ion-text>
-
-      <!-- 🟠 FAB Add Product (only for admins) -->
-      <ion-fab v-if="isAuthenticated" vertical="bottom" horizontal="end" slot="fixed">
-        <ion-fab-button color="carrot" @click="goToAddProduct">
+      <!-- 🟠 Stacked FABs: Add Product on top, Scan Barcode just below it.
+           Built as our own fixed column rather than nested <ion-fab>s, since
+           ion-fab only auto-positions a single direct button per anchor. -->
+      <div class="stacked-fabs" slot="fixed">
+        <ion-fab-button v-if="isAuthenticated" color="carrot" @click="goToAddProduct">
           <ion-icon :icon="addOutline"/>
         </ion-fab-button>
-      </ion-fab>
-    </ion-content>
+        <ion-fab-button color="carrot" @click="goToBarcodeScan">
+          <ion-icon :icon="barcodeOutline"/>
+        </ion-fab-button>
+      </div>
 
-    <ion-footer>
-      <div class="footer-count">
+      <!-- Results-count pill: lives inside ion-content (slot="fixed") rather
+           than a separate <ion-footer>, so it floats OVER the product grid
+           instead of ion-content stopping short before a footer's reserved
+           row — the frosted-glass blur now actually has real scrolling
+           content behind it to blur, not blank page background. -->
+      <div class="footer-count" slot="fixed">
         <small>
           {{ $t('search.showingResults', {count: results.length, total: totalProductsCount}) }}
         </small>
       </div>
-    </ion-footer>
-
-
+    </ion-content>
   </ion-page>
 </template>
 
@@ -639,6 +620,7 @@ import { ref, onMounted, onUnmounted, nextTick, watch, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter, useRoute } from 'vue-router'
 import {supabase} from '@/plugins/supabaseClient'
+import {notifyFetchError} from '@/utils/offlineFeedback'
 import {
   barcodeOutline,
   chevronDownCircleOutline,
@@ -646,18 +628,13 @@ import {
   addOutline,
   chevronUpOutline,
   chevronDownOutline,
-  funnelOutline,
+  optionsOutline,
   pricetagsOutline, storefrontOutline, shieldCheckmarkOutline,
-  checkmarkCircle, warning, closeCircle, alertCircle, sparkles,
-  swapVerticalOutline,
-  searchOutline,
+  warning, alertCircle, sparkles,
   eyeOutline,
-  timeOutline,
-  flameOutline,
-  sparklesOutline,
-  trendingUpOutline,
   listOutline,
-  closeOutline
+  closeOutline,
+  searchOutline
 } from 'ionicons/icons'
 import {
   CheckCircle2,
@@ -670,13 +647,11 @@ import {
   Sparkles
 } from 'lucide-vue-next'
 import {Capacitor} from '@capacitor/core'
-import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
 import {Haptics, ImpactStyle} from '@capacitor/haptics'
 import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
 import timezone from 'dayjs/plugin/timezone'
 import relativeTime from 'dayjs/plugin/relativeTime'
-import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import { flagBot } from '@/utils/botShield';
 import { hasOrganicInteraction, delayForHuman } from '@/utils/interactionShield';
 import { useRecaptcha } from '@/composables/useRecaptcha';
@@ -689,9 +664,13 @@ import FilterContent from '@/components/FilterContent.vue'
 import StoreLogoBar from "@/components/StoreLogoBar.vue";
 import {ActivityLogService} from "@/services/ActivityLogService";
 import { scheduleBannerUpdate } from '@/plugins/admob'
+import HouseAdCard from '@/components/ads/HouseAdCard.vue'
+import HouseAdNativeCard from '@/components/ads/HouseAdNativeCard.vue'
+import { failedAdSpaceId, useHouseAdAtTop, adSpaceStyle } from '@/composables/useAdFallback'
 import {isDonor, refreshSubscriptionStatus} from "@/composables/useSubscriptionStatus";
 import {Purchases} from "@revenuecat/purchases-capacitor";
 import {PAYWALL_RESULT, RevenueCatUI} from "@revenuecat/purchases-capacitor-ui";
+import {getOptimizedImageUrl} from "@/utils/imageHelpers";
 
 
 /* ---------------- Day.js ---------------- */
@@ -737,13 +716,19 @@ const totalProductsCount = ref(0)
 const allProducts = ref<Product[]>([])
 const results = ref<Product[]>([])
 const errorMsg = ref('')
-const scanning = ref(false)
+
+function setFetchError(err: { message?: string } | null | undefined) {
+  errorMsg.value = err?.message || t('common.error')
+  notifyFetchError(err)
+}
 const isScanning = ref(false)
 // Suppresses the "no product found" empty state during the brief window
 // between router.push(/item/...) and the page transition actually completing —
 // fetchProducts' finally block resets loadingProducts before that transition finishes.
 const isNavigatingToItem = ref(false)
 const searchQuery = ref('')
+const searchExpanded = ref(false)
+const searchbarEl = ref<any>(null)
 const categories = ref<{ id: number; name: string }[]>([])
 const activeCategories = ref<{ id: number; name: string }[]>([])
 
@@ -761,8 +746,8 @@ const currentPage = ref(0)
 const ingredientDictionary = ref<Record<string, string>>({})
 const infiniteScroll = ref<HTMLIonInfiniteScrollElement | null>(null)
 const suppressSortWatcher = ref(false)
-const html5QrCodeInstance = ref<Html5Qrcode | null>(null)
 const isNative = ref(Capacitor.isNativePlatform())
+const houseAdAtTop = useHouseAdAtTop('ad-space-search', isDonor)
 
 const categoryIcons: Record<string, string> = {
   "Snacks": "🍿",
@@ -794,7 +779,6 @@ const stores = ref<{ id: string; name: string; logo_url?: string }[]>([])
 const activeStores = ref<{ id: string; name: string }[]>([])
 const loadingStores = ref(true)
 const showFilters = ref(false)
-const showSearchbar = ref(false)
 const isFilterModalOpen = ref(false)
 const isSmallScreen = ref(window.innerWidth < 768)
 
@@ -1081,6 +1065,10 @@ function dismissForYouInfo() {
 
 const { t } = useI18n()
 
+// How often a native sponsored card appears in the product feed (every Nth
+// product), replacing the old fixed top-banner house-ad slot on this view.
+const HOUSE_AD_NATIVE_INTERVAL = 6
+
 /* ---------------- Product Groups ---------------- */
 const goldProducts = computed(() => {
   return results.value.filter(p => (p.partner_tier || '').toLowerCase() === 'gold')
@@ -1153,20 +1141,6 @@ async function applyGoldRotationOffset() {
   }
 }
 
-const sortLabel = computed(() => {
-  if (sortBy.value === 'for_you') return 'For You'
-  if (sortBy.value === 'views') return 'Hot'
-  if (sortBy.value === 'trending') return 'Trending'
-  return 'New'
-})
-
-const sortIcon = computed(() => {
-  if (sortBy.value === 'for_you') return sparklesOutline
-  if (sortBy.value === 'views') return flameOutline
-  if (sortBy.value === 'trending') return trendingUpOutline
-  return timeOutline
-})
-
 function toggleCategory(cat: { id: number; name: string }) {
   const index = activeCategories.value.findIndex(c => c.id === cat.id)
 
@@ -1193,132 +1167,10 @@ function toggleStatus(status: string) {
 
 
 /* ---------------- Scanner ---------------- */
-function handleDismiss() {
-  scanning.value = false
-  stopScan()
-}
-
-async function stopScan() {
-  if (html5QrCodeInstance.value) {
-    try {
-      if (html5QrCodeInstance.value.isScanning) {
-        await html5QrCodeInstance.value.stop()
-      }
-      const reader = document.getElementById('reader')
-      if (reader) reader.innerHTML = ''
-    } catch (err) {
-      console.warn('Error stopping scanner:', err)
-    } finally {
-      html5QrCodeInstance.value = null
-    }
-  }
-}
-
-
-async function startScan() {
-  await ActivityLogService.log("barcode_scan_start");
-
-  if (scanning.value) return
-  scanning.value = true
-
-  if (isNative.value) {
-    try {
-      // 📱 Native → ML Kit
-      const { camera } = await BarcodeScanner.checkPermissions();
-      if (camera !== 'granted') {
-        const { camera: newStatus } = await BarcodeScanner.requestPermissions();
-        if (newStatus !== 'granted') {
-           scanning.value = false;
-           return;
-        }
-      }
-
-      const { barcodes } = await BarcodeScanner.scan();
-
-      if (barcodes.length > 0) {
-        const barcode = barcodes[0].rawValue;
-        if (barcode) {
-          await Haptics.impact({ style: ImpactStyle.Medium });
-          activeStores.value = [];
-          activeCategories.value = [];
-          activeStatuses.value = [];
-          isScanning.value = true;
-          searchQuery.value = barcode;
-
-          await ActivityLogService.log("barcode_scan_success", {
-            barcode: barcode
-          });
-        }
-      }
-    } catch (err) {
-      console.error('❌ Native scan failed:', err)
-      await ActivityLogService.log("barcode_scan_error", { error: err || "unknown" });
-    } finally {
-      scanning.value = false
-      if (route.query.scan === 'true') {
-        router.replace({path: '/search'})
-      }
-    }
-  }
-}
-
-async function onScannerModalPresented() {
-  // 🌐 Web init logic here
-  try {
-    let readerEl = null
-    // Retry finding element for up to 2 seconds
-    for (let i = 0; i < 20; i++) {
-      readerEl = document.getElementById('reader')
-      if (readerEl) break
-      await new Promise(r => setTimeout(r, 100))
-    }
-
-    if (!readerEl) {
-      console.error("❌ #reader container not found after modal present")
-      scanning.value = false
-      return
-    }
-
-    const html5QrCode = new Html5Qrcode('reader')
-    html5QrCodeInstance.value = html5QrCode
-
-    const config = {
-      fps: 15,
-      qrbox: { width: 250, height: 250 },
-      formatsToSupport: [
-        Html5QrcodeSupportedFormats.EAN_13,
-        Html5QrcodeSupportedFormats.EAN_8,
-        Html5QrcodeSupportedFormats.UPC_A,
-        Html5QrcodeSupportedFormats.UPC_E,
-        Html5QrcodeSupportedFormats.CODE_128,
-        Html5QrcodeSupportedFormats.QR_CODE
-      ]
-    }
-
-    await html5QrCode.start(
-        { facingMode: 'environment' },
-        config,
-        async (decodedText) => {
-          console.log('✅ Web barcode detected:', decodedText)
-          await Haptics.impact({style: ImpactStyle.Medium})
-          
-          activeStores.value = []
-          activeCategories.value = []
-          activeStatuses.value = []
-          isScanning.value = true
-          searchQuery.value = decodedText
-          
-          await ActivityLogService.log("barcode_scan_success", { barcode: decodedText });
-
-          await stopScan()
-          scanning.value = false
-        },
-        () => { /* Silent failure for each frame */ }
-    )
-  } catch (err) {
-    console.error('❌ Web scanner start failed:', err)
-    scanning.value = false
-  }
+// Live camera + result-preview scanning now lives in its own full-screen
+// route (see BarcodeScanCamera.vue) rather than an in-page modal.
+function goToBarcodeScan() {
+  router.push('/scan/barcode')
 }
 
 /* ---------------- Data Fetch ---------------- */
@@ -1357,6 +1209,7 @@ const fetchProducts = async (reset = false) => {
 
   if (isFetching.value || (allLoaded.value && !reset)) return
   isFetching.value = true
+  errorMsg.value = ''
 
   if (reset) {
     currentPage.value = 0
@@ -1467,7 +1320,7 @@ const fetchProducts = async (reset = false) => {
       })
 
       if (error) {
-        errorMsg.value = error.message
+        setFetchError(error)
       } else {
         if (!data || data.length < pageSize) {
           allLoaded.value = true
@@ -1580,7 +1433,7 @@ const fetchProducts = async (reset = false) => {
       )
 
       if (error) {
-        errorMsg.value = error.message
+        setFetchError(error)
       } else {
         if (!data || data.length < pageSize) {
           allLoaded.value = true
@@ -1618,7 +1471,7 @@ const fetchProducts = async (reset = false) => {
     })
 
     if (error) {
-      errorMsg.value = error.message
+      setFetchError(error)
     } else {
       if (!data || data.length < pageSize) {
         allLoaded.value = true
@@ -1650,7 +1503,7 @@ const fetchTotalCount = async () => {
       .select('barcode', {count: 'exact', head: true})
       .eq('is_archived', false)
   if (error) {
-    errorMsg.value = error.message
+    setFetchError(error)
   } else {
     totalProductsCount.value = count || 0
   }
@@ -1665,6 +1518,22 @@ const handleSearchInput = (event: Event) => {
 
   if (q.length > 1) {   // only log if at least 2 chars
     ActivityLogService.log("search_query", {query: q});
+  }
+};
+
+const expandSearch = () => {
+  searchExpanded.value = true;
+  nextTick(() => searchbarEl.value?.$el?.setFocus());
+};
+
+const collapseSearch = () => {
+  searchQuery.value = '';
+  searchExpanded.value = false;
+};
+
+const handleSearchBlur = () => {
+  if (!searchQuery.value) {
+    searchExpanded.value = false;
   }
 };
 
@@ -1723,8 +1592,15 @@ function getStatusClass(status: string) {
 
 /* ---------------- Infinite Scroll ---------------- */
 const loadMore = async (event: Event) => {
-  await fetchProducts()
-  ;(event.target as HTMLIonInfiniteScrollElement).complete()
+  try {
+    await fetchProducts()
+    // A failed page (e.g. offline) leaves allLoaded=false — without this it would
+    // just keep re-triggering ionInfinite in a tight retry loop while still near
+    // the bottom of the list. Pull-to-refresh re-enables it once back online.
+    if (errorMsg.value) infiniteDisabled.value = true
+  } finally {
+    ;(event.target as HTMLIonInfiniteScrollElement).complete()
+  }
 }
 
 
@@ -1861,16 +1737,9 @@ onIonViewDidEnter(async () => {
     }
   }
 
-  // Refresh AdMob if needed
-  scheduleBannerUpdate();
-
-  // Auto trigger scanner if route has scan=true
-  if (route.query.scan === "true") {
-    setTimeout(async () => {
-      await startScan();
-      router.replace({path: "/search"});
-    }, 300);
-  }
+  // Banner now goes through the shared LevelPlay scheduler (same one every
+  // other ad-bearing view uses) instead of a bespoke show/destroy pair here.
+  scheduleBannerUpdate()
 });
 
 
@@ -1888,31 +1757,42 @@ const getStatusIcon = (status: string) => {
 
 
 <style>
+/* Floats over the product grid (see slot="fixed" note in the template)
+   instead of reserving its own row below ion-content, so the frosted
+   pill actually has scrolling content behind it to blur. */
 .footer-count {
-  text-align: center;
-  padding: 3px 0;
-  font-size: 14px;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: var(--floating-tab-bar-offset);
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.footer-count small {
+  display: inline-block;
+  padding: 6px 16px;
+  border-radius: var(--radius-pill);
+  /* --ion-background-color-rgb isn't kept in sync with our custom
+     --ion-background-color override, so build the tint from an explicit
+     light/dark pair instead of trusting it (it silently fell back to
+     black in light mode, producing an unreadable dark-on-dark pill). */
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--card-border);
+  box-shadow: var(--card-shadow);
+  font-size: 12px;
+  font-weight: 600;
   color: var(--ion-color-medium);
-  background: transparent;
 }
 
-
-#reader {
-  width: 100%;
-  max-height: 100%;
-  border-radius: 8px;
-  overflow: hidden;
-  margin: 0 auto; /* center horizontally */
+.ion-palette-dark .footer-count small {
+  background: rgba(20, 20, 22, 0.65);
 }
 
-/* For larger screens */
-@media (min-width: 768px) {
-  #reader {
-    width: 400px; /* fixed width for better control */
-    height: 300px; /* fixed height */
-    border-radius: 8px; /* maybe larger radius for desktop */
-  }
-}
 
 ion-chip {
   border-radius: 999px !important;
@@ -1941,7 +1821,20 @@ ion-searchbar.rounded {
   display: grid;
   grid-template-columns: 1fr;
   gap: 16px;
-  padding: 4px 0;
+  /* Extra bottom padding so the last row always clears the fixed
+     Add/Scan FABs instead of sitting flush underneath them. */
+  padding: 4px 0 130px;
+}
+
+/* Top clearance for the floating search/filter bar (now inside
+   ion-content, slot="fixed") lives on the outer wrapper — the actual
+   first thing rendered (featured-gold section, "for you" card, or the
+   product grid, depending on state) — not on .product-grid itself,
+   since content before the grid needs to clear the bar too. */
+.search-results-wrap {
+  /* Ionic's .ion-padding utility sets padding-top via !important, so a
+     plain override here never wins without matching it. */
+  padding-top: 78px !important;
 }
 
 /* Laptop & Computer Only: Multiple columns */
@@ -1966,15 +1859,19 @@ ion-searchbar.rounded {
 
 .modern-product-card {
   margin: 0; /* Reset margin for grid layout */
-  background: var(--ion-card-background, #ffffff);
-  border-radius: 20px;
+  background: var(--card-bg);
+  border-radius: var(--radius-lg);
   overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-  border: 1px solid rgba(var(--ion-color-dark-rgb), 0.05);
-  transition: transform 0.2s ease, box-shadow 0.3s ease;
+  box-shadow: var(--card-shadow);
+  border: 1px solid var(--card-border);
+  transition: transform 0.15s ease, box-shadow 0.25s ease;
   cursor: pointer;
   position: relative;
   height: 160px; /* Fixed height for clean grid rows */
+}
+
+.modern-product-card:hover {
+  box-shadow: var(--card-shadow-hover);
 }
 
 /* Mobile: restore bottom margin if grid is 1 column */
@@ -2039,7 +1936,7 @@ ion-searchbar.rounded {
 .floating-status-pill {
   position: absolute;
   padding: 4px 10px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   display: flex;
   align-items: center;
   gap: 5px;
@@ -2094,8 +1991,9 @@ ion-searchbar.rounded {
 
 .info-top .name {
   margin: 0;
-  font-size: 1.15rem; /* Larger */
-  font-weight: 850; /* Heavier */
+  font-size: 1.1rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
   color: var(--ion-color-dark);
   line-height: 1.25;
   display: -webkit-box;
@@ -2222,57 +2120,139 @@ ion-searchbar.rounded {
 }
 
 /* Consolidated Search Header Styles (3-Row Layout) */
+/* Three separate pills (search bar + two buttons), floating over the
+   product grid instead of sitting in a solid ion-toolbar — each pill
+   keeps its own background, the space around them is transparent. */
 .header-main-actions {
+  position: absolute;
+  top: 10px;
+  left: 16px;
+  right: 16px;
+  z-index: 5;
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 8px;
-  padding: 8px 16px;
-  width: 100%;
 }
 
-.classic-scan-btn {
-  width: 50px;
-  height: 50px;
-  min-width: 50px;
-  --padding-start: 0;
-  --padding-end: 0;
-  --border-radius: 12px;
+.inline-searchbar {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Fade-in only — no animating width/flex-grow on the ion-searchbar itself.
+   Resizing that custom element mid-animation can leave its shadow-DOM icon
+   mispositioned on iOS WebKit (the icon doesn't reliably re-center while the
+   host's box is still changing size), so the bar is laid out at its final
+   width from the first frame and only opacity transitions. */
+.searchbar-expanded {
+  animation: searchbar-fade-in 0.2s ease-out;
+}
+
+@keyframes searchbar-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.search-toggle-btn {
+  flex-shrink: 0;
+}
+
+.searchbar-wrap {
+  position: relative;
+}
+
+/* Sits over the searchbar's own leading search icon so tapping it again
+   collapses the search — same spot the user tapped to open it. Placed
+   after the input in DOM order but pinned over the icon, so it never
+   covers the text/typing area. */
+.searchbar-icon-hit {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 44px;
+  background: transparent;
+  border: none;
+  padding: 0;
   margin: 0;
+  cursor: pointer;
+  z-index: 1;
+  -webkit-appearance: none;
+  appearance: none;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.classic-scan-btn ion-icon {
-  font-size: 24px;
+.searchbar-icon-hit:focus,
+.searchbar-icon-hit:active {
+  background: transparent;
+  outline: none;
+}
+
+/* Stacked FABs: Add Product (top) + Scan Barcode (just below it) */
+.stacked-fabs {
+  position: absolute;
+  right: 16px;
+  /* Cleared above the results-count pill, not floating far above it. */
+  bottom: calc(var(--floating-tab-bar-offset) + 42px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  z-index: 10;
 }
 
 .classic-action-btn {
-  height: 50px;
+  /* !important + min/max on all four needed: iOS mode's own ion-button
+     internal padding/min-height (different from md/Android) otherwise
+     wins over a plain height/width here, making the button render a
+     different size on iPhone than on Android. */
+  height: 44px !important;
+  width: 44px !important;
+  min-width: 44px !important;
+  max-width: 44px !important;
+  min-height: 44px !important;
+  max-height: 44px !important;
   margin: 0;
   --color: var(--ion-color-dark);
+  /* !important needed: ion-button's fill="clear" sets --background:
+     transparent via its own .button-clear class at higher specificity
+     than a plain class selector here. Frosted-glass tint (not the
+     opaque --card-bg) to match the see-through searchbar next to it. */
+  --background: rgba(255, 255, 255, 0.65) !important;
+  --border-radius: var(--radius-md);
+  --background-hover: rgba(var(--ion-color-carrot-rgb), 0.1);
+  --background-activated: rgba(var(--ion-color-carrot-rgb), 0.14);
+  --transition: background-color 0.2s ease;
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--card-shadow);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   position: relative;
   font-weight: 700;
   text-transform: none;
 }
 
 .classic-action-btn ion-icon {
-  font-size: 22px;
+  font-size: 38px;
+  color: var(--ion-color-dark);
 }
 
-.sort-btn-wrapper {
-  display: flex;
-  align-items: center;
-  gap: 4px;
+.ion-palette-dark .classic-action-btn {
+  --background: rgba(20, 20, 22, 0.65) !important;
 }
 
 .right-actions-group {
   display: flex;
   align-items: center;
-  gap: 4px;
-}
-
-.btn-label {
-  margin-left: 4px;
-  font-size: 13px;
+  gap: 8px;
+  flex-shrink: 0;
+  margin-left: auto;
 }
 
 .badge-dot {
@@ -2296,32 +2276,6 @@ ion-searchbar.rounded {
   font-weight: 800;
 }
 
-.search-container {
-  padding: 0 16px 12px;
-}
-
-
-
-.search-row-toolbar {
-  --min-height: auto;
-}
-
-/* Animation for searchbar row */
-.fade-down-enter-active,
-.fade-down-leave-active {
-  transition: all 0.25s ease-out;
-  transform-origin: top;
-}
-
-.fade-down-enter-from,
-.fade-down-leave-to {
-  opacity: 0;
-  transform: translateY(-10px);
-}
-
-
-.actions-toolbar,
-.search-row-toolbar,
 .filter-toolbar {
   --background: var(--ion-background-color);
   backdrop-filter: none;
@@ -2345,8 +2299,8 @@ ion-header {
 
 
 /* Force neutral text color in toolbar controls */
-.actions-toolbar ion-button,
-.actions-toolbar ion-icon {
+.header-main-actions ion-button,
+.header-main-actions ion-icon {
   color: var(--ion-color-dark);
 }
 
@@ -2414,7 +2368,7 @@ ion-header {
 .product-grid.grid-mode {
   grid-template-columns: repeat(2, 1fr);
   gap: 12px;
-  padding: 8px;
+  padding: 8px 8px 130px;
 }
 
 @media (min-width: 768px) {
@@ -2431,13 +2385,13 @@ ion-header {
 
 .grid-product-card {
   aspect-ratio: 1 / 1;
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   overflow: hidden;
-  background: var(--ion-card-background, #ffffff);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-  border: 1px solid rgba(var(--ion-color-dark-rgb), 0.05);
+  background: var(--card-bg);
+  box-shadow: var(--card-shadow);
+  border: 1px solid var(--card-border);
   position: relative;
-  transition: transform 0.2s ease;
+  transition: transform 0.2s ease, box-shadow 0.25s ease;
   z-index: 1;
 }
 
@@ -2450,6 +2404,10 @@ ion-header {
   border: 2px solid transparent !important; /* Base for tiered items */
 }
 
+.grid-product-card:hover {
+  box-shadow: var(--card-shadow-hover);
+}
+
 .grid-product-card:active {
   transform: scale(0.95);
 }
@@ -2458,6 +2416,7 @@ ion-header {
   width: 100%;
   height: 100%;
   position: relative;
+  background: var(--ion-background-color-step-100, #f8fafc);
 }
 
 .grid-card-image img {

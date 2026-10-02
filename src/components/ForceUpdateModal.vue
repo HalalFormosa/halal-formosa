@@ -80,7 +80,7 @@ const handleUpdate = async () => {
 .force-update-modal {
   --height: auto;
   --max-height: 80%;
-  --border-radius: 24px;
+  --border-radius: var(--radius-xl);
   --background: var(--ion-background-color, #ffffff);
 }
 
@@ -93,7 +93,7 @@ const handleUpdate = async () => {
 }
 
 .illustration-container {
-  background: rgba(var(--ion-color-primary-rgb), 0.1);
+  background: rgba(var(--ion-color-carrot-rgb), 0.1);
   padding: 24px;
   border-radius: 50%;
   margin-bottom: 24px;
@@ -102,7 +102,7 @@ const handleUpdate = async () => {
 .update-icon {
   width: 64px;
   height: 64px;
-  color: var(--ion-color-primary);
+  color: var(--ion-color-carrot);
   animation: rotate 10s linear infinite;
 }
 
@@ -133,7 +133,7 @@ const handleUpdate = async () => {
 
 .update-button {
   width: 100%;
-  --border-radius: 12px;
+  --border-radius: var(--radius-md);
   --padding-top: 16px;
   --padding-bottom: 16px;
   font-weight: 600;

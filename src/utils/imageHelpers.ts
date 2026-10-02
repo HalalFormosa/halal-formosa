@@ -37,3 +37,30 @@ export function blobToBase64(file: Blob): Promise<string> {
         r.readAsDataURL(file)
     })
 }
+
+const PLACEHOLDER_IMAGE = 'https://via.placeholder.com/150x150.webp?text=No+Photo'
+
+// Requests a downsized/compressed rendition from Supabase Storage's image
+// transform endpoint instead of shipping the full ~1000px upload for a
+// thumbnail-sized slot — the main win on slow connections. Falls back to
+// the original URL untouched for anything that isn't one of our storage
+// object URLs (e.g. the placeholder).
+//
+// Both width AND height must be passed: giving the transform only a width
+// does NOT scale proportionally — it silently returns the image cropped to
+// that width while keeping the full original height, producing a mangled
+// sliver instead of a resize.
+export function getOptimizedImageUrl(
+    url: string | undefined | null,
+    width: number,
+    height: number,
+    resize: 'contain' | 'cover' = 'contain',
+    quality = 60
+): string {
+    if (!url) return PLACEHOLDER_IMAGE
+    if (!url.includes('/storage/v1/object/public/')) return url
+
+    const transformed = url.replace('/storage/v1/object/public/', '/storage/v1/render/image/public/')
+    const separator = transformed.includes('?') ? '&' : '?'
+    return `${transformed}${separator}width=${width}&height=${height}&resize=${resize}&quality=${quality}`
+}

@@ -115,6 +115,11 @@
     "password": "Mật khẩu",
     "loggingIn": "Đang đăng nhập...",
     "continueWithGoogle": "Tiếp tục với Google",
+    "continueWithLine": "Tiếp tục với LINE",
+    "agreeToTerms": "Tôi đồng ý với {privacy} và {terms}",
+    "privacyPolicy": "Chính sách quyền riêng tư",
+    "termsOfService": "Điều khoản dịch vụ",
+    "mustAgreeToTerms": "Vui lòng đồng ý với Chính sách quyền riêng tư và Điều khoản dịch vụ để tiếp tục.",
     "forgotPassword": "Quên mật khẩu?",
     "resetEmailSent": "Đã gửi email đặt lại mật khẩu! Vui lòng kiểm tra hộp thư đến của bạn.",
     "noAccount": "Bạn chưa có tài khoản?",
@@ -595,6 +600,11 @@
       "about": "Giới thiệu về ứng dụng",
       "contributions": "Contributions"
     },
+    "stats": {
+      "products": "Sản phẩm",
+      "places": "Địa điểm",
+      "xp": "XP"
+    },
     "title": "Hồ sơ",
     "logout": "Đăng xuất",
     "donor": "Tình trạng nhà tài trợ",
@@ -657,6 +667,17 @@
     "login": "Đăng nhập",
     "review": "Đánh giá sản phẩm",
     "settings": "Cài đặt",
+    "linkedAccounts": {
+      "title": "Tài khoản đã liên kết",
+      "subtitle": "Xem các phương thức đăng nhập đã liên kết với tài khoản của bạn.",
+      "email": "Email & Mật khẩu",
+      "google": "Google",
+      "apple": "Apple",
+      "line": "LINE",
+      "connected": "Đã liên kết",
+      "notConnected": "Chưa liên kết",
+      "note": "Đăng nhập bằng bất kỳ phương thức đã liên kết nào cũng sẽ vào cùng một tài khoản này."
+    },
     "legal": "Hợp pháp",
     "credits": "Tín dụng & Người đóng góp",
     "support": "Ủng hộ Halal Formosa ❤️",
@@ -1056,6 +1077,9 @@
     "direction": "Hướng Qibla",
     "fromNorth": "từ phía Bắc đích thực",
     "preparing": "Đang chuẩn bị la bàn...",
+    "needsPermission": "Cần quyền truy cập la bàn để hiển thị hướng.",
+    "enableButton": "Bật La Bàn",
+    "error": "Không thể khởi tạo la bàn.",
     "facing": "Bạn đang đối mặt với Qibla"
   },
   "savedItems": {

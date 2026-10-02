@@ -60,17 +60,19 @@
 
     <ion-content class="ion-padding">
 
-      <ion-button
-          v-if="activeCategoryIds.length"
-          size="small"
-          fill="clear"
-          color="medium"
-          @click="clearFilters"
-      >
-        {{ $t('partner.actions.clearFilters') }}
-      </ion-button>
-
-
+      <div class="list-section-header">
+        <span v-if="!loading" class="results-count">{{ filteredBodies.length }} {{ $t('partner.title') }}</span>
+        <ion-button
+            v-if="activeCategoryIds.length"
+            size="small"
+            fill="clear"
+            color="medium"
+            class="clear-filters-btn"
+            @click="clearFilters"
+        >
+          {{ $t('partner.actions.clearFilters') }}
+        </ion-button>
+      </div>
 
       <!-- List -->
       <div class="discover-grid">
@@ -122,10 +124,11 @@
               <div class="scope-chips">
                 <span
                     v-for="s in body.scopes.slice(0, 2)"
-                    :key="s"
+                    :key="s.id"
                     class="scope-tag"
+                    :style="scopeTagStyle(s.color)"
                 >
-                  {{ s }}
+                  {{ s.name }}
                 </span>
                 <span v-if="body.scopes.length > 2" class="scope-tag more">
                   +{{ body.scopes.length - 2 }}
@@ -244,7 +247,8 @@ async function fetchPartners() {
         scope_id,
         partner_scopes (
           id,
-          name
+          name,
+          color
         )
       )
     `)
@@ -263,9 +267,11 @@ async function fetchPartners() {
     scopeIds: (b.partners_scopes ?? []).map(
         (s: any) => s.scope_id as string
     ),
-    scopes: (b.partners_scopes ?? []).map(
-        (s: any) => s.partner_scopes.name as string
-    )
+    scopes: (b.partners_scopes ?? []).map((s: any) => ({
+      id: s.partner_scopes.id as string,
+      name: s.partner_scopes.name as string,
+      color: s.partner_scopes.color as string | null
+    }))
   }))
 }
 
@@ -306,6 +312,24 @@ const filteredBodies = computed(() => {
 
 
 
+
+/* ---------------- Helpers ---------------- */
+function hexToRgb(hex: string): string | null {
+  const match = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
+  if (!match) return null
+  const [r, g, b] = match.slice(1).map(v => parseInt(v, 16))
+  return `${r}, ${g}, ${b}`
+}
+
+function scopeTagStyle(color?: string | null) {
+  const rgb = color ? hexToRgb(color) : null
+  if (!rgb) return {}
+
+  return {
+    background: `rgba(${rgb}, 0.14)`,
+    color: color as string
+  }
+}
 
 /* ---------------- Methods ---------------- */
 function handleSearchInput(ev: Event) {
@@ -392,7 +416,7 @@ onMounted(async () => {
   position: relative;
   display: flex;
   flex-direction: column;
-  border-radius: 20px;
+  border-radius: var(--radius-lg);
   margin: 0;
   overflow: hidden;
   border: 1px solid var(--card-border-color, rgba(0,0,0,0.05));
@@ -405,8 +429,8 @@ onMounted(async () => {
   --card-shadow-color: rgba(0,0,0,0.05);
   --partner-text-color: var(--ion-color-dark, #000000);
   --logo-area-bg: #ffffff;
-  --tag-bg: rgba(var(--ion-color-primary-rgb), 0.08);
-  --tag-text: var(--ion-color-primary);
+  --tag-bg: rgba(var(--ion-color-carrot-rgb), 0.08);
+  --tag-text: var(--ion-color-carrot);
   
   background: var(--card-bg);
 }
@@ -436,7 +460,7 @@ onMounted(async () => {
   position: relative;
   display: flex;
   flex-direction: column;
-  border-radius: 20px;
+  border-radius: var(--radius-lg);
   margin: 0;
   overflow: hidden;
   border: 1px solid var(--card-border-color);
@@ -451,8 +475,8 @@ onMounted(async () => {
   --logo-bg: #ffffff;
   --info-bg: #f9fafb;
   --partner-text-color: #111827;
-  --tag-bg: rgba(var(--ion-color-primary-rgb), 0.08);
-  --tag-text: var(--ion-color-primary);
+  --tag-bg: rgba(var(--ion-color-carrot-rgb), 0.08);
+  --tag-text: var(--ion-color-carrot);
   
   background: var(--info-bg);
 }
@@ -490,8 +514,8 @@ onMounted(async () => {
     --info-bg: #1f2937;
     --partner-text-color: #f3f4f6;
     --logo-bg: #ffffff; /* Keep white for seamless logo integration as per user request */
-    --tag-bg: rgba(var(--ion-color-primary-rgb), 0.2);
-    --tag-text: var(--ion-color-primary-tint);
+    --tag-bg: rgba(var(--ion-color-carrot-rgb), 0.2);
+    --tag-text: var(--ion-color-carrot-tint);
   }
   
   .discover-item.gold {
@@ -686,8 +710,9 @@ onMounted(async () => {
    ========================= */
 
 ion-searchbar.rounded {
-  --border-radius: 12px;
-  --box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+  --border-radius: var(--radius-lg);
+  --box-shadow: none;
+  --background: var(--card-inner-bg);
   padding: 0;
 }
 
@@ -710,7 +735,41 @@ ion-searchbar.rounded {
   --border-style: none;
 }
 
+.search-toolbar ion-button[fill="clear"] {
+  --border-radius: var(--radius-lg);
+  --background: var(--card-inner-bg);
+  border: 1px solid var(--card-border);
+  margin: 0 12px;
+  font-weight: 700;
+}
+
 .text-center { text-align: center; }
 .text-sm { font-size: 0.875rem; }
 .text-gray-500 { color: var(--ion-color-medium); }
-.mt-8 { margin-top: 2rem; }</style>
+.mt-8 { margin-top: 2rem; }
+
+/* =========================
+   Section Header
+   ========================= */
+.list-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 32px;
+  margin-bottom: 4px;
+}
+
+.results-count {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--ion-color-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.clear-filters-btn {
+  margin: 0 0 0 auto;
+  --padding-start: 8px;
+  --padding-end: 8px;
+  font-size: 0.8rem;
+}</style>

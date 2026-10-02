@@ -115,6 +115,11 @@
     "password": "パスワード",
     "loggingIn": "ログイン中...",
     "continueWithGoogle": "Google を続ける",
+    "continueWithLine": "LINE で続ける",
+    "agreeToTerms": "{privacy}と{terms}に同意します",
+    "privacyPolicy": "プライバシーポリシー",
+    "termsOfService": "利用規約",
+    "mustAgreeToTerms": "続けるにはプライバシーポリシーと利用規約に同意してください。",
     "forgotPassword": "パスワードをお忘れですか？",
     "resetEmailSent": "パスワードリセットメールを送信しました! 受信箱をご確認ください。",
     "noAccount": "アカウントをお持ちでない場合は、",
@@ -595,6 +600,11 @@
       "about": "アプリについて",
       "contributions": "Contributions"
     },
+    "stats": {
+      "products": "商品",
+      "places": "場所",
+      "xp": "XP"
+    },
     "title": "プロフィール",
     "logout": "ログアウト",
     "donor": "ドナーステータス",
@@ -657,6 +667,17 @@
     "login": "ログイン",
     "review": "製品レビュー",
     "settings": "設定",
+    "linkedAccounts": {
+      "title": "連携アカウント",
+      "subtitle": "アカウントに連携されているログイン方法を確認できます。",
+      "email": "メールアドレスとパスワード",
+      "google": "Google",
+      "apple": "Apple",
+      "line": "LINE",
+      "connected": "連携済み",
+      "notConnected": "未連携",
+      "note": "連携済みのいずれかの方法でログインすると、同じアカウントにアクセスします。"
+    },
     "legal": "法律上の",
     "credits": "クレジットと寄稿者",
     "support": "ハラール・フォルモサをサポート❤️",
@@ -1056,6 +1077,9 @@
     "direction": "キブラの方向",
     "fromNorth": "トゥルーノースから",
     "preparing": "コンパスを準備しています...",
+    "needsPermission": "方向を表示するにはコンパスへのアクセスが必要です。",
+    "enableButton": "コンパスを有効にする",
+    "error": "コンパスを初期化できませんでした。",
     "facing": "あなたはキブラに面しています"
   },
   "savedItems": {

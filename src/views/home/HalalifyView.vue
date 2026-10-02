@@ -1029,13 +1029,13 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.03);
+  box-shadow: var(--card-shadow);
 }
 
 .ion-palette-dark .phrase-card {
   background: var(--ion-color-step-100, #1e1e1e);
   border-color: var(--ion-color-step-200, #2d2d2d);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--card-shadow);
 }
 
 .phrase-header {

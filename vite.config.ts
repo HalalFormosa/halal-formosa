@@ -11,7 +11,15 @@ import pkg from './package.json' with { type: 'json' }
 // https://vitejs.dev/config/
 export default defineConfig({
     plugins: [
-        vue(),
+        vue({
+            template: {
+                compilerOptions: {
+                    // Strip HTML comments from the compiled output so internal dev notes
+                    // don't leak into the shipped DOM (visible via browser devtools).
+                    comments: false,
+                },
+            },
+        }),
         legacy()
     ],
     css: {

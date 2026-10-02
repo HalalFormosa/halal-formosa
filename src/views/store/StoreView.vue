@@ -1,35 +1,52 @@
 <template>
   <ion-page>
-    <ion-header>
+    <ion-header :class="{ 'house-ad-top': houseAdAtTop }">
       <!-- Native (mobile) AdMob banner -->
-      <div v-if="isNative && !isDonor" id="ad-space-store" :style="{ height: '65px', paddingTop: 'var(--ion-safe-area-top, 0)' }"></div>
+      <div v-if="isNative && !isDonor" id="ad-space-store" :style="adSpaceStyle(houseAdAtTop)"></div>
+      <!-- House-ad fallback banner (web, or the real banner failed to fill /
+           LevelPlay is disabled), like Explore — minus the 'product' kind,
+           since this IS the product store. The feed also gets recurring
+           native cards (see HouseAdNativeCard below). -->
+      <HouseAdCard v-if="!isDonor && (!isNative || failedAdSpaceId === 'ad-space-store')" variant="banner" exclude-kind="product" />
 
       <app-header :title="$t('store.title')" :icon="bagHandleOutline" :showProfile="true" />
-
-      <!-- Actions toolbar: search input + chats + cart -->
-      <ion-toolbar class="actions-toolbar">
-        <ion-searchbar
-          v-model="searchQuery"
-          :placeholder="$t('store.searchPlaceholder')"
-          :debounce="400"
-          show-clear-button="focus"
-          class="compact-searchbar"
-        />
-
-        <ion-buttons slot="end">
-          <ion-button @click="openChats" class="header-action-button">
-            <ion-icon :icon="chatbubblesOutline" />
-            <ion-badge v-if="totalUnreadCount > 0" color="danger" class="header-badge">{{ totalUnreadCount }}</ion-badge>
-          </ion-button>
-          <ion-button @click="openCart" class="header-action-button cart-button">
-            <ion-icon :icon="cartOutline" />
-            <ion-badge v-if="cartCount > 0" color="danger" class="header-badge">{{ cartCount }}</ion-badge>
-          </ion-button>
-        </ion-buttons>
-      </ion-toolbar>
     </ion-header>
 
     <ion-content>
+      <!-- ion-refresher must be a direct child of ion-content — nested
+           inside the wrapper divs below, it never rendered its pulling
+           icon/text even though the refresh itself still fired. -->
+      <ion-refresher slot="fixed" @ionRefresh="doRefresh($event)">
+        <ion-refresher-content
+            :pulling-icon="chevronDownCircleOutline"
+            :pullingText="$t('search.pullToRefresh')"
+            refreshingSpinner="circles"
+        />
+      </ion-refresher>
+
+      <!-- Search bar + chats/cart float over the content instead of sitting
+           in their own ion-toolbar — matches Product/Trip's pattern. -->
+      <div class="header-main-actions" slot="fixed">
+        <ion-searchbar
+            v-model="searchQuery"
+            :placeholder="$t('store.searchPlaceholder')"
+            :debounce="400"
+            show-clear-button="focus"
+            class="compact-searchbar inline-searchbar"
+        />
+
+        <div class="right-actions-group">
+          <ion-button @click="openChats" class="classic-action-btn">
+            <ion-icon :icon="chatbubblesOutline" />
+            <ion-badge v-if="totalUnreadCount > 0" color="danger" class="header-badge">{{ totalUnreadCount }}</ion-badge>
+          </ion-button>
+          <ion-button @click="openCart" class="classic-action-btn cart-button">
+            <ion-icon :icon="cartOutline" />
+            <ion-badge v-if="cartCount > 0" color="danger" class="header-badge">{{ cartCount }}</ion-badge>
+          </ion-button>
+        </div>
+      </div>
+
       <div class="store-view-wrapper" style="position: relative; min-height: 100%;">
         <div class="store-container">
           <!-- Test Phase Disclaimer Banner -->
@@ -37,9 +54,6 @@
             <ion-icon :icon="warningOutline" class="test-phase-icon" />
             <span>{{ $t('store.testPhaseDisclaimer') }}</span>
           </div>
-          <ion-refresher slot="fixed" @ionRefresh="doRefresh($event)">
-            <ion-refresher-content />
-          </ion-refresher>
 
           <!-- Promo Banners -->
           <div v-if="promoBanners.length > 0" class="promo-section">
@@ -97,9 +111,8 @@
 
           <!-- Product Grid -->
           <div class="store-grid" v-if="!loading && products.length > 0">
+            <template v-for="(product, productIndex) in products" :key="product.id">
             <div
-              v-for="product in products"
-              :key="product.id"
               class="store-product-card"
               @click="navigateToProduct(product.id)"
             >
@@ -140,6 +153,15 @@
                 </div>
               </div>
             </div>
+
+            <!-- Recurring native sponsored card, woven into the store feed
+                 every HOUSE_AD_NATIVE_INTERVAL products. -->
+            <HouseAdNativeCard
+                v-if="!isDonor && (productIndex + 1) % HOUSE_AD_NATIVE_INTERVAL === 0"
+                mode="store"
+                :slot="Math.floor(productIndex / HOUSE_AD_NATIVE_INTERVAL)"
+            />
+            </template>
           </div>
 
           <!-- Skeleton loader -->
@@ -164,25 +186,29 @@
           <ion-infinite-scroll @ionInfinite="loadMore($event)" :disabled="noMore">
             <ion-infinite-scroll-content :loading-text="$t('store.loadingMore')" />
           </ion-infinite-scroll>
-
-          <!-- Admin FAB -->
-          <ion-fab v-if="isAdmin" vertical="bottom" horizontal="end" slot="fixed">
-            <ion-fab-button color="carrot" @click="navigateToAdminAdd">
-              <ion-icon :icon="addOutline" />
-            </ion-fab-button>
-          </ion-fab>
         </div>
       </div>
-    </ion-content>
 
-    <!-- Footer result count -->
-    <ion-footer v-if="totalCount > 0" class="result-footer">
-      <ion-toolbar>
-        <ion-title size="small" class="result-count">
+      <!-- Admin FAB: must be a direct child of ion-content for slot="fixed"
+           to actually pin it to the viewport — nested inside the scrolling
+           wrapper divs above, the slot assignment silently no-ops (native
+           shadow DOM only slots direct light-DOM children) and it scrolls
+           with the grid instead of staying put like Search/Explore's FABs. -->
+      <ion-fab v-if="isAdmin" vertical="bottom" horizontal="end" slot="fixed" class="admin-add-fab">
+        <ion-fab-button color="carrot" @click="navigateToAdminAdd">
+          <ion-icon :icon="addOutline" />
+        </ion-fab-button>
+      </ion-fab>
+
+      <!-- Results-count pill: lives inside ion-content (slot="fixed") so it
+           floats over the product grid instead of reserving its own footer
+           row, matching SearchView's frosted-glass results pill. -->
+      <div v-if="totalCount > 0" class="footer-count" slot="fixed">
+        <small>
           {{ $t('store.showingResults', { count: products.length, total: totalCount }) }}
-        </ion-title>
-      </ion-toolbar>
-    </ion-footer>
+        </small>
+      </div>
+    </ion-content>
 
     <!-- Cart Modal -->
     <ion-modal :is-open="cartOpen" @didDismiss="cartOpen = false" :initial-breakpoint="0.5" :breakpoints="[0, 0.5, 0.85]">
@@ -304,21 +330,25 @@ import { useI18n } from 'vue-i18n'
 import {
   IonPage, IonHeader, IonContent, IonToolbar, IonButtons, IonButton, IonIcon,
   IonSearchbar, IonChip, IonSkeletonText, IonInfiniteScroll, IonInfiniteScrollContent,
-  IonFab, IonFabButton, IonRefresher, IonRefresherContent, IonFooter, IonTitle,
+  IonFab, IonFabButton, IonRefresher, IonRefresherContent, IonTitle,
   IonPopover, IonList, IonItem, IonLabel, IonModal, IonThumbnail, IonBadge,
   IonInput, IonToggle, onIonViewWillEnter, onIonViewDidEnter
 } from '@ionic/vue'
 import { Capacitor } from '@capacitor/core'
+import HouseAdCard from '@/components/ads/HouseAdCard.vue'
+import HouseAdNativeCard from '@/components/ads/HouseAdNativeCard.vue'
+import { failedAdSpaceId, useHouseAdAtTop, adSpaceStyle } from '@/composables/useAdFallback'
 import { isDonor } from "@/composables/useSubscriptionStatus"
 import { scheduleBannerUpdate } from '@/plugins/admob'
 import {
   bagHandleOutline, chatbubblesOutline, cartOutline, constructOutline,
   chevronDownOutline, checkmarkOutline, filterOutline, imageOutline,
   closeOutline, storefrontOutline, addOutline, removeCircleOutline, addCircleOutline,
-  warningOutline
+  warningOutline, chevronDownCircleOutline
 } from 'ionicons/icons'
 import AppHeader from '@/components/AppHeader.vue'
 import { supabase } from '@/plugins/supabaseClient'
+import { notifyFetchError } from '@/utils/offlineFeedback'
 import { isAdmin } from '@/composables/userProfile'
 import { useStoreCart } from '@/composables/useStoreCart'
 import { useStoreChat } from '@/composables/useStoreChat'
@@ -335,6 +365,7 @@ const { execute: executeRecaptcha, isCaptchaEnabled } = useRecaptcha()
 
 // State
 const isNative = ref(Capacitor.isNativePlatform())
+const houseAdAtTop = useHouseAdAtTop('ad-space-store', isDonor)
 
 onIonViewDidEnter(() => {
   scheduleBannerUpdate()
@@ -345,6 +376,10 @@ const promoScroll = ref<HTMLElement | null>(null)
 let autoScrollInterval: any = null
 const loading = ref(true)
 const products = ref<any[]>([])
+// How often a native sponsored card appears in the store product feed
+// (every Nth product), replacing the old fixed top-banner house-ad
+// fallback on this view.
+const HOUSE_AD_NATIVE_INTERVAL = 6
 const categories = ref<any[]>([])
 const promoBanners = ref<any[]>([])
 const searchQuery = ref('')
@@ -459,7 +494,7 @@ function navigateToMerchant(id: string) {
 
 function navigateToAdminAdd() {
   if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
-  router.push('/admin/store/add-product')
+  router.push('/merchant/store/product/add')
 }
 
 function openFilter() {
@@ -587,13 +622,21 @@ async function fetchProducts(reset = true, silent = false) {
     if (products.value.length >= totalCount.value) {
       noMore.value = true
     }
+  } else if (error) {
+    notifyFetchError(error)
+    // Stop infinite scroll from hammering a dead connection — doRefresh resets
+    // noMore back to false once the user pulls to refresh.
+    if (!reset) noMore.value = true
   }
   if (!silent) loading.value = false
 }
 
 async function loadMore(event: any) {
-  await fetchProducts(false)
-  event.target.complete()
+  try {
+    await fetchProducts(false)
+  } finally {
+    event.target.complete()
+  }
 }
 
 async function doRefresh(event: any) {
@@ -692,17 +735,77 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-/* Actions toolbar */
-.actions-toolbar {
-  --background: var(--ion-background-color);
-  --border-width: 0;
-  /* Align the search field + trailing icons to the same 16px gutter used by the
-     category pills, filter row and product grid. The ion-searchbar host adds ~7px
-     of inner padding, so 8px here lands the field edge at ~15px (matching the pills). */
-  --padding-start: 8px;
-  --padding-end: 8px;
-  --padding-top: 4px;
-  --padding-bottom: 6px;
+.admin-add-fab {
+  bottom: var(--floating-tab-bar-clearance);
+}
+
+/* Clears the floating search bar (slot="fixed" in the template) instead
+   of content starting right underneath it. */
+.store-view-wrapper {
+  padding-top: 78px;
+}
+
+/* Floats over the store content (slot="fixed" in the template) instead of
+   sitting in its own ion-toolbar — matches Product/Trip's search bar. */
+.header-main-actions {
+  position: absolute;
+  top: 10px;
+  left: 16px;
+  right: 16px;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.inline-searchbar {
+  flex: 1;
+  min-width: 0;
+}
+
+.classic-action-btn {
+  /* !important + min/max on all four needed: iOS mode's own ion-button
+     internal padding/min-height (different from md/Android) otherwise
+     wins over a plain height/width here, making the button render a
+     different size on iPhone than on Android. */
+  height: 44px !important;
+  width: 44px !important;
+  min-width: 44px !important;
+  max-width: 44px !important;
+  min-height: 44px !important;
+  max-height: 44px !important;
+  margin: 0;
+  --color: var(--ion-color-dark);
+  /* !important needed: ion-button's fill="clear" sets --background:
+     transparent via its own .button-clear class at higher specificity
+     than a plain class selector here. Frosted-glass tint (not the
+     opaque --card-bg) to match the see-through searchbar next to it. */
+  --background: rgba(255, 255, 255, 0.65) !important;
+  --border-radius: var(--radius-md);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--card-shadow);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  position: relative;
+  font-weight: 700;
+  text-transform: none;
+}
+
+.ion-palette-dark .classic-action-btn {
+  --background: rgba(20, 20, 22, 0.65) !important;
+}
+
+.classic-action-btn ion-icon {
+  font-size: 24px;
+  color: var(--ion-color-dark);
+}
+
+.right-actions-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
 
@@ -715,16 +818,12 @@ onBeforeUnmount(() => {
 }
 
 .modern-sort-button {
-  --border-radius: 20px;
+  --border-radius: var(--radius-xl);
   --padding-start: 12px;
   --padding-end: 12px;
   font-size: 0.8rem;
   font-weight: 600;
   text-transform: none;
-  --color: var(--ion-text-color);
-}
-
-.header-action-button {
   --color: var(--ion-text-color);
 }
 
@@ -775,17 +874,24 @@ onBeforeUnmount(() => {
   position: relative;
   min-width: 280px;
   max-width: 320px;
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   overflow: hidden;
   scroll-snap-align: start;
   flex-shrink: 0;
   cursor: pointer;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--card-shadow);
+  border: 1px solid var(--card-border);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.promo-card:active {
+  transform: scale(0.98);
+  box-shadow: var(--card-shadow-hover);
 }
 
 .promo-image {
   width: 100%;
-  height: 140px;
+  height: 150px;
   object-fit: cover;
   display: block;
 }
@@ -795,31 +901,39 @@ onBeforeUnmount(() => {
   bottom: 0;
   left: 0;
   right: 0;
-  padding: 12px 16px;
-  background: linear-gradient(transparent, rgba(0, 0, 0, 0.7));
+  padding: 16px;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.75));
   color: #fff;
 }
 
 .promo-overlay h3 {
   margin: 0;
-  font-size: 1rem;
-  font-weight: 700;
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
 }
 
 .promo-overlay p {
   margin: 4px 0 0;
   font-size: 0.8rem;
-  opacity: 0.9;
+  opacity: 0.92;
+  font-weight: 500;
 }
 
-/* Category pills */
+/* Category pills — cohesive capsule pill-nav, same surface language as the
+   floating tab bar and header chip buttons */
 .category-scroll {
   display: flex;
-  gap: 12px;
+  gap: 10px;
   overflow-x: auto;
-  padding: 16px;
+  padding: 12px 16px;
   -webkit-overflow-scrolling: touch;
-  background: transparent;
+  background: var(--card-inner-bg);
+  margin: 0 16px;
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--card-border);
+  box-shadow: var(--card-shadow);
 }
 
 .category-scroll::-webkit-scrollbar {
@@ -830,12 +944,11 @@ onBeforeUnmount(() => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0 24px;
   padding: 0 16px;
   height: 42px;
   min-width: 80px;
-  border-radius: 21px;
-  border: 2px solid transparent;
+  border-radius: var(--radius-lg);
+  border: 1.5px solid transparent;
   background-size: cover;
   background-position: center;
   position: relative;
@@ -843,8 +956,7 @@ onBeforeUnmount(() => {
   color: #ffffff;
   flex-shrink: 0;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -864,25 +976,25 @@ onBeforeUnmount(() => {
 .pill-text {
   position: relative;
   z-index: 2;
-  font-size: 0.85rem;
+  font-size: 0.83rem;
   font-weight: 700;
   white-space: nowrap;
-  letter-spacing: 0.02em;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+  letter-spacing: 0.01em;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
 }
 
 .pill-active {
   border-color: var(--ion-color-carrot) !important;
-  box-shadow: 0 8px 25px rgba(255, 126, 0, 0.35);
-  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 0 0 3px rgba(var(--ion-color-carrot-rgb), 0.18);
+  transform: translateY(-1px);
 }
 
 .pill-active::before {
-  background: rgba(var(--ion-color-carrot-rgb), 0.3);
+  background: rgba(var(--ion-color-carrot-rgb), 0.32);
 }
 
-.ion-palette-dark .premium-cat-pill {
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+.ion-palette-dark .category-scroll {
+  background: var(--card-inner-bg);
 }
 
 /* Filter Row */
@@ -894,7 +1006,7 @@ onBeforeUnmount(() => {
 }
 
 .modern-filter-button {
-  --border-radius: 20px;
+  --border-radius: var(--radius-xl);
   font-size: 0.8rem;
   font-weight: 500;
   text-transform: none;
@@ -1044,13 +1156,13 @@ onBeforeUnmount(() => {
 }
 
 .store-product-card {
-  background: #ffffff;
-  border-radius: 16px;
+  background: var(--card-bg);
+  border-radius: var(--radius-lg);
   overflow: hidden;
   cursor: pointer;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-  border: 1px solid var(--ion-color-step-50, transparent);
+  box-shadow: var(--card-shadow);
+  border: 1px solid var(--card-border);
   height: 100%;
   display: flex;
   flex-direction: column;
@@ -1058,6 +1170,7 @@ onBeforeUnmount(() => {
 
 .store-product-card:active {
   transform: scale(0.97);
+  box-shadow: var(--card-shadow-hover);
 }
 
 .product-image-wrapper {
@@ -1107,20 +1220,22 @@ onBeforeUnmount(() => {
 }
 
 .product-info {
-  padding: 12px;
+  padding: 12px 12px 14px;
   display: flex;
   flex-direction: column;
   flex-grow: 1;
   justify-content: space-between;
+  gap: 3px;
+  border-top: 1px solid var(--card-border);
 }
 
 .product-category {
-  font-size: 0.65rem;
+  font-size: 0.62rem;
   color: var(--ion-color-medium);
-  margin-bottom: 2px;
+  margin-bottom: 0;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  font-weight: 600;
+  letter-spacing: 0.06em;
+  font-weight: 700;
 }
 
 .product-store-info {
@@ -1142,9 +1257,10 @@ onBeforeUnmount(() => {
 }
 
 .product-name {
-  margin: 4px 0;
+  margin: 2px 0;
   font-size: 0.88rem;
-  font-weight: 600;
+  font-weight: 700;
+  letter-spacing: -0.01em;
   line-height: 1.3;
   color: var(--ion-text-color);
   display: -webkit-box;
@@ -1181,14 +1297,16 @@ onBeforeUnmount(() => {
 
 .product-price-row {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   justify-content: space-between;
   gap: 4px;
+  margin-top: 4px;
 }
 
 .product-price {
-  font-size: 1rem;
-  font-weight: 700;
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
   color: var(--ion-color-carrot);
 }
 
@@ -1224,17 +1342,36 @@ onBeforeUnmount(() => {
   opacity: 0.5;
 }
 
-/* Footer */
-.result-footer ion-toolbar {
-  --background: var(--ion-background-color);
-  --border-width: 0;
-  --min-height: 24px;
+/* Floats over the product grid (see slot="fixed" note in the template)
+   instead of reserving its own row below ion-content, so the frosted
+   pill actually has scrolling content behind it to blur. */
+.footer-count {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(var(--floating-tab-bar-offset) + 8px);
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 5;
 }
 
-.result-count {
-  font-size: 0.75rem;
+.footer-count small {
+  display: inline-block;
+  padding: 6px 16px;
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--card-border);
+  box-shadow: var(--card-shadow);
+  font-size: 12px;
+  font-weight: 600;
   color: var(--ion-color-medium);
-  text-align: center;
+}
+
+.ion-palette-dark .footer-count small {
+  background: rgba(20, 20, 22, 0.65);
 }
 
 /* Active sort */
@@ -1292,13 +1429,14 @@ onBeforeUnmount(() => {
 
 /* Dark mode */
 .ion-palette-dark .store-product-card {
-  background: var(--ion-color-step-100, #1e1e1e);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-  border-color: rgba(255, 255, 255, 0.05);
+  background: var(--card-bg);
+  box-shadow: var(--card-shadow);
+  border-color: var(--card-border);
 }
 
 .ion-palette-dark .promo-card {
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--card-shadow);
+  border-color: var(--card-border);
 }
 
 .ion-palette-dark .product-image-wrapper {
@@ -1314,11 +1452,11 @@ onBeforeUnmount(() => {
 
 /* Responsive Searchbar */
 @media (min-width: 768px) {
-  .actions-toolbar {
-    --padding-start: 24px;
-    --padding-end: 24px;
+  .header-main-actions {
+    left: 24px;
+    right: 24px;
   }
-  
+
   .compact-searchbar {
     max-width: 600px;
     margin: 0 auto;
