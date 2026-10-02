@@ -11,7 +11,7 @@
     "test:e2e": "cypress run",
     "test:unit": "vitest",
     "lint": "eslint .",
-    "postversion": "node scripts/update-native-version.js",
+    "version": "node scripts/update-native-version.js && git add android/app/build.gradle ios/App/App.xcodeproj/project.pbxproj",
     "postinstall": "node scripts/patch-keyboard-resize.js",
     "capacitor:sync:after": "node node_modules/capacitor-levelplay-ads/scripts/levelplay-manifest.js && node scripts/patch-keyboard-resize.js"
   },
