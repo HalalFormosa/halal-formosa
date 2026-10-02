@@ -51,14 +51,24 @@ import { ActivityLogService } from '@/services/ActivityLogService'
  * One-tap "what will you do with this product?" question shown under a scan
  * result. Optional and non-blocking: shown on every result that gives a verdict
  * (or a random share if VITE_DECISION_PROMPT_RATE is set; re-rolled whenever `scanKey` changes).
- * The answer is logged as a `scan_decision` activity event.
+ * Two activity events: `scan_decision_shown` when the card appears (so the answer rate can be
+ * measured) and `scan_decision` when the user answers.
  */
-const props = defineProps<{
-  /** Increment once per new result; each change re-rolls whether to show. */
-  scanKey: number
-  /** The verdict shown for this scan (e.g. "Syubhah"). */
-  status: string | null | undefined
-}>()
+const props = withDefaults(
+    defineProps<{
+      /** Increment once per new result; each change re-rolls whether to show. */
+      scanKey: number
+      /** The scan's own verdict (e.g. "Syubhah"); decides whether the card is eligible. */
+      status: string | null | undefined
+      /** The rating the user actually sees on screen (the database product's rating when matched). */
+      shownStatus?: string | null
+      /** Whether the scanned product is already in our database (null = not checked yet). */
+      inDatabase?: boolean | null
+    }>(),
+    // Without an explicit default Vue turns an omitted boolean prop into `false`,
+    // which would wrongly log "not in database" for an unknown status.
+    { shownStatus: undefined, inDatabase: undefined }
+)
 
 const emit = defineEmits<{ (e: 'answered', choice: DecisionChoice): void }>()
 
@@ -91,6 +101,13 @@ watch(
       answered.value = false
       showInfo.value = false
       visible.value = !!props.status && VERDICTS.has(props.status) && Math.random() < showRate()
+      if (visible.value) {
+        // Fire and forget: a logging failure must never get in the user's way.
+        void ActivityLogService.log('scan_decision_shown', {
+          auto_status: props.status,
+          source: 'ingredient_scan',
+        }).catch(() => {})
+      }
     },
     { immediate: true }
 )
@@ -102,7 +119,9 @@ function choose(choice: DecisionChoice) {
   // Fire and forget: a logging failure must never get in the user's way.
   void ActivityLogService.log('scan_decision', {
     choice,
-    auto_status: props.status,
+    auto_status: props.status, // the scan's own verdict
+    shown_status: props.shownStatus ?? props.status, // what the user saw on screen
+    in_database: props.inDatabase ?? null,
     source: 'ingredient_scan',
   }).catch(() => {})
 }

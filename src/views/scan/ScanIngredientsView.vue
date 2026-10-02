@@ -305,6 +305,8 @@
           <ScanDecisionPrompt
               :scan-key="decisionPromptKey"
               :status="autoStatus"
+              :shown-status="displayStatus"
+              :in-database="productFoundInDb"
               @answered="onDecisionAnswered"
           />
 

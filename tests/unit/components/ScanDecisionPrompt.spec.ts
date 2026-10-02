@@ -46,21 +46,55 @@ describe('ScanDecisionPrompt', () => {
         expect(factory({ scanKey: 1, status: null }).find('.decision-prompt').exists()).toBe(false)
     })
 
-    it('logs one scan_decision event and then shows thanks', async () => {
+    it('logs one scan_decision event with what the user saw, then shows thanks', async () => {
         vi.spyOn(Math, 'random').mockReturnValue(0)
-        const w = factory({ scanKey: 1, status: 'Haram' })
+        const w = mount(ScanDecisionPrompt, {
+            props: { scanKey: 1, status: 'Syubhah', shownStatus: 'Muslim-friendly', inDatabase: true },
+            global: { mocks: { $t: (k: string) => k }, stubs: { IonIcon: true } },
+        })
 
         await w.find('.decision-btn-skip').trigger('click')
         await w.vm.$nextTick()
 
-        expect(ActivityLogService.log).toHaveBeenCalledTimes(1)
-        expect(ActivityLogService.log).toHaveBeenCalledWith('scan_decision', {
+        const decisions = vi.mocked(ActivityLogService.log).mock.calls.filter(([a]) => a === 'scan_decision')
+        expect(decisions).toHaveLength(1)
+        expect(decisions[0][1]).toEqual({
             choice: 'skip',
-            auto_status: 'Haram',
+            auto_status: 'Syubhah',
+            shown_status: 'Muslim-friendly',
+            in_database: true,
             source: 'ingredient_scan',
         })
         expect(w.find('.decision-thanks').exists()).toBe(true)
         expect(w.findAll('button.decision-btn')).toHaveLength(0)
+    })
+
+    it('falls back to the scan verdict and null when the shown status is not known', async () => {
+        vi.spyOn(Math, 'random').mockReturnValue(0)
+        const w = factory({ scanKey: 1, status: 'Haram' })
+        await w.find('.decision-btn-use').trigger('click')
+        const [, detail] = vi.mocked(ActivityLogService.log).mock.calls.find(([a]) => a === 'scan_decision')!
+        expect(detail).toMatchObject({ shown_status: 'Haram', in_database: null })
+    })
+
+    it('logs scan_decision_shown once when the card appears, and not when it is hidden', async () => {
+        vi.spyOn(Math, 'random').mockReturnValue(0)
+        const w = factory({ scanKey: 1, status: 'Syubhah' })
+        const shown = () => vi.mocked(ActivityLogService.log).mock.calls.filter(([a]) => a === 'scan_decision_shown')
+        expect(shown()).toHaveLength(1)
+        expect(shown()[0][1]).toEqual({ auto_status: 'Syubhah', source: 'ingredient_scan' })
+
+        // answering must not log "shown" again
+        await w.find('.decision-btn-use').trigger('click')
+        expect(shown()).toHaveLength(1)
+
+        // a new scan result logs it again
+        await w.setProps({ scanKey: 2, status: 'Haram' })
+        expect(shown()).toHaveLength(2)
+
+        vi.clearAllMocks()
+        factory({ scanKey: 1, status: 'No ingredients detected' })
+        expect(shown()).toHaveLength(0)
     })
 
     it('explains how the answer is used when the info icon is tapped, and logs nothing', async () => {
@@ -73,7 +107,8 @@ describe('ScanDecisionPrompt', () => {
 
         await w.find('.decision-info-btn').trigger('click')
         expect(w.find('.decision-info').exists()).toBe(false)
-        expect(ActivityLogService.log).not.toHaveBeenCalled()
+        const decisions = vi.mocked(ActivityLogService.log).mock.calls.filter(([a]) => a === 'scan_decision')
+        expect(decisions).toHaveLength(0)
     })
 
     it('re-rolls and resets when a new scan result arrives', async () => {
