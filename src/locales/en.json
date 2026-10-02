@@ -817,7 +817,10 @@
     "deleteAccountConfirmBtn": "Delete My Account",
     "deleteAccountSuccess": "Your account has been successfully deleted.",
     "nearbyPrompts": "Nearby review reminders",
-    "nearbyPromptsNote": "Privately remind me to share Muslim facilities after I visit a mosque or halal eatery."
+    "nearbyPromptsNote": "Privately remind me to share Muslim facilities after I visit a mosque or halal eatery.",
+    "researchParticipation": "Include my data in academic research",
+    "researchParticipationNote": "Allow my anonymized, aggregated usage data to be used in academic research and published findings. Turning this off excludes your data from future research; already published results cannot be withdrawn.",
+    "researchParticipationError": "Could not save your choice. Please try again."
   },
   "referral": {
     "titleCash": "Invite & Earn NT$",

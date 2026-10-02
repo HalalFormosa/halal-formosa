@@ -734,7 +734,10 @@
     "deleteAccountConfirmBtn": "刪除我的帳戶",
     "deleteAccountSuccess": "您的帳戶已成功刪除。",
     "nearbyPrompts": "附近地點評論提醒",
-    "nearbyPromptsNote": "當我拜訪清真寺或清真餐廳後，私下提醒我分享穆斯林設施。"
+    "nearbyPromptsNote": "當我拜訪清真寺或清真餐廳後，私下提醒我分享穆斯林設施。",
+    "researchParticipation": "允許我的資料用於學術研究",
+    "researchParticipationNote": "允許將我的匿名化、彙總使用資料用於學術研究及發表研究成果。關閉後，你的資料將不再納入之後的研究；已發表之成果無法撤回。",
+    "researchParticipationError": "無法儲存你的選擇，請再試一次。"
   },
   "profile": {
     "sections": {
