@@ -64,9 +64,24 @@ const emit = defineEmits<{ (e: 'answered', choice: DecisionChoice): void }>()
 
 import type { ScanDecisionChoice as DecisionChoice } from '@/utils/scanDecisionNotice'
 
-// Always shown while developing (`ionic serve`) so it is easy to test; unit tests
-// (mode "test") and production use the real sampling rate.
-const SHOW_RATE = import.meta.env.DEV && import.meta.env.MODE !== 'test' ? 1 : 1 / 3
+// Share of results that show the prompt (0-1). Override with VITE_DECISION_PROMPT_RATE, e.g.
+// `VITE_DECISION_PROMPT_RATE=1` in .env to see it on every result in a device build. Without it,
+// `ionic serve` always shows it (easy to test) and every built app (including a "dev" Android
+// build, where Vite's DEV flag is false) uses 1 in 3. Unit tests always use 1 in 3.
+const DEFAULT_RATE = 1 / 3
+const envRate = Number(import.meta.env.VITE_DECISION_PROMPT_RATE)
+const hasEnvRate =
+    import.meta.env.VITE_DECISION_PROMPT_RATE !== undefined &&
+    import.meta.env.VITE_DECISION_PROMPT_RATE !== '' &&
+    Number.isFinite(envRate)
+const SHOW_RATE =
+    import.meta.env.MODE === 'test'
+        ? DEFAULT_RATE
+        : hasEnvRate
+            ? Math.min(1, Math.max(0, envRate))
+            : import.meta.env.DEV
+                ? 1
+                : DEFAULT_RATE
 const VERDICTS = new Set(['Muslim-friendly', 'Syubhah', 'Haram'])
 
 const options: { value: DecisionChoice; icon: string }[] = [
