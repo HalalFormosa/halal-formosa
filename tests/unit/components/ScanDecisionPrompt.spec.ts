@@ -15,18 +15,29 @@ const factory = (props: { scanKey: number; status: string | null }) =>
 
 describe('ScanDecisionPrompt', () => {
     beforeEach(() => vi.clearAllMocks())
-    afterEach(() => vi.restoreAllMocks())
-
-    it('shows three choices for a verdict when the sample roll passes', () => {
-        vi.spyOn(Math, 'random').mockReturnValue(0.1)
-        const w = factory({ scanKey: 1, status: 'Syubhah' })
-        expect(w.findAll('button.decision-btn')).toHaveLength(3)
+    afterEach(() => {
+        vi.restoreAllMocks()
+        vi.unstubAllEnvs()
     })
 
-    it('stays hidden when the sample roll fails', () => {
-        vi.spyOn(Math, 'random').mockReturnValue(0.9)
-        const w = factory({ scanKey: 1, status: 'Syubhah' })
-        expect(w.find('.decision-prompt').exists()).toBe(false)
+    it('shows three choices on every verdict result by default', () => {
+        // even an unlucky random roll must not hide it when no rate is configured
+        vi.spyOn(Math, 'random').mockReturnValue(0.99)
+        for (const status of ['Muslim-friendly', 'Syubhah', 'Haram']) {
+            const w = factory({ scanKey: 1, status })
+            expect(w.findAll('button.decision-btn')).toHaveLength(3)
+        }
+    })
+
+    it('can be sampled with VITE_DECISION_PROMPT_RATE', () => {
+        vi.stubEnv('VITE_DECISION_PROMPT_RATE', '0.5')
+        const random = vi.spyOn(Math, 'random')
+
+        random.mockReturnValue(0.1)
+        expect(factory({ scanKey: 1, status: 'Syubhah' }).find('.decision-prompt').exists()).toBe(true)
+
+        random.mockReturnValue(0.9)
+        expect(factory({ scanKey: 1, status: 'Syubhah' }).find('.decision-prompt').exists()).toBe(false)
     })
 
     it('never shows without a verdict', () => {

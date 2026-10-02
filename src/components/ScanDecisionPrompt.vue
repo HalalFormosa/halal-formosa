@@ -49,8 +49,8 @@ import { ActivityLogService } from '@/services/ActivityLogService'
 
 /**
  * One-tap "what will you do with this product?" question shown under a scan
- * result. Shown on a random ~1 in 3 results (re-rolled whenever `scanKey`
- * changes) so it stays light, and only for results that give a verdict.
+ * result. Optional and non-blocking: shown on every result that gives a verdict
+ * (or a random share if VITE_DECISION_PROMPT_RATE is set; re-rolled whenever `scanKey` changes).
  * The answer is logged as a `scan_decision` activity event.
  */
 const props = defineProps<{
@@ -64,25 +64,16 @@ const emit = defineEmits<{ (e: 'answered', choice: DecisionChoice): void }>()
 
 import type { ScanDecisionChoice as DecisionChoice } from '@/utils/scanDecisionNotice'
 
-// Share of results that show the prompt (0-1). Override with VITE_DECISION_PROMPT_RATE, e.g.
-// `VITE_DECISION_PROMPT_RATE=1` in .env to see it on every result in a device build. Without it,
-// `ionic serve` always shows it (easy to test) and every built app (including a "dev" Android
-// build, where Vite's DEV flag is false) uses 1 in 3. Unit tests always use 1 in 3.
-const DEFAULT_RATE = 1 / 3
-const envRate = Number(import.meta.env.VITE_DECISION_PROMPT_RATE)
-const hasEnvRate =
-    import.meta.env.VITE_DECISION_PROMPT_RATE !== undefined &&
-    import.meta.env.VITE_DECISION_PROMPT_RATE !== '' &&
-    Number.isFinite(envRate)
-const SHOW_RATE =
-    import.meta.env.MODE === 'test'
-        ? DEFAULT_RATE
-        : hasEnvRate
-            ? Math.min(1, Math.max(0, envRate))
-            : import.meta.env.DEV
-                ? 1
-                : DEFAULT_RATE
+// Share of results that show the prompt (0-1). Shown on every verdict result by default; set
+// VITE_DECISION_PROMPT_RATE (e.g. 0.5) to show it on a random share instead.
+const DEFAULT_RATE = 1
 const VERDICTS = new Set(['Muslim-friendly', 'Syubhah', 'Haram'])
+
+function showRate(): number {
+  const raw = import.meta.env.VITE_DECISION_PROMPT_RATE
+  const n = Number(raw)
+  return raw !== undefined && raw !== '' && Number.isFinite(n) ? Math.min(1, Math.max(0, n)) : DEFAULT_RATE
+}
 
 const options: { value: DecisionChoice; icon: string }[] = [
   { value: 'use', icon: checkmarkCircleOutline },
@@ -99,7 +90,7 @@ watch(
     () => {
       answered.value = false
       showInfo.value = false
-      visible.value = !!props.status && VERDICTS.has(props.status) && Math.random() < SHOW_RATE
+      visible.value = !!props.status && VERDICTS.has(props.status) && Math.random() < showRate()
     },
     { immediate: true }
 )
