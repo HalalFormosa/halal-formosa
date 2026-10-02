@@ -15,6 +15,7 @@ export const isPublicProfile = ref<boolean | null>(null);
 export const showLastSeen = ref<boolean>(true);
 export const hasReviewedApp = ref<boolean>(false);
 export const nearbyPromptsEnabled = ref<boolean>(true);
+export const researchOptOut = ref<boolean>(false);
 
 /* ---------------- Profile fields ---------------- */
 export const donorType = ref("Free");
@@ -61,6 +62,7 @@ type UserProfileRow = {
     consent_acknowledged: boolean;
     avatar_url: string | null;
     nearby_prompts_enabled: boolean;
+    research_opt_out: boolean;
     user_roles: {
         role: string;
     } | null;
@@ -119,6 +121,22 @@ export async function setNearbyPromptsEnabled(value: boolean) {
         .from("user_profiles")
         .update({ nearby_prompts_enabled: value })
         .eq("id", currentUser.value.id)
+}
+
+/** `includeInResearch` is the toggle's polarity; the column stores the opt-out. */
+export async function setResearchParticipation(includeInResearch: boolean) {
+    if (!currentUser.value?.id) return
+    const previous = researchOptOut.value
+    researchOptOut.value = !includeInResearch
+    const { error } = await supabase
+        .from("user_profiles")
+        .update({ research_opt_out: !includeInResearch })
+        .eq("id", currentUser.value.id)
+    if (error) {
+        console.error("❌ setResearchParticipation failed", error)
+        researchOptOut.value = previous
+    }
+    return error
 }
 
 
@@ -201,6 +219,7 @@ export async function loadUserProfile(userId: string) {
           consent_acknowledged,
           avatar_url,
           nearby_prompts_enabled,
+          research_opt_out,
           user_roles (
             role
           )
@@ -227,6 +246,7 @@ export async function loadUserProfile(userId: string) {
         acknowledged.value = data.consent_acknowledged ?? false;
         nearbyPromptsEnabled.value = data.nearby_prompts_enabled ?? true;
         localStorage.setItem(promptKey(userId), JSON.stringify(nearbyPromptsEnabled.value));
+        researchOptOut.value = data.research_opt_out ?? false;
     } else {
         console.warn("⚠️ No profile found, resetting defaults");
 
@@ -294,4 +314,5 @@ export function resetUserProfileState() {
     acknowledged.value = false
     profileSkipped.value = false
     nearbyPromptsEnabled.value = true
+    researchOptOut.value = false
 }

@@ -679,7 +679,10 @@
     "deleteAccountConfirmBtn": "删除我的帐户",
     "deleteAccountSuccess": "您的帐户已成功删除。",
     "nearbyPrompts": "附近地点评论提醒",
-    "nearbyPromptsNote": "当我拜访清真寺或清真餐厅后，私下提醒我分享穆斯林设施。"
+    "nearbyPromptsNote": "当我拜访清真寺或清真餐厅后，私下提醒我分享穆斯林设施。",
+    "researchParticipation": "允许我的数据用于学术研究",
+    "researchParticipationNote": "允许将我的匿名化、汇总使用数据用于学术研究及发表研究成果。关闭后，你的数据将不再纳入之后的研究；已发表的成果无法撤回。",
+    "researchParticipationError": "无法保存你的选择，请重试。"
   },
   "profile": {
     "sections": {

@@ -975,7 +975,10 @@
     "deleteAccountConfirmBtn": "Hapus Akun Saya",
     "deleteAccountSuccess": "Akun Anda telah berhasil dihapus.",
     "nearbyPrompts": "Pengingat ulasan sekitar",
-    "nearbyPromptsNote": "Ingatkan saya secara pribadi untuk membagikan fasilitas Muslim setelah saya mengunjungi masjid atau tempat makan halal."
+    "nearbyPromptsNote": "Ingatkan saya secara pribadi untuk membagikan fasilitas Muslim setelah saya mengunjungi masjid atau tempat makan halal.",
+    "researchParticipation": "Sertakan data saya dalam penelitian akademik",
+    "researchParticipationNote": "Izinkan data penggunaan saya yang dianonimkan dan diagregasi digunakan dalam penelitian akademik dan publikasi hasilnya. Mematikan ini akan mengecualikan data Anda dari penelitian berikutnya; hasil yang sudah dipublikasikan tidak dapat ditarik.",
+    "researchParticipationError": "Pilihan tidak dapat disimpan. Silakan coba lagi."
   },
   "profile": {
     "sections": {

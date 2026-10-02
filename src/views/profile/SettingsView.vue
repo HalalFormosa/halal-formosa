@@ -68,6 +68,19 @@
             </ion-note>
           </div>
         </ion-item>
+        <ion-item lines="full" style="--border-radius: 12px;">
+          <div style="width: 100%; padding: 8px 0;">
+            <ion-toggle
+                :checked="!researchOptOut"
+                @ionChange="(e) => onResearchToggle(e.detail.checked)"
+            >
+              {{ $t('settings.researchParticipation') }}
+            </ion-toggle>
+            <ion-note style="display: block; margin-top: 8px; font-size: 0.85rem;">
+              {{ $t('settings.researchParticipationNote') }}
+            </ion-note>
+          </div>
+        </ion-item>
       </ion-list>
 
       <!-- 🛠️ Developer Options -->
@@ -145,6 +158,8 @@ import {
   resetUserProfileState,
   nearbyPromptsEnabled,
   setNearbyPromptsEnabled,
+  researchOptOut,
+  setResearchParticipation,
   donorType,
   userRole
 } from '@/composables/userProfile'
@@ -176,6 +191,20 @@ const { isDark: paletteToggle, toggleDarkPalette, initTheme } = useTheme()
 onMounted(() => {
   initTheme()
 })
+
+const onResearchToggle = async (include: boolean) => {
+  // ionChange also fires when the :checked binding updates; ignore no-ops.
+  if (include === !researchOptOut.value) return
+  const error = await setResearchParticipation(include)
+  if (error) {
+    const toast = await toastController.create({
+      message: t('settings.researchParticipationError'),
+      duration: 2500,
+      color: 'danger'
+    })
+    await toast.present()
+  }
+}
 
 const confirmDeleteAccount = async () => {
   const alert = await alertController.create({
