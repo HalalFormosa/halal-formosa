@@ -57,6 +57,8 @@ PODS:
   - CordovaPluginsStatic (8.1.0):
     - CapacitorCordova
     - OneSignalXCFramework (= 5.4.1)
+  - Google-Mobile-Ads-SDK (13.1.0):
+    - GoogleUserMessagingPlatform (>= 1.1)
   - GoogleDataTransport (10.1.0):
     - nanopb (~> 3.30910.0)
     - PromisesObjC (~> 2.4)
@@ -70,6 +72,7 @@ PODS:
     - GoogleToolboxForMac/Defines (= 4.2.1)
   - "GoogleToolboxForMac/NSData+zlib (4.2.1)":
     - GoogleToolboxForMac/Defines (= 4.2.1)
+  - GoogleUserMessagingPlatform (3.1.0)
   - GoogleUtilities/Environment (8.1.0):
     - GoogleUtilities/Privacy
   - GoogleUtilities/Logger (8.1.0):
@@ -82,6 +85,9 @@ PODS:
   - GTMSessionFetcher/Core (3.5.0)
   - IONFilesystemLib (1.1.1)
   - IONGeolocationLib (2.0.0)
+  - IronSourceAdMobAdapter (5.6.0.0):
+    - Google-Mobile-Ads-SDK (= 13.1.0)
+    - IronSourceSDK/Ads (~> 9.0)
   - IronSourceAdQualitySDK (9.10.0)
   - IronSourceSDK (9.6.0.0):
     - IronSourceSDK/AdQuality (= 9.6.0.0)
@@ -205,6 +211,7 @@ DEPENDENCIES:
   - "CapawesomeTeamCapacitorDatetimePicker (from `../../node_modules/@capawesome-team/capacitor-datetime-picker`)"
   - "CapgoCapacitorNavigationBar (from `../../node_modules/@capgo/capacitor-navigation-bar`)"
   - CordovaPluginsStatic (from `../capacitor-cordova-ios-plugins`)
+  - IronSourceAdMobAdapter
   - OneSignalXCFramework (= 5.4.1)
   - RecaptchaEnterprise (= 18.9.1)
   - "RevenuecatPurchasesCapacitor (from `../../node_modules/@revenuecat/purchases-capacitor`)"
@@ -212,13 +219,16 @@ DEPENDENCIES:
 
 SPEC REPOS:
   trunk:
+    - Google-Mobile-Ads-SDK
     - GoogleDataTransport
     - GoogleMLKit
     - GoogleToolboxForMac
+    - GoogleUserMessagingPlatform
     - GoogleUtilities
     - GTMSessionFetcher
     - IONFilesystemLib
     - IONGeolocationLib
+    - IronSourceAdMobAdapter
     - IronSourceAdQualitySDK
     - IronSourceSDK
     - MLImage
@@ -321,13 +331,16 @@ SPEC CHECKSUMS:
   CapawesomeTeamCapacitorDatetimePicker: 859adffaef2ac2f43f8c530f5b182ea13d5678d6
   CapgoCapacitorNavigationBar: b38f5c3fda336ab2e8493f8cc0c8093aa1a385c5
   CordovaPluginsStatic: b1e0cb61738004841352e28a8dcf8629f495d919
+  Google-Mobile-Ads-SDK: 8429bef6ee1a4e322b0a5571b64217ed8317a3d5
   GoogleDataTransport: aae35b7ea0c09004c3797d53c8c41f66f219d6a7
   GoogleMLKit: ddd51d7dff36ff28defa69afedd9cdce684fd857
   GoogleToolboxForMac: d1a2cbf009c453f4d6ded37c105e2f67a32206d8
+  GoogleUserMessagingPlatform: befe603da6501006420c206222acd449bba45a9c
   GoogleUtilities: 00c88b9a86066ef77f0da2fab05f65d7768ed8e1
   GTMSessionFetcher: 5aea5ba6bd522a239e236100971f10cb71b96ab6
   IONFilesystemLib: dfa8706539ac9ab77ccfd6e5b3830ce9b5e57f6c
   IONGeolocationLib: a5e40b54edc2ee9902036eda5aaa41ddf07bb68d
+  IronSourceAdMobAdapter: fae3a1370e49145b4ea2d8407e5bdb7f6a0da286
   IronSourceAdQualitySDK: 779fc3754f27b3d5fae8da52c5709a2dbdb502a6
   IronSourceSDK: fd05921e1ed23cc69e6eb21477e6b86230c98e2e
   MLImage: 2ab9c968e75f57911c16f4c9d9e8a8e9604a86a1
@@ -347,6 +360,6 @@ SPEC CHECKSUMS:
   RevenuecatPurchasesCapacitorUi: 59851dc7076d29f5f010e3dca51902898659f2d1
   RevenueCatUI: 5f7b3496a7fd7a16a254a6b78de2e221c117d9d2
 
-PODFILE CHECKSUM: fd9f14b5695a38e9a6b27a142e3c1237c751a4c8
+PODFILE CHECKSUM: fefeba969f47344abd8949af8077ee626524823e
 
 COCOAPODS: 1.16.2
