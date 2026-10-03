@@ -199,6 +199,25 @@ export function setUserRole(userId: string, value: string | null) {
     else localStorage.removeItem(roleKey(userId))
 }
 
+/* ---------------- Google avatar mirroring ---------------- */
+// Google profile photos are hotlinked from lh3.googleusercontent.com, which throttles (429) when
+// many load at once, leaving broken avatars. The mirror-avatars edge function copies the caller's
+// photo into our own avatars bucket; it only runs once per user since the URL then changes.
+const mirrorAttempted = new Set<string>()
+
+async function mirrorGoogleAvatar(userId: string, avatarUrl: string | null) {
+    if (!avatarUrl || !avatarUrl.includes("googleusercontent.com") || mirrorAttempted.has(userId)) return
+    mirrorAttempted.add(userId) // at most one try per session, so a failing photo can't loop
+    try {
+        const { data, error } = await supabase.functions.invoke("mirror-avatars", { body: {} })
+        if (error || data?.status !== "mirrored") return
+        const { data: row } = await supabase.from("user_profiles").select("avatar_url").eq("id", userId).maybeSingle()
+        if (row?.avatar_url) editAvatarUrl.value = row.avatar_url
+    } catch (e) {
+        console.warn("Avatar mirroring failed", e)
+    }
+}
+
 /* ---------------- Profile load/save ---------------- */
 export async function loadUserProfile(userId: string) {
     profileLoaded.value = false // ⬅️ NEW (start)
@@ -247,6 +266,8 @@ export async function loadUserProfile(userId: string) {
         nearbyPromptsEnabled.value = data.nearby_prompts_enabled ?? true;
         localStorage.setItem(promptKey(userId), JSON.stringify(nearbyPromptsEnabled.value));
         researchOptOut.value = data.research_opt_out ?? false;
+
+        void mirrorGoogleAvatar(userId, data.avatar_url) // fire and forget: never blocks the profile load
     } else {
         console.warn("⚠️ No profile found, resetting defaults");
 
