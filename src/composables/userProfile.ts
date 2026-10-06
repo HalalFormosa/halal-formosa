@@ -1,6 +1,6 @@
 import { ref, computed } from "vue";
 import { supabase } from "@/plugins/supabaseClient";
-import { isDonor } from "./useSubscriptionStatus";
+import { isDonor, resolveIsDonor, clearRcProActive } from "./useSubscriptionStatus";
 
 export const profileLoaded = ref(false)
 
@@ -146,9 +146,7 @@ export function setDonorType(userId: string, value: string) {
     donorType.value = value
     localStorage.setItem(donorKey(userId), value)
 
-    const isProOrSupporter = ["pro", "supporter", "founding supporter", "developer", "contributor"].includes(
-        value.toLowerCase()
-    );
+    const isProOrSupporter = resolveIsDonor(value);
     isDonor.value = isProOrSupporter;
     localStorage.setItem("user_pro_status", String(isProOrSupporter));
 }
@@ -158,9 +156,7 @@ export function loadDonorFromCache(userId: string) {
     const type = storedType ?? "Free"
     donorType.value = type
 
-    const isProOrSupporter = ["pro", "supporter", "founding supporter", "developer", "contributor"].includes(
-        type.toLowerCase()
-    );
+    const isProOrSupporter = resolveIsDonor(type);
     isDonor.value = isProOrSupporter;
     localStorage.setItem("user_pro_status", String(isProOrSupporter));
 }
@@ -321,6 +317,7 @@ export function resetUserProfileState() {
     // Reset donor status and clear cached pro entitlement
     isDonor.value = false
     localStorage.removeItem("user_pro_status")
+    clearRcProActive()
 
     editDOB.value = null
     editNationality.value = null

@@ -16,6 +16,26 @@ const disableDevAds = import.meta.env.DEV && (import.meta.env.VITE_DISABLE_ADS =
 export const isDonor = ref(disableDevAds ? true : cachedStatus);
 export const lastSyncedEntitlement = ref<string | null>(null);
 
+// RevenueCat's last known answer for "Halal Formosa Pro" (null = never checked on this device).
+// Profile loads (user_profiles.donor_type) also write isDonor, and that row can lag behind a
+// fresh purchase, so they must never downgrade a user RevenueCat already says is Pro.
+const RC_PRO_CACHE_KEY = "rc_pro_active";
+export const rcProActive = ref<boolean | null>(
+    localStorage.getItem(RC_PRO_CACHE_KEY) === "true" ? true : null
+);
+
+const PRO_DONOR_TYPES = ["pro", "supporter", "founding supporter", "developer", "contributor"];
+
+/** Pro access = the profile's donor tier OR an active RevenueCat entitlement. */
+export function resolveIsDonor(donorType: string): boolean {
+    return PRO_DONOR_TYPES.includes(donorType.toLowerCase()) || rcProActive.value === true;
+}
+
+export function clearRcProActive() {
+    rcProActive.value = null;
+    localStorage.removeItem(RC_PRO_CACHE_KEY);
+}
+
 export async function refreshSubscriptionStatus(options?: {
     syncToServer?: boolean;
 }) {
@@ -46,6 +66,8 @@ export async function refreshSubscriptionStatus(options?: {
         // ✅ Update ref and cache
         isDonor.value = hasPro;
         localStorage.setItem(SUB_CACHE_KEY, String(hasPro));
+        rcProActive.value = hasPro;
+        localStorage.setItem(RC_PRO_CACHE_KEY, String(hasPro));
 
         console.log("⭐ [Sub] Pro entitlement =", hasPro);
 
