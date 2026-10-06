@@ -145,6 +145,7 @@ import IngredientHighlightImage from '@/components/scan/IngredientHighlightImage
 import { extractIonColor } from '@/utils/ingredientHelpers'
 import { getScanStatus, type ScanStatus } from '@/services/ScanLimitService'
 import { ActivityLogService } from '@/services/ActivityLogService'
+import { supabase } from '@/plugins/supabaseClient'
 
 const props = defineProps<{
   active: boolean
@@ -444,10 +445,12 @@ async function startAnalysis() {
 
       const base64 = canvas.toDataURL('image/jpeg', 0.8).split(',')[1]
 
+      // google-ocr spends money, so it requires the signed-in user's token (the public anon key is not enough).
+      const { data: { session } } = await supabase.auth.getSession()
       const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/google-ocr`, {
           method: 'POST',
           headers: {
-              Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+              Authorization: `Bearer ${session?.access_token ?? import.meta.env.VITE_SUPABASE_ANON_KEY}`,
               'Content-Type': 'application/json'
           },
           body: JSON.stringify({ imageBase64: base64, includeAnnotations: true })
