@@ -45,7 +45,7 @@
           </div>
           <div class="conv-body">
             <div class="conv-top">
-              <span class="conv-name">{{ conv.buyer_profile?.display_name || conv.buyer_profile?.email || $t('store.chat.customer') }}</span>
+              <span class="conv-name">{{ conv.buyer_profile?.display_name || $t('store.chat.customer') }}</span>
               <span class="conv-time">{{ formatTime(conv.last_message_at) }}</span>
             </div>
             <div class="conv-bottom">
@@ -184,7 +184,7 @@ async function fetchConversations(silent = false) {
   if (buyerIds.length > 0) {
     const { data: profs } = await supabase
       .from('user_profiles')
-      .select('id, email, display_name, avatar_url')
+      .select('id, display_name, avatar_url')
       .in('id', buyerIds)
     profiles = profs || []
   }

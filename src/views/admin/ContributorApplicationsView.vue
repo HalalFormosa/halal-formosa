@@ -92,6 +92,7 @@ import {
   IonToast
 } from '@ionic/vue'
 import { supabase } from '@/plugins/supabaseClient'
+import { adminGetUserContacts } from '@/services/PrivateProfileService'
 import AppHeader from '@/components/AppHeader.vue'
 
 interface ContributorApplication {
@@ -123,16 +124,16 @@ async function fetchApplications() {
     // Fetch user profiles for these user_ids in parallel to fetch user metadata safely
     const userIds = (data || []).map(item => item.user_id)
     if (userIds.length > 0) {
-      const { data: profiles, error: profError } = await supabase
-        .from('user_profiles')
-        .select('id, email, display_name')
-        .in('id', userIds)
+      const [{ data: profiles, error: profError }, contacts] = await Promise.all([
+        supabase.from('user_profiles').select('id, display_name').in('id', userIds),
+        adminGetUserContacts(userIds),
+      ])
 
       if (!profError && profiles) {
         const profileMap = new Map(profiles.map(p => [p.id, p]))
         applications.value = data.map(item => ({
           ...item,
-          email: profileMap.get(item.user_id)?.email,
+          email: contacts.get(item.user_id)?.email ?? undefined,
           display_name: profileMap.get(item.user_id)?.display_name
         }))
         return

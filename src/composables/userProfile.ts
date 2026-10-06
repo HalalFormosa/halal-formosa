@@ -1,5 +1,6 @@
 import { ref, computed } from "vue";
 import { supabase } from "@/plugins/supabaseClient";
+import { getMyPrivateProfile } from "@/services/PrivateProfileService";
 import { isDonor, resolveIsDonor, clearRcProActive } from "./useSubscriptionStatus";
 
 export const profileLoaded = ref(false)
@@ -218,17 +219,17 @@ async function mirrorGoogleAvatar(userId: string, avatarUrl: string | null) {
 export async function loadUserProfile(userId: string) {
     profileLoaded.value = false // ⬅️ NEW (start)
 
+    // Sensitive fields (birth date, nationality, gender, phone) come from a server function,
+    // not from user_profiles, so they can be hidden from other users' queries.
+    const privatePromise = getMyPrivateProfile()
+
     const { data, error } = await supabase
         .from("user_profiles")
         .select(`
           donor_type,
           public_profile,
           display_name,
-          date_of_birth,
-          nationality,
-          gender,
           bio,
-          phone,
           show_last_seen,
           has_reviewed_app,
           consent_acknowledged,
@@ -242,6 +243,8 @@ export async function loadUserProfile(userId: string) {
         .eq("id", userId)
         .maybeSingle<UserProfileRow & { display_name: string | null }>();
 
+    const priv = await privatePromise
+
     if (!error && data) {
         setDonorType(userId, data.donor_type || "Free")
         setUserRole(userId, data.user_roles?.role ?? null)
@@ -249,11 +252,11 @@ export async function loadUserProfile(userId: string) {
         isPublicProfile.value = data.public_profile ?? false;
         localStorage.setItem(pubKey(userId), JSON.stringify(isPublicProfile.value));
 
-        editDOB.value = data.date_of_birth;
-        editNationality.value = data.nationality;
-        editGender.value = data.gender ?? 'Other';
+        editDOB.value = priv?.date_of_birth ?? null;
+        editNationality.value = priv?.nationality ?? null;
+        editGender.value = priv?.gender ?? 'Other';
         editBio.value = data.bio;
-        editPhone.value = data.phone;
+        editPhone.value = priv?.phone ?? null;
         editAvatarUrl.value = data.avatar_url;
         editDisplayName.value = data.display_name;
         showLastSeen.value = data.show_last_seen ?? true;

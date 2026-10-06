@@ -215,6 +215,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
 import { supabase } from "@/plugins/supabaseClient";
+import { adminGetUserContacts } from "@/services/PrivateProfileService";
 
 import {
   IonPage,
@@ -336,8 +337,7 @@ async function fetchLogs(isRefresh = false) {
       *,
       user_profiles: user_id (
         display_name,
-        avatar_url,
-        email
+        avatar_url
       )
     `)
       .order("created_at", { ascending: false })
@@ -352,11 +352,16 @@ async function fetchLogs(isRefresh = false) {
     noMoreData.value = true
   }
 
+  // Emails come from an admin-only server function, not from the user_profiles join.
+  const contacts = await adminGetUserContacts(
+      [...new Set(data.map(row => row.user_id as string).filter(Boolean))]
+  )
+
   logs.value.push(
       ...data.map(row => ({
         ...row,
         display_name: row.user_profiles?.display_name,
-        email: row.user_profiles?.email,
+        email: contacts.get(row.user_id)?.email,
         avatar_url: row.user_profiles?.avatar_url
       }))
   )

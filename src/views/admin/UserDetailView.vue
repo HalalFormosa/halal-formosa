@@ -362,6 +362,7 @@
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { supabase } from '@/plugins/supabaseClient'
+import { adminGetUserContacts } from '@/services/PrivateProfileService'
 import { countries, loadCountries } from '@/composables/useCountries'
 
 import {
@@ -631,13 +632,17 @@ function describeActivity(log: any) {
 
 /* Fetch user profile */
 async function fetchUser() {
-  const { data } = await supabase
-      .from('user_profiles')
-      .select('*')
-      .eq('id', userId)
-      .single()
+  // Sensitive fields (email, birth date, gender, nationality, last sign-in) come from an admin-only server function.
+  const [{ data }, contacts] = await Promise.all([
+    supabase
+        .from('user_profiles')
+        .select('id, display_name, avatar_url, bio, public_profile, profile_completed_notified, created_at')
+        .eq('id', userId)
+        .single(),
+    adminGetUserContacts([userId as string]),
+  ])
 
-  user.value = data
+  user.value = data ? { ...data, ...(contacts.get(userId as string) ?? {}) } : data
 }
 
 /* Fetch summary (reuse admin list logic via RPC) */

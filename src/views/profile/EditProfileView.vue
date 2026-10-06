@@ -563,6 +563,7 @@ import { useI18n } from "vue-i18n";
 import { countries, loadCountries } from "@/composables/useCountries"
 import { onBeforeMount, ref, computed } from "vue";
 import { supabase } from "@/plugins/supabaseClient";
+import { getMyPrivateProfile } from "@/services/PrivateProfileService";
 import { useRouter, onBeforeRouteLeave } from "vue-router";
 import { useNotifier } from "@/composables/useNotifier";
 
@@ -980,19 +981,21 @@ async function saveProfile() {
   }
 
   /* 2️⃣ Re-fetch profile (authoritative state after save) */
-  const { data: profile, error } = await supabase
+  const { data: profileRow, error } = await supabase
       .from('user_profiles')
       .select(`
       display_name,
       bio,
-      date_of_birth,
-      nationality,
-      gender,
-      phone,
       profile_completed_notified
     `)
       .eq('id', userId)
       .single();
+
+  // Sensitive fields come from a server function, not from user_profiles.
+  const priv = await getMyPrivateProfile();
+  const profile = profileRow
+      ? { ...profileRow, date_of_birth: priv?.date_of_birth ?? null, phone: priv?.phone ?? null }
+      : null;
 
   if (error || !profile) {
     console.warn('Failed to reload profile after save', error);

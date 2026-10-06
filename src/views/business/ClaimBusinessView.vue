@@ -216,6 +216,7 @@ import router from '@/router'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { supabase } from '@/plugins/supabaseClient'
+import { getMyPrivateProfile } from '@/services/PrivateProfileService'
 import { ClaimService } from '@/services/ClaimService'
 import { ActivityLogService } from '@/services/ActivityLogService'
 import { useNotifier } from '@/composables/useNotifier'
@@ -272,11 +273,13 @@ onIonViewWillEnter(async () => {
 
   // Pre-fill contact details from the current user's account/profile
   form.value.contact_email = user.email ?? ''
-  const { data: profile } = await supabase
-    .from('user_profiles')
-    .select('display_name, phone')
-    .eq('id', user.id)
-    .maybeSingle()
+  const [{ data: profileRow }, privateProfile] = await Promise.all([
+    supabase.from('user_profiles').select('display_name').eq('id', user.id).maybeSingle(),
+    getMyPrivateProfile(),
+  ])
+  const profile = (profileRow || privateProfile)
+    ? { display_name: profileRow?.display_name ?? null, phone: privateProfile?.phone ?? null }
+    : null
 
   if (profile) {
     if (profile.display_name) form.value.contact_name = profile.display_name

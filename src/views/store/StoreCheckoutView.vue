@@ -189,6 +189,7 @@ import {
 import { constructOutline, mapOutline, cashOutline, warningOutline } from 'ionicons/icons'
 import AppHeader from '@/components/AppHeader.vue'
 import { supabase } from '@/plugins/supabaseClient'
+import { getMyPrivateProfile } from '@/services/PrivateProfileService'
 import { useStoreCart } from '@/composables/useStoreCart'
 import { useEcpayPayment } from '@/composables/useEcpayPayment'
 import { useEcpayLogistics } from '@/composables/useEcpayLogistics'
@@ -266,14 +267,9 @@ onMounted(async () => {
     buyerName.value = session.user.user_metadata?.full_name || session.user.user_metadata?.name || ''
     
     // Fetch additional info from profile
-    const { data: profile } = await supabase
-      .from('user_profiles')
-      .select('phone')
-      .eq('id', session.user.id)
-      .single()
-    
-    if (profile?.phone) {
-      buyerPhone.value = profile.phone
+    const privateProfile = await getMyPrivateProfile()
+    if (privateProfile?.phone) {
+      buyerPhone.value = privateProfile.phone
     }
   }
   await fetchDeliveryOptions()

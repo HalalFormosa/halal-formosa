@@ -8,6 +8,7 @@ import { Capacitor } from '@capacitor/core'
 import { Keyboard, KeyboardResize } from '@capacitor/keyboard'
 import { Browser } from '@capacitor/browser'
 import { supabase } from '@/plugins/supabaseClient'
+import { getMyPrivateProfile } from '@/services/PrivateProfileService'
 import { isDeviceOnline } from '@/utils/connectivity'
 import { completeLineLogin } from '@/composables/useLineLogin'
 import { initLevelPlay } from '@/lib/levelplay'
@@ -209,19 +210,20 @@ async function syncOneSignalUser(user: any) {
             let profile: any = null;
             let roleData: any = null;
             try {
-                const [profileResult, roleResult] = await Promise.all([
+                const [profileResult, roleResult, privateProfile] = await Promise.all([
                     supabase
                         .from('user_profiles')
-                        .select('display_name, phone, donor_type')
+                        .select('display_name, donor_type')
                         .eq('id', user.id)
                         .maybeSingle(),
                     supabase
                         .from('user_roles')
                         .select('role')
                         .eq('user_id', user.id)
-                        .maybeSingle()
+                        .maybeSingle(),
+                    getMyPrivateProfile()
                 ]);
-                profile = profileResult.data;
+                profile = { ...(profileResult.data ?? {}), phone: privateProfile?.phone ?? null };
                 roleData = roleResult.data;
             } catch (err) {
                 console.warn('⚠️ Failed to fetch profile/role info from database:', err);
@@ -331,19 +333,20 @@ async function syncRevenueCatUser(user: any) {
             let profile: any = null;
             let roleData: any = null;
             try {
-                const [profileResult, roleResult] = await Promise.all([
+                const [profileResult, roleResult, privateProfile] = await Promise.all([
                     supabase
                         .from('user_profiles')
-                        .select('display_name, phone')
+                        .select('display_name')
                         .eq('id', user.id)
                         .maybeSingle(),
                     supabase
                         .from('user_roles')
                         .select('role')
                         .eq('user_id', user.id)
-                        .maybeSingle()
+                        .maybeSingle(),
+                    getMyPrivateProfile()
                 ]);
-                profile = profileResult.data;
+                profile = { ...(profileResult.data ?? {}), phone: privateProfile?.phone ?? null };
                 roleData = roleResult.data;
             } catch (err) {
                 console.warn('⚠️ Failed to fetch profile/role info for RevenueCat:', err);

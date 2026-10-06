@@ -275,6 +275,7 @@ import {
   chevronDownOutline, checkmarkOutline
 } from 'ionicons/icons'
 import { supabase } from '@/plugins/supabaseClient'
+import { getMyPrivateProfile } from '@/services/PrivateProfileService'
 import { useI18n } from 'vue-i18n'
 import { useEcpayLogistics } from '@/composables/useEcpayLogistics'
 
@@ -361,11 +362,11 @@ async function fetchStore() {
       .maybeSingle()
     
     // Fetch user profile for auto-filling sender info
-    const { data: profileData } = await supabase
-      .from('user_profiles')
-      .select('display_name, phone')
-      .eq('id', user.value.id)
-      .maybeSingle()
+    const [{ data: profileRow }, privateProfile] = await Promise.all([
+      supabase.from('user_profiles').select('display_name').eq('id', user.value.id).maybeSingle(),
+      getMyPrivateProfile(),
+    ])
+    const profileData = { display_name: profileRow?.display_name ?? null, phone: privateProfile?.phone ?? null }
 
     if (storeData) {
       store.value = storeData

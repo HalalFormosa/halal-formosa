@@ -637,12 +637,12 @@ async function submitApplication() {
     // Fetch profile for user metadata
     const { data: profile } = await supabase
       .from('user_profiles')
-      .select('display_name, email')
+      .select('display_name')
       .eq('id', user.id)
       .maybeSingle()
 
     const userName = profile?.display_name || user.email || 'Anonymous'
-    const userEmail = profile?.email || user.email || 'N/A'
+    const userEmail = user.email || 'N/A'
 
     await notifyEvent(
       'contributor_application_needs_review',
