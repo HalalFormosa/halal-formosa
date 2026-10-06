@@ -36,7 +36,8 @@ npm-debug.log*
 /screenshots
 /scratch
 /temp
-/supabase/
+/supabase/*
+!/supabase/functions/
 
 # Old build backup (compiled bundle)
 /App_Backup/
