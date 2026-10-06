@@ -120,6 +120,7 @@ import {
 import { sendOutline, chatbubblesOutline, constructOutline, ellipsisVertical } from 'ionicons/icons'
 import AppHeader from '@/components/AppHeader.vue'
 import { supabase } from '@/plugins/supabaseClient'
+import { MERCHANT_STORE_PUBLIC_COLUMNS } from '@/utils/merchantStore'
 import { useStoreChat } from '@/composables/useStoreChat'
 import { useI18n } from 'vue-i18n'
 import dayjs from 'dayjs'
@@ -175,7 +176,7 @@ async function init() {
       // Buyer sees the Store
       const { data: store } = await supabase
         .from('merchant_stores')
-        .select('*')
+        .select(MERCHANT_STORE_PUBLIC_COLUMNS)
         .eq('user_id', conv.store_user_id)
         .maybeSingle()
       
@@ -187,7 +188,7 @@ async function init() {
 
       if (store) {
         otherUser.value = {
-          ...store,
+          ...(store as any),
           last_seen_at: profile?.last_seen_at,
           show_last_seen: profile?.show_last_seen
         }

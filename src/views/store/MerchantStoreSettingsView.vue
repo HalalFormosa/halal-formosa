@@ -275,6 +275,7 @@ import {
   chevronDownOutline, checkmarkOutline
 } from 'ionicons/icons'
 import { supabase } from '@/plugins/supabaseClient'
+import { MERCHANT_STORE_PUBLIC_COLUMNS, getMyMerchantSender } from '@/utils/merchantStore'
 import { getMyPrivateProfile } from '@/services/PrivateProfileService'
 import { useI18n } from 'vue-i18n'
 import { useEcpayLogistics } from '@/composables/useEcpayLogistics'
@@ -355,11 +356,17 @@ async function fetchStore() {
   
   loading.value = true
   try {
-    const { data: storeData } = await supabase
-      .from('merchant_stores')
-      .select('*')
-      .eq('user_id', user.value.id)
-      .maybeSingle()
+    const [{ data: storeRow }, senderInfo] = await Promise.all([
+      supabase
+        .from('merchant_stores')
+        .select(MERCHANT_STORE_PUBLIC_COLUMNS)
+        .eq('user_id', user.value.id)
+        .maybeSingle(),
+      // The merchant's own sender details come from an owner-only server function.
+      getMyMerchantSender(),
+    ])
+    // (a dynamic column list loses the generated row type, hence the cast)
+    const storeData: any = storeRow ? { ...(storeRow as any), ...(senderInfo ?? {}) } : null
     
     // Fetch user profile for auto-filling sender info
     const [{ data: profileRow }, privateProfile] = await Promise.all([

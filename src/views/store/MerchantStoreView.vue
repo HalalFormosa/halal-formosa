@@ -236,6 +236,7 @@ import {
   closeOutline, moonOutline, sunnyOutline
 } from 'ionicons/icons'
 import { supabase } from '@/plugins/supabaseClient'
+import { MERCHANT_STORE_PUBLIC_COLUMNS } from '@/utils/merchantStore'
 import { useI18n } from 'vue-i18n'
 import { useStoreChat } from '@/composables/useStoreChat'
 import { useTheme } from '@/composables/useTheme'
@@ -430,7 +431,7 @@ async function fetchStoreData() {
   const storeId = route.params.id as string
   const { data: storeData } = await supabase
     .from('merchant_stores')
-    .select('*')
+    .select(MERCHANT_STORE_PUBLIC_COLUMNS)
     .eq('id', storeId)
     .maybeSingle()
 

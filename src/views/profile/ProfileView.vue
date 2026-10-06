@@ -962,6 +962,7 @@
 import {computed, onBeforeUnmount, onMounted, ref, watch} from "vue";
 import {useRouter} from "vue-router";
 import {supabase} from "@/plugins/supabaseClient";
+import {MERCHANT_STORE_PUBLIC_COLUMNS} from "@/utils/merchantStore";
 
 // ✅ Ionic components
 import {
@@ -1325,7 +1326,7 @@ async function fetchPendingCount() {
 async function fetchMerchantStore(ownerId: string) {
   const { data, error } = await supabase
     .from("merchant_stores")
-    .select("*")
+    .select(MERCHANT_STORE_PUBLIC_COLUMNS)
     .eq("user_id", ownerId)
     .maybeSingle();
 
