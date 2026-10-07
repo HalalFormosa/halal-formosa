@@ -73,11 +73,11 @@ function removeShift(key: DayKey, index: number) {
 
 <style scoped>
 .opening-hours-item { --padding-top: 6px; --padding-bottom: 6px; }
-.day-label { max-width: 64px; min-width: 64px; font-weight: 600; }
+.day-label { flex: 0 0 auto; min-width: 84px; max-width: none; white-space: nowrap; font-weight: 600; }
 .closed-label { color: var(--ion-color-medium); font-size: .85rem; font-style: italic; }
 .shifts { display: flex; flex-direction: column; gap: 4px; margin-left: auto; align-items: flex-end; }
 .shift-row { display: flex; align-items: center; gap: 4px; }
-.time-field { max-width: 108px; --padding-start: 8px; border: 1px solid var(--ion-color-light-shade); border-radius: 8px; }
+.time-field { width: 142px; max-width: 142px; --padding-start: 8px; --padding-end: 4px; border: 1px solid var(--ion-color-light-shade); border-radius: 8px; }
 .dash { color: var(--ion-color-medium); }
 .mini-btn { margin: 0; --padding-start: 2px; --padding-end: 2px; }
 .add-shift { margin: 0; font-size: .8rem; text-transform: none; }

@@ -373,8 +373,22 @@
                 <ion-item lines="full">
                   <ion-input v-model="form.instagram" :label="$t('addPlace.instagramLabel')" label-placement="stacked" placeholder="@username" />
                 </ion-item>
-                <ion-item lines="none">
+                <ion-item lines="full">
                   <ion-input v-model="form.line_id" :label="$t('addPlace.lineIdLabel')" label-placement="stacked" placeholder="yourlineid" />
+                </ion-item>
+                <ion-item lines="none">
+                  <ion-select
+                      v-model="form.price_range"
+                      interface="popover"
+                      :label="$t('explore.filters.priceRange')"
+                      label-placement="stacked"
+                      :placeholder="$t('addPlace.priceRangePlaceholder', 'Select price range')"
+                  >
+                    <ion-select-option value="">{{ $t('addPlace.priceNotSet', 'Not set') }}</ion-select-option>
+                    <ion-select-option value="$">{{ $t('addPlace.priceLevels.low') }}</ion-select-option>
+                    <ion-select-option value="$">{{ $t('addPlace.priceLevels.medium') }}</ion-select-option>
+                    <ion-select-option value="$$">{{ $t('addPlace.priceLevels.high') }}</ion-select-option>
+                  </ion-select>
                 </ion-item>
               </ion-card>
             </div>
@@ -522,6 +536,8 @@ import {
   IonContent,
   IonItem,
   IonInput,
+  IonSelect,
+  IonSelectOption,
   IonButton,
   IonToast,
   IonSpinner,
