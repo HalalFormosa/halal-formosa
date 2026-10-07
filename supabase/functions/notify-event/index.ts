@@ -137,19 +137,19 @@ async function verifyReviewSubmission(
     if (!/^[0-9A-Za-z_-]{1,40}$/.test(barcode)) return { ok: false, why: "bad_barcode" };
     const { data: p } = await supabase.from("products").select("name, approved, added_by").eq("barcode", barcode).maybeSingle();
     if (!p || p.added_by !== userId || p.approved === true) return { ok: false, why: "product_not_pending_or_not_yours" };
-    return { ok: true, title: "🔍 Product needs review", body: clamp(p.name, 120), link: `myapp://item/${barcode}` };
+    return { ok: true, title: "🔍 Product needs review", body: clamp(p.name, 120), link: `myapp://admin/review-products?barcode=${encodeURIComponent(barcode)}` };
   }
   if (type === "location_needs_review") {
     const id = data?.id != null ? String(data.id) : "";
     if (!/^[0-9]{1,12}$/.test(id)) return { ok: false, why: "bad_location_id" };
     const { data: l } = await supabase.from("locations").select("name, approved, created_by").eq("id", id).maybeSingle();
     if (!l || l.created_by !== userId || l.approved === true) return { ok: false, why: "location_not_pending_or_not_yours" };
-    return { ok: true, title: "🔍 Place needs review", body: clamp(l.name, 120), link: `myapp://place/${id}` };
+    return { ok: true, title: "🔍 Place needs review", body: clamp(l.name, 120), link: `myapp://admin/review-locations?id=${id}` };
   }
   if (type === "contributor_application_needs_review") {
     const { data: a } = await supabase.from("contributor_applications").select("id").eq("user_id", userId).eq("status", "pending").limit(1);
     if (!a || a.length === 0) return { ok: false, why: "no_pending_application" };
-    return { ok: true, title: "🔍 Contributor application", body: "A new contributor application is waiting for review." };
+    return { ok: true, title: "🔍 Contributor application", body: "A new contributor application is waiting for review.", link: "myapp://admin/contributor-applications" };
   }
   return { ok: false, why: "not_a_review_type" };
 }

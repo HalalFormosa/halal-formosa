@@ -826,11 +826,12 @@ import { useNotifier } from "@/composables/useNotifier";
 import { useAdminOcrRecheck } from "@/composables/useAdminOcrRecheck";
 
 import { useI18n } from 'vue-i18n'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 const { t } = useI18n()
 const { notifyEvent } = useNotifier()
 const router = useRouter()
+const route = useRoute()
 
 const categories = ref<{ id:number; name:string }[]>([])
 const modules = [Pagination, Zoom]
@@ -2287,7 +2288,17 @@ onMounted( async () => {
   await loadPendingProducts()
   await loadCategories()
   await fetchStores()
+  await openFromPushLink()
 })
+
+// Admin push notification deep link: /admin/review-products?barcode=... opens that product's review straight away.
+async function openFromPushLink() {
+  const barcode = route.query.barcode
+  if (typeof barcode !== 'string' || !barcode) return
+  const product = pendingProducts.value.find(p => String(p.barcode) === barcode)
+  if (product) await openProductModal(product)
+}
+watch(() => route.query.barcode, () => { if (pendingProducts.value.length) openFromPushLink() })
 </script>
 
 <style scoped>

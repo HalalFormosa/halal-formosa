@@ -448,7 +448,10 @@
                       <ion-label class="capitalize">{{ day }}</ion-label>
                       <ion-label slot="end" class="ion-text-right">
             <span v-if="value.active">
-              {{ value.open }} – {{ value.close }}
+              <template v-if="value.shifts && value.shifts.length > 1">
+                <span v-for="(s, i) in value.shifts" :key="i" style="display: block;">{{ s.open }} – {{ s.close }}</span>
+              </template>
+              <template v-else>{{ value.open }} – {{ value.close }}</template>
             </span>
                         <span v-else class="text-gray-400">{{ $t('common.closed') }}</span>
                       </ion-label>
@@ -1246,10 +1249,19 @@ const formattedOpeningHours = computed(() => {
         return time
       }
 
-      result[labels[dayKey]] = {
-        active: true,
+      // A day can have several periods (split shifts such as 11:00-14:00 and 17:00-19:00): keep all of them.
+      const shift = {
         open: formatTime(openTime),
         close: closeTime ? formatTime(closeTime) : t('explore.details.open24Hours') || '24h'
+      }
+      const existing = result[labels[dayKey]]
+      if (existing.active) {
+        existing.shifts.push(shift)
+        existing.shifts.sort((a: any, b: any) => a.open.localeCompare(b.open))
+        existing.open = existing.shifts[0].open
+        existing.close = existing.shifts[0].close
+      } else {
+        result[labels[dayKey]] = { active: true, ...shift, shifts: [shift] }
       }
     })
 

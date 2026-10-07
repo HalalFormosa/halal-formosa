@@ -277,20 +277,7 @@
               <ion-item-divider mode="md">
                 <ion-label>{{ $t('addPlace.openingHours') }}</ion-label>
               </ion-item-divider>
-              <ion-list class="opening-hours-list" lines="none">
-                <template v-for="(label, key) in dayLabels" :key="key">
-                  <ion-item class="opening-hours-item" lines="full">
-                    <ion-checkbox v-model="selectedLocation.opening_hours[key].active" slot="start" />
-                    <ion-label class="day-label">{{ $t('addPlace.days.' + key) }}</ion-label>
-                    <span v-if="!selectedLocation.opening_hours[key]?.active" class="closed-label">{{ $t('addPlace.closed') }}</span>
-                    <div v-else class="time-inputs">
-                      <ion-input v-model="selectedLocation.opening_hours[key].open" type="time" class="time-field" />
-                      <span style="margin: 0 4px;">-</span>
-                      <ion-input v-model="selectedLocation.opening_hours[key].close" type="time" class="time-field" />
-                    </div>
-                  </ion-item>
-                </template>
-              </ion-list>
+              <OpeningHoursEditor :model-value="selectedLocation.opening_hours" @change="hoursTouched = true" />
 
               <!-- Image Section -->
               <div class="ion-margin-top ion-padding-horizontal">
@@ -345,7 +332,10 @@ import {
   IonCard, IonListHeader, alertController
 } from '@ionic/vue'
 
-import { ref, onMounted, reactive, computed } from 'vue'
+import { ref, onMounted, reactive, computed, watch } from 'vue'
+import { useRoute } from 'vue-router'
+import OpeningHoursEditor from '@/components/OpeningHoursEditor.vue'
+import { weekFromDb, weekToDb } from '@/utils/openingHours'
 import { supabase } from '@/plugins/supabaseClient'
 import {
   listOutline, timeOutline, checkmarkCircle, swapVerticalOutline,
@@ -419,16 +409,8 @@ function handleTagInput(ev: any) {
   }
 }
 
-// Opening hours helper
-const defaultHours = {
-  mon: { active: false, open: "09:00", close: "18:00" },
-  tue: { active: false, open: "09:00", close: "18:00" },
-  wed: { active: false, open: "09:00", close: "18:00" },
-  thu: { active: false, open: "09:00", close: "18:00" },
-  fri: { active: false, open: "09:00", close: "18:00" },
-  sat: { active: false, open: "09:00", close: "18:00" },
-  sun: { active: false, open: "09:00", close: "18:00" },
-}
+// Opening hours are edited as shifts (see OpeningHoursEditor); untouched hours are left exactly as stored.
+const hoursTouched = ref(false)
 
 // Image states
 const imageFile = ref<File | null>(null)
@@ -543,13 +525,8 @@ async function loadPendingLocations() {
 
 function openLocationModal(loc: any) {
   // Ensure opening_hours has the right structure
-  let hours = loc.opening_hours
-  if (!hours || typeof hours !== 'object' || Array.isArray(hours)) {
-    hours = JSON.parse(JSON.stringify(defaultHours))
-  } else {
-    // Merge with defaults to ensure all days exist
-    hours = { ...JSON.parse(JSON.stringify(defaultHours)), ...hours }
-  }
+  hoursTouched.value = false
+  const hours = weekFromDb(loc.opening_hours, false)
 
   selectedLocation.value = reactive({ 
     ...loc,
@@ -621,16 +598,22 @@ async function approveLocation(loc: any) {
 
   // 1. Upload image if changed
   if (imageFile.value && loc.id) {
+    // Bucket is `location-image` (singular). A fresh file name each time avoids the CDN serving the old main.jpg.
+    const path = `${loc.id}/main-${Date.now()}.jpg`
     const { error: uploadError } = await supabase.storage
-        .from('location-images')
-        .upload(`${loc.id}/main.jpg`, imageFile.value, { upsert: true })
+        .from('location-image')
+        .upload(path, imageFile.value, { upsert: false, contentType: 'image/jpeg' })
 
-    if (!uploadError) {
-      const { data: publicUrl } = supabase.storage
-          .from('location-images')
-          .getPublicUrl(`${loc.id}/main.jpg`)
-      imageUrl = publicUrl.publicUrl
+    if (uploadError) {
+      // Don't approve with the old picture and hide the failure.
+      console.error('❌ Location image upload failed:', uploadError)
+      showToast(`Image upload failed: ${uploadError.message}`, 'danger')
+      return
     }
+    const { data: publicUrl } = supabase.storage
+        .from('location-image')
+        .getPublicUrl(path)
+    imageUrl = publicUrl.publicUrl
   }
 
   // 2. Update location
@@ -648,7 +631,7 @@ async function approveLocation(loc: any) {
         price_range: loc.price_range,
         type_id: loc.type_id,
         tags: loc.tags,
-        opening_hours: loc.opening_hours,
+        ...(hoursTouched.value ? { opening_hours: weekToDb(loc.opening_hours) } : {}),
         image: imageUrl,
         approved: true,
         approved_by: user.id,
@@ -748,9 +731,21 @@ async function rejectLocation(id: number) {
   await alert.present()
 }
 
-onMounted(() => {
+const route = useRoute()
+
+// Admin push notification deep link: /admin/review-locations?id=... opens that place's review straight away.
+function openFromPushLink() {
+  const id = route.query.id
+  if (typeof id !== 'string' || !id) return
+  const loc = pendingLocations.value.find(l => String(l.id) === id)
+  if (loc) openLocationModal(loc)
+}
+watch(() => route.query.id, () => { if (pendingLocations.value.length) openFromPushLink() })
+
+onMounted(async () => {
   loadLocationTypes()
-  loadPendingLocations()
+  await loadPendingLocations()
+  openFromPushLink()
 })
 </script>
 <style scoped>

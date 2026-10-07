@@ -1391,6 +1391,8 @@
       "sun": "Sunday"
     },
     "closed": "Closed",
+    "addShift": "Add shift",
+    "removeShift": "Remove shift",
     "reviewNotice": "🕵️ Submissions will be reviewed before appearing publicly.",
     "priceLevels": {
       "low": "$ (Low)",

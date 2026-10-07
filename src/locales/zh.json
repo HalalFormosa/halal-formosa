@@ -1228,6 +1228,8 @@
       "sun": "週日"
     },
     "closed": "休息",
+    "addShift": "新增時段",
+    "removeShift": "移除時段",
     "reviewNotice": "🕵️ 提交內容將在公開前進行審核。",
     "priceLevels": {
       "low": "$ (低)",

@@ -1101,6 +1101,8 @@
       "sun": "星期日"
     },
     "closed": "关闭",
+    "addShift": "添加时段",
+    "removeShift": "移除时段",
     "reviewNotice": "🕵️ 提交的内容将在公开出现之前经过审核。",
     "priceLevels": {
       "low": "$（低）",

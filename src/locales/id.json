@@ -1520,6 +1520,8 @@
       "sun": "Minggu"
     },
     "closed": "Tutup",
+    "addShift": "Tambah sesi",
+    "removeShift": "Hapus sesi",
     "reviewNotice": "🕵️ Kiriman akan ditinjau sebelum muncul secara publik.",
     "priceLevels": {
       "low": "$ (Rendah)",

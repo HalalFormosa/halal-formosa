@@ -409,20 +409,7 @@
             <div class="form-section">
               <ion-list-header><ion-label>{{ $t('addPlace.openingHours') }}</ion-label></ion-list-header>
               <ion-card class="input-card">
-                <ion-list class="opening-hours-list" lines="none">
-                  <template v-for="(label, key) in dayLabels" :key="key">
-                    <ion-item class="opening-hours-item" lines="full">
-                      <ion-checkbox v-model="form.opening_hours[key].active" slot="start" @ionChange="openingHoursTouched = true" />
-                      <ion-label class="day-label">{{ $t('addPlace.days.' + key) }}</ion-label>
-                      <span v-if="!form.opening_hours[key].active" class="closed-label">{{ $t('addPlace.closed') }}</span>
-                      <div v-else class="time-inputs">
-                        <ion-input v-model="form.opening_hours[key].open" type="time" class="time-field" />
-                        <span style="margin: 0 4px;">-</span>
-                        <ion-input v-model="form.opening_hours[key].close" type="time" class="time-field" />
-                      </div>
-                    </ion-item>
-                  </template>
-                </ion-list>
+                <OpeningHoursEditor :model-value="form.opening_hours" @change="openingHoursTouched = true" />
               </ion-card>
             </div>
 
@@ -525,6 +512,8 @@
 </template>
 
 <script setup lang="ts">
+import OpeningHoursEditor from '@/components/OpeningHoursEditor.vue'
+import { emptyWeek, weekFromDb, weekFromGooglePeriods, weekToDb, type WeekShifts } from '@/utils/openingHours'
 import {
   IonPage,
   IonHeader,
@@ -776,7 +765,7 @@ const form = ref<{
   instagram: string | null,
   line_id: string | null,
   price_range: string | null,
-  opening_hours: any,
+  opening_hours: WeekShifts,
   tags: string[],
   approved: boolean,
 }>({
@@ -794,15 +783,7 @@ const form = ref<{
   tags: [],
   approved: false,
 
-  opening_hours: {
-    mon: {active: true, open: "09:00", close: "18:00"},
-    tue: {active: true, open: "09:00", close: "18:00"},
-    wed: {active: true, open: "09:00", close: "18:00"},
-    thu: {active: true, open: "09:00", close: "18:00"},
-    fri: {active: true, open: "09:00", close: "18:00"},
-    sat: {active: true, open: "09:00", close: "18:00"},
-    sun: {active: true, open: "09:00", close: "18:00"},
-  },
+  opening_hours: emptyWeek(true),
 })
 
 const tagInput = ref('')
@@ -1396,96 +1377,15 @@ function updateMapMarker() {
   map.setZoom(17)
 }
 
+// Google Places opening hours -> editable shifts (every shift of a day is kept)
 function formatOpeningHours(googleHours: any) {
-  const hours = { ...form.value.opening_hours }
-  const daysMap: Record<number, string> = { 1: 'mon', 2: 'tue', 3: 'wed', 4: 'thu', 5: 'fri', 6: 'sat', 0: 'sun' }
-
-  if (googleHours?.periods) {
-    googleHours.periods.forEach((period: any) => {
-      const dayKey = daysMap[period.open.day]
-      if (dayKey && hours[dayKey]) {
-        hours[dayKey].active = true
-        const openH = String(period.open.hour).padStart(2, '0')
-        const openM = String(period.open.minute).padStart(2, '0')
-        hours[dayKey].open = `${openH}:${openM}`
-
-        if (period.close) {
-          const closeH = String(period.close.hour).padStart(2, '0')
-          const closeM = String(period.close.minute).padStart(2, '0')
-          hours[dayKey].close = `${closeH}:${closeM}`
-        }
-      }
-    })
-  }
-  return hours
+  if (googleHours?.periods) return weekFromGooglePeriods(googleHours.periods)
+  return form.value.opening_hours
 }
 
-// Convert opening hours from DB (Google Places or custom format) to form format
+// Convert opening hours from DB (periods or older day-key format) to the editable shifts format
 function convertOpeningHoursForEdit(dbHours: any) {
-  // Default hours structure
-  const defaultHours = {
-    mon: { active: false, open: "09:00", close: "18:00" },
-    tue: { active: false, open: "09:00", close: "18:00" },
-    wed: { active: false, open: "09:00", close: "18:00" },
-    thu: { active: false, open: "09:00", close: "18:00" },
-    fri: { active: false, open: "09:00", close: "18:00" },
-    sat: { active: false, open: "09:00", close: "18:00" },
-    sun: { active: false, open: "09:00", close: "18:00" },
-  }
-
-  if (!dbHours) return defaultHours
-
-  // Check if it's Google Places format (has periods array)
-  if (dbHours.periods && Array.isArray(dbHours.periods)) {
-    const hours = { ...defaultHours }
-    const daysMap: Record<number, string> = { 0: 'sun', 1: 'mon', 2: 'tue', 3: 'wed', 4: 'thu', 5: 'fri', 6: 'sat' }
-
-    dbHours.periods.forEach((period: any) => {
-      if (!period?.open?.day && period?.open?.day !== 0) return
-
-      const dayKey = daysMap[period.open.day]
-      if (!dayKey || !hours[dayKey as keyof typeof hours]) return
-
-      const dayData = hours[dayKey as keyof typeof hours]
-      dayData.active = true
-
-      // Format time from HHMM to HH:MM
-      const formatTime = (timeStr: string) => {
-        if (!timeStr) return "09:00"
-        // Remove any existing colons
-        const cleanTime = timeStr.replace(/:/g, '')
-        if (cleanTime.length === 4) {
-          return `${cleanTime.substring(0, 2)}:${cleanTime.substring(2, 4)}`
-        }
-        return timeStr
-      }
-
-      dayData.open = formatTime(period.open.time)
-
-      if (period.close?.time) {
-        dayData.close = formatTime(period.close.time)
-      }
-    })
-
-    return hours
-  }
-
-  // Check if it's already in custom format (has day keys like mon, tue, etc.)
-  if (dbHours.mon || dbHours.tue || dbHours.wed || dbHours.thu || dbHours.fri || dbHours.sat || dbHours.sun) {
-    // Merge with defaults to ensure all days exist
-    return {
-      mon: dbHours.mon || defaultHours.mon,
-      tue: dbHours.tue || defaultHours.tue,
-      wed: dbHours.wed || defaultHours.wed,
-      thu: dbHours.thu || defaultHours.thu,
-      fri: dbHours.fri || defaultHours.fri,
-      sat: dbHours.sat || defaultHours.sat,
-      sun: dbHours.sun || defaultHours.sun,
-    }
-  }
-
-  // Unknown format, return defaults
-  return defaultHours
+  return weekFromDb(dbHours, false)
 }
 
 /* -------------------- Submit -------------------- */
@@ -1510,16 +1410,7 @@ const uploadToSupabase = async (file: File): Promise<string> => {
 
 const normalizeOpeningHours = () => {
   if (!openingHoursTouched.value) return null
-
-  const hours = form.value.opening_hours
-
-  const hasAnyActive = Object.values(hours).some(
-      (d: any) => d.active && d.open && d.close
-  )
-
-  if (!hasAnyActive) return null
-
-  return hours
+  return weekToDb(form.value.opening_hours)
 }
 
 

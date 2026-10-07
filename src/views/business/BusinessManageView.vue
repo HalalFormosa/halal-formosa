@@ -121,16 +121,7 @@
             <!-- Opening hours -->
             <div class="edit-block">
               <p class="block-title">{{ $t('business.info.openingHours') }}</p>
-              <div v-for="d in DAYS" :key="d" class="hours-row">
-                <ion-toggle :checked="hours[d].active" @ionChange="hours[d].active = $event.detail.checked" />
-                <span class="day-label">{{ $t('business.days.' + d) }}</span>
-                <template v-if="hours[d].active">
-                  <ion-input type="time" v-model="hours[d].open" class="time-in" />
-                  <span class="time-dash">–</span>
-                  <ion-input type="time" v-model="hours[d].close" class="time-in" />
-                </template>
-                <span v-else class="closed-lbl">{{ $t('business.info.closed') }}</span>
-              </div>
+              <OpeningHoursEditor :model-value="hours" day-label-prefix="business.days." closed-key="business.info.closed" />
             </div>
 
             <!-- Tags -->
@@ -677,6 +668,8 @@
 </template>
 
 <script setup lang="ts">
+import OpeningHoursEditor from '@/components/OpeningHoursEditor.vue'
+import { weekFromDb, weekToDb, type WeekShifts } from '@/utils/openingHours'
 import { ref, computed, watch, nextTick, onBeforeUnmount } from 'vue'
 import mapsLoader from '@/plugins/googleMapsLoader'
 import {
@@ -778,11 +771,13 @@ const uploadingHalal = ref(false)
 
 // Opening hours (day-by-day, matches AddPlaceView's custom format) + tags
 const DAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const
-type DayHours = { active: boolean; open: string; close: string }
-function defaultHours(): Record<string, DayHours> {
-  return Object.fromEntries(DAYS.map(d => [d, { active: d !== 'sun', open: '09:00', close: '18:00' }]))
+// A listing with no hours yet starts as open Mon-Sat; every day can hold several shifts.
+function hoursFromDb(db: any): WeekShifts {
+  const week = weekFromDb(db, true)
+  if (!db) week.sun.active = false
+  return week
 }
-const hours = ref<Record<string, DayHours>>(defaultHours())
+const hours = ref<WeekShifts>(hoursFromDb(null))
 const tagsList = ref<string[]>([])
 const newTag = ref('')
 
@@ -790,28 +785,6 @@ function addTag() {
   const v = newTag.value.trim().replace(/^#/, '')
   if (v && !tagsList.value.includes(v)) tagsList.value.push(v)
   newTag.value = ''
-}
-
-// Normalize DB opening_hours (custom day keys or Google `periods`) into day format
-function normalizeHours(dbHours: any): Record<string, DayHours> {
-  const out = defaultHours()
-  if (!dbHours) return out
-  if (dbHours.mon || dbHours.tue || dbHours.wed || dbHours.thu || dbHours.fri || dbHours.sat || dbHours.sun) {
-    for (const d of DAYS) if (dbHours[d]) out[d] = { active: !!dbHours[d].active, open: dbHours[d].open || '09:00', close: dbHours[d].close || '18:00' }
-    return out
-  }
-  if (Array.isArray(dbHours.periods)) {
-    const map: Record<number, string> = { 0: 'sun', 1: 'mon', 2: 'tue', 3: 'wed', 4: 'thu', 5: 'fri', 6: 'sat' }
-    for (const d of DAYS) out[d].active = false
-    for (const p of dbHours.periods) {
-      const d = map[p?.open?.day]
-      if (!d) continue
-      const fmt = (t: string) => (t && t.length === 4 ? `${t.slice(0, 2)}:${t.slice(2)}` : t)
-      out[d] = { active: true, open: fmt(p.open?.time) || '09:00', close: fmt(p.close?.time) || '18:00' }
-    }
-    return out
-  }
-  return out
 }
 
 const photos = ref<LocationPhoto[]>([])
@@ -902,7 +875,7 @@ onIonViewWillEnter(async () => {
       }
       halalCertUrl.value = loc.halal_cert_url ?? ''
       halalMaterials.value = Array.isArray(loc.halal_material_photos) ? (loc.halal_material_photos as string[]) : []
-      hours.value = normalizeHours(loc.opening_hours)
+      hours.value = hoursFromDb(loc.opening_hours)
       tagsList.value = Array.isArray(loc.tags) ? (loc.tags as string[]) : []
       if (typeof loc.lat === 'number' && typeof loc.lng === 'number') coords.value = { lat: loc.lat, lng: loc.lng }
     }
@@ -965,7 +938,7 @@ function applyDraft(draft: Record<string, unknown>) {
   if ('has_qibla_direction' in draft) h.has_qibla_direction = !!draft.has_qibla_direction
   if ('halal_cert_url' in draft) halalCertUrl.value = String(draft.halal_cert_url ?? '')
   if ('halal_material_photos' in draft) halalMaterials.value = Array.isArray(draft.halal_material_photos) ? draft.halal_material_photos as string[] : []
-  if ('opening_hours' in draft) hours.value = normalizeHours(draft.opening_hours)
+  if ('opening_hours' in draft) hours.value = hoursFromDb(draft.opening_hours)
   if ('tags' in draft) tagsList.value = Array.isArray(draft.tags) ? draft.tags as string[] : []
 }
 
@@ -996,7 +969,7 @@ function buildPatch(): Record<string, unknown> {
     has_qibla_direction: halal.value.has_qibla_direction,
     halal_cert_url: halalCertUrl.value || null,
     halal_material_photos: halalMaterials.value,
-    opening_hours: hours.value,
+    opening_hours: weekToDb(hours.value),
     tags: tagsList.value,
   }
 }
