@@ -16,7 +16,7 @@
         <ion-item lines="full" style="--border-radius: 12px;">
           <ion-toggle
               :checked="paletteToggle"
-              @ionChange="(e) => {paletteToggle = e.detail.checked; toggleDarkPalette(e.detail.checked);}"
+              @ionChange="(e) => {paletteToggle = e.detail.checked; toggleDarkPalette(e.detail.checked); ActivityLogService.log('settings_theme_toggle', { theme: e.detail.checked ? 'dark' : 'light' });}"
           >
             {{ $t('settings.darkMode') }}
           </ion-toggle>
@@ -169,6 +169,7 @@ import { useNotifier } from '@/composables/useNotifier'
 import { keyOutline, trashOutline, sparkles, chatboxEllipsesOutline } from 'ionicons/icons'
 import { useRouter } from 'vue-router'
 import { supabase } from '@/plugins/supabaseClient'
+import { ActivityLogService } from '@/services/ActivityLogService'
 
 const { locale, t } = useI18n()
 const lang = ref(locale.value)
@@ -183,6 +184,7 @@ const changeLanguage = (newLang: string) => {
   lang.value = newLang
   locale.value = newLang
   localStorage.setItem('lang', newLang)
+  ActivityLogService.log('settings_language_change', { language: newLang })
 }
 
 // Dark Mode logic
@@ -229,6 +231,8 @@ const confirmDeleteAccount = async () => {
 
 const executeDeleteAccount = async () => {
   try {
+    // Logged before the RPC: once the account is gone there is no user to attribute it to.
+    await ActivityLogService.log('account_delete_confirm')
     const { error } = await supabase.rpc('delete_user_account')
     if (error) throw error
 
@@ -244,6 +248,7 @@ const executeDeleteAccount = async () => {
 
     router.push('/')
   } catch (err: any) {
+    ActivityLogService.log('account_delete_failed', { error_message: err?.message })
     const alert = await alertController.create({
       header: 'Error',
       message: err.message || 'Failed to delete account. Please try again.',

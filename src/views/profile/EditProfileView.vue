@@ -563,6 +563,7 @@ import { useI18n } from "vue-i18n";
 import { countries, loadCountries } from "@/composables/useCountries"
 import { onBeforeMount, ref, computed } from "vue";
 import { supabase } from "@/plugins/supabaseClient";
+import { ActivityLogService } from '@/services/ActivityLogService'
 import { getMyPrivateProfile } from "@/services/PrivateProfileService";
 import { useRouter, onBeforeRouteLeave } from "vue-router";
 import { useNotifier } from "@/composables/useNotifier";
@@ -784,10 +785,12 @@ async function submitReferralCode(code: string | null) {
   try {
     const { error } = await supabase.rpc('redeem_referral_code', { p_code: code });
     if (error && !/already recorded/i.test(error.message)) {
+      ActivityLogService.log('referral_code_redeem_failed', { source: 'edit_profile', error_message: error.message });
       referralError.value = error.message || (t('profile.editProfile.referralInvalid') as string) || 'Invalid referral code.';
       return;
     }
     referralChoiceMade.value = true;
+    if (code) ActivityLogService.log('referral_code_redeem_success', { source: 'edit_profile' });
     if (code) {
       referralMode.value = 'applied';
       referralAppliedCode.value = code.toUpperCase();
@@ -957,6 +960,7 @@ async function saveProfile() {
   /* 1️⃣ Save profile fields */
   const saveError = await updateUserProfile(userId);
   if (saveError) {
+    ActivityLogService.log('profile_update_failed', { user_id: userId, error_message: saveError.message });
     const toast = await toastController.create({
       message: (t('profile.editProfile.saveFailed') || 'Could not save your profile.')
         + (saveError.message ? `: ${saveError.message}` : ''),
@@ -979,6 +983,8 @@ async function saveProfile() {
   if (authUpdateError) {
     console.error('Failed to update auth metadata for avatar/name', authUpdateError);
   }
+
+  ActivityLogService.log('profile_update_success', { user_id: userId, onboarding: !wasComplete.value });
 
   /* 2️⃣ Re-fetch profile (authoritative state after save) */
   const { data: profileRow, error } = await supabase

@@ -1580,6 +1580,7 @@ const submitPlace = async () => {
       await awardAndCelebrate('add_place', 10000)
 
       await ActivityLogService.log("add_place_success", {
+        id: newPlace.id,
         name: form.value.name,
         address: form.value.address,
         lat: form.value.lat,
@@ -1596,6 +1597,11 @@ const submitPlace = async () => {
     imagePreview.value = null
     pendingFile.value = null
   } catch (err: any) {
+    ActivityLogService.log(isEditing.value ? 'edit_place_failed' : 'add_place_failed', {
+      ...(isEditing.value ? { id: route.params.id } : {}),
+      name: form.value.name,
+      error_message: err?.message
+    })
     toast.value = { open: true, message: err.message || 'Failed to save.', color: 'danger' }
   } finally {
     submitting.value = false
@@ -1611,7 +1617,8 @@ const getLocation = async (): Promise<{lat: number; lng: number} | null> => {
       // Permissions
       const perm = await Geolocation.checkPermissions()
       if (perm.location !== 'granted') {
-        await Geolocation.requestPermissions()
+        const requested = await Geolocation.requestPermissions()
+        ActivityLogService.log('permission_result', { permission: 'location', status: requested.location, source: 'add_place' })
       }
 
       // Get position

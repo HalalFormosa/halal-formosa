@@ -248,6 +248,7 @@ import {
 import { sparkles, lockClosedOutline, refreshOutline } from 'ionicons/icons'
 import { useI18n } from 'vue-i18n'
 import { supabase } from '@/plugins/supabaseClient'
+import { ActivityLogService } from '@/services/ActivityLogService'
 import CosmeticBadge from '@/components/CosmeticBadge.vue'
 import { useBadgeCosmetics, type BadgeCosmetic } from '@/composables/useBadgeCosmetics'
 import { Capacitor } from '@capacitor/core'
@@ -575,6 +576,7 @@ async function handlePurchase(item: BadgeCosmetic) {
         text: t('profile.badgeShop.purchase'),
         handler: async () => {
           const result = await purchaseCosmetic(item.id)
+          ActivityLogService.log(result.success ? 'badge_purchase_success' : 'badge_purchase_failed', { cosmetic_id: item.id, category: item.category, tier: item.tier, xp_cost: item.xp_cost, ...(result.success ? {} : { error_message: result.error }) })
           if (result.success) {
             fireConfetti()
             previewCosmetics.value[item.category] = item
@@ -603,6 +605,7 @@ async function handlePurchase(item: BadgeCosmetic) {
 
 async function handleEquip(item: BadgeCosmetic) {
   await equipCosmetic(item.id, item.category)
+  ActivityLogService.log('badge_equip', { cosmetic_id: item.id, category: item.category, source: 'shop' })
   syncPreviewWithEquipped()
   const toast = await toastController.create({
     message: `✅ ${item.name} equipped!`,
@@ -615,6 +618,7 @@ async function handleEquip(item: BadgeCosmetic) {
 
 async function handleUnequip(item: BadgeCosmetic) {
   await unequipCosmetic(item.id)
+  ActivityLogService.log('badge_unequip', { cosmetic_id: item.id, category: item.category, source: 'shop' })
   syncPreviewWithEquipped()
   const toast = await toastController.create({
     message: `${item.name} unequipped`,

@@ -91,6 +91,7 @@ import AppHeader from '@/components/AppHeader.vue'
 import { isDonor, refreshSubscriptionStatus } from '@/composables/useSubscriptionStatus'
 import { supabase } from '@/plugins/supabaseClient'
 import { ActivityLogService } from '@/services/ActivityLogService'
+import { logPaywallCancelled, logPaywallFailed } from '@/utils/paywallLogging'
 import {
   fetchIngredientArticles,
   type IngredientArticleListItem,
@@ -122,6 +123,7 @@ async function loadArticles() {
 }
 
 async function presentRcPaywall() {
+  ActivityLogService.log('pro_paywall_trigger', { source: 'ingredient_encyclopedia_view' })
   if (!Capacitor.isNativePlatform()) {
     console.warn('[RC] Paywall can only run on native apps.')
     return
@@ -136,9 +138,14 @@ async function presentRcPaywall() {
         { source: 'ingredient_encyclopedia_view' }
       )
       await loadArticles()
+    } else if (result === PAYWALL_RESULT.CANCELLED) {
+      logPaywallCancelled('ingredient_encyclopedia_view')
+    } else {
+      logPaywallFailed('ingredient_encyclopedia_view', result)
     }
   } catch (err) {
     console.error('Paywall failed:', err)
+    logPaywallFailed('ingredient_encyclopedia_view', err)
   }
 }
 

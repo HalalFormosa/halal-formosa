@@ -596,6 +596,7 @@ import { userRole } from '@/composables/userProfile'
 import { isDonor, refreshSubscriptionStatus } from '@/composables/useSubscriptionStatus'
 import { useAdSlotCollapsed, adSpaceStyle } from '@/composables/useAdFallback'
 import { ActivityLogService } from "@/services/ActivityLogService";
+import { logPaywallCancelled, logPaywallFailed } from '@/utils/paywallLogging'
 import { scheduleBannerUpdate } from '@/plugins/admob'
 import { RevenueCatUI, PAYWALL_RESULT } from '@revenuecat/purchases-capacitor-ui'
 import { useNotifier } from "@/composables/useNotifier";
@@ -827,15 +828,18 @@ async function presentPaywall(): Promise<boolean> {
         return true
 
       case PAYWALL_RESULT.CANCELLED:
+        logPaywallCancelled("save_item_limit")
         return false
 
       case PAYWALL_RESULT.ERROR:
       default:
+        logPaywallFailed("save_item_limit", result)
         return false
     }
 
   } catch (err) {
     console.error("Paywall failed:", err)
+    logPaywallFailed("save_item_limit", err)
     return false
   }
 }
@@ -1402,6 +1406,7 @@ async function loadProductData() {
       Promise.all(secondary).catch(err => console.error('Secondary product data load failed:', err))
     } else if (!prodData && !prodError) {
       // Product not found in database -> Show contribution prompt
+      ActivityLogService.log('product_not_found', { barcode })
       showContributionPrompt.value = true
       loading.value = false
       await nextTick()

@@ -2542,6 +2542,7 @@ async function handleConfirmCrop() {
     // that case. Don't let that silently pass as a successful scan.
     if (!ingredientsText.value?.trim() && !ingredientsTextZh.value?.trim()) {
       ocrFailedOnce.value = true
+      ActivityLogService.log('add_product_ocr_failed', { barcode: form.value.barcode, reason: 'no_ingredients_detected' })
       setError(t('addProduct.noIngredientsDetected') || "Couldn't detect an ingredients list in that photo. Try again or enter the ingredients manually below.")
       return
     }
@@ -2549,6 +2550,7 @@ async function handleConfirmCrop() {
     showOcrToast.value = true
   } catch (err: any) {
     ocrFailedOnce.value = true
+    ActivityLogService.log('add_product_ocr_failed', { barcode: form.value.barcode, reason: 'error', error_message: err?.message })
     setError(err.message || 'OCR failed')
   }
 }
@@ -2822,6 +2824,7 @@ async function handleSubmit() {
 
   } catch (err: any) {
     console.error('Submission error:', err)
+    ActivityLogService.log('add_product_failed', { barcode: form.value.barcode, error_message: err?.message })
     setError(err.message || 'An unexpected error occurred.')
   } finally {
     loading.value = false

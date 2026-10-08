@@ -3,6 +3,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { ref, onMounted } from 'vue';
 import { onIonViewWillEnter } from '@ionic/vue';
 import { supabase } from '@/plugins/supabaseClient';
+import { ActivityLogService } from '@/services/ActivityLogService'
 import {
   IonPage, IonContent, IonHeader, IonToolbar, IonTitle, IonItem, IonLabel,
   IonTextarea, IonButton, IonInput, IonCard, IonCardHeader, IonCardContent, IonCardTitle, IonToast,
@@ -137,6 +138,8 @@ async function submitReport() {
 
     if (error) throw error;
 
+    ActivityLogService.log('product_report_submit', { barcode: product.value.barcode, has_image: !!imageUrl });
+
     // 🔔 Notify Discord
     const { notifyEvent } = useNotifier()
     const userName = freshUser?.user_metadata?.name || freshUser?.email || 'Anonymous'
@@ -155,6 +158,7 @@ async function submitReport() {
     setTimeout(() => router.back(), 1000);
   } catch (error: any) {
     console.error('Error submitting report:', error);
+    ActivityLogService.log('product_report_failed', { barcode: product.value?.barcode, error_message: error?.message });
     toastMessage.value = error.message || 'Failed to submit report.';
     toastColor.value = 'danger';
   } finally {

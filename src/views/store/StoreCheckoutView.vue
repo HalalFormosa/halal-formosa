@@ -458,6 +458,7 @@ async function placeOrder() {
     await initiatePayment(order.id)
 
   } catch (err: any) {
+    ActivityLogService.log('store_checkout_failed', { error_message: err?.message })
     const toast = await toastController.create({
       message: `❌ ${err.message || 'Something went wrong'}`,
       duration: 3000,

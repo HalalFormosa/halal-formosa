@@ -164,6 +164,7 @@ import {
 import { cartOutline, checkmarkCircle, closeCircleOutline, sparkles, arrowUndoOutline } from 'ionicons/icons'
 import { useI18n } from 'vue-i18n'
 import { supabase } from '@/plugins/supabaseClient'
+import { ActivityLogService } from '@/services/ActivityLogService'
 import CosmeticBadge from '@/components/CosmeticBadge.vue'
 import { useBadgeCosmetics, type OwnedCosmetic, type BadgeCosmetic } from '@/composables/useBadgeCosmetics'
 import { currentPoints } from '@/composables/usePoints'
@@ -376,6 +377,7 @@ async function toggleEquip(owned: OwnedCosmetic) {
 
 async function handleEquip(owned: OwnedCosmetic) {
   await equipCosmetic(owned.cosmetic_id, owned.cosmetic!.category)
+  ActivityLogService.log('badge_equip', { cosmetic_id: owned.cosmetic_id, category: owned.cosmetic!.category, source: 'customize' })
   const toast = await toastController.create({
     message: `✅ ${owned.cosmetic?.name} equipped!`,
     duration: 2000,
@@ -387,6 +389,7 @@ async function handleEquip(owned: OwnedCosmetic) {
 
 async function handleUnequip(cosmetic: BadgeCosmetic) {
   await unequipCosmetic(cosmetic.id)
+  ActivityLogService.log('badge_unequip', { cosmetic_id: cosmetic.id, category: cosmetic.category, source: 'customize' })
   const toast = await toastController.create({
     message: `${cosmetic.name} unequipped`,
     duration: 2000,
@@ -423,6 +426,7 @@ async function confirmRefund(owned: OwnedCosmetic) {
         role: 'destructive',
         handler: async () => {
           const res = await refundCosmetic(cosmetic.id)
+          ActivityLogService.log(res.success ? 'badge_refund_success' : 'badge_refund_failed', { cosmetic_id: cosmetic.id, xp_cost: cosmetic.xp_cost, ...(res.success ? {} : { error_message: res.error }) })
           if (res.success) {
             const toast = await toastController.create({
               message: `💸 Refunded ${cosmetic.xp_cost} XP for "${cosmetic.name}"!`,

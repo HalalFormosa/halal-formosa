@@ -286,6 +286,7 @@ const askGeolocationPermission = async () => {
     if (permStatus.location !== 'granted') {
       const result = await Geolocation.requestPermissions();
       console.log('🔑 Geolocation permission result:', result);
+      ActivityLogService.log('permission_result', { permission: 'location', status: result.location, source: 'app_launch' });
     }
     localStorage.setItem(askedKey, 'true');
   } catch (err) {
@@ -421,6 +422,7 @@ watch(locale, (newLocale) => {
 
 import { App as CapApp } from '@capacitor/app';
 import { useRouter } from 'vue-router';
+import { ActivityLogService } from '@/services/ActivityLogService'
 
 const router = useRouter();
 

@@ -378,6 +378,7 @@ const handleSubmit = async () => {
     emit('close')
   } catch (err: any) {
     console.error('[FacilityReviewModal] Submit failed', err)
+    ActivityLogService.log('location_review_failed', { id: props.locationId, error_message: err?.message })
     const toast = await toastController.create({
       message: `❌ Error: ${err.message || 'Failed to submit review'}`,
       duration: 3000,

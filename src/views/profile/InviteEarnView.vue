@@ -175,6 +175,7 @@ import { useI18n } from 'vue-i18n';
 import { toastController } from '@ionic/vue';
 import { useReferrals } from '@/composables/useReferrals';
 import { supabase } from '@/plugins/supabaseClient';
+import { ActivityLogService } from '@/services/ActivityLogService'
 
 const { t } = useI18n();
 const { summary, config, loading, loadReferralConfig, loadMyReferralSummary } = useReferrals();
@@ -216,9 +217,11 @@ async function applyLateCode() {
   try {
     const { error } = await supabase.rpc('redeem_referral_code', { p_code: lateCode.value.trim() });
     if (error) {
+      ActivityLogService.log('referral_code_redeem_failed', { source: 'invite_earn', error_message: error.message });
       lateCodeError.value = error.message || (t('profile.editProfile.referralInvalid') as string) || 'Invalid referral code.';
       return;
     }
+    ActivityLogService.log('referral_code_redeem_success', { source: 'invite_earn' });
     try { localStorage.removeItem('hf_pending_referral_code'); } catch { /* empty */ }
     lateCode.value = '';
     await loadMyReferralSummary();

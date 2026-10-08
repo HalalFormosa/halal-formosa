@@ -2,6 +2,7 @@ import { ref } from 'vue'
 import { Capacitor } from '@capacitor/core'
 import { BarcodeScanner, BarcodeFormat, type Barcode } from '@capacitor-mlkit/barcode-scanning'
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode'
+import { ActivityLogService } from '@/services/ActivityLogService'
 
 const MLKIT_FORMATS = [
   BarcodeFormat.Ean13,
@@ -96,6 +97,7 @@ export function useLiveBarcodeScanner() {
       const { camera } = await BarcodeScanner.checkPermissions()
       if (camera !== 'granted') {
         const { camera: newStatus } = await BarcodeScanner.requestPermissions()
+        ActivityLogService.log('permission_result', { permission: 'camera', status: newStatus, source: 'barcode_scan' })
         if (newStatus !== 'granted') throw new BarcodeScanStartError('permissionError')
       }
 

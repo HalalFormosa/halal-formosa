@@ -100,6 +100,7 @@ import {
 } from '@ionic/vue';
 import { useRoute } from 'vue-router';
 import { supabase } from '@/plugins/supabaseClient';
+import { ActivityLogService } from '@/services/ActivityLogService'
 import type { User } from '@supabase/supabase-js'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import {createOutline } from "ionicons/icons";
@@ -158,6 +159,7 @@ onMounted(async () => {
 
   if (!error && data) {
     newsItem.value = data;
+    ActivityLogService.log('news_detail_open', { id: data.id });
 
     // 🔹 Fetch author details separately
     if (data.author_id) {

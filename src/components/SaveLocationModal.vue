@@ -82,6 +82,7 @@ import { isDonor } from '@/composables/useSubscriptionStatus';
 import { Capacitor } from '@capacitor/core';
 import { RevenueCatUI, PAYWALL_RESULT } from '@revenuecat/purchases-capacitor-ui';
 import { ActivityLogService } from '@/services/ActivityLogService';
+import { logPaywallCancelled, logPaywallFailed } from '@/utils/paywallLogging'
 
 const props = defineProps<{
   isOpen: boolean;
@@ -153,8 +154,11 @@ async function presentPaywall(): Promise<boolean> {
       });
       return true;
     }
+    if (result === PAYWALL_RESULT.CANCELLED) logPaywallCancelled("save_location_limit");
+    else logPaywallFailed("save_location_limit", result);
   } catch (err) {
     console.error("Paywall failed:", err);
+    logPaywallFailed("save_location_limit", err);
   }
   return false;
 }

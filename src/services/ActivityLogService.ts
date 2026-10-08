@@ -57,6 +57,12 @@ function resolveEntity(activity: string, rawDetail: any): EntityResult {
         case 'explore_detail_share':
         case 'explore_detail_call':
         case 'explore_detail_report':
+        case 'location_report_submit':
+        case 'location_report_failed':
+        case 'location_review_failed':
+        case 'edit_place_failed':
+        case 'related_place_click':
+        case 'location_check_in':
         case 'explore_detail_line':
         case 'explore_detail_foodpanda':
         case 'explore_detail_ubereats':
@@ -79,6 +85,9 @@ function resolveEntity(activity: string, rawDetail: any): EntityResult {
         case 'related_product_click':
         case 'product_edit_click':
         case 'product_report_click':
+        case 'product_report_submit':
+        case 'product_report_failed':
+        case 'product_not_found':
         case 'home_scan_ingredient': {
             const raw =
                 detail.barcode ??
@@ -272,6 +281,8 @@ function resolveEntity(activity: string, rawDetail: any): EntityResult {
         case 'pro_purchase_success':
         case 'pro_restore_success':
         case 'pro_paywall_trigger':
+        case 'pro_purchase_cancelled':
+        case 'pro_purchase_failed':
             return {
                 entity_type: 'entitlement',
                 entity_id: detail.entitlement ?? 'Halal Formosa Pro'
@@ -370,6 +381,58 @@ function resolveEntity(activity: string, rawDetail: any): EntityResult {
             }
 
         // ðŸŸ¢ UTILITIES
+        // 🟢 PROFILE / ACCOUNT
+        case 'profile_update_success':
+        case 'profile_update_failed':
+        case 'account_delete_confirm':
+        case 'account_delete_failed':
+            return {
+                entity_type: 'user',
+                entity_id: detail.user_id ?? null
+            }
+
+        case 'referral_code_redeem_success':
+        case 'referral_code_redeem_failed':
+            return {
+                entity_type: 'referral',
+                entity_id: detail.source ?? null
+            }
+
+        // 🟢 BADGE COSMETICS
+        case 'badge_purchase_success':
+        case 'badge_purchase_failed':
+        case 'badge_equip':
+        case 'badge_unequip':
+        case 'badge_refund_success':
+        case 'badge_refund_failed':
+            return {
+                entity_type: 'cosmetic',
+                entity_id: detail.cosmetic_id ? String(detail.cosmetic_id) : null
+            }
+
+        // 🟢 ADS (LevelPlay) — entity is the placement; init failures have none
+        case 'ad_impression':
+        case 'ad_click':
+        case 'ad_load_failed':
+        case 'ad_display_failed':
+        case 'ad_reward_earned':
+        case 'ad_rewarded_requested':
+        case 'ad_rewarded_failed':
+        case 'ad_rewarded_closed_no_reward': {
+            const placement = detail.space_id ?? detail.ad_unit_id ?? null
+            return {
+                entity_type: placement != null ? 'ad_placement' : null,
+                entity_id: placement != null ? String(placement) : null
+            }
+        }
+
+        // 🟢 PERMISSIONS
+        case 'permission_result':
+            return {
+                entity_type: 'permission',
+                entity_id: detail.permission ? String(detail.permission) : null
+            }
+
         case 'utility_qibla_open':
             return {
                 entity_type: null,
@@ -381,6 +444,8 @@ function resolveEntity(activity: string, rawDetail: any): EntityResult {
         case 'add_product_ocr_start':
         case 'add_product_success':
         case 'add_product_submit_success':
+        case 'add_product_failed':
+        case 'add_product_ocr_failed':
             return {
                 entity_type: 'product',
                 entity_id: detail.barcode ? String(detail.barcode) : null
@@ -473,6 +538,9 @@ function resolveActivityGroup(activity: string): string | null {
         case 'related_product_click':
         case 'product_edit_click':
         case 'product_report_click':
+        case 'product_report_submit':
+        case 'product_report_failed':
+        case 'product_not_found':
         case 'product_share':
         case 'scan_ingredients_start':
         case 'scan_ingredients_success':
@@ -519,6 +587,11 @@ function resolveActivityGroup(activity: string): string | null {
         case 'explore_detail_ubereats':
         case 'location_review_edit':
         case 'location_review_success':
+        case 'location_report_submit':
+        case 'location_report_failed':
+        case 'location_review_failed':
+        case 'related_place_click':
+        case 'location_check_in':
             return 'place'
 
         /* -------------------------
@@ -564,6 +637,9 @@ function resolveActivityGroup(activity: string): string | null {
         case 'partner_produced_product_click':
         case 'partner_nearby_location_click':
         case 'partner_nearby_view_more_click':
+        case 'partner_halal_indo_restaurants_view_more_click':
+        case 'partner_indonesian_products_view_more_click':
+        case 'partner_muslim_friendly_indo_restaurants_view_more_click':
             return 'partner'
 
 
@@ -573,6 +649,18 @@ function resolveActivityGroup(activity: string): string | null {
         case 'profile_page_open':
         case 'profile_edit_open':
         case 'profile_logout':
+        case 'profile_update_success':
+        case 'profile_update_failed':
+        case 'account_delete_confirm':
+        case 'account_delete_failed':
+        case 'referral_code_redeem_success':
+        case 'referral_code_redeem_failed':
+        case 'badge_purchase_success':
+        case 'badge_purchase_failed':
+        case 'badge_equip':
+        case 'badge_unequip':
+        case 'badge_refund_success':
+        case 'badge_refund_failed':
             return 'profile'
 
         /* -------------------------
@@ -580,6 +668,15 @@ function resolveActivityGroup(activity: string): string | null {
         -------------------------- */
         case 'house_ad_impression':
         case 'house_ad_click':
+        case 'ad_impression':
+        case 'ad_click':
+        case 'ad_load_failed':
+        case 'ad_display_failed':
+        case 'ad_init_failed':
+        case 'ad_reward_earned':
+        case 'ad_rewarded_requested':
+        case 'ad_rewarded_failed':
+        case 'ad_rewarded_closed_no_reward':
             return 'advertising'
 
         /* -------------------------
@@ -589,6 +686,8 @@ function resolveActivityGroup(activity: string): string | null {
         case 'pro_purchase_success':
         case 'pro_restore_success':
         case 'pro_paywall_trigger':
+        case 'pro_purchase_cancelled':
+        case 'pro_purchase_failed':
         case 'donation_click':
         case 'donation_success':
             return 'monetization'
@@ -618,6 +717,7 @@ function resolveActivityGroup(activity: string): string | null {
         case 'store_order_submit':
         case 'store_order_success':
         case 'store_payment_failed':
+        case 'store_checkout_failed':
             return 'store'
 
         case 'merchant_application_submit':
@@ -681,6 +781,9 @@ function resolveActivityGroup(activity: string): string | null {
         /* -------------------------
            UTILITIES
         -------------------------- */
+        case 'permission_result':
+            return 'permissions'
+
         case 'utility_qibla_open':
             return 'utilities'
 
@@ -694,6 +797,10 @@ function resolveActivityGroup(activity: string): string | null {
         case 'add_place_success':
         case 'edit_place_success':
         case 'add_place_source_input':
+        case 'add_product_failed':
+        case 'add_product_ocr_failed':
+        case 'add_place_failed':
+        case 'edit_place_failed':
             return 'contributions'
 
         /* -------------------------
@@ -715,6 +822,7 @@ function resolveActivityGroup(activity: string): string | null {
         case 'notification_opened':
         case 'notification_category_opened':
         case 'notification_newitem_opened':
+        case 'notification_daily_mission_opened':
             return 'notifications'
 
         /* -------------------------

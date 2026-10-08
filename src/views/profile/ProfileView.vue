@@ -1070,6 +1070,7 @@ import {RevenueCatUI, PAYWALL_RESULT} from '@revenuecat/purchases-capacitor-ui';
 import {refreshSubscriptionStatus} from "@/composables/useSubscriptionStatus";
 import {toastController} from "@ionic/vue";
 import { ActivityLogService } from '@/services/ActivityLogService'
+import { logPaywallCancelled, logPaywallFailed } from '@/utils/paywallLogging'
 import { MerchantService, MerchantApplication } from '@/services/MerchantService'
 import { ClaimService } from '@/services/ClaimService'
 import { useI18n } from 'vue-i18n'
@@ -1759,7 +1760,7 @@ function goToSavedLocations() {
 }
 
 async function openProPaywall() {
-  ActivityLogService.log('pro_paywall_open')
+  ActivityLogService.log('pro_paywall_open', { source: 'profile_view' })
 
   // ⛔ Web / PWA guard
   if (!Capacitor.isNativePlatform()) {
@@ -1781,7 +1782,11 @@ async function openProPaywall() {
     await ensureRevenueCatLoggedIn();
 
     const paywallResult = await presentPaywall();
-    if (paywallResult !== PAYWALL_RESULT.PURCHASED && paywallResult !== PAYWALL_RESULT.RESTORED) return; // ✅ safe now
+    if (paywallResult !== PAYWALL_RESULT.PURCHASED && paywallResult !== PAYWALL_RESULT.RESTORED) {
+      if (paywallResult === PAYWALL_RESULT.CANCELLED) logPaywallCancelled('profile_view');
+      else logPaywallFailed('profile_view', paywallResult);
+      return; // ✅ safe now
+    }
 
     // 🔄 Refresh subscription state
     await refreshCustomerInfo();
@@ -1804,7 +1809,8 @@ async function openProPaywall() {
       await toast.present();
 
       ActivityLogService.log('pro_purchase_success', {
-        entitlement: 'Halal Formosa Pro'
+        entitlement: 'Halal Formosa Pro',
+        source: 'profile_view'
       })
 
       await notifyEvent(
@@ -1835,6 +1841,7 @@ async function openProPaywall() {
 
   } catch (err: any) {
     console.error("[RC] Error opening paywall:", err);
+    logPaywallFailed('profile_view', err);
     const toast = await toastController.create({
       message: t('profile.pro.errorOpening', 'Failed to load subscription options. Please try again.'),
       duration: 3000,

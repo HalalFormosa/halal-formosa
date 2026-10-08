@@ -104,6 +104,7 @@ import {
   IonInfiniteScrollContent, IonCard, IonCardTitle, IonCardContent, IonCardSubtitle, IonCardHeader, IonIcon, IonFabButton, IonFab, IonSkeletonText
 } from '@ionic/vue';
 import { supabase } from '@/plugins/supabaseClient';
+import { ActivityLogService } from '@/services/ActivityLogService'
 import {addOutline, chevronDownCircleOutline} from 'ionicons/icons';
 
 
@@ -147,6 +148,7 @@ function fromNowToTaipei(dateString?: string) {
 
 
 onMounted(async () => {
+  ActivityLogService.log('news_page_open')
   await loadInitialNews()
 })
 

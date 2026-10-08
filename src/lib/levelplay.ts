@@ -2,6 +2,23 @@
 import { LevelPlayAds, AdEvent } from 'capacitor-levelplay-ads'
 import { Capacitor } from '@capacitor/core'
 import { markAdFailed, clearAdFailed, markAdLoaded, clearAdLoaded } from '@/composables/useAdFallback'
+import { ActivityLogService } from '@/services/ActivityLogService'
+
+// Ad telemetry. Every event carries ad_network 'levelplay' (house ads log
+// their own house_ad_* events) plus the placement (space_id / ad_unit_id).
+// Banners refresh on their own every ~30-60s, so impressions are throttled
+// per placement to keep activity_log volume sane.
+const IMPRESSION_THROTTLE_MS = 60_000
+const lastImpressionAt = new Map<string, number>()
+
+function adErrorMessage(info: any): string | undefined {
+    const m = info?.errorMessage ?? info?.error ?? info?.message
+    return m != null ? String(m) : undefined
+}
+
+function logAd(activity: string, detail: Record<string, any> = {}) {
+    ActivityLogService.log(activity, { ad_network: 'levelplay', platform: Capacitor.getPlatform(), ...detail })
+}
 
 let initialized = false
 let bannerListenersRegistered = false
@@ -19,16 +36,28 @@ function registerBannerListeners() {
         clearAdFailed(activeBannerSpaceId ?? undefined)
         markAdLoaded(activeBannerSpaceId)
     }).catch((e) => console.debug('[LevelPlay] listener register skip', e))
-    LevelPlayAds.addListener(AdEvent.BannerLoadFailed, () => {
+    LevelPlayAds.addListener(AdEvent.BannerLoadFailed, (info: any) => {
         bannerSettled = true
+        logAd('ad_load_failed', { ad_format: 'banner', space_id: activeBannerSpaceId, error_code: info?.errorCode, error_message: adErrorMessage(info) })
         markAdFailed(activeBannerSpaceId)
     }).catch((e) => console.debug('[LevelPlay] listener register skip', e))
     // A banner can load fine but then fail to actually render on a later
     // internal refresh (onAdDisplayFailed) — without this, BannerLoaded had
     // already cleared the fallback and nothing ever re-shows it, so the ad
     // slot goes blank and stays blank until the next navigation.
-    LevelPlayAds.addListener(AdEvent.BannerDisplayFailed, () => {
+    LevelPlayAds.addListener(AdEvent.BannerDisplayFailed, (info: any) => {
+        logAd('ad_display_failed', { ad_format: 'banner', space_id: activeBannerSpaceId, error_code: info?.errorCode, error_message: adErrorMessage(info) })
         markAdFailed(activeBannerSpaceId)
+    }).catch((e) => console.debug('[LevelPlay] listener register skip', e))
+    LevelPlayAds.addListener(AdEvent.BannerDisplayed, () => {
+        const space = activeBannerSpaceId ?? 'unknown'
+        const now = Date.now()
+        if (now - (lastImpressionAt.get(space) ?? 0) < IMPRESSION_THROTTLE_MS) return
+        lastImpressionAt.set(space, now)
+        logAd('ad_impression', { ad_format: 'banner', space_id: activeBannerSpaceId })
+    }).catch((e) => console.debug('[LevelPlay] listener register skip', e))
+    LevelPlayAds.addListener(AdEvent.BannerClicked, () => {
+        logAd('ad_click', { ad_format: 'banner', space_id: activeBannerSpaceId })
     }).catch((e) => console.debug('[LevelPlay] listener register skip', e))
 }
 // Memoized so concurrent/early callers (e.g. a fast navigation to a screen
@@ -72,6 +101,7 @@ export function initLevelPlay(): Promise<void> {
                 console.log('[LevelPlay] SDK initialized successfully')
             } catch (e) {
                 console.debug('[LevelPlay] init skip', e)
+                logAd('ad_init_failed', { error_message: adErrorMessage(e) ?? String(e) })
             }
         })()
     }
@@ -91,6 +121,7 @@ export async function showLevelPlayBanner(adUnitId: string, spaceId?: string) {
         // SDK never came up (bad app key, network, etc) — no load/fail event
         // will ever fire, so mark it failed ourselves rather than leaving
         // the slot silently blank.
+        logAd('ad_load_failed', { ad_format: 'banner', space_id: spaceId, error_message: 'sdk_not_initialized' })
         markAdFailed(spaceId)
         return
     }
@@ -110,11 +141,13 @@ export async function showLevelPlayBanner(adUnitId: string, spaceId?: string) {
         setTimeout(() => {
             if (activeBannerSpaceId === spaceId && !bannerSettled) {
                 bannerSettled = true
+                logAd('ad_load_failed', { ad_format: 'banner', space_id: spaceId, error_message: 'settle_timeout' })
                 markAdFailed(spaceId)
             }
         }, BANNER_SETTLE_TIMEOUT_MS)
     } catch (e) {
         bannerSettled = true
+        logAd('ad_load_failed', { ad_format: 'banner', space_id: spaceId, error_message: adErrorMessage(e) ?? String(e) })
         markAdFailed(spaceId)
         console.debug('[LevelPlay] banner skip', e)
     }
@@ -153,15 +186,20 @@ export async function showLevelPlayRewardedAd(adUnitId: string, onReward: () => 
         // No house-ad equivalent for rewarded — surface a clear failure so
         // callers (e.g. ScanIngredientsView's "watch ad" flow) show their
         // existing "ad failed" error state instead of hanging.
+        logAd('ad_rewarded_failed', { ad_format: 'rewarded', ad_unit_id: adUnitId, error_message: 'levelplay_disabled' })
         throw new Error('LevelPlay is disabled')
     }
     await initLevelPlay()
     if (!initialized) {
         console.warn('[LevelPlay] not ready — rewarded ad skipped')
+        logAd('ad_rewarded_failed', { ad_format: 'rewarded', ad_unit_id: adUnitId, error_message: 'sdk_not_initialized' })
         return
     }
 
+    logAd('ad_rewarded_requested', { ad_format: 'rewarded', ad_unit_id: adUnitId })
+
     return new Promise<void>(async (resolve, reject) => {
+        let rewarded = false
         const listeners: any[] = []
         const cleanup = async () => {
             for (const handle of listeners) {
@@ -172,10 +210,21 @@ export async function showLevelPlayRewardedAd(adUnitId: string, onReward: () => 
         try {
             listeners.push(await LevelPlayAds.addListener(AdEvent.RewardedRewarded, async (reward) => {
                 console.log('[LevelPlay] reward earned:', reward)
+                rewarded = true
+                logAd('ad_reward_earned', { ad_format: 'rewarded', ad_unit_id: adUnitId })
                 try { await onReward() } catch (e) { console.error('[LevelPlay] error in onReward callback:', e) }
             }))
 
+            listeners.push(await LevelPlayAds.addListener(AdEvent.RewardedClicked, () => {
+                logAd('ad_click', { ad_format: 'rewarded', ad_unit_id: adUnitId })
+            }))
+
+            listeners.push(await LevelPlayAds.addListener(AdEvent.RewardedDisplayed, () => {
+                logAd('ad_impression', { ad_format: 'rewarded', ad_unit_id: adUnitId })
+            }))
+
             listeners.push(await LevelPlayAds.addListener(AdEvent.RewardedClosed, async () => {
+                if (!rewarded) logAd('ad_rewarded_closed_no_reward', { ad_format: 'rewarded', ad_unit_id: adUnitId })
                 await cleanup()
                 resolve()
             }))
@@ -184,6 +233,7 @@ export async function showLevelPlayRewardedAd(adUnitId: string, onReward: () => 
             const { isReady } = await LevelPlayAds.isRewardedReady()
             if (!isReady) {
                 console.debug('[LevelPlay] rewarded ad not ready:', adUnitId)
+                logAd('ad_rewarded_failed', { ad_format: 'rewarded', ad_unit_id: adUnitId, error_message: 'not_ready' })
                 await cleanup()
                 reject(new Error('Rewarded ad not ready'))
                 return
@@ -192,6 +242,7 @@ export async function showLevelPlayRewardedAd(adUnitId: string, onReward: () => 
             await LevelPlayAds.showRewarded()
         } catch (err) {
             console.debug('[LevelPlay] rewarded skip', err)
+            logAd('ad_rewarded_failed', { ad_format: 'rewarded', ad_unit_id: adUnitId, error_message: adErrorMessage(err) ?? String(err) })
             await cleanup()
             reject(err)
         }

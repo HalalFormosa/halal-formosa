@@ -46,6 +46,7 @@ import {
 
 import { loadCountriesFromCache } from "@/composables/useCountries"
 import OneSignal from 'onesignal-cordova-plugin';
+import { ActivityLogService } from '@/services/ActivityLogService'
 import { refreshSubscriptionStatus, isDonor } from "@/composables/useSubscriptionStatus";
 
 defineCustomElements(window)
@@ -508,6 +509,7 @@ document.addEventListener('deviceready', async () => {
         if (!hasPermission) {
             const accepted = await OneSignal.Notifications.requestPermission(false);
             console.log('🔔 User accepted notifications:', accepted);
+            ActivityLogService.log('permission_result', { permission: 'push', status: accepted ? 'granted' : 'denied', source: 'app_launch' });
         }
 
         // 🧭 Handle incoming push when tapped/opened

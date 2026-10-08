@@ -229,7 +229,7 @@
                     color="carrot"
                     size="small"
                     expand="block"
-                    @click="presentPaywall"
+                    @click="onForYouUpgradeClick"
                 >
                   {{ $t('search.forYou.upgrade') }}
                 </ion-button>
@@ -663,6 +663,7 @@ import FilterContent from '@/components/FilterContent.vue'
 
 import StoreLogoBar from "@/components/StoreLogoBar.vue";
 import {ActivityLogService} from "@/services/ActivityLogService";
+import { logPaywallCancelled, logPaywallFailed } from '@/utils/paywallLogging'
 import { scheduleBannerUpdate } from '@/plugins/admob'
 import HouseAdCard from '@/components/ads/HouseAdCard.vue'
 import HouseAdNativeCard from '@/components/ads/HouseAdNativeCard.vue'
@@ -861,6 +862,11 @@ async function ensureRevenueCatLoggedIn() {
   console.log("🔐 RevenueCat logged in as:", data.user.id)
 }
 
+function onForYouUpgradeClick() {
+  ActivityLogService.log("pro_paywall_trigger", { source: "search_for_you_upgrade_button" });
+  return presentPaywall();
+}
+
 async function presentPaywall(): Promise<boolean> {
   if (!Capacitor.isNativePlatform()) {
     console.warn("[RC] Paywall can only run on native (Android/iOS).");
@@ -877,28 +883,34 @@ async function presentPaywall(): Promise<boolean> {
     switch (result) {
       case PAYWALL_RESULT.PURCHASED:
         console.log("[RC] 🎉 User purchased subscription!");
+        ActivityLogService.log("pro_purchase_success", { source: "search_sort_for_you" });
         return true;
 
       case PAYWALL_RESULT.RESTORED:
         console.log("[RC] 🔄 Subscription restored!");
+        ActivityLogService.log("pro_restore_success", { source: "search_sort_for_you" });
         return true;
 
       case PAYWALL_RESULT.CANCELLED:
         console.log("[RC] User cancelled paywall.");
+        logPaywallCancelled("search_sort_for_you");
         return false;
 
       case PAYWALL_RESULT.ERROR:
         console.log("[RC] Paywall error.");
+        logPaywallFailed("search_sort_for_you", result);
         return false;
 
       case PAYWALL_RESULT.NOT_PRESENTED:
       default:
         console.log("[RC] Paywall not presented.");
+        logPaywallFailed("search_sort_for_you", result);
         return false;
     }
 
   } catch (e) {
     console.error("[RC] Paywall failed:", e);
+    logPaywallFailed("search_sort_for_you", e);
     return false;
   }
 }
