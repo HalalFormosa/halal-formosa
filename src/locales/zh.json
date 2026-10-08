@@ -795,7 +795,8 @@
       "locationsReview": "地點審核",
       "locationReports": "地點回報",
       "productReports": "產品回報",
-      "users": "用戶"
+      "users": "用戶",
+      "auditLog": "稽核紀錄"
     },
     "pro": {
       "title": "Halal Formosa Pro ⭐",
@@ -1589,7 +1590,41 @@
     "retractConfirm": "要撤回此項目嗎？此動作無法復原。",
     "retractFailed": "撤回失敗：{error}",
     "never": "從未",
-    "neverActive": "從未活躍"
+    "neverActive": "從未活躍",
+    "auditLog": {
+      "title": "稽核紀錄",
+      "kinds": {
+        "all": "全部",
+        "admin": "管理員",
+        "merchant": "商家",
+        "business_owner": "場所經營者"
+      },
+      "table": "資料表",
+      "allTables": "所有資料表",
+      "actorFilter": "操作者：{name}",
+      "userFilter": "使用者 {id}",
+      "empty": "尚無稽核紀錄。",
+      "emptyFiltered": "沒有符合條件的紀錄。",
+      "clearFilters": "清除篩選",
+      "loadFailed": "無法載入稽核紀錄。",
+      "retry": "重試",
+      "place": "地點 #{id}",
+      "user": "使用者 {id}",
+      "changes": "變更（{count}）",
+      "noChanges": "沒有記錄到欄位變更。",
+      "hidden": "已隱藏（敏感資料）",
+      "actions": {
+        "create": "建立",
+        "update": "更新",
+        "delete": "刪除",
+        "approve": "核准",
+        "unapprove": "取消核准",
+        "reject": "駁回",
+        "status_change": "狀態變更",
+        "activate": "啟用",
+        "deactivate": "停用"
+      }
+    }
   },
   "merchantApplications": {
     "title": "申請管理",

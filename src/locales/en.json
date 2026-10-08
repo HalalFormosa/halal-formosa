@@ -960,7 +960,8 @@
       "locationsReview": "Locations Review",
       "locationReports": "Location Reports",
       "productReports": "Product Reports",
-      "users": "Users"
+      "users": "Users",
+      "auditLog": "Audit Log"
     },
     "pro": {
       "title": "Halal Formosa Pro ⭐",
@@ -2059,7 +2060,41 @@
     "retractConfirm": "Retract this entry? This cannot be undone.",
     "retractFailed": "Failed to retract: {error}",
     "never": "Never",
-    "neverActive": "Never active"
+    "neverActive": "Never active",
+    "auditLog": {
+      "title": "Audit Log",
+      "kinds": {
+        "all": "All",
+        "admin": "Admin",
+        "merchant": "Merchant",
+        "business_owner": "Business owner"
+      },
+      "table": "Table",
+      "allTables": "All tables",
+      "actorFilter": "By {name}",
+      "userFilter": "User {id}",
+      "empty": "No audited actions yet.",
+      "emptyFiltered": "Nothing matches these filters.",
+      "clearFilters": "Clear filters",
+      "loadFailed": "Couldn't load the audit log.",
+      "retry": "Retry",
+      "place": "Place #{id}",
+      "user": "User {id}",
+      "changes": "Changes ({count})",
+      "noChanges": "No recorded field changes.",
+      "hidden": "Hidden (sensitive)",
+      "actions": {
+        "create": "Created",
+        "update": "Updated",
+        "delete": "Deleted",
+        "approve": "Approved",
+        "unapprove": "Unapproved",
+        "reject": "Rejected",
+        "status_change": "Status changed",
+        "activate": "Activated",
+        "deactivate": "Deactivated"
+      }
+    }
   },
   "merchantApplications": {
     "title": "Merchant Applications",

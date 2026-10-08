@@ -776,6 +776,13 @@
               <ion-label>{{ $t('profile.admin.scanLogs') }}</ion-label>
             </ion-item>
 
+            <ion-item button @click="goToAuditLog">
+              <div class="icon-box" slot="start">
+                <ion-icon :icon="icons.shieldCheckmarkOutline" />
+              </div>
+              <ion-label>{{ $t('profile.admin.auditLog') }}</ion-label>
+            </ion-item>
+
             <ion-item button @click="goToAnalyticsDashboard">
               <div class="icon-box" slot="start">
                 <ion-icon :icon="icons.listOutline" />
@@ -1885,6 +1892,7 @@ const goToProductReports = () => router.push('/admin/product-reports')
 
 const goToAnalyticsDashboard = () => router.push("/admin/analytics");
 const goToScanLogs = () => router.push("/admin/scan-logs");
+const goToAuditLog = () => router.push("/admin/audit-log");
 
 const goToEditProfile = () => {
   ActivityLogService.log('profile_edit_open')

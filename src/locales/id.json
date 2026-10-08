@@ -1035,7 +1035,8 @@
       "locationsReview": "Tinjau Lokasi",
       "locationReports": "Laporan Lokasi",
       "productReports": "Laporan Produk",
-      "users": "Pengguna"
+      "users": "Pengguna",
+      "auditLog": "Log Audit"
     },
     "pro": {
       "title": "Halal Formosa Pro ⭐",
@@ -1930,7 +1931,41 @@
     "analytics": "Dasbor Analitik",
     "locationsReview": "Tinjauan Lokasi",
     "users": "Pengguna",
-    "products": "Kelola Produk"
+    "products": "Kelola Produk",
+    "auditLog": {
+      "title": "Log Audit",
+      "kinds": {
+        "all": "Semua",
+        "admin": "Admin",
+        "merchant": "Merchant",
+        "business_owner": "Pemilik bisnis"
+      },
+      "table": "Tabel",
+      "allTables": "Semua tabel",
+      "actorFilter": "Oleh {name}",
+      "userFilter": "Pengguna {id}",
+      "empty": "Belum ada tindakan yang diaudit.",
+      "emptyFiltered": "Tidak ada yang cocok dengan filter ini.",
+      "clearFilters": "Hapus filter",
+      "loadFailed": "Gagal memuat log audit.",
+      "retry": "Coba lagi",
+      "place": "Tempat #{id}",
+      "user": "Pengguna {id}",
+      "changes": "Perubahan ({count})",
+      "noChanges": "Tidak ada perubahan kolom yang tercatat.",
+      "hidden": "Disembunyikan (data sensitif)",
+      "actions": {
+        "create": "Dibuat",
+        "update": "Diperbarui",
+        "delete": "Dihapus",
+        "approve": "Disetujui",
+        "unapprove": "Persetujuan dicabut",
+        "reject": "Ditolak",
+        "status_change": "Status diubah",
+        "activate": "Diaktifkan",
+        "deactivate": "Dinonaktifkan"
+      }
+    }
   },
   "update": {
     "required_title": "Pembaruan Diperlukan",
