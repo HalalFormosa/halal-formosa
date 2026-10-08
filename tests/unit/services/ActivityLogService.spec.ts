@@ -15,8 +15,8 @@ describe('ActivityLogService', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         // Reset the default auth mock behavior
-        vi.mocked(supabase.auth.getUser).mockResolvedValue({
-            data: { user: { id: 'mock-user-id' } as any },
+        vi.mocked(supabase.auth.getSession).mockResolvedValue({
+            data: { session: { user: { id: 'mock-user-id' } } as any },
             error: null
         } as any)
     })
@@ -102,10 +102,31 @@ describe('ActivityLogService', () => {
         }))
     })
 
+    it('reads the user from the local session and never calls the auth server', async () => {
+        const insertMock = vi.fn().mockResolvedValue({ data: null, error: null })
+        vi.mocked(supabase.from).mockReturnValue({ insert: insertMock } as any)
+
+        await ActivityLogService.log('screen_view', { screen: '/home', from: null })
+
+        expect(supabase.auth.getSession).toHaveBeenCalled()
+        expect(supabase.auth.getUser).not.toHaveBeenCalled()
+        expect(insertMock).toHaveBeenCalledWith(expect.objectContaining({ user_id: 'mock-user-id' }))
+    })
+
+    it('logs as anonymous instead of dropping the event when the session cannot be read', async () => {
+        vi.mocked(supabase.auth.getSession).mockRejectedValueOnce(new Error('storage unavailable'))
+        const insertMock = vi.fn().mockResolvedValue({ data: null, error: null })
+        vi.mocked(supabase.from).mockReturnValue({ insert: insertMock } as any)
+
+        await ActivityLogService.log('app_open', { platform: 'android' })
+
+        expect(insertMock).toHaveBeenCalledWith(expect.objectContaining({ user_id: null, activity_type: 'app_open' }))
+    })
+
     it('should still log activity for anonymous (logged-out) users, with a null user_id', async () => {
         // Override mock for this specific test: no authenticated user
-        vi.mocked(supabase.auth.getUser).mockResolvedValueOnce({
-            data: { user: null },
+        vi.mocked(supabase.auth.getSession).mockResolvedValueOnce({
+            data: { session: null },
             error: null
         } as any)
 

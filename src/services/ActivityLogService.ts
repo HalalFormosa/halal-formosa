@@ -618,6 +618,20 @@ function resolveEntity(activity: string, rawDetail: any): EntityResult {
     }
 }
 
+/**
+ * Who is logging, from the locally stored session. supabase.auth.getUser() asks the auth server every
+ * time, which made every logged event (and now every screen_view) cost an extra network request.
+ * This is for analytics attribution only. If the session cannot be read the event is still logged
+ * as anonymous rather than lost.
+ */
+async function currentUserId(): Promise<string | null> {
+    try {
+        return (await supabase.auth.getSession()).data.session?.user?.id ?? null
+    } catch {
+        return null
+    }
+}
+
 function resolveActivityGroup(activity: string): string | null {
     switch (activity) {
 
@@ -1053,7 +1067,7 @@ export class ActivityLogService {
             return
         }
 
-        const user = (await supabase.auth.getUser()).data.user
+        const userId = await currentUserId()
         const session_id = SessionService.getSessionId()
 
         const { entity_type, entity_id } = resolveEntity(activity, detail)
@@ -1068,7 +1082,7 @@ export class ActivityLogService {
         const activity_group = resolveActivityGroup(activity)
 
         const payload = {
-            user_id: user?.id ?? null,
+            user_id: userId,
             session_id,
             activity_type: activity,
             activity_group,
