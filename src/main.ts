@@ -46,6 +46,8 @@ import {
 
 import { loadCountriesFromCache } from "@/composables/useCountries"
 import OneSignal from 'onesignal-cordova-plugin';
+import { installClientErrorReporting } from '@/plugins/clientErrorReporting';
+import { buildScreenView, screenPattern } from '@/utils/screenView';
 import { ActivityLogService } from '@/services/ActivityLogService'
 import { refreshSubscriptionStatus, isDonor } from "@/composables/useSubscriptionStatus";
 
@@ -84,8 +86,18 @@ document.documentElement.dir = ['ar', 'ur'].includes(initialLang) ? 'rtl' : 'ltr
 /* Create app */
 const app = createApp(App).use(IonicVue).use(router).use(i18n)
 
+// Report uncaught errors (Vue, window, unhandled rejections) as client_error events
+installClientErrorReporting(app, () => screenPattern(router.currentRoute.value))
+
 // AdMob refresh after route changes
 router.afterEach(() => scheduleBannerUpdate())
+
+// One screen_view per page change, from the route pattern (never the concrete URL)
+router.afterEach((to, from, failure) => {
+    if (failure) return
+    const detail = buildScreenView(to, from)
+    if (detail) ActivityLogService.log('screen_view', detail)
+})
 
 // 1. Load from cache first → no flicker
 loadCountriesFromCache()

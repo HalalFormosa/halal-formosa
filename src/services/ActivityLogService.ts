@@ -551,6 +551,19 @@ function resolveEntity(activity: string, rawDetail: any): EntityResult {
         case 'app_review_prompt_shown':
             return { entity_type: null, entity_id: null }
 
+        // 🟢 NAVIGATION / CLIENT ERRORS — entity is the route pattern / the error signature
+        case 'screen_view':
+            return {
+                entity_type: 'screen',
+                entity_id: detail.screen ? String(detail.screen) : null
+            }
+
+        case 'client_error':
+            return {
+                entity_type: 'error',
+                entity_id: detail.signature ? String(detail.signature) : null
+            }
+
         // 🟢 PERMISSIONS
         case 'permission_result':
             return {
@@ -914,6 +927,12 @@ function resolveActivityGroup(activity: string): string | null {
         -------------------------- */
         case 'permission_result':
             return 'permissions'
+
+        case 'screen_view':
+            return 'navigation'
+
+        case 'client_error':
+            return 'errors'
 
         case 'app_open':
         case 'app_resume':

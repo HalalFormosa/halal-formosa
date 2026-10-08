@@ -89,6 +89,8 @@ describe('ActivityLogService', () => {
         ['onboarding_step_view', { step: 2 }, 'onboarding', 'onboarding_step', '2'],
         ['app_review_prompt_response', { choice: 'later' }, 'app', 'review_choice', 'later'],
         ['app_open', { platform: 'android' }, 'app', null, null],
+        ['screen_view', { screen: '/item/:barcode', from: '/home' }, 'navigation', 'screen', '/item/:barcode'],
+        ['client_error', { signature: 'k3j2h1', source: 'vue' }, 'errors', 'error', 'k3j2h1'],
     ])('maps %s to group, entity and id', async (activity, detail, group, entityType, entityId) => {
         const insertMock = vi.fn().mockResolvedValue({ data: null, error: null })
         vi.mocked(supabase.from).mockReturnValue({ insert: insertMock } as any)
