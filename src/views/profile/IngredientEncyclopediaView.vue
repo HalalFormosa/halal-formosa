@@ -91,7 +91,7 @@ import AppHeader from '@/components/AppHeader.vue'
 import { isDonor, refreshSubscriptionStatus } from '@/composables/useSubscriptionStatus'
 import { supabase } from '@/plugins/supabaseClient'
 import { ActivityLogService } from '@/services/ActivityLogService'
-import { logPaywallCancelled, logPaywallFailed } from '@/utils/paywallLogging'
+import { logPaywallCancelled, logPaywallFailed, logPaywallRestored } from '@/utils/paywallLogging'
 import {
   fetchIngredientArticles,
   type IngredientArticleListItem,
@@ -133,10 +133,11 @@ async function presentRcPaywall() {
     const { result } = await RevenueCatUI.presentPaywall()
     if (result === PAYWALL_RESULT.PURCHASED || result === PAYWALL_RESULT.RESTORED) {
       await refreshSubscriptionStatus({ syncToServer: true })
-      await ActivityLogService.log(
-        result === PAYWALL_RESULT.PURCHASED ? 'pro_purchase_success' : 'pro_restore_success',
-        { source: 'ingredient_encyclopedia_view' }
-      )
+      if (result === PAYWALL_RESULT.PURCHASED) {
+        await ActivityLogService.log('pro_purchase_success', { source: 'ingredient_encyclopedia_view' })
+      } else {
+        logPaywallRestored('ingredient_encyclopedia_view')
+      }
       await loadArticles()
     } else if (result === PAYWALL_RESULT.CANCELLED) {
       logPaywallCancelled('ingredient_encyclopedia_view')

@@ -82,7 +82,7 @@ import { isDonor } from '@/composables/useSubscriptionStatus';
 import { Capacitor } from '@capacitor/core';
 import { RevenueCatUI, PAYWALL_RESULT } from '@revenuecat/purchases-capacitor-ui';
 import { ActivityLogService } from '@/services/ActivityLogService';
-import { logPaywallCancelled, logPaywallFailed } from '@/utils/paywallLogging'
+import { logPaywallCancelled, logPaywallFailed, logPaywallRestored } from '@/utils/paywallLogging'
 
 const props = defineProps<{
   isOpen: boolean;
@@ -149,9 +149,13 @@ async function presentPaywall(): Promise<boolean> {
       const { refreshSubscriptionStatus } = await import('@/composables/useSubscriptionStatus');
       await refreshSubscriptionStatus({ syncToServer: true });
       
-      await ActivityLogService.log("pro_purchase_success", {
-        source: "save_location_limit"
-      });
+      if (result === PAYWALL_RESULT.PURCHASED) {
+        await ActivityLogService.log("pro_purchase_success", {
+          source: "save_location_limit"
+        });
+      } else {
+        logPaywallRestored("save_location_limit");
+      }
       return true;
     }
     if (result === PAYWALL_RESULT.CANCELLED) logPaywallCancelled("save_location_limit");

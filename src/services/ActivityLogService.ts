@@ -280,6 +280,7 @@ function resolveEntity(activity: string, rawDetail: any): EntityResult {
         case 'pro_paywall_open':
         case 'pro_purchase_success':
         case 'pro_restore_success':
+        case 'pro_restore_empty':
         case 'pro_paywall_trigger':
         case 'pro_purchase_cancelled':
         case 'pro_purchase_failed':
@@ -685,6 +686,7 @@ function resolveActivityGroup(activity: string): string | null {
         case 'pro_paywall_open':
         case 'pro_purchase_success':
         case 'pro_restore_success':
+        case 'pro_restore_empty':
         case 'pro_paywall_trigger':
         case 'pro_purchase_cancelled':
         case 'pro_purchase_failed':

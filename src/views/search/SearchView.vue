@@ -663,7 +663,7 @@ import FilterContent from '@/components/FilterContent.vue'
 
 import StoreLogoBar from "@/components/StoreLogoBar.vue";
 import {ActivityLogService} from "@/services/ActivityLogService";
-import { logPaywallCancelled, logPaywallFailed } from '@/utils/paywallLogging'
+import { logPaywallCancelled, logPaywallFailed, logPaywallRestored } from '@/utils/paywallLogging'
 import { scheduleBannerUpdate } from '@/plugins/admob'
 import HouseAdCard from '@/components/ads/HouseAdCard.vue'
 import HouseAdNativeCard from '@/components/ads/HouseAdNativeCard.vue'
@@ -888,7 +888,8 @@ async function presentPaywall(): Promise<boolean> {
 
       case PAYWALL_RESULT.RESTORED:
         console.log("[RC] 🔄 Subscription restored!");
-        ActivityLogService.log("pro_restore_success", { source: "search_sort_for_you" });
+        await refreshSubscriptionStatus({syncToServer: true});
+        logPaywallRestored("search_sort_for_you");
         return true;
 
       case PAYWALL_RESULT.CANCELLED:

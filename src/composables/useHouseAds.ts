@@ -132,9 +132,11 @@ async function loadHouseAdPool(): Promise<void> {
                 .eq('approved', true)
                 .in('partner_tier', TIER_ORDER)
                 .limit(60),
+            // locations has no partner_tier column — the tier belongs to the owning partner,
+            // so inner-join it and filter on the embedded partners row.
             supabase.from('locations')
-                .select('id, name, image, partner_tier, description, partner:partners(name)')
-                .in('partner_tier', TIER_ORDER)
+                .select('id, name, image, description, partners!inner(name, partner_tier)')
+                .in('partners.partner_tier', TIER_ORDER)
                 .limit(60),
             supabase.from('trips')
                 .select('id, title, cover_url, external_url, is_active, provider:partners(name, partner_tier)')
@@ -165,9 +167,9 @@ async function loadHouseAdPool(): Promise<void> {
         }
 
         for (const l of locationsRes.data ?? []) {
-            const tier = tierOf(l.partner_tier)
+            const partner = Array.isArray((l as any).partners) ? (l as any).partners[0] : (l as any).partners
+            const tier = tierOf(partner?.partner_tier)
             if (!tier) continue
-            const partner = Array.isArray((l as any).partner) ? (l as any).partner[0] : (l as any).partner
             byTier[tier].push({
                 kind: 'location', id: l.id, tier, title: l.name, image: l.image,
                 to: { name: 'PlaceDetail', params: { id: l.id } },

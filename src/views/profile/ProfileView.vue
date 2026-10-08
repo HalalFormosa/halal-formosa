@@ -1070,7 +1070,7 @@ import {RevenueCatUI, PAYWALL_RESULT} from '@revenuecat/purchases-capacitor-ui';
 import {refreshSubscriptionStatus} from "@/composables/useSubscriptionStatus";
 import {toastController} from "@ionic/vue";
 import { ActivityLogService } from '@/services/ActivityLogService'
-import { logPaywallCancelled, logPaywallFailed } from '@/utils/paywallLogging'
+import { logPaywallCancelled, logPaywallFailed, logPaywallRestored } from '@/utils/paywallLogging'
 import { MerchantService, MerchantApplication } from '@/services/MerchantService'
 import { ClaimService } from '@/services/ClaimService'
 import { useI18n } from 'vue-i18n'
@@ -1834,9 +1834,7 @@ async function openProPaywall() {
       });
       await toast.present();
 
-      ActivityLogService.log('pro_restore_success', {
-        entitlement: 'Halal Formosa Pro'
-      })
+      logPaywallRestored('profile_view', { entitlement: 'Halal Formosa Pro' })
     }
 
   } catch (err: any) {

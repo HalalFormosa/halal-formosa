@@ -742,7 +742,7 @@ import { showLevelPlayRewardedAd } from '@/lib/levelplay'
 import { Capacitor } from '@capacitor/core'
 import HouseAdCard from '@/components/ads/HouseAdCard.vue'
 import { ActivityLogService } from "@/services/ActivityLogService";
-import { logPaywallCancelled, logPaywallFailed } from '@/utils/paywallLogging'
+import { logPaywallCancelled, logPaywallFailed, logPaywallRestored } from '@/utils/paywallLogging'
 import { isNetworkError } from '@/utils/offlineFeedback'
 
 import { RevenueCatUI, PAYWALL_RESULT } from '@revenuecat/purchases-capacitor-ui'
@@ -1330,7 +1330,7 @@ async function presentPaywall(): Promise<boolean> {
         return true
       case PAYWALL_RESULT.RESTORED:
         await refreshSubscriptionStatus()
-        await ActivityLogService.log("pro_restore_success", { source: "ai_summary" })
+        logPaywallRestored("ai_summary")
         return true
       case PAYWALL_RESULT.CANCELLED:
         logPaywallCancelled("ai_summary")

@@ -596,7 +596,7 @@ import { userRole } from '@/composables/userProfile'
 import { isDonor, refreshSubscriptionStatus } from '@/composables/useSubscriptionStatus'
 import { useAdSlotCollapsed, adSpaceStyle } from '@/composables/useAdFallback'
 import { ActivityLogService } from "@/services/ActivityLogService";
-import { logPaywallCancelled, logPaywallFailed } from '@/utils/paywallLogging'
+import { logPaywallCancelled, logPaywallFailed, logPaywallRestored } from '@/utils/paywallLogging'
 import { scheduleBannerUpdate } from '@/plugins/admob'
 import { RevenueCatUI, PAYWALL_RESULT } from '@revenuecat/purchases-capacitor-ui'
 import { useNotifier } from "@/composables/useNotifier";
@@ -822,9 +822,7 @@ async function presentPaywall(): Promise<boolean> {
 
       case PAYWALL_RESULT.RESTORED:
         await refreshSubscriptionStatus({ syncToServer: true })
-        await ActivityLogService.log("pro_restore_success", {
-          source: "save_item_limit"
-        })
+        logPaywallRestored("save_item_limit")
         return true
 
       case PAYWALL_RESULT.CANCELLED:
