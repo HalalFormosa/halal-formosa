@@ -2277,12 +2277,19 @@ onMounted( async () => {
   preloadAIModel(); // Non-blocking async preload
   const { data, error } = await supabase
       .from('ingredient_highlights')
-      .select('keyword, color')
+      .select('keyword, keyword_zh, color')
 
   if (!error && data) {
-    ingredientDictionary.value = Object.fromEntries(
-        data.map(h => [h.keyword, h.color])
-    )
+    const dict: Record<string, string> = {}
+    for (const h of data) {
+      dict[h.keyword] = h.color
+      // keyword_zh holds one or more Chinese variants separated by "|"
+      for (const zh of (h.keyword_zh ?? '').split('|')) {
+        const v = zh.trim()
+        if (v && !(v in dict)) dict[v] = h.color
+      }
+    }
+    ingredientDictionary.value = dict
   }
 
   await loadPendingProducts()

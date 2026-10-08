@@ -44,6 +44,8 @@ const ADMIN_REVIEW_TYPES = new Set([
 
 // A single user can trigger at most this many admin pushes per hour (a real submission is required for each).
 const ADMIN_PUSH_MAX_PER_HOUR = 10;
+// At most one admin push per review type in this window (global, across all callers).
+const ADMIN_PUSH_COOLDOWN_MINUTES = 5;
 
 const MAX_BODY_CHARS = 20_000;
 const MAX_TITLE = 120;
@@ -232,8 +234,15 @@ serve(async (req) => {
           const since = new Date(Date.now() - 60 * 60 * 1000).toISOString();
           const { count } = await supabase.from("ops_events").select("id", { count: "exact", head: true })
             .eq("source", "notify-event").eq("event", "admin_push_sent").eq("detail->>caller", caller.userId!).gte("created_at", since);
+          // Global cooldown per review type, so a burst of submissions gives admins one push, not one each.
+          const cdSince = new Date(Date.now() - ADMIN_PUSH_COOLDOWN_MINUTES * 60 * 1000).toISOString();
+          const { count: recentType, error: cdError } = await supabase.from("ops_events").select("id", { count: "exact", head: true })
+            .eq("source", "notify-event").eq("event", "admin_push_sent").eq("detail->>type", type).gte("created_at", cdSince);
           if ((count ?? 0) >= ADMIN_PUSH_MAX_PER_HOUR) {
             await opsLog("warn", "admin_push_rate_limited", { type, caller: caller.userId });
+          } else if (cdError || (recentType ?? 0) > 0) {
+            // Fail closed on a broken check too. The Discord notice still carries every submission.
+            if (cdError) await opsLog("error", "admin_cooldown_check_failed", { type, error: cdError.message });
           } else {
             const r = await sendAdminPush(v.title!, v.body!, v.link, pushData(data));
             adminPushSent = r.sent;
@@ -250,13 +259,6 @@ serve(async (req) => {
       // A non-admin (or an unknown type) asked to push to everyone: worth a record admins can see.
       await opsLog("warn", "push_blocked", { type, caller: caller.userId, is_admin: caller.isAdmin });
     }
-
-    // What was ACTUALLY delivered (this is what notifications_log records).
-    const resolvedChannels = [
-      ...(sendDiscord ? ["discord"] : []),
-      ...(pushAllowed ? ["onesignal"] : []),
-      ...(adminPushSent ? ["onesignal_admin"] : []),
-    ];
 
     /* ---------------------------------------------------
        1️⃣ Discord (conditional)
@@ -329,16 +331,17 @@ serve(async (req) => {
         .from("notifications_log")
         .select("id, created_at")
         .eq("type", type)
-        .contains("channels", ["onesignal"]) // only earlier real pushes count (not Discord-only rows)
+        .contains("channels", JSON.stringify(["onesignal"])) // channels is jsonb: pass a JSON string, a JS array is sent as a Postgres array literal and fails (22P02)
         .gt("created_at", since)
         .order("created_at", { ascending: false })
         .limit(1);
 
       if (cooldownError) {
+        // Fail closed: a broken cooldown check must never turn into a push per request.
         console.error(`❌ [${requestId}] Cooldown query failed`, cooldownError);
-      }
-
-      if (recent?.length) {
+        await opsLog("error", "cooldown_check_failed", { type, error: cooldownError.message });
+        sendOneSignal = false;
+      } else if (recent?.length) {
         console.log(`⏳ [${requestId}] Cooldown HIT for type=${type}, last=${recent[0].created_at}`);
         sendOneSignal = false;
       } else {
@@ -379,6 +382,13 @@ serve(async (req) => {
     /* ---------------------------------------------------
        5️⃣ Log (what was actually delivered)
     --------------------------------------------------- */
+    // What was ACTUALLY delivered (computed after the cooldown, so suppressed pushes don't restart the window).
+    const resolvedChannels = [
+      ...(sendDiscord ? ["discord"] : []),
+      ...(sendOneSignal ? ["onesignal"] : []),
+      ...(adminPushSent ? ["onesignal_admin"] : []),
+    ];
+
     console.log(`📝 [${requestId}] Attempting insert into notifications_log`);
 
     const { error: insertError, data: insertData } = await supabase
