@@ -1,6 +1,7 @@
 import { ref, computed } from "vue";
 import { supabase } from "@/plugins/supabaseClient";
 import { getMyPrivateProfile } from "@/services/PrivateProfileService";
+import { recordAppVersion } from "@/services/AppVersionService";
 import { isDonor, resolveIsDonor, clearRcProActive } from "./useSubscriptionStatus";
 
 export const profileLoaded = ref(false)
@@ -96,6 +97,8 @@ export async function setShowLastSeen(value: boolean) {
 
 export async function updateLastSeen() {
     if (!currentUser.value?.id) return
+    // Fire-and-forget; throttled inside (new version/user, else every 12h).
+    void recordAppVersion(currentUser.value.id)
     await supabase
         .from("user_profiles")
         .update({ last_seen_at: new Date().toISOString() })
