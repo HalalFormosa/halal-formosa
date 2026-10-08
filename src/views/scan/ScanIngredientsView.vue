@@ -1448,6 +1448,7 @@ const { shareResult } = useShareCard(
 )
 
 function onShareClick() {
+  ActivityLogService.log('scan_result_share', { product_name: productName.value, status: autoStatus.value })
   shareResult(originalFile)
 }
 

@@ -58,6 +58,7 @@ function resolveEntity(activity: string, rawDetail: any): EntityResult {
         case 'explore_detail_call':
         case 'explore_detail_report':
         case 'location_report_submit':
+        case 'location_move':
         case 'location_report_failed':
         case 'location_review_failed':
         case 'edit_place_failed':
@@ -86,6 +87,10 @@ function resolveEntity(activity: string, rawDetail: any): EntityResult {
         case 'product_edit_click':
         case 'product_report_click':
         case 'product_report_submit':
+        case 'product_save_success':
+        case 'product_save_failed':
+        case 'product_unsave':
+        case 'product_move':
         case 'product_report_failed':
         case 'product_not_found':
         case 'home_scan_ingredient': {
@@ -214,6 +219,7 @@ function resolveEntity(activity: string, rawDetail: any): EntityResult {
         case 'trip_search':
         case 'explore_address_search':
         case 'search_no_results':
+        case 'search_results':
              return {
                 entity_type: 'search_query',
                 entity_id: detail.query ? String(detail.query) : null
@@ -323,6 +329,7 @@ function resolveEntity(activity: string, rawDetail: any): EntityResult {
             }
 
         case 'store_checkout_submit':
+        case 'store_pay_now_click':
         case 'store_order_success':
             return {
                 entity_type: 'store_order',
@@ -478,6 +485,72 @@ function resolveEntity(activity: string, rawDetail: any): EntityResult {
                 entity_id: detail.setting ? String(detail.setting) : null
             }
 
+        // 🟢 SAVED FOLDERS / UNSAVE
+        case 'saved_folder_create':
+        case 'saved_folder_rename':
+        case 'saved_folder_delete':
+            return {
+                entity_type: 'saved_folder',
+                entity_id: detail.folder_id ? String(detail.folder_id) : null
+            }
+
+        case 'location_unsave':
+            return {
+                entity_type: 'saved_location',
+                entity_id: detail.saved_id ? String(detail.saved_id) : null
+            }
+
+        // 🟢 SHARING / COPY
+        case 'referral_invite_share':
+            return {
+                entity_type: 'share_method',
+                entity_id: detail.method ? String(detail.method) : null
+            }
+
+        case 'scan_result_share':
+        case 'halalify_phrase_copy':
+            return { entity_type: null, entity_id: null }
+
+        // 🟢 STORE CHAT / ORDERS / REPORT REPLIES
+        case 'store_chat_start':
+            return {
+                entity_type: 'merchant_user',
+                entity_id: detail.store_user_id ? String(detail.store_user_id) : null
+            }
+
+        case 'store_chat_message_sent':
+            return {
+                entity_type: 'store_conversation',
+                entity_id: detail.conversation_id ? String(detail.conversation_id) : null
+            }
+
+        case 'store_orders_page_open':
+            return { entity_type: null, entity_id: null }
+
+        case 'report_reply_sent':
+            return {
+                entity_type: 'report',
+                entity_id: detail.report_id ? String(detail.report_id) : null
+            }
+
+        // 🟢 ONBOARDING / APP LIFECYCLE
+        case 'onboarding_step_view':
+            return {
+                entity_type: 'onboarding_step',
+                entity_id: detail.step != null ? String(detail.step) : null
+            }
+
+        case 'app_review_prompt_response':
+            return {
+                entity_type: 'review_choice',
+                entity_id: detail.choice ? String(detail.choice) : null
+            }
+
+        case 'app_open':
+        case 'app_resume':
+        case 'app_review_prompt_shown':
+            return { entity_type: null, entity_id: null }
+
         // 🟢 PERMISSIONS
         case 'permission_result':
             return {
@@ -576,6 +649,7 @@ function resolveActivityGroup(activity: string): string | null {
         case 'search_filter_store':
         case 'search_filter_status':
         case 'search_sort_change':
+        case 'search_results':
         case 'search_query':
             return 'search'
 
@@ -771,6 +845,10 @@ function resolveActivityGroup(activity: string): string | null {
         case 'store_order_success':
         case 'store_payment_failed':
         case 'store_checkout_failed':
+        case 'store_chat_start':
+        case 'store_chat_message_sent':
+        case 'store_orders_page_open':
+        case 'store_pay_now_click':
             return 'store'
 
         case 'merchant_application_submit':
@@ -836,6 +914,34 @@ function resolveActivityGroup(activity: string): string | null {
         -------------------------- */
         case 'permission_result':
             return 'permissions'
+
+        case 'app_open':
+        case 'app_resume':
+        case 'app_review_prompt_shown':
+        case 'app_review_prompt_response':
+            return 'app'
+
+        case 'saved_folder_create':
+        case 'saved_folder_rename':
+        case 'saved_folder_delete':
+        case 'location_unsave':
+        case 'location_move':
+        case 'product_save_success':
+        case 'product_save_failed':
+        case 'product_unsave':
+        case 'product_move':
+            return 'saved'
+
+        case 'referral_invite_share':
+        case 'scan_result_share':
+        case 'halalify_phrase_copy':
+            return 'sharing'
+
+        case 'report_reply_sent':
+            return 'reports'
+
+        case 'onboarding_step_view':
+            return 'onboarding'
 
         case 'app_update_required_shown':
         case 'app_update_store_click':

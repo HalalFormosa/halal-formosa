@@ -832,6 +832,7 @@ function playPhrase(text: string) {
 async function copyPhrase(text: string) {
   try {
     await navigator.clipboard.writeText(text)
+    ActivityLogService.log('halalify_phrase_copy', { phrase: text.slice(0, 80) })
     const toast = await toastController.create({
       message: 'Copied Chinese phrase to clipboard!',
       duration: 2000,

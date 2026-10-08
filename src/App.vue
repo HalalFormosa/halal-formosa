@@ -296,6 +296,8 @@ const askGeolocationPermission = async () => {
 };
 
 const APP_OPEN_KEY = 'app_open_count';
+const RESUME_LOG_GAP_MS = 30 * 60 * 1000;
+let lastResumeLoggedAt = Date.now(); // the cold start was just logged as app_open
 const NEVER_SHOW_REVIEW_KEY = 'app_review_never_show';
 
 const checkAppUpdate = async () => {
@@ -358,6 +360,7 @@ const checkAndAskForReview = async () => {
 
   // 🔄 Trigger every 5 opens
   if (count % 5 === 0) {
+    ActivityLogService.log('app_review_prompt_shown', { open_count: count });
     const alert = await alertController.create({
       header: t('appReview.title'),
       message: t('appReview.message'),
@@ -378,6 +381,7 @@ const checkAndAskForReview = async () => {
                 {
                   text: t('appReview.confirmNeverConfirm'),
                   handler: () => {
+                    ActivityLogService.log('app_review_prompt_response', { choice: 'never' });
                     localStorage.setItem(NEVER_SHOW_REVIEW_KEY, 'true');
                     setHasReviewedApp(true);
                   }
@@ -391,6 +395,7 @@ const checkAndAskForReview = async () => {
           text: t('appReview.later'),
           role: 'cancel',
           handler: () => {
+            ActivityLogService.log('app_review_prompt_response', { choice: 'later' });
             // Reset counter to wait for another 5 opens
             localStorage.setItem(APP_OPEN_KEY, '0');
           }
@@ -399,6 +404,7 @@ const checkAndAskForReview = async () => {
           text: t('appReview.rateNow'),
           cssClass: 'alert-button-confirm',
           handler: async () => {
+            ActivityLogService.log('app_review_prompt_response', { choice: 'rate_now' });
             // 1. Mark as reviewed locally & in DB immediately to stop asking
             localStorage.setItem(NEVER_SHOW_REVIEW_KEY, 'true');
             setHasReviewedApp(true);
@@ -447,6 +453,9 @@ watch(
 );
 
 onMounted(async () => {
+  // Cold start. Complements user_app_versions, which only knows logged-in users.
+  ActivityLogService.log('app_open', { platform: Capacitor.getPlatform(), native: Capacitor.isNativePlatform() });
+
   // 🛡️ Initialize Organic Interaction Monitor
   initInteractionMonitor();
 
@@ -479,6 +488,11 @@ onMounted(async () => {
   // Update last seen when app becomes active again
   CapApp.addListener('appStateChange', ({ isActive }) => {
     if (isActive) {
+      // Returning to the app counts as a new visit only after a real break (30 min), not an app-switcher flick.
+      if (Date.now() - lastResumeLoggedAt >= RESUME_LOG_GAP_MS) {
+        lastResumeLoggedAt = Date.now();
+        ActivityLogService.log('app_resume', { platform: Capacitor.getPlatform() });
+      }
       if (currentUser.value?.id) {
         updateLastSeen();
       }

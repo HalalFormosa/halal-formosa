@@ -431,6 +431,7 @@ async function createFolder(name: string) {
     .insert({ user_id: user.id, name });
     
   if (!error) {
+    ActivityLogService.log('saved_folder_create', { kind: 'product' });
     await loadFoldersAndItems();
   }
 }
@@ -449,7 +450,9 @@ async function removeItem(saveId: string) {
         text: t('savedItems.remove'),
         role: 'destructive',
         handler: async () => {
+          const barcode = folders.value.flatMap((f: any) => f.saved_items ?? []).find((s: any) => s.id === saveId)?.products?.barcode;
           await supabase.from('saved_items').delete().eq('id', saveId);
+          ActivityLogService.log('product_unsave', { barcode, saved_id: saveId });
           await loadFoldersAndItems();
         }
       }
@@ -498,6 +501,7 @@ async function moveItem(saveId: string, currentFolderId: string, productId: stri
       } else if (!error) {
         // Success! Now delete the old relation
         await supabase.from('saved_items').delete().eq('id', saveId);
+        ActivityLogService.log('product_move', { product_id: productId, to_folder_id: folder.id });
         
         // Refresh local data completely to instantly reflect the jump
         await loadFoldersAndItems();
@@ -549,6 +553,7 @@ async function renameFolder(folderId: string, newName: string) {
     console.error('Error renaming folder:', error);
     return false;
   }
+  ActivityLogService.log('saved_folder_rename', { kind: 'product', folder_id: folderId });
   await loadFoldersAndItems();
   return true;
 }
@@ -563,6 +568,7 @@ async function deleteFolder(folderId: string) {
     console.error('Error deleting folder:', error);
     return false;
   }
+  ActivityLogService.log('saved_folder_delete', { kind: 'product', folder_id: folderId });
   await loadFoldersAndItems();
   return true;
 }

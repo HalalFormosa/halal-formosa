@@ -1,5 +1,6 @@
 import { ref, computed } from 'vue'
 import { supabase } from '@/plugins/supabaseClient'
+import { ActivityLogService } from '@/services/ActivityLogService'
 import type { RealtimeChannel } from '@supabase/supabase-js'
 
 export interface ChatMessage {
@@ -86,6 +87,7 @@ export function useStoreChat() {
       console.error('[Chat] Failed to create conversation:', error)
       return null
     }
+    ActivityLogService.log('store_chat_start', { store_user_id: storeUserId, product_id: productId || null })
     return created?.id || null
   }
 
@@ -127,6 +129,7 @@ export function useStoreChat() {
       sending.value = false
       return { success: false, error: insertError.message }
     }
+    ActivityLogService.log('store_chat_message_sent', { conversation_id: conversationId, has_image: !!imageUrl })
 
     // Update conversation last_message and unread counts
     const { data: conv, error: fetchError } = await supabase

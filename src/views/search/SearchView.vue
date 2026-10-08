@@ -1348,6 +1348,16 @@ const fetchProducts = async (reset = false) => {
             ? processedData
             : [...results.value, ...processedData]
 
+        if (reset && q && results.value.length > 0) {
+          ActivityLogService.log("search_results", {
+            query: q,
+            result_count: results.value.length,
+            has_more: !allLoaded.value,
+            filter_count: activeStores.value.length + activeCategories.value.length + activeStatuses.value.length,
+            sort: sortBy.value
+          })
+        }
+
         if (reset && results.value.length === 0) {
           ActivityLogService.log("search_no_results", {
             query: q,
@@ -1572,7 +1582,9 @@ const openDetails = async (product: Product) => {
     store: activeStores.value.map(s => s.name),
     category: activeCategories.value.map(c => c.name),
     status_filters: activeStatuses.value,
-    query_used: searchQuery.value || null
+    query_used: searchQuery.value || null,
+    position: results.value.findIndex(p => p.barcode === product.barcode) + 1,
+    result_count: results.value.length
   });
 
   router.push({path: `/item/${product.barcode}`})

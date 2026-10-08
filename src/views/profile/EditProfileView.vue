@@ -561,7 +561,7 @@ import { useImageResizer } from "@/composables/useImageResizer";
 import { useI18n } from "vue-i18n";
 
 import { countries, loadCountries } from "@/composables/useCountries"
-import { onBeforeMount, ref, computed } from "vue";
+import { onBeforeMount, ref, computed, watch } from "vue";
 import { supabase } from "@/plugins/supabaseClient";
 import { ActivityLogService } from '@/services/ActivityLogService'
 import { getMyPrivateProfile } from "@/services/PrivateProfileService";
@@ -819,6 +819,11 @@ const searchQuery = ref("");
 const selectedCountry = ref<Country | null>(null);
 const loadingProfile = ref(true);
 const currentStep = ref(1);
+// Funnel for the forced first-time wizard: which step people reach before finishing (profile_update_success).
+// Only transitions are logged, so editing an already-complete profile never counts.
+watch(currentStep, (step) => {
+  if (mustCompleteProfile.value) ActivityLogService.log('onboarding_step_view', { step });
+});
 const DEFAULT_AVATAR_PLACEHOLDER = "https://placehold.co/150x150/e0e0e0/666666.png?text=No+Avatar";
 
 async function skipOnboarding() {

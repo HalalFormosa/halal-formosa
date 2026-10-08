@@ -237,6 +237,7 @@ function shareTextFor(code: string) {
 async function shareCode() {
   const code = summary.value?.my_code;
   if (!code || !referralLink.value) return;
+  ActivityLogService.log('referral_invite_share', { method: 'share_sheet' });
   try {
     await Share.share({
       title: 'Halal Formosa',
@@ -262,6 +263,7 @@ async function shareVia(platform: 'whatsapp' | 'line' | 'facebook' | 'x') {
   if (!code || !referralLink.value) return;
   const text = shareTextFor(code);
   const link = referralLink.value;
+  ActivityLogService.log('referral_invite_share', { method: platform });
 
   const urls: Record<typeof platform, string> = {
     whatsapp: `https://wa.me/?text=${encodeURIComponent(`${text} ${link}`)}`,
@@ -280,6 +282,7 @@ async function shareVia(platform: 'whatsapp' | 'line' | 'facebook' | 'x') {
 async function copyLink() {
   const code = summary.value?.my_code;
   if (!code || !referralLink.value) return;
+  ActivityLogService.log('referral_invite_share', { method: 'copy_link' });
   try {
     await Clipboard.write({ string: `${shareTextFor(code)} ${referralLink.value}` });
   } catch {
@@ -304,6 +307,7 @@ async function shareQrCode() {
     return;
   }
 
+  ActivityLogService.log('referral_invite_share', { method: 'qr_code' });
   try {
     const base64 = qrDataUrl.value.replace(/^data:image\/\w+;base64,/, '');
     const path = `share/referral-qr-${Date.now()}.png`;

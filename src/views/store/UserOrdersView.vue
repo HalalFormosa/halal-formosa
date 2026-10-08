@@ -210,6 +210,7 @@ import {
 } from 'ionicons/icons'
 import AppHeader from '@/components/AppHeader.vue'
 import { supabase } from '@/plugins/supabaseClient'
+import { ActivityLogService } from '@/services/ActivityLogService'
 import { useI18n } from 'vue-i18n'
 import { useTheme } from '@/composables/useTheme'
 import { useRouter, useRoute } from 'vue-router'
@@ -319,6 +320,7 @@ function formatCodDate(dateStr: string): string {
 
 async function payNow(orderId: string) {
   if (purchasesDisabled.value) return
+  ActivityLogService.log('store_pay_now_click', { order_id: orderId })
   try {
     await initiatePayment(orderId)
   } catch (err: any) {
@@ -357,6 +359,7 @@ let stopPolling: (() => void) | null = null
 watch(selectedStatus, () => fetchOrders())
 
 onMounted(async () => {
+  ActivityLogService.log('store_orders_page_open')
   await fetchOrders()
 
   // Check for pending orders that might be transitioning to paid

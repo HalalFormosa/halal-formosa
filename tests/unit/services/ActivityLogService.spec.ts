@@ -77,6 +77,29 @@ describe('ActivityLogService', () => {
         }))
     })
 
+    it.each([
+        ['saved_folder_create', { kind: 'product', folder_id: 'f1' }, 'saved', 'saved_folder', 'f1'],
+        ['location_move', { id: 42, to_folder_id: 'f2' }, 'saved', 'place', '42'],
+        ['product_save_success', { barcode: '471', folder_id: 'f1' }, 'saved', 'product', '471'],
+        ['referral_invite_share', { method: 'whatsapp' }, 'sharing', 'share_method', 'whatsapp'],
+        ['search_results', { query: 'tofu', result_count: 7 }, 'search', 'search_query', 'tofu'],
+        ['store_chat_message_sent', { conversation_id: 'c9' }, 'store', 'store_conversation', 'c9'],
+        ['store_pay_now_click', { order_id: 'o5' }, 'store', 'store_order', 'o5'],
+        ['report_reply_sent', { kind: 'product', report_id: 'r3' }, 'reports', 'report', 'r3'],
+        ['onboarding_step_view', { step: 2 }, 'onboarding', 'onboarding_step', '2'],
+        ['app_review_prompt_response', { choice: 'later' }, 'app', 'review_choice', 'later'],
+        ['app_open', { platform: 'android' }, 'app', null, null],
+    ])('maps %s to group, entity and id', async (activity, detail, group, entityType, entityId) => {
+        const insertMock = vi.fn().mockResolvedValue({ data: null, error: null })
+        vi.mocked(supabase.from).mockReturnValue({ insert: insertMock } as any)
+
+        await ActivityLogService.log(activity as string, detail)
+
+        expect(insertMock).toHaveBeenCalledWith(expect.objectContaining({
+            activity_group: group, entity_type: entityType, entity_id: entityId
+        }))
+    })
+
     it('should still log activity for anonymous (logged-out) users, with a null user_id', async () => {
         // Override mock for this specific test: no authenticated user
         vi.mocked(supabase.auth.getUser).mockResolvedValueOnce({

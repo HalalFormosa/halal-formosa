@@ -94,6 +94,7 @@ import { ref, onMounted, nextTick, onUnmounted } from 'vue'
 import { IonSpinner, IonIcon } from '@ionic/vue'
 import { sendOutline, chatbubblesOutline, lockClosedOutline, timeOutline } from 'ionicons/icons'
 import { supabase } from '@/plugins/supabaseClient'
+import { ActivityLogService } from '@/services/ActivityLogService'
 import LinkPreview from '@/components/LinkPreview.vue'
 
 const props = defineProps<{
@@ -192,6 +193,10 @@ async function sendMessage() {
   if (error) {
     console.error('Error sending message:', error)
   } else {
+    ActivityLogService.log('report_reply_sent', {
+      kind: props.productReportId ? 'product' : 'location',
+      report_id: props.productReportId ?? props.locationReportId
+    })
     newMessage.value = ''
     if (textareaRef.value) {
       textareaRef.value.style.height = 'auto'

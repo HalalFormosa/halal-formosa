@@ -871,6 +871,7 @@ async function createNewFolder() {
     .single();
 
   if (data && !error) {
+    ActivityLogService.log('saved_folder_create', { kind: 'product', folder_id: data.id });
     folders.value.unshift(data);
     newFolderName.value = ''; // Reset input
     
@@ -917,10 +918,12 @@ async function saveToFolder(folderId: string) {
       toastMessage.value = t('search.details.itemAlreadySaved');
       showWarningToast.value = true;
     } else {
+      ActivityLogService.log('product_save_success', { barcode: item.value.barcode, folder_id: folderId });
       toastMessage.value = t('search.details.itemSavedSuccess');
       showSuccessToast.value = true;
     }
   } else {
+    ActivityLogService.log('product_save_failed', { barcode: item.value.barcode, folder_id: folderId, error_message: error?.message });
     console.error("Failed to save", error);
     toastMessage.value = t('search.details.saveFailed');
     showErrorToast.value = true;

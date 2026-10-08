@@ -1,5 +1,6 @@
 import { ref, computed } from 'vue';
 import { supabase } from '@/plugins/supabaseClient';
+import { ActivityLogService } from '@/services/ActivityLogService';
 import type { SavedLocationFolder, SavedLocation } from '@/types/SavedLocation';
 
 const folders = ref<SavedLocationFolder[]>([]);
@@ -177,6 +178,7 @@ export function useSavedLocations() {
       return null;
     }
 
+    ActivityLogService.log('saved_folder_create', { kind: 'location', folder_id: data?.id });
     return data;
   }
 
@@ -225,6 +227,8 @@ export function useSavedLocations() {
       return false;
     }
 
+    ActivityLogService.log('location_unsave', { saved_id: savedId });
+
     // Refresh to update the IDs set
     await loadFoldersAndSavedLocations();
     return true;
@@ -263,6 +267,7 @@ export function useSavedLocations() {
 
     // Delete from old folder
     await supabase.from('saved_locations').delete().eq('id', savedId);
+    ActivityLogService.log('location_move', { id: locationId, to_folder_id: targetFolderId });
 
     await loadFoldersAndSavedLocations();
     return true;
@@ -303,6 +308,8 @@ export function useSavedLocations() {
       return false;
     }
 
+    ActivityLogService.log('saved_folder_rename', { kind: 'location', folder_id: folderId });
+
     await loadFoldersAndSavedLocations();
     return true;
   }
@@ -317,6 +324,8 @@ export function useSavedLocations() {
       console.error('Error deleting folder:', error);
       return false;
     }
+
+    ActivityLogService.log('saved_folder_delete', { kind: 'location', folder_id: folderId });
 
     await loadFoldersAndSavedLocations();
     return true;
