@@ -4,6 +4,7 @@ import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
 import timezone from 'dayjs/plugin/timezone'
 import { usePoints } from '@/composables/usePoints'
+import { ActivityLogService } from '@/services/ActivityLogService'
 
 dayjs.extend(utc)
 dayjs.extend(timezone)
@@ -235,6 +236,7 @@ export function useDailyMissions() {
                     ) {
                         console.log(`[Missions] Awarding points for: ${missionClaimAction}`)
                         awardingMissions.add(m.id)
+                        ActivityLogService.log('mission_completed', { mission_id: m.id })
 
                         awardAndCelebrate(missionClaimAction).finally(() => {
                             // We keep it in the set for a few seconds to let DB catch up
@@ -270,6 +272,7 @@ export function useDailyMissions() {
 
             console.log('[Missions] Awarding daily bonus...')
             awardingMissions.add('daily_bonus')
+            ActivityLogService.log('daily_mission_bonus_claimed')
 
             await awardAndCelebrate('daily_mission_bonus').finally(() => {
                 setTimeout(() => {

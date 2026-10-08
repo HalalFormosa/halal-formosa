@@ -263,6 +263,7 @@ const alertButtons = [
   {
     text: 'Update Now',
     handler: async () => {
+      ActivityLogService.log('app_update_prompt_accept', { platform: Capacitor.getPlatform() });
       const info = await AppUpdate.getAppUpdateInfo();
       if (info.flexibleUpdateAllowed) {
         await AppUpdate.startFlexibleUpdate();
@@ -303,6 +304,7 @@ const checkAppUpdate = async () => {
     const info = await AppUpdate.getAppUpdateInfo();
     if (info.updateAvailability === AppUpdateAvailability.UPDATE_AVAILABLE) {
       showUpdateAlert.value = true;
+      ActivityLogService.log('app_update_prompt_shown', { platform: Capacitor.getPlatform() });
     }
   } catch (err) {
     console.error('❌ Error checking app update:', err);

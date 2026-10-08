@@ -53,6 +53,30 @@ describe('ActivityLogService', () => {
         }))
     })
 
+    it('never throws into the caller when the backend call fails', async () => {
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+        vi.mocked(supabase.from).mockReturnValue({ insert: vi.fn().mockRejectedValue(new Error('network down')) } as any)
+
+        await expect(ActivityLogService.log('points_awarded', { action: 'add_product' })).resolves.toBeUndefined()
+        expect(warn).toHaveBeenCalled()
+        warn.mockRestore()
+    })
+
+    it('resolves reward events to their own entity and group', async () => {
+        const insertMock = vi.fn().mockResolvedValue({ data: null, error: null })
+        vi.mocked(supabase.from).mockReturnValue({ insert: insertMock } as any)
+
+        await ActivityLogService.log('mission_completed', { mission_id: 'scan_barcode' })
+        expect(insertMock).toHaveBeenCalledWith(expect.objectContaining({
+            activity_group: 'rewards', entity_type: 'mission', entity_id: 'scan_barcode'
+        }))
+
+        await ActivityLogService.log('privacy_setting_change', { setting: 'public_profile', enabled: true })
+        expect(insertMock).toHaveBeenCalledWith(expect.objectContaining({
+            activity_group: 'privacy', entity_type: 'privacy_setting', entity_id: 'public_profile'
+        }))
+    })
+
     it('should still log activity for anonymous (logged-out) users, with a null user_id', async () => {
         // Override mock for this specific test: no authenticated user
         vi.mocked(supabase.auth.getUser).mockResolvedValueOnce({

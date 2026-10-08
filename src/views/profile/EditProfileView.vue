@@ -984,7 +984,7 @@ async function saveProfile() {
     console.error('Failed to update auth metadata for avatar/name', authUpdateError);
   }
 
-  ActivityLogService.log('profile_update_success', { user_id: userId, onboarding: !wasComplete.value });
+  ActivityLogService.log('profile_update_success', { user_id: userId, onboarding: !wasComplete.value, consent_acknowledged: acknowledged.value });
 
   /* 2️⃣ Re-fetch profile (authoritative state after save) */
   const { data: profileRow, error } = await supabase

@@ -7,6 +7,8 @@ import { i18n } from "@/i18n";
 import confetti from "canvas-confetti";
 import lottie from "lottie-web";
 import { Capacitor } from "@capacitor/core";
+import { ActivityLogService } from "@/services/ActivityLogService";
+import { getLevelFromPoints } from "@/utils/xp";
 
 const EDGE_BASE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`;
 
@@ -73,6 +75,12 @@ async function celebrateNewAchievements(userId: string, avatar: string) {
     let delay = 4200; // let the XP toast (4000ms) finish first
     for (const u of unlocked) {
         const def = definitions.value.find((d) => d.id === u.unlocked_achievement_id);
+        ActivityLogService.log("achievement_unlocked", {
+            achievement_id: u.unlocked_achievement_id,
+            category: def?.category,
+            tier: def?.tier,
+            points_reward: u.points_reward,
+        });
         const label = def
             ? i18n.global.t(`achievements.categories.${def.category}.tiers.${def.tier}`)
             : i18n.global.t("achievements.title");
@@ -94,6 +102,7 @@ export function usePoints() {
 
     async function awardAndCelebrate(action: string, autoCloseMs = 5000) {
         console.log("🚀 awardAndCelebrate called with", action);
+        const pointsBefore = currentPoints.value ?? 0;
 
         const rule = rules.value[action] ?? fallbackRules[action];
         const optimisticPoints = rule?.points ?? 0;
@@ -119,6 +128,19 @@ export function usePoints() {
                 res.total
             );
             currentPoints.value = res.total ?? currentPoints.value;
+
+            ActivityLogService.log("points_awarded", {
+                action,
+                points: res.points ?? optimisticPoints,
+                total: res.total,
+            });
+            if (typeof res.total === "number") {
+                const levelBefore = getLevelFromPoints(pointsBefore);
+                const levelAfter = getLevelFromPoints(res.total);
+                if (levelAfter > levelBefore) {
+                    ActivityLogService.log("level_up", { from: levelBefore, to: levelAfter, total: res.total });
+                }
+            }
             console.log(
                 `✅ Confirmed ${res.points} pts for ${res.label}. Total = ${res.total}`
             );
@@ -127,6 +149,7 @@ export function usePoints() {
             if (userId) celebrateNewAchievements(userId, avatar);
         } else {
             console.warn("❌ Failed:", res.error);
+            ActivityLogService.log("points_award_failed", { action, error_message: res.error });
             closeReward();
         }
 

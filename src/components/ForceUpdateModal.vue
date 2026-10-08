@@ -33,11 +33,13 @@
 </template>
 
 <script setup lang="ts">
+import { watch } from 'vue';
 import { IonModal, IonButton, IonBadge, IonIcon } from '@ionic/vue';
 import { arrowForward } from 'ionicons/icons';
 import { Browser } from '@capacitor/browser';
 import { AppLauncher } from '@capacitor/app-launcher';
 import { Capacitor } from '@capacitor/core';
+import { ActivityLogService } from '@/services/ActivityLogService';
 
 const props = defineProps<{
   isOpen: boolean;
@@ -46,7 +48,27 @@ const props = defineProps<{
   minVersion?: string;
 }>();
 
+// How many users hit the update wall, on which version, and whether they go on to the store.
+watch(
+  () => props.isOpen,
+  (open) => {
+    if (open) {
+      ActivityLogService.log('app_update_required_shown', {
+        current_version: props.currentVersion,
+        min_version: props.minVersion,
+        platform: Capacitor.getPlatform(),
+      });
+    }
+  },
+  { immediate: true }
+);
+
 const handleUpdate = async () => {
+  ActivityLogService.log('app_update_store_click', {
+    current_version: props.currentVersion,
+    min_version: props.minVersion,
+    platform: Capacitor.getPlatform(),
+  });
   if (!props.storeUrl) {
     console.error('No store URL provided for update');
     return;

@@ -2,6 +2,7 @@ import { ref, computed } from "vue";
 import { supabase } from "@/plugins/supabaseClient";
 import { getMyPrivateProfile } from "@/services/PrivateProfileService";
 import { recordAppVersion } from "@/services/AppVersionService";
+import { ActivityLogService } from "@/services/ActivityLogService";
 import { isDonor, resolveIsDonor, clearRcProActive } from "./useSubscriptionStatus";
 
 export const profileLoaded = ref(false)
@@ -74,6 +75,8 @@ type UserProfileRow = {
 export async function setPublicProfile(value: boolean) {
     if (!currentUser.value?.id) return
 
+    // The toggle's ionChange also fires when its bound value loads, so only record real changes.
+    if (isPublicProfile.value !== value) ActivityLogService.log('privacy_setting_change', { setting: 'public_profile', enabled: value })
     isPublicProfile.value = value
     localStorage.setItem(
         pubKey(currentUser.value.id),
@@ -88,6 +91,7 @@ export async function setPublicProfile(value: boolean) {
 
 export async function setShowLastSeen(value: boolean) {
     if (!currentUser.value?.id) return
+    if (showLastSeen.value !== value) ActivityLogService.log('privacy_setting_change', { setting: 'show_last_seen', enabled: value })
     showLastSeen.value = value
     await supabase
         .from("user_profiles")
@@ -116,6 +120,7 @@ export async function setHasReviewedApp(value: boolean) {
 
 export async function setNearbyPromptsEnabled(value: boolean) {
     if (!currentUser.value?.id) return
+    if (nearbyPromptsEnabled.value !== value) ActivityLogService.log('privacy_setting_change', { setting: 'nearby_prompts', enabled: value })
     nearbyPromptsEnabled.value = value
     localStorage.setItem(
         promptKey(currentUser.value.id),
@@ -139,6 +144,9 @@ export async function setResearchParticipation(includeInResearch: boolean) {
     if (error) {
         console.error("❌ setResearchParticipation failed", error)
         researchOptOut.value = previous
+        ActivityLogService.log('privacy_setting_change_failed', { setting: 'research_participation', enabled: includeInResearch, error_message: error.message })
+    } else if (previous !== !includeInResearch) {
+        ActivityLogService.log('privacy_setting_change', { setting: 'research_participation', enabled: includeInResearch })
     }
     return error
 }

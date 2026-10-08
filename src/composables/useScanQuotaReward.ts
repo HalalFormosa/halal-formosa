@@ -1,6 +1,7 @@
 import { supabase } from '@/plugins/supabaseClient'
 import { isDonor } from '@/composables/useSubscriptionStatus'
 import { userRole } from '@/composables/userProfile'
+import { ActivityLogService } from '@/services/ActivityLogService'
 
 /**
  * Awards bonus scan quota to the current user (e.g. for contributing a product or location).
@@ -33,6 +34,7 @@ export async function awardScanBonus(amount = 1) {
       })
       if (insertError) throw insertError
       console.log(`🎉 Awarded first ${amount} bonus scans to user ${user.id}`)
+      ActivityLogService.log('scan_bonus_granted', { amount })
       return true
     }
 
@@ -46,6 +48,7 @@ export async function awardScanBonus(amount = 1) {
     const contributionScans = currentBonus - currentAdUses
     if (contributionScans >= 3) {
       console.log('📈 Daily contribution scan reward limit reached (max 3/day). No scans awarded.')
+      ActivityLogService.log('scan_bonus_cap_reached', { amount })
       return false
     }
 
@@ -60,6 +63,7 @@ export async function awardScanBonus(amount = 1) {
 
     if (updateError) throw updateError
     console.log(`🎉 Successfully awarded ${amount} bonus scans (Total today: ${currentBonus + amount})`)
+    ActivityLogService.log('scan_bonus_granted', { amount, total_today: currentBonus + amount })
     return true
 
   } catch (err) {

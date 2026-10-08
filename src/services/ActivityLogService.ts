@@ -427,6 +427,57 @@ function resolveEntity(activity: string, rawDetail: any): EntityResult {
             }
         }
 
+        // 🟢 APP UPDATE — entity is the version the user is on (null for the optional store prompt)
+        case 'app_update_required_shown':
+        case 'app_update_store_click':
+            return {
+                entity_type: 'app_version',
+                entity_id: detail.current_version ? String(detail.current_version) : null
+            }
+
+        case 'app_update_prompt_shown':
+        case 'app_update_prompt_accept':
+            return { entity_type: null, entity_id: null }
+
+        // 🟢 REWARDS (points, levels, achievements, missions, scan bonus)
+        case 'points_awarded':
+        case 'points_award_failed':
+            return {
+                entity_type: 'point_action',
+                entity_id: detail.action ? String(detail.action) : null
+            }
+
+        case 'level_up':
+            return {
+                entity_type: 'level',
+                entity_id: detail.to != null ? String(detail.to) : null
+            }
+
+        case 'achievement_unlocked':
+            return {
+                entity_type: 'achievement',
+                entity_id: detail.achievement_id != null ? String(detail.achievement_id) : null
+            }
+
+        case 'mission_completed':
+            return {
+                entity_type: 'mission',
+                entity_id: detail.mission_id ? String(detail.mission_id) : null
+            }
+
+        case 'daily_mission_bonus_claimed':
+        case 'scan_bonus_granted':
+        case 'scan_bonus_cap_reached':
+            return { entity_type: null, entity_id: null }
+
+        // 🟢 PRIVACY / CONSENT SETTINGS
+        case 'privacy_setting_change':
+        case 'privacy_setting_change_failed':
+            return {
+                entity_type: 'privacy_setting',
+                entity_id: detail.setting ? String(detail.setting) : null
+            }
+
         // 🟢 PERMISSIONS
         case 'permission_result':
             return {
@@ -786,6 +837,26 @@ function resolveActivityGroup(activity: string): string | null {
         case 'permission_result':
             return 'permissions'
 
+        case 'app_update_required_shown':
+        case 'app_update_store_click':
+        case 'app_update_prompt_shown':
+        case 'app_update_prompt_accept':
+            return 'app_update'
+
+        case 'points_awarded':
+        case 'points_award_failed':
+        case 'level_up':
+        case 'achievement_unlocked':
+        case 'mission_completed':
+        case 'daily_mission_bonus_claimed':
+        case 'scan_bonus_granted':
+        case 'scan_bonus_cap_reached':
+            return 'rewards'
+
+        case 'privacy_setting_change':
+        case 'privacy_setting_change_failed':
+            return 'privacy'
+
         case 'utility_qibla_open':
             return 'utilities'
 
@@ -839,7 +910,17 @@ function resolveActivityGroup(activity: string): string | null {
    Service
 -------------------------- */
 export class ActivityLogService {
+    // Logging is best-effort and almost always fire-and-forget, so it must never throw into a caller
+    // (an unawaited rejection would surface as an unhandled promise rejection).
     static async log(activity: string, detail: any = {}) {
+        try {
+            await ActivityLogService.write(activity, detail)
+        } catch (err) {
+            console.warn('[ActivityLogService] log skipped:', err)
+        }
+    }
+
+    private static async write(activity: string, detail: any) {
 
         // ðŸš« HARD STOP (no Supabase, no auth, no side effects)
         if (!ACTIVITY_LOG_ENABLED) {
