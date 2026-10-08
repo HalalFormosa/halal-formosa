@@ -5,7 +5,7 @@ export function highlightIngredients(
     dictionary: Record<string, string>,
     productStatus: string
 ): HighlightedIngredient[] {
-    const parts = text.split(',').map(p => p.trim()).filter(Boolean)
+    const parts = text.split(/[,，、]/).map(p => p.trim()).filter(Boolean)
     const sortedKeys = Object.keys(dictionary).sort((a, b) => b.length - a.length)
 
     return parts.map<HighlightedIngredient>(part => {
@@ -13,7 +13,28 @@ export function highlightIngredients(
 
         for (const key of sortedKeys) {
             let regex: RegExp
-            if (/[|()[\]\\]/.test(key)) {
+            if (/[㐀-鿿]/.test(key)) {
+                // A single-character key (e.g. 水) must be the whole segment: as a substring it would
+                // also hit longer words like 水解動物蛋白 and wrongly mark them with the short key's colour.
+                // Quantities and brackets are ignored, so 水 70% and 水（純水）still count as 水.
+                if (key.length === 1) {
+                    const bare = part.replace(/[（(][^）)]*[）)]/g, '').replace(/[\d.%％\s]/g, '')
+                    if (bare === key) {
+                        matchedKey = key
+                        break
+                    }
+                    continue
+                }
+                // \b never matches around CJK (not \w), so use a plain substring match
+                // keys like 脂肪酸甘油[酯脂] are intentional regexes; others are literal
+                try {
+                    regex = /[()[\]\\]/.test(key)
+                        ? new RegExp(key, 'i')
+                        : new RegExp(key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i')
+                } catch {
+                    continue
+                }
+            } else if (/[|()[\]\\]/.test(key)) {
                 try {
                     regex = new RegExp(key, 'i')
                 } catch {
