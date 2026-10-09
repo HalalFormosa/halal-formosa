@@ -222,6 +222,7 @@ import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import { ActivityLogService } from '@/services/ActivityLogService'
 import { SocialMediaService } from '@/services/SocialMediaService'
+import { shouldTriggerPreviewLimit } from '@/utils/reelPreview'
 
 dayjs.extend(relativeTime)
 
@@ -335,11 +336,13 @@ const setupIntersectionObserver = () => {
 }
 
 const triggerLimit = (id: string, platform: string) => {
+  // Idempotent: snapping currentTime below fires another timeupdate, which must not re-enter here
+  if (isLimited[id]) return
   const video = videoRefs[id]
   if (video) {
     video.pause()
     // Snap to end if possible, otherwise just stay at current
-    try { video.currentTime = getLimitSeconds(platform) } catch(e) {}
+    try { video.currentTime = getLimitSeconds(platform) } catch { /* seeking can throw before metadata has loaded */ }
   }
   isLimited[id] = true
   isPlaying[id] = false
@@ -353,8 +356,8 @@ const triggerLimit = (id: string, platform: string) => {
 const handleTimeUpdate = (reel: any, event: any) => {
   const video = event.target
   const limitSeconds = getLimitSeconds(reel.platform)
-  
-  if (video.currentTime >= limitSeconds) {
+
+  if (shouldTriggerPreviewLimit(!!isLimited[reel.id], video.currentTime, limitSeconds)) {
     if (playbackTimer) clearTimeout(playbackTimer)
     triggerLimit(reel.id, reel.platform)
   }
