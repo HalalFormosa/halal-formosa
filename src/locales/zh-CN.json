@@ -1895,6 +1895,8 @@
     "earned": "您获得 {points} 点",
     "rewardAnswer": "问卷回答",
     "rewardComplete": "问卷完成",
-    "textPlaceholder": "请输入您的答案（欢迎补充细节）"
+    "textPlaceholder": "请输入您的答案（欢迎补充细节）",
+    "answerMore": "现在再回答 {count} 题（约 {minutes} 分）",
+    "later": "之后再说"
   }
 }

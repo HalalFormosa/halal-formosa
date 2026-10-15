@@ -2540,6 +2540,8 @@
     "earned": "You earned {points} points",
     "rewardAnswer": "Survey answer",
     "rewardComplete": "Survey completed",
-    "textPlaceholder": "Type your answer (optional detail is welcome)"
+    "textPlaceholder": "Type your answer (optional detail is welcome)",
+    "answerMore": "Answer {count} more now (~{minutes} min)",
+    "later": "Maybe later"
   }
 }

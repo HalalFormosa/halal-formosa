@@ -2539,6 +2539,8 @@
     "earned": "Anda mendapat {points} poin",
     "rewardAnswer": "Jawaban survei",
     "rewardComplete": "Survei selesai",
-    "textPlaceholder": "Tulis jawaban Anda (detail tambahan sangat membantu)"
+    "textPlaceholder": "Tulis jawaban Anda (detail tambahan sangat membantu)",
+    "answerMore": "Jawab {count} lagi sekarang (~{minutes} mnt)",
+    "later": "Mungkin nanti"
   }
 }

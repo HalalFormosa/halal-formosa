@@ -19,8 +19,16 @@
           <p>{{ thanks.completed ? $t('survey.doneAllBody') : $t('survey.thanksBody') }}</p>
         </div>
       </div>
+      <div v-if="thanks && !thanks.completed && remaining > 0" class="more" data-testid="survey-more">
+        <ion-button expand="block" color="carrot" data-testid="survey-answer-more" @click="openFlow">
+          {{ $t('survey.answerMore', { count: remaining, minutes: estimateMinutes(remaining) }) }}
+        </ion-button>
+        <button type="button" class="link later" data-testid="survey-later" @click="thanks = null">
+          {{ $t('survey.later') }}
+        </button>
+      </div>
 
-      <template v-else-if="question">
+      <template v-if="!thanks && question">
         <p class="intro">{{ $t('survey.cardIntro') }}</p>
         <h3 class="prompt" data-testid="survey-prompt">{{ prompt }}</h3>
 
@@ -75,7 +83,7 @@ import { useYearlySurvey } from '@/composables/useYearlySurvey'
 import { estimateMinutes, localizedText, type SurveyAnswer, type SurveySubmitResult } from '@/services/SurveyService'
 
 const { locale } = useI18n()
-const { card, question, answered, total, remaining, loadCard, answerCard, dismiss, openFlow } = useYearlySurvey()
+const { card, question, answered, total, remaining, flowOpen, loadCard, answerCard, dismiss, openFlow } = useYearlySurvey()
 
 const value = ref<SurveyAnswer | null>(null)
 const saving = ref(false)
@@ -83,6 +91,9 @@ const error = ref(false)
 const thanks = ref<SurveySubmitResult | null>(null)
 
 onMounted(loadCard)
+
+// Coming back from "answer the rest now" the thank-you is stale: the flow has its own finish screen.
+watch(flowOpen, (open) => { if (!open) thanks.value = null })
 
 // A new question (or a fresh flow result) clears whatever was typed for the previous one.
 watch(() => question.value?.key, () => { value.value = null; error.value = false })
@@ -148,4 +159,6 @@ async function submit() {
 .thanks { display: flex; gap: 12px; align-items: center; }
 .thanks ion-icon { font-size: 40px; color: var(--ion-color-success); flex: 0 0 auto; }
 .thanks p { margin: 2px 0 0; font-size: 0.85rem; color: var(--ion-color-medium); }
+.more { margin-top: 14px; }
+.later { display: block; margin: 4px auto 0; }
 </style>
