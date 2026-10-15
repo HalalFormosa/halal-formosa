@@ -739,7 +739,8 @@
       "locationsReview": "地点回顾",
       "locationReports": "位置报告",
       "productReports": "产品报告",
-      "users": "用户"
+      "users": "用户",
+      "survey": "年度问卷"
     },
     "pro": {
       "title": "清真福尔摩沙 Pro ⭐",
@@ -863,7 +864,7 @@
       "noLocations": "You haven't submitted any locations yet."
     }
   },
-"achievements": {
+  "achievements": {
     "title": "我的成就",
     "summaryLabel": "已解锁奖杯",
     "nextTierHint": "再完成 {count} 次即可解锁“{tier}”",
@@ -1444,6 +1445,23 @@
         "resolved": "已解决",
         "rejected": "被拒绝"
       }
+    },
+    "survey": {
+      "title": "年度问卷",
+      "cycle": "周期",
+      "allCycles": "所有周期",
+      "cycleN": "第 {n} 周期",
+      "group": "群体",
+      "allGroups": "所有人",
+      "export": "导出 CSV",
+      "respondents": "受访人数",
+      "completed": "全部完成",
+      "completionRate": "完成率",
+      "nps": "NPS",
+      "empty": "目前还没有回答。用户回答后会显示在这里。",
+      "answers": "{n} 条回答",
+      "average": "平均 {value}",
+      "noText": "目前没有文字回答。"
     }
   },
   "merchantApplications": {
@@ -1850,5 +1868,33 @@
       "yes": "是的，我有去",
       "no": "没有耶"
     }
+  },
+  "survey": {
+    "cardTitle": "帮助我们进步",
+    "cardIntro": "关于 Halal Formosa 的一个小问题",
+    "progress": "{answered}/{total}",
+    "submit": "提交答案",
+    "answerAll": "现在回答全部 {count} 题（约 {minutes} 分）",
+    "notNow": "稍后再说",
+    "neverAsk": "不要再询问",
+    "skip": "跳过",
+    "next": "下一题",
+    "finish": "完成",
+    "close": "关闭",
+    "retry": "再试一次",
+    "flowTitle": "年度问卷",
+    "stepOf": "第 {current} 题，共 {total} 题",
+    "saveError": "无法保存您的答案，请再试一次。",
+    "loadError": "无法加载题目。",
+    "thanksTitle": "谢谢您！",
+    "thanksBody": "已保存您的答案。下一题会在之后打开 App 时询问。",
+    "doneAllTitle": "全部完成，谢谢您！",
+    "doneAllBody": "您已回答所有题目，明年我们会再次询问。",
+    "doneSomeTitle": "感谢您的回答",
+    "doneSomeBody": "跳过的题目之后会一次一题再出现。",
+    "earned": "您获得 {points} 点",
+    "rewardAnswer": "问卷回答",
+    "rewardComplete": "问卷完成",
+    "textPlaceholder": "请输入您的答案（欢迎补充细节）"
   }
 }

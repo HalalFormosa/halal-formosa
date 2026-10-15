@@ -783,6 +783,13 @@
               <ion-label>{{ $t('profile.admin.auditLog') }}</ion-label>
             </ion-item>
 
+            <ion-item button @click="goToSurveyResults">
+              <div class="icon-box" slot="start">
+                <ion-icon :icon="icons.clipboardOutline" />
+              </div>
+              <ion-label>{{ $t('profile.admin.survey') }}</ion-label>
+            </ion-item>
+
             <ion-item button @click="goToAnalyticsDashboard">
               <div class="icon-box" slot="start">
                 <ion-icon :icon="icons.listOutline" />
@@ -1041,6 +1048,7 @@ import {
   colorPaletteOutline,
   trophyOutline,
   shieldCheckmarkOutline,
+  clipboardOutline,
   linkOutline,
   diamondOutline,
   libraryOutline,
@@ -1089,6 +1097,7 @@ const { notifyEvent } = useNotifier();
 
 // Icons for use in template
 const icons = {
+  clipboardOutline,
   closeCircleOutline, 
   timeOutline, 
   storefrontOutline,
@@ -1893,6 +1902,7 @@ const goToProductReports = () => router.push('/admin/product-reports')
 const goToAnalyticsDashboard = () => router.push("/admin/analytics");
 const goToScanLogs = () => router.push("/admin/scan-logs");
 const goToAuditLog = () => router.push("/admin/audit-log");
+const goToSurveyResults = () => router.push("/admin/survey");
 
 const goToEditProfile = () => {
   ActivityLogService.log('profile_edit_open')

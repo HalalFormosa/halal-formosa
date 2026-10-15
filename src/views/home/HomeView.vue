@@ -226,6 +226,9 @@
         <DailyMissions v-if="isAuthenticated" />
       </LazySection>
 
+      <!-- === Yearly evaluation: one question per session === -->
+      <YearlySurveyCard v-if="isAuthenticated" />
+
 
       <!-- === Discover Products === -->
       <ion-card>
@@ -1160,6 +1163,7 @@ import { useHomeData } from '@/composables/useHomeData'
 import { syncPrayerWidget } from '@/composables/useWidgetSync'
 import LazySection from '@/components/LazySection.vue'
 import DailyMissions from "@/components/DailyMissions.vue"
+import YearlySurveyCard from "@/components/survey/YearlySurveyCard.vue"
 import { useDailyMissions } from '@/composables/useDailyMissions'
 
 const { withCache } = useHomeData()

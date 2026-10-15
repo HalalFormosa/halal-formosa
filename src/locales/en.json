@@ -961,7 +961,8 @@
       "locationReports": "Location Reports",
       "productReports": "Product Reports",
       "users": "Users",
-      "auditLog": "Audit Log"
+      "auditLog": "Audit Log",
+      "survey": "Yearly Survey"
     },
     "pro": {
       "title": "Halal Formosa Pro ⭐",
@@ -2094,6 +2095,23 @@
         "activate": "Activated",
         "deactivate": "Deactivated"
       }
+    },
+    "survey": {
+      "title": "Yearly Survey",
+      "cycle": "Cycle",
+      "allCycles": "All cycles",
+      "cycleN": "Cycle {n}",
+      "group": "Group",
+      "allGroups": "Everyone",
+      "export": "Export CSV",
+      "respondents": "Respondents",
+      "completed": "Completed all",
+      "completionRate": "Completion",
+      "nps": "NPS",
+      "empty": "No answers yet. Answers appear here as users respond.",
+      "answers": "{n} answers",
+      "average": "Average {value}",
+      "noText": "No written answers yet."
     }
   },
   "merchantApplications": {
@@ -2495,5 +2513,33 @@
       "no": "Not really"
     },
     "deleteConfirmMsg": "Are you sure you want to delete your review?"
+  },
+  "survey": {
+    "cardTitle": "Help us improve",
+    "cardIntro": "One quick question about Halal Formosa",
+    "progress": "{answered}/{total}",
+    "submit": "Submit answer",
+    "answerAll": "Answer all {count} now (~{minutes} min)",
+    "notNow": "Not now",
+    "neverAsk": "Don't ask again",
+    "skip": "Skip",
+    "next": "Next",
+    "finish": "Finish",
+    "close": "Close",
+    "retry": "Try again",
+    "flowTitle": "Yearly survey",
+    "stepOf": "Question {current} of {total}",
+    "saveError": "Could not save your answer. Please try again.",
+    "loadError": "Could not load the questions.",
+    "thanksTitle": "Thank you!",
+    "thanksBody": "Your answer was saved. We'll ask the next question in a later visit.",
+    "doneAllTitle": "All done, thank you!",
+    "doneAllBody": "You answered every question. We'll ask again next year.",
+    "doneSomeTitle": "Thanks for your answers",
+    "doneSomeBody": "The questions you skipped will come back one at a time.",
+    "earned": "You earned {points} points",
+    "rewardAnswer": "Survey answer",
+    "rewardComplete": "Survey completed",
+    "textPlaceholder": "Type your answer (optional detail is welcome)"
   }
 }

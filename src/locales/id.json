@@ -1036,7 +1036,8 @@
       "locationReports": "Laporan Lokasi",
       "productReports": "Laporan Produk",
       "users": "Pengguna",
-      "auditLog": "Log Audit"
+      "auditLog": "Log Audit",
+      "survey": "Survei Tahunan"
     },
     "pro": {
       "title": "Halal Formosa Pro ⭐",
@@ -1965,6 +1966,23 @@
         "activate": "Diaktifkan",
         "deactivate": "Dinonaktifkan"
       }
+    },
+    "survey": {
+      "title": "Survei Tahunan",
+      "cycle": "Siklus",
+      "allCycles": "Semua siklus",
+      "cycleN": "Siklus {n}",
+      "group": "Kelompok",
+      "allGroups": "Semua orang",
+      "export": "Ekspor CSV",
+      "respondents": "Responden",
+      "completed": "Selesai semua",
+      "completionRate": "Penyelesaian",
+      "nps": "NPS",
+      "empty": "Belum ada jawaban. Jawaban akan muncul di sini saat pengguna merespons.",
+      "answers": "{n} jawaban",
+      "average": "Rata-rata {value}",
+      "noText": "Belum ada jawaban tertulis."
     }
   },
   "update": {
@@ -2494,5 +2512,33 @@
     "statusConverted": "Berhasil",
     "statusCanceled": "Dibatalkan",
     "statusSignedUp": "Sudah mendaftar"
+  },
+  "survey": {
+    "cardTitle": "Bantu kami berkembang",
+    "cardIntro": "Satu pertanyaan singkat tentang Halal Formosa",
+    "progress": "{answered}/{total}",
+    "submit": "Kirim jawaban",
+    "answerAll": "Jawab semua {count} sekarang (~{minutes} mnt)",
+    "notNow": "Nanti saja",
+    "neverAsk": "Jangan tanya lagi",
+    "skip": "Lewati",
+    "next": "Lanjut",
+    "finish": "Selesai",
+    "close": "Tutup",
+    "retry": "Coba lagi",
+    "flowTitle": "Survei tahunan",
+    "stepOf": "Pertanyaan {current} dari {total}",
+    "saveError": "Jawaban tidak dapat disimpan. Silakan coba lagi.",
+    "loadError": "Pertanyaan tidak dapat dimuat.",
+    "thanksTitle": "Terima kasih!",
+    "thanksBody": "Jawaban Anda tersimpan. Pertanyaan berikutnya muncul di kunjungan berikutnya.",
+    "doneAllTitle": "Selesai, terima kasih!",
+    "doneAllBody": "Anda sudah menjawab semua pertanyaan. Kami akan bertanya lagi tahun depan.",
+    "doneSomeTitle": "Terima kasih atas jawabannya",
+    "doneSomeBody": "Pertanyaan yang dilewati akan muncul kembali satu per satu.",
+    "earned": "Anda mendapat {points} poin",
+    "rewardAnswer": "Jawaban survei",
+    "rewardComplete": "Survei selesai",
+    "textPlaceholder": "Tulis jawaban Anda (detail tambahan sangat membantu)"
   }
 }

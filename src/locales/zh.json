@@ -796,7 +796,8 @@
       "locationReports": "地點回報",
       "productReports": "產品回報",
       "users": "用戶",
-      "auditLog": "稽核紀錄"
+      "auditLog": "稽核紀錄",
+      "survey": "年度問卷"
     },
     "pro": {
       "title": "Halal Formosa Pro ⭐",
@@ -1624,6 +1625,23 @@
         "activate": "啟用",
         "deactivate": "停用"
       }
+    },
+    "survey": {
+      "title": "年度問卷",
+      "cycle": "週期",
+      "allCycles": "所有週期",
+      "cycleN": "第 {n} 週期",
+      "group": "族群",
+      "allGroups": "所有人",
+      "export": "匯出 CSV",
+      "respondents": "受訪人數",
+      "completed": "全部完成",
+      "completionRate": "完成率",
+      "nps": "NPS",
+      "empty": "目前還沒有回答。使用者回答後會顯示在這裡。",
+      "answers": "{n} 則回答",
+      "average": "平均 {value}",
+      "noText": "目前沒有文字回答。"
     }
   },
   "merchantApplications": {
@@ -2056,5 +2074,33 @@
       "no": "沒有耶"
     },
     "deleteConfirmMsg": "確定要刪除你的評論嗎？"
+  },
+  "survey": {
+    "cardTitle": "幫助我們進步",
+    "cardIntro": "關於 Halal Formosa 的一個小問題",
+    "progress": "{answered}/{total}",
+    "submit": "送出答案",
+    "answerAll": "現在回答全部 {count} 題（約 {minutes} 分）",
+    "notNow": "稍後再說",
+    "neverAsk": "不要再詢問",
+    "skip": "略過",
+    "next": "下一題",
+    "finish": "完成",
+    "close": "關閉",
+    "retry": "再試一次",
+    "flowTitle": "年度問卷",
+    "stepOf": "第 {current} 題，共 {total} 題",
+    "saveError": "無法儲存您的答案，請再試一次。",
+    "loadError": "無法載入題目。",
+    "thanksTitle": "謝謝您！",
+    "thanksBody": "已儲存您的答案。下一題會在之後開啟 App 時詢問。",
+    "doneAllTitle": "全部完成，謝謝您！",
+    "doneAllBody": "您已回答所有題目，明年我們會再次詢問。",
+    "doneSomeTitle": "感謝您的回答",
+    "doneSomeBody": "略過的題目之後會一次一題再出現。",
+    "earned": "您獲得 {points} 點",
+    "rewardAnswer": "問卷回答",
+    "rewardComplete": "問卷完成",
+    "textPlaceholder": "請輸入您的答案（歡迎補充細節）"
   }
 }

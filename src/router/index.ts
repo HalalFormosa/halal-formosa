@@ -284,6 +284,11 @@ const routes: Array<RouteRecordRaw> = [
         meta: { requiresAuth: true, requiresAdmin: true }
     },
     {
+        path: '/admin/survey',
+        component: () => import('@/views/admin/SurveyResultsView.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true }
+    },
+    {
         path: '/admin/analytics',
         name: 'AnalyticsDashboard',
         component: () => import('@/views/admin/AnalyticsDashboardView.vue'),
