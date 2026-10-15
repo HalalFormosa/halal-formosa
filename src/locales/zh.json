@@ -797,7 +797,8 @@
       "productReports": "產品回報",
       "users": "用戶",
       "auditLog": "稽核紀錄",
-      "survey": "年度問卷"
+      "survey": "年度問卷",
+      "tools": "營運工具"
     },
     "pro": {
       "title": "Halal Formosa Pro ⭐",
@@ -2105,5 +2106,267 @@
     "answerMore": "現在再回答 {count} 題（約 {minutes} 分）",
     "later": "之後再說",
     "notAvailable": "您的帳號目前尚未開放問卷，請過幾週再來看看。"
+  },
+  "adminPages": {
+    "common": {
+      "all": "全部",
+      "cancel": "取消",
+      "confirm": "確認",
+      "copied": "已複製 {v}",
+      "copy": "複製",
+      "copyFailed": "無法複製",
+      "edit": "編輯",
+      "hideDetails": "隱藏詳細資料",
+      "showDetails": "顯示詳細資料",
+      "lastDays": "最近 {n} 天",
+      "loadFailed": "載入失敗，請再試一次。",
+      "loadMore": "載入更多",
+      "period": "期間",
+      "retry": "再試一次",
+      "save": "儲存",
+      "saveFailed": "無法儲存",
+      "saved": "已儲存"
+    },
+    "tools": {
+      "title": "營運工具",
+      "intro": "僅限管理員的頁面：版本、系統狀態、訂閱與內容。",
+      "group": {
+        "release": "版本",
+        "health": "系統狀態",
+        "business": "營運",
+        "content": "內容與社群"
+      },
+      "versions": {
+        "name": "App 版本",
+        "desc": "每位使用者的版本，以及低於最低版本的人"
+      },
+      "settings": {
+        "name": "App 設定",
+        "desc": "最低版本、OCR 登入、商店連結"
+      },
+      "health": {
+        "name": "系統狀態",
+        "desc": "每日檢查、伺服器事件與安全變更"
+      },
+      "errors": {
+        "name": "App 錯誤",
+        "desc": "App 回報的錯誤（已分組）"
+      },
+      "subs": {
+        "name": "訂閱",
+        "desc": "Pro 會員、即將到期與不一致"
+      },
+      "announcements": {
+        "name": "公告與通知",
+        "desc": "App 內公告、推播紀錄、更新電子郵件"
+      },
+      "survey": {
+        "name": "年度問卷",
+        "desc": "首頁問卷的回答與分數"
+      },
+      "barcodes": {
+        "name": "未知條碼",
+        "desc": "已掃描但資料庫中沒有的商品"
+      },
+      "reviews": {
+        "name": "評論管理",
+        "desc": "查看與移除地點評論"
+      },
+      "line": {
+        "name": "LINE 機器人活動",
+        "desc": "LINE 機器人的事件與使用量"
+      }
+    },
+    "versions": {
+      "title": "App 版本",
+      "note": "{total} 位使用者中有 {live} 位由 App 即時回報。其餘來自各人最後一次掃描，因此只涵蓋掃描過的人。即時回報將從下一個 App 版本開始。",
+      "empty": "此期間沒有使用者。",
+      "minimum": "最低 {v}",
+      "belowMinimum": "低於最低版本",
+      "liveCount": "{n} 位即時",
+      "lastSeen": "最後出現 {d}",
+      "tileUsers": "出現的使用者",
+      "tileLive": "即時回報",
+      "tileNewest": "使用最新版",
+      "tileBelow": "低於最低版本"
+    },
+    "settings": {
+      "title": "App 設定",
+      "note": "變更會立即套用到所有使用者，並記錄在稽核紀錄中。",
+      "minVersions": "最低 App 版本",
+      "minVersionHelp": "使用舊版的使用者必須先更新才能繼續。",
+      "versionInvalid": "請輸入像 2.0.1 的版本",
+      "impact": "過去 14 天出現的 {total} 位使用者中，有 {below} 位低於 {v}，將被要求更新。",
+      "impactCurrent": "過去 14 天出現的 {total} 位使用者中，有 {below} 位低於目前的最低版本 {v}，已被要求更新。",
+      "updated": "更新於 {d}",
+      "savedFrom": "{key}：{old} 改為 {new}",
+      "confirmTitle": "請確認",
+      "confirmVersion": "將 {platform} 最低版本設為 {v}？最近 {total} 位使用者中有 {below} 位會被要求更新。",
+      "confirmLink": "將 {label} 連結改為 {value}？",
+      "security": "安全",
+      "ocrTitle": "OCR 需要登入",
+      "ocrHelp": "開啟後，只有已登入的使用者可使用文字辨識服務。",
+      "ocrOn": "要開啟登入要求嗎？",
+      "ocrOff": "要關閉登入要求嗎？任何人都能不登入使用文字辨識服務。",
+      "storeLinks": "商店連結",
+      "readOnly": "其他設定",
+      "readOnlyHelp": "此處僅供檢視。"
+    },
+    "health": {
+      "title": "系統狀態",
+      "tabChecks": "檢查",
+      "tabEvents": "事件",
+      "tabSecurity": "安全",
+      "hours": "最近 {n} 小時",
+      "allClear": "一切正常",
+      "flagged": "有 {n} 項需要查看",
+      "generated": "檢查時間 {d}",
+      "level": "等級",
+      "tileScanGap": "未記錄的掃描",
+      "tileProMismatch": "Pro 不一致",
+      "tileJobErrors": "工作錯誤",
+      "tileChanges": "稽核的變更",
+      "scanLog": "掃描",
+      "scanLogLine": "{events} 次掃描成功，{rows} 筆已儲存，缺少 {missing} 筆。",
+      "purchases": "購買未同步",
+      "purchasesHelp": "已在 App 內購買，但伺服器未顯示為 Pro。",
+      "logins": "登入失敗",
+      "loginsLine": "{n} 次登入失敗，此期間預期約 {expected} 次。",
+      "webhook": "購買 Webhook",
+      "webhookLine": "{purchases} 筆購買，已處理 {processed} 個 Webhook 事件。",
+      "jobErrors": "{n} 個伺服器工作錯誤",
+      "cron": "失敗的排程工作",
+      "sensitive": "非管理員的敏感變更",
+      "sensitiveHelp": "這不應該發生，請逐一檢查。",
+      "noEvents": "沒有事件。",
+      "noSecurity": "沒有安全變更紀錄。",
+      "securityNote": "對點數、Pro 狀態等受保護資料的變更，以及執行者。",
+      "by": "由",
+      "flag": {
+        "scan_log_gap": "掃描未儲存",
+        "purchase_not_synced": "購買未同步",
+        "pro_flag_mismatch": "Pro 標記不一致",
+        "login_failure_spike": "登入失敗暴增",
+        "server_job_errors": "伺服器工作錯誤",
+        "webhook_silent": "Webhook 無動靜",
+        "cron_job_failed": "排程工作失敗",
+        "scheduled_call_5xx": "排程呼叫錯誤",
+        "scheduled_call_unauthorized": "排程呼叫被拒",
+        "sensitive_change_by_non_admin": "非管理員的敏感變更"
+      }
+    },
+    "subs": {
+      "title": "訂閱",
+      "note": "{lapsed} 筆已失效、{granted} 筆由推薦或管理員贈送 Pro，共 {total} 筆訂閱紀錄。",
+      "empty": "此檢視沒有訂閱。",
+      "active": "有效",
+      "lapsed": "已失效",
+      "notRenewing": "不續訂",
+      "renews": "續訂中",
+      "granted": "贈送 Pro",
+      "mismatch": "個人資料不一致",
+      "first": "首次購買 {d}",
+      "expires": "到期 {d}",
+      "endedOn": "結束於 {d}",
+      "tileActive": "有效 Pro",
+      "tileExpiring": "14 天內到期",
+      "tileNotRenewing": "不續訂",
+      "tileMismatch": "不一致",
+      "filter": {
+        "all": "全部",
+        "active": "有效",
+        "expiring": "即將到期",
+        "not_renewing": "不續訂",
+        "lapsed": "已失效",
+        "mismatch": "不一致"
+      }
+    },
+    "announcements": {
+      "title": "公告",
+      "tabAnnouncements": "公告",
+      "tabNotifications": "推播紀錄",
+      "tabEmails": "更新郵件",
+      "note": "啟用中的公告會顯示給 App 內的使用者。",
+      "new": "新增公告",
+      "newTitle": "新增公告",
+      "editTitle": "編輯公告",
+      "empty": "尚無公告。",
+      "live": "顯示中",
+      "off": "關閉",
+      "nowLive": "公告已顯示",
+      "nowOff": "公告已關閉",
+      "fieldTitle": "標題",
+      "fieldContent": "內容",
+      "fieldType": "類型",
+      "fieldImage": "圖片連結（選填）",
+      "fieldLink": "連結（選填）",
+      "fieldActive": "顯示給使用者",
+      "titleRequired": "請輸入標題",
+      "imageHttps": "圖片連結必須以 https:// 開頭",
+      "linkScheme": "連結必須以 https:// 或 myapp:// 開頭",
+      "noNotifications": "沒有通知紀錄。",
+      "noEmails": "沒有排隊中的更新郵件。",
+      "emailNote": "此處不顯示電子郵件地址。",
+      "emailSent": "已寄出",
+      "emailPending": "等待中",
+      "emailFailed": "失敗",
+      "emailTotal": "佇列中"
+    },
+    "barcodes": {
+      "title": "未知條碼",
+      "note": "使用者掃描但資料庫尚未收錄的條碼。已新增的 {added} 筆不列出。",
+      "empty": "此期間沒有缺少的條碼。",
+      "scans": "{n} 次掃描",
+      "people": "{n} 人",
+      "last": "最近 {d}",
+      "lookup": "查詢",
+      "tileMissing": "仍缺少",
+      "tileScans": "掃描次數",
+      "tileRepeated": "掃描 3 次以上",
+      "tileAdded": "已新增"
+    },
+    "errors": {
+      "title": "App 錯誤",
+      "note": "由 App 本身回報的錯誤。只有具備錯誤回報的版本才會傳送，因此數字會在下一個版本後增加。",
+      "empty": "此期間沒有錯誤。",
+      "times": "{n} 次",
+      "users": "{n} 位使用者",
+      "first": "首次 {d}",
+      "stack": "顯示堆疊追蹤",
+      "tileErrors": "錯誤",
+      "tileKinds": "不同錯誤",
+      "tileViews": "畫面瀏覽",
+      "tileRate": "每千次瀏覽的錯誤"
+    },
+    "reviews": {
+      "title": "評論管理",
+      "note": "移除評論對使用者而言是永久的。必須填寫原因，被移除的評論會保留在稽核紀錄中。",
+      "rating": "評分",
+      "anyRating": "任何評分",
+      "upTo": "{n} 星以下",
+      "search": "搜尋評論或地點",
+      "empty": "找不到評論。",
+      "noComment": "沒有留言",
+      "ownerReply": "店家回覆",
+      "remove": "移除",
+      "removeTitle": "移除評論",
+      "removeMessage": "要移除對 {place} 的這則評論嗎？請簡短說明原因。",
+      "reasonPlaceholder": "原因（至少 3 個字）",
+      "removed": "評論已移除"
+    },
+    "line": {
+      "title": "LINE 機器人活動",
+      "note": "僅顯示總數。帳號 ID 已縮短，不會完整顯示。",
+      "empty": "此期間沒有 LINE 活動。",
+      "perDay": "每日",
+      "legend": "事件，加號後為使用量。",
+      "byType": "事件類型",
+      "topSources": "最活躍的帳號",
+      "masked": "ID 已縮短。",
+      "tileEvents": "事件",
+      "tileUsage": "使用量",
+      "tileAccounts": "帳號",
+      "tileActiveDays": "活躍天數"
+    }
   }
 }

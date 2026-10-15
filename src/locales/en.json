@@ -962,7 +962,8 @@
       "productReports": "Product Reports",
       "users": "Users",
       "auditLog": "Audit Log",
-      "survey": "Yearly Survey"
+      "survey": "Yearly Survey",
+      "tools": "Operations tools"
     },
     "pro": {
       "title": "Halal Formosa Pro ⭐",
@@ -2544,5 +2545,267 @@
     "answerMore": "Answer {count} more now (~{minutes} min)",
     "later": "Maybe later",
     "notAvailable": "The survey isn't available for your account yet. Please check back in a few weeks."
+  },
+  "adminPages": {
+    "common": {
+      "all": "All",
+      "cancel": "Cancel",
+      "confirm": "Confirm",
+      "copied": "Copied {v}",
+      "copy": "Copy",
+      "copyFailed": "Could not copy",
+      "edit": "Edit",
+      "hideDetails": "Hide details",
+      "showDetails": "Show details",
+      "lastDays": "Last {n} days",
+      "loadFailed": "Could not load. Please try again.",
+      "loadMore": "Load more",
+      "period": "Period",
+      "retry": "Try again",
+      "save": "Save",
+      "saveFailed": "Could not save",
+      "saved": "Saved"
+    },
+    "tools": {
+      "title": "Operations tools",
+      "intro": "Admin-only pages for releases, health, subscriptions and content.",
+      "group": {
+        "release": "Releases",
+        "health": "Health",
+        "business": "Business",
+        "content": "Content and community"
+      },
+      "versions": {
+        "name": "App versions",
+        "desc": "Which version each user runs, and who is below the minimum"
+      },
+      "settings": {
+        "name": "App settings",
+        "desc": "Minimum versions, OCR sign-in, store links"
+      },
+      "health": {
+        "name": "System health",
+        "desc": "Daily checks, server events and security changes"
+      },
+      "errors": {
+        "name": "App errors",
+        "desc": "Errors reported by the app, grouped"
+      },
+      "subs": {
+        "name": "Subscriptions",
+        "desc": "Pro members, expiring and mismatches"
+      },
+      "announcements": {
+        "name": "Announcements and notifications",
+        "desc": "In-app announcements, push log, update emails"
+      },
+      "survey": {
+        "name": "Yearly survey",
+        "desc": "Answers and scores from the Home survey"
+      },
+      "barcodes": {
+        "name": "Unknown barcodes",
+        "desc": "Scanned products that are not in the database"
+      },
+      "reviews": {
+        "name": "Review moderation",
+        "desc": "Read and remove place reviews"
+      },
+      "line": {
+        "name": "LINE bot activity",
+        "desc": "Events and usage of the LINE bot"
+      }
+    },
+    "versions": {
+      "title": "App versions",
+      "note": "{live} of {total} users reported live from the app. The rest come from each person's last scan, so they only show people who scanned. Live reports start with the next app release.",
+      "empty": "No users seen in this period.",
+      "minimum": "Minimum {v}",
+      "belowMinimum": "Below minimum",
+      "liveCount": "{n} live",
+      "lastSeen": "last seen {d}",
+      "tileUsers": "Users seen",
+      "tileLive": "Reported live",
+      "tileNewest": "On the newest",
+      "tileBelow": "Below minimum"
+    },
+    "settings": {
+      "title": "App settings",
+      "note": "Changes apply to every user right away and are recorded in the audit log.",
+      "minVersions": "Minimum app version",
+      "minVersionHelp": "Users on an older version are asked to update before they can continue.",
+      "versionInvalid": "Use a version like 2.0.1",
+      "impact": "{below} of {total} users seen in the last 14 days are below {v} and would be asked to update.",
+      "impactCurrent": "{below} of {total} users seen in the last 14 days are below the current minimum {v} and are already asked to update.",
+      "updated": "Updated {d}",
+      "savedFrom": "{key}: {old} to {new}",
+      "confirmTitle": "Please confirm",
+      "confirmVersion": "Set the minimum {platform} version to {v}? {below} of {total} recent users would be asked to update.",
+      "confirmLink": "Change the {label} link to {value}?",
+      "security": "Security",
+      "ocrTitle": "Require sign-in for OCR",
+      "ocrHelp": "When on, only signed-in users can use the text-reading service.",
+      "ocrOn": "Turn the sign-in requirement on?",
+      "ocrOff": "Turn the sign-in requirement OFF? Anyone could use the text-reading service without an account.",
+      "storeLinks": "Store links",
+      "readOnly": "Other settings",
+      "readOnlyHelp": "Read only here."
+    },
+    "health": {
+      "title": "System health",
+      "tabChecks": "Checks",
+      "tabEvents": "Events",
+      "tabSecurity": "Security",
+      "hours": "Last {n} hours",
+      "allClear": "All clear",
+      "flagged": "{n} thing(s) need a look",
+      "generated": "Checked {d}",
+      "level": "Level",
+      "tileScanGap": "Unlogged scans",
+      "tileProMismatch": "Pro mismatches",
+      "tileJobErrors": "Job errors",
+      "tileChanges": "Audited changes",
+      "scanLog": "Scans",
+      "scanLogLine": "{events} scans succeeded, {rows} were stored, {missing} missing.",
+      "purchases": "Purchases not synced",
+      "purchasesHelp": "Bought in the app but the server does not show them as Pro.",
+      "logins": "Failed logins",
+      "loginsLine": "{n} failed logins, about {expected} expected for this period.",
+      "webhook": "Purchase webhook",
+      "webhookLine": "{purchases} purchase(s) and {processed} webhook event(s) processed in this period.",
+      "jobErrors": "{n} server job error(s)",
+      "cron": "Scheduled jobs that failed",
+      "sensitive": "Sensitive changes by non-admins",
+      "sensitiveHelp": "This should never happen. Check each one.",
+      "noEvents": "No events.",
+      "noSecurity": "No security changes recorded.",
+      "securityNote": "Changes to protected data such as points and Pro status, with who made them.",
+      "by": "by",
+      "flag": {
+        "scan_log_gap": "Scans not stored",
+        "purchase_not_synced": "Purchase not synced",
+        "pro_flag_mismatch": "Pro flag mismatch",
+        "login_failure_spike": "Login failure spike",
+        "server_job_errors": "Server job errors",
+        "webhook_silent": "Webhook silent",
+        "cron_job_failed": "Scheduled job failed",
+        "scheduled_call_5xx": "Scheduled call error",
+        "scheduled_call_unauthorized": "Scheduled call rejected",
+        "sensitive_change_by_non_admin": "Sensitive change by non-admin"
+      }
+    },
+    "subs": {
+      "title": "Subscriptions",
+      "note": "{lapsed} lapsed, {granted} Pro granted by referral or admin, {total} subscription records in total.",
+      "empty": "No subscriptions in this view.",
+      "active": "Active",
+      "lapsed": "Lapsed",
+      "notRenewing": "Not renewing",
+      "renews": "Renews",
+      "granted": "Pro granted",
+      "mismatch": "Profile mismatch",
+      "first": "First purchase {d}",
+      "expires": "expires {d}",
+      "endedOn": "ended {d}",
+      "tileActive": "Active Pro",
+      "tileExpiring": "Expiring in 14 days",
+      "tileNotRenewing": "Not renewing",
+      "tileMismatch": "Mismatches",
+      "filter": {
+        "all": "All",
+        "active": "Active",
+        "expiring": "Expiring",
+        "not_renewing": "Not renewing",
+        "lapsed": "Lapsed",
+        "mismatch": "Mismatch"
+      }
+    },
+    "announcements": {
+      "title": "Announcements",
+      "tabAnnouncements": "Announcements",
+      "tabNotifications": "Push log",
+      "tabEmails": "Update emails",
+      "note": "Active announcements are shown to users in the app.",
+      "new": "New announcement",
+      "newTitle": "New announcement",
+      "editTitle": "Edit announcement",
+      "empty": "No announcements yet.",
+      "live": "Live",
+      "off": "Off",
+      "nowLive": "Announcement is live",
+      "nowOff": "Announcement is off",
+      "fieldTitle": "Title",
+      "fieldContent": "Message",
+      "fieldType": "Type",
+      "fieldImage": "Image link (optional)",
+      "fieldLink": "Link (optional)",
+      "fieldActive": "Show to users",
+      "titleRequired": "Please enter a title",
+      "imageHttps": "The image link must start with https://",
+      "linkScheme": "The link must start with https:// or myapp://",
+      "noNotifications": "No notifications logged.",
+      "noEmails": "No update emails queued.",
+      "emailNote": "Addresses are not shown here.",
+      "emailSent": "Sent",
+      "emailPending": "Pending",
+      "emailFailed": "Failed",
+      "emailTotal": "In queue"
+    },
+    "barcodes": {
+      "title": "Unknown barcodes",
+      "note": "Barcodes people scanned that are not in the database yet. {added} already added are left out.",
+      "empty": "Nothing missing in this period.",
+      "scans": "{n} scan(s)",
+      "people": "{n} user(s)",
+      "last": "last {d}",
+      "lookup": "Look up",
+      "tileMissing": "Still missing",
+      "tileScans": "Scans",
+      "tileRepeated": "Scanned 3 or more times",
+      "tileAdded": "Already added"
+    },
+    "errors": {
+      "title": "App errors",
+      "note": "Errors reported by the app itself. Only builds with error reporting send them, so numbers grow after the next release.",
+      "empty": "No errors in this period.",
+      "times": "{n}×",
+      "users": "{n} user(s)",
+      "first": "first {d}",
+      "stack": "Show stack trace",
+      "tileErrors": "Errors",
+      "tileKinds": "Different errors",
+      "tileViews": "Screen views",
+      "tileRate": "Errors per 1,000 views"
+    },
+    "reviews": {
+      "title": "Review moderation",
+      "note": "Removing a review is permanent for users. A reason is required, and the removed review is kept in the audit log.",
+      "rating": "Rating",
+      "anyRating": "Any rating",
+      "upTo": "{n} star or lower",
+      "search": "Search comments or places",
+      "empty": "No reviews found.",
+      "noComment": "No comment",
+      "ownerReply": "Owner reply",
+      "remove": "Remove",
+      "removeTitle": "Remove review",
+      "removeMessage": "Remove this review of {place}? Please give a short reason.",
+      "reasonPlaceholder": "Reason (at least 3 characters)",
+      "removed": "Review removed"
+    },
+    "line": {
+      "title": "LINE bot activity",
+      "note": "Totals only. Account ids are shortened and never shown in full.",
+      "empty": "No LINE activity in this period.",
+      "perDay": "Per day",
+      "legend": "Events, plus usage after the plus sign.",
+      "byType": "Event types",
+      "topSources": "Most active accounts",
+      "masked": "Shortened ids.",
+      "tileEvents": "Events",
+      "tileUsage": "Usage",
+      "tileAccounts": "Accounts",
+      "tileActiveDays": "Active days"
+    }
   }
 }

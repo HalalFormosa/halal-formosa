@@ -23,7 +23,7 @@ export const REDACTED = '[redacted]'
 // Tables that carry the trg_admin_audit trigger (see migration 20261009000000_admin_audit_log.sql).
 // The page also adds any table it sees in the data, so a table added later still shows up.
 export const AUDITED_TABLES: string[] = [
-    'achievement_definitions', 'announcements', 'badge_cosmetics', 'category_rules', 'cities',
+    'achievement_definitions', 'announcements', 'app_config', 'location_reviews', 'badge_cosmetics', 'category_rules', 'cities',
     'contributor_applications', 'donations', 'halal_trip_metadata', 'halalify_phrases', 'ingredient_article_aliases',
     'ingredient_article_products', 'ingredient_article_sources', 'ingredient_articles', 'ingredient_blacklist',
     'ingredient_highlights', 'klook_product_bindings', 'loading_reflections', 'location_certifications',

@@ -296,6 +296,56 @@ const routes: Array<RouteRecordRaw> = [
         }
     },
     {
+        path: '/admin/tools',
+        component: () => import('@/views/admin/AdminToolsView.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true }
+    },
+    {
+        path: '/admin/app-versions',
+        component: () => import('@/views/admin/AppVersionsView.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true }
+    },
+    {
+        path: '/admin/app-settings',
+        component: () => import('@/views/admin/AppSettingsView.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true }
+    },
+    {
+        path: '/admin/system-health',
+        component: () => import('@/views/admin/SystemHealthView.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true }
+    },
+    {
+        path: '/admin/subscriptions',
+        component: () => import('@/views/admin/SubscriptionsView.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true }
+    },
+    {
+        path: '/admin/announcements',
+        component: () => import('@/views/admin/AnnouncementsAdminView.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true }
+    },
+    {
+        path: '/admin/unknown-barcodes',
+        component: () => import('@/views/admin/UnknownBarcodesView.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true }
+    },
+    {
+        path: '/admin/app-errors',
+        component: () => import('@/views/admin/AppErrorsView.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true }
+    },
+    {
+        path: '/admin/reviews',
+        component: () => import('@/views/admin/ReviewModerationView.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true }
+    },
+    {
+        path: '/admin/line-activity',
+        component: () => import('@/views/admin/LineActivityView.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true }
+    },
+    {
         path: '/admin/survey',
         component: () => import('@/views/admin/SurveyResultsView.vue'),
         meta: { requiresAuth: true, requiresAdmin: true }

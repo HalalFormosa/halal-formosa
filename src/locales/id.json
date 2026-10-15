@@ -1037,7 +1037,8 @@
       "productReports": "Laporan Produk",
       "users": "Pengguna",
       "auditLog": "Log Audit",
-      "survey": "Survei Tahunan"
+      "survey": "Survei Tahunan",
+      "tools": "Alat operasional"
     },
     "pro": {
       "title": "Halal Formosa Pro ⭐",
@@ -2543,5 +2544,267 @@
     "answerMore": "Jawab {count} lagi sekarang (~{minutes} mnt)",
     "later": "Mungkin nanti",
     "notAvailable": "Survei belum tersedia untuk akun Anda. Silakan cek lagi dalam beberapa minggu."
+  },
+  "adminPages": {
+    "common": {
+      "all": "Semua",
+      "cancel": "Batal",
+      "confirm": "Konfirmasi",
+      "copied": "Disalin {v}",
+      "copy": "Salin",
+      "copyFailed": "Tidak dapat menyalin",
+      "edit": "Ubah",
+      "hideDetails": "Sembunyikan detail",
+      "showDetails": "Tampilkan detail",
+      "lastDays": "{n} hari terakhir",
+      "loadFailed": "Gagal memuat. Silakan coba lagi.",
+      "loadMore": "Muat lebih banyak",
+      "period": "Periode",
+      "retry": "Coba lagi",
+      "save": "Simpan",
+      "saveFailed": "Gagal menyimpan",
+      "saved": "Tersimpan"
+    },
+    "tools": {
+      "title": "Alat operasional",
+      "intro": "Halaman khusus admin untuk rilis, kesehatan sistem, langganan, dan konten.",
+      "group": {
+        "release": "Rilis",
+        "health": "Kesehatan",
+        "business": "Bisnis",
+        "content": "Konten dan komunitas"
+      },
+      "versions": {
+        "name": "Versi aplikasi",
+        "desc": "Versi yang dipakai tiap pengguna dan siapa yang di bawah minimum"
+      },
+      "settings": {
+        "name": "Pengaturan aplikasi",
+        "desc": "Versi minimum, login OCR, tautan toko"
+      },
+      "health": {
+        "name": "Kesehatan sistem",
+        "desc": "Pemeriksaan harian, kejadian server, dan perubahan keamanan"
+      },
+      "errors": {
+        "name": "Error aplikasi",
+        "desc": "Error yang dilaporkan aplikasi, dikelompokkan"
+      },
+      "subs": {
+        "name": "Langganan",
+        "desc": "Anggota Pro, yang akan berakhir, dan ketidaksesuaian"
+      },
+      "announcements": {
+        "name": "Pengumuman dan notifikasi",
+        "desc": "Pengumuman dalam aplikasi, log push, email pembaruan"
+      },
+      "survey": {
+        "name": "Survei tahunan",
+        "desc": "Jawaban dan skor dari survei di Beranda"
+      },
+      "barcodes": {
+        "name": "Barcode tidak dikenal",
+        "desc": "Produk yang dipindai tetapi belum ada di database"
+      },
+      "reviews": {
+        "name": "Moderasi ulasan",
+        "desc": "Baca dan hapus ulasan tempat"
+      },
+      "line": {
+        "name": "Aktivitas bot LINE",
+        "desc": "Kejadian dan penggunaan bot LINE"
+      }
+    },
+    "versions": {
+      "title": "Versi aplikasi",
+      "note": "{live} dari {total} pengguna melapor langsung dari aplikasi. Sisanya berasal dari pemindaian terakhir masing-masing, jadi hanya mencakup yang pernah memindai. Laporan langsung dimulai pada rilis aplikasi berikutnya.",
+      "empty": "Belum ada pengguna pada periode ini.",
+      "minimum": "Minimum {v}",
+      "belowMinimum": "Di bawah minimum",
+      "liveCount": "{n} langsung",
+      "lastSeen": "terakhir terlihat {d}",
+      "tileUsers": "Pengguna terlihat",
+      "tileLive": "Melapor langsung",
+      "tileNewest": "Versi terbaru",
+      "tileBelow": "Di bawah minimum"
+    },
+    "settings": {
+      "title": "Pengaturan aplikasi",
+      "note": "Perubahan berlaku untuk semua pengguna segera dan dicatat di log audit.",
+      "minVersions": "Versi aplikasi minimum",
+      "minVersionHelp": "Pengguna dengan versi lebih lama diminta memperbarui sebelum bisa melanjutkan.",
+      "versionInvalid": "Gunakan versi seperti 2.0.1",
+      "impact": "{below} dari {total} pengguna dalam 14 hari terakhir berada di bawah {v} dan akan diminta memperbarui.",
+      "impactCurrent": "{below} dari {total} pengguna dalam 14 hari terakhir berada di bawah minimum saat ini {v} dan sudah diminta memperbarui.",
+      "updated": "Diperbarui {d}",
+      "savedFrom": "{key}: {old} menjadi {new}",
+      "confirmTitle": "Mohon konfirmasi",
+      "confirmVersion": "Atur versi minimum {platform} ke {v}? {below} dari {total} pengguna terbaru akan diminta memperbarui.",
+      "confirmLink": "Ubah tautan {label} menjadi {value}?",
+      "security": "Keamanan",
+      "ocrTitle": "Wajib login untuk OCR",
+      "ocrHelp": "Jika aktif, hanya pengguna yang login yang bisa memakai layanan pembaca teks.",
+      "ocrOn": "Aktifkan kewajiban login?",
+      "ocrOff": "MATIKAN kewajiban login? Siapa pun bisa memakai layanan pembaca teks tanpa akun.",
+      "storeLinks": "Tautan toko",
+      "readOnly": "Pengaturan lain",
+      "readOnlyHelp": "Hanya baca di sini."
+    },
+    "health": {
+      "title": "Kesehatan sistem",
+      "tabChecks": "Pemeriksaan",
+      "tabEvents": "Kejadian",
+      "tabSecurity": "Keamanan",
+      "hours": "{n} jam terakhir",
+      "allClear": "Semua aman",
+      "flagged": "{n} hal perlu dicek",
+      "generated": "Diperiksa {d}",
+      "level": "Level",
+      "tileScanGap": "Pemindaian tak tercatat",
+      "tileProMismatch": "Pro tidak sesuai",
+      "tileJobErrors": "Error job",
+      "tileChanges": "Perubahan diaudit",
+      "scanLog": "Pemindaian",
+      "scanLogLine": "{events} pemindaian berhasil, {rows} tersimpan, {missing} hilang.",
+      "purchases": "Pembelian belum sinkron",
+      "purchasesHelp": "Dibeli di aplikasi tetapi server belum menandainya sebagai Pro.",
+      "logins": "Login gagal",
+      "loginsLine": "{n} login gagal, sekitar {expected} diperkirakan untuk periode ini.",
+      "webhook": "Webhook pembelian",
+      "webhookLine": "{purchases} pembelian, {processed} kejadian webhook diproses.",
+      "jobErrors": "{n} error job server",
+      "cron": "Job terjadwal yang gagal",
+      "sensitive": "Perubahan sensitif oleh non-admin",
+      "sensitiveHelp": "Ini seharusnya tidak pernah terjadi. Periksa satu per satu.",
+      "noEvents": "Tidak ada kejadian.",
+      "noSecurity": "Belum ada perubahan keamanan.",
+      "securityNote": "Perubahan pada data terlindungi seperti poin dan status Pro, beserta pelakunya.",
+      "by": "oleh",
+      "flag": {
+        "scan_log_gap": "Pemindaian tak tersimpan",
+        "purchase_not_synced": "Pembelian belum sinkron",
+        "pro_flag_mismatch": "Tanda Pro tidak sesuai",
+        "login_failure_spike": "Lonjakan login gagal",
+        "server_job_errors": "Error job server",
+        "webhook_silent": "Webhook senyap",
+        "cron_job_failed": "Job terjadwal gagal",
+        "scheduled_call_5xx": "Error panggilan terjadwal",
+        "scheduled_call_unauthorized": "Panggilan terjadwal ditolak",
+        "sensitive_change_by_non_admin": "Perubahan sensitif oleh non-admin"
+      }
+    },
+    "subs": {
+      "title": "Langganan",
+      "note": "{lapsed} berakhir, {granted} Pro diberikan lewat referral atau admin, total {total} catatan langganan.",
+      "empty": "Tidak ada langganan pada tampilan ini.",
+      "active": "Aktif",
+      "lapsed": "Berakhir",
+      "notRenewing": "Tidak diperpanjang",
+      "renews": "Diperpanjang",
+      "granted": "Pro diberikan",
+      "mismatch": "Profil tidak sesuai",
+      "first": "Pembelian pertama {d}",
+      "expires": "berakhir {d}",
+      "endedOn": "berakhir pada {d}",
+      "tileActive": "Pro aktif",
+      "tileExpiring": "Berakhir dalam 14 hari",
+      "tileNotRenewing": "Tidak diperpanjang",
+      "tileMismatch": "Ketidaksesuaian",
+      "filter": {
+        "all": "Semua",
+        "active": "Aktif",
+        "expiring": "Segera berakhir",
+        "not_renewing": "Tidak diperpanjang",
+        "lapsed": "Berakhir",
+        "mismatch": "Tidak sesuai"
+      }
+    },
+    "announcements": {
+      "title": "Pengumuman",
+      "tabAnnouncements": "Pengumuman",
+      "tabNotifications": "Log push",
+      "tabEmails": "Email pembaruan",
+      "note": "Pengumuman yang aktif ditampilkan kepada pengguna di aplikasi.",
+      "new": "Pengumuman baru",
+      "newTitle": "Pengumuman baru",
+      "editTitle": "Ubah pengumuman",
+      "empty": "Belum ada pengumuman.",
+      "live": "Tayang",
+      "off": "Mati",
+      "nowLive": "Pengumuman tayang",
+      "nowOff": "Pengumuman dimatikan",
+      "fieldTitle": "Judul",
+      "fieldContent": "Pesan",
+      "fieldType": "Jenis",
+      "fieldImage": "Tautan gambar (opsional)",
+      "fieldLink": "Tautan (opsional)",
+      "fieldActive": "Tampilkan ke pengguna",
+      "titleRequired": "Silakan isi judul",
+      "imageHttps": "Tautan gambar harus diawali https://",
+      "linkScheme": "Tautan harus diawali https:// atau myapp://",
+      "noNotifications": "Belum ada notifikasi tercatat.",
+      "noEmails": "Tidak ada email pembaruan dalam antrean.",
+      "emailNote": "Alamat email tidak ditampilkan di sini.",
+      "emailSent": "Terkirim",
+      "emailPending": "Menunggu",
+      "emailFailed": "Gagal",
+      "emailTotal": "Dalam antrean"
+    },
+    "barcodes": {
+      "title": "Barcode tidak dikenal",
+      "note": "Barcode yang dipindai pengguna tetapi belum ada di database. {added} yang sudah ditambahkan tidak ditampilkan.",
+      "empty": "Tidak ada yang kurang pada periode ini.",
+      "scans": "{n} pemindaian",
+      "people": "{n} orang",
+      "last": "terakhir {d}",
+      "lookup": "Cari",
+      "tileMissing": "Masih kurang",
+      "tileScans": "Pemindaian",
+      "tileRepeated": "Dipindai 3 kali atau lebih",
+      "tileAdded": "Sudah ditambahkan"
+    },
+    "errors": {
+      "title": "Error aplikasi",
+      "note": "Error yang dilaporkan aplikasi sendiri. Hanya versi dengan pelaporan error yang mengirimnya, sehingga angka naik setelah rilis berikutnya.",
+      "empty": "Tidak ada error pada periode ini.",
+      "times": "{n} kali",
+      "users": "{n} pengguna",
+      "first": "pertama {d}",
+      "stack": "Tampilkan stack trace",
+      "tileErrors": "Error",
+      "tileKinds": "Jenis error",
+      "tileViews": "Tampilan layar",
+      "tileRate": "Error per 1.000 tampilan"
+    },
+    "reviews": {
+      "title": "Moderasi ulasan",
+      "note": "Menghapus ulasan bersifat permanen bagi pengguna. Alasan wajib diisi, dan ulasan yang dihapus tersimpan di log audit.",
+      "rating": "Rating",
+      "anyRating": "Semua rating",
+      "upTo": "Bintang {n} atau kurang",
+      "search": "Cari komentar atau tempat",
+      "empty": "Tidak ada ulasan.",
+      "noComment": "Tanpa komentar",
+      "ownerReply": "Balasan pemilik",
+      "remove": "Hapus",
+      "removeTitle": "Hapus ulasan",
+      "removeMessage": "Hapus ulasan untuk {place}? Mohon beri alasan singkat.",
+      "reasonPlaceholder": "Alasan (minimal 3 karakter)",
+      "removed": "Ulasan dihapus"
+    },
+    "line": {
+      "title": "Aktivitas bot LINE",
+      "note": "Hanya total. Id akun dipersingkat dan tidak pernah ditampilkan penuh.",
+      "empty": "Tidak ada aktivitas LINE pada periode ini.",
+      "perDay": "Per hari",
+      "legend": "Kejadian, ditambah penggunaan setelah tanda tambah.",
+      "byType": "Jenis kejadian",
+      "topSources": "Akun paling aktif",
+      "masked": "Id dipersingkat.",
+      "tileEvents": "Kejadian",
+      "tileUsage": "Penggunaan",
+      "tileAccounts": "Akun",
+      "tileActiveDays": "Hari aktif"
+    }
   }
 }
