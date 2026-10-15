@@ -116,6 +116,9 @@
 
 
 
+      <!-- === Yearly evaluation: one question per session === -->
+      <YearlySurveyCard v-if="isAuthenticated" />
+
       <!-- === Our Partner=== -->
       <ion-card>
         <ion-card-header>
@@ -225,9 +228,6 @@
       <LazySection placeholderHeight="120px" @load="isAuthenticated && fetchProgress()">
         <DailyMissions v-if="isAuthenticated" />
       </LazySection>
-
-      <!-- === Yearly evaluation: one question per session === -->
-      <YearlySurveyCard v-if="isAuthenticated" />
 
 
       <!-- === Discover Products === -->
