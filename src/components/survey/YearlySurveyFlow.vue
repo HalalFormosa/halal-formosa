@@ -20,6 +20,11 @@
         <ion-button fill="outline" color="carrot" @click="start">{{ $t('survey.retry') }}</ion-button>
       </div>
 
+      <div v-else-if="notAvailable" class="center-box" data-testid="survey-flow-unavailable">
+        <p>{{ $t('survey.notAvailable') }}</p>
+        <ion-button fill="outline" color="carrot" @click="flowOpen = false">{{ $t('survey.close') }}</ion-button>
+      </div>
+
       <!-- thank-you -->
       <div v-else-if="done" class="center-box done-box" data-testid="survey-flow-done">
         <div class="done-icon"><ion-icon :icon="checkmarkCircle" /></div>
@@ -42,7 +47,7 @@
       </div>
     </ion-content>
 
-    <ion-footer v-if="!loading && !done && !errorKey && current">
+    <ion-footer v-if="!loading && !done && !errorKey && !notAvailable && current">
       <ion-toolbar>
         <div class="footer-row">
           <ion-button fill="clear" color="medium" :disabled="saving" data-testid="survey-flow-skip" @click="skip">
@@ -78,6 +83,7 @@ const errorKey = ref<string | null>(null)
 const saveError = ref(false)
 const saving = ref(false)
 const done = ref(false)
+const notAvailable = ref(false)
 
 const questions = ref<SurveyQuestion[]>([])
 const index = ref(0)
@@ -112,6 +118,7 @@ async function start() {
   errorKey.value = null
   saveError.value = false
   done.value = false
+  notAvailable.value = false
   index.value = 0
   value.value = null
   earned.value = 0
@@ -123,7 +130,8 @@ async function start() {
     total.value = flow.total
     completed.value = flow.state === 'complete'
     questions.value = flow.state === 'flow' ? flow.questions : []
-    if (!questions.value.length) done.value = true
+    if (flow.state === 'ineligible') notAvailable.value = true
+    else if (!questions.value.length) done.value = true
   } catch (err) {
     console.warn('[YearlySurveyFlow] could not load questions:', err)
     errorKey.value = 'survey.loadError'

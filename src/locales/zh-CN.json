@@ -1897,6 +1897,7 @@
     "rewardComplete": "问卷完成",
     "textPlaceholder": "请输入您的答案（欢迎补充细节）",
     "answerMore": "现在再回答 {count} 题（约 {minutes} 分）",
-    "later": "之后再说"
+    "later": "之后再说",
+    "notAvailable": "您的账号目前尚未开放问卷，请过几周再来看看。"
   }
 }

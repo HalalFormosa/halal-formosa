@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
 vi.mock('@/services/SurveyService', async (importOriginal) => {
     const actual = await importOriginal<typeof import('@/services/SurveyService')>()
@@ -27,7 +27,7 @@ vi.mock('@/composables/usePoints', async () => {
 })
 vi.mock('@/i18n', () => ({ i18n: { global: { t: (k: string) => k } } }))
 
-import { useYearlySurvey, resetYearlySurveySession } from '@/composables/useYearlySurvey'
+import { useYearlySurvey, resetYearlySurveySession, requestYearlySurveyFlow } from '@/composables/useYearlySurvey'
 import { SurveyService } from '@/services/SurveyService'
 import { openReward } from '@/composables/useRewardOverlay'
 import { currentPoints } from '@/composables/usePoints'
@@ -151,5 +151,27 @@ describe('useYearlySurvey', () => {
         s.onFlowClosed({ answered: 14, total: 14, completed: true })
         expect(s.flowOpen.value).toBe(false)
         expect(s.card.value).toMatchObject({ state: 'complete', answered: 14 })
+    })
+
+    describe('/survey link request', () => {
+        afterEach(() => vi.useRealTimers())
+
+        it('is granted once, right after the link was opened', () => {
+            requestYearlySurveyFlow()
+            const s = useYearlySurvey()
+            expect(s.consumeFlowRequest()).toBe(true)
+            expect(s.consumeFlowRequest()).toBe(false)
+        })
+
+        it('is false when no link was opened', () => {
+            expect(useYearlySurvey().consumeFlowRequest()).toBe(false)
+        })
+
+        it('expires, so a link opened while signed out does not pop up after a later login', () => {
+            vi.useFakeTimers()
+            requestYearlySurveyFlow()
+            vi.advanceTimersByTime(3 * 60 * 1000)
+            expect(useYearlySurvey().consumeFlowRequest()).toBe(false)
+        })
     })
 })

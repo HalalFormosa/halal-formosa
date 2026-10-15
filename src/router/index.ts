@@ -25,6 +25,7 @@ import {
 import SearchView from '@/views/search/SearchView.vue';
 import ExploreView from '@/views/explore/ExploreView.vue';
 import ScanIngredientsView from '@/views/scan/ScanIngredientsView.vue';
+import { requestYearlySurveyFlow } from '@/composables/useYearlySurvey';
 
 const ALLOWED_WHEN_PROFILE_INCOMPLETE = [
     '/profile',
@@ -282,6 +283,17 @@ const routes: Array<RouteRecordRaw> = [
         path: '/admin/audit-log',
         component: () => import('@/views/admin/AuditLogView.vue'),
         meta: { requiresAuth: true, requiresAdmin: true }
+    },
+    {
+        // Deep link target for notifications and the web (myapp://survey, https://halalformosa.com/survey).
+        // Not a page of its own: after the auth guard has run it asks Home to open the survey flow.
+        path: '/survey',
+        component: { render: () => null },
+        meta: { requiresAuth: true, noTabs: true, noAds: true },
+        beforeEnter: () => {
+            requestYearlySurveyFlow()
+            return { path: '/home', replace: true }
+        }
     },
     {
         path: '/admin/survey',

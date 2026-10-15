@@ -22,7 +22,7 @@ vi.mock('@/components/survey/YearlySurveyFlow.vue', () => ({ default: { template
 
 import YearlySurveyCard from '@/components/survey/YearlySurveyCard.vue'
 import { SurveyService } from '@/services/SurveyService'
-import { resetYearlySurveySession, useYearlySurvey } from '@/composables/useYearlySurvey'
+import { resetYearlySurveySession, useYearlySurvey, requestYearlySurveyFlow } from '@/composables/useYearlySurvey'
 
 const i18n = createI18n({ legacy: false, locale: 'en', messages: { en } })
 const passthrough = { template: '<div><slot /></div>' }
@@ -99,5 +99,33 @@ describe('YearlySurveyCard after an answer', () => {
 
         expect(w.find('[data-testid="survey-thanks"]').exists()).toBe(true)
         expect(w.find('[data-testid="survey-answer-more"]').exists()).toBe(false)
+    })
+
+    it('opens the full-screen flow straight away when Home is reached through a /survey link', async () => {
+        vi.mocked(SurveyService.getCard).mockResolvedValue({ state: 'question', answered: 0, total: 14, question })
+        requestYearlySurveyFlow()
+        mount(YearlySurveyCard, { global: { plugins: [i18n], stubs } })
+        await flushPromises()
+
+        expect(useYearlySurvey().flowOpen.value).toBe(true)
+    })
+
+    it('opens it as well when Home was already showing and the link arrives afterwards', async () => {
+        vi.mocked(SurveyService.getCard).mockResolvedValue({ state: 'question', answered: 0, total: 14, question })
+        mount(YearlySurveyCard, { global: { plugins: [i18n], stubs } })
+        await flushPromises()
+        expect(useYearlySurvey().flowOpen.value).toBe(false)
+
+        requestYearlySurveyFlow()
+        await flushPromises()
+        expect(useYearlySurvey().flowOpen.value).toBe(true)
+    })
+
+    it('does not open the flow without a link', async () => {
+        vi.mocked(SurveyService.getCard).mockResolvedValue({ state: 'question', answered: 0, total: 14, question })
+        mount(YearlySurveyCard, { global: { plugins: [i18n], stubs } })
+        await flushPromises()
+
+        expect(useYearlySurvey().flowOpen.value).toBe(false)
     })
 })

@@ -2542,6 +2542,7 @@
     "rewardComplete": "Survey completed",
     "textPlaceholder": "Type your answer (optional detail is welcome)",
     "answerMore": "Answer {count} more now (~{minutes} min)",
-    "later": "Maybe later"
+    "later": "Maybe later",
+    "notAvailable": "The survey isn't available for your account yet. Please check back in a few weeks."
   }
 }

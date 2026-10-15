@@ -83,14 +83,17 @@ import { useYearlySurvey } from '@/composables/useYearlySurvey'
 import { estimateMinutes, localizedText, type SurveyAnswer, type SurveySubmitResult } from '@/services/SurveyService'
 
 const { locale } = useI18n()
-const { card, question, answered, total, remaining, flowOpen, loadCard, answerCard, dismiss, openFlow } = useYearlySurvey()
+const { card, question, answered, total, remaining, flowOpen, flowRequestedAt, consumeFlowRequest, loadCard, answerCard, dismiss, openFlow } = useYearlySurvey()
 
 const value = ref<SurveyAnswer | null>(null)
 const saving = ref(false)
 const error = ref(false)
 const thanks = ref<SurveySubmitResult | null>(null)
 
-onMounted(loadCard)
+// A /survey link: open the full-screen flow, whether Home was already showing or is only now being mounted.
+function openIfRequested() { if (consumeFlowRequest()) openFlow() }
+onMounted(() => { loadCard(); openIfRequested() })
+watch(flowRequestedAt, openIfRequested)
 
 // Coming back from "answer the rest now" the thank-you is stale: the flow has its own finish screen.
 watch(flowOpen, (open) => { if (!open) thanks.value = null })

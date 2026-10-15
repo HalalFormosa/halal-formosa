@@ -19,12 +19,22 @@ const loaded = ref(false)
 const loading = ref(false)
 const flowOpen = ref(false)
 
+// The /survey deep link (notification or web link) asks Home to open the full-screen flow. It expires so a link
+// opened while signed out does not pop the survey up minutes later, after an unrelated login.
+const FLOW_REQUEST_TTL_MS = 2 * 60 * 1000
+const flowRequestedAt = ref<number | null>(null)
+
+export function requestYearlySurveyFlow() {
+  flowRequestedAt.value = Date.now()
+}
+
 /** Test hook: lets a new test start from a fresh session. */
 export function resetYearlySurveySession() {
   card.value = null
   loaded.value = false
   loading.value = false
   flowOpen.value = false
+  flowRequestedAt.value = null
 }
 
 export function useYearlySurvey() {
@@ -113,6 +123,13 @@ export function useYearlySurvey() {
     if (card.value) card.value = { ...card.value, state: 'snoozed' }
   }
 
+  /** True once if a recent /survey link asked for the flow; the request is used up either way. */
+  function consumeFlowRequest(): boolean {
+    const at = flowRequestedAt.value
+    flowRequestedAt.value = null
+    return at !== null && Date.now() - at <= FLOW_REQUEST_TTL_MS
+  }
+
   function openFlow() {
     flowOpen.value = true
     ActivityLogService.log('survey_flow_started', { answered: answered.value })
@@ -138,6 +155,8 @@ export function useYearlySurvey() {
     remaining,
     loading,
     flowOpen,
+    flowRequestedAt,
+    consumeFlowRequest,
     loadCard,
     answerCard,
     saveAnswer,

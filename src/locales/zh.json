@@ -2103,6 +2103,7 @@
     "rewardComplete": "問卷完成",
     "textPlaceholder": "請輸入您的答案（歡迎補充細節）",
     "answerMore": "現在再回答 {count} 題（約 {minutes} 分）",
-    "later": "之後再說"
+    "later": "之後再說",
+    "notAvailable": "您的帳號目前尚未開放問卷，請過幾週再來看看。"
   }
 }
