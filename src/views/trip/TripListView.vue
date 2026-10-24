@@ -270,8 +270,7 @@ import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import utc from 'dayjs/plugin/utc'
 import timezone from 'dayjs/plugin/timezone'
-import { flagBot } from '@/utils/botShield'
-import { hasOrganicInteraction, delayForHuman } from '@/utils/interactionShield'
+import { delayForHuman } from '@/utils/interactionShield'
 import { useRecaptcha } from '@/composables/useRecaptcha'
 
 dayjs.extend(utc)
@@ -539,21 +538,15 @@ function handleSearchInput(ev: Event) {
 
   if (q.length > 1) {
     searchTimeout = window.setTimeout(async () => {
-      // 🛡️ Level 2 Interaction & hCaptcha Attestation Guard for Trip Search
-      if (!hasOrganicInteraction()) {
-        flagBot('no_organic_interaction');
-        return;
-      }
-
-      // Execute reCAPTCHA invisibly
+      // Execute reCAPTCHA invisibly. A failed token is never proof of a bot,
+      // so fall through and let the server decide.
       let captchaToken = 'disabled';
       if (isCaptchaEnabled) {
         try {
           captchaToken = await executeRecaptcha('trip');
         } catch (e) {
-          console.error('🚨 reCAPTCHA verification failed in trip:', e);
-          flagBot('captcha_challenge_failed');
-          return;
+          console.warn('reCAPTCHA token unavailable in trip:', e);
+          captchaToken = 'none';
         }
       }
       (window as any)._recaptchaToken = captchaToken;

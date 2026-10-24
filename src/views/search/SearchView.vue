@@ -653,7 +653,7 @@ import utc from 'dayjs/plugin/utc'
 import timezone from 'dayjs/plugin/timezone'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import { flagBot } from '@/utils/botShield';
-import { hasOrganicInteraction, delayForHuman } from '@/utils/interactionShield';
+import { delayForHuman } from '@/utils/interactionShield';
 import { useRecaptcha } from '@/composables/useRecaptcha';
 
 
@@ -1246,21 +1246,15 @@ const fetchProducts = async (reset = false) => {
        🔎 SEARCH MODE
     ========================================================= */
     if (searchQuery.value && searchQuery.value.length > 1) {
-      // 🛡️ Level 2 Interaction & hCaptcha Attestation Guard
-      if (!hasOrganicInteraction()) {
-        flagBot('no_organic_interaction');
-        return;
-      }
-
-      // Execute reCAPTCHA invisibly
+      // Execute reCAPTCHA invisibly. A failed token is never proof of a bot,
+      // so fall through and let the server decide.
       let captchaToken = 'disabled';
       if (isCaptchaEnabled) {
         try {
           captchaToken = await executeRecaptcha('search');
         } catch (e) {
-          console.error('🚨 reCAPTCHA verification failed:', e);
-          flagBot('captcha_challenge_failed');
-          return;
+          console.warn('reCAPTCHA token unavailable in search:', e);
+          captchaToken = 'none';
         }
       }
       (window as any)._recaptchaToken = captchaToken;

@@ -353,8 +353,7 @@ import { isAdmin } from '@/composables/userProfile'
 import { useStoreCart } from '@/composables/useStoreCart'
 import { useStoreChat } from '@/composables/useStoreChat'
 import { ActivityLogService } from '@/services/ActivityLogService'
-import { flagBot } from '@/utils/botShield'
-import { hasOrganicInteraction, delayForHuman } from '@/utils/interactionShield'
+import { delayForHuman } from '@/utils/interactionShield'
 import { useRecaptcha } from '@/composables/useRecaptcha'
 
 const { t, locale } = useI18n()
@@ -679,21 +678,15 @@ function stopAutoScroll() {
 watch(searchQuery, async (newVal) => {
   const trimmed = newVal.trim()
   if (trimmed.length > 1) {
-    // 🛡️ Level 2 Interaction & hCaptcha Attestation Guard for Store Search
-    if (!hasOrganicInteraction()) {
-      flagBot('no_organic_interaction');
-      return;
-    }
-
-    // Execute reCAPTCHA invisibly
+    // Execute reCAPTCHA invisibly. A failed token is never proof of a bot,
+    // so fall through and let the server decide.
     let captchaToken = 'disabled';
     if (isCaptchaEnabled) {
       try {
         captchaToken = await executeRecaptcha('store');
       } catch (e) {
-        console.error('🚨 reCAPTCHA verification failed in store:', e);
-        flagBot('captcha_challenge_failed');
-        return;
+        console.warn('reCAPTCHA token unavailable in store:', e);
+        captchaToken = 'none';
       }
     }
     (window as any)._recaptchaToken = captchaToken;

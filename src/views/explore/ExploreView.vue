@@ -990,9 +990,8 @@ import {Geolocation} from '@capacitor/geolocation'
 import { StatusBar, Style } from '@capacitor/status-bar'
 import {supabase} from '@/plugins/supabaseClient'
 import {notifyFetchError} from '@/utils/offlineFeedback'
-import { hasOrganicInteraction, delayForHuman } from '@/utils/interactionShield'
+import { delayForHuman } from '@/utils/interactionShield'
 import { useRecaptcha } from '@/composables/useRecaptcha'
-import { flagBot } from '@/utils/botShield'
 
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
@@ -3020,21 +3019,15 @@ const runRemoteLocationSearchInner = async (q: string, logQuery: boolean): Promi
     });
   }
 
-  // 🛡️ Level 2 Interaction & hCaptcha Attestation Guard for Explore Search
-  if (!hasOrganicInteraction()) {
-    flagBot('no_organic_interaction');
-    return false;
-  }
-
-  // Execute reCAPTCHA invisibly
+  // Execute reCAPTCHA invisibly. A failed token is never proof of a bot
+  // (network blips, SDK hiccups), so fall through and let the server decide.
   let captchaToken = 'disabled';
   if (isCaptchaEnabled) {
     try {
       captchaToken = await executeRecaptcha('explore');
     } catch (e) {
-      console.error('🚨 reCAPTCHA verification failed in explore:', e);
-      flagBot('captcha_challenge_failed');
-      return false;
+      console.warn('reCAPTCHA token unavailable in explore:', e);
+      captchaToken = 'none';
     }
   }
   (window as any)._recaptchaToken = captchaToken;

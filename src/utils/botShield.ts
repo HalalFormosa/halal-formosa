@@ -2,7 +2,7 @@ import { ref } from 'vue';
 
 const BOT_STORAGE_KEY = 'hf_bot_shield_flag';
 const BOT_STORAGE_TS_KEY = 'hf_bot_shield_flag_ts';
-const BOT_FLAG_TTL_MS = 30 * 60 * 1000; // 30 minutes
+const BOT_FLAG_TTL_MS = 5 * 60 * 1000; // 5 minutes — short so a false positive clears itself
 
 function readStoredFlag(): boolean {
   if (localStorage.getItem(BOT_STORAGE_KEY) !== 'true') {
