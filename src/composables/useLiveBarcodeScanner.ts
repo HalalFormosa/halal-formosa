@@ -64,6 +64,10 @@ export function useLiveBarcodeScanner() {
   let barcodeListenerHandle: { remove: () => Promise<void> } | null = null
   let scanErrorListenerHandle: { remove: () => Promise<void> } | null = null
   let html5QrCode: Html5Qrcode | null = null
+  // Bumped by every start()/stop(). start() awaits several slow native calls
+  // (permission dialog, Play Services check); if stop() ran meanwhile — e.g.
+  // the user hit back — start() must not carry on and re-hide the WebView.
+  let generation = 0
 
   /**
    * @param onError Called for scan failures that happen *after* `start()`
@@ -77,8 +81,12 @@ export function useLiveBarcodeScanner() {
     onDetected: (rawValue: string) => void,
     onError?: (code: BarcodeScanErrorCode) => void
   ) {
+    const gen = ++generation
+    const cancelled = () => gen !== generation
+
     if (isNative) {
       const { supported } = await BarcodeScanner.isSupported()
+      if (cancelled()) return
       if (!supported) throw new BarcodeScanStartError('unsupportedError')
 
       // On Android, ML Kit's barcode model is a separate module fetched via
@@ -86,6 +94,7 @@ export function useLiveBarcodeScanner() {
       // GMS) — startScan() would otherwise fail with an opaque native error.
       if (Capacitor.getPlatform() === 'android') {
         const { available } = await BarcodeScanner.isGoogleBarcodeScannerModuleAvailable()
+        if (cancelled()) return
         if (!available) {
           // Fire-and-forget: kicks off the download for next time, but this
           // attempt still needs to fail now so the caller can tell the user.
@@ -95,8 +104,10 @@ export function useLiveBarcodeScanner() {
       }
 
       const { camera } = await BarcodeScanner.checkPermissions()
+      if (cancelled()) return
       if (camera !== 'granted') {
         const { camera: newStatus } = await BarcodeScanner.requestPermissions()
+        if (cancelled()) return
         ActivityLogService.log('permission_result', { permission: 'camera', status: newStatus, source: 'barcode_scan' })
         if (newStatus !== 'granted') throw new BarcodeScanStartError('permissionError')
       }
@@ -107,11 +118,13 @@ export function useLiveBarcodeScanner() {
         const barcode: Barcode | undefined = event.barcodes[0]
         if (barcode?.rawValue) onDetected(barcode.rawValue)
       })
+      if (cancelled()) { await releaseNative(); return }
 
       scanErrorListenerHandle = await BarcodeScanner.addListener('scanError', (event) => {
         console.error('❌ [useLiveBarcodeScanner] Native scan error:', event.message)
         onError?.('scanError')
       })
+      if (cancelled()) { await releaseNative(); return }
 
       try {
         await BarcodeScanner.startScan({ formats: MLKIT_FORMATS })
@@ -123,6 +136,8 @@ export function useLiveBarcodeScanner() {
         scanErrorListenerHandle = null
         throw new BarcodeScanStartError('cameraError')
       }
+
+      if (cancelled()) { await releaseNative(); return }
 
       try {
         const { available } = await BarcodeScanner.isTorchAvailable()
@@ -138,27 +153,31 @@ export function useLiveBarcodeScanner() {
         (decodedText) => onDetected(decodedText),
         () => { /* silent per-frame miss */ }
       )
+      if (cancelled()) await stop()
     }
   }
 
+  async function releaseNative() {
+    document.body.classList.remove('barcode-scanner-active')
+    try {
+      await BarcodeScanner.stopScan()
+    } catch {
+      // scan may never have started (e.g. permission denied) — nothing to stop
+    }
+    const handles = [barcodeListenerHandle, scanErrorListenerHandle]
+    barcodeListenerHandle = null
+    scanErrorListenerHandle = null
+    for (const h of handles) {
+      try { await h?.remove() } catch { /* already gone */ }
+    }
+    torchAvailable.value = false
+    torchOn.value = false
+  }
+
   async function stop() {
+    generation++
     if (isNative) {
-      document.body.classList.remove('barcode-scanner-active')
-      try {
-        await BarcodeScanner.stopScan()
-      } catch {
-        // scan may never have started (e.g. permission denied) — nothing to stop
-      }
-      if (barcodeListenerHandle) {
-        await barcodeListenerHandle.remove()
-        barcodeListenerHandle = null
-      }
-      if (scanErrorListenerHandle) {
-        await scanErrorListenerHandle.remove()
-        scanErrorListenerHandle = null
-      }
-      torchAvailable.value = false
-      torchOn.value = false
+      await releaseNative()
     } else if (html5QrCode) {
       try {
         if (html5QrCode.isScanning) await html5QrCode.stop()

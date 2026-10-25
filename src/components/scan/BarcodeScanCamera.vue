@@ -83,7 +83,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
-import { IonIcon, IonSpinner } from '@ionic/vue'
+import { IonIcon, IonSpinner, onIonViewWillLeave } from '@ionic/vue'
 import { closeOutline, flashOutline, flashOffOutline, fastFoodOutline } from 'ionicons/icons'
 import { useI18n } from 'vue-i18n'
 import { Haptics, ImpactStyle } from '@capacitor/haptics'
@@ -201,6 +201,12 @@ onMounted(async () => {
     await ActivityLogService.log('barcode_scan_error', { error: code })
     emit('error', t(`search.barcodeScan.${code}`))
   }
+})
+
+// The leaving page stays mounted until Ionic's transition ends; release the
+// camera (and un-hide the WebView) as soon as the user navigates away.
+onIonViewWillLeave(() => {
+  stopScanner()
 })
 
 onUnmounted(() => {
