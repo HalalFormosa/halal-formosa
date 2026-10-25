@@ -866,6 +866,11 @@
                 <div v-if="['gold', 'silver'].includes(String(place.partner_tier || '').toLowerCase())" class="premium-flare"></div>
               </div>
             </div>
+
+            <div v-if="mapShowsGoldOnly" class="map-empty-hint">
+              <ion-icon :icon="locationOutline" />
+              <span>{{ $t('explore.noPlacesInView') }}</span>
+            </div>
           </template>
         </div>
       </div>
@@ -2039,6 +2044,16 @@ const displayedLocations = computed(() => {
   return sortedLocations.value
 })
 
+// True when the map carousel holds only gold partners because the current
+// viewport has no regular places.
+const mapShowsGoldOnly = computed(() =>
+  viewMode.value === 'map' &&
+  !!mapInstance &&
+  !!currentMapBounds.value &&
+  visibleMapLocations.value.length > 0 &&
+  visibleMapLocations.value.every(p => p.partner_tier?.toLowerCase() === 'gold')
+)
+
 const visibleMapLocations = computed(() => {
   if (viewMode.value !== 'map' || !mapInstance) {
     return displayedLocations.value
@@ -2064,9 +2079,17 @@ const visibleMapLocations = computed(() => {
   // rotation timer picks next just vanishes from this carousel the moment
   // it's outside the current map view, and a random regular place leads
   // instead until rotation cycles back to a gold that happens to be visible.
-  let filtered = displayedLocations.value.filter(p =>
-    p.partner_tier?.toLowerCase() === 'gold' || extendedBounds.contains(p.position)
-  )
+  // The viewport decides what's listed. The only exception is ONE gold
+  // partner from outside it (the first in sort order, i.e. the featured
+  // one) so sponsorship still gets its slot without drowning out the
+  // places actually on screen.
+  let outOfViewGoldKept = false
+  let filtered = displayedLocations.value.filter(p => {
+    if (extendedBounds.contains(p.position)) return true
+    if (p.partner_tier?.toLowerCase() !== 'gold' || outOfViewGoldKept) return false
+    outOfViewGoldKept = true
+    return true
+  })
 
   // Limit to max 25 cards to keep DOM lightweight
   const maxCards = 25
@@ -4609,6 +4632,23 @@ button.gm-ui-hover-effect > span {
   padding: 0 16px;
   gap: 12px;
   will-change: transform;
+}
+
+.map-empty-hint {
+  flex: 0 0 60vw;
+  max-width: 240px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px;
+  border-radius: 20px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--ion-color-medium);
+  background: rgba(var(--card-bg-rgb), 0.88);
+  backdrop-filter: blur(20px) saturate(180%);
 }
 
 .modern-location-card {

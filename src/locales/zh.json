@@ -616,6 +616,7 @@
     "showingPlace": "顯示 1 個地點",
     "results": "搜尋結果",
     "showingResults": "正在顯示 {total} 個地點中的 {count} 個",
+    "noPlacesInView": "此地圖範圍內沒有其他地點，請移動或縮小地圖查看更多。",
     "details": {
       "title": "地點詳情",
       "noticeTitle": "處理與狀態說明",
