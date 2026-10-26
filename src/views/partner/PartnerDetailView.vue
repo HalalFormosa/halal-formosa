@@ -221,12 +221,81 @@
           </ion-card-content>
         </ion-card>
 
-        <!-- Produced Products (Campus only) -->
+        <!-- Own branches / stores (locations linked to this partner) -->
         <ion-card
-            v-if="(body.partner_type === 'campus') && (loadingProducedProducts || producedProducts.length)"
+            v-if="isBrandPartner && (loadingBranches || ownStoreLocations.length)"
         >
           <ion-card-header>
-            <ion-card-title>{{ $t('partner.producedProducts') }}</ion-card-title>
+            <ion-card-title>{{ $t('partner.ourStores') }}</ion-card-title>
+          </ion-card-header>
+
+          <ion-card-content>
+            <template v-if="loadingBranches">
+              <ion-skeleton-text animated style="width:100%;height:140px;border-radius:12px;" />
+            </template>
+
+            <div v-else class="discover-scroll">
+              <div class="discover-track">
+                <ion-card
+                    v-for="loc in ownStoreLocations"
+                    :key="loc.id"
+                    class="discover-item discover-item--scroll"
+                    button
+                    @click="openCertifiedLocation(loc)"
+                >
+                  <img
+                      :src="loc.image || 'https://placehold.co/200x200'"
+                      class="discover-img"
+                      @error="(e) => (e.target as any).src = `https://placehold.co/200x200?text=${encodeURIComponent(loc.name)}`"
+                  />
+                  <ion-label class="discover-label">
+                    <p class="discover-name" style="text-align: center;">{{ loc.name }}</p>
+                    <p style="font-size:12px;color:var(--ion-color-medium)">
+                      {{ loc.location_types?.name }}
+                    </p>
+                  </ion-label>
+                </ion-card>
+              </div>
+            </div>
+          </ion-card-content>
+        </ion-card>
+
+        <!-- Stores that carry this partner's products -->
+        <ion-card
+            v-if="isBrandPartner && (loadingStockists || stockists.length)"
+        >
+          <ion-card-header>
+            <ion-card-title>{{ $t('partner.availableAt') }}</ion-card-title>
+          </ion-card-header>
+
+          <ion-card-content>
+            <template v-if="loadingStockists">
+              <ion-skeleton-text animated style="width:100%;height:80px;border-radius:12px;" />
+            </template>
+
+            <div v-else class="stockist-row">
+              <div
+                  v-for="s in stockists"
+                  :key="s.id"
+                  class="stockist-item"
+                  :role="s.website ? 'button' : undefined"
+                  @click="openStockist(s)"
+              >
+                <img v-if="s.logo_url" :src="s.logo_url" :alt="s.name" class="stockist-logo" />
+                <span class="stockist-name">{{ s.name }}</span>
+              </div>
+            </div>
+          </ion-card-content>
+        </ion-card>
+
+        <!-- Produced Products (Campus) / Provided Products (brand & merchant partners) -->
+        <ion-card
+            v-if="hasProducedProducts && (loadingProducedProducts || producedProducts.length)"
+        >
+          <ion-card-header>
+            <ion-card-title>
+              {{ body.partner_type === 'campus' ? $t('partner.producedProducts') : $t('partner.productsBy', { name: body.name }) }}
+            </ion-card-title>
           </ion-card-header>
 
           <ion-card-content>
@@ -628,7 +697,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import {
   IonPage,
@@ -864,6 +933,82 @@ async function fetchCertifiedProducts() {
 const producedProducts = ref<any[]>([])
 const loadingProducedProducts = ref(false)
 
+const PRODUCT_PROVIDER_TYPES = ['campus', 'merchant', 'vendor', 'organization']
+const hasProducedProducts = computed(() => PRODUCT_PROVIDER_TYPES.includes(body.value.partner_type || ''))
+const isBrandPartner = computed(() => hasProducedProducts.value && body.value.partner_type !== 'campus')
+
+// Branches / own stores: map places linked to this partner via locations.partner_id
+const branchLocations = ref<any[]>([])
+const loadingBranches = ref(false)
+
+async function fetchBranchLocations() {
+  loadingBranches.value = true
+
+  const { data, error } = await supabase
+      .from('locations')
+      .select('id, name, image, address, location_types ( name )')
+      .eq('partner_id', body.value.id)
+      .eq('approved', true)
+      .eq('is_archived', false)
+      .order('name', { ascending: true })
+
+  if (!error && data) {
+    branchLocations.value = data
+  }
+
+  loadingBranches.value = false
+}
+
+// Gold partners may already list the same place under "Affiliated Stores"
+const ownStoreLocations = computed(() => {
+  const listed = new Set(certifiedLocations.value.map(l => l.id))
+  return branchLocations.value.filter(l => !listed.has(l.id))
+})
+
+// Stores that carry this partner's products (derived from product_stores)
+const stockists = ref<any[]>([])
+const loadingStockists = ref(false)
+
+async function fetchStockists() {
+  loadingStockists.value = true
+
+  const { data, error } = await supabase
+      .from('product_stores')
+      .select('stores ( id, name, logo_url, website, sort_order ), products!inner ( partner_id )')
+      .eq('products.partner_id', body.value.id)
+
+  if (!error && data) {
+    const byId = new Map<string, any>()
+    for (const row of data as any[]) {
+      const s = Array.isArray(row.stores) ? row.stores[0] : row.stores
+      if (s && !byId.has(s.id)) byId.set(s.id, s)
+    }
+    stockists.value = [...byId.values()].sort(
+        (a, b) => (a.sort_order ?? 999) - (b.sort_order ?? 999) || a.name.localeCompare(b.name)
+    )
+  }
+
+  loadingStockists.value = false
+}
+
+async function openStockist(s: any) {
+  if (!s.website) return
+
+  ActivityLogService.log('partner_stockist_click', {
+    partner_id: body.value.id,
+    partner_name: body.value.name,
+    store_id: s.id,
+    store_name: s.name
+  })
+
+  await Browser.open({
+    url: s.website,
+    windowName: '_self',
+    toolbarColor: '#e67e22',
+    presentationStyle: 'fullscreen',
+  })
+}
+
 async function fetchProducedProducts() {
   loadingProducedProducts.value = true
 
@@ -877,7 +1022,8 @@ async function fetchProducedProducts() {
         photo_front_url
       `)
       .eq('partner_id', body.value.id)
-      .limit(20)
+      .order('name', { ascending: true })
+      .limit(50)
 
   if (!error && data) {
     producedProducts.value = data
@@ -1235,6 +1381,14 @@ onMounted(async () => {
   
   if (body.value.partner_type === 'campus') {
     fetchNearbyLocations()
+  }
+
+  if (isBrandPartner.value) {
+    fetchBranchLocations()
+    fetchStockists()
+  }
+
+  if (hasProducedProducts.value) {
     fetchProducedProducts()
   }
 
@@ -1505,6 +1659,34 @@ onMounted(async () => {
 }
 
 /* Horizontal Scroll Styles */
+.stockist-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.stockist-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 72px;
+}
+
+.stockist-logo {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #fff;
+}
+
+.stockist-name {
+  font-size: 12px;
+  text-align: center;
+  color: var(--ion-color-medium);
+}
+
 .discover-scroll {
   display: flex;
   overflow-x: auto;

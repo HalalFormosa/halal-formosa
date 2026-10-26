@@ -39,6 +39,7 @@ export interface Product {
         partner_type: string | null;
         logo_url: string | null;
         verified: boolean;
+        is_active?: boolean | null;
     } | null;
 
     partner_id?: string | null;

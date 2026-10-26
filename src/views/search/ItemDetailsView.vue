@@ -181,6 +181,20 @@
                   <span>{{ $t('search.officialPartner') }}</span>
                 </div>
               </div>
+
+              <!-- Provided by (brand/merchant partner; campus partners have their own card below) -->
+              <div
+                  v-if="item?.partner?.is_active && item.partner.partner_type !== 'campus'"
+                  class="provided-by-row"
+                  role="button"
+                  tabindex="0"
+                  @click="goToPartner(item.partner.id)"
+              >
+                <img v-if="item.partner.logo_url" :src="item.partner.logo_url" alt="" class="provided-by-logo" />
+                <span class="provided-by-text">
+                  {{ $t('home.houseAdProvider.providedBy', { name: item.partner.name }) }}
+                </span>
+              </div>
             </div>
 
             <!-- Produced By (Campus Partner) -->
@@ -1259,7 +1273,7 @@ async function loadProductData() {
             store_id,
             stores ( id, name, logo_url )
           ),
-          partner:partners(id, name, partner_tier, partner_type, logo_url, verified)
+          partner:partners(id, name, partner_tier, partner_type, logo_url, verified, is_active)
         `)
         .eq('barcode', barcode)
         .maybeSingle()
@@ -1279,7 +1293,7 @@ async function loadProductData() {
                 store_id,
                 stores ( id, name, logo_url )
               ),
-              partner:partners(id, name, partner_tier, partner_type, logo_url, verified)
+              partner:partners(id, name, partner_tier, partner_type, logo_url, verified, is_active)
             )
           `)
           .eq('barcode', barcode)
@@ -1663,6 +1677,28 @@ const share = async () => {
 
 .tier-gold .official-verified-tag {
   color: #ca8a04;
+}
+
+.provided-by-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  font-size: 0.85rem;
+  color: var(--ion-color-medium);
+  cursor: pointer;
+}
+
+.provided-by-row strong {
+  color: var(--ion-text-color);
+}
+
+.provided-by-logo {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  object-fit: contain;
+  background: #fff;
 }
 
 /* TEXT CONTENT */

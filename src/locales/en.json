@@ -1431,7 +1431,10 @@
       "website": "Website"
     },
     "goldPartner": "GOLD PARTNER",
-    "producedProducts": "Produced Products"
+    "producedProducts": "Produced Products",
+    "productsBy": "Products by {name}",
+    "ourStores": "Our Stores",
+    "availableAt": "Available At"
   },
   "points": {
     "title": "Review Points Logs"
