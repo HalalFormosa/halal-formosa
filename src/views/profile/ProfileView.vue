@@ -1887,7 +1887,7 @@ onBeforeUnmount(() => {
 const handleLogout = async () => {
   ActivityLogService.log('profile_logout')
 
-  const {error} = await supabase.auth.signOut();
+  const {error} = await supabase.auth.signOut({ scope: 'local' });
   if (!error) {
     userEmail.value = "";
     currentPoints.value = null; // reset points
