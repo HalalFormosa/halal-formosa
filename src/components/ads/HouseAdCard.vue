@@ -66,6 +66,7 @@ import {
   useHouseAds,
   getHouseAd,
   startHouseAdRotationTimer,
+  shouldLogHouseAdImpression,
   turnDurationForTier,
   type HouseAdKind,
 } from '@/composables/useHouseAds'
@@ -185,18 +186,30 @@ async function onOpen() {
 // Logs one impression each time a genuinely different ad rotates into this
 // slot — not on every re-render (progressPercent ticks every 500ms but
 // doesn't change `item`, so this watcher stays quiet in between turns).
-watch(item, (ad) => {
-  if (ad) ActivityLogService.log('house_ad_impression', adLogDetail(ad))
-}, { immediate: true })
+function logImpression() {
+  const ad = item.value
+  if (ad && shouldLogHouseAdImpression(ad.kind, ad.id, 'banner')) {
+    ActivityLogService.log('house_ad_impression', adLogDetail(ad))
+  }
+}
+
+watch(item, logImpression, { immediate: true })
+
+// An impression skipped while the app was backgrounded is logged on return.
+function onVisibilityChange() {
+  if (document.visibilityState === 'visible') logImpression()
+}
 
 onMounted(() => {
   loadHouseAdPool()
   startHouseAdRotationTimer()
   tickInterval = setInterval(() => { nowTick.value = Date.now() }, 500)
+  document.addEventListener('visibilitychange', onVisibilityChange)
 })
 
 onUnmounted(() => {
   if (tickInterval) clearInterval(tickInterval)
+  document.removeEventListener('visibilitychange', onVisibilityChange)
 })
 </script>
 

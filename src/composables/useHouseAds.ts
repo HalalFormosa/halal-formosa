@@ -9,6 +9,7 @@
 // Re-rolls on a timer sized to the current item's own tier, and on each
 // fresh view entry.
 import { ref } from 'vue'
+import SessionService from '@/services/SessionService'
 import type { RouteLocationRaw } from 'vue-router'
 import { supabase } from '@/plugins/supabaseClient'
 
@@ -110,6 +111,27 @@ export function stopHouseAdRotationTimer() {
         clearTimeout(rotationTimeout)
         rotationTimeout = null
     }
+}
+
+// Impression gate: the rotation timer re-rolls every 10-30s (and every card
+// logs on mount), so without this an open app wrote an activity_log row per
+// turn. Allows one impression per ad + placement per session, and only while
+// the app is in the foreground. A refusal while hidden doesn't burn the key,
+// so the ad is logged once it's actually seen.
+let impressionSessionId: string | null = null
+const loggedImpressions = new Set<string>()
+
+export function shouldLogHouseAdImpression(kind: string, adId: string | number, placement: string): boolean {
+    if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return false
+    const sessionId = SessionService.getSessionId()
+    if (sessionId !== impressionSessionId) {
+        impressionSessionId = sessionId
+        loggedImpressions.clear()
+    }
+    const key = `${placement}:${kind}:${adId}`
+    if (loggedImpressions.has(key)) return false
+    loggedImpressions.add(key)
+    return true
 }
 
 function tierOf(raw: string | null | undefined): HouseAdTier | null {
