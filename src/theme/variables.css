@@ -1656,6 +1656,16 @@ body.barcode-scanner-active .barcode-scanner-ui {
     --padding-bottom: var(--safe-area-inset-bottom, 0px);
 }
 
+/* Bottom sheets (ion-modal with breakpoints) sit flush with the screen bottom,
+   so on Android phones with a transparent / overlaid navigation bar the system
+   buttons cover the lowest content (e.g. the status chips). Add the bottom
+   inset as extra scroll padding so everything can be scrolled clear of it.
+   The inset is 0 on iOS-without-home-bar and on opaque non-overlay navbars,
+   so those render unchanged. */
+ion-modal.modal-sheet ion-content {
+    --padding-bottom: calc(var(--ion-padding, 16px) + var(--safe-area-inset-bottom, 0px));
+}
+
 /* Removed duplicate and moved to consolidated block above */
 
 .details-container {
