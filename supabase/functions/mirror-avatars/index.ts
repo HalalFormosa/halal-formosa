@@ -14,7 +14,17 @@ const BACKFILL_TOKEN = ''
 const EXT: Record<string, string> = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif' }
 const MAX_BYTES = 2 * 1024 * 1024
 
-const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, {
+// Server key: the new `default` secret key (SUPABASE_SECRET_KEYS is a JSON object keyed by key name),
+// falling back to the legacy service_role key until that one is deactivated.
+function readSecretKey(): string {
+  try {
+    const key = JSON.parse(Deno.env.get('SUPABASE_SECRET_KEYS') ?? '{}').default
+    if (typeof key === 'string' && key !== '') return key
+  } catch { /* fall through to the legacy key */ }
+  return ''
+}
+
+const admin = createClient(Deno.env.get('SUPABASE_URL')!, readSecretKey() || Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '', {
   auth: { persistSession: false },
 })
 

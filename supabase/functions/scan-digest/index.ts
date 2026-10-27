@@ -7,7 +7,17 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 // Posts to the Discord "alerts" channel. No-ops gracefully if no webhook is configured.
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
-const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+// Server key: the new `default` secret key (SUPABASE_SECRET_KEYS is a JSON object keyed by key name),
+// falling back to the legacy service_role key until that one is deactivated.
+const LEGACY_SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+function readSecretKey(): string {
+  try {
+    const key = JSON.parse(Deno.env.get('SUPABASE_SECRET_KEYS') ?? '{}').default
+    if (typeof key === 'string' && key !== '') return key
+  } catch { /* fall through to the legacy key */ }
+  return ''
+}
+const SECRET_KEY = readSecretKey()
 const CRON_SECRET = Deno.env.get('CRON_SECRET') ?? ''
 
 // Route to the alerts channel, falling back to the default webhook.
@@ -73,7 +83,7 @@ Deno.serve(async (req: Request) => {
   const secret = req.headers.get('x-cron-secret') ?? ''
   const auth = req.headers.get('authorization') ?? ''
   const authorized =
-    (CRON_SECRET !== '' && secret === CRON_SECRET) || auth === `Bearer ${SERVICE_ROLE}`
+    (CRON_SECRET !== '' && secret === CRON_SECRET) || (LEGACY_SERVICE_ROLE !== '' && auth === `Bearer ${LEGACY_SERVICE_ROLE}`)
   if (!authorized) return new Response('Unauthorized', { status: 401 })
 
   // Optional per-request overrides.
@@ -89,7 +99,7 @@ Deno.serve(async (req: Request) => {
     // No/invalid body — use defaults.
   }
 
-  const supabase = createClient(SUPABASE_URL, SERVICE_ROLE)
+  const supabase = createClient(SUPABASE_URL, SECRET_KEY || LEGACY_SERVICE_ROLE)
   const { data, error } = await supabase.rpc('get_unknown_barcode_digest', {
     p_min_count: minCount,
     p_recent_days: recentDays,
@@ -103,6 +113,14 @@ Deno.serve(async (req: Request) => {
   }
 
   const rows = (data ?? []) as DigestRow[]
+
+  // ?dry_run=1 reports the row count without posting to Discord.
+  if (new URL(req.url).searchParams.get('dry_run') === '1') {
+    return new Response(
+      JSON.stringify({ dry_run: true, rows: rows.length, key_source: SECRET_KEY ? 'secret' : 'legacy' }),
+      { headers: { 'Content-Type': 'application/json' } },
+    )
+  }
 
   if (rows.length === 0) {
     return new Response(
