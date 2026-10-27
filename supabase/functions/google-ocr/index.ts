@@ -111,7 +111,7 @@ async function getAccessToken() {
     })
   });
   const json = await res.json();
-  console.log("📡 Google OAuth response:", res.status, res.statusText, json);
+  console.log("📡 Google OAuth response:", res.status, res.statusText, json.error ?? "token received");
   if (!json.access_token) {
     throw new Error("Failed to fetch access token");
   }
@@ -285,7 +285,7 @@ Deno.serve(async (req)=>{
   } catch (err) {
     console.error("❌ google-ocr error:", err);
     return new Response(JSON.stringify({
-      error: String(err)
+      error: "Text recognition failed. Please try again."
     }), {
       status: 500,
       headers: {

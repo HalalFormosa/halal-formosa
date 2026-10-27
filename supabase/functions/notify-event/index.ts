@@ -432,7 +432,7 @@ serve(async (req) => {
     console.error("❌ notify-event error:", err);
 
     return new Response(
-      JSON.stringify({ error: (err as Error)?.message ?? String(err) }),
+      JSON.stringify({ error: "Notification failed" }),
       { status: 500, headers: corsHeaders }
     );
   }

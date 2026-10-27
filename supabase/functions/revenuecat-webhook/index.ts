@@ -277,6 +277,8 @@ Deno.serve(async (req: Request) => {
     await opsLog('error', 'event_failed', ctx.user ?? null, { type: ctx.type, product: ctx.product, status: res.status, error: errText })
     await alertOnce(`fail:${ctx.type ?? 'unknown'}`,
       `**🚨 RevenueCat webhook failed**\nEvent: ${ctx.type ?? 'unknown'}${ctx.user ? ` (user ${ctx.user.slice(0, 8)}…)` : ''}\nError: ${errText}\nRevenueCat will retry; the user's Pro status in Supabase may be stale until it succeeds (the daily reconcile job also repairs it).`)
+    // The detail stays in ops_events and the alert above; the caller only gets a generic message.
+    return new Response(JSON.stringify({ error: 'Webhook processing failed' }), { status: res.status, headers: { 'Content-Type': 'application/json' } })
   } else if (res.status === 200 && ctx.type) {
     let ok = false
     try { ok = (await res.clone().json())?.ok === true } catch { /* not JSON */ }
