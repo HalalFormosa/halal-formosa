@@ -5,9 +5,22 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const LINE_CHANNEL_ACCESS_TOKEN = Deno.env.get("LINE_CHANNEL_ACCESS_TOKEN");
 const LINE_CHANNEL_SECRET = Deno.env.get("LINE_CHANNEL_SECRET");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
-const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+// Server key: the new `default` secret key (SUPABASE_SECRET_KEYS is a JSON object keyed by key name),
+// falling back to the legacy service_role key until that one is deactivated.
+function readSecretKey(): string {
+  try {
+    const key = JSON.parse(Deno.env.get("SUPABASE_SECRET_KEYS") ?? "{}").default;
+    if (typeof key === "string" && key !== "") return key;
+  } catch { /* fall through to the legacy key */ }
+  return "";
+}
+const SECRET_KEY = readSecretKey();
+const LEGACY_SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+function internalAuthHeaders(): Record<string, string> {
+  return SECRET_KEY !== "" ? { "x-internal-key": SECRET_KEY } : { Authorization: `Bearer ${LEGACY_SERVICE_ROLE}` };
+}
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+const supabase = createClient(SUPABASE_URL, SECRET_KEY || LEGACY_SERVICE_ROLE);
 
 // After this much USER inactivity, a saved "chat" mode expires and the menu is shown again.
 // (Note: admin replies sent from the LINE OA app are NOT visible to this webhook,
@@ -344,12 +357,12 @@ async function runAnalysis(messageId) {
     if (!imgRes.ok) return "❌ Failed to fetch image from LINE.";
     const buffer = await imgRes.arrayBuffer();
 
-    // analyze-product only accepts server callers: authenticate with the service role key.
+    // analyze-product only accepts server callers: authenticate with the server key (x-internal-key, or the legacy service role bearer).
     const apiRes = await fetch(`${SUPABASE_URL}/functions/v1/analyze-product`, {
       method: "POST",
       headers: {
         "Content-Type": "application/octet-stream",
-        Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`
+        ...internalAuthHeaders()
       },
       body: buffer
     });

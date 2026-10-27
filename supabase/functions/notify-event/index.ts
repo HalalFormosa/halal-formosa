@@ -17,7 +17,25 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
    Environment
 --------------------------------------------------- */
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+// Server key: the new `default` secret key (SUPABASE_SECRET_KEYS is a JSON object keyed by key name),
+// falling back to the legacy service_role key until that one is deactivated.
+function readSecretKey(): string {
+  try {
+    const key = JSON.parse(Deno.env.get("SUPABASE_SECRET_KEYS") ?? "{}").default;
+    if (typeof key === "string" && key !== "") return key;
+  } catch { /* fall through to the legacy key */ }
+  return "";
+}
+const SECRET_KEY = readSecretKey();
+const LEGACY_SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+// Function-to-function auth: the new secret key travels in x-internal-key (a secret key can't go in
+// Authorization: Bearer); the legacy service_role bearer is still accepted until that key is deactivated.
+function isInternalCall(req: Request): boolean {
+  const internal = req.headers.get("x-internal-key") ?? "";
+  if (SECRET_KEY !== "" && internal === SECRET_KEY) return true;
+  const bearer = (req.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "").trim();
+  return LEGACY_SERVICE_ROLE !== "" && bearer === LEGACY_SERVICE_ROLE;
+}
 const ONESIGNAL_APP_ID = Deno.env.get("ONESIGNAL_APP_ID");
 const ONESIGNAL_API_KEY = Deno.env.get("ONESIGNAL_API_KEY");
 
@@ -55,7 +73,7 @@ const MAX_DISCORD_MESSAGE = 1800;
 /* ---------------------------------------------------
    Clients
 --------------------------------------------------- */
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+const supabase = createClient(SUPABASE_URL, SECRET_KEY || LEGACY_SERVICE_ROLE);
 
 /* ---------------------------------------------------
    CORS
@@ -76,9 +94,9 @@ const LINK_RE = /^myapp:\/\/(item|place|news)\/[A-Za-z0-9._~-]{1,64}$/;
 
 // Who is calling? Admin / service role are the only callers allowed to push to everyone.
 async function resolveCaller(req: Request): Promise<{ userId: string | null; isAdmin: boolean }> {
+  if (isInternalCall(req)) return { userId: null, isAdmin: true };
   const token = (req.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "").trim();
   if (!token) return { userId: null, isAdmin: false };
-  if (token === SUPABASE_SERVICE_ROLE_KEY) return { userId: null, isAdmin: true };
   try {
     const { data, error } = await supabase.auth.getUser(token); // fails for the public anon key
     if (error || !data?.user) return { userId: null, isAdmin: false };

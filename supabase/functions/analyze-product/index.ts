@@ -5,7 +5,28 @@ import { serve } from "https://deno.land/std@0.182.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
-const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+// Server key: the new `default` secret key (SUPABASE_SECRET_KEYS is a JSON object keyed by key name),
+// falling back to the legacy service_role key until that one is deactivated.
+function readSecretKey(): string {
+  try {
+    const key = JSON.parse(Deno.env.get("SUPABASE_SECRET_KEYS") ?? "{}").default;
+    if (typeof key === "string" && key !== "") return key;
+  } catch { /* fall through to the legacy key */ }
+  return "";
+}
+const SECRET_KEY = readSecretKey();
+const LEGACY_SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+// Function-to-function auth: the new secret key travels in x-internal-key (a secret key can't go in
+// Authorization: Bearer); the legacy service_role bearer is still accepted until that key is deactivated.
+function isInternalCall(req: Request): boolean {
+  const internal = req.headers.get("x-internal-key") ?? "";
+  if (SECRET_KEY !== "" && internal === SECRET_KEY) return true;
+  const bearer = (req.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "").trim();
+  return LEGACY_SERVICE_ROLE !== "" && bearer === LEGACY_SERVICE_ROLE;
+}
+function internalAuthHeaders(): Record<string, string> {
+  return SECRET_KEY !== "" ? { "x-internal-key": SECRET_KEY } : { Authorization: `Bearer ${LEGACY_SERVICE_ROLE}` };
+}
 const GOOGLE_API_KEY = Deno.env.get("GOOGLE_TRANSLATION_API_KEY");
 const OCR_KEY = Deno.env.get("GOOGLE_OCR_KEY"); // optional shared secret
 const MAX_IMAGE_BYTES = 8_000_000;
@@ -97,8 +118,7 @@ function formatReason(label, items) {
       });
     }
     // Server-only: the caller must present the service role key.
-    const authHeader = req.headers.get("authorization") ?? "";
-    if (!SERVICE_ROLE || authHeader !== `Bearer ${SERVICE_ROLE}`) {
+    if (!isInternalCall(req)) {
       console.warn("⛔ analyze-product: rejected unauthenticated call");
       return new Response(JSON.stringify({
         error: "Unauthorized"
@@ -127,7 +147,7 @@ function formatReason(label, items) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${SERVICE_ROLE}`,
+        ...internalAuthHeaders(),
         ...OCR_KEY ? {
           "x-api-key": OCR_KEY
         } : {}

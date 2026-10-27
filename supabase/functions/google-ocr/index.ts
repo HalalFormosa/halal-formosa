@@ -8,14 +8,32 @@ console.info("🚀 google-ocr function deployed");
 // The public anon key alone is NOT enough. Enforcement is switched on/off with app_config.enforce_ocr_auth
 // ('true' / 'false') so it can be enabled once every supported app build sends the user's token.
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
-const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-const admin = createClient(SUPABASE_URL!, SERVICE_ROLE!);
+// Server key: the new `default` secret key (SUPABASE_SECRET_KEYS is a JSON object keyed by key name),
+// falling back to the legacy service_role key until that one is deactivated.
+function readSecretKey(): string {
+  try {
+    const key = JSON.parse(Deno.env.get("SUPABASE_SECRET_KEYS") ?? "{}").default;
+    if (typeof key === "string" && key !== "") return key;
+  } catch { /* fall through to the legacy key */ }
+  return "";
+}
+const SECRET_KEY = readSecretKey();
+const LEGACY_SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+// Function-to-function auth: the new secret key travels in x-internal-key (a secret key can't go in
+// Authorization: Bearer); the legacy service_role bearer is still accepted until that key is deactivated.
+function isInternalCall(req: Request): boolean {
+  const internal = req.headers.get("x-internal-key") ?? "";
+  if (SECRET_KEY !== "" && internal === SECRET_KEY) return true;
+  const bearer = (req.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "").trim();
+  return LEGACY_SERVICE_ROLE !== "" && bearer === LEGACY_SERVICE_ROLE;
+}
+const admin = createClient(SUPABASE_URL!, SECRET_KEY || LEGACY_SERVICE_ROLE);
 const MAX_IMAGE_BASE64_CHARS = 12_000_000; // ~9 MB of image data; Vision rejects anything over 10 MB anyway
 
 async function isAuthorizedCaller(req: Request): Promise<boolean> {
+  if (isInternalCall(req)) return true;
   const token = (req.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "").trim();
   if (!token) return false;
-  if (SERVICE_ROLE && token === SERVICE_ROLE) return true;
   try {
     const { data, error } = await admin.auth.getUser(token); // fails for the anon key (no user)
     return !error && !!data?.user;
