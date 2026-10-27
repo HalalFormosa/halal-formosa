@@ -50,6 +50,7 @@ import { installClientErrorReporting } from '@/plugins/clientErrorReporting';
 import { buildScreenView, screenPattern } from '@/utils/screenView';
 import { ActivityLogService } from '@/services/ActivityLogService'
 import { refreshSubscriptionStatus, isDonor } from "@/composables/useSubscriptionStatus";
+import { deepLinkToPath } from '@/utils/urlHost';
 
 defineCustomElements(window)
 
@@ -574,13 +575,7 @@ const handleDeepLink = async (url: string, isColdBoot = false) => {
     captureReferralCodeFromUrl(url);
 
     try {
-        let path = '';
-        if (url.startsWith('myapp://')) {
-            path = url.replace('myapp://', '/');
-        } else if (url.includes('app.halalformosa.com') || url.includes('halalformosa.com')) {
-            const urlObj = new URL(url);
-            path = urlObj.pathname + urlObj.search;
-        }
+        const path = deepLinkToPath(url);
 
         if (path && path !== '/') {
             await router.isReady();

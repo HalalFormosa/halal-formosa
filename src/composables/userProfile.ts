@@ -4,6 +4,7 @@ import { getMyPrivateProfile } from "@/services/PrivateProfileService";
 import { recordAppVersion } from "@/services/AppVersionService";
 import { ActivityLogService } from "@/services/ActivityLogService";
 import { isDonor, resolveIsDonor, clearRcProActive } from "./useSubscriptionStatus";
+import { urlHostMatches } from "@/utils/urlHost"
 
 export const profileLoaded = ref(false)
 
@@ -214,7 +215,7 @@ export function setUserRole(userId: string, value: string | null) {
 const mirrorAttempted = new Set<string>()
 
 async function mirrorGoogleAvatar(userId: string, avatarUrl: string | null) {
-    if (!avatarUrl || !avatarUrl.includes("googleusercontent.com") || mirrorAttempted.has(userId)) return
+    if (!avatarUrl || !urlHostMatches(avatarUrl, "googleusercontent.com") || mirrorAttempted.has(userId)) return
     mirrorAttempted.add(userId) // at most one try per session, so a failing photo can't loop
     try {
         const { data, error } = await supabase.functions.invoke("mirror-avatars", { body: {} })

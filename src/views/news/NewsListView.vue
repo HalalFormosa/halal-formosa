@@ -135,6 +135,7 @@ import AppHeader from "@/components/AppHeader.vue";
 
 // 🟢 import role state from userProfile composable
 import { isAdmin, isContributor } from '@/composables/userProfile'
+import { htmlToText } from '@/utils/htmlToText';
 
 // Extend dayjs
 dayjs.extend(utc)
@@ -204,7 +205,7 @@ function truncateText(text: string, wordLimit = 10) {
 }
 
 function generateSummary(content: string, title: string, wordLimit = 20) {
-  const text = content.replace(/<[^>]+>/g, '').trim();
+  const text = htmlToText(content);
   const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
   const filtered = lines.filter(line => !line.includes(title)).join(' ');
   const allWords = filtered.split(/\s+/);
