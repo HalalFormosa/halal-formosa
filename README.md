@@ -3,7 +3,7 @@
 [![Maintainer](https://img.shields.io/badge/Maintained%20by-R%20Creative-orange.svg)](https://github.com/rakharamadhana)
 [![Vue 3](https://img.shields.io/badge/Vue-3.x-emerald.svg)](https://vuejs.org/)
 [![Ionic Framework](https://img.shields.io/badge/Ionic-Vue-blue.svg)](https://ionicframework.com/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: PolyForm Noncommercial](https://img.shields.io/badge/License-PolyForm%20Noncommercial%201.0.0-blue.svg)](LICENSE)
 
 **Halal Formosa** is a state-of-the-art hybrid mobile application engineered to empower the Muslim community and travelers in Taiwan. It offers a comprehensive digital companion to check food halal status, track daily missions, locate prayer times/mosques, and find verified Muslim-friendly establishments.
 
@@ -136,7 +136,21 @@ We love contributions! Follow these steps to submit clean code additions:
 ---
 
 ## 📄 License
-This project is licensed under the **MIT License**. Feel free to use, modify, and distribute it.
+The source code is **source-available** under the
+[PolyForm Noncommercial License 1.0.0](LICENSE). It is not open source.
+
+* You can read, run, learn from, and modify the code for **noncommercial** purposes.
+* You can contribute changes back. See [CONTRIBUTING.md](CONTRIBUTING.md).
+* You **cannot** copy it, rebrand it, or use it in a commercial product or app-store listing.
+* Earlier versions of this README incorrectly stated an MIT license. That was an error and
+  never reflected the intended terms. Use of the code is governed by the LICENSE file.
+
+**Trademarks:** "Halal Formosa", its logo, and related branding are trademarks of the project
+owner and are not covered by the code license. See [NOTICE](NOTICE).
+
+Copyright and trademarks are held by YiQi Global Consulting (藝啟文創行銷有限公司). Original
+developer: [Rakha Ramadhana](https://github.com/rakharamadhana). For commercial licensing,
+contact YiQi Global Consulting through [halalformosa.com](https://halalformosa.com).
 
 ---
 
