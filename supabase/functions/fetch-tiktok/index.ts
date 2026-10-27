@@ -28,8 +28,9 @@ Deno.serve(async (req) => {
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
     const SUPABASE_SERVICE_ROLE_KEY = SECRET_KEY || Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     
-    // 🔑 API Key from the User
-    const RAPIDAPI_KEY = Deno.env.get('RAPIDAPI_KEY') || '2728e3f902msh1b2c56dff4c59b2p19faebjsn5500fcd75412';
+    // 🔑 RapidAPI key comes from the RAPIDAPI_KEY secret only (never hardcode it in source)
+    const RAPIDAPI_KEY = Deno.env.get('RAPIDAPI_KEY');
+    if (!RAPIDAPI_KEY) throw new Error('Missing RAPIDAPI_KEY secret');
     const RAPIDAPI_HOST = 'tiktok-api23.p.rapidapi.com';
     const USERNAME = 'halal_formosa';
     
