@@ -14,7 +14,17 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 // it stops by itself when nobody is pending.
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
-const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+// Server key: the new `default` secret key (SUPABASE_SECRET_KEYS is a JSON object keyed by key name),
+// falling back to the legacy service_role key until that one is deactivated.
+const LEGACY_SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+function readSecretKey(): string {
+  try {
+    const key = JSON.parse(Deno.env.get('SUPABASE_SECRET_KEYS') ?? '{}').default
+    if (typeof key === 'string' && key !== '') return key
+  } catch { /* fall through to the legacy key */ }
+  return ''
+}
+const SECRET_KEY = readSecretKey()
 const CRON_SECRET = Deno.env.get('CRON_SECRET') ?? ''
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY') ?? ''
 const FROM = Deno.env.get('UPDATE_EMAIL_FROM') ?? 'Halal Formosa <noreply@halalformosa.com>'
@@ -23,7 +33,7 @@ const DEFAULT_CAP = Number(Deno.env.get('UPDATE_EMAIL_DAILY_CAP') ?? '50')
 const SUBJECT = "We've missed you! Halal Formosa v2.0 is here 🌙"
 const SEND_DELAY_MS = 600 // Resend allows 2 requests/second
 
-const supabase = createClient(SUPABASE_URL, SERVICE_ROLE)
+const supabase = createClient(SUPABASE_URL, SECRET_KEY || LEGACY_SERVICE_ROLE)
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } })
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
@@ -126,7 +136,7 @@ async function sendOne(to: string, platform: string | null, storeUrls: { android
 Deno.serve(async (req: Request) => {
   const secret = req.headers.get('x-cron-secret') ?? ''
   const auth = req.headers.get('authorization') ?? ''
-  const authorized = (CRON_SECRET !== '' && secret === CRON_SECRET) || auth === `Bearer ${SERVICE_ROLE}`
+  const authorized = (CRON_SECRET !== '' && secret === CRON_SECRET) || (LEGACY_SERVICE_ROLE !== '' && auth === `Bearer ${LEGACY_SERVICE_ROLE}`)
   if (!authorized) return new Response('Unauthorized', { status: 401 })
 
   let body: any = {}
@@ -160,7 +170,7 @@ Deno.serve(async (req: Request) => {
   const remaining = Math.max(0, cap - (sentToday ?? 0))
   const { count: pending } = await supabase.from('update_email_queue').select('id', { count: 'exact', head: true }).eq('status', 'pending').gt('expires_at', new Date().toISOString())
 
-  if (dryRun) return json({ dry_run: true, pending, sent_today: sentToday ?? 0, cap, would_send_now: Math.min(remaining, pending ?? 0), resend_key_set: RESEND_API_KEY !== '' })
+  if (dryRun) return json({ dry_run: true, key_source: SECRET_KEY ? 'secret' : 'legacy', pending, sent_today: sentToday ?? 0, cap, would_send_now: Math.min(remaining, pending ?? 0), resend_key_set: RESEND_API_KEY !== '' })
   if (!RESEND_API_KEY) { await opsLog('error', 'update_email_no_key', {}); return json({ error: 'RESEND_API_KEY not set' }, 500) }
   if (remaining <= 0 || !pending) return json({ sent: 0, reason: remaining <= 0 ? 'daily_cap_reached' : 'nothing_pending', pending, sent_today: sentToday ?? 0, cap })
 

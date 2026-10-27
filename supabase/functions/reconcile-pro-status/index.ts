@@ -7,12 +7,23 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 // Never downgrades a user RevenueCat has no record of (manual grants stay untouched).
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
-const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+// Server key: the new `default` secret key (SUPABASE_SECRET_KEYS is a JSON object keyed by key name),
+// falling back to the legacy service_role key until that one is deactivated.
+const LEGACY_SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+function readSecretKey(): string {
+  try {
+    const key = JSON.parse(Deno.env.get('SUPABASE_SECRET_KEYS') ?? '{}').default
+    if (typeof key === 'string' && key !== '') return key
+  } catch { /* fall through to the legacy key */ }
+  return ''
+}
+const SECRET_KEY = readSecretKey()
+const SERVER_KEY = SECRET_KEY || LEGACY_SERVICE_ROLE
 const CRON_SECRET = Deno.env.get('CRON_SECRET') ?? ''
 const RC_SECRET_API_KEY = Deno.env.get('REVENUECAT_SECRET_KEY') ?? ''
 
 const DISCORD_ALERTS = Deno.env.get('DISCORD_WEBHOOK_URL_ALERTS') ?? Deno.env.get('DISCORD_WEBHOOK_URL') ?? ''
-const opsClient = createClient(SUPABASE_URL, SERVICE_ROLE)
+const opsClient = createClient(SUPABASE_URL, SERVER_KEY)
 
 // Persist what the job did (visible to admins in ops_events) and alert Discord when it had to repair or hit errors.
 async function opsLog(level: 'info' | 'warn' | 'error', event: string, detail: unknown) {
@@ -90,14 +101,14 @@ function needsFix(c: Candidate, rc: RcState): string | null {
 Deno.serve(async (req: Request) => {
   const secret = req.headers.get('x-cron-secret') ?? ''
   const auth = req.headers.get('authorization') ?? ''
-  const authorized = (CRON_SECRET !== '' && secret === CRON_SECRET) || auth === `Bearer ${SERVICE_ROLE}`
+  const authorized = (CRON_SECRET !== '' && secret === CRON_SECRET) || (LEGACY_SERVICE_ROLE !== '' && auth === `Bearer ${LEGACY_SERVICE_ROLE}`)
   if (!authorized) return new Response('Unauthorized', { status: 401 })
   if (RC_SECRET_API_KEY === '') return json({ error: 'REVENUECAT_SECRET_KEY not configured' }, 500)
 
   let dryRun = new URL(req.url).searchParams.get('dry_run') === '1'
   try { dryRun = dryRun || (await req.json())?.dry_run === true } catch { /* empty body is fine */ }
 
-  const supabase = createClient(SUPABASE_URL, SERVICE_ROLE)
+  const supabase = createClient(SUPABASE_URL, SERVER_KEY)
   const { data: candidates, error } = await supabase.rpc('pro_reconcile_candidates')
   if (error) return json({ error: error.message }, 500)
 
@@ -133,7 +144,7 @@ Deno.serve(async (req: Request) => {
   }
   await Promise.all(Array.from({ length: CONCURRENCY }, worker))
 
-  const summary = { dry_run: dryRun, checked: candidates?.length ?? 0, fixed: fixed.length, mismatches: fixed, unknown_to_rc: unknownToRc.length, errors }
+  const summary = { dry_run: dryRun, key_source: SECRET_KEY ? 'secret' : 'legacy', checked: candidates?.length ?? 0, fixed: fixed.length, mismatches: fixed, unknown_to_rc: unknownToRc.length, errors }
   console.log('[reconcile-pro-status]', JSON.stringify(summary))
 
   if (!dryRun) {

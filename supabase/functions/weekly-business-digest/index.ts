@@ -5,7 +5,17 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 // Email: sent via Resend (RESEND_API_KEY). No-ops gracefully if the key is unset.
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
-const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+// Server key: the new `default` secret key (SUPABASE_SECRET_KEYS is a JSON object keyed by key name),
+// falling back to the legacy service_role key until that one is deactivated.
+const LEGACY_SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+function readSecretKey(): string {
+  try {
+    const key = JSON.parse(Deno.env.get('SUPABASE_SECRET_KEYS') ?? '{}').default
+    if (typeof key === 'string' && key !== '') return key
+  } catch { /* fall through to the legacy key */ }
+  return ''
+}
+const SECRET_KEY = readSecretKey()
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY') ?? ''
 const DIGEST_FROM = Deno.env.get('DIGEST_FROM') ?? 'Halal Formosa <onboarding@resend.dev>'
 const CRON_SECRET = Deno.env.get('CRON_SECRET') ?? ''
@@ -65,14 +75,19 @@ function renderEmail(r: DigestRow, delta: number): string {
 Deno.serve(async (req: Request) => {
   const secret = req.headers.get('x-cron-secret') ?? ''
   const auth = req.headers.get('authorization') ?? ''
-  const authorized = (CRON_SECRET !== '' && secret === CRON_SECRET) || auth === `Bearer ${SERVICE_ROLE}`
+  const authorized = (CRON_SECRET !== '' && secret === CRON_SECRET) || (LEGACY_SERVICE_ROLE !== '' && auth === `Bearer ${LEGACY_SERVICE_ROLE}`)
   if (!authorized) return new Response('Unauthorized', { status: 401 })
 
-  const supabase = createClient(SUPABASE_URL, SERVICE_ROLE)
+  const supabase = createClient(SUPABASE_URL, SECRET_KEY || LEGACY_SERVICE_ROLE)
   const { data, error } = await supabase.rpc('get_business_weekly_digests')
   if (error) return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: { 'Content-Type': 'application/json' } })
 
   const rows = (data ?? []) as DigestRow[]
+
+  // ?dry_run=1 reports what would be sent without emailing anyone.
+  if (new URL(req.url).searchParams.get('dry_run') === '1') {
+    return new Response(JSON.stringify({ dry_run: true, would_send: rows.length, key_source: SECRET_KEY ? 'secret' : 'legacy' }), { headers: { 'Content-Type': 'application/json' } })
+  }
 
   if (!RESEND_API_KEY) {
     return new Response(JSON.stringify({ skipped: true, reason: 'RESEND_API_KEY not set', would_send: rows.length }), { headers: { 'Content-Type': 'application/json' } })
