@@ -326,6 +326,7 @@
             >
               <img
                   :src="getOptimizedImageUrl(matchedDbProduct.photo_front_url, 120, 120, 'cover')"
+                  @error="onProductImageError"
                   class="matched-product-thumb"
                   alt=""
               />
@@ -755,7 +756,7 @@ import { useAutoScanStore } from '@/composables/useAutoScanStore'
 import { useNotifier } from "@/composables/useNotifier"
 import { useI18n } from 'vue-i18n'
 import { syncScanWidget } from '@/composables/useWidgetSync'
-import { getOptimizedImageUrl } from '@/utils/imageHelpers'
+import { getOptimizedImageUrl, onProductImageError } from '@/utils/imageHelpers'
 
 const { t, te } = useI18n()
 

@@ -304,6 +304,7 @@
                           loading="lazy"
                           decoding="async"
                           :src="getOptimizedImageUrl(product.photo_front_url, 290, 320, 'cover')"
+                          @error="onProductImageError"
                         />
                         <div class="floating-status-pill bottom-left" :class="product.status.toLowerCase().replace(' ', '-')">
                           <component :is="getStatusIcon(product.status)" :size="14" />
@@ -360,6 +361,7 @@
                             loading="lazy"
                             decoding="async"
                             :src="getOptimizedImageUrl(product.photo_front_url, 100, 100, 'cover', 40)"
+                            @error="onProductImageError"
                             :alt="product.name"
                             class="featured-bg-blur"
                         />
@@ -368,6 +370,7 @@
                             loading="lazy"
                             decoding="async"
                             :src="getOptimizedImageUrl(product.photo_front_url, 500, 500, 'cover', 65)"
+                            @error="onProductImageError"
                             :alt="product.name"
                             class="featured-fg-image"
                         />
@@ -458,6 +461,7 @@
                           loading="lazy"
                           decoding="async"
                           :src="getOptimizedImageUrl(product.photo_front_url, 290, 320, 'cover')"
+                          @error="onProductImageError"
                           :alt="product.name"
                       />
                       <!-- Floating Status Pill on Image (Bottom Left) -->
@@ -528,6 +532,7 @@
                         loading="lazy"
                         decoding="async"
                         :src="getOptimizedImageUrl(product.photo_front_url, 400, 400, 'cover')"
+                        @error="onProductImageError"
                         :alt="product.name"
                     />
                     <!-- Floating Tier Badge (Top Left) -->
@@ -671,7 +676,7 @@ import { failedAdSpaceId, useHouseAdAtTop, adSpaceStyle } from '@/composables/us
 import {isDonor, refreshSubscriptionStatus} from "@/composables/useSubscriptionStatus";
 import {Purchases} from "@revenuecat/purchases-capacitor";
 import {PAYWALL_RESULT, RevenueCatUI} from "@revenuecat/purchases-capacitor-ui";
-import {getOptimizedImageUrl} from "@/utils/imageHelpers";
+import {getOptimizedImageUrl, onProductImageError} from "@/utils/imageHelpers";
 
 
 /* ---------------- Day.js ---------------- */

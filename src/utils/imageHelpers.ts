@@ -76,3 +76,13 @@ export function getOptimizedImageUrl(
     const separator = transformed.includes('?') ? '&' : '?'
     return `${transformed}${separator}width=${width}&height=${height}&resize=${resize}&quality=${quality}`
 }
+
+// If a product's stored thumbnail is missing (front_thumb.jpg 404s), retry once with the
+// original front.jpg so the card shows the photo instead of broken-image alt text.
+export function onProductImageError(event: Event): void {
+    const img = event.target as HTMLImageElement | null
+    if (!img || img.dataset.thumbFallback === '1') return
+    if (!/\/front_thumb\.jpg(\?|$)/.test(img.src)) return
+    img.dataset.thumbFallback = '1'
+    img.src = img.src.replace('/front_thumb.jpg', '/front.jpg')
+}
