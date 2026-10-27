@@ -2,6 +2,17 @@ import { serve } from "https://deno.land/std/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 import { createCipheriv, createHash } from "node:crypto"
 
+// Server key: the new `default` secret key (SUPABASE_SECRET_KEYS is a JSON object keyed by key name),
+// falling back to the legacy service_role key until that one is deactivated.
+function readSecretKey(): string {
+  try {
+    const key = JSON.parse(Deno.env.get('SUPABASE_SECRET_KEYS') ?? '{}').default
+    if (typeof key === 'string' && key !== '') return key
+  } catch { /* fall through to the legacy key */ }
+  return ''
+}
+const SERVER_KEY = readSecretKey() || (Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '')
+
 // Newebpay MPG (幕前支付) checkout initiation.
 //
 // NOTE: field names / endpoint follow Newebpay's publicly documented MPG
@@ -83,7 +94,7 @@ serve(async (req) => {
 
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+      SERVER_KEY
     )
 
     const { data: order, error: orderErr } = await supabase
