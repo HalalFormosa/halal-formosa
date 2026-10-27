@@ -343,6 +343,12 @@
   },
   "scanIngredients": {
     "title": "Scan Ingredients",
+    "aiErrors": {
+      "unavailable": "AI explanation is temporarily unavailable. Please try again later.",
+      "dailyLimit": "You've reached today's AI explanation limit. It resets tomorrow.",
+      "proOnly": "AI explanations are a Pro feature.",
+      "signIn": "Please sign in to use AI explanations."
+    },
     "todayScans": "Today Scans: {used} / {total}",
     "help": "How it works",
     "tips": {

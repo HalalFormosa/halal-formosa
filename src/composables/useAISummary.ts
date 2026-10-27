@@ -3,6 +3,28 @@ import { extractIonColor, colorMeaning } from '@/utils/ingredientHelpers'
 import { marked } from 'marked'
 import DOMPurify from 'dompurify'
 import { supabase } from '@/plugins/supabaseClient'
+import { i18n } from '@/i18n'
+
+// Server codes from generate-ai-explanation -> translated, user-safe messages. Anything else
+// (network drop, Gemini outage, old server response) shows the generic "unavailable" text so
+// raw provider or billing errors are never shown to users; details stay in the console.
+export class AiRequestError extends Error {
+    constructor(public status: number, public code?: string, message?: string) {
+        super(`AI request failed [${status}${code ? ' ' + code : ''}]: ${message || 'no detail'}`)
+    }
+}
+
+const AI_ERROR_KEYS: Record<string, string> = {
+    UNAUTHORIZED: 'signIn',
+    PRO_ONLY: 'proOnly',
+    AI_DAILY_LIMIT: 'dailyLimit',
+}
+
+export function friendlyAiError(err: unknown): string {
+    const code = err instanceof AiRequestError ? err.code : undefined
+    const key = (code && AI_ERROR_KEYS[code]) || 'unavailable'
+    return i18n.global.t(`scanIngredients.aiErrors.${key}`)
+}
 
 export default function useAISummary() {
     const overallNote = ref<string>('') // summary text (HTML after parsing)
@@ -55,8 +77,7 @@ export default function useAISummary() {
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}))
-                const statusText = response.statusText || 'Unknown Error'
-                throw new Error(`Edge Function Error [${response.status} ${statusText}]: ${errorData.error || 'No detailed message provided'}`)
+                throw new AiRequestError(response.status, errorData.code, errorData.error)
             }
 
             // Capture which model finally answered
@@ -118,7 +139,7 @@ export default function useAISummary() {
 
         } catch (err: any) {
             console.error("AI Summary Error:", err)
-            errorSummary.value = `<b>AI Error:</b> ${err.message}`
+            errorSummary.value = friendlyAiError(err)
         } finally {
             loadingSummary.value = false
             tryingModel.value = ''

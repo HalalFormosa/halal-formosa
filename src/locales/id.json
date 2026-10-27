@@ -525,6 +525,12 @@
   },
   "scanIngredients": {
     "title": "Scan Komposisi",
+    "aiErrors": {
+      "unavailable": "Penjelasan AI sedang tidak tersedia. Silakan coba lagi nanti.",
+      "dailyLimit": "Anda telah mencapai batas penjelasan AI hari ini. Batas akan diatur ulang besok.",
+      "proOnly": "Penjelasan AI adalah fitur Pro.",
+      "signIn": "Silakan masuk untuk menggunakan penjelasan AI."
+    },
     "todayScans": "Scan Hari Ini: {used} / {total}",
     "help": "Cara kerja",
     "tips": {

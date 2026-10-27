@@ -325,6 +325,12 @@
   },
   "scanIngredients": {
     "title": "掃描成分",
+    "aiErrors": {
+      "unavailable": "AI 說明暫時無法使用，請稍後再試。",
+      "dailyLimit": "您已達到今日 AI 說明次數上限，明天會重置。",
+      "proOnly": "AI 說明為 Pro 專屬功能。",
+      "signIn": "請先登入以使用 AI 說明。"
+    },
     "todayScans": "今日掃描：{used} / {total}",
     "help": "如何運作",
     "tips": {
