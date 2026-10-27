@@ -1,0 +1,41 @@
+name: DCO
+
+# Requires every commit in a pull request to carry a "Signed-off-by:" line
+# (git commit -s), confirming the contributor terms in CONTRIBUTING.md.
+
+on:
+  pull_request:
+    branches: [ "main", "master" ]
+
+jobs:
+  dco:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Check Signed-off-by on every commit
+      env:
+        BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+      run: |
+        missing=0
+        for sha in $(git rev-list --no-merges "$BASE_SHA..$HEAD_SHA"); do
+          author=$(git log -1 --format='%ae' "$sha")
+          # bots such as Dependabot cannot sign off
+          case "$author" in *"[bot]"*) continue ;; esac
+          if ! git log -1 --format='%B' "$sha" | grep -qiE '^Signed-off-by: .+ <.+@.+>'; then
+            echo "::error::Commit $sha is missing a Signed-off-by line"
+            missing=1
+          fi
+        done
+        if [ "$missing" -ne 0 ]; then
+          echo "Add a sign-off with: git commit --amend -s --no-edit  (or git rebase --signoff main)"
+          exit 1
+        fi
+        echo "All commits are signed off."
