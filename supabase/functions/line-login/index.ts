@@ -14,7 +14,16 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 // email get a synthetic placeholder address instead.
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
-const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+// Server key: the new `default` secret key (SUPABASE_SECRET_KEYS is a JSON object keyed by key name),
+// falling back to the legacy service_role key until that one is deactivated.
+function readSecretKey(): string {
+  try {
+    const key = JSON.parse(Deno.env.get('SUPABASE_SECRET_KEYS') ?? '{}').default
+    if (typeof key === 'string' && key !== '') return key
+  } catch { /* fall through to the legacy key */ }
+  return ''
+}
+const SERVER_KEY = readSecretKey() || (Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '')
 const LINE_CHANNEL_ID = Deno.env.get('LINE_LOGIN_CHANNEL_ID')!
 const LINE_CHANNEL_SECRET = Deno.env.get('LINE_LOGIN_CHANNEL_SECRET')!
 
@@ -92,7 +101,7 @@ Deno.serve(async (req: Request) => {
   const lineUserId = profile.sub
   if (!lineUserId) return json({ error: 'LINE profile missing sub' }, 401)
 
-  const supabase = createClient(SUPABASE_URL, SERVICE_ROLE)
+  const supabase = createClient(SUPABASE_URL, SERVER_KEY)
 
   // 3. Reuse the email on file for a returning LINE identity so account
   // continuity doesn't depend on LINE re-reporting the same email.
