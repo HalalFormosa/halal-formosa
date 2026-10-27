@@ -24,7 +24,7 @@
 - `sync-subscription` verifies Pro with RevenueCat server-side instead of trusting the client payload.
 - Each signed-in user's app version is recorded with `record_app_version`.
 - Admin: audit log page, survey results page, and operations pages (versions, settings, health, subscriptions and more) at `/admin/tools`.
-- Version bumped to 2.0.2 (Android versionCode 137, iOS build 45 for the app target).
+- Version bumped to 2.0.2 (Android versionCode 137, iOS build numbers incremented on all three targets).
 
 ## 2.0.1
 
