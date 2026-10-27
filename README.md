@@ -1,6 +1,6 @@
 # 🇹🇼 Halal Formosa
 
-[![Maintainer](https://img.shields.io/badge/Maintained%20by-R%20Creative-orange.svg)](https://github.com/rakharamadhana)
+[![Maintainer](https://img.shields.io/badge/Maintained%20by-Halal%20Formosa%20Team-orange.svg)](https://github.com/HalalFormosa)
 [![Vue 3](https://img.shields.io/badge/Vue-3.x-emerald.svg)](https://vuejs.org/)
 [![Ionic Framework](https://img.shields.io/badge/Ionic-Vue-blue.svg)](https://ionicframework.com/)
 [![License: PolyForm Noncommercial](https://img.shields.io/badge/License-PolyForm%20Noncommercial%201.0.0-blue.svg)](LICENSE)
@@ -155,5 +155,5 @@ contact the team through [halalformosa.com](https://halalformosa.com).
 
 ---
 
-> **Maintained by [R Creative](https://github.com/rakharamadhana)** 🇹🇼  
+> **Maintained by the Halal Formosa team, in partnership with YiQi Global Consulting (藝啟文創行銷有限公司)** 🇹🇼  
 > *Dedicated to empowering and supporting the Muslim community in Taiwan.*

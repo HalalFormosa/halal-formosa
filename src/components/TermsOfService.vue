@@ -2,7 +2,7 @@
   <div class="ion-padding">
     <h1>Terms of Service</h1>
     <p>
-      These Terms of Service (“Terms”) apply to the <strong>Halal Formosa</strong> mobile application (the “Service”) provided by <strong>R Creative</strong> (the “Company”).
+      These Terms of Service (“Terms”) apply to the <strong>Halal Formosa</strong> mobile application (the “Service”) provided by <strong>YiQi Global Consulting (藝啟文創行銷有限公司)</strong> (the “Company”), in partnership with the Halal Formosa founding team.
       By accessing or using the Service, users (“Users”) agree to be bound by these Terms.
       If you do not agree, please do not use the Service.
     </p>
@@ -67,8 +67,8 @@
     <ol>
       <li><strong>Database and User-Submitted Content</strong>
         <ul>
-          <li>All data in our database, including <strong>product information, halal status labels, and user-submitted reports</strong>, is managed and maintained by <strong>R Creative</strong>.</li>
-          <li>Contributors retain ownership of their submissions but grant R Creative a <strong>perpetual, royalty-free, non-exclusive license</strong> to store, process, and display the content within the Service.</li>
+          <li>All data in our database, including <strong>product information, halal status labels, and user-submitted reports</strong>, is managed and maintained by <strong>YiQi Global Consulting (藝啟文創行銷有限公司)</strong>.</li>
+          <li>Contributors retain ownership of their submissions but grant YiQi Global Consulting (藝啟文創行銷有限公司) a <strong>perpetual, royalty-free, non-exclusive license</strong> to store, process, and display the content within the Service.</li>
           <li>Users may not copy, modify, redistribute, or reuse this content without <strong>written permission</strong>.</li>
         </ul>
       </li>
@@ -126,7 +126,7 @@
 
     <h2>Article 11 – Governing Law and Dispute Resolution</h2>
     <ul>
-      <li>The Service is provided by <strong>R Creative</strong> as a <strong>voluntary individual/team initiative</strong> intended for community benefit, without formal business registration in Taiwan.</li>
+      <li>The Service is operated by <strong>YiQi Global Consulting (藝啟文創行銷有限公司)</strong>, a company in Taiwan, in partnership with the Halal Formosa founding team, and is intended for community benefit.</li>
       <li>Users agree to first seek resolution through <strong>amicable communication</strong> with the Service team, guided by <strong>Shariah (Islamic) principles</strong> of fairness and mutual understanding.</li>
       <li>If resolution cannot be reached, the matter will be governed by the <strong>laws of Taiwan</strong>, and any formal proceedings will be subject to the <strong>exclusive jurisdiction of the Taipei District Court</strong>.</li>
       <li>By using the Service, <strong>international users</strong> also agree that any disputes will be governed under the laws of Taiwan.</li>
@@ -140,7 +140,7 @@
       </ul>
     </ul>
 
-    <p><em>Effective Date: August 2025</em></p>
-    <p><strong>Service Name:</strong> Halal Formosa<br><strong>Provider:</strong> R Creative</p>
+    <p><em>Effective Date: August 2025 &middot; Last updated: October 2026</em></p>
+    <p><strong>Service Name:</strong> Halal Formosa<br><strong>Provider:</strong> YiQi Global Consulting (藝啟文創行銷有限公司)</p>
   </div>
 </template>
