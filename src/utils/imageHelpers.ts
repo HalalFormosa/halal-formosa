@@ -40,9 +40,9 @@ export function blobToBase64(file: Blob): Promise<string> {
 
 const PLACEHOLDER_IMAGE = 'https://via.placeholder.com/150x150.webp?text=No+Photo'
 
-// Flip to true only once every existing product has a front_thumb.jpg
-// (scripts/backfill-product-thumbs.mjs), otherwise un-backfilled products
-// would show a broken image instead of falling back to the transform.
+// Flip to true only once every existing product has a front_thumb.jpg (all 2,107 did as of
+// 2026-10-27, and new uploads create one), otherwise a product without one would show a broken
+// image instead of falling back to the transform.
 const USE_STORED_PRODUCT_THUMBS = false
 
 // Requests a downsized/compressed rendition from Supabase Storage's image
