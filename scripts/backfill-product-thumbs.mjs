@@ -23,11 +23,16 @@ const supabase = createClient(url, key, { auth: { persistSession: false } })
 const BUCKET = 'product-images'
 const CONCURRENCY = 4
 
+// The storage folder comes from the product's photo URL, not its barcode: a
+// product whose barcode was edited later keeps its photo in the old folder.
 const barcodes = []
 for (let from = 0; ; from += 1000) {
-    const { data, error } = await supabase.from('products').select('barcode').not('photo_front_url', 'is', null).range(from, from + 999)
+    const { data, error } = await supabase.from('products').select('photo_front_url').not('photo_front_url', 'is', null).range(from, from + 999)
     if (error) throw error
-    barcodes.push(...data.map((r) => r.barcode))
+    for (const r of data) {
+        const folder = r.photo_front_url.match(/\/product-images\/([^/]+)\/front\.jpg(\?|$)/)?.[1]
+        if (folder) barcodes.push(decodeURIComponent(folder))
+    }
     if (data.length < 1000) break
 }
 console.log(`${barcodes.length} products with a front photo${apply ? '' : ' (dry run)'}`)
