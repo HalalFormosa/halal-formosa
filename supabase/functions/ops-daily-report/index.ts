@@ -5,10 +5,20 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 // Query: ?dry_run=1 skips Discord, ?hours=N changes the window (default 24).
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+// Server key: the new `default` secret key (SUPABASE_SECRET_KEYS is a JSON object keyed by key name),
+// falling back to the legacy service_role key until that one is deactivated.
+const LEGACY_SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+function readSecretKey(): string {
+  try {
+    const key = JSON.parse(Deno.env.get("SUPABASE_SECRET_KEYS") ?? "{}").default;
+    if (typeof key === "string" && key !== "") return key;
+  } catch { /* fall through to the legacy key */ }
+  return "";
+}
+const SECRET_KEY = readSecretKey();
 const CRON_SECRET = Deno.env.get("CRON_SECRET") ?? "";
 const DISCORD = Deno.env.get("DISCORD_WEBHOOK_URL_ALERTS") ?? Deno.env.get("DISCORD_WEBHOOK_URL") ?? "";
-const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
+const admin = createClient(SUPABASE_URL, SECRET_KEY || LEGACY_SERVICE_ROLE);
 
 const json = (b: unknown, status = 200) =>
   new Response(JSON.stringify(b), { status, headers: { "Content-Type": "application/json" } });
@@ -44,7 +54,7 @@ function describe(flag: string, c: any): string {
 Deno.serve(async (req: Request) => {
   const secret = req.headers.get("x-cron-secret") ?? "";
   const auth = req.headers.get("authorization") ?? "";
-  if (!((CRON_SECRET !== "" && secret === CRON_SECRET) || auth === `Bearer ${SERVICE_ROLE}`)) {
+  if (!((CRON_SECRET !== "" && secret === CRON_SECRET) || (LEGACY_SERVICE_ROLE !== "" && auth === `Bearer ${LEGACY_SERVICE_ROLE}`))) {
     return new Response("Unauthorized", { status: 401 });
   }
   const url = new URL(req.url);
@@ -74,5 +84,5 @@ Deno.serve(async (req: Request) => {
       body: JSON.stringify({ username: "Halal Formosa Bot", content }) }).catch(() => null);
     alerted = !!res && res.ok;
   }
-  return json({ ok: true, dry_run: dryRun, alerted, discord_configured: DISCORD !== "", report });
+  return json({ ok: true, dry_run: dryRun, alerted, discord_configured: DISCORD !== "", key_source: SECRET_KEY ? "secret" : "legacy", report });
 });
