@@ -169,7 +169,7 @@ export function usePoints() {
             currentPoints.value = prevPoints + optimisticIncrement;
             fireConfetti();
 
-            const res = await fetch(`${EDGE_BASE_URL}/award-points`, {
+            const res = await fetch(`${EDGE_BASE_URL}/award-points-v2`, {
                 method: "POST",
                 headers: {
                     Authorization: `Bearer ${session.access_token}`,
