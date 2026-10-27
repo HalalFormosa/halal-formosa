@@ -9,7 +9,17 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 // Auth: RevenueCat 'Authorization' header must equal REVENUECAT_WEBHOOK_SECRET.
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
-const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+// Server key: the new `default` secret key (SUPABASE_SECRET_KEYS is a JSON object keyed by key name),
+// falling back to the legacy service_role key until that one is deactivated.
+function readSecretKey(): string {
+  try {
+    const key = JSON.parse(Deno.env.get('SUPABASE_SECRET_KEYS') ?? '{}').default
+    if (typeof key === 'string' && key !== '') return key
+  } catch { /* fall through to the legacy key */ }
+  return ''
+}
+const SECRET_KEY = readSecretKey()
+const SERVER_KEY = SECRET_KEY || (Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '')
 const WEBHOOK_SECRET = Deno.env.get('REVENUECAT_WEBHOOK_SECRET') ?? ''
 const RC_SECRET_API_KEY = Deno.env.get('REVENUECAT_SECRET_KEY') ?? ''
 
@@ -17,7 +27,7 @@ const PRO_ENTITLEMENT = 'Halal Formosa Pro'
 
 // ---- Operational visibility: every processed event / failure is recorded in ops_events, and failures alert Discord ----
 const DISCORD_ALERTS = Deno.env.get('DISCORD_WEBHOOK_URL_ALERTS') ?? Deno.env.get('DISCORD_WEBHOOK_URL') ?? ''
-const ops = createClient(SUPABASE_URL, SERVICE_ROLE)
+const ops = createClient(SUPABASE_URL, SERVER_KEY)
 
 async function opsLog(level: 'info' | 'warn' | 'error', event: string, userId: string | null, detail: unknown) {
   try { await ops.from('ops_events').insert({ source: 'revenuecat-webhook', level, event, user_id: userId, detail }) } catch { /* never break the webhook */ }
@@ -137,7 +147,7 @@ async function handle(req: Request, ctx: { type?: string; user?: string; product
 
   if (ev.type === 'TRANSFER') {
     const ids: string[] = [...(ev.transferred_from ?? []), ...(ev.transferred_to ?? [])].filter((id: string) => UUID_RE.test(id))
-    const transferClient = createClient(SUPABASE_URL, SERVICE_ROLE)
+    const transferClient = createClient(SUPABASE_URL, SERVER_KEY)
     for (const id of ids) {
       const err = await syncAfterTransfer(transferClient, id)
       if (err) return new Response(JSON.stringify({ error: err, user: id }), { status: 500, headers: { 'Content-Type': 'application/json' } })
@@ -150,7 +160,7 @@ async function handle(req: Request, ctx: { type?: string; user?: string; product
 
   const entitlementIds: string[] = ev.entitlement_ids ?? (ev.entitlement_id ? [ev.entitlement_id] : [])
   const type: string = ev.type ?? ''
-  const supabase = createClient(SUPABASE_URL, SERVICE_ROLE)
+  const supabase = createClient(SUPABASE_URL, SERVER_KEY)
 
   // ---- Personal "Halal Formosa Pro" entitlement -> mirror + referral reward ----
   if (entitlementIds.includes(PRO_ENTITLEMENT)) {

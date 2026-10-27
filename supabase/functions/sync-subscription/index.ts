@@ -6,7 +6,17 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 // cannot grant Pro. Never downgrades a user RevenueCat has no record of (manual grants stay untouched).
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
-const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+// Server key: the new `default` secret key (SUPABASE_SECRET_KEYS is a JSON object keyed by key name),
+// falling back to the legacy service_role key until that one is deactivated.
+function readSecretKey(): string {
+  try {
+    const key = JSON.parse(Deno.env.get('SUPABASE_SECRET_KEYS') ?? '{}').default
+    if (typeof key === 'string' && key !== '') return key
+  } catch { /* fall through to the legacy key */ }
+  return ''
+}
+const SECRET_KEY = readSecretKey()
+const SERVER_KEY = SECRET_KEY || (Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '')
 const RC_SECRET_API_KEY = Deno.env.get('REVENUECAT_SECRET_KEY') ?? ''
 
 const PRO_ENTITLEMENT = 'Halal Formosa Pro'
@@ -25,7 +35,7 @@ Deno.serve(async (req: Request) => {
   const token = (req.headers.get('authorization') ?? '').replace(/^Bearer\s+/i, '')
   if (!token) return json({ error: 'Unauthorized' }, 401)
 
-  const admin = createClient(SUPABASE_URL, SERVICE_ROLE)
+  const admin = createClient(SUPABASE_URL, SERVER_KEY)
   const { data: userData, error: authError } = await admin.auth.getUser(token)
   const userId = userData?.user?.id
   if (authError || !userId) return json({ error: 'Unauthorized' }, 401)
