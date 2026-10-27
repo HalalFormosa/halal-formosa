@@ -1,5 +1,31 @@
 # Changelog
 
+## 2.0.2
+
+### New features
+- **Yearly survey on Home.** A short card above Our Partners asks one of 14 questions per session. After an answer you can choose to answer the rest right away. Every answer earns XP, with a bonus for finishing. New accounts are not asked in their first 30 days, and "Not now" pauses the card for a week. The survey also opens from a `/survey` link.
+- **Brand partner pages** now list the partner's stores, stockists and provided products. Product details link to them.
+
+### Fixes
+- **Barcode scan back button.** Leaving the scanner (including during the camera permission prompt) no longer leaves a blank screen.
+- **Explore map carousel** shows the places in view, with at most one out-of-view gold place.
+- **Search no longer blocks real users.** The weak "no interaction" and reCAPTCHA-failure checks were removed from Explore, Search, Store and Trip. A failed token now falls through to server-side verification, and the bot flag lasts 5 minutes instead of longer.
+- **Chinese ingredient highlighting.** Keywords now match in Chinese text, split on full-width commas and 、. One-character keys such as 水 must be the whole segment, so they no longer colour longer words.
+- **Android bottom sheets** have extra bottom padding so navigation buttons no longer cover the lowest content.
+- **Sign out** now signs out of this device only, not every session.
+- **Reels preview limit** no longer loops (one anonymous session logged 11,366 events in a minute).
+- **Duplicate ad impressions.** House ad impressions are logged once per ad per placement per session.
+
+### Behind the scenes
+- Edge functions (cron, ops report, scan digest, avatar mirroring, sync-subscription, RevenueCat webhook, NewebPay, ECPay, LINE, OCR, notify-event and others) use the new Supabase secret API key. Functions that existed only on the server are now tracked in git.
+- `award-points-v2`, rebuilt from the `point_rules` contract, replaces the old points call.
+- Product front thumbnails are stored and served from our storage instead of paid image transforms. The one-off backfill scripts were removed.
+- Activity log: `screen_view` on every page change, `client_error` reporting, more events (saved folders, sharing, search quality, store chat, onboarding, app lifecycle, rewards, privacy settings), and the user is read from the local session.
+- `sync-subscription` verifies Pro with RevenueCat server-side instead of trusting the client payload.
+- Each signed-in user's app version is recorded with `record_app_version`.
+- Admin: audit log page, survey results page, and operations pages (versions, settings, health, subscriptions and more) at `/admin/tools`.
+- Version bumped to 2.0.2 (Android versionCode 137, iOS build 45 for the app target).
+
 ## 2.0.1
 
 ### New features
