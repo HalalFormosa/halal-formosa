@@ -822,6 +822,7 @@ import { useBackgroundRemoval } from "@/composables/useBackgroundRemoval";
 import { highlightIngredients } from "@/utils/useIngredientHighlighter";
 import { isValidBarcodeFormat, normalizeBarcode } from "@/utils/barcodeValidator";
 import { computeImageHash, computeImageHashFromUrl } from "@/utils/useImageHash";
+import { uploadProductFrontThumb } from "@/utils/productThumbnail";
 import { useNotifier } from "@/composables/useNotifier";
 import { useAdminOcrRecheck } from "@/composables/useAdminOcrRecheck";
 
@@ -2017,6 +2018,7 @@ async function approveProduct(product: any) {
         .from('product-images')
         .getPublicUrl(`${barcode}/front.jpg`)
       frontUrl = `${publicUrl.publicUrl.split('?')[0]}?v=${Date.now()}`
+      await uploadProductFrontThumb(barcode, frontFile.value)
     }
   }
 

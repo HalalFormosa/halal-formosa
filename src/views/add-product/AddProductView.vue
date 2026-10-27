@@ -1061,6 +1061,7 @@ import { userRole, setUserRole, isAdmin } from '@/composables/userProfile'
 import { usePoints } from "@/composables/usePoints";
 import { useNotifier } from "@/composables/useNotifier";
 import { useImageResizer } from "@/composables/useImageResizer";
+import { uploadProductFrontThumb } from "@/utils/productThumbnail";
 import { useBackgroundRemoval } from "@/composables/useBackgroundRemoval";
 import { computeImageHash } from "@/utils/useImageHash";
 import { useCropperOcr } from "@/composables/useCropperOcr"
@@ -2639,6 +2640,7 @@ async function handleSubmit() {
 
       frontUrl = `${publicUrl.publicUrl.split('?')[0]}?v=${Date.now()}`
       console.log('Front image uploaded:', frontUrl)
+      await uploadProductFrontThumb(barcode, frontFile.value)
     }
 
     if (backFile.value) {

@@ -40,6 +40,11 @@ export function blobToBase64(file: Blob): Promise<string> {
 
 const PLACEHOLDER_IMAGE = 'https://via.placeholder.com/150x150.webp?text=No+Photo'
 
+// Flip to true only once every existing product has a front_thumb.jpg
+// (scripts/backfill-product-thumbs.mjs), otherwise un-backfilled products
+// would show a broken image instead of falling back to the transform.
+const USE_STORED_PRODUCT_THUMBS = false
+
 // Requests a downsized/compressed rendition from Supabase Storage's image
 // transform endpoint instead of shipping the full ~1000px upload for a
 // thumbnail-sized slot — the main win on slow connections. Falls back to
@@ -59,6 +64,13 @@ export function getOptimizedImageUrl(
 ): string {
     if (!url) return PLACEHOLDER_IMAGE
     if (!url.includes('/storage/v1/object/public/')) return url
+
+    // Product fronts have a stored 500px thumbnail (front_thumb.jpg, written at
+    // upload and by the backfill script) — serving it costs nothing, unlike the
+    // per-image-billed transform below.
+    if (USE_STORED_PRODUCT_THUMBS && /\/product-images\/[^/]+\/front\.jpg(\?|$)/.test(url)) {
+        return url.replace('/front.jpg', '/front_thumb.jpg')
+    }
 
     const transformed = url.replace('/storage/v1/object/public/', '/storage/v1/render/image/public/')
     const separator = transformed.includes('?') ? '&' : '?'

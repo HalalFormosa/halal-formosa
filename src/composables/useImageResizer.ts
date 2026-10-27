@@ -74,5 +74,49 @@ export function useImageResizer() {
         });
     }
 
-    return { resizeImage };
+    // Square cover-crop thumbnail for list/grid slots — a stored replacement
+    // for Supabase's paid /render/image/ transform (see getOptimizedImageUrl).
+    async function makeThumbnail(
+        webPath: string | File,
+        size = 500,
+        quality = 0.65
+    ): Promise<File> {
+        let blob: Blob;
+
+        if (typeof webPath === "string") {
+            const response = await fetch(webPath);
+            blob = await response.blob();
+        } else {
+            blob = webPath;
+        }
+
+        const source = await loadDrawableImage(blob);
+        const w = "naturalWidth" in source ? (source.naturalWidth || source.width) : source.width;
+        const h = "naturalHeight" in source ? (source.naturalHeight || source.height) : source.height;
+
+        const side = Math.min(w, h);
+        const out = Math.min(size, side);
+        const canvas = document.createElement("canvas");
+        canvas.width = out;
+        canvas.height = out;
+        canvas.getContext("2d")!.drawImage(source, (w - side) / 2, (h - side) / 2, side, side, 0, 0, out, out);
+
+        if ("close" in source) source.close();
+
+        return new Promise((resolve, reject) => {
+            canvas.toBlob(
+                (thumbBlob) => {
+                    if (thumbBlob) {
+                        resolve(new File([thumbBlob], "front_thumb.jpg", { type: "image/jpeg" }));
+                    } else {
+                        reject(new Error("❌ Failed to create thumbnail"));
+                    }
+                },
+                "image/jpeg",
+                quality
+            );
+        });
+    }
+
+    return { resizeImage, makeThumbnail };
 }
