@@ -1,6 +1,6 @@
 # Halal Formosa 2.0.2: release announcement draft
 
-Draft for review. Written from the git history between `v2.0.1` and `main` (42 commits), following [brand-guidelines.md](brand-guidelines.md). Version numbers are **not bumped yet**: `package.json`, Android and iOS still say 2.0.1.
+Draft for review. The store, push and social texts are deliberately short and public-safe; the table below is internal. Written from the git history between `v2.0.1` and `main` (42 commits), following [brand-guidelines.md](brand-guidelines.md). Version numbers are **not bumped yet**: `package.json`, Android and iOS still say 2.0.1.
 
 ## Release name
 
@@ -35,64 +35,41 @@ Left out on purpose (internal, no visible change): secret-key migration of edge 
 
 ---
 
-## App Store: What's New (English, limit 4,000 characters)
+## App Store: What's New (limit 4,000 characters)
 
+Public wording: short, benefits only. No details about security, bot checks or backend work.
+
+### English
 ```
 The Check-in Update
 
-NEW
-• Yearly survey on Home. Answer one short question per visit, or the rest in one go, and earn XP for every answer.
-• Brand partner pages now show their stores, stockists and the products they provide.
+• New yearly survey on Home. Answer a quick question and earn XP.
+• Partner pages now show their stores and products.
+• Smoother scanning, Explore and search, plus other fixes and improvements.
 
-FIXED
-• The back button after a barcode scan no longer leaves a blank screen.
-• The Explore map carousel now shows the places you can actually see.
-• Searching no longer wrongly blocks real users.
-• Chinese ingredients are highlighted correctly in ingredient lists.
-• Signing out now only signs out the device you are using.
-• Reels no longer get stuck when the preview limit is reached.
-
-Thank you for helping our community. Found a problem? Tell us on Instagram @halalformosa.
+Thank you for helping our community.
 ```
 
-## App Store: What's New (Traditional Chinese)
-
+### Traditional Chinese
 ```
 簽到更新
 
-新功能
-• 首頁新增年度問卷。每次只需回答一個簡短問題，也可以一次答完其餘問題，每個答案都能獲得 XP。
-• 品牌合作夥伴頁面現在會顯示其門市、經銷點與供應的產品。
+• 首頁新增年度問卷，回答簡短問題即可獲得 XP。
+• 合作夥伴頁面現在會顯示其門市與產品。
+• 掃描、探索與搜尋更順暢，並包含其他修正與改進。
 
-修正
-• 掃描條碼後按返回鍵不再出現空白畫面。
-• 探索地圖的輪播現在顯示您實際看得到的地點。
-• 搜尋時不再誤擋真實使用者。
-• 成分表中的中文成分現在能正確標示。
-• 登出現在只會登出目前使用的裝置。
-• 達到預覽上限後，短影片不再卡住。
-
-感謝您一同幫助我們的社群。遇到問題嗎？歡迎到 Instagram @halalformosa 告訴我們。
+感謝您一同幫助我們的社群。
 ```
 
-## App Store: What's New (Indonesian)
-
+### Indonesian
 ```
 Pembaruan Check-in
 
-BARU
-• Survei tahunan di Beranda. Jawab satu pertanyaan singkat setiap kunjungan, atau sisanya sekaligus, dan dapatkan XP untuk setiap jawaban.
-• Halaman mitra merek kini menampilkan toko, penyalur, dan produk yang mereka sediakan.
+• Survei tahunan baru di Beranda. Jawab pertanyaan singkat dan dapatkan XP.
+• Halaman mitra kini menampilkan toko dan produk mereka.
+• Pemindaian, Jelajah, dan pencarian lebih lancar, plus perbaikan dan peningkatan lainnya.
 
-DIPERBAIKI
-• Tombol kembali setelah memindai barcode tidak lagi menyisakan layar kosong.
-• Karusel peta Jelajah kini menampilkan tempat yang benar-benar terlihat.
-• Pencarian tidak lagi salah memblokir pengguna asli.
-• Bahan dalam bahasa Mandarin kini ditandai dengan benar di daftar bahan.
-• Keluar akun kini hanya keluar dari perangkat yang sedang dipakai.
-• Reels tidak lagi macet saat batas pratinjau tercapai.
-
-Terima kasih sudah membantu komunitas kita. Menemukan masalah? Beri tahu kami di Instagram @halalformosa.
+Terima kasih sudah membantu komunitas kita.
 ```
 
 ---
@@ -100,27 +77,27 @@ Terima kasih sudah membantu komunitas kita. Menemukan masalah? Beri tahu kami di
 ## Google Play: What's new (limit 500 characters per language)
 
 ### English (en-US)
-
 ```
 The Check-in Update
-NEW: Yearly survey on Home. One short question per visit, earn XP for every answer. Brand partner pages now show their stores, stockists and products.
-FIXED: Blank screen after barcode scan back button. Explore map carousel shows visible places. Real users no longer blocked from search. Chinese ingredients highlighted correctly. Android bottom sheets no longer hidden by navigation buttons. Sign out only on this device.
+• New yearly survey on Home. Answer a quick question and earn XP.
+• Partner pages now show their stores and products.
+• Smoother scanning, Explore and search, plus other fixes and improvements.
 ```
 
 ### Traditional Chinese (zh-TW)
-
 ```
 簽到更新
-新功能：首頁新增年度問卷，每次回答一個簡短問題，每個答案都能獲得 XP。品牌合作夥伴頁面現在會顯示其門市、經銷點與產品。
-修正：掃描條碼後按返回鍵不再出現空白畫面。探索地圖輪播顯示可見的地點。搜尋不再誤擋真實使用者。成分表中的中文成分能正確標示。Android 底部面板不再被導覽按鈕遮住。登出只會登出目前的裝置。
+• 首頁新增年度問卷，回答簡短問題即可獲得 XP。
+• 合作夥伴頁面現在會顯示其門市與產品。
+• 掃描、探索與搜尋更順暢，並包含其他修正與改進。
 ```
 
 ### Indonesian (id)
-
 ```
 Pembaruan Check-in
-BARU: Survei tahunan di Beranda. Satu pertanyaan singkat per kunjungan, dapatkan XP untuk setiap jawaban. Halaman mitra merek kini menampilkan toko, penyalur, dan produk.
-DIPERBAIKI: Layar kosong setelah tombol kembali di pemindaian barcode. Karusel peta Jelajah menampilkan tempat yang terlihat. Pengguna asli tidak lagi diblokir saat mencari. Bahan Mandarin ditandai dengan benar. Panel bawah Android tidak tertutup tombol navigasi. Keluar akun hanya di perangkat ini.
+• Survei tahunan baru di Beranda. Jawab pertanyaan singkat dan dapatkan XP.
+• Halaman mitra kini menampilkan toko dan produk mereka.
+• Pemindaian, Jelajah, dan pencarian lebih lancar, plus perbaikan dan peningkatan lainnya.
 ```
 
 ---
@@ -129,9 +106,9 @@ DIPERBAIKI: Layar kosong setelah tombol kembali di pemindaian barcode. Karusel p
 
 **Title:** Update 2.0.2 is here
 
-**Body:** A yearly survey on Home where every answer earns XP, richer brand partner pages, and a round of fixes for scanning, Explore and sign-out.
+**Body:** A yearly survey on Home where every answer earns XP, richer partner pages, and smoother scanning and search.
 
-**Push (one line):** Halal Formosa 2.0.2 is out: yearly survey with XP, richer partner pages and fixes. Update now.
+**Push (one line):** Halal Formosa 2.0.2 is out: a yearly survey with XP, richer partner pages and smoother scanning. Update now.
 
 ## Social caption (Instagram / Facebook)
 
@@ -139,8 +116,8 @@ DIPERBAIKI: Layar kosong setelah tombol kembali di pemindaian barcode. Karusel p
 Halal Formosa 2.0.2, the Check-in Update, is live.
 
 ✔ A short yearly survey on Home. Every answer earns XP.
-✔ Brand partner pages now show stores, stockists and products.
-✔ Fixes for barcode scan, the Explore map, search and sign-out.
+✔ Partner pages now show their stores and products.
+✔ Smoother scanning, Explore and search.
 
 Update on the App Store and Google Play. Thank you for building this with us.
 ```
