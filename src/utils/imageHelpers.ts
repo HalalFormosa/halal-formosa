@@ -43,7 +43,7 @@ const PLACEHOLDER_IMAGE = 'https://via.placeholder.com/150x150.webp?text=No+Phot
 // Flip to true only once every existing product has a front_thumb.jpg (all 2,107 did as of
 // 2026-10-27, and new uploads create one), otherwise a product without one would show a broken
 // image instead of falling back to the transform.
-const USE_STORED_PRODUCT_THUMBS = false
+const USE_STORED_PRODUCT_THUMBS = true
 
 // Requests a downsized/compressed rendition from Supabase Storage's image
 // transform endpoint instead of shipping the full ~1000px upload for a
