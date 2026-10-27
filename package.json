@@ -90,7 +90,6 @@
     "onesignal-cordova-plugin": "^5.3.1",
     "onnxruntime-web": "1.21.0",
     "praytime": "^3.2.0",
-    "puppeteer": "^24.42.0",
     "qrcode": "^1.5.4",
     "swiper": "^12.1.2",
     "tesseract.js": "^6.0.1",
