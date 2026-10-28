@@ -762,6 +762,7 @@ import { useAutoScanStore } from '@/composables/useAutoScanStore'
 import { useNotifier } from "@/composables/useNotifier"
 import { useI18n } from 'vue-i18n'
 import { extractCoreProductName, wordJaccard } from '@/utils/productNameMatch'
+import { takeScanAction } from '@/composables/useScanModeRequest'
 import { syncScanWidget } from '@/composables/useWidgetSync'
 import { getOptimizedImageUrl, onProductImageError } from '@/utils/imageHelpers'
 
@@ -799,6 +800,14 @@ const currentStep = ref(STEP_CAPTURE)
 const contentRef = ref<any>(null)
 
 onIonViewDidEnter(() => {
+  // Arrived from the mode switcher on Auto Scan / Live Verdict: start what was asked for.
+  const requested = takeScanAction()
+  if (requested) {
+    currentStep.value = STEP_CAPTURE
+    if (requested === 'camera') scanFromCamera()
+    else scanFromGallery()
+  }
+
   if (currentStep.value === STEP_RESULTS) {
     scheduleBannerUpdate()
   } else {
