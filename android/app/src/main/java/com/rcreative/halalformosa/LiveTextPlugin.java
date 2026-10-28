@@ -12,6 +12,7 @@ import android.util.Log;
 import android.util.Size;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.widget.FrameLayout;
 import androidx.annotation.NonNull;
 import androidx.camera.core.Camera;
@@ -216,6 +217,8 @@ public class LiveTextPlugin extends Plugin {
                 ViewGroup.LayoutParams.MATCH_PARENT
             );
         parent.addView(previewView, 0, previewParams);
+        // A held-steady phone gets no touches, so without this the screen times out and locks mid-scan.
+        getActivity().getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         webView.setBackgroundColor(Color.TRANSPARENT);
 
         // Preview and analysis must share one aspect ratio so the boxes line up with what is shown.
@@ -345,6 +348,7 @@ public class LiveTextPlugin extends Plugin {
         }
         camera = null;
         imageCapture = null;
+        getActivity().getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         if (previewView != null) {
             ViewGroup parent = (ViewGroup) previewView.getParent();
             if (parent != null) {
