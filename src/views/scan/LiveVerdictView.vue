@@ -36,6 +36,10 @@
             <ion-button size="small" color="carrot" class="retry" @click="start">Try again</ion-button>
           </template>
           <template v-else>
+            <div class="product-row">
+              <span class="product-label">Product</span>
+              <span class="product-name" :class="{ 'product-name--pending': !productName }">{{ productName || (verdict === 'scanning' ? '—' : 'Looking for the product name…') }}</span>
+            </div>
             <div class="verdict-title">{{ verdictTitle }}</div>
             <div class="verdict-sub">{{ verdictSub }}</div>
           </template>
@@ -61,7 +65,7 @@ import { mapImageBoxToView, liveMatchKey } from '@/utils/liveVerdictMatcher'
 const router = useRouter()
 const supported = Capacitor.getPlatform() === 'android'
 
-const { running, error, verdict, highlights, frameSize, torchOn, start, stop, toggleTorch } = useLiveVerdict()
+const { running, error, verdict, productName, highlights, frameSize, torchOn, start, stop, toggleTorch } = useLiveVerdict()
 
 const stageRef = ref<HTMLElement | null>(null)
 const viewSize = ref({ width: window.innerWidth, height: window.innerHeight })
@@ -76,6 +80,8 @@ const boxes = computed(() => {
   const out: { key: string; x: number; y: number; width: number; height: number; color: string; ion: string; label: string }[] = []
   for (const h of highlights.value) {
     const ion = extractIonColor(h.color)
+    // Only flagged ingredients get a box; "Muslim-friendly" matches are not shown live.
+    if (ion !== 'danger' && ion !== 'warning') continue
     const status = colorMeaning(ion)
     h.boxes?.forEach((box, i) => {
       const mapped = mapImageBoxToView(box, frameSize.value, viewSize.value)
@@ -97,7 +103,7 @@ const flagged = computed(() =>
 
 const verdictClass = computed(() => {
   if (!supported || error.value) return 'idle'
-  return { scanning: 'idle', Haram: 'danger', Syubhah: 'warning' }[verdict.value]
+  return { scanning: 'idle', Haram: 'danger', Syubhah: 'warning', 'Muslim-friendly': 'primary' }[verdict.value]
 })
 
 const verdictTitle = computed(() => (verdict.value === 'scanning' ? 'Point at the ingredient list' : verdict.value))
@@ -107,8 +113,10 @@ const verdictSub = computed(() => {
     case 'Haram':
     case 'Syubhah':
       return 'Flagged: ' + flagged.value.map(h => h.matchedVariant ?? h.keyword).join(', ')
+    case 'Muslim-friendly':
+      return 'No flagged ingredients in the text read so far. Move across the whole list to be sure.'
     default:
-      return running.value ? 'Nothing flagged so far. Move across the whole list.' : 'Starting camera…'
+      return running.value ? 'Hold steady so the text is sharp.' : 'Starting camera…'
   }
 })
 
@@ -217,6 +225,31 @@ onIonViewWillLeave(() => {
 }
 .bottom-card--danger { border-left-color: var(--ion-color-danger); }
 .bottom-card--warning { border-left-color: var(--ion-color-warning); }
+.bottom-card--primary { border-left-color: var(--ion-color-primary); }
+.product-row {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 8px;
+}
+.product-label {
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  opacity: 0.6;
+}
+.product-name {
+  font-size: 16px;
+  font-weight: 600;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+.product-name--pending {
+  font-weight: 400;
+  opacity: 0.6;
+}
 .verdict-title {
   font-size: 22px;
   font-weight: 800;

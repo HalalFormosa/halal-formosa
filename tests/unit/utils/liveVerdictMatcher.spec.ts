@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import type { LiveTextFrame } from '@/plugins/liveText'
 import type { IngredientHighlight } from '@/types/Ingredient'
 import {
+    countRecognizedChars,
     createLiveMatcher,
     mapImageBoxToView,
     normalizeLiveText,
@@ -50,7 +51,7 @@ describe('createLiveMatcher', () => {
     const match = createLiveMatcher(dictionary)
 
     it('finds a keyword and boxes the words that make it up', () => {
-        const [m] = match(frameOf(['sugar,', 'gelatin,', 'salt']))
+        const [m] = match(frameOf(['sugar', 'gelatin', 'salt']))
         expect(m.keyword).toBe('gelatin|gelatine')
         expect(m.matchedVariant).toBe('gelatin')
         expect(m.boxes).toEqual([{ x: 100, y: 0, width: 90, height: 40 }])
@@ -88,6 +89,41 @@ describe('createLiveMatcher', () => {
     it('ignores invalid regex entries instead of throwing', () => {
         const broken = createLiveMatcher([hl('[unclosed', '', '--ion-color-danger')])
         expect(broken(frameOf(['anything']))).toEqual([])
+    })
+})
+
+describe('boxes for a whole-line element', () => {
+    const lineFrame = (text: string, box: { x: number; y: number; width: number; height: number }): LiveTextFrame => ({
+        width: 1000,
+        height: 2000,
+        blocks: [{ lines: [{ text, box, elements: [{ text, box }] }] }],
+    })
+    const match = createLiveMatcher([hl('', '明膠', '--ion-color-danger')])
+
+    it('cuts the box to the matched characters', () => {
+        const [m] = match(lineFrame('成分明膠糖', { x: 100, y: 50, width: 500, height: 40 }))
+        expect(m.boxes).toEqual([{ x: 300, y: 50, width: 200, height: 40 }])
+    })
+
+    it('counts punctuation when locating the match', () => {
+        const [m] = match(lineFrame('成分：明膠、糖', { x: 0, y: 0, width: 700, height: 40 }))
+        expect(m.boxes).toEqual([{ x: 300, y: 0, width: 200, height: 40 }])
+    })
+
+    it('cuts top to bottom for vertical text', () => {
+        const [m] = match(lineFrame('成分明膠糖', { x: 10, y: 0, width: 40, height: 500 }))
+        expect(m.boxes).toEqual([{ x: 10, y: 200, width: 40, height: 200 }])
+    })
+
+    it('keeps the whole box when the match is the whole element', () => {
+        const [m] = match(lineFrame('明膠', { x: 5, y: 6, width: 80, height: 30 }))
+        expect(m.boxes).toEqual([{ x: 5, y: 6, width: 80, height: 30 }])
+    })
+})
+
+describe('countRecognizedChars', () => {
+    it('counts letters and digits only', () => {
+        expect(countRecognizedChars(frameOf(['ab,', 'c 1']))).toBe(4)
     })
 })
 
