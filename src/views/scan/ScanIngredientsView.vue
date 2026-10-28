@@ -761,6 +761,7 @@ import { onIonViewDidEnter } from '@ionic/vue'
 import { useAutoScanStore } from '@/composables/useAutoScanStore'
 import { useNotifier } from "@/composables/useNotifier"
 import { useI18n } from 'vue-i18n'
+import { extractCoreProductName, wordJaccard } from '@/utils/productNameMatch'
 import { syncScanWidget } from '@/composables/useWidgetSync'
 import { getOptimizedImageUrl, onProductImageError } from '@/utils/imageHelpers'
 
@@ -984,42 +985,6 @@ const ingredientsMatchPercent = computed(() =>
 // Show the fuller Quran/Hadith reminder only some of the time — the short line the rest,
 // so the prompt doesn't feel repetitive on every scan.
 const contributionMotivationKey = ref('scanIngredients.scan.contributionPrompt.motivation')
-
-// OCR-extracted product names often carry trailing packaging details
-// (e.g. "Coffee Plaza Net Weight: 300ml") that the stored product name
-// won't contain, so an exact substring match against the raw OCR text
-// misses real matches. Strip that noise down to the core name first.
-function extractCoreProductName(raw: string): string {
-  return raw
-    .replace(/net\s*weight\s*[:\-]?\s*[\d.,]+\s*(ml|l|g|kg|oz|lbs?)\b/gi, '')
-    .replace(/\b[\d.,]+\s*(ml|l|g|kg|oz|lbs?)\b/gi, '')
-    .replace(/[:\-–]+\s*$/g, '')
-    .replace(/\s{2,}/g, ' ')
-    .trim()
-}
-
-const STOP_WORDS = new Set(['the', 'and', 'with', 'for', 'net', 'weight'])
-
-function significantWords(name: string): string[] {
-  return name
-    .toLowerCase()
-    .split(/[^a-z0-9]+/)
-    .filter(w => w.length >= 3 && !STOP_WORDS.has(w))
-}
-
-// Jaccard similarity (overlap ÷ union) between two texts' significant words. Used for
-// both name and ingredient comparison — union-based so a short text matching inside a
-// much longer, unrelated one doesn't score as a near-perfect match (overlap ÷ min-size
-// would: e.g. "Strawberry Milk" vs. "Ultra Milk Long-lasting Flavored Milk - Strawberry
-// Flavor" scored 100% under that formula despite being different products).
-function wordJaccard(a: string, b: string): number {
-  const wordsA = new Set(significantWords(a))
-  const wordsB = new Set(significantWords(b))
-  if (wordsA.size === 0 || wordsB.size === 0) return 0
-  const overlap = [...wordsA].filter(w => wordsB.has(w)).length
-  const union = new Set([...wordsA, ...wordsB]).size
-  return overlap / Math.max(1, union)
-}
 
 async function checkProductExistence(name: string) {
   if (!name || name === 'Unknown' || name === 'Scan Results') return false
