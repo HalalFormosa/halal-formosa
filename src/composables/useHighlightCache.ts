@@ -20,8 +20,19 @@ const blacklistPatterns = ref<RegExp[]>([])
 
 /** Load from localStorage */
 function loadCachedHighlights(): HighlightCache | null {
-    const raw = localStorage.getItem(CACHE_KEY)
-    return raw ? (JSON.parse(raw) as HighlightCache) : null
+    try {
+        const raw = localStorage.getItem(CACHE_KEY)
+        return raw ? (JSON.parse(raw) as HighlightCache) : null
+    } catch {
+        return null
+    }
+}
+
+/** Put a cached copy into the shared state; used on a cache hit and when a refresh fails. */
+function applyCache(cached: HighlightCache): HighlightCache {
+    allHighlights.value = cached.highlights
+    blacklistPatterns.value = cached.blacklist.map(r => new RegExp(r.pattern, 'gi'))
+    return cached
 }
 
 /** Save to localStorage */
@@ -45,11 +56,7 @@ async function fetchHighlightsWithCache(force = false): Promise<HighlightCache |
 
     if (!force && count < 5) {
         const cached = loadCachedHighlights()
-        if (cached) {
-            allHighlights.value = cached.highlights
-            blacklistPatterns.value = cached.blacklist.map(r => new RegExp(r.pattern, 'gi'))
-            return cached
-        }
+        if (cached) return applyCache(cached)
     }
 
     try {
@@ -65,21 +72,19 @@ async function fetchHighlightsWithCache(force = false): Promise<HighlightCache |
             }
             saveCachedHighlights(data)
 
-            allHighlights.value = data.highlights
-            blacklistPatterns.value = data.blacklist.map(r => new RegExp(r.pattern, 'gi'))
-
             console.log("Fetching new ingredients data succeed!")
 
-            return data
+            return applyCache(data)
         } else {
             console.error('❌ Error fetching highlights', hl.error || bl.error)
         }
     } catch (err) {
         console.error('❌ Supabase fetch failed', err)
-        return loadCachedHighlights()
     }
 
-    return null
+    // The refresh failed (offline, server error): keep working from the last good copy.
+    const fallback = loadCachedHighlights()
+    return fallback ? applyCache(fallback) : null
 }
 
 export default function useHighlightCache() {
