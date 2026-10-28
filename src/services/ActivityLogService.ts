@@ -72,6 +72,9 @@ function resolveEntity(activity: string, rawDetail: any): EntityResult {
         case 'edit_place_success':
         case 'add_place_success':
         case 'location_review_success':
+        case 'visit_prompt_shown':
+        case 'visit_prompt_yes':
+        case 'visit_prompt_no':
             return {
                 entity_type: 'place',
                 entity_id: detail.id ? String(detail.id) : null
@@ -745,6 +748,9 @@ function resolveActivityGroup(activity: string): string | null {
         case 'location_review_failed':
         case 'related_place_click':
         case 'location_check_in':
+        case 'visit_prompt_shown':
+        case 'visit_prompt_yes':
+        case 'visit_prompt_no':
             return 'place'
 
         /* -------------------------
