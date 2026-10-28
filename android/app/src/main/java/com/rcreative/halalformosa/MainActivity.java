@@ -8,6 +8,7 @@ public class MainActivity extends BridgeActivity {
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(WidgetSyncPlugin.class);
         registerPlugin(RecaptchaNativePlugin.class);
+        registerPlugin(LiveTextPlugin.class);
         super.onCreate(savedInstanceState);
     }
 }

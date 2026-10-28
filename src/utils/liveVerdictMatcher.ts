@@ -1,0 +1,189 @@
+import type { HighlightBox, IngredientHighlight } from '@/types/Ingredient'
+import type { LiveTextFrame } from '@/plugins/liveText'
+
+/**
+ * Frame-by-frame version of the keyword matching in useOcrPipeline.recheckHighlights.
+ * Same dictionary (ingredient_highlights), same `|` variants, same regex convention,
+ * but the dictionary is compiled once and matching runs straight on the on-device
+ * OCR elements, so there is no translation step and no network call per frame.
+ */
+
+const MAX_BOXES_PER_MATCH = 5
+
+/** Lower-case and drop everything that is not a letter or digit (works for Latin and CJK). */
+export function normalizeLiveText(text: string): string {
+    return text.toLowerCase().replace(/[^\p{L}\p{N}]/gu, '')
+}
+
+interface CompiledVariant {
+    raw: string
+    norm: string
+    regex: RegExp | null
+}
+
+interface CompiledHighlight {
+    highlight: IngredientHighlight
+    variants: CompiledVariant[]
+}
+
+function compileVariant(raw: string): CompiledVariant | null {
+    const trimmed = raw.trim()
+    if (!trimmed) return null
+
+    // Same rule as the photo flow: these characters mean "this variant is a regex".
+    if (/[[\]\\]/.test(trimmed)) {
+        try {
+            return { raw: trimmed, norm: normalizeLiveText(trimmed), regex: new RegExp(trimmed, 'gi') }
+        } catch {
+            return null
+        }
+    }
+
+    const norm = normalizeLiveText(trimmed)
+    if (!norm) return null
+    // A lone Latin letter or digit would match nearly everything.
+    if (norm.length < 2 && /^[a-z0-9]$/.test(norm)) return null
+    return { raw: trimmed, norm, regex: null }
+}
+
+export function compileHighlights(highlights: IngredientHighlight[]): CompiledHighlight[] {
+    return [...highlights]
+        .sort((a, b) => b.keyword.length - a.keyword.length)
+        .map(highlight => {
+            const variants = [
+                ...(highlight.keyword?.split('|') ?? []),
+                ...(highlight.keyword_zh?.split('|') ?? []),
+            ]
+                .map(compileVariant)
+                .filter((v): v is CompiledVariant => v !== null)
+            return { highlight, variants }
+        })
+        .filter(c => c.variants.length > 0)
+}
+
+function mergeBoxes(boxes: HighlightBox[]): HighlightBox | null {
+    if (!boxes.length) return null
+    const left = Math.min(...boxes.map(b => b.x))
+    const top = Math.min(...boxes.map(b => b.y))
+    const right = Math.max(...boxes.map(b => b.x + b.width))
+    const bottom = Math.max(...boxes.map(b => b.y + b.height))
+    return { x: left, y: top, width: right - left, height: bottom - top }
+}
+
+/** Stable identity of a match across frames. */
+export function liveMatchKey(h: IngredientHighlight): string {
+    return `${h.keyword}|${h.keyword_zh}|${h.matchedVariant ?? ''}`
+}
+
+/** Number of letters/digits recognised in the frame; used to tell "no text" from "no flagged text". */
+export function countRecognizedChars(frame: LiveTextFrame): number {
+    let total = 0
+    for (const block of frame.blocks) {
+        for (const line of block.lines) total += normalizeLiveText(line.text).length
+    }
+    return total
+}
+
+/**
+ * Returns a function that finds every dictionary hit in one OCR frame, each with the
+ * pixel boxes (in the frame's own coordinate space) of the words that make it up.
+ */
+export function createLiveMatcher(highlights: IngredientHighlight[]) {
+    const compiled = compileHighlights(highlights)
+
+    return function matchFrame(frame: LiveTextFrame): IngredientHighlight[] {
+        const found = new Map<string, IngredientHighlight>()
+        const foundNorms: string[] = []
+
+        for (const block of frame.blocks) {
+            // Flatten the block so an ingredient wrapped over two lines still matches.
+            let fullText = ''
+            const spans: { start: number; end: number; box: HighlightBox }[] = []
+            for (const line of block.lines) {
+                for (const el of line.elements) {
+                    const norm = normalizeLiveText(el.text)
+                    if (!norm) continue
+                    spans.push({ start: fullText.length, end: fullText.length + norm.length, box: el.box })
+                    fullText += norm
+                }
+            }
+            if (!fullText) continue
+
+            for (const { highlight, variants } of compiled) {
+                for (const variant of variants) {
+                    // A longer variant that already matched covers this shorter one.
+                    if (!variant.regex && foundNorms.some(n => n.includes(variant.norm) && n !== variant.norm)) continue
+
+                    const ranges = findRanges(fullText, variant)
+                    if (!ranges.length) continue
+
+                    const boxes: HighlightBox[] = []
+                    for (const [start, end] of ranges) {
+                        const merged = mergeBoxes(
+                            spans.filter(s => s.start < end && s.end > start).map(s => s.box),
+                        )
+                        if (merged) boxes.push(merged)
+                    }
+
+                    const candidate: IngredientHighlight = { ...highlight, matchedVariant: variant.raw, boxes }
+                    const key = liveMatchKey(candidate)
+                    const existing = found.get(key)
+                    if (existing) {
+                        existing.boxes = [...(existing.boxes ?? []), ...boxes].slice(0, MAX_BOXES_PER_MATCH)
+                    } else {
+                        found.set(key, { ...candidate, boxes: boxes.slice(0, MAX_BOXES_PER_MATCH) })
+                        if (!variant.regex) foundNorms.push(variant.norm)
+                    }
+                }
+            }
+        }
+
+        return [...found.values()]
+    }
+}
+
+function findRanges(fullText: string, variant: CompiledVariant): [number, number][] {
+    const ranges: [number, number][] = []
+
+    if (variant.regex) {
+        variant.regex.lastIndex = 0
+        let m: RegExpExecArray | null
+        while (ranges.length < MAX_BOXES_PER_MATCH && (m = variant.regex.exec(fullText)) !== null) {
+            if (m[0].length === 0) {
+                variant.regex.lastIndex++
+                continue
+            }
+            ranges.push([m.index, m.index + m[0].length])
+        }
+        return ranges
+    }
+
+    let from = 0
+    while (ranges.length < MAX_BOXES_PER_MATCH) {
+        const at = fullText.indexOf(variant.norm, from)
+        if (at === -1) break
+        ranges.push([at, at + variant.norm.length])
+        from = at + variant.norm.length
+    }
+    return ranges
+}
+
+/**
+ * The preview is shown "fill-centre" (scaled to cover the view, overflow cropped).
+ * Maps a box from analysis-image pixels to view pixels under that scaling.
+ */
+export function mapImageBoxToView(
+    box: HighlightBox,
+    image: { width: number; height: number },
+    view: { width: number; height: number },
+): HighlightBox {
+    const scale = Math.max(view.width / image.width, view.height / image.height)
+    const offsetX = (view.width - image.width * scale) / 2
+    const offsetY = (view.height - image.height * scale) / 2
+    return {
+        x: box.x * scale + offsetX,
+        y: box.y * scale + offsetY,
+        width: box.width * scale,
+        height: box.height * scale,
+    }
+}
