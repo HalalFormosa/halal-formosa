@@ -439,6 +439,7 @@
     "limit": {
       "reached": "Daily scan limit reached. Watch an ad or contribute a missing product/location to get more scans!",
       "reachedContribute": "Daily scan limit reached. Contribute a missing product or location to get more scans!",
+      "upgrade": "Go Pro",
       "bonus": "Watch Ad +1 Scan",
       "adLimit": "You can only watch {count} ads per day.",
       "contributeTip": "Earn +1 daily scan for every product or location you contribute (max 3/day)."

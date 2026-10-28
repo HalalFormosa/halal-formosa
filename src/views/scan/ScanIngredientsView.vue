@@ -600,7 +600,8 @@
       <ion-toast
           :is-open="showLimitToast"
           :message="limitReachedMessage"
-          :duration="2000"
+          :duration="limitToastButtons.length ? 5000 : 2000"
+          :buttons="limitToastButtons"
           color="warning"
           position="bottom"
           @did-dismiss="showLimitToast=false"
@@ -866,6 +867,11 @@ const limitReachedMessage = computed(() =>
   !REWARDED_SCANS_ENABLED && te('scanIngredients.limit.reachedContribute')
     ? t('scanIngredients.limit.reachedContribute', { limit: DAILY_SCAN_LIMIT })
     : t('scanIngredients.limit.reached', { limit: DAILY_SCAN_LIMIT })
+)
+const limitToastButtons = computed(() =>
+  isNative.value && !isDonor.value
+    ? [{ text: t('scanIngredients.limit.upgrade'), handler: () => { void openScanLimitPaywall() } }]
+    : []
 )
 const adSlotCollapsed = useAdSlotCollapsed('ad-space-scan-results', isDonor)
 const dailyAdUses = ref(0);
@@ -1282,7 +1288,7 @@ const {
   generateSummary
 } = useAISummary()
 
-async function presentPaywall(): Promise<boolean> {
+async function presentPaywall(source = "ai_summary"): Promise<boolean> {
   if (!Capacitor.isNativePlatform()) {
     console.warn("[RC] Paywall can only run on native.");
     return false;
@@ -1293,7 +1299,7 @@ async function presentPaywall(): Promise<boolean> {
     switch (paywallResult) {
       case PAYWALL_RESULT.PURCHASED:
         await refreshSubscriptionStatus()
-        await ActivityLogService.log("pro_purchase_success", { source: "ai_summary" })
+        await ActivityLogService.log("pro_purchase_success", { source })
 
         const { data: { user } } = await supabase.auth.getUser();
         await notifyEvent(
@@ -1312,21 +1318,28 @@ async function presentPaywall(): Promise<boolean> {
         return true
       case PAYWALL_RESULT.RESTORED:
         await refreshSubscriptionStatus()
-        logPaywallRestored("ai_summary")
+        logPaywallRestored(source)
         return true
       case PAYWALL_RESULT.CANCELLED:
-        logPaywallCancelled("ai_summary")
+        logPaywallCancelled(source)
         return false
       case PAYWALL_RESULT.ERROR:
       default:
-        logPaywallFailed("ai_summary", paywallResult)
+        logPaywallFailed(source, paywallResult)
         return false
     }
   } catch (err) {
     console.error("Paywall failed:", err)
-    logPaywallFailed("ai_summary", err)
+    logPaywallFailed(source, err)
     return false
   }
+}
+
+// Offered from the daily-scan-limit toast so the wall has an upgrade path
+// without interrupting people who would rather contribute for bonus scans.
+async function openScanLimitPaywall() {
+  await ActivityLogService.log("pro_paywall_trigger", { source: "scan_limit" })
+  await presentPaywall("scan_limit")
 }
 
 async function handleSummaryClick() {

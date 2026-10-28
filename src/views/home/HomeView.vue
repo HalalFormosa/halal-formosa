@@ -1561,6 +1561,7 @@ async function presentRcPaywall() {
     return;
   }
 
+  ActivityLogService.log('pro_paywall_trigger', { source: 'home_view_halalify' });
   try {
     const { result } = await RevenueCatUI.presentPaywall();
     if (result === PAYWALL_RESULT.PURCHASED || result === PAYWALL_RESULT.RESTORED) {
