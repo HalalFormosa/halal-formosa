@@ -329,11 +329,8 @@ export default function useOcrPipeline(options: OcrPipelineOptions) {
 
             // Fallback for translation if google-ocr returned text but no translation
             if (text.trim() && !translatedText.trim()) {
-                const apiKey = import.meta.env.VITE_GOOGLE_TRANSLATION_API_KEY;
-                if (apiKey) {
-                    console.warn("⚠️ [OcrPipeline] Falling back to manual translation for full text");
-                    translatedText = await translateToEnglish(text) || '';
-                }
+                console.warn("⚠️ [OcrPipeline] Falling back to manual translation for full text");
+                translatedText = await translateToEnglish(text) || '';
             }
 
             return {
@@ -381,31 +378,6 @@ export default function useOcrPipeline(options: OcrPipelineOptions) {
             }
             return data.translatedText;
         } catch (e: any) {
-            // 2. Fallback to direct call if key exists (backward compatibility)
-            const apiKey = import.meta.env.VITE_GOOGLE_TRANSLATION_API_KEY;
-            if (apiKey) {
-                console.warn("⚠️ [OcrPipeline] Falling back to direct Google Translation API call");
-                try {
-                    const res = await withTimeout(
-                        fetch(`https://translation.googleapis.com/language/translate/v2?key=${apiKey}`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                q: text,
-                                target: 'en',
-                                format: 'text'
-                            }),
-                        }),
-                        10000
-                    );
-                    const json = await res.json();
-                    const result = json.data?.translations?.[0]?.translatedText;
-                    if (result) return result;
-                } catch (fallbackErr) {
-                    console.error("❌ [OcrPipeline] Fallback translation failed:", fallbackErr);
-                }
-            }
-
             if (attempt < 2 && e.message !== 'timeout') {
                 console.warn(`Retrying translation (attempt ${attempt + 1})...`);
                 return translateToEnglish(text, attempt + 1);
