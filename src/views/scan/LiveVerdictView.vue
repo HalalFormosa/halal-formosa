@@ -86,6 +86,7 @@ import { Capacitor } from '@capacitor/core'
 import useLiveVerdict from '@/composables/useLiveVerdict'
 import useLiveContribute from '@/composables/useLiveContribute'
 import ScanModeSwitcher from '@/components/scan/ScanModeSwitcher.vue'
+import { countMuslimFriendly } from '@/utils/liveVerdictTracker'
 import { contributePromptKind } from '@/utils/liveContribute'
 import { isContributionLimitReached } from '@/composables/useScanQuotaReward'
 import { extractIonColor } from '@/utils/ingredientHelpers'
@@ -164,6 +165,8 @@ const flagged = computed(() =>
   highlights.value.filter(h => ['danger', 'warning'].includes(extractIonColor(h.color))),
 )
 
+const friendlyCount = computed(() => countMuslimFriendly(highlights.value))
+
 const verdictClass = computed(() => {
   if (!supported || error.value) return 'idle'
   return { scanning: 'idle', Haram: 'danger', Syubhah: 'warning', 'Muslim-friendly': 'primary' }[verdict.value]
@@ -177,7 +180,9 @@ const verdictSub = computed(() => {
     case 'Syubhah':
       return 'Flagged: ' + flagged.value.map(liveDisplayName).join(', ')
     case 'Muslim-friendly':
-      return 'No flagged ingredients in the text read so far. Move across the whole list to be sure.'
+      return friendlyCount.value > 0
+        ? `${friendlyCount.value} Muslim-friendly ingredient${friendlyCount.value === 1 ? '' : 's'} detected. None flagged so far.`
+        : 'None flagged so far. Move across the whole list to be sure.'
     default:
       return running.value ? 'Hold steady so the text is sharp.' : 'Starting camera…'
   }
