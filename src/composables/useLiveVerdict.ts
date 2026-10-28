@@ -3,7 +3,7 @@ import type { PluginListenerHandle } from '@capacitor/core'
 import { LiveText } from '@/plugins/liveText'
 import type { IngredientHighlight } from '@/types/Ingredient'
 import useHighlightCache from '@/composables/useHighlightCache'
-import { countRecognizedChars, createLiveMatcher } from '@/utils/liveVerdictMatcher'
+import { createLiveMatcher } from '@/utils/liveVerdictMatcher'
 import { LiveHighlightTracker, type LiveVerdict } from '@/utils/liveVerdictTracker'
 
 const ACTIVE_CLASS = 'live-verdict-active'
@@ -49,7 +49,7 @@ export default function useLiveVerdict() {
             tracker.reset()
             listener = await LiveText.addListener('textFrame', frame => {
                 const now = Date.now()
-                tracker.update(matchFrame(frame), countRecognizedChars(frame), now)
+                tracker.update(matchFrame(frame), now)
                 frameSize.value = { width: frame.width, height: frame.height }
                 highlights.value = tracker.active(now)
                 verdict.value = tracker.verdict(now)

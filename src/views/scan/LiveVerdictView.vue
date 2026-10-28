@@ -97,7 +97,7 @@ const flagged = computed(() =>
 
 const verdictClass = computed(() => {
   if (!supported || error.value) return 'idle'
-  return { scanning: 'idle', Haram: 'danger', Syubhah: 'warning', 'Muslim-friendly': 'primary' }[verdict.value]
+  return { scanning: 'idle', Haram: 'danger', Syubhah: 'warning' }[verdict.value]
 })
 
 const verdictTitle = computed(() => (verdict.value === 'scanning' ? 'Point at the ingredient list' : verdict.value))
@@ -107,10 +107,8 @@ const verdictSub = computed(() => {
     case 'Haram':
     case 'Syubhah':
       return 'Flagged: ' + flagged.value.map(h => h.matchedVariant ?? h.keyword).join(', ')
-    case 'Muslim-friendly':
-      return 'No flagged ingredients in view. Keep the whole list in view to be sure.'
     default:
-      return running.value ? 'Hold steady so the text is sharp.' : 'Starting camera…'
+      return running.value ? 'Nothing flagged so far. Move across the whole list.' : 'Starting camera…'
   }
 })
 
@@ -219,7 +217,6 @@ onIonViewWillLeave(() => {
 }
 .bottom-card--danger { border-left-color: var(--ion-color-danger); }
 .bottom-card--warning { border-left-color: var(--ion-color-warning); }
-.bottom-card--primary { border-left-color: var(--ion-color-primary); }
 .verdict-title {
   font-size: 22px;
   font-weight: 800;

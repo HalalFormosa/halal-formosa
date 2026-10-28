@@ -9,17 +9,14 @@ import { liveMatchKey } from '@/utils/liveVerdictMatcher'
  * after it was last seen.
  */
 
-export type LiveVerdict = 'scanning' | 'Haram' | 'Syubhah' | 'Muslim-friendly'
+/** Deliberately no "clear" state: a live view only sees part of the label, so silence is not a verdict. */
+export type LiveVerdict = 'scanning' | 'Haram' | 'Syubhah'
 
 export interface LiveTrackerOptions {
     /** How long a highlight stays after it was last seen. */
     ttlMs?: number
     /** Frames (within the ttl) a highlight must be seen in before it is shown. */
     minHits?: number
-    /** Letters/digits a frame needs to count as "a label with text in view". */
-    minTextChars?: number
-    /** Consecutive text-bearing frames needed before the verdict can read "clear". */
-    minTextFrames?: number
 }
 
 interface TrackedEntry {
@@ -30,32 +27,21 @@ interface TrackedEntry {
 
 export class LiveHighlightTracker {
     private entries = new Map<string, TrackedEntry>()
-    private textFrames = 0
-    private lastTextAt = 0
     private readonly ttlMs: number
     private readonly minHits: number
-    private readonly minTextChars: number
-    private readonly minTextFrames: number
 
     constructor(options: LiveTrackerOptions = {}) {
         this.ttlMs = options.ttlMs ?? 800
         this.minHits = options.minHits ?? 2
-        this.minTextChars = options.minTextChars ?? 20
-        this.minTextFrames = options.minTextFrames ?? 3
     }
 
-    update(matches: IngredientHighlight[], recognizedChars: number, now: number) {
+    update(matches: IngredientHighlight[], now: number) {
         for (const match of matches) {
             const key = liveMatchKey(match)
             const prev = this.entries.get(key)
             // A match that went stale starts over; it has to earn its way back in.
             const hits = prev && now - prev.lastSeen <= this.ttlMs ? prev.hits + 1 : 1
             this.entries.set(key, { highlight: match, hits, lastSeen: now })
-        }
-
-        if (recognizedChars >= this.minTextChars) {
-            this.textFrames = now - this.lastTextAt <= this.ttlMs ? this.textFrames + 1 : 1
-            this.lastTextAt = now
         }
         this.prune(now)
     }
@@ -72,14 +58,11 @@ export class LiveHighlightTracker {
         const active = this.active(now)
         if (active.some(h => extractIonColor(h.color) === 'danger')) return 'Haram'
         if (active.some(h => extractIonColor(h.color) === 'warning')) return 'Syubhah'
-        const readingText = now - this.lastTextAt <= this.ttlMs && this.textFrames >= this.minTextFrames
-        return readingText ? 'Muslim-friendly' : 'scanning'
+        return 'scanning'
     }
 
     reset() {
         this.entries.clear()
-        this.textFrames = 0
-        this.lastTextAt = 0
     }
 
     private prune(now: number) {

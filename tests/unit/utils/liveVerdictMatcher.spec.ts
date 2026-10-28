@@ -2,7 +2,6 @@ import { describe, it, expect } from 'vitest'
 import type { LiveTextFrame } from '@/plugins/liveText'
 import type { IngredientHighlight } from '@/types/Ingredient'
 import {
-    countRecognizedChars,
     createLiveMatcher,
     mapImageBoxToView,
     normalizeLiveText,
@@ -89,12 +88,6 @@ describe('createLiveMatcher', () => {
     it('ignores invalid regex entries instead of throwing', () => {
         const broken = createLiveMatcher([hl('[unclosed', '', '--ion-color-danger')])
         expect(broken(frameOf(['anything']))).toEqual([])
-    })
-})
-
-describe('countRecognizedChars', () => {
-    it('counts letters and digits only', () => {
-        expect(countRecognizedChars(frameOf(['ab,', 'c 1']))).toBe(4)
     })
 })
 
