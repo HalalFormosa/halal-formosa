@@ -68,7 +68,7 @@ Deno.serve(async (req) => {
 
     if (rpcError) {
       console.error("❌ RPC purchase error:", rpcError);
-      return new Response(JSON.stringify({ success: false, error: rpcError.message }), {
+      return new Response(JSON.stringify({ success: false, error: "Purchase failed" }), {
         status: 400,
         headers: { "Content-Type": "application/json", ...corsHeaders() },
       });
@@ -93,7 +93,7 @@ Deno.serve(async (req) => {
     );
   } catch (err) {
     console.error("🔥 Purchase cosmetic fatal error:", err);
-    return new Response(JSON.stringify({ success: false, error: String(err) }), {
+    return new Response(JSON.stringify({ success: false, error: "Purchase failed" }), {
       status: 500,
       headers: { "Content-Type": "application/json", ...corsHeaders() },
     });

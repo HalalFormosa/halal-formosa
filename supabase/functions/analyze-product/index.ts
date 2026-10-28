@@ -279,7 +279,7 @@ console.log("🧪 Ingredients to check:", ingredients);
   } catch (err) {
     console.error("❌ Error in analyze-product:", err);
     return new Response(JSON.stringify({
-      error: String(err)
+      error: "Analysis failed. Please try again."
     }), {
       headers: {
         "Content-Type": "application/json"

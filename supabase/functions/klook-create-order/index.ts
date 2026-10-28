@@ -254,7 +254,7 @@ Deno.serve(async (req) => {
         .eq("id", booking.id);
 
       console.error("[KLOOK-CREATE-ORDER] Klook API call failed:", result.errorMessage);
-      return jsonResponse({ success: false, error: result.errorMessage || "Klook booking failed", bookingId: booking.id }, 502);
+      return jsonResponse({ success: false, error: "Klook booking failed. Please try again later.", bookingId: booking.id }, 502);
     }
 
     await supabaseAdmin
@@ -277,6 +277,6 @@ Deno.serve(async (req) => {
     });
   } catch (err) {
     console.error("[KLOOK-CREATE-ORDER] Fatal error:", err);
-    return jsonResponse({ success: false, error: err instanceof Error ? err.message : String(err) }, 500);
+    return jsonResponse({ success: false, error: "Order failed. Please try again." }, 500);
   }
 });
