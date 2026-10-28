@@ -75,15 +75,6 @@ export function liveMatchKey(h: IngredientHighlight): string {
     return `${h.keyword}|${h.keyword_zh}|${h.matchedVariant ?? ''}`
 }
 
-/** Number of letters/digits recognised in the frame; used to tell "no text" from "no flagged text". */
-export function countRecognizedChars(frame: LiveTextFrame): number {
-    let total = 0
-    for (const block of frame.blocks) {
-        for (const line of block.lines) total += normalizeLiveText(line.text).length
-    }
-    return total
-}
-
 /**
  * Returns a function that finds every dictionary hit in one OCR frame, each with the
  * pixel boxes (in the frame's own coordinate space) of the words that make it up.
