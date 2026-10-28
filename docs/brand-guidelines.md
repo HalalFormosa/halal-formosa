@@ -64,7 +64,7 @@ Warm, practical, community-first. A helpful friend who has lived in Taiwan a whi
 | Website | https://halalformosa.com |
 | Web app / share links | https://app.halalformosa.com |
 | Instagram | https://www.instagram.com/halalformosa/ |
-| TikTok | https://www.tiktok.com/@halal_formosa |
+| TikTok | https://www.tiktok.com/@halalformosa |
 | Facebook | https://www.facebook.com/halalformosa/ |
 | LINE Official | https://line.me/R/ti/p/@975schpu |
 

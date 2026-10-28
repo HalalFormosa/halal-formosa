@@ -895,7 +895,7 @@
               <span class="social-label-premium">{{ $t('profile.social.line') }}</span>
             </a>
             
-            <a class="social-item-premium" @click.prevent="logAndOpen('tiktok', 'https://www.tiktok.com/@halal_formosa')">
+            <a class="social-item-premium" @click.prevent="logAndOpen('tiktok', 'https://www.tiktok.com/@halalformosa')">
               <ion-icon :icon="icons.logoTiktok" class="social-icon-btn" style="color: #000000" />
               <span class="social-label-premium">{{ te('profile.social.tiktok') ? $t('profile.social.tiktok') : 'TikTok' }}</span>
             </a>
