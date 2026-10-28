@@ -194,6 +194,26 @@ describe('ActivityLogService', () => {
         })
     })
 
+    describe('visit prompt events', () => {
+        it.each(['visit_prompt_shown', 'visit_prompt_yes', 'visit_prompt_no'])(
+            'resolves %s to the place entity using only id and name',
+            async (activity) => {
+                const insertMock = vi.fn().mockResolvedValue({ data: null, error: null })
+                vi.mocked(supabase.from).mockReturnValue({ insert: insertMock } as any)
+
+                await ActivityLogService.log(activity, { id: 42, name: 'Test Cafe' })
+
+                expect(insertMock).toHaveBeenCalledWith(expect.objectContaining({
+                    activity_type: activity,
+                    activity_group: 'place',
+                    entity_type: 'place',
+                    entity_id: '42',
+                    activity_detail: { id: 42, name: 'Test Cafe' }
+                }))
+            }
+        )
+    })
+
     describe('notification events', () => {
         it('resolves notification_received to the notification entity and "notifications" group', async () => {
             const insertMock = vi.fn().mockResolvedValue({ data: null, error: null })
