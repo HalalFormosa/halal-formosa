@@ -92,3 +92,8 @@ export class LiveHighlightTracker {
         }
     }
 }
+
+/** How many confirmed dictionary matches are Muslim-friendly (primary colour). Each match counts once. */
+export function countMuslimFriendly(highlights: IngredientHighlight[]): number {
+    return highlights.filter(h => extractIonColor(h.color) === 'primary').length
+}

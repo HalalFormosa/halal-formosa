@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import type { IngredientHighlight } from '@/types/Ingredient'
-import { LiveHighlightTracker } from '@/utils/liveVerdictTracker'
+import { countMuslimFriendly, LiveHighlightTracker } from '@/utils/liveVerdictTracker'
 
 const haram: IngredientHighlight = { keyword: 'pork', keyword_zh: '豬', color: '--ion-color-danger', matchedVariant: 'pork' }
 const doubtful: IngredientHighlight = { keyword: 'carmine', keyword_zh: '', color: '--ion-color-warning', matchedVariant: 'carmine' }
@@ -68,5 +68,22 @@ describe('LiveHighlightTracker', () => {
         const t = new LiveHighlightTracker()
         for (const now of [0, 100]) t.update([friendly], 5, now)
         expect(t.verdict(100)).toBe('scanning')
+    })
+})
+
+describe('countMuslimFriendly', () => {
+    it('counts only the Muslim-friendly (primary) matches', () => {
+        expect(countMuslimFriendly([friendly, haram, doubtful, { ...friendly, matchedVariant: 'salt' }])).toBe(2)
+    })
+
+    it('is zero when there are none', () => {
+        expect(countMuslimFriendly([])).toBe(0)
+        expect(countMuslimFriendly([haram, doubtful])).toBe(0)
+    })
+
+    it('counts the matches the tracker has confirmed', () => {
+        const t = new LiveHighlightTracker()
+        for (const now of [0, 100]) t.update([friendly, { ...friendly, matchedVariant: 'salt' }], 60, now)
+        expect(countMuslimFriendly(t.active(100))).toBe(2)
     })
 })
