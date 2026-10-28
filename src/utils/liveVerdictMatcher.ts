@@ -118,6 +118,31 @@ function mergeBoxes(boxes: HighlightBox[]): HighlightBox | null {
     return { x: left, y: top, width: right - left, height: bottom - top }
 }
 
+const CJK = /[\u3400-\u9fff]/
+
+/** First plain-text variant of a dictionary field; regex-style variants are not readable names. */
+function firstReadable(field: string | undefined): string {
+    return (
+        (field ?? '')
+            .split('|')
+            .map(v => v.trim())
+            .find(v => v && !/[[\]\\]/.test(v)) ?? ''
+    )
+}
+
+/**
+ * Name to show for a match: the text that was read on the label, with its counterpart from
+ * the dictionary in brackets, e.g. "甘油 (glycerin)" for a Chinese label, so people who
+ * cannot read Chinese still see what was flagged. Falls back to the matched text alone
+ * when the dictionary has no readable counterpart.
+ */
+export function liveDisplayName(h: IngredientHighlight): string {
+    const matched = (h.matchedVariant ?? '').trim() || firstReadable(h.keyword) || firstReadable(h.keyword_zh)
+    const counterpart = CJK.test(matched) ? firstReadable(h.keyword) : firstReadable(h.keyword_zh)
+    if (!counterpart || counterpart.toLowerCase() === matched.toLowerCase()) return matched
+    return `${matched} (${counterpart})`
+}
+
 /** Stable identity of a match across frames. */
 export function liveMatchKey(h: IngredientHighlight): string {
     return `${h.keyword}|${h.keyword_zh}|${h.matchedVariant ?? ''}`
