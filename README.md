@@ -146,7 +146,13 @@ The source code is **source-available** under the
   never reflected the intended terms. Use of the code is governed by the LICENSE file.
 
 **Trademarks:** "Halal Formosa", its logo, and related branding are trademarks of the project
-owner and are not covered by the code license. See [NOTICE](NOTICE).
+owner and are not covered by the code license. See [NOTICE](NOTICE) and the
+[trademark policy](TRADEMARKS.md). If you fork this project, you must rename it and remove our
+logo and branding before you publish it.
+
+**Official app:** the only official Halal Formosa apps are the ones listed on
+[halalformosa.com](https://halalformosa.com). Any other app, website, or store listing that uses
+the Halal Formosa name or logo is not ours. Please report it through the website.
 
 Halal Formosa was founded on 25 July 2025 by Rakha Ramadhana (lead engineer) and Sherlis
 Oktaviani. Since 27 January 2026 it has operated in partnership with YiQi Global Consulting
