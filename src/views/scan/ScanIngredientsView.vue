@@ -257,6 +257,12 @@
                 {{ $t('scanIngredients.autoScan.label') }}
               </ion-button>
             </div>
+
+            <!-- Experimental (experiment/live-verdict): Android only, no i18n yet -->
+            <ion-button v-if="isAndroid" fill="outline" color="carrot" expand="block" style="height: 48px; margin-top: 12px;" @click="router.push('/scan/live')">
+              <ion-icon slot="start" :icon="eyeOutline" />
+              Live Verdict (experimental)
+            </ion-button>
           </ion-card-content>
         </ion-card>
       </div>
@@ -840,6 +846,7 @@ const showMuslimFriendly = ref(false)
 const showLimitToast = ref(false);
 const bonusScans = ref(0)
 const isNative = ref(Capacitor.isNativePlatform())
+const isAndroid = Capacitor.getPlatform() === 'android'
 
 // Flip to true to bring back the "Watch Ad +1 Scan" button. Off for now: the
 // rewarded-ad flow isn't ready, so bonus scans come from contributions only.

@@ -45,6 +45,13 @@ dependencies {
     implementation project(':capacitor-android')
     implementation "com.google.android.recaptcha:recaptcha:18.9.3"
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0"
+    // Live Verdict experiment: CameraX preview + on-device ML Kit text recognition (Latin + Chinese, bundled model)
+    implementation "androidx.camera:camera-camera2:$androidxCameraCamera2Version"
+    implementation "androidx.camera:camera-lifecycle:$androidxCameraLifecycleVersion"
+    implementation "androidx.camera:camera-view:$androidxCameraViewVersion"
+    implementation "com.google.mlkit:text-recognition-chinese:16.0.1"
+    // CameraX hands back ListenableFuture; the Java plugin needs it on its compile classpath
+    implementation "com.google.guava:guava:33.4.0-android"
     testImplementation "junit:junit:$junitVersion"
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
     androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
