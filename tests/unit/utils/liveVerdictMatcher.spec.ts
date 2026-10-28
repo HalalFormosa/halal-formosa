@@ -4,6 +4,7 @@ import type { IngredientHighlight } from '@/types/Ingredient'
 import {
     countRecognizedChars,
     createLiveMatcher,
+    liveDisplayName,
     mapImageBoxToView,
     normalizeLiveText,
 } from '@/utils/liveVerdictMatcher'
@@ -118,6 +119,35 @@ describe('boxes for a whole-line element', () => {
     it('keeps the whole box when the match is the whole element', () => {
         const [m] = match(lineFrame('明膠', { x: 5, y: 6, width: 80, height: 30 }))
         expect(m.boxes).toEqual([{ x: 5, y: 6, width: 80, height: 30 }])
+    })
+})
+
+describe('liveDisplayName', () => {
+    it('adds the English name next to a matched Chinese term', () => {
+        expect(liveDisplayName({ ...hl('glycerin|glycerol', '甘油', '--ion-color-warning'), matchedVariant: '甘油' })).toBe(
+            '甘油 (glycerin)',
+        )
+    })
+
+    it('adds the Chinese name next to a matched English term', () => {
+        expect(liveDisplayName({ ...hl('gelatin', '明膠|吉利丁', '--ion-color-danger'), matchedVariant: 'gelatin' })).toBe(
+            'gelatin (明膠)',
+        )
+    })
+
+    it('shows only the matched text when the dictionary has no readable counterpart', () => {
+        expect(liveDisplayName({ ...hl('e47[1-5]', '', '--ion-color-warning'), matchedVariant: 'e47[1-5]' })).toBe('e47[1-5]')
+        expect(liveDisplayName({ ...hl('', '酒', '--ion-color-danger'), matchedVariant: '酒' })).toBe('酒')
+    })
+
+    it('skips regex-style English variants when picking the counterpart', () => {
+        expect(liveDisplayName({ ...hl('e47[1-5]|emulsifier', '乳化劑', '--ion-color-warning'), matchedVariant: '乳化劑' })).toBe(
+            '乳化劑 (emulsifier)',
+        )
+    })
+
+    it('does not repeat a name that is the same in both languages', () => {
+        expect(liveDisplayName({ ...hl('Glycerin', 'glycerin', '--ion-color-warning'), matchedVariant: 'glycerin' })).toBe('glycerin')
     })
 })
 

@@ -39,12 +39,14 @@
             <div class="product-row">
               <span class="product-label">Product</span>
               <span class="product-name" :class="{ 'product-name--pending': !productName }">{{ productName || (verdict === 'scanning' ? '—' : 'Looking for the product name…') }}</span>
+              <span v-if="productNameEn" class="product-name-en">{{ productNameEn }}</span>
+              <span v-else-if="translatingName" class="product-name-en product-name-en--pending">Translating…</span>
             </div>
             <div class="verdict-title">{{ verdictTitle }}</div>
             <div class="verdict-sub">{{ verdictSub }}</div>
           </template>
           <div class="disclaimer">
-            Reads only the text in view, on your phone. Nothing is saved or uploaded. Not a certification.
+            Reads the label on your phone and saves nothing. The product name is sent for translation when you are online. Not a certification.
           </div>
         </div>
       </div>
@@ -60,12 +62,12 @@ import { useRouter } from 'vue-router'
 import { Capacitor } from '@capacitor/core'
 import useLiveVerdict from '@/composables/useLiveVerdict'
 import { extractIonColor, colorMeaning } from '@/utils/ingredientHelpers'
-import { mapImageBoxToView, liveMatchKey } from '@/utils/liveVerdictMatcher'
+import { mapImageBoxToView, liveMatchKey, liveDisplayName } from '@/utils/liveVerdictMatcher'
 
 const router = useRouter()
 const supported = Capacitor.getPlatform() === 'android'
 
-const { running, error, verdict, productName, highlights, frameSize, torchOn, start, stop, toggleTorch } = useLiveVerdict()
+const { running, error, verdict, productName, productNameEn, translatingName, highlights, frameSize, torchOn, start, stop, toggleTorch } = useLiveVerdict()
 
 const stageRef = ref<HTMLElement | null>(null)
 const viewSize = ref({ width: window.innerWidth, height: window.innerHeight })
@@ -90,7 +92,7 @@ const boxes = computed(() => {
         ...mapped,
         color: `var(--ion-color-${ion})`,
         ion,
-        label: `${status} · ${h.matchedVariant ?? h.keyword}`,
+        label: `${status} · ${liveDisplayName(h)}`,
       })
     })
   }
@@ -112,7 +114,7 @@ const verdictSub = computed(() => {
   switch (verdict.value) {
     case 'Haram':
     case 'Syubhah':
-      return 'Flagged: ' + flagged.value.map(h => h.matchedVariant ?? h.keyword).join(', ')
+      return 'Flagged: ' + flagged.value.map(liveDisplayName).join(', ')
     case 'Muslim-friendly':
       return 'No flagged ingredients in the text read so far. Move across the whole list to be sure.'
     default:
@@ -245,6 +247,14 @@ onIonViewWillLeave(() => {
   -webkit-line-clamp: 2;
   line-clamp: 2;
   -webkit-box-orient: vertical;
+}
+.product-name-en {
+  margin-top: 2px;
+  font-size: 14px;
+  opacity: 0.85;
+}
+.product-name-en--pending {
+  opacity: 0.5;
 }
 .product-name--pending {
   font-weight: 400;

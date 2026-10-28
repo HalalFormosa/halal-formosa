@@ -1,13 +1,44 @@
 import { ref, shallowRef } from 'vue'
 import type { PluginListenerHandle } from '@capacitor/core'
 import { LiveText } from '@/plugins/liveText'
+import { invokeFunction } from '@/plugins/supabaseClient'
 import type { IngredientHighlight } from '@/types/Ingredient'
 import useHighlightCache from '@/composables/useHighlightCache'
 import { countRecognizedChars, createLiveMatcher } from '@/utils/liveVerdictMatcher'
 import { extractLiveProductName, LiveProductNameTracker } from '@/utils/liveProductName'
+import { LiveNameTranslator, type LiveNameTranslatorStorage } from '@/utils/liveNameTranslator'
 import { LiveHighlightTracker, type LiveVerdict } from '@/utils/liveVerdictTracker'
 
 const ACTIVE_CLASS = 'live-verdict-active'
+const TRANSLATE_TIMEOUT_MS = 8000
+const TRANSLATIONS_KEY = 'liveNameTranslations'
+
+/** Translated product names kept on the device so a product scanned before is not translated (paid for) again. */
+const translationStorage: LiveNameTranslatorStorage = {
+    load() {
+        try {
+            return JSON.parse(localStorage.getItem(TRANSLATIONS_KEY) || '{}')
+        } catch {
+            return {}
+        }
+    },
+    save(entries) {
+        try {
+            localStorage.setItem(TRANSLATIONS_KEY, JSON.stringify(entries))
+        } catch {
+            /* storage full or blocked */
+        }
+    },
+}
+
+/** Sends only the recognised product name text (never an image) to the existing translate function. */
+async function translateToEnglish(text: string): Promise<string | null> {
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) return null
+    const timeout = new Promise<null>(resolve => setTimeout(() => resolve(null), TRANSLATE_TIMEOUT_MS))
+    const result = await Promise.race([invokeFunction('google-translate', { body: { text, target: 'en' } }), timeout])
+    if (!result || result.error || !result.data?.translatedText) return null
+    return String(result.data.translatedText)
+}
 
 /**
  * Live "point the camera and read the verdict" mode (experimental, Android only for now).
@@ -23,11 +54,19 @@ export default function useLiveVerdict() {
     const verdict = ref<LiveVerdict>('scanning')
     const highlights = shallowRef<IngredientHighlight[]>([])
     const productName = ref('')
+    const productNameEn = ref('')
+    const translatingName = ref(false)
     const frameSize = ref({ width: 0, height: 0 })
     const torchOn = ref(false)
 
     const tracker = new LiveHighlightTracker()
     const nameTracker = new LiveProductNameTracker()
+    const nameTranslator = new LiveNameTranslator(translateToEnglish, { onUpdate: syncEnglishName, storage: translationStorage })
+
+    function syncEnglishName() {
+        productNameEn.value = nameTranslator.get(productName.value)
+        translatingName.value = nameTranslator.pending(productName.value)
+    }
     let listener: PluginListenerHandle | null = null
 
     async function start() {
@@ -51,11 +90,14 @@ export default function useLiveVerdict() {
 
             tracker.reset()
             nameTracker.reset()
+            nameTranslator.reset()
             listener = await LiveText.addListener('textFrame', frame => {
                 const now = Date.now()
                 tracker.update(matchFrame(frame), countRecognizedChars(frame), now)
                 nameTracker.update(extractLiveProductName(frame), now)
                 productName.value = nameTracker.current(now)
+                nameTranslator.update(productName.value, now)
+                syncEnglishName()
                 frameSize.value = { width: frame.width, height: frame.height }
                 highlights.value = tracker.active(now)
                 verdict.value = tracker.verdict(now)
@@ -83,7 +125,10 @@ export default function useLiveVerdict() {
         torchOn.value = false
         tracker.reset()
         nameTracker.reset()
+        nameTranslator.reset()
         productName.value = ''
+        productNameEn.value = ''
+        translatingName.value = false
         highlights.value = []
         verdict.value = 'scanning'
     }
@@ -98,5 +143,5 @@ export default function useLiveVerdict() {
         }
     }
 
-    return { running, starting, error, verdict, productName, highlights, frameSize, torchOn, start, stop, toggleTorch }
+    return { running, starting, error, verdict, productName, productNameEn, translatingName, highlights, frameSize, torchOn, start, stop, toggleTorch }
 }
