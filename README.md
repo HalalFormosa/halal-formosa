@@ -148,7 +148,8 @@ The source code is **source-available** under the
 **Trademarks:** "Halal Formosa", its logo, and related branding are trademarks of the project
 owner and are not covered by the code license. See [NOTICE](NOTICE) and the
 [trademark policy](TRADEMARKS.md). If you fork this project, you must rename it and remove our
-logo and branding before you publish it.
+logo and branding before you publish it. Projects built on this code are welcome: keep the
+`LICENSE` and `NOTICE` files and say "Based on Halal Formosa" with a link to this repository.
 
 **Official app:** the only official Halal Formosa apps are the ones listed on
 [halalformosa.com](https://halalformosa.com). Any other app, website, or store listing that uses

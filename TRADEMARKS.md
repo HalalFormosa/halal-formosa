@@ -27,6 +27,30 @@ partnership with its founding team.
 
 If you fork the project, rename it and replace the logo, icons, and branding before you publish it.
 
+## Projects built on Halal Formosa
+We are glad when people build on this code. Every derivative project must:
+- keep the [LICENSE](LICENSE) and [NOTICE](NOTICE) files, including the `Required Notice:` lines,
+  as the license requires;
+- use its own name, logo, and branding;
+- state clearly, in its README and in its store or website description, that it is "Based on Halal
+  Formosa" with a link to <https://github.com/HalalFormosa/halal-formosa>.
+
+**Welcome, no need to ask:** halal apps for other countries or cities, learning and research
+projects, translations, tools that reuse parts of the code for a different purpose, and personal or
+community projects.
+
+**Please ask first:** a project that offers the same kind of service to the same audience as Halal
+Formosa, for example a halal scanner or halal directory app for people in Taiwan. Write to us through
+[halalformosa.com](https://halalformosa.com) before you publish it. We would rather work together
+than compete.
+
+**Not allowed without a separate agreement:** any commercial use (selling the app, in-app purchases,
+ads, paid listings, or paid access), and any use of the Halal Formosa name, logo, or data.
+
+## Commercial licensing
+If you want to use the code commercially, contact us through [halalformosa.com](https://halalformosa.com).
+We can agree a separate license with you.
+
 ## Reporting a violation
 If you find a copy of Halal Formosa that breaks this policy, contact the team through
 [halalformosa.com](https://halalformosa.com) with a link to the copy. We may ask GitHub, Google Play,
