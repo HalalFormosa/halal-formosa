@@ -5,6 +5,7 @@ import {
     countRecognizedChars,
     createLiveMatcher,
     liveDisplayName,
+    liveEnglishName,
     mapImageBoxToView,
     normalizeLiveText,
 } from '@/utils/liveVerdictMatcher'
@@ -148,6 +149,24 @@ describe('liveDisplayName', () => {
 
     it('does not repeat a name that is the same in both languages', () => {
         expect(liveDisplayName({ ...hl('Glycerin', 'glycerin', '--ion-color-warning'), matchedVariant: 'glycerin' })).toBe('glycerin')
+    })
+})
+
+describe('liveEnglishName', () => {
+    it('shows the English name for a term read in Chinese', () => {
+        expect(liveEnglishName({ ...hl('glycerin|glycerol', '甘油', '--ion-color-warning'), matchedVariant: '甘油' })).toBe('glycerin')
+    })
+
+    it('shows an English match as it is, without the Chinese name', () => {
+        expect(liveEnglishName({ ...hl('gelatin', '明膠', '--ion-color-danger'), matchedVariant: 'gelatin' })).toBe('gelatin')
+    })
+
+    it('skips regex-style English variants', () => {
+        expect(liveEnglishName({ ...hl('e47[1-5]|emulsifier', '乳化劑', '--ion-color-warning'), matchedVariant: '乳化劑' })).toBe('emulsifier')
+    })
+
+    it('falls back to the matched text when there is no readable English name', () => {
+        expect(liveEnglishName({ ...hl('', '酒', '--ion-color-danger'), matchedVariant: '酒' })).toBe('酒')
     })
 })
 
