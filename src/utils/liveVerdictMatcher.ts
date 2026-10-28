@@ -15,6 +15,54 @@ export function normalizeLiveText(text: string): string {
     return text.toLowerCase().replace(/[^\p{L}\p{N}]/gu, '')
 }
 
+/**
+ * Normalised text plus, for each normalised character, the index of the raw character it
+ * came from. Lets a match be located inside the element's original text (punctuation and
+ * spaces included) so its box can be cut to the matched characters.
+ */
+function normalizeWithMap(raw: string): { norm: string; rawIndex: number[] } {
+    let norm = ''
+    const rawIndex: number[] = []
+    let i = 0
+    for (const ch of raw) {
+        const kept = normalizeLiveText(ch)
+        for (let k = 0; k < kept.length; k++) rawIndex.push(i)
+        norm += kept
+        i += ch.length
+    }
+    return { norm, rawIndex }
+}
+
+interface TextSpan {
+    start: number
+    end: number
+    box: HighlightBox
+    rawLength: number
+    rawIndex: number[]
+}
+
+/**
+ * ML Kit reports a whole Chinese line as one element, so the element's box is far wider
+ * than the characters we matched. Characters in a line are about equally wide, so cut the
+ * box in proportion to where the matched characters sit in the element's text. Vertical
+ * text (a tall, narrow element) is cut top to bottom instead.
+ */
+function subBox(span: TextSpan, start: number, end: number): HighlightBox {
+    const from = Math.max(start, span.start) - span.start
+    const to = Math.min(end, span.end) - span.start
+    if (from <= 0 && to >= span.end - span.start) return span.box
+    if (span.rawLength < 2) return span.box
+
+    const fracStart = span.rawIndex[from] / span.rawLength
+    const fracEnd = (span.rawIndex[to - 1] + 1) / span.rawLength
+    const { x, y, width, height } = span.box
+
+    if (height > width * 1.5) {
+        return { x, y: y + height * fracStart, width, height: height * (fracEnd - fracStart) }
+    }
+    return { x: x + width * fracStart, y, width: width * (fracEnd - fracStart), height }
+}
+
 interface CompiledVariant {
     raw: string
     norm: string
@@ -75,6 +123,15 @@ export function liveMatchKey(h: IngredientHighlight): string {
     return `${h.keyword}|${h.keyword_zh}|${h.matchedVariant ?? ''}`
 }
 
+/** Number of letters/digits recognised in the frame; used to tell "no text" from "no flagged text". */
+export function countRecognizedChars(frame: LiveTextFrame): number {
+    let total = 0
+    for (const block of frame.blocks) {
+        for (const line of block.lines) total += normalizeLiveText(line.text).length
+    }
+    return total
+}
+
 /**
  * Returns a function that finds every dictionary hit in one OCR frame, each with the
  * pixel boxes (in the frame's own coordinate space) of the words that make it up.
@@ -89,12 +146,18 @@ export function createLiveMatcher(highlights: IngredientHighlight[]) {
         for (const block of frame.blocks) {
             // Flatten the block so an ingredient wrapped over two lines still matches.
             let fullText = ''
-            const spans: { start: number; end: number; box: HighlightBox }[] = []
+            const spans: TextSpan[] = []
             for (const line of block.lines) {
                 for (const el of line.elements) {
-                    const norm = normalizeLiveText(el.text)
+                    const { norm, rawIndex } = normalizeWithMap(el.text)
                     if (!norm) continue
-                    spans.push({ start: fullText.length, end: fullText.length + norm.length, box: el.box })
+                    spans.push({
+                        start: fullText.length,
+                        end: fullText.length + norm.length,
+                        box: el.box,
+                        rawLength: el.text.length,
+                        rawIndex,
+                    })
                     fullText += norm
                 }
             }
@@ -111,7 +174,7 @@ export function createLiveMatcher(highlights: IngredientHighlight[]) {
                     const boxes: HighlightBox[] = []
                     for (const [start, end] of ranges) {
                         const merged = mergeBoxes(
-                            spans.filter(s => s.start < end && s.end > start).map(s => s.box),
+                            spans.filter(s => s.start < end && s.end > start).map(s => subBox(s, start, end)),
                         )
                         if (merged) boxes.push(merged)
                     }

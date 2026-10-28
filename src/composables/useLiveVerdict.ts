@@ -3,7 +3,8 @@ import type { PluginListenerHandle } from '@capacitor/core'
 import { LiveText } from '@/plugins/liveText'
 import type { IngredientHighlight } from '@/types/Ingredient'
 import useHighlightCache from '@/composables/useHighlightCache'
-import { createLiveMatcher } from '@/utils/liveVerdictMatcher'
+import { countRecognizedChars, createLiveMatcher } from '@/utils/liveVerdictMatcher'
+import { extractLiveProductName, LiveProductNameTracker } from '@/utils/liveProductName'
 import { LiveHighlightTracker, type LiveVerdict } from '@/utils/liveVerdictTracker'
 
 const ACTIVE_CLASS = 'live-verdict-active'
@@ -21,10 +22,12 @@ export default function useLiveVerdict() {
     const error = ref('')
     const verdict = ref<LiveVerdict>('scanning')
     const highlights = shallowRef<IngredientHighlight[]>([])
+    const productName = ref('')
     const frameSize = ref({ width: 0, height: 0 })
     const torchOn = ref(false)
 
     const tracker = new LiveHighlightTracker()
+    const nameTracker = new LiveProductNameTracker()
     let listener: PluginListenerHandle | null = null
 
     async function start() {
@@ -47,9 +50,12 @@ export default function useLiveVerdict() {
             }
 
             tracker.reset()
+            nameTracker.reset()
             listener = await LiveText.addListener('textFrame', frame => {
                 const now = Date.now()
-                tracker.update(matchFrame(frame), now)
+                tracker.update(matchFrame(frame), countRecognizedChars(frame), now)
+                nameTracker.update(extractLiveProductName(frame), now)
+                productName.value = nameTracker.current(now)
                 frameSize.value = { width: frame.width, height: frame.height }
                 highlights.value = tracker.active(now)
                 verdict.value = tracker.verdict(now)
@@ -76,6 +82,8 @@ export default function useLiveVerdict() {
         running.value = false
         torchOn.value = false
         tracker.reset()
+        nameTracker.reset()
+        productName.value = ''
         highlights.value = []
         verdict.value = 'scanning'
     }
@@ -90,5 +98,5 @@ export default function useLiveVerdict() {
         }
     }
 
-    return { running, starting, error, verdict, highlights, frameSize, torchOn, start, stop, toggleTorch }
+    return { running, starting, error, verdict, productName, highlights, frameSize, torchOn, start, stop, toggleTorch }
 }
