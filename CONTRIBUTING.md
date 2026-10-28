@@ -45,4 +45,4 @@ Do not open a public issue for security problems. See [SECURITY.md](SECURITY.md)
 ## Branding
 
 You may not use the "Halal Formosa" name or logo for your own forks, apps, or listings.
-See [NOTICE](NOTICE).
+See [NOTICE](NOTICE) and the [trademark policy](TRADEMARKS.md).
