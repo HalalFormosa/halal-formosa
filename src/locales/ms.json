@@ -351,6 +351,7 @@
     "limit": {
       "reached": "Had imbasan harian dicapai. Tonton iklan atau sumbangkan produk/lokasi yang tiada untuk imbasan tambahan!",
       "reachedContribute": "Had imbasan harian dicapai. Sumbangkan produk/lokasi yang tiada untuk imbasan tambahan!",
+      "upgrade": "Naik taraf ke Pro",
       "bonus": "Watch Ad +1 Scan",
       "adLimit": "You can only watch {count} ads per day.",
       "contributeTip": "Dapatkan +1 imbasan harian bagi setiap produk atau lokasi yang anda sumbangkan (maks 3/hari)."

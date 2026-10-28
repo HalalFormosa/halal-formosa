@@ -310,6 +310,7 @@ async function presentRcPaywall() {
     return false;
   }
 
+  ActivityLogService.log('pro_paywall_trigger', { source: 'saved_items_view' });
   try {
     const { result } = await RevenueCatUI.presentPaywall();
 

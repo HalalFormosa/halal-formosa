@@ -644,6 +644,7 @@ async function openProPaywall() {
     await toast.present()
     return
   }
+  ActivityLogService.log('pro_paywall_trigger', { source: 'badge_shop_view' })
   try {
     const { RevenueCatUI } = await import('@revenuecat/purchases-capacitor-ui')
     await RevenueCatUI.presentPaywall()

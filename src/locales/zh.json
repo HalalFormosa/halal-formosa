@@ -466,6 +466,7 @@
     "limit": {
       "reached": "已達到每日掃描限制。觀看廣告或貢獻缺失的產品/地點以獲取更多掃描次數！",
       "reachedContribute": "已達到每日掃描限制。貢獻缺失的產品或地點即可獲得更多掃描次數！",
+      "upgrade": "升級 Pro",
       "bonus": "Watch Ad +1 Scan",
       "adLimit": "You can only watch {count} ads per day.",
       "contributeTip": "每貢獻一個新產品或地點可獲得 +1 每日掃描次數（每日最多 +3 次）。"
