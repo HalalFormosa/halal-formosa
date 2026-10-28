@@ -223,10 +223,40 @@ The app's design system is called **"Modern Minimal"**: quiet, spacious, rounded
 
 ---
 
-## 12. Open items for the owner
+## 12. Documents and reports (header and footer)
+
+Every document we generate (PDF reports, audits, proposals, one-pagers, exported docs) carries the same header and footer on every page.
+
+**Header: the company**
+- The Halal Formosa logo, top-left, from `public/logo-raw/logo.png` (full artwork, never cropped or recoloured). Keep clear space and don't go below the minimum size in section 5.
+- Beside the logo, all company information, taken from the links table in section 3 (don't retype handles from memory):
+  - Name: Halal Formosa
+  - Website: halalformosa.com
+  - Instagram: @halalformosa
+  - TikTok: @halalformosa
+  - Facebook: halalformosa
+  - LINE Official: @975schpu
+- Any further company details (legal name, address, email) go here too once the owner supplies them (see section 13).
+- A thin `#E67E22` rule under the header.
+
+**Footer: the document**
+- Context for this document only: its title, date, version or period covered, data sources, and a confidentiality note when relevant (for example "Internal").
+- Page number on the right.
+- Small, muted text (about 8 pt, grey), on a white or `#F7F7F8` ground.
+
+**Rules**
+- Both appear on every page, not only the first.
+- Company details live only in the header and document details only in the footer; don't mix them.
+- Body type follows section 7 (Inter, falling back to a system sans). Orange for headings and table headers, black text on orange.
+- Internal-only documents (admin data, user or partner details) keep the header and footer but must be marked internal in the header and not be shared publicly.
+
+---
+
+## 13. Open items for the owner
 
 These aren't defined in the codebase, so the next session shouldn't invent them:
 - Official **tagline** (the one in section 1 is a proposal).
+- **Company details for the document header**: legal entity name, address, contact email and phone (none are recorded in the repo).
 - **App Store / Google Play badge** assets and store URLs.
 - A **horizontal logo**, transparent PNG/SVG and monochrome versions.
 - Whether the "Halal" status is applied to certified products only (confirm wording before using "certified").
