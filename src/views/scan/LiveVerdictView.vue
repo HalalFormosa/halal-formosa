@@ -3,6 +3,12 @@
     <!-- The camera is drawn natively behind the webview; this page is deliberately transparent. -->
     <ion-content :fullscreen="true" class="live-content" :scroll-y="false">
       <div ref="stageRef" class="stage">
+        <!-- Shown while the photo is taken and the label is read, then the add-product flow opens -->
+        <div v-if="busy" class="busy-overlay">
+          <ion-spinner name="crescent" />
+          <div class="busy-text">{{ busyMessage }}</div>
+        </div>
+
         <template v-if="supported">
           <div
             v-for="b in boxes"
@@ -44,6 +50,18 @@
             </div>
             <div class="verdict-title">{{ verdictTitle }}</div>
             <div class="verdict-sub">{{ verdictSub }}</div>
+
+            <div v-if="showContributePrompt" class="contribute">
+              <div class="contribute-text">
+                <strong>New to Halal Formosa?</strong> We don't have this product yet. Add it so others can scan it too.
+              </div>
+              <div class="contribute-actions">
+                <ion-button size="small" color="carrot" @click="onContribute">Add this product</ion-button>
+                <ion-button size="small" fill="clear" color="light" @click="dismissPrompt">Not now</ion-button>
+              </div>
+              <div class="contribute-note">Takes a photo of the label, then asks for the barcode.</div>
+              <div v-if="contributeError" class="contribute-error">{{ contributeError }}</div>
+            </div>
           </template>
           <div class="disclaimer">
             Reads the label on your phone and saves nothing. The product name is sent for translation when you are online. Not a certification.
@@ -56,18 +74,47 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
-import { IonPage, IonContent, IonIcon, IonButton, onIonViewDidEnter, onIonViewWillLeave } from '@ionic/vue'
+import { IonPage, IonContent, IonIcon, IonButton, IonSpinner, onIonViewDidEnter, onIonViewWillLeave } from '@ionic/vue'
 import { closeOutline, flashlight, flashlightOutline } from 'ionicons/icons'
 import { useRouter } from 'vue-router'
 import { Capacitor } from '@capacitor/core'
 import useLiveVerdict from '@/composables/useLiveVerdict'
+import useLiveContribute from '@/composables/useLiveContribute'
+import { isContributionLimitReached } from '@/composables/useScanQuotaReward'
 import { extractIonColor, colorMeaning } from '@/utils/ingredientHelpers'
 import { mapImageBoxToView, liveMatchKey, liveDisplayName } from '@/utils/liveVerdictMatcher'
 
 const router = useRouter()
 const supported = Capacitor.getPlatform() === 'android'
 
-const { running, error, verdict, productName, productNameEn, translatingName, highlights, frameSize, torchOn, start, stop, toggleTorch } = useLiveVerdict()
+const {
+  running, error, verdict, productName, productNameEn, translatingName, lookupName, productMatch,
+  highlights, frameSize, torchOn, start, stop, toggleTorch,
+} = useLiveVerdict()
+
+const { busy, busyMessage, error: contributeError, contribute } = useLiveContribute({ stopCamera: stop })
+
+// Names the user said "Not now" to, so the prompt does not nag during this visit.
+const dismissedNames = ref<string[]>([])
+const contributionLimitReached = ref(false)
+
+const showContributePrompt = computed(
+  () =>
+    supported &&
+    running.value &&
+    !error.value &&
+    !contributionLimitReached.value &&
+    productMatch.value === 'missing' &&
+    !dismissedNames.value.includes(lookupName.value),
+)
+
+function dismissPrompt() {
+  dismissedNames.value.push(lookupName.value)
+}
+
+function onContribute() {
+  void contribute(productNameEn.value || productName.value)
+}
 
 const stageRef = ref<HTMLElement | null>(null)
 const viewSize = ref({ width: window.innerWidth, height: window.innerHeight })
@@ -135,9 +182,14 @@ onBeforeUnmount(() => {
   void stop()
 })
 
-onIonViewDidEnter(() => {
+onIonViewDidEnter(async () => {
   measure()
   if (supported) void start()
+  try {
+    contributionLimitReached.value = await isContributionLimitReached()
+  } catch {
+    contributionLimitReached.value = false
+  }
 })
 onIonViewWillLeave(() => {
   void stop()
@@ -268,6 +320,48 @@ onIonViewWillLeave(() => {
   margin-top: 2px;
   font-size: 14px;
   opacity: 0.9;
+}
+.contribute {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+}
+.contribute-text {
+  font-size: 14px;
+  line-height: 1.35;
+}
+.contribute-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 8px;
+}
+.contribute-note {
+  margin-top: 4px;
+  font-size: 11px;
+  opacity: 0.65;
+}
+.contribute-error {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--ion-color-danger);
+}
+.busy-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: var(--ion-background-color, #fff);
+  color: var(--ion-text-color, #000);
+  pointer-events: auto;
+}
+.busy-text {
+  font-size: 15px;
+  font-weight: 600;
 }
 .disclaimer {
   margin-top: 8px;

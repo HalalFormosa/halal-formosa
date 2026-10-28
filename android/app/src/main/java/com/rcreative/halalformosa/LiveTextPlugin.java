@@ -1,9 +1,13 @@
 package com.rcreative.halalformosa;
 
 import android.Manifest;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import android.graphics.Matrix;
 import android.graphics.Rect;
 import android.media.Image;
+import android.util.Base64;
 import android.util.Log;
 import android.util.Size;
 import android.view.View;
@@ -13,6 +17,8 @@ import androidx.annotation.NonNull;
 import androidx.camera.core.Camera;
 import androidx.camera.core.CameraSelector;
 import androidx.camera.core.ExperimentalGetImage;
+import androidx.camera.core.ImageCapture;
+import androidx.camera.core.ImageCaptureException;
 import androidx.camera.core.ImageAnalysis;
 import androidx.camera.core.ImageProxy;
 import androidx.camera.core.Preview;
@@ -37,6 +43,8 @@ import com.google.mlkit.vision.text.Text;
 import com.google.mlkit.vision.text.TextRecognition;
 import com.google.mlkit.vision.text.TextRecognizer;
 import com.google.mlkit.vision.text.chinese.ChineseTextRecognizerOptions;
+import java.io.ByteArrayOutputStream;
+import java.nio.ByteBuffer;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -61,6 +69,7 @@ public class LiveTextPlugin extends Plugin {
     private PreviewView previewView;
     private ProcessCameraProvider cameraProvider;
     private Camera camera;
+    private ImageCapture imageCapture;
     private TextRecognizer recognizer;
     private ExecutorService analysisExecutor;
 
@@ -92,6 +101,76 @@ public class LiveTextPlugin extends Plugin {
             camera.getCameraControl().enableTorch(enabled);
             call.resolve();
         });
+    }
+
+    /**
+     * One still photo for the "add this product" flow. Kept in memory only: the JPEG is decoded,
+     * rotated upright and handed to JavaScript as base64; nothing is written to storage.
+     */
+    @PluginMethod
+    public void takePhoto(PluginCall call) {
+        getActivity().runOnUiThread(() -> {
+            if (previewView == null) {
+                call.reject("Camera is not running");
+                return;
+            }
+            if (imageCapture == null) {
+                // Some devices cannot run preview + analysis + capture together; use the preview frame.
+                Bitmap preview = previewView.getBitmap();
+                if (preview == null) {
+                    call.reject("Camera is not ready");
+                    return;
+                }
+                resolvePhoto(call, preview);
+                return;
+            }
+            imageCapture.takePicture(
+                analysisExecutor,
+                new ImageCapture.OnImageCapturedCallback() {
+                    @Override
+                    public void onCaptureSuccess(@NonNull ImageProxy image) {
+                        try {
+                            ByteBuffer buffer = image.getPlanes()[0].getBuffer();
+                            byte[] bytes = new byte[buffer.remaining()];
+                            buffer.get(bytes);
+                            Bitmap decoded = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
+                            if (decoded == null) {
+                                call.reject("Could not read the photo");
+                                return;
+                            }
+                            int rotation = image.getImageInfo().getRotationDegrees();
+                            if (rotation != 0) {
+                                Matrix matrix = new Matrix();
+                                matrix.postRotate(rotation);
+                                decoded = Bitmap.createBitmap(decoded, 0, 0, decoded.getWidth(), decoded.getHeight(), matrix, true);
+                            }
+                            resolvePhoto(call, decoded);
+                        } catch (Exception e) {
+                            Log.e(TAG, "Photo failed", e);
+                            call.reject("Could not take the photo: " + e.getMessage());
+                        } finally {
+                            image.close();
+                        }
+                    }
+
+                    @Override
+                    public void onError(@NonNull ImageCaptureException exception) {
+                        Log.e(TAG, "Capture failed", exception);
+                        call.reject("Could not take the photo: " + exception.getMessage());
+                    }
+                }
+            );
+        });
+    }
+
+    private void resolvePhoto(PluginCall call, Bitmap bitmap) {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 90, out);
+        JSObject result = new JSObject();
+        result.put("base64", Base64.encodeToString(out.toByteArray(), Base64.NO_WRAP));
+        result.put("width", bitmap.getWidth());
+        result.put("height", bitmap.getHeight());
+        call.resolve(result);
     }
 
     private void startCamera(PluginCall call) {
@@ -162,13 +241,42 @@ public class LiveTextPlugin extends Plugin {
             .build();
         analysis.setAnalyzer(analysisExecutor, this::analyze);
 
+        ImageCapture capture = new ImageCapture.Builder()
+            .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
+            .setResolutionSelector(
+                new ResolutionSelector.Builder()
+                    .setAspectRatioStrategy(ratio)
+                    .setResolutionStrategy(
+                        new ResolutionStrategy(
+                            new Size(1920, 1080),
+                            ResolutionStrategy.FALLBACK_RULE_CLOSEST_HIGHER_THEN_LOWER
+                        )
+                    )
+                    .build()
+            )
+            .build();
+
         cameraProvider.unbindAll();
-        camera = cameraProvider.bindToLifecycle(
-            (LifecycleOwner) getActivity(),
-            CameraSelector.DEFAULT_BACK_CAMERA,
-            preview,
-            analysis
-        );
+        try {
+            camera = cameraProvider.bindToLifecycle(
+                (LifecycleOwner) getActivity(),
+                CameraSelector.DEFAULT_BACK_CAMERA,
+                preview,
+                analysis,
+                capture
+            );
+            imageCapture = capture;
+        } catch (IllegalArgumentException unsupportedCombination) {
+            Log.w(TAG, "Preview + analysis + capture not supported here; photos will use the preview frame");
+            cameraProvider.unbindAll();
+            camera = cameraProvider.bindToLifecycle(
+                (LifecycleOwner) getActivity(),
+                CameraSelector.DEFAULT_BACK_CAMERA,
+                preview,
+                analysis
+            );
+            imageCapture = null;
+        }
     }
 
     @ExperimentalGetImage
@@ -236,6 +344,7 @@ public class LiveTextPlugin extends Plugin {
             cameraProvider.unbindAll();
         }
         camera = null;
+        imageCapture = null;
         if (previewView != null) {
             ViewGroup parent = (ViewGroup) previewView.getParent();
             if (parent != null) {

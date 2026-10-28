@@ -1,17 +1,36 @@
 import { ref, shallowRef } from 'vue'
 import type { PluginListenerHandle } from '@capacitor/core'
 import { LiveText } from '@/plugins/liveText'
-import { invokeFunction } from '@/plugins/supabaseClient'
+import { invokeFunction, supabase } from '@/plugins/supabaseClient'
 import type { IngredientHighlight } from '@/types/Ingredient'
 import useHighlightCache from '@/composables/useHighlightCache'
 import { countRecognizedChars, createLiveMatcher } from '@/utils/liveVerdictMatcher'
 import { extractLiveProductName, LiveProductNameTracker } from '@/utils/liveProductName'
 import { LiveNameTranslator, type LiveNameTranslatorStorage } from '@/utils/liveNameTranslator'
+import { LiveProductLookup, type LiveLookupState } from '@/utils/liveProductLookup'
+import { extractCoreProductName, pickBestProductMatch } from '@/utils/productNameMatch'
 import { LiveHighlightTracker, type LiveVerdict } from '@/utils/liveVerdictTracker'
 
 const ACTIVE_CLASS = 'live-verdict-active'
 const TRANSLATE_TIMEOUT_MS = 8000
 const TRANSLATIONS_KEY = 'liveNameTranslations'
+const CJK = /[\u3400-\u9fff]/
+
+/**
+ * Is a product with this (English) name already in our database? Same ranked search and
+ * name rule the ingredient scan uses. A failed search returns null, never "not found".
+ */
+async function productExists(name: string): Promise<boolean | null> {
+    const core = extractCoreProductName(name) || name
+    const { data, error } = await supabase.rpc('search_products', {
+        p_query: core,
+        p_limit: 5,
+        p_offset: 0,
+        p_sort: 'relevance',
+    })
+    if (error) return null
+    return pickBestProductMatch(name, (data ?? []) as { name: string }[]) !== null
+}
 
 /** Translated product names kept on the device so a product scanned before is not translated (paid for) again. */
 const translationStorage: LiveNameTranslatorStorage = {
@@ -56,12 +75,27 @@ export default function useLiveVerdict() {
     const productName = ref('')
     const productNameEn = ref('')
     const translatingName = ref(false)
+    const lookupName = ref('')
+    const productMatch = ref<LiveLookupState>('unknown')
     const frameSize = ref({ width: 0, height: 0 })
     const torchOn = ref(false)
 
     const tracker = new LiveHighlightTracker()
     const nameTracker = new LiveProductNameTracker()
     const nameTranslator = new LiveNameTranslator(translateToEnglish, { onUpdate: syncEnglishName, storage: translationStorage })
+
+    const productLookup = new LiveProductLookup(productExists, { onUpdate: syncProductMatch })
+
+    /** The name we search the database with: the English name, or the label's own name if it is not Chinese. */
+    function currentLookupName(): string {
+        if (productNameEn.value) return productNameEn.value
+        return productName.value && !CJK.test(productName.value) ? productName.value : ''
+    }
+
+    function syncProductMatch() {
+        lookupName.value = currentLookupName()
+        productMatch.value = productLookup.state(lookupName.value)
+    }
 
     function syncEnglishName() {
         productNameEn.value = nameTranslator.get(productName.value)
@@ -98,6 +132,8 @@ export default function useLiveVerdict() {
                 productName.value = nameTracker.current(now)
                 nameTranslator.update(productName.value, now)
                 syncEnglishName()
+                productLookup.update(currentLookupName(), now)
+                syncProductMatch()
                 frameSize.value = { width: frame.width, height: frame.height }
                 highlights.value = tracker.active(now)
                 verdict.value = tracker.verdict(now)
@@ -129,6 +165,8 @@ export default function useLiveVerdict() {
         productName.value = ''
         productNameEn.value = ''
         translatingName.value = false
+        lookupName.value = ''
+        productMatch.value = 'unknown'
         highlights.value = []
         verdict.value = 'scanning'
     }
@@ -143,5 +181,5 @@ export default function useLiveVerdict() {
         }
     }
 
-    return { running, starting, error, verdict, productName, productNameEn, translatingName, highlights, frameSize, torchOn, start, stop, toggleTorch }
+    return { running, starting, error, verdict, productName, productNameEn, translatingName, lookupName, productMatch, highlights, frameSize, torchOn, start, stop, toggleTorch }
 }

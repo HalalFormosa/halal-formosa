@@ -35,6 +35,11 @@ export interface LiveTextPlugin {
     start(): Promise<void>
     stop(): Promise<void>
     setTorch(options: { enabled: boolean }): Promise<void>
+    /**
+     * Takes one still photo of what the camera is pointed at. Only called when the user chooses to
+     * contribute a product; returns an upright JPEG as base64.
+     */
+    takePhoto(): Promise<{ base64: string; width: number; height: number }>
     addListener(
         eventName: 'textFrame',
         listener: (frame: LiveTextFrame) => void,
