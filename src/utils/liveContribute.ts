@@ -35,3 +35,29 @@ export function buildAddProductQuery(args: {
         rawOcr: ocr?.textZh ?? '',
     }
 }
+
+export type ContributePromptKind = 'missing' | 'general'
+
+/**
+ * Whether, and how, to invite the user to add the product they are scanning.
+ *  - 'missing': we looked it up and it is not in the database.
+ *  - 'general': something is being read (a label, a name, flagged ingredients) but we have not
+ *    confirmed either way, e.g. the name is not translated yet. The invitation stays, so
+ *    people using the live verdict are still nudged to contribute.
+ * Never shown for a product the database already has, or once the user said "Not now" for it.
+ */
+export function contributePromptKind(args: {
+    available: boolean
+    running: boolean
+    hasError: boolean
+    limitReached: boolean
+    /** Any detection: enough label text read, a product name, or a flagged ingredient. */
+    detected: boolean
+    match: 'unknown' | 'checking' | 'found' | 'missing'
+    dismissed: boolean
+}): ContributePromptKind | null {
+    const { available, running, hasError, limitReached, detected, match, dismissed } = args
+    if (!available || !running || hasError || limitReached || dismissed || !detected) return null
+    if (match === 'found') return null
+    return match === 'missing' ? 'missing' : 'general'
+}
