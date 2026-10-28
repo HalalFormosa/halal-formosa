@@ -143,6 +143,17 @@ export function liveDisplayName(h: IngredientHighlight): string {
     return `${matched} (${counterpart})`
 }
 
+/**
+ * English name only, for the on-screen boxes. A match read in Chinese shows the dictionary's
+ * English name; one read in English shows itself. Falls back to the matched text when the
+ * dictionary has no readable English name for it.
+ */
+export function liveEnglishName(h: IngredientHighlight): string {
+    const matched = (h.matchedVariant ?? '').trim() || firstReadable(h.keyword) || firstReadable(h.keyword_zh)
+    if (!CJK.test(matched)) return matched
+    return firstReadable(h.keyword) || matched
+}
+
 /** Stable identity of a match across frames. */
 export function liveMatchKey(h: IngredientHighlight): string {
     return `${h.keyword}|${h.keyword_zh}|${h.matchedVariant ?? ''}`

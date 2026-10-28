@@ -88,8 +88,8 @@ import useLiveContribute from '@/composables/useLiveContribute'
 import ScanModeSwitcher from '@/components/scan/ScanModeSwitcher.vue'
 import { contributePromptKind } from '@/utils/liveContribute'
 import { isContributionLimitReached } from '@/composables/useScanQuotaReward'
-import { extractIonColor, colorMeaning } from '@/utils/ingredientHelpers'
-import { mapImageBoxToView, liveMatchKey, liveDisplayName } from '@/utils/liveVerdictMatcher'
+import { extractIonColor } from '@/utils/ingredientHelpers'
+import { mapImageBoxToView, liveMatchKey, liveDisplayName, liveEnglishName } from '@/utils/liveVerdictMatcher'
 
 const router = useRouter()
 const supported = Capacitor.getPlatform() === 'android'
@@ -145,7 +145,6 @@ const boxes = computed(() => {
     const ion = extractIonColor(h.color)
     // Only flagged ingredients get a box; "Muslim-friendly" matches are not shown live.
     if (ion !== 'danger' && ion !== 'warning') continue
-    const status = colorMeaning(ion)
     h.boxes?.forEach((box, i) => {
       const mapped = mapImageBoxToView(box, frameSize.value, viewSize.value)
       out.push({
@@ -153,7 +152,8 @@ const boxes = computed(() => {
         ...mapped,
         color: `var(--ion-color-${ion})`,
         ion,
-        label: `${status} · ${liveDisplayName(h)}`,
+        // English name only; the colour carries Haram / Syubhah, and the bottom banner spells it out.
+        label: liveEnglishName(h),
       })
     })
   }
