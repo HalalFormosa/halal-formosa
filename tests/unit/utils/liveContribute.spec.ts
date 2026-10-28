@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import type { OcrResult } from '@/composables/useOcrService'
-import { base64ToFile, buildAddProductQuery } from '@/utils/liveContribute'
+import { base64ToFile, buildAddProductQuery, contributePromptKind } from '@/utils/liveContribute'
 import { LiveProductLookup } from '@/utils/liveProductLookup'
 import { extractCoreProductName, pickBestProductMatch, wordJaccard } from '@/utils/productNameMatch'
 
@@ -141,5 +141,46 @@ describe('LiveProductLookup', () => {
     it('has no state for an empty name', () => {
         const l = new LiveProductLookup(vi.fn())
         expect(l.state('')).toBe('unknown')
+    })
+})
+
+describe('contributePromptKind', () => {
+    const base = {
+        available: true,
+        running: true,
+        hasError: false,
+        limitReached: false,
+        detected: true,
+        match: 'unknown' as const,
+        dismissed: false,
+    }
+
+    it('says the product is missing once the lookup found nothing', () => {
+        expect(contributePromptKind({ ...base, match: 'missing' })).toBe('missing')
+    })
+
+    it('still invites a contribution while the name is not translated or looked up yet', () => {
+        expect(contributePromptKind({ ...base, match: 'unknown' })).toBe('general')
+        expect(contributePromptKind({ ...base, match: 'checking' })).toBe('general')
+    })
+
+    it('stays when only ingredients are detected and no product name was read', () => {
+        expect(contributePromptKind({ ...base, detected: true, match: 'unknown' })).toBe('general')
+    })
+
+    it('does not nag for a product the database already has', () => {
+        expect(contributePromptKind({ ...base, match: 'found' })).toBeNull()
+    })
+
+    it('waits until something has been detected', () => {
+        expect(contributePromptKind({ ...base, detected: false })).toBeNull()
+    })
+
+    it('respects Not now, errors, the contribution limit and a stopped camera', () => {
+        expect(contributePromptKind({ ...base, dismissed: true })).toBeNull()
+        expect(contributePromptKind({ ...base, hasError: true })).toBeNull()
+        expect(contributePromptKind({ ...base, limitReached: true })).toBeNull()
+        expect(contributePromptKind({ ...base, running: false })).toBeNull()
+        expect(contributePromptKind({ ...base, available: false })).toBeNull()
     })
 })
