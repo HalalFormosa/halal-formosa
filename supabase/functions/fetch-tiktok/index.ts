@@ -12,7 +12,7 @@ function readSecretKey(): string {
 const SECRET_KEY = readSecretKey();
 
 const RAPIDAPI_HOST = 'tiktok-api23.p.rapidapi.com';
-const USERNAME = 'halal_formosa';
+const USERNAME = 'halalformosa';
 // The account's secUid never changes, so it is looked up once and cached in app_config.
 // That makes a normal run cost 1 RapidAPI request instead of 2 (the plan has a small monthly quota).
 const SECUID_CACHE_KEY = 'tiktok_secuid';

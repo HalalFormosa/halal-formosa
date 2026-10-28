@@ -238,7 +238,7 @@ const fromNow = (timestamp: string) => {
 const logSocialFollow = (platform: string) => {
   ActivityLogService.log('home_social_follow_click', {
     platform: platform,
-    handle: platform === 'instagram' ? '@halalformosa' : '@halal_formosa'
+    handle: '@halalformosa'
   })
 }
 </script>
