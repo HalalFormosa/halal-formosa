@@ -52,8 +52,11 @@
             <div class="verdict-sub">{{ verdictSub }}</div>
 
             <div v-if="showContributePrompt" class="contribute">
-              <div class="contribute-text">
+              <div v-if="contributeKind === 'missing'" class="contribute-text">
                 <strong>New to Halal Formosa?</strong> We don't have this product yet. Add it so others can scan it too.
+              </div>
+              <div v-else class="contribute-text">
+                <strong>Help the community.</strong> Add this product so others can scan it too.
               </div>
               <div class="contribute-actions">
                 <ion-button size="small" color="carrot" @click="onContribute">Add this product</ion-button>
@@ -67,6 +70,8 @@
             Reads the label on your phone and saves nothing. The product name is sent for translation when you are online. Not a certification.
           </div>
         </div>
+
+        <ScanModeSwitcher current="live" class="live-switcher" />
       </div>
     </ion-content>
   </ion-page>
@@ -80,6 +85,8 @@ import { useRouter } from 'vue-router'
 import { Capacitor } from '@capacitor/core'
 import useLiveVerdict from '@/composables/useLiveVerdict'
 import useLiveContribute from '@/composables/useLiveContribute'
+import ScanModeSwitcher from '@/components/scan/ScanModeSwitcher.vue'
+import { contributePromptKind } from '@/utils/liveContribute'
 import { isContributionLimitReached } from '@/composables/useScanQuotaReward'
 import { extractIonColor, colorMeaning } from '@/utils/ingredientHelpers'
 import { mapImageBoxToView, liveMatchKey, liveDisplayName } from '@/utils/liveVerdictMatcher'
@@ -94,22 +101,29 @@ const {
 
 const { busy, busyMessage, error: contributeError, contribute } = useLiveContribute({ stopCamera: stop })
 
-// Names the user said "Not now" to, so the prompt does not nag during this visit.
-const dismissedNames = ref<string[]>([])
+// Products the user said "Not now" to, so the prompt does not nag during this visit. Keyed by the
+// product name, so it comes back for the next product.
+const dismissedKeys = ref<string[]>([])
 const contributionLimitReached = ref(false)
 
-const showContributePrompt = computed(
-  () =>
-    supported &&
-    running.value &&
-    !error.value &&
-    !contributionLimitReached.value &&
-    productMatch.value === 'missing' &&
-    !dismissedNames.value.includes(lookupName.value),
+const promptKey = computed(() => lookupName.value || productName.value)
+
+const contributeKind = computed(() =>
+  contributePromptKind({
+    available: supported,
+    running: running.value,
+    hasError: !!error.value,
+    limitReached: contributionLimitReached.value,
+    // Any detection counts: enough label text read, a product name, or a flagged ingredient.
+    detected: verdict.value !== 'scanning' || !!productName.value || highlights.value.length > 0,
+    match: productMatch.value,
+    dismissed: dismissedKeys.value.includes(promptKey.value),
+  }),
 )
+const showContributePrompt = computed(() => contributeKind.value !== null)
 
 function dismissPrompt() {
-  dismissedNames.value.push(lookupName.value)
+  dismissedKeys.value.push(promptKey.value)
 }
 
 function onContribute() {
@@ -269,7 +283,8 @@ onIonViewWillLeave(() => {
   position: absolute;
   left: 12px;
   right: 12px;
-  bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
+  /* sits above the mode switcher */
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 84px);
   padding: 14px 16px;
   border-radius: 16px;
   background: rgba(20, 20, 22, 0.88);
@@ -320,6 +335,12 @@ onIonViewWillLeave(() => {
   margin-top: 2px;
   font-size: 14px;
   opacity: 0.9;
+}
+.live-switcher {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
 }
 .contribute {
   margin-top: 12px;

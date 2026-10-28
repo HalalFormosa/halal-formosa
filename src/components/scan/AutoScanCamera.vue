@@ -115,7 +115,7 @@
         </div>
       </div>
 
-      <div class="bottom-controls" v-if="phase !== 'result'">
+      <div class="bottom-controls" :class="{ 'with-switcher': phase === 'searching' }" v-if="phase !== 'result'">
         <div class="status-badge" :class="statusClass">
           <ion-spinner v-if="phase !== 'searching' || scanning" name="lines-small" />
           <span>{{ statusMessage }}</span>
@@ -125,6 +125,9 @@
           {{ $t('scanIngredients.autoScan.hint', 'Position ingredients inside the frame') }}
         </div>
       </div>
+
+      <!-- Quick swap to another way of scanning, without going back to the mode picker -->
+      <ScanModeSwitcher v-if="phase === 'searching'" current="auto" />
     </div>
 
     <!-- Hidden canvas for frame analysis -->
@@ -137,6 +140,7 @@ import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
 import { IonIcon, IonSpinner } from '@ionic/vue'
 import { closeOutline, scanOutline, flashOutline, flashOffOutline } from 'ionicons/icons'
 import { useI18n } from 'vue-i18n'
+import ScanModeSwitcher from '@/components/scan/ScanModeSwitcher.vue'
 import useHighlightCache from '@/composables/useHighlightCache'
 import { useOcrService } from '@/composables/useOcrService'
 import type { AutoScanResult } from '@/composables/useAutoScanStore'
@@ -866,6 +870,11 @@ onUnmounted(() => {
   align-items: center;
   gap: 16px;
   background: linear-gradient(to top, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0) 100%);
+}
+
+/* the mode switcher below carries the bottom safe-area spacing */
+.bottom-controls.with-switcher {
+  padding-bottom: 8px;
 }
 
 .status-badge {
