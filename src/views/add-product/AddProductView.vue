@@ -129,6 +129,9 @@
 
       <div v-else>
         <!-- 🔹 OCR Loading Overlay (WOW Factor) -->
+        <!-- Stable host: ion-modal below moves itself out of this parent when it opens, so a bare v-if
+             right before it made Vue insertBefore a node that was no longer a child (NotFoundError). -->
+        <div class="ocr-overlay-host">
         <div v-if="ocrLoading && !showCropper" class="ocr-overlay" style="position: fixed; z-index: 3000;">
         <ion-progress-bar
             :value="progress"
@@ -154,6 +157,7 @@
           </small>
         </div>
       </div>
+        </div>
 
       <ion-modal :is-open="showCropper" @didDismiss="closeCropper">
         <ion-header>
