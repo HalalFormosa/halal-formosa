@@ -9,7 +9,6 @@
     "build": "vue-tsc && vite build --mode production",
     "build:dev": "vue-tsc && vite build --mode development",
     "preview": "vite preview",
-    "test:e2e": "cypress run",
     "test:unit": "vitest",
     "lint": "eslint .",
     "version": "node scripts/update-native-version.js && git add android/app/build.gradle ios/App/App.xcodeproj/project.pbxproj",
@@ -100,7 +99,6 @@
     "vue3-datepicker": "^0.4.0"
   },
   "devDependencies": {
-    "@capacitor/assets": "^3.0.5",
     "@capacitor/cli": "^8.0.0",
     "@eslint/js": "^10.0.1",
     "@types/canvas-confetti": "^1.9.0",
@@ -112,7 +110,6 @@
     "@vitest/coverage-v8": "^4.1.6",
     "@vue/eslint-config-typescript": "^14.7.0",
     "@vue/test-utils": "^2.3.0",
-    "cypress": "^13.5.0",
     "eslint": "^10.0.2",
     "eslint-plugin-vue": "^10.8.0",
     "globals": "^17.3.0",
