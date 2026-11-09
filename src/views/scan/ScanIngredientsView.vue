@@ -244,32 +244,37 @@
           <ion-card-content>
             <ion-button expand="block" color="carrot" style="height: 56px; font-weight: 700;" class="ion-margin-bottom" @click="scanFromCamera">
                 <ion-icon slot="start" :icon="cameraOutline" />
-                {{ $t('scanIngredients.scan.camera') }}
+                {{ $t('scanIngredients.scan.takePhoto') }}
             </ion-button>
 
-            <div style="display: flex; gap: 12px;">
-                <ion-button fill="outline" color="carrot" style="flex: 1; height: 48px;" @click="scanFromGallery">
-                  <ion-icon slot="start" :icon="cloudUploadOutline" />
-                  {{ $t('scanIngredients.scan.gallery') }}
-                </ion-button>
-                <ion-button fill="outline" color="carrot" style="flex: 1; height: 48px;" @click="router.push('/scan/auto')">
-                  <ion-icon slot="start" :icon="eyeOutline" />
-                {{ $t('scanIngredients.autoScan.label') }}
-              </ion-button>
+            <div class="mode-tiles-label">{{ $t('scanIngredients.scan.otherWays') }}</div>
+            <div class="mode-tiles">
+              <button type="button" class="mode-tile" @click="scanFromGallery">
+                <ion-icon :icon="imagesOutline" />
+                <span class="mode-tile-name">{{ $t('scanIngredients.scan.gallery') }}</span>
+                <span class="mode-tile-hint">{{ $t('scanIngredients.scan.galleryHint') }}</span>
+              </button>
+              <button type="button" class="mode-tile" @click="router.push('/scan/auto')">
+                <ion-icon :icon="scanOutline" />
+                <span class="mode-tile-name">{{ $t('scanIngredients.autoScan.label') }}</span>
+                <span class="mode-tile-hint">{{ $t('scanIngredients.scan.autoHint') }}</span>
+              </button>
+              <button v-if="liveVerdictSupported" type="button" class="mode-tile" @click="router.push('/scan/live')">
+                <span v-if="!isDonor" class="mode-tile-pro"><ion-icon :icon="lockClosedOutline" />PRO</span>
+                <ion-icon :icon="pulseOutline" />
+                <span class="mode-tile-name">{{ $t('scanIngredients.liveVerdict.label') }}</span>
+                <span class="mode-tile-hint">{{ $t('scanIngredients.scan.liveHint') }}</span>
+              </button>
             </div>
 
-            <!-- Experimental (experiment/live-verdict): Android only, no i18n yet -->
-            <div v-if="liveVerdictSupported" style="display: flex; gap: 8px; margin-top: 12px; align-items: center;">
-              <ion-button fill="outline" color="carrot" style="flex: 1; height: 48px; margin: 0;" @click="router.push('/scan/live')">
-                <ion-icon slot="start" :icon="isDonor ? eyeOutline : lockClosedOutline" />
-                Live Verdict (experimental)
-                <span v-if="!isDonor" class="pro-pill">PRO</span>
-              </ion-button>
-              <ion-button fill="clear" color="carrot" style="margin: 0; height: 48px;" aria-label="What is Live Verdict?" @click="liveHelpOpen = true">
-                <ion-icon slot="icon-only" :icon="helpCircleOutline" />
-              </ion-button>
+            <div v-if="liveVerdictSupported" class="mode-help-row">
+              <span class="beta-pill">{{ $t('scanIngredients.scan.beta') }}</span>
+              <button type="button" class="mode-help-link" @click="liveHelpOpen = true">
+                {{ $t('scanIngredients.liveVerdict.help') }}
+                <ion-icon :icon="helpCircleOutline" />
+              </button>
             </div>
-            <LiveVerdictHelpModal v-if="liveVerdictSupported"v-model:open="liveHelpOpen" />
+            <LiveVerdictHelpModal v-if="liveVerdictSupported" v-model:open="liveHelpOpen" />
           </ion-card-content>
         </ion-card>
       </div>
@@ -691,7 +696,8 @@ import {
 } from '@ionic/vue'
 import {
   cameraOutline,
-  cloudUploadOutline, 
+  imagesOutline,
+  pulseOutline,
   helpCircleOutline, 
   lockClosedOutline,
   refreshOutline,
@@ -709,8 +715,7 @@ import {
   squareOutline,
   phonePortraitOutline,
   tabletLandscapeOutline,
-  stopCircle,
-  eyeOutline,
+  stopCircle,
   addCircleOutline,
   timeOutline,
   chevronDownOutline
@@ -2267,6 +2272,113 @@ onUnmounted(() => {
   margin-top: 8px;
   font-size: 12px;
   opacity: 0.6;
+}
+
+.mode-tiles-label {
+  margin: 4px 2px 6px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ion-color-medium);
+}
+
+.mode-tiles {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 8px;
+}
+
+.mode-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 12px 4px 10px;
+  border-radius: 12px;
+  border: 1px solid var(--ion-color-step-150, rgba(128, 128, 128, 0.25));
+  background: var(--ion-color-step-50, rgba(128, 128, 128, 0.08));
+  color: var(--ion-text-color);
+  font: inherit;
+  cursor: pointer;
+}
+
+.mode-tile:active {
+  transform: scale(0.98);
+}
+
+.mode-tile > ion-icon {
+  font-size: 24px;
+  color: var(--ion-color-carrot);
+}
+
+.mode-tile-name {
+  margin-top: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.mode-tile-hint {
+  font-size: 11px;
+  color: var(--ion-color-medium);
+  text-align: center;
+}
+
+/* Gold is reserved for Pro. */
+.mode-tile-pro {
+  position: absolute;
+  top: -8px;
+  right: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 1px 6px;
+  border-radius: 8px;
+  background: #facc15;
+  color: #422006;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.mode-tile-pro ion-icon {
+  font-size: 10px;
+}
+
+.mode-help-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.beta-pill {
+  padding: 1px 8px;
+  border-radius: 8px;
+  background: var(--ion-color-step-100, rgba(128, 128, 128, 0.18));
+  color: var(--ion-color-medium);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.mode-help-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border: 0;
+  background: none;
+  color: var(--ion-color-carrot);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.mode-help-link ion-icon {
+  font-size: 16px;
 }
 
 .pro-pill {

@@ -354,6 +354,10 @@
       "disclaimerNote": "结果仅供参考。 消费前务必向可信来源进行验证。",
       "gotIt": "知道了"
     },
+    "liveVerdict": {
+      "label": "实时判定",
+      "help": "什么是实时判定？"
+    },
     "autoScan": {
       "title": "自动扫描仪",
       "hint": "将成分放置在框架内",
@@ -368,6 +372,12 @@
       "label": "Auto Scan"
     },
     "scan": {
+      "takePhoto": "拍照",
+      "otherWays": "其他扫描方式",
+      "galleryHint": "选择照片",
+      "autoHint": "扫描一次",
+      "liveHint": "实时",
+      "beta": "测试版",
       "decision": {
         "question": "你打算怎么处理这个产品？",
         "use": "购买／食用",
