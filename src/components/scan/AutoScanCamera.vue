@@ -14,7 +14,7 @@
     <!-- UI Overlay (Controls & Feedback) -->
     <div class="scanner-ui-overlay">
       <div class="top-controls">
-        <span class="scanner-title">{{ $t('scanIngredients.autoScan.title', 'Auto Scanner') }}</span>
+        <span class="scanner-title">{{ $t('scanIngredients.autoScan.title', 'Auto Capture') }}</span>
         <div class="top-controls-actions">
           <div v-if="scanStatus" class="scan-count-chip" :class="{ 'scan-count-empty': scanStatus.remaining <= 0 }">
             <ion-icon :icon="scanOutline" />

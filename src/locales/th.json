@@ -310,7 +310,7 @@
         "found": "พบส่วนผสมแล้ว! กำลังโฟกัส...",
         "notFound": "ไม่พบส่วนผสม เก็บต่อไป..."
       },
-      "label": "Auto Scan"
+      "label": "Auto Capture"
     },
     "scan": {
       "camera": "กล้อง",

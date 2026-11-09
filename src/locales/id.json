@@ -594,8 +594,8 @@
       "gotIt": "Mengerti"
     },
     "liveVerdict": {
-      "label": "Live Verdict",
-      "help": "Apa itu Live Verdict?"
+      "label": "Live Scan",
+      "help": "Apa itu Live Scan?"
     },
     "autoScan": {
       "title": "Pindai Otomatis",
@@ -609,7 +609,7 @@
         "notFound": "Komposisi tidak ditemukan, tahan posisi...",
         "analyzing": "Oke! Membaca bahan..."
       },
-      "label": "Auto Scan",
+      "label": "Auto Capture",
       "analyzingHint": "Foto diambil — kamu bisa menurunkan kamera sekarang",
       "highlightsFound": "{count} bahan ditemukan",
       "autoDismiss": "Pindai berikutnya dalam {s} dtk — ketuk untuk jeda",
@@ -621,7 +621,7 @@
       "takePhoto": "Ambil foto",
       "otherWays": "Cara lain memindai",
       "galleryHint": "Pilih foto",
-      "autoHint": "Baca sekali",
+      "autoHint": "Foto otomatis",
       "liveHint": "Langsung",
       "beta": "Beta",
       "decision": {

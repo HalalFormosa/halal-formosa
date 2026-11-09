@@ -355,8 +355,8 @@
       "gotIt": "知道了"
     },
     "liveVerdict": {
-      "label": "实时判定",
-      "help": "什么是实时判定？"
+      "label": "实时扫描",
+      "help": "什么是实时扫描？"
     },
     "autoScan": {
       "title": "自动扫描仪",
@@ -369,13 +369,13 @@
         "found": "成分找到了！ 聚焦...",
         "notFound": "未找到成分，继续持有..."
       },
-      "label": "Auto Scan"
+      "label": "自动拍摄"
     },
     "scan": {
       "takePhoto": "拍照",
       "otherWays": "其他扫描方式",
       "galleryHint": "选择照片",
-      "autoHint": "扫描一次",
+      "autoHint": "就绪即拍",
       "liveHint": "实时",
       "beta": "测试版",
       "decision": {

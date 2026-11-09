@@ -310,12 +310,12 @@
         "found": "Bahan Ditemui! Memfokuskan...",
         "notFound": "Bahan tak jumpa, terus pegang..."
       },
-      "label": "Auto Scan"
+      "label": "Auto Capture"
     },
     "scan": {
       "camera": "Kamera",
       "gallery": "Galeri",
-      "auto": "Auto Scan (BETA)",
+      "auto": "Auto Capture (BETA)",
       "reCrop": "Pangkas semula",
       "productName": "Nama Produk Dikesan",
       "ingredientsZh": "Bahan-bahan yang dikesan (Cina)",

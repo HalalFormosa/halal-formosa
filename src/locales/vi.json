@@ -310,7 +310,7 @@
         "found": "Thành phần được tìm thấy! Tập trung...",
         "notFound": "Không tìm thấy thành phần, tiếp tục giữ..."
       },
-      "label": "Auto Scan"
+      "label": "Auto Capture"
     },
     "scan": {
       "camera": "Máy ảnh",

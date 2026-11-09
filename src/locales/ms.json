@@ -286,8 +286,8 @@
       "gotIt": "Faham"
     },
     "liveVerdict": {
-      "label": "Live Verdict",
-      "help": "Apakah Live Verdict?"
+      "label": "Live Scan",
+      "help": "Apakah Live Scan?"
     },
     "autoScan": {
       "title": "Pengimbas Auto",
@@ -300,13 +300,13 @@
         "found": "Bahan Dijumpai! Memfokus...",
         "notFound": "Bahan tidak dijumpai, teruskan pegang..."
       },
-      "label": "Auto Scan"
+      "label": "Auto Capture"
     },
     "scan": {
       "takePhoto": "Ambil gambar",
       "otherWays": "Cara lain mengimbas",
       "galleryHint": "Pilih gambar",
-      "autoHint": "Baca sekali",
+      "autoHint": "Tangkap automatik",
       "liveHint": "Masa nyata",
       "beta": "Beta",
       "decision": {
