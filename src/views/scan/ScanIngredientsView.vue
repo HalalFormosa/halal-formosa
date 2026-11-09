@@ -180,6 +180,26 @@
 
       <!-- 🔍 STEP 1: Capture -->
       <div v-show="currentStep === STEP_CAPTURE" class="step-content">
+        <!-- Scan came back empty or failed: explain, give tips, offer a retry -->
+        <div v-if="scanFailure" class="scan-failure-card" role="alert" data-testid="scan-failure">
+          <div class="scan-failure-head">
+            <ion-icon :icon="alertCircleOutline" />
+            <strong>{{ $t('scanIngredients.failure.title') }}</strong>
+          </div>
+          <p class="scan-failure-body">{{ $t(`scanIngredients.failure.${scanFailure}`) }}</p>
+          <template v-if="scanFailure !== 'offline'">
+            <p class="scan-failure-tips-title">{{ $t('scanIngredients.failure.tipsTitle') }}</p>
+            <ul class="scan-failure-tips">
+              <li>{{ $t('scanIngredients.failure.tip1') }}</li>
+              <li>{{ $t('scanIngredients.failure.tip2') }}</li>
+              <li>{{ $t('scanIngredients.failure.tip3') }}</li>
+            </ul>
+          </template>
+          <ion-button expand="block" class="scan-failure-retry" @click="retryAfterFailure">
+            {{ $t('scanIngredients.failure.retry') }}
+          </ion-button>
+        </div>
+
         <!-- Daily Scan Counter -->
         <div style="margin-bottom: 8px;" v-if="todayScanCount !== null">
           <ion-chip color="primary" style="width: 100%; justify-content: center; height: 32px;">
@@ -715,10 +735,11 @@ import {
   squareOutline,
   phonePortraitOutline,
   tabletLandscapeOutline,
-  stopCircle,
+  stopCircle,
   addCircleOutline,
   timeOutline,
-  chevronDownOutline
+  chevronDownOutline,
+  alertCircleOutline
 } from 'ionicons/icons'
 import AppHeader from '@/components/AppHeader.vue'
 import IngredientHighlightImage from '@/components/scan/IngredientHighlightImage.vue'
@@ -962,6 +983,24 @@ const router = useRouter()
 const { autoScanResult, clearResult } = useAutoScanStore()
 
 const isMovingToResults = ref(false)
+
+// A scan that produced nothing readable. Kept on screen (with tips and a retry button) instead of a
+// 2-second toast that vanished and left people staring at a blank step (survey feedback, Nov 2026).
+type ScanFailure = 'empty' | 'error' | 'offline'
+const scanFailure = ref<ScanFailure | null>(null)
+
+function showScanFailure(kind: ScanFailure) {
+  isMovingToResults.value = false
+  clearError()
+  scanFailure.value = kind
+  currentStep.value = STEP_CAPTURE
+  scrollToTop()
+}
+
+function retryAfterFailure() {
+  scanFailure.value = null
+  clearAll()
+}
 
 const truncatedProductName = computed(() => {
   if (!productName.value) return ''
@@ -1419,6 +1458,7 @@ function clearAll() {
   tryingModel.value = ''
   summaryUsed.value = false
   showTutorial.value = true
+  scanFailure.value = null
   currentStep.value = STEP_CAPTURE
   scrollToTop()
 }
@@ -1485,6 +1525,7 @@ async function fetchRandomReflection() {
 }
 
 async function handleConfirmCrop() {
+  scanFailure.value = null
   try {
     ocrStartTime.value = Date.now()
 
@@ -1510,7 +1551,7 @@ async function handleConfirmCrop() {
       )
     }
 
-    showOk.value = true
+    if (ingredientsText.value?.trim()) showOk.value = true
 
     // Only log if ingredients were detected
     if (ingredientsText.value?.trim()) {
@@ -1569,12 +1610,17 @@ async function handleConfirmCrop() {
 
     } else {
       console.warn('🚫 OCR text found but no ingredient section detected, skipping log')
-      setError(t('scanIngredients.errors.noIngredients'))
+      showScanFailure('empty')
+      ActivityLogService.log("scan_ingredients_error", {
+        error: "no_ingredients_detected",
+        source: currentSource.value,
+        offline: false
+      });
     }
 
   } catch (err: any) {
 
-    setError(err.message || t('scanIngredients.errors.ocrFailed'))
+    showScanFailure(isNetworkError(err) ? 'offline' : 'error')
 
     await ActivityLogService.log("scan_ingredients_error", {
       error: err.message || "OCR failed",
@@ -1788,10 +1834,17 @@ async function handleAutoDetected(result: any) {
           isMovingToResults.value = false
           decisionPromptKey.value++
           nextStep()
+      } else {
+          // Nothing readable: say so, instead of leaving the camera screen with no feedback at all.
+          showScanFailure('empty')
+          ActivityLogService.log("scan_ingredients_error", {
+            error: "no_ingredients_detected",
+            source: "auto_scan",
+            offline: false
+          });
       }
   } catch (err: any) {
-      isMovingToResults.value = false
-      setError(err.message || 'Auto OCR failed')
+      showScanFailure(isNetworkError(err) ? 'offline' : 'error')
 
       await ActivityLogService.log("scan_ingredients_error", {
         error: err.message || "Auto OCR failed",
@@ -1968,6 +2021,27 @@ onUnmounted(() => {
 }
 
 .hero-desc { color: var(--ion-color-step-600); line-height: 1.5; margin-bottom: 16px; }
+
+.scan-failure-card {
+  margin-bottom: 14px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(230, 126, 34, 0.35);
+  background: rgba(230, 126, 34, 0.08);
+}
+.scan-failure-head { display: flex; align-items: center; gap: 8px; font-size: 1rem; }
+.scan-failure-head ion-icon { font-size: 22px; color: #c96718; }
+.scan-failure-body { margin: 6px 0 0; line-height: 1.45; }
+.scan-failure-tips-title {
+  margin: 12px 0 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #c96718;
+}
+.scan-failure-tips { margin: 0; padding-left: 18px; font-size: 0.9rem; line-height: 1.5; }
+.scan-failure-retry { margin-top: 12px; --background: #e67e22; --color: #000; font-weight: 700; }
 
 .db-found-badge {
   font-size: 18px;

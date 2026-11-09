@@ -182,6 +182,22 @@
                 </div>
               </div>
 
+              <!-- When the verdict last changed, and why we can say so -->
+              <div v-if="verdictChange || lastUpdatedLabel" class="verdict-note" data-testid="verdict-note">
+                <p v-if="verdictChange" class="verdict-note-change">
+                  <ion-icon :icon="informationCircleOutline" />
+                  <span>
+                    {{ $t('search.verdictNote.changed', { from: $t(`search.status.${verdictChange.from}`), date: verdictChange.when }) }}
+                    <template v-if="verdictChange.ingredientsChanged">
+                      {{ $t('search.verdictNote.ingredientsUpdated') }}
+                    </template>
+                  </span>
+                </p>
+                <p v-if="lastUpdatedLabel" class="verdict-note-updated">
+                  {{ $t('search.verdictNote.lastUpdated', { date: lastUpdatedLabel }) }}
+                </p>
+              </div>
+
               <!-- Provided by (brand/merchant partner; campus partners have their own card below) -->
               <div
                   v-if="item?.partner?.is_active && item.partner.partner_type !== 'campus'"
@@ -602,6 +618,7 @@ import {
   sparkles,
   star,
   shieldCheckmarkOutline,
+  informationCircleOutline,
   shareSocialOutline,
   sparklesOutline // Added for contribution prompt
 } from "ionicons/icons";
@@ -717,6 +734,56 @@ function fromNowToTaipei(dateString?: string) {
   if (!dateString) return ''
   return dayjs.utc(dateString).tz('Asia/Taipei').fromNow()
 }
+
+/**
+ * "Last updated" and verdict-change notice. A product's verdict can change when its info is reviewed;
+ * without a hint, users who saw a different verdict days earlier get confused (yearly survey, Nov 2026).
+ */
+interface VerdictInfo {
+  last_updated_at: string | null
+  status_changed_at: string | null
+  previous_status: string | null
+  ingredients_changed: boolean | null
+}
+const verdictInfo = ref<VerdictInfo | null>(null)
+const VERDICT_CHANGE_NOTICE_DAYS = 60
+const KNOWN_VERDICTS = ['Halal', 'Muslim-friendly', 'Syubhah', 'Haram']
+
+async function loadVerdictInfo(productId?: string) {
+  verdictInfo.value = null
+  if (!productId) return
+  try {
+    const { data, error } = await supabase.rpc('product_verdict_info', { p_product_id: productId })
+    if (!error && data) verdictInfo.value = data as VerdictInfo
+  } catch (err) {
+    console.warn('Verdict info load failed:', err)
+  }
+}
+
+function formatTaipeiDate(dateString?: string | null) {
+  if (!dateString) return ''
+  return dayjs.utc(dateString).tz('Asia/Taipei').format('D MMM YYYY')
+}
+
+const lastUpdatedLabel = computed(() => {
+  const when = verdictInfo.value?.last_updated_at || item.value?.created_at
+  return when ? formatTaipeiDate(when) : ''
+})
+
+// Only for a recent change from one real verdict to a different one (not "Unknown" -> first verdict).
+const verdictChange = computed(() => {
+  const info = verdictInfo.value
+  const current = item.value?.status
+  if (!info?.status_changed_at || !info.previous_status || !current) return null
+  if (!KNOWN_VERDICTS.includes(info.previous_status) || info.previous_status === current) return null
+  const ageDays = dayjs().diff(dayjs.utc(info.status_changed_at), 'day')
+  if (ageDays > VERDICT_CHANGE_NOTICE_DAYS) return null
+  return {
+    from: info.previous_status,
+    when: formatTaipeiDate(info.status_changed_at),
+    ingredientsChanged: !!info.ingredients_changed,
+  }
+})
 
 function goToAddProduct() {
   router.push({
@@ -1325,6 +1392,7 @@ async function loadProductData() {
 
       // ✅ assign once
       item.value = product
+      void loadVerdictInfo(product.id)
 
       // If we got here via a merged-away barcode, fix the URL to the
       // canonical one (bookmarks/shares/QR codes should settle on it too).
@@ -1621,6 +1689,32 @@ const share = async () => {
   font-size: 12px;
   color: var(--ion-color-medium);
   margin: 2px 0 12px 0;
+}
+
+.verdict-note {
+  margin-top: 10px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--ion-color-medium);
+}
+.verdict-note p {
+  margin: 0;
+}
+.verdict-note-change {
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+  margin-bottom: 4px !important;
+  padding: 8px 10px !important;
+  border-radius: 10px;
+  background: rgba(230, 126, 34, 0.1);
+  color: var(--ion-text-color);
+}
+.verdict-note-change ion-icon {
+  flex: 0 0 auto;
+  margin-top: 1px;
+  font-size: 15px;
+  color: #c96718;
 }
 
 .section-title {
