@@ -2,13 +2,15 @@ import { ref, shallowRef } from 'vue'
 import type { PluginListenerHandle } from '@capacitor/core'
 import { LiveText } from '@/plugins/liveText'
 import { invokeFunction, supabase } from '@/plugins/supabaseClient'
-import type { IngredientHighlight } from '@/types/Ingredient'
+import type { HighlightBox, IngredientHighlight } from '@/types/Ingredient'
 import useHighlightCache from '@/composables/useHighlightCache'
 import { countRecognizedChars, createLiveMatcher } from '@/utils/liveVerdictMatcher'
 import { extractLiveProductName, LiveProductNameTracker } from '@/utils/liveProductName'
 import { LiveNameTranslator, type LiveNameTranslatorStorage } from '@/utils/liveNameTranslator'
 import { LiveProductLookup, type LiveLookupState } from '@/utils/liveProductLookup'
 import { extractCoreProductName, pickBestProductMatch } from '@/utils/productNameMatch'
+import { LiveIngredientGate, findIngredientHeaders } from '@/utils/liveIngredientGate'
+import { cropFrameToRegion, mapViewBoxToImage, scanRegionInView } from '@/utils/liveScanRegion'
 import { LiveHighlightTracker, type LiveVerdict } from '@/utils/liveVerdictTracker'
 
 const ACTIVE_CLASS = 'live-verdict-active'
@@ -60,11 +62,11 @@ async function translateToEnglish(text: string): Promise<string | null> {
 }
 
 /**
- * Live "point the camera and read the verdict" mode (experimental, Android only for now).
- * Camera frames are analysed on the device by ML Kit and discarded; this composable
+ * Live "point the camera and read the verdict" mode (experimental; Android and iOS).
+ * Camera frames are analysed on the device (ML Kit on Android, Apple Vision on iOS) and discarded; this composable
  * only ever sees the recognised text and its boxes.
  */
-export default function useLiveVerdict() {
+export default function useLiveVerdict(options: { getViewSize?: () => { width: number; height: number } } = {}) {
     const { allHighlights, fetchHighlightsWithCache } = useHighlightCache()
 
     const running = ref(false)
@@ -79,6 +81,11 @@ export default function useLiveVerdict() {
     const productMatch = ref<LiveLookupState>('unknown')
     const frameSize = ref({ width: 0, height: 0 })
     const torchOn = ref(false)
+    /** True once an ingredient heading (the Chinese word for ingredients) has been seen inside the scan box. */
+    const ingredientsFound = ref(false)
+    const gate = new LiveIngredientGate()
+    /** The ingredient heading(s) currently visible in the box, in camera-image pixels. */
+    const headerMarks = shallowRef<{ text: string; box: HighlightBox }[]>([])
 
     const tracker = new LiveHighlightTracker()
     const nameTracker = new LiveProductNameTracker()
@@ -123,11 +130,22 @@ export default function useLiveVerdict() {
             }
 
             tracker.reset()
+            gate.reset()
+            ingredientsFound.value = false
             nameTracker.reset()
             nameTranslator.reset()
-            listener = await LiveText.addListener('textFrame', frame => {
+            listener = await LiveText.addListener('textFrame', rawFrame => {
                 const now = Date.now()
-                tracker.update(matchFrame(frame), countRecognizedChars(frame), now)
+                // Only read what is inside the scan box; the bottom of the screen is the verdict card.
+                const view = options.getViewSize?.()
+                const frame = view?.width && view.height && rawFrame.width
+                    ? cropFrameToRegion(rawFrame, mapViewBoxToImage(scanRegionInView(view), rawFrame, view))
+                    : rawFrame
+                // Read the list only after its header is found in the box; until then ask the user to find it.
+                ingredientsFound.value = gate.update(frame, now)
+                headerMarks.value = findIngredientHeaders(frame)
+                if (ingredientsFound.value) tracker.update(matchFrame(frame), countRecognizedChars(frame), now)
+                else tracker.update([], 0, now)
                 nameTracker.update(extractLiveProductName(frame), now)
                 productName.value = nameTracker.current(now)
                 nameTranslator.update(productName.value, now)
@@ -160,6 +178,9 @@ export default function useLiveVerdict() {
         running.value = false
         torchOn.value = false
         tracker.reset()
+        gate.reset()
+        ingredientsFound.value = false
+        headerMarks.value = []
         nameTracker.reset()
         nameTranslator.reset()
         productName.value = ''
@@ -181,5 +202,5 @@ export default function useLiveVerdict() {
         }
     }
 
-    return { running, starting, error, verdict, productName, productNameEn, translatingName, lookupName, productMatch, highlights, frameSize, torchOn, start, stop, toggleTorch }
+    return { running, starting, error, verdict, productName, productNameEn, translatingName, lookupName, productMatch, highlights, frameSize, torchOn, ingredientsFound, headerMarks, start, stop, toggleTorch }
 }

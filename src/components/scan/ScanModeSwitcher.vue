@@ -20,6 +20,7 @@
       >
         <ion-icon :icon="mode.icon" />
         <span>{{ mode.label }}</span>
+        <span v-if="mode.pro" class="pro-badge"><ion-icon :icon="lockClosed" />{{ t('common.pro', 'Pro') }}</span>
       </button>
     </nav>
   </div>
@@ -28,33 +29,37 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { IonIcon } from '@ionic/vue'
-import { cameraOutline, imagesOutline, pulseOutline, scanOutline } from 'ionicons/icons'
+import { cameraOutline, imagesOutline, lockClosed, pulseOutline, scanOutline } from 'ionicons/icons'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { Capacitor } from '@capacitor/core'
+import { isLiveVerdictSupported } from '@/utils/liveScanPlatform'
 import { switchScanMode, type ScanMode } from '@/composables/useScanModeRequest'
+import { isDonor } from '@/composables/useSubscriptionStatus'
+import { presentProPaywall } from '@/utils/proPaywall'
 
 const props = defineProps<{ current: 'camera' | 'auto' | 'live' }>()
 
 const router = useRouter()
 const { t } = useI18n()
 
-// Live Verdict needs the Android camera plugin for now.
-const liveAvailable = Capacitor.getPlatform() === 'android'
+// Live Verdict needs the native camera plugin (Android and iOS).
+const liveAvailable = isLiveVerdictSupported()
 
 const modes = computed(() => {
-  const list: { id: 'camera' | 'auto' | 'live'; label: string; icon: string }[] = [
+  const list: { id: 'camera' | 'auto' | 'live'; label: string; icon: string; pro?: boolean }[] = [
     { id: 'camera', label: t('scanIngredients.scan.camera', 'Camera'), icon: cameraOutline },
     { id: 'auto', label: t('scanIngredients.autoScan.label', 'Auto Scan'), icon: scanOutline },
   ]
   if (liveAvailable) {
-    list.push({ id: 'live', label: t('scanIngredients.liveVerdict.label', 'Live Verdict'), icon: pulseOutline })
+    list.push({ id: 'live', label: t('scanIngredients.liveVerdict.label', 'Live Verdict'), icon: pulseOutline, pro: !isDonor.value })
   }
   return list
 })
 
-function go(mode: ScanMode) {
+async function go(mode: ScanMode) {
   if (mode === props.current) return
+  // Live Verdict is a Pro feature: free users see the paywall instead of the camera.
+  if (mode === 'live' && !isDonor.value && !(await presentProPaywall('live_verdict'))) return
   const previous = (window.history.state as { back?: string | null } | null)?.back
   switchScanMode(router, mode, previous)
 }
@@ -95,6 +100,23 @@ function go(mode: ScanMode) {
 }
 .mode-btn ion-icon {
   font-size: 22px;
+}
+/* Pro badge: solid orange with black text; inverted on the active (orange) button. */
+.pro-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 5px;
+  border-radius: 6px;
+  background: var(--ion-color-carrot, #e67e22);
+  color: #000;
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 1.4;
+}
+.mode-btn.active .pro-badge {
+  background: #000;
+  color: #fff;
 }
 /* Brand: solid orange takes black text. */
 .mode-btn.active {

@@ -88,6 +88,42 @@ describe('createLiveMatcher', () => {
         expect(hits.map(h => h.matchedVariant)).toEqual(['red wine vinegar'])
     })
 
+    describe('Chinese words that contain a flagged character', () => {
+        // Same shape as the real dictionary rows, with the short flagged words listed FIRST on purpose
+        // so the result cannot depend on the order the dictionary is walked in.
+        const dict = [
+            hl('Alcohol', '酒', '--ion-color-danger'),
+            hl('Vinegar', '醋', '--ion-color-warning'),
+            hl('Tartaric acid', '酒石酸', '--ion-color-primary'),
+            hl('Acetic Acid', '醋酸', '--ion-color-primary'),
+        ]
+        const run = createLiveMatcher(dict)
+
+        it('does not flag 酒 inside 酒石酸 (tartaric acid)', () => {
+            expect(run(frameOf(['成分：', '酒石酸、', '糖'])).map(h => h.matchedVariant)).toEqual(['酒石酸'])
+        })
+
+        it('does not flag 醋 inside 醋酸 (acetic acid)', () => {
+            expect(run(frameOf(['醋酸'])).map(h => h.matchedVariant)).toEqual(['醋酸'])
+        })
+
+        it('still flags a separate 酒 elsewhere on the label', () => {
+            const hits = run(frameOf(['酒石酸、', '糖、', '酒']))
+            expect(hits.map(h => h.matchedVariant).sort()).toEqual(['酒', '酒石酸'].sort())
+        })
+
+        it('still flags a plain 酒 and 醋', () => {
+            expect(run(frameOf(['米酒'])).map(h => h.matchedVariant)).toEqual(['酒'])
+            expect(run(frameOf(['白醋'])).map(h => h.matchedVariant)).toEqual(['醋'])
+        })
+
+        it('boxes only the lone 酒, not the one inside 酒石酸', () => {
+            const hits = run(frameOf(['酒石酸', '酒']))
+            const alcohol = hits.find(h => h.matchedVariant === '酒')
+            expect(alcohol?.boxes).toEqual([{ x: 100, y: 0, width: 90, height: 40 }])
+        })
+    })
+
     it('ignores invalid regex entries instead of throwing', () => {
         const broken = createLiveMatcher([hl('[unclosed', '', '--ion-color-danger')])
         expect(broken(frameOf(['anything']))).toEqual([])

@@ -177,7 +177,6 @@ export function createLiveMatcher(highlights: IngredientHighlight[]) {
 
     return function matchFrame(frame: LiveTextFrame): IngredientHighlight[] {
         const found = new Map<string, IngredientHighlight>()
-        const foundNorms: string[] = []
 
         for (const block of frame.blocks) {
             // Flatten the block so an ingredient wrapped over two lines still matches.
@@ -199,37 +198,61 @@ export function createLiveMatcher(highlights: IngredientHighlight[]) {
             }
             if (!fullText) continue
 
+            // Find every hit in this block first, then drop the ones that sit inside a longer hit.
+            // This must not depend on the order the dictionary is walked in: "酒" (alcohol) is a
+            // piece of "酒石酸" (tartaric acid) and "醋" (vinegar) a piece of "醋酸" (acetic acid).
+            const hits: BlockHit[] = []
             for (const { highlight, variants } of compiled) {
                 for (const variant of variants) {
-                    // A longer variant that already matched covers this shorter one.
-                    if (!variant.regex && foundNorms.some(n => n.includes(variant.norm) && n !== variant.norm)) continue
-
                     const ranges = findRanges(fullText, variant)
-                    if (!ranges.length) continue
+                    if (ranges.length) hits.push({ highlight, variant, ranges })
+                }
+            }
+            const plainHits = hits.filter(h => !h.variant.regex)
 
-                    const boxes: HighlightBox[] = []
-                    for (const [start, end] of ranges) {
-                        const merged = mergeBoxes(
-                            spans.filter(s => s.start < end && s.end > start).map(s => subBox(s, start, end)),
-                        )
-                        if (merged) boxes.push(merged)
-                    }
+            for (const hit of hits) {
+                const ranges = hit.variant.regex
+                    ? hit.ranges
+                    : hit.ranges.filter(([start, end]) => !plainHits.some(other => coversRange(other, hit, start, end)))
+                if (!ranges.length) continue
 
-                    const candidate: IngredientHighlight = { ...highlight, matchedVariant: variant.raw, boxes }
-                    const key = liveMatchKey(candidate)
-                    const existing = found.get(key)
-                    if (existing) {
-                        existing.boxes = [...(existing.boxes ?? []), ...boxes].slice(0, MAX_BOXES_PER_MATCH)
-                    } else {
-                        found.set(key, { ...candidate, boxes: boxes.slice(0, MAX_BOXES_PER_MATCH) })
-                        if (!variant.regex) foundNorms.push(variant.norm)
-                    }
+                const boxes: HighlightBox[] = []
+                for (const [start, end] of ranges) {
+                    const merged = mergeBoxes(
+                        spans.filter(s => s.start < end && s.end > start).map(s => subBox(s, start, end)),
+                    )
+                    if (merged) boxes.push(merged)
+                }
+
+                const candidate: IngredientHighlight = { ...hit.highlight, matchedVariant: hit.variant.raw, boxes }
+                const key = liveMatchKey(candidate)
+                const existing = found.get(key)
+                if (existing) {
+                    existing.boxes = [...(existing.boxes ?? []), ...boxes].slice(0, MAX_BOXES_PER_MATCH)
+                } else {
+                    found.set(key, { ...candidate, boxes: boxes.slice(0, MAX_BOXES_PER_MATCH) })
                 }
             }
         }
 
         return [...found.values()]
     }
+}
+
+interface BlockHit {
+    highlight: IngredientHighlight
+    variant: CompiledVariant
+    ranges: [number, number][]
+}
+
+/**
+ * Does `outer` have a strictly longer plain-text hit that contains the text at [start, end)?
+ * Only the occurrence inside the longer word is covered, so a lone "酒" elsewhere on the label
+ * is still reported.
+ */
+function coversRange(outer: BlockHit, inner: BlockHit, start: number, end: number): boolean {
+    if (outer.variant.norm.length <= inner.variant.norm.length) return false
+    return outer.ranges.some(([s, e]) => s <= start && end <= e)
 }
 
 function findRanges(fullText: string, variant: CompiledVariant): [number, number][] {
