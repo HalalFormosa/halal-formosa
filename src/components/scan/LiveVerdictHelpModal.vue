@@ -6,7 +6,7 @@
         <span v-if="!isDonor" class="pro-badge"><ion-icon :icon="lockClosed" />{{ t('common.pro', 'Pro') }}</span>
       </h2>
       <p>{{ t('scanIngredients.liveVerdict.helpIntro', 'Point your camera at an ingredient list and get a verdict as you move, with no photo to take.') }}</p>
-      <!-- Bound dynamically so the build does not need the screenshot to exist (public/hints/live-verdict-howto.png). -->
+      <!-- Bound dynamically so the build does not need the screenshot to exist (public/hints/live-verdict-howto.jpg). -->
       <img v-if="!imgFailed" class="help-img" :src="helpImageSrc" :alt="t('scanIngredients.liveVerdict.helpImgAlt', 'Live Verdict reading an ingredient list inside the scan box')" @error="imgFailed = true" />
       <ol>
         <li>{{ t('scanIngredients.liveVerdict.helpStep0', 'Find the ingredient heading on the pack (成分 or 原料) and put it inside the box. Reading starts once it is found.') }}</li>
@@ -41,7 +41,7 @@ const router = useRouter()
 const route = useRoute()
 
 const imgFailed = ref(false)
-const helpImageSrc = '/hints/live-verdict-howto.png'
+const helpImageSrc = '/hints/live-verdict-howto.jpg'
 
 /** Free users: open the paywall from here; on purchase, go straight into Live Verdict. */
 async function upgrade() {
