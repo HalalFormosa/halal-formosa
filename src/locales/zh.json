@@ -493,6 +493,17 @@
       "finalizing": "Finalizing...",
       "failed": "Failed"
     },
+    "failure": {
+      "title": "無法讀取這個標籤",
+      "empty": "這張照片裡找不到成分表。",
+      "error": "讀取照片時發生錯誤。",
+      "offline": "沒有網路連線。請檢查連線後再試一次。",
+      "tipsTitle": "小提示",
+      "tip1": "只拍成分表，並讓它佔滿畫面",
+      "tip2": "光線充足並拿穩手機",
+      "tip3": "避免包裝反光",
+      "retry": "再試一次"
+    },
     "errors": {
       "ocrFailed": "OCR analysis failed. Please try again with a clearer photo.",
       "noIngredients": "No ingredients detected. Please try cropping more closely.",
@@ -503,6 +514,11 @@
   "search": {
     "title": "產品",
     "placeholder": "搜尋 (例如：茶)",
+    "verdictNote": {
+      "lastUpdated": "最後更新：{date}",
+      "changed": "判定結果已於 {date} 由「{from}」變更。",
+      "ingredientsUpdated": "成分表同時已更新。"
+    },
     "officialPartner": "官方夥伴",
     "filtersLabel": "篩選",
     "filters": {

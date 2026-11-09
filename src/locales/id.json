@@ -701,6 +701,17 @@
       "finalizing": "Finalizing...",
       "failed": "Failed"
     },
+    "failure": {
+      "title": "Kami tidak bisa membaca label ini",
+      "empty": "Daftar bahan tidak ditemukan pada foto itu.",
+      "error": "Terjadi kesalahan saat membaca foto.",
+      "offline": "Tidak ada koneksi internet. Periksa koneksi lalu coba lagi.",
+      "tipsTitle": "Tips",
+      "tip1": "Bidik hanya daftar bahan hingga memenuhi bingkai",
+      "tip2": "Gunakan cahaya yang cukup dan pegang ponsel dengan stabil",
+      "tip3": "Hindari pantulan cahaya pada kemasan mengilap",
+      "retry": "Coba lagi"
+    },
     "errors": {
       "ocrFailed": "OCR analysis failed. Please try again with a clearer photo.",
       "noIngredients": "No ingredients detected. Please try cropping more closely.",
@@ -715,6 +726,11 @@
   "search": {
     "title": "Produk",
     "placeholder": "Cari (misal: Teh)",
+    "verdictNote": {
+      "lastUpdated": "Terakhir diperbarui {date}",
+      "changed": "Status berubah dari {from} pada {date}.",
+      "ingredientsUpdated": "Daftar bahan diperbarui pada saat yang sama."
+    },
     "officialPartner": "MITRA RESMI",
     "filtersLabel": "Filter",
     "filters": {

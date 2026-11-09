@@ -444,6 +444,17 @@
       "adLimit": "You can only watch {count} ads per day.",
       "contributeTip": "Earn +1 daily scan for every product or location you contribute (max 3/day)."
     },
+    "failure": {
+      "title": "We couldn't read this label",
+      "empty": "No ingredient list was found in that photo.",
+      "error": "Something went wrong while reading the photo.",
+      "offline": "No internet connection. Check your connection and try again.",
+      "tipsTitle": "Tips",
+      "tip1": "Fill the frame with the ingredient list only",
+      "tip2": "Use good light and hold the phone steady",
+      "tip3": "Avoid glare on shiny packaging",
+      "retry": "Try again"
+    },
     "errors": {
       "ocrFailed": "OCR analysis failed. Please try again with a clearer photo.",
       "noIngredients": "No ingredients detected. Please try cropping more closely.",
@@ -533,6 +544,11 @@
   "search": {
     "title": "Product",
     "placeholder": "Search (e.g. Tea)",
+    "verdictNote": {
+      "lastUpdated": "Last updated {date}",
+      "changed": "Verdict changed from {from} on {date}.",
+      "ingredientsUpdated": "The ingredient list was updated at the same time."
+    },
     "officialPartner": "OFFICIAL PARTNER",
     "filtersLabel": "Filters",
     "filters": {

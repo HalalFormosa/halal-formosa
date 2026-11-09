@@ -175,6 +175,7 @@ import { watch } from 'vue';
 import { useTheme } from '@/composables/useTheme';
 import { useAppUpdate } from '@/composables/useAppUpdate';
 import ForceUpdateModal from '@/components/ForceUpdateModal.vue';
+import { shouldShowUpdatePrompt, readUpdatePromptLastShown, markUpdatePromptShown } from '@/utils/updatePromptThrottle';
 import SmartAppBanner from '@/components/SmartAppBanner.vue';
 import { useProximityPrompt } from '@/composables/useProximityPrompt';
 import FacilityReviewModal from '@/components/FacilityReviewModal.vue';
@@ -304,7 +305,9 @@ const checkAppUpdate = async () => {
   if (!Capacitor.isNativePlatform() || Capacitor.getPlatform() !== 'android') return;
   try {
     const info = await AppUpdate.getAppUpdateInfo();
-    if (info.updateAvailability === AppUpdateAvailability.UPDATE_AVAILABLE) {
+    if (info.updateAvailability === AppUpdateAvailability.UPDATE_AVAILABLE
+        && shouldShowUpdatePrompt(Date.now(), readUpdatePromptLastShown())) {
+      markUpdatePromptShown();
       showUpdateAlert.value = true;
       ActivityLogService.log('app_update_prompt_shown', { platform: Capacitor.getPlatform() });
     }

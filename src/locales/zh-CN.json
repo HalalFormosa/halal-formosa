@@ -447,6 +447,17 @@
       "finalizing": "Finalizing...",
       "failed": "Failed"
     },
+    "failure": {
+      "title": "无法读取这个标签",
+      "empty": "这张照片里找不到成分表。",
+      "error": "读取照片时发生错误。",
+      "offline": "没有网络连接。请检查连接后再试一次。",
+      "tipsTitle": "小提示",
+      "tip1": "只拍成分表，并让它占满画面",
+      "tip2": "光线充足并拿稳手机",
+      "tip3": "避免包装反光",
+      "retry": "再试一次"
+    },
     "errors": {
       "ocrFailed": "OCR analysis failed. Please try again with a clearer photo.",
       "noIngredients": "No ingredients detected. Please try cropping more closely.",
@@ -457,6 +468,11 @@
   "search": {
     "title": "产品",
     "placeholder": "搜索（例如茶）",
+    "verdictNote": {
+      "lastUpdated": "最后更新：{date}",
+      "changed": "判定结果已于 {date} 由“{from}”变更。",
+      "ingredientsUpdated": "成分表同时已更新。"
+    },
     "officialPartner": "官方合作伙伴",
     "filtersLabel": "过滤器",
     "filters": {
