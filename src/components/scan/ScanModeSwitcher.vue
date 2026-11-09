@@ -42,23 +42,23 @@ const props = defineProps<{ current: 'camera' | 'auto' | 'live' }>()
 const router = useRouter()
 const { t } = useI18n()
 
-// Live Verdict needs the native camera plugin (Android and iOS).
+// Live Scan needs the native camera plugin (Android and iOS).
 const liveAvailable = isLiveVerdictSupported()
 
 const modes = computed(() => {
   const list: { id: 'camera' | 'auto' | 'live'; label: string; icon: string; pro?: boolean }[] = [
     { id: 'camera', label: t('scanIngredients.scan.camera', 'Camera'), icon: cameraOutline },
-    { id: 'auto', label: t('scanIngredients.autoScan.label', 'Auto Scan'), icon: scanOutline },
+    { id: 'auto', label: t('scanIngredients.autoScan.label', 'Auto Capture'), icon: scanOutline },
   ]
   if (liveAvailable) {
-    list.push({ id: 'live', label: t('scanIngredients.liveVerdict.label', 'Live Verdict'), icon: pulseOutline, pro: !isDonor.value })
+    list.push({ id: 'live', label: t('scanIngredients.liveVerdict.label', 'Live Scan'), icon: pulseOutline, pro: !isDonor.value })
   }
   return list
 })
 
 async function go(mode: ScanMode) {
   if (mode === props.current) return
-  // Live Verdict is a Pro feature: free users see the paywall instead of the camera.
+  // Live Scan is a Pro feature: free users see the paywall instead of the camera.
   if (mode === 'live' && !isDonor.value && !(await presentProPaywall('live_verdict'))) return
   const previous = (window.history.state as { back?: string | null } | null)?.back
   switchScanMode(router, mode, previous)

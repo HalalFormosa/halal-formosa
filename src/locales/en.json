@@ -452,12 +452,12 @@
       "adFailed": "Could not load rewarded ad. Please try again."
     },
     "liveVerdict": {
-      "label": "Live Verdict",
-      "help": "What is Live Verdict?"
+      "label": "Live Scan",
+      "help": "What is Live Scan?"
     },
     "autoScan": {
-      "label": "Auto Scan",
-      "title": "Auto Scanner",
+      "label": "Auto Capture",
+      "title": "Auto Capture",
       "hint": "Position ingredients inside the frame",
       "status": {
         "init": "Initializing HD Camera...",
@@ -479,12 +479,12 @@
       "takePhoto": "Take a photo",
       "otherWays": "Other ways to scan",
       "galleryHint": "Pick a photo",
-      "autoHint": "Reads once",
+      "autoHint": "Snaps when ready",
       "liveHint": "Real time",
       "beta": "Beta",
       "camera": "Camera",
       "gallery": "Gallery",
-      "auto": "Auto Scan (BETA)",
+      "auto": "Auto Capture (BETA)",
       "reCrop": "Re-crop",
       "productName": "Detected Product Name",
       "decision": {

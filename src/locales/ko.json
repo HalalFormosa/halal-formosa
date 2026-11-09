@@ -310,7 +310,7 @@
         "found": "성분 발견! 집중 중...",
         "notFound": "성분이 발견되지 않아 계속 보관하세요."
       },
-      "label": "Auto Scan"
+      "label": "Auto Capture"
     },
     "scan": {
       "camera": "카메라",

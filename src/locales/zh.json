@@ -397,8 +397,8 @@
       "gotIt": "了解"
     },
     "liveVerdict": {
-      "label": "即時判定",
-      "help": "什麼是即時判定？"
+      "label": "即時掃描",
+      "help": "什麼是即時掃描？"
     },
     "autoScan": {
       "title": "自動掃描",
@@ -411,13 +411,13 @@
         "found": "找到成分！對焦中...",
         "notFound": "未找到成分，請繼續保持..."
       },
-      "label": "Auto Scan"
+      "label": "自動拍攝"
     },
     "scan": {
       "takePhoto": "拍照",
       "otherWays": "其他掃描方式",
       "galleryHint": "選擇照片",
-      "autoHint": "掃描一次",
+      "autoHint": "就緒即拍",
       "liveHint": "即時",
       "beta": "測試版",
       "camera": "相機",

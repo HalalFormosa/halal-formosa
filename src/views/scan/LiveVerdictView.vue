@@ -34,7 +34,7 @@
           </button>
           <span class="experimental-pill">Experimental</span>
           <div class="top-actions">
-            <button class="round-btn" aria-label="What is Live Verdict?" @click="helpOpen = true">
+            <button class="round-btn" aria-label="What is Live Scan?" @click="helpOpen = true">
               <ion-icon :icon="helpCircleOutline" />
             </button>
             <button v-if="running" class="round-btn" :aria-label="torchOn ? 'Turn torch off' : 'Turn torch on'" @click="toggleTorch">
@@ -46,7 +46,7 @@
         <div class="bottom-card" :class="'bottom-card--' + verdictClass">
           <template v-if="!supported">
             <div class="verdict-title">Not available here</div>
-            <div class="verdict-sub">Live Verdict needs the Halal Formosa app on your phone. Use Scan Ingredients on this device.</div>
+            <div class="verdict-sub">Live Scan needs the Halal Formosa app on your phone. Use Scan Ingredients on this device.</div>
           </template>
           <template v-else-if="error">
             <div class="verdict-title">Can't start</div>

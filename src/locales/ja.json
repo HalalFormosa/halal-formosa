@@ -310,7 +310,7 @@
         "found": "材料が見つかりました！ 焦点を合わせています...",
         "notFound": "材料が見つかりません。そのままにしておいてください..."
       },
-      "label": "Auto Scan"
+      "label": "Auto Capture"
     },
     "scan": {
       "camera": "カメラ",

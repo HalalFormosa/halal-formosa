@@ -310,7 +310,7 @@
         "found": "Malzemeler Bulundu! Odaklanıyor...",
         "notFound": "Malzemeler bulunamadı, beklemeye devam edin..."
       },
-      "label": "Auto Scan"
+      "label": "Auto Capture"
     },
     "scan": {
       "camera": "Kamera",

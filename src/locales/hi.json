@@ -310,7 +310,7 @@
         "found": "सामग्री मिल गई! ध्यान केंद्रित करना...",
         "notFound": "सामग्री नहीं मिली, पकड़े रहें..."
       },
-      "label": "Auto Scan"
+      "label": "Auto Capture"
     },
     "scan": {
       "camera": "कैमरा",
