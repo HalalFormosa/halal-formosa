@@ -40,7 +40,7 @@
                 {{ $t('home.added') }} {{ fromNowToTaipei(newsItem.created_at) }}
               </template>
             </p>
-            <div class="article-content" v-html="newsItem.content"></div>
+            <div class="article-content" v-html="safeContent"></div>
 
             <!-- Sponsored card — appears here (scrolled into view) rather
                  than glued to the top, so it doesn't delay the article
@@ -99,6 +99,7 @@ import {
   onIonViewDidEnter
 } from '@ionic/vue';
 import { useRoute } from 'vue-router';
+import DOMPurify from 'dompurify'
 import { supabase } from '@/plugins/supabaseClient';
 import { ActivityLogService } from '@/services/ActivityLogService'
 import type { User } from '@supabase/supabase-js'
@@ -111,6 +112,9 @@ const user = ref<User | null>(null)
 
 const route = useRoute();
 const newsItem = ref<any>(null);
+// News HTML comes from a rich-text editor (Quill), so strip scripts and event
+// handlers before rendering it with v-html.
+const safeContent = computed(() => DOMPurify.sanitize(newsItem.value?.content ?? ''));
 const authorProfile = ref<{ display_name: string | null; public_profile: boolean } | null>(null);
 const loading = ref(true);
 const isNative = ref(Capacitor.isNativePlatform())
