@@ -593,6 +593,10 @@
       "disclaimerNote": "Hasil hanya untuk referensi. Selalu verifikasi dengan sumber terpercaya sebelum dikonsumsi.",
       "gotIt": "Mengerti"
     },
+    "liveVerdict": {
+      "label": "Live Verdict",
+      "help": "Apa itu Live Verdict?"
+    },
     "autoScan": {
       "title": "Pindai Otomatis",
       "hint": "Posisikan komposisi di dalam bingkai",
@@ -614,6 +618,12 @@
       "viewDetails": "Lihat Detail"
     },
     "scan": {
+      "takePhoto": "Ambil foto",
+      "otherWays": "Cara lain memindai",
+      "galleryHint": "Pilih foto",
+      "autoHint": "Baca sekali",
+      "liveHint": "Langsung",
+      "beta": "Beta",
       "decision": {
         "question": "Apa yang akan Anda lakukan dengan produk ini?",
         "use": "Beli / makan",

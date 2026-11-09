@@ -396,6 +396,10 @@
       "disclaimerNote": "結果僅供參考。食用前請務必向可靠來源確認。",
       "gotIt": "了解"
     },
+    "liveVerdict": {
+      "label": "即時判定",
+      "help": "什麼是即時判定？"
+    },
     "autoScan": {
       "title": "自動掃描",
       "hint": "請將成分對準在框內",
@@ -410,6 +414,12 @@
       "label": "Auto Scan"
     },
     "scan": {
+      "takePhoto": "拍照",
+      "otherWays": "其他掃描方式",
+      "galleryHint": "選擇照片",
+      "autoHint": "掃描一次",
+      "liveHint": "即時",
+      "beta": "測試版",
       "camera": "相機",
       "gallery": "相簿",
       "auto": "自動掃描 (測試版)",

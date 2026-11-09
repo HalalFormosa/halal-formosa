@@ -285,6 +285,10 @@
       "disclaimerNote": "Keputusan adalah untuk rujukan sahaja. Sentiasa sahkan dengan sumber dipercayai sebelum makan.",
       "gotIt": "Faham"
     },
+    "liveVerdict": {
+      "label": "Live Verdict",
+      "help": "Apakah Live Verdict?"
+    },
     "autoScan": {
       "title": "Pengimbas Auto",
       "hint": "Letakkan bahan di dalam bingkai",
@@ -299,6 +303,12 @@
       "label": "Auto Scan"
     },
     "scan": {
+      "takePhoto": "Ambil gambar",
+      "otherWays": "Cara lain mengimbas",
+      "galleryHint": "Pilih gambar",
+      "autoHint": "Baca sekali",
+      "liveHint": "Masa nyata",
+      "beta": "Beta",
       "decision": {
         "question": "Apakah tindakan anda terhadap produk ini?",
         "use": "Beli / makan",
