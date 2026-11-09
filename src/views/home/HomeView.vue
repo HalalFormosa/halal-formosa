@@ -48,6 +48,17 @@
                 <ion-icon :icon="compassOutline" slot="start" />
                 {{ $t('home.qibla') }}
               </ion-button>
+
+              <ion-button
+                  size="small"
+                  fill="clear"
+                  color="carrot"
+                  class="qibla-header-btn"
+                  :aria-label="$t('prayerSettings.title')"
+                  @click="openPrayerSettings"
+              >
+                <ion-icon :icon="settingsOutline" />
+              </ion-button>
             </div>
           </div>
         </ion-card-header>
@@ -1066,6 +1077,11 @@
       </ion-content>
     </ion-popover>
 
+    <PrayerSettingsSheet
+      :is-open="showPrayerSettings"
+      @close="showPrayerSettings = false"
+    />
+
     <!-- 📢 Bottom Sheet Announcement Modal -->
     <ion-modal
       :is-open="showAnnouncement && !!announcement"
@@ -1131,6 +1147,7 @@ import {
   closeOutline,
   shieldCheckmarkOutline,
   locateOutline,
+  settingsOutline,
   cartOutline,
   constructOutline,
   chevronForwardOutline,
@@ -1161,6 +1178,8 @@ import { PrayTime } from 'praytime'
 import { useLocation, type LatLng } from '@/composables/useLocation'
 import { useHomeData } from '@/composables/useHomeData'
 import { syncPrayerWidget } from '@/composables/useWidgetSync'
+import { usePrayerSettings } from '@/composables/usePrayerSettings'
+import PrayerSettingsSheet from '@/components/PrayerSettingsSheet.vue'
 import LazySection from '@/components/LazySection.vue'
 import DailyMissions from "@/components/DailyMissions.vue"
 import YearlySurveyCard from "@/components/survey/YearlySurveyCard.vue"
@@ -2051,13 +2070,15 @@ async function fetchPrayerTimes() {
 
   const location = await getUserLocation()
 
-  const praytime = new PrayTime('MWL')
+  const cfg = prayerSettings.value
+  const praytime = new PrayTime(cfg.method)
 
   praytime
       .location([location.lat, location.lng])
       .timezone(userTimezone.value)
       .format('24h')
-      .adjust({ highLats: 'AngleBased' })
+      .adjust({ highLats: 'AngleBased', asr: cfg.asr })
+      .tune({ ...cfg.tune })
 
   const times = praytime.getTimes(new Date())
 
@@ -2074,6 +2095,17 @@ async function fetchPrayerTimes() {
 
   syncPrayerWidget(prayerTimes.value)
 }
+
+const { settings: prayerSettings } = usePrayerSettings()
+const showPrayerSettings = ref(false)
+
+function openPrayerSettings() {
+  ActivityLogService.log('home_prayer_settings_open')
+  showPrayerSettings.value = true
+}
+
+// Recompute as soon as the user saves new calculation settings.
+watch(prayerSettings, () => { fetchPrayerTimes() }, { deep: true })
 
 async function handleRefreshLocation() {
   ActivityLogService.log("home_prayer_refresh_location");
