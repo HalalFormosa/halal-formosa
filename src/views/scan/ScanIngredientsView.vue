@@ -259,10 +259,17 @@
             </div>
 
             <!-- Experimental (experiment/live-verdict): Android only, no i18n yet -->
-            <ion-button v-if="isAndroid" fill="outline" color="carrot" expand="block" style="height: 48px; margin-top: 12px;" @click="router.push('/scan/live')">
-              <ion-icon slot="start" :icon="eyeOutline" />
-              Live Verdict (experimental)
-            </ion-button>
+            <div v-if="liveVerdictSupported" style="display: flex; gap: 8px; margin-top: 12px; align-items: center;">
+              <ion-button fill="outline" color="carrot" style="flex: 1; height: 48px; margin: 0;" @click="router.push('/scan/live')">
+                <ion-icon slot="start" :icon="isDonor ? eyeOutline : lockClosedOutline" />
+                Live Verdict (experimental)
+                <span v-if="!isDonor" class="pro-pill">PRO</span>
+              </ion-button>
+              <ion-button fill="clear" color="carrot" style="margin: 0; height: 48px;" aria-label="What is Live Verdict?" @click="liveHelpOpen = true">
+                <ion-icon slot="icon-only" :icon="helpCircleOutline" />
+              </ion-button>
+            </div>
+            <LiveVerdictHelpModal v-if="liveVerdictSupported"v-model:open="liveHelpOpen" />
           </ion-card-content>
         </ion-card>
       </div>
@@ -711,6 +718,7 @@ import {
 import AppHeader from '@/components/AppHeader.vue'
 import IngredientHighlightImage from '@/components/scan/IngredientHighlightImage.vue'
 import ScanDecisionPrompt from '@/components/ScanDecisionPrompt.vue'
+import LiveVerdictHelpModal from '@/components/scan/LiveVerdictHelpModal.vue'
 import { buildScanDecisionNotice, type ScanDecisionChoice } from '@/utils/scanDecisionNotice'
 import {ref, onUnmounted, computed, nextTick} from 'vue'
 import { Swiper, SwiperSlide } from 'swiper/vue'
@@ -748,6 +756,7 @@ dayjs.extend(relativeTime)
 
 import { showLevelPlayRewardedAd } from '@/lib/levelplay'
 import { Capacitor } from '@capacitor/core'
+import { isLiveVerdictSupported } from '@/utils/liveScanPlatform'
 import HouseAdCard from '@/components/ads/HouseAdCard.vue'
 import { ActivityLogService } from "@/services/ActivityLogService";
 import { logPaywallCancelled, logPaywallFailed, logPaywallRestored } from '@/utils/paywallLogging'
@@ -857,7 +866,8 @@ const showMuslimFriendly = ref(false)
 const showLimitToast = ref(false);
 const bonusScans = ref(0)
 const isNative = ref(Capacitor.isNativePlatform())
-const isAndroid = Capacitor.getPlatform() === 'android'
+const liveVerdictSupported = isLiveVerdictSupported()
+const liveHelpOpen = ref(false)
 
 // Flip to true to bring back the "Watch Ad +1 Scan" button. Off for now: the
 // rewarded-ad flow isn't ready, so bonus scans come from contributions only.
@@ -1180,10 +1190,15 @@ async function logIngredientScan({
   source: 'camera' | 'gallery'
   errorMessage?: string | null
   startTime?: number | null
-}) {
+}): Promise<boolean> {
+  // Resolves true only when a successful scan row was actually stored. The daily-limit trigger can
+  // reject the insert, and callers must not record a "scan success" activity event in that case.
   try {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return console.warn('⏩ No user logged in, skipping log');
+    if (!user) {
+      console.warn('⏩ No user logged in, skipping log');
+      return false;
+    }
 
     const success = !!ingredientsTextZh.value?.trim() || !!ingredientsText.value?.trim();
 
@@ -1210,10 +1225,15 @@ async function logIngredientScan({
       }
     ]);
 
-    if (error) console.error('❌ Log insert failed:', error);
-    else console.log(errorMessage ? '⚠️ Logged failed scan' : '✅ Logged successful scan');
+    if (error) {
+      console.error('❌ Log insert failed:', error);
+      return false;
+    }
+    console.log(errorMessage ? '⚠️ Logged failed scan' : '✅ Logged successful scan');
+    return success;
   } catch (err) {
     console.error('Error logging scan:', err);
+    return false;
   }
 }
 
@@ -1492,16 +1512,19 @@ async function handleConfirmCrop() {
       // Logic moved up to handleConfirmCrop level
 
 
-      await ActivityLogService.log("scan_ingredients_success", {
-        product_name: productName.value || "Unknown",
-        auto_status: autoStatus.value,
-        ingredient_count: ingredientHighlights.value?.length ?? 0,
-      });
-
-      await logIngredientScan({
+      const stored = await logIngredientScan({
         source: currentSource.value || 'camera',
         startTime: ocrStartTime.value
       })
+
+      // Only count it as a success if the scan log accepted the row (the daily limit can reject it).
+      if (stored) {
+        await ActivityLogService.log("scan_ingredients_success", {
+          product_name: productName.value || "Unknown",
+          auto_status: autoStatus.value,
+          ingredient_count: ingredientHighlights.value?.length ?? 0,
+        });
+      }
 
 
 
@@ -1741,17 +1764,19 @@ async function handleAutoDetected(result: any) {
           // Auto Scan already counted/logged this the moment the live detection
           // succeeded (see AutoScanView.vue's onStableResult) — don't double it here.
           if (!result.loggedAsScan) {
-            await ActivityLogService.log("scan_ingredients_success", {
-              product_name: productName.value || "Unknown",
-              auto_status: autoStatus.value,
-              ingredient_count: ingredientHighlights.value?.length ?? 0,
-              source: "auto_scan"
-            });
-
-            await logIngredientScan({
+            const stored = await logIngredientScan({
               source: "camera",
               startTime: ocrStartTime.value
             })
+
+            if (stored) {
+              await ActivityLogService.log("scan_ingredients_success", {
+                product_name: productName.value || "Unknown",
+                auto_status: autoStatus.value,
+                ingredient_count: ingredientHighlights.value?.length ?? 0,
+                source: "auto_scan"
+              });
+            }
 
             await loadTodayScanCount()
           }

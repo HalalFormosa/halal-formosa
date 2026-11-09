@@ -20,21 +20,33 @@
           </div>
         </template>
 
+        <!-- Only text inside this box is read; the verdict card at the bottom is never scanned. -->
+        <div v-if="supported && running" class="scan-box" :class="'scan-box--' + verdictClass" :style="scanBoxStyle" aria-hidden="true">
+          <span class="scan-hint" :class="'scan-hint--' + verdictClass">{{ searching ? 'Find 成分 / 原料 and place it in the box' : verdict === 'scanning' ? 'Reading…' : verdict }}</span>
+        </div>
+
+        <!-- Points at the ingredient heading so the user knows they are in the right place. -->
+        <div v-for="(m, i) in headerBoxes" :key="'hdr' + i" class="hdr-box" :style="{ left: m.x + 'px', top: m.y + 'px', width: m.width + 'px', height: m.height + 'px' }"></div>
+
         <div class="top-bar">
           <button class="round-btn" aria-label="Close" @click="close">
             <ion-icon :icon="closeOutline" />
           </button>
           <span class="experimental-pill">Experimental</span>
-          <button v-if="running" class="round-btn" :aria-label="torchOn ? 'Turn torch off' : 'Turn torch on'" @click="toggleTorch">
-            <ion-icon :icon="torchOn ? flashlight : flashlightOutline" />
-          </button>
-          <span v-else class="round-btn-spacer" />
+          <div class="top-actions">
+            <button class="round-btn" aria-label="What is Live Verdict?" @click="helpOpen = true">
+              <ion-icon :icon="helpCircleOutline" />
+            </button>
+            <button v-if="running" class="round-btn" :aria-label="torchOn ? 'Turn torch off' : 'Turn torch on'" @click="toggleTorch">
+              <ion-icon :icon="torchOn ? flashlight : flashlightOutline" />
+            </button>
+          </div>
         </div>
 
         <div class="bottom-card" :class="'bottom-card--' + verdictClass">
           <template v-if="!supported">
-            <div class="verdict-title">Android only for now</div>
-            <div class="verdict-sub">Live Verdict needs the Android app. Use Scan Ingredients on this device.</div>
+            <div class="verdict-title">Not available here</div>
+            <div class="verdict-sub">Live Verdict needs the Halal Formosa app on your phone. Use Scan Ingredients on this device.</div>
           </template>
           <template v-else-if="error">
             <div class="verdict-title">Can't start</div>
@@ -72,6 +84,7 @@
         </div>
 
         <ScanModeSwitcher current="live" class="live-switcher" />
+        <LiveVerdictHelpModal v-model:open="helpOpen" />
       </div>
     </ion-content>
   </ion-page>
@@ -80,25 +93,30 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { IonPage, IonContent, IonIcon, IonButton, IonSpinner, onIonViewDidEnter, onIonViewWillLeave } from '@ionic/vue'
-import { closeOutline, flashlight, flashlightOutline } from 'ionicons/icons'
+import { closeOutline, flashlight, flashlightOutline, helpCircleOutline } from 'ionicons/icons'
 import { useRouter } from 'vue-router'
-import { Capacitor } from '@capacitor/core'
+import { isLiveVerdictSupported } from '@/utils/liveScanPlatform'
 import useLiveVerdict from '@/composables/useLiveVerdict'
 import useLiveContribute from '@/composables/useLiveContribute'
 import ScanModeSwitcher from '@/components/scan/ScanModeSwitcher.vue'
+import LiveVerdictHelpModal from '@/components/scan/LiveVerdictHelpModal.vue'
 import { countMuslimFriendly } from '@/utils/liveVerdictTracker'
 import { contributePromptKind } from '@/utils/liveContribute'
 import { isContributionLimitReached } from '@/composables/useScanQuotaReward'
 import { extractIonColor } from '@/utils/ingredientHelpers'
+import { LIVE_SCAN_REGION } from '@/utils/liveScanRegion'
+import { isDonor } from '@/composables/useSubscriptionStatus'
+import { presentProPaywall } from '@/utils/proPaywall'
 import { mapImageBoxToView, liveMatchKey, liveDisplayName, liveEnglishName } from '@/utils/liveVerdictMatcher'
 
 const router = useRouter()
-const supported = Capacitor.getPlatform() === 'android'
+const supported = isLiveVerdictSupported()
+const helpOpen = ref(false)
 
 const {
   running, error, verdict, productName, productNameEn, translatingName, lookupName, productMatch,
-  highlights, frameSize, torchOn, start, stop, toggleTorch,
-} = useLiveVerdict()
+  highlights, frameSize, torchOn, ingredientsFound, headerMarks, start, stop, toggleTorch,
+} = useLiveVerdict({ getViewSize: () => viewSize.value })
 
 const { busy, busyMessage, error: contributeError, contribute } = useLiveContribute({ stopCamera: stop })
 
@@ -139,6 +157,16 @@ function measure() {
   if (el) viewSize.value = { width: el.clientWidth, height: el.clientHeight }
 }
 
+const scanBoxStyle = computed(() => {
+  const r = LIVE_SCAN_REGION
+  return {
+    left: r.left * 100 + '%',
+    top: r.top * 100 + '%',
+    width: r.width * 100 + '%',
+    height: r.height * 100 + '%',
+  }
+})
+
 const boxes = computed(() => {
   if (!frameSize.value.width) return []
   const out: { key: string; x: number; y: number; width: number; height: number; color: string; ion: string; label: string }[] = []
@@ -161,9 +189,25 @@ const boxes = computed(() => {
   return out
 })
 
+const headerBoxes = computed(() => {
+  if (!frameSize.value.width) return []
+  return headerMarks.value.map(m => ({ text: m.text, ...mapImageBoxToView(m.box, frameSize.value, viewSize.value) }))
+})
+
 const flagged = computed(() =>
   highlights.value.filter(h => ['danger', 'warning'].includes(extractIonColor(h.color))),
 )
+
+const MAX_FLAGGED_SHOWN = 3
+
+// Haram first, then Syubhah; show the top few names and fold the rest into "+N".
+const flaggedSummary = computed(() => {
+  const rank = (h: (typeof flagged.value)[number]) => (extractIonColor(h.color) === 'danger' ? 0 : 1)
+  const names = [...flagged.value].sort((a, b) => rank(a) - rank(b)).map(liveDisplayName)
+  const shown = names.slice(0, MAX_FLAGGED_SHOWN).join(', ')
+  const extra = names.length - MAX_FLAGGED_SHOWN
+  return extra > 0 ? `${shown} +${extra}` : shown
+})
 
 const friendlyCount = computed(() => countMuslimFriendly(highlights.value))
 
@@ -172,13 +216,20 @@ const verdictClass = computed(() => {
   return { scanning: 'idle', Haram: 'danger', Syubhah: 'warning', 'Muslim-friendly': 'primary' }[verdict.value]
 })
 
-const verdictTitle = computed(() => (verdict.value === 'scanning' ? 'Point at the ingredient list' : verdict.value))
+const searching = computed(() => running.value && !ingredientsFound.value)
+
+const verdictTitle = computed(() => {
+  if (searching.value) return 'Find the ingredient list'
+  return verdict.value === 'scanning' ? 'Reading the ingredients…' : verdict.value
+})
 
 const verdictSub = computed(() => {
+  if (headerMarks.value.length && verdict.value === 'scanning') return 'Ingredient list found. Keep it inside the box.'
+  if (searching.value) return 'Move the label until the 成分 / 原料 heading is inside the box.'
   switch (verdict.value) {
     case 'Haram':
     case 'Syubhah':
-      return 'Flagged: ' + flagged.value.map(liveDisplayName).join(', ')
+      return 'Flagged: ' + flaggedSummary.value
     case 'Muslim-friendly':
       return friendlyCount.value > 0
         ? `${friendlyCount.value} Muslim-friendly ingredient${friendlyCount.value === 1 ? '' : 's'} detected. None flagged so far.`
@@ -203,7 +254,14 @@ onBeforeUnmount(() => {
 
 onIonViewDidEnter(async () => {
   measure()
-  if (supported) void start()
+  if (supported) {
+    // Pro only. Also covers opening /scan/live directly, not just the mode switcher.
+    if (!isDonor.value && !(await presentProPaywall('live_verdict'))) {
+      router.back()
+      return
+    }
+    void start()
+  }
   try {
     contributionLimitReached.value = await isContributionLimitReached()
   } catch {
@@ -224,6 +282,38 @@ onIonViewWillLeave(() => {
   inset: 0;
   overflow: hidden;
   pointer-events: none;
+}
+.scan-box {
+  position: absolute;
+  border: 2px dashed rgba(255, 255, 255, 0.9);
+  border-radius: 12px;
+  box-sizing: border-box;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.35);
+}
+.scan-box--danger { border: 3px solid var(--ion-color-danger); }
+.scan-box--warning { border: 3px solid var(--ion-color-warning); }
+.scan-box--primary { border: 3px solid var(--ion-color-primary); }
+.scan-hint.scan-hint--danger { background: var(--ion-color-danger); color: #fff; font-weight: 700; }
+.scan-hint.scan-hint--warning { background: var(--ion-color-warning); color: #000; font-weight: 700; }
+.scan-hint.scan-hint--primary { background: var(--ion-color-primary); color: #fff; font-weight: 700; }
+.scan-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 6px;
+  transform: translateX(-50%);
+  max-width: 90%;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.hdr-box {
+  position: absolute;
+  border: 2px solid #fff;
+  border-radius: 6px;
+  box-sizing: border-box;
 }
 .hl-box {
   position: absolute;
@@ -260,6 +350,10 @@ onIonViewWillLeave(() => {
   align-items: center;
   justify-content: space-between;
   pointer-events: auto;
+}
+.top-actions {
+  display: flex;
+  gap: 8px;
 }
 .round-btn,
 .round-btn-spacer {

@@ -24,6 +24,7 @@
 		7182576EFFCCB2C51ADA53DC /* RecaptchaNativePlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = F17A02DBAC2D0A4D29F5868C /* RecaptchaNativePlugin.swift */; };
 		83EF6771D8FF44FDC2971FDE /* HalalFormosaWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = FD83C8D3E39DB4A4B00464B8 /* HalalFormosaWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		995EBC172F0D78E493464102 /* WidgetSyncPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B73DF7B9358EA89A7D51434 /* WidgetSyncPlugin.swift */; };
+		6D2F8B4CAE305B71C9F2D1E5 /* LiveTextPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C1E7A3B9D2F4A60B8E1C0D4 /* LiveTextPlugin.swift */; };
 		9C8AE8AA118ECD51C8A4BAA1 /* Pods_OneSignalNotificationServiceExtension.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 18B8AE9E163B72B2E83DDF34 /* Pods_OneSignalNotificationServiceExtension.framework */; };
 		E439C333DC40C9C167B855CF /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 610350F28D9E01261C8C5B22 /* Foundation.framework */; };
 		E88917864B274810B8D6F86F /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED70E3254C284680B7C108CA /* ViewController.swift */; };
@@ -82,6 +83,7 @@
 		5D90D7382FD83CFE0008B36C /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
 		610350F28D9E01261C8C5B22 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 		9B73DF7B9358EA89A7D51434 /* WidgetSyncPlugin.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WidgetSyncPlugin.swift; sourceTree = "<group>"; };
+		5C1E7A3B9D2F4A60B8E1C0D4 /* LiveTextPlugin.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LiveTextPlugin.swift; sourceTree = "<group>"; };
 		AF51FD2D460BCFE21FA515B2 /* Pods-App.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-App.release.xcconfig"; path = "Pods/Target Support Files/Pods-App/Pods-App.release.xcconfig"; sourceTree = "<group>"; };
 		BFD9EC6FBA2C0359BAD084EC /* HalalFormosaWidget.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HalalFormosaWidget.swift; sourceTree = "<group>"; };
 		D27511AEEECE366B88775EE0 /* Pods_App.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_App.framework; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -175,6 +177,7 @@
 				F17A02DBAC2D0A4D29F5868C /* RecaptchaNativePlugin.swift */,
 				ED70E3254C284680B7C108CA /* ViewController.swift */,
 				9B73DF7B9358EA89A7D51434 /* WidgetSyncPlugin.swift */,
+				5C1E7A3B9D2F4A60B8E1C0D4 /* LiveTextPlugin.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -446,6 +449,7 @@
 				7182576EFFCCB2C51ADA53DC /* RecaptchaNativePlugin.swift in Sources */,
 				E88917864B274810B8D6F86F /* ViewController.swift in Sources */,
 				995EBC172F0D78E493464102 /* WidgetSyncPlugin.swift in Sources */,
+				6D2F8B4CAE305B71C9F2D1E5 /* LiveTextPlugin.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
