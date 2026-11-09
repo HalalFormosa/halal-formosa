@@ -2844,5 +2844,39 @@
       "tileAccounts": "Accounts",
       "tileActiveDays": "Active days"
     }
+  },
+  "prayerSettings": {
+    "title": "Prayer calculation",
+    "close": "Close",
+    "note": "Times are calculated. Your local mosque may differ by a few minutes.",
+    "method": "Method",
+    "asr": "Asr",
+    "asrStandard": "Standard",
+    "asrHanafi": "Hanafi",
+    "adjust": "Adjust minutes",
+    "adjustHelp": "Add or subtract minutes to match your mosque's timetable.",
+    "plus": "Add a minute to {prayer}",
+    "minus": "Subtract a minute from {prayer}",
+    "save": "Save",
+    "reset": "Reset to default",
+    "prayers": {
+      "fajr": "Fajr",
+      "dhuhr": "Dhuhr",
+      "asr": "Asr",
+      "maghrib": "Maghrib",
+      "isha": "Isha"
+    },
+    "methods": {
+      "MWL": "Muslim World League",
+      "ISNA": "ISNA (North America)",
+      "Egypt": "Egyptian General Authority",
+      "Makkah": "Umm al-Qura (Makkah)",
+      "Karachi": "University of Islamic Sciences, Karachi",
+      "Tehran": "Institute of Geophysics, Tehran",
+      "Jafari": "Shia Ithna-Ashari (Jafari)",
+      "France": "Union des Organisations Islamiques de France",
+      "Russia": "Spiritual Administration of Muslims of Russia",
+      "Singapore": "Majlis Ugama Islam Singapura"
+    }
   }
 }

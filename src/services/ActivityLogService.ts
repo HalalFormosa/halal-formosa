@@ -668,6 +668,7 @@ function resolveActivityGroup(activity: string): string | null {
         case 'home_cert_body_click':
         case 'home_viewmore_cert_bodies':
         case 'home_prayer_popover_open':
+        case 'home_prayer_settings_open':
             return 'home'
 
         /* -------------------------
