@@ -1648,6 +1648,13 @@
     "freeTier": "Penggunaan Paket Gratis",
     "proUpgrade": "Tingkatkan ke {pro} untuk simpanan tanpa batas.",
     "freeLimitReached": "Anda telah mencapai batas gratis. Tingkatkan ke Pro untuk menyimpan item tanpa batas!",
+    "limitSheet": {
+      "title": "Daftar simpanan Anda penuh",
+      "body": "Akun gratis bisa menyimpan {limit} item. Hapus satu, atau upgrade ke Pro untuk menyimpan tanpa batas.",
+      "upgrade": "Upgrade ke Pro",
+      "manage": "Kelola item tersimpan",
+      "notNow": "Nanti saja"
+    },
     "noCollections": "Belum Ada Koleksi",
     "noCollectionsDesc": "Buat folder untuk mulai mengatur item simpanan Anda!",
     "createFolder": "Buat Folder",
@@ -2420,6 +2427,13 @@
     "freeTier": "Free Tier Usage",
     "proUpgrade": "Upgrade to {pro} for unlimited saves.",
     "freeLimitReached": "You've reached your free limit. Upgrade to Pro to save unlimited locations!",
+    "limitSheet": {
+      "title": "Lokasi tersimpan Anda penuh",
+      "body": "Akun gratis bisa menyimpan {limit} lokasi. Hapus satu, atau upgrade ke Pro untuk menyimpan tanpa batas.",
+      "upgrade": "Upgrade ke Pro",
+      "manage": "Kelola lokasi tersimpan",
+      "notNow": "Nanti saja"
+    },
     "noCollections": "No Collections Yet",
     "noCollectionsDesc": "Create a folder to start organizing your saved locations!",
     "createFolder": "Create Folder",

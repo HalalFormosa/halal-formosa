@@ -1357,6 +1357,13 @@
     "freeTier": "免費版使用限制",
     "proUpgrade": "升級到 {pro} 以獲得無限儲存次數。",
     "freeLimitReached": "您已達到免費限額。升級到 Pro 以儲存無限項目！",
+    "limitSheet": {
+      "title": "您的收藏已滿",
+      "body": "免費版最多可收藏 {limit} 個項目。請移除一個，或升級 Pro 以無限收藏。",
+      "upgrade": "升級 Pro",
+      "manage": "管理已收藏項目",
+      "notNow": "稍後再說"
+    },
     "noCollections": "尚無收藏",
     "noCollectionsDesc": "創建資料夾以開始整理您的收藏項目！",
     "createFolder": "創建資料夾",
@@ -2049,6 +2056,13 @@
     "freeTier": "Free Tier Usage",
     "proUpgrade": "Upgrade to {pro} for unlimited saves.",
     "freeLimitReached": "You've reached your free limit. Upgrade to Pro to save unlimited locations!",
+    "limitSheet": {
+      "title": "您收藏的地點已滿",
+      "body": "免費版最多可收藏 {limit} 個地點。請移除一個，或升級 Pro 以無限收藏。",
+      "upgrade": "升級 Pro",
+      "manage": "管理已收藏地點",
+      "notNow": "稍後再說"
+    },
     "noCollections": "No Collections Yet",
     "noCollectionsDesc": "Create a folder to start organizing your saved locations!",
     "createFolder": "Create Folder",

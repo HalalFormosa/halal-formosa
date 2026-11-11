@@ -481,6 +481,13 @@
       </ion-content>
     </ion-modal>
 
+    <save-limit-sheet
+      v-model:open="showSaveLimitSheet"
+      kind="item"
+      @upgraded="onSaveLimitUpgraded"
+      @manage="router.push('/profile/saved-items')"
+    />
+
     <!-- Save to Folder Modal -->
     <ion-modal :is-open="showSaveModal" @didDismiss="showSaveModal = false" :initial-breakpoint="0.5" :breakpoints="[0, 0.5, 0.75]">
       <ion-content class="ion-padding">
@@ -627,7 +634,8 @@ import { userRole } from '@/composables/userProfile'
 import { isDonor } from '@/composables/useSubscriptionStatus'
 import { useAdSlotCollapsed, adSpaceStyle } from '@/composables/useAdFallback'
 import { ActivityLogService } from "@/services/ActivityLogService";
-import { presentProPaywall } from '@/utils/proPaywall'
+import SaveLimitSheet from '@/components/SaveLimitSheet.vue'
+import { FREE_SAVE_LIMIT } from '@/constants/savedLimits'
 import { scheduleBannerUpdate } from '@/plugins/admob'
 
 const showContributionPrompt = ref(false) // Added state
@@ -660,6 +668,7 @@ const maxVisible = 5
 const ingredientDictionary = ref<Record<string, string>>({});
 
 const showSaveModal = ref(false);
+const showSaveLimitSheet = ref(false);
 const folders = ref<{ id: string, name: string }[]>([]);
 const isItemSaved = ref(false); 
 const newFolderName = ref('');
@@ -867,16 +876,17 @@ async function loadFoldersAndSavedState() {
 async function openSaveModal() {
   await popoverController.dismiss();
 
-  if (!isItemSaved.value && !isDonor.value && totalSavedItems.value >= 5) {
-    const purchased = await presentProPaywall("save_item_limit");
-
-    if (!purchased) return;
-
-    // 🔁 Yield small delay for subscription reactive update
-    await new Promise(r => setTimeout(r, 300));
+  if (!isItemSaved.value && !isDonor.value && totalSavedItems.value >= FREE_SAVE_LIMIT) {
+    showSaveLimitSheet.value = true;
+    return;
   }
   
   showSaveModal.value = true;
+}
+
+// Pro was just bought from the limit sheet: carry on saving once the sheet has finished closing.
+function onSaveLimitUpgraded() {
+  setTimeout(() => { showSaveModal.value = true }, 300);
 }
 
 async function createNewFolder() {

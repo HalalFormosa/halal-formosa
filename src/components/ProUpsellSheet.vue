@@ -44,6 +44,8 @@ const props = withDefaults(defineProps<{
   open: boolean
   /** Activity-log source passed to the paywall, e.g. "scan_limit". */
   source: string
+  /** Extra fields logged with the paywall trigger. */
+  meta?: Record<string, unknown>
   title: string
   message: string
   upgradeLabel: string
@@ -54,6 +56,7 @@ const props = withDefaults(defineProps<{
   canUpgrade?: boolean
   icon?: string
 }>(), {
+  meta: undefined,
   secondaryLabel: undefined,
   canUpgrade: true,
   icon: scanOutline,
@@ -74,7 +77,7 @@ async function upgrade() {
   if (busy.value) return
   busy.value = true
   try {
-    const ok = await presentProPaywall(props.source)
+    const ok = await presentProPaywall(props.source, { meta: props.meta })
     if (!ok) return
     closedBy = 'upgraded'
     emit('update:open', false)

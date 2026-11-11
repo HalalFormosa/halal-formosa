@@ -47,12 +47,20 @@ describe('ProUpsellSheet', () => {
         const w = mountIt()
         await w.findAll('button')[0].trigger('click')
         await vi.waitFor(() => expect(w.emitted('upgraded')).toHaveLength(1))
-        expect(state.present).toHaveBeenCalledWith('scan_limit')
+        expect(state.present).toHaveBeenCalledWith('scan_limit', { meta: undefined })
         expect(w.emitted('update:open')?.[0]).toEqual([false])
 
         // The dismissal that follows must not read as "user walked away".
         w.findComponent(IonModal).vm.$emit('didDismiss')
         expect(w.emitted('dismissed')).toBeUndefined()
+    })
+
+    it('passes extra log fields through to the paywall', async () => {
+        state.present.mockResolvedValue(true)
+        const w = mountIt({ meta: { location_id: 7 } })
+        await w.findAll('button')[0].trigger('click')
+        await vi.waitFor(() => expect(state.present).toHaveBeenCalled())
+        expect(state.present).toHaveBeenCalledWith('scan_limit', { meta: { location_id: 7 } })
     })
 
     it('stays open when the paywall is cancelled', async () => {

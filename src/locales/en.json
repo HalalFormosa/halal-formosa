@@ -1523,6 +1523,13 @@
     "freeTier": "Free Tier Usage",
     "proUpgrade": "Upgrade to {pro} for unlimited saves.",
     "freeLimitReached": "You've reached your free limit. Upgrade to Pro to save unlimited items!",
+    "limitSheet": {
+      "title": "Your saved list is full",
+      "body": "Free lists hold {limit} items. Remove one, or go Pro to save unlimited items.",
+      "upgrade": "Go Pro",
+      "manage": "Manage saved items",
+      "notNow": "Not now"
+    },
     "noCollections": "No Collections Yet",
     "noCollectionsDesc": "Create a folder to start organizing your saved items!",
     "createFolder": "Create Folder",
@@ -1554,6 +1561,13 @@
     "freeTier": "Free Tier Usage",
     "proUpgrade": "Upgrade to {pro} for unlimited saves.",
     "freeLimitReached": "You've reached your free limit. Upgrade to Pro to save unlimited locations!",
+    "limitSheet": {
+      "title": "Your saved locations are full",
+      "body": "Free lists hold {limit} locations. Remove one, or go Pro to save unlimited locations.",
+      "upgrade": "Go Pro",
+      "manage": "Manage saved locations",
+      "notNow": "Not now"
+    },
     "noCollections": "No Collections Yet",
     "noCollectionsDesc": "Create a folder to start organizing your saved locations!",
     "createFolder": "Create Folder",
