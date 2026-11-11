@@ -288,7 +288,6 @@
             </div>
 
             <div v-if="liveVerdictSupported" class="mode-help-row">
-              <span class="beta-pill">{{ $t('scanIngredients.scan.beta') }}</span>
               <button type="button" class="mode-help-link" @click="liveHelpOpen = true">
                 {{ $t('scanIngredients.liveVerdict.help') }}
                 <ion-icon :icon="helpCircleOutline" />
@@ -2378,15 +2377,6 @@ onUnmounted(() => {
   justify-content: center;
   gap: 8px;
   margin-top: 12px;
-}
-
-.beta-pill {
-  padding: 1px 8px;
-  border-radius: 8px;
-  background: var(--ion-color-step-100, rgba(128, 128, 128, 0.18));
-  color: var(--ion-color-medium);
-  font-size: 11px;
-  font-weight: 600;
 }
 
 .mode-help-link {

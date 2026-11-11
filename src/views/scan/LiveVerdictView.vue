@@ -32,7 +32,6 @@
           <button class="round-btn" aria-label="Close" @click="close">
             <ion-icon :icon="closeOutline" />
           </button>
-          <span class="experimental-pill">Experimental</span>
           <div class="top-actions">
             <button class="round-btn" aria-label="What is Live Scan?" @click="helpOpen = true">
               <ion-icon :icon="helpCircleOutline" />
@@ -369,14 +368,6 @@ onIonViewWillLeave(() => {
   background: rgba(0, 0, 0, 0.55);
   color: #fff;
   font-size: 22px;
-}
-.experimental-pill {
-  padding: 4px 12px;
-  border-radius: 999px;
-  background: var(--ion-color-carrot, #e67e22);
-  color: #000;
-  font-size: 12px;
-  font-weight: 700;
 }
 .bottom-card {
   position: absolute;

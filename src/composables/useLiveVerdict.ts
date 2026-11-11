@@ -62,7 +62,7 @@ async function translateToEnglish(text: string): Promise<string | null> {
 }
 
 /**
- * Live "point the camera and read the verdict" mode (experimental; Android and iOS).
+ * Live "point the camera and read the verdict" mode (Android and iOS).
  * Camera frames are analysed on the device (ML Kit on Android, Apple Vision on iOS) and discarded; this composable
  * only ever sees the recognised text and its boxes.
  */
