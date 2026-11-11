@@ -344,6 +344,8 @@
               :status="autoStatus"
               :shown-status="displayStatus"
               :in-database="productFoundInDb"
+              :scan-log-id="decisionScanLogId"
+              :flagged-ingredients="flaggedForDecision"
               @answered="onDecisionAnswered"
           />
 
@@ -751,6 +753,7 @@ import ScanLimitSheet from '@/components/scan/ScanLimitSheet.vue'
 import AiExplanationTeaser from '@/components/scan/AiExplanationTeaser.vue'
 import { canEarnMoreScans } from '@/services/ScanLimitService'
 import { buildScanDecisionNotice, type ScanDecisionChoice } from '@/utils/scanDecisionNotice'
+import { flaggedIngredientNames, type ScanLogId } from '@/utils/scanDecisionLog'
 import {ref, onUnmounted, computed, nextTick} from 'vue'
 import { Swiper, SwiperSlide } from 'swiper/vue'
 import { Autoplay, Pagination } from 'swiper/modules'
@@ -815,6 +818,9 @@ const STEP_CAPTURE = 0
 const STEP_RESULTS = 1
 // Bumped once per new scan result; ScanDecisionPrompt re-rolls on each change.
 const decisionPromptKey = ref(0)
+// ingredient_scan_logs.id of the scan on screen (null when its log insert failed or was skipped);
+// passed to ScanDecisionPrompt so its activity events can point back at the scan.
+const decisionScanLogId = ref<ScanLogId>(null)
 
 // Tell the team (Discord only, no user identity) what was scanned and what the user decided.
 // The type contains "product" on purpose: notify-event routes those to the contributions channel.
@@ -1216,6 +1222,8 @@ const dangerousHighlights = computed(() =>
 const friendlyHighlights = computed(() => 
   ingredientHighlights.value.filter((h: IngredientHighlight) => extractIonColor(h.color) === 'primary')
 )
+// Same flagged set the result screen highlights, as short English names for the decision event.
+const flaggedForDecision = computed(() => flaggedIngredientNames(dangerousHighlights.value))
 // Name of the main flagged ingredient, used to personalise the free-user AI teaser.
 const teaserIngredient = computed(() => {
   const h = dangerousHighlights.value[0]
@@ -1240,6 +1248,7 @@ async function logIngredientScan({
 }): Promise<boolean> {
   // Resolves true only when a successful scan row was actually stored. The daily-limit trigger can
   // reject the insert, and callers must not record a "scan success" activity event in that case.
+  decisionScanLogId.value = null // a new scan: never keep the previous scan's id
   try {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
@@ -1253,7 +1262,7 @@ async function logIngredientScan({
     const info = await Device.getInfo();
     const { model, platform } = info;
 
-    const { error } = await supabase.from('ingredient_scan_logs').insert([
+    const { data: inserted, error } = await supabase.from('ingredient_scan_logs').insert([
       {
         user_id: user.id,
         product_name: productName.value || 'Unknown Product',
@@ -1270,12 +1279,13 @@ async function logIngredientScan({
         device_model: model,
         platform
       }
-    ]);
+    ]).select('id').maybeSingle();
 
     if (error) {
       console.error('❌ Log insert failed:', error);
       return false;
     }
+    decisionScanLogId.value = inserted?.id ?? null;
     console.log(errorMessage ? '⚠️ Logged failed scan' : '✅ Logged successful scan');
     return success;
   } catch (err) {
@@ -1715,6 +1725,9 @@ async function handleAutoDetected(result: any) {
     showLimitSheet.value = true
     return
   }
+
+  // Auto Capture may have logged this scan already; if so, reuse its row id for the decision events.
+  decisionScanLogId.value = result.loggedAsScan ? (result.scanLogId ?? null) : null
 
   currentSource.value = 'camera'
   const file = new File([blob], `auto-ingredients-${Date.now()}.jpg`, { type: 'image/jpeg' })

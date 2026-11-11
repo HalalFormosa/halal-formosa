@@ -64,6 +64,8 @@ describe('ScanDecisionPrompt', () => {
             shown_status: 'Muslim-friendly',
             in_database: true,
             source: 'ingredient_scan',
+            scan_log_id: null,
+            flagged_ingredients: [],
         })
         expect(w.find('.decision-thanks').exists()).toBe(true)
         expect(w.findAll('button.decision-btn')).toHaveLength(0)
@@ -82,7 +84,7 @@ describe('ScanDecisionPrompt', () => {
         const w = factory({ scanKey: 1, status: 'Syubhah' })
         const shown = () => vi.mocked(ActivityLogService.log).mock.calls.filter(([a]) => a === 'scan_decision_shown')
         expect(shown()).toHaveLength(1)
-        expect(shown()[0][1]).toEqual({ auto_status: 'Syubhah', source: 'ingredient_scan' })
+        expect(shown()[0][1]).toEqual({ auto_status: 'Syubhah', source: 'ingredient_scan', scan_log_id: null })
 
         // answering must not log "shown" again
         await w.find('.decision-btn-use').trigger('click')
@@ -95,6 +97,32 @@ describe('ScanDecisionPrompt', () => {
         vi.clearAllMocks()
         factory({ scanKey: 1, status: 'No ingredients detected' })
         expect(shown()).toHaveLength(0)
+    })
+
+    it('puts the scan log id on both events and the flagged ingredients on the answer only', async () => {
+        vi.spyOn(Math, 'random').mockReturnValue(0)
+        const w = mount(ScanDecisionPrompt, {
+            props: { scanKey: 1, status: 'Haram', scanLogId: 'log-9', flaggedIngredients: ['lard', 'e120'] },
+            global: { mocks: { $t: (k: string) => k }, stubs: { IonIcon: true } },
+        })
+        const calls = () => vi.mocked(ActivityLogService.log).mock.calls
+
+        const shown = calls().find(([a]) => a === 'scan_decision_shown')!
+        expect(shown[1]).toEqual({ auto_status: 'Haram', source: 'ingredient_scan', scan_log_id: 'log-9' })
+
+        await w.find('.decision-btn-skip').trigger('click')
+        const decision = calls().find(([a]) => a === 'scan_decision')!
+        expect(decision[1]).toMatchObject({ choice: 'skip', scan_log_id: 'log-9', flagged_ingredients: ['lard', 'e120'] })
+    })
+
+    it('still logs when the logging call rejects, and never blocks the answer', async () => {
+        vi.spyOn(Math, 'random').mockReturnValue(0)
+        vi.mocked(ActivityLogService.log).mockRejectedValue(new Error('offline'))
+        const w = factory({ scanKey: 1, status: 'Syubhah' })
+        await w.find('.decision-btn-check').trigger('click')
+        await w.vm.$nextTick()
+        expect(w.find('.decision-thanks').exists()).toBe(true)
+        vi.mocked(ActivityLogService.log).mockResolvedValue(undefined)
     })
 
     it('explains how the answer is used when the info icon is tapped, and logs nothing', async () => {

@@ -46,6 +46,11 @@ import {
   searchOutline,
 } from 'ionicons/icons'
 import { ActivityLogService } from '@/services/ActivityLogService'
+import {
+  buildScanDecisionDetail,
+  buildScanDecisionShownDetail,
+  type ScanLogId,
+} from '@/utils/scanDecisionLog'
 
 /**
  * One-tap "what will you do with this product?" question shown under a scan
@@ -64,10 +69,14 @@ const props = withDefaults(
       shownStatus?: string | null
       /** Whether the scanned product is already in our database (null = not checked yet). */
       inDatabase?: boolean | null
+      /** ingredient_scan_logs.id of this scan (null/omitted when the log insert failed or was skipped). */
+      scanLogId?: ScanLogId
+      /** English names of the ingredients that caused the verdict; logged with the answer only. */
+      flaggedIngredients?: string[]
     }>(),
     // Without an explicit default Vue turns an omitted boolean prop into `false`,
     // which would wrongly log "not in database" for an unknown status.
-    { shownStatus: undefined, inDatabase: undefined }
+    { shownStatus: undefined, inDatabase: undefined, scanLogId: null, flaggedIngredients: () => [] }
 )
 
 const emit = defineEmits<{ (e: 'answered', choice: DecisionChoice): void }>()
@@ -103,10 +112,10 @@ watch(
       visible.value = !!props.status && VERDICTS.has(props.status) && Math.random() < showRate()
       if (visible.value) {
         // Fire and forget: a logging failure must never get in the user's way.
-        void ActivityLogService.log('scan_decision_shown', {
-          auto_status: props.status,
-          source: 'ingredient_scan',
-        }).catch(() => {})
+        void ActivityLogService.log(
+            'scan_decision_shown',
+            buildScanDecisionShownDetail({ autoStatus: props.status, scanLogId: props.scanLogId })
+        ).catch(() => {})
       }
     },
     { immediate: true }
@@ -117,13 +126,18 @@ function choose(choice: DecisionChoice) {
   answered.value = true
   emit('answered', choice)
   // Fire and forget: a logging failure must never get in the user's way.
-  void ActivityLogService.log('scan_decision', {
-    choice,
-    auto_status: props.status, // the scan's own verdict
-    shown_status: props.shownStatus ?? props.status, // what the user saw on screen
-    in_database: props.inDatabase ?? null,
-    source: 'ingredient_scan',
-  }).catch(() => {})
+  // auto_status is the scan's own verdict; shown_status is what the user saw on screen.
+  void ActivityLogService.log(
+      'scan_decision',
+      buildScanDecisionDetail({
+        choice,
+        autoStatus: props.status,
+        shownStatus: props.shownStatus,
+        inDatabase: props.inDatabase,
+        scanLogId: props.scanLogId,
+        flaggedIngredients: props.flaggedIngredients,
+      })
+  ).catch(() => {})
 }
 </script>
 
