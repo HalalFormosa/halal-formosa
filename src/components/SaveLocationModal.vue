@@ -79,10 +79,8 @@ import { addOutline, bookmarkOutline, bookmark } from 'ionicons/icons';
 import { useI18n } from 'vue-i18n';
 import { useSavedLocations } from '@/composables/useSavedLocations';
 import { isDonor } from '@/composables/useSubscriptionStatus';
-import { Capacitor } from '@capacitor/core';
-import { RevenueCatUI, PAYWALL_RESULT } from '@revenuecat/purchases-capacitor-ui';
 import { ActivityLogService } from '@/services/ActivityLogService';
-import { logPaywallCancelled, logPaywallFailed, logPaywallRestored } from '@/utils/paywallLogging'
+import { presentProPaywall } from '@/utils/proPaywall';
 
 const props = defineProps<{
   isOpen: boolean;
@@ -135,38 +133,6 @@ function isLocationInFolder(folderId: string): boolean {
   return savedFolderIds.value.has(folderId);
 }
 
-async function presentPaywall(): Promise<boolean> {
-  if (!Capacitor.isNativePlatform()) {
-    console.warn("[RC] Paywall can only run on native.");
-    return false;
-  }
-
-  try {
-    const { result } = await RevenueCatUI.presentPaywall();
-
-    if (result === PAYWALL_RESULT.PURCHASED || result === PAYWALL_RESULT.RESTORED) {
-      // Refresh subscription state
-      const { refreshSubscriptionStatus } = await import('@/composables/useSubscriptionStatus');
-      await refreshSubscriptionStatus({ syncToServer: true });
-      
-      if (result === PAYWALL_RESULT.PURCHASED) {
-        await ActivityLogService.log("pro_purchase_success", {
-          source: "save_location_limit"
-        });
-      } else {
-        logPaywallRestored("save_location_limit");
-      }
-      return true;
-    }
-    if (result === PAYWALL_RESULT.CANCELLED) logPaywallCancelled("save_location_limit");
-    else logPaywallFailed("save_location_limit", result);
-  } catch (err) {
-    console.error("Paywall failed:", err);
-    logPaywallFailed("save_location_limit", err);
-  }
-  return false;
-}
-
 async function createNewFolder() {
   if (!newFolderName.value.trim()) return;
   
@@ -188,13 +154,9 @@ async function saveToFolder(folderId: string) {
 
   // Check free tier limit
   if (!isDonor.value && totalSavedCount.value >= 5) {
-    await ActivityLogService.log("pro_paywall_trigger", {
-      source: "save_location_limit",
-      location_id: props.locationId,
-      location_name: props.locationName
+    const purchased = await presentProPaywall("save_location_limit", {
+      meta: { location_id: props.locationId, location_name: props.locationName }
     });
-
-    const purchased = await presentPaywall();
     if (!purchased) return;
 
     // Yield small delay for subscription reactive update

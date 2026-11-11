@@ -177,9 +177,9 @@ import AppHeader from '@/components/AppHeader.vue'
 import { useHalalifyFavorites } from '@/composables/useHalalifyFavorites'
 import { useHalalifyPhrases } from '@/composables/useHalalifyPhrases'
 import type { HalalifyPhrase } from '@/data/halalifyPhrases'
-import { isDonor, refreshSubscriptionStatus } from '@/composables/useSubscriptionStatus'
+import { isDonor } from '@/composables/useSubscriptionStatus'
 import { isAdmin } from '@/composables/userProfile'
-import { RevenueCatUI, PAYWALL_RESULT } from '@revenuecat/purchases-capacitor-ui'
+import { presentProPaywall } from '@/utils/proPaywall'
 import { Capacitor, type PluginListenerHandle } from '@capacitor/core'
 import { TextToSpeech } from '@capacitor-community/text-to-speech'
 import { ActivityLogService } from '@/services/ActivityLogService'
@@ -894,18 +894,7 @@ async function presentRcPaywall() {
     return;
   }
 
-  ActivityLogService.log('pro_paywall_trigger', { source: 'halalify_view' });
-  try {
-    const { result } = await RevenueCatUI.presentPaywall();
-    if (result === PAYWALL_RESULT.PURCHASED || result === PAYWALL_RESULT.RESTORED) {
-      await refreshSubscriptionStatus({ syncToServer: true });
-      ActivityLogService.log('pro_purchase_success', {
-        source: 'halalify_view'
-      });
-    }
-  } catch (err) {
-    console.error("Paywall failed:", err);
-  }
+  await presentProPaywall('halalify_view');
 }
 
 onMounted(async () => {

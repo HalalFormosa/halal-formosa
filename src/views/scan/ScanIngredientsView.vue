@@ -785,11 +785,9 @@ import { Capacitor } from '@capacitor/core'
 import { isLiveVerdictSupported } from '@/utils/liveScanPlatform'
 import HouseAdCard from '@/components/ads/HouseAdCard.vue'
 import { ActivityLogService } from "@/services/ActivityLogService";
-import { logPaywallCancelled, logPaywallFailed, logPaywallRestored } from '@/utils/paywallLogging'
+import { presentProPaywall } from '@/utils/proPaywall'
 import { isNetworkError } from '@/utils/offlineFeedback'
 
-import { RevenueCatUI, PAYWALL_RESULT } from '@revenuecat/purchases-capacitor-ui'
-import { refreshSubscriptionStatus } from '@/composables/useSubscriptionStatus'
 import { useRouter } from 'vue-router'
 import { scheduleBannerUpdate } from '@/plugins/admob'
 import { destroyLevelPlayBanner } from '@/lib/levelplay'
@@ -1353,56 +1351,12 @@ const {
 } = useAISummary()
 
 async function presentPaywall(source = "ai_summary"): Promise<boolean> {
-  if (!Capacitor.isNativePlatform()) {
-    console.warn("[RC] Paywall can only run on native.");
-    return false;
-  }
-  try {
-    const resultParams = await RevenueCatUI.presentPaywall()
-    const paywallResult = resultParams.result || (resultParams as any)
-    switch (paywallResult) {
-      case PAYWALL_RESULT.PURCHASED:
-        await refreshSubscriptionStatus()
-        await ActivityLogService.log("pro_purchase_success", { source })
-
-        const { data: { user } } = await supabase.auth.getUser();
-        await notifyEvent(
-          'pro_purchase_success',
-          '💎 New Pro Member!',
-          `User ${user?.email ?? 'unknown'} has just subscribed to Halal Formosa Pro!`,
-          undefined,
-          {
-            source: 'scan_ingredients_view',
-            email: user?.email,
-            user_id: user?.id
-          },
-          ['discord']
-        ).catch(console.error);
-
-        return true
-      case PAYWALL_RESULT.RESTORED:
-        await refreshSubscriptionStatus()
-        logPaywallRestored(source)
-        return true
-      case PAYWALL_RESULT.CANCELLED:
-        logPaywallCancelled(source)
-        return false
-      case PAYWALL_RESULT.ERROR:
-      default:
-        logPaywallFailed(source, paywallResult)
-        return false
-    }
-  } catch (err) {
-    console.error("Paywall failed:", err)
-    logPaywallFailed(source, err)
-    return false
-  }
+  return presentProPaywall(source)
 }
 
 // Offered from the daily-scan-limit toast so the wall has an upgrade path
 // without interrupting people who would rather contribute for bonus scans.
 async function openScanLimitPaywall() {
-  await ActivityLogService.log("pro_paywall_trigger", { source: "scan_limit" })
   await presentPaywall("scan_limit")
 }
 
@@ -1413,9 +1367,6 @@ async function handleSummaryClick() {
 
   // 🚫 If not Pro → show paywall
   if (!isDonor.value) {
-    await ActivityLogService.log("pro_paywall_trigger", {
-      source: "ai_summary"
-    })
     const purchased = await presentPaywall()
     if (!purchased) return
     // 🔁 Yield small delay for subscription reactive update

@@ -624,13 +624,11 @@ import {
 } from "ionicons/icons";
 import AddProductView from "@/views/add-product/AddProductView.vue";
 import { userRole } from '@/composables/userProfile'
-import { isDonor, refreshSubscriptionStatus } from '@/composables/useSubscriptionStatus'
+import { isDonor } from '@/composables/useSubscriptionStatus'
 import { useAdSlotCollapsed, adSpaceStyle } from '@/composables/useAdFallback'
 import { ActivityLogService } from "@/services/ActivityLogService";
-import { logPaywallCancelled, logPaywallFailed, logPaywallRestored } from '@/utils/paywallLogging'
+import { presentProPaywall } from '@/utils/proPaywall'
 import { scheduleBannerUpdate } from '@/plugins/admob'
-import { RevenueCatUI, PAYWALL_RESULT } from '@revenuecat/purchases-capacitor-ui'
-import { useNotifier } from "@/composables/useNotifier";
 
 const showContributionPrompt = ref(false) // Added state
 const auditLogRef = ref<InstanceType<typeof AuditHistoryLog> | null>(null)
@@ -641,7 +639,6 @@ const ionRouter = useIonRouter()
 const router = useRouter()
 const barcode = route.params.barcode as string
 const { t } = useI18n()
-const { notifyEvent } = useNotifier()
 
 const isScrolled = ref(false)
 const handleScroll = (ev: any) => {
@@ -867,71 +864,11 @@ async function loadFoldersAndSavedState() {
   totalSavedItems.value = count || 0;
 }
 
-async function presentPaywall(): Promise<boolean> {
-  if (!Capacitor.isNativePlatform()) {
-    console.warn("[RC] Paywall can only run on native.");
-    return false;
-  }
-
-  try {
-    const { result } = await RevenueCatUI.presentPaywall();
-
-    switch (result) {
-      case PAYWALL_RESULT.PURCHASED:
-        // 🔄 Refresh subscription state
-        await refreshSubscriptionStatus({ syncToServer: true })
-
-        await ActivityLogService.log("pro_purchase_success", {
-          source: "save_item_limit"
-        })
-
-        const { data: { user } } = await supabase.auth.getUser();
-        await notifyEvent(
-          'pro_purchase_success',
-          '💎 New Pro Member!',
-          `User ${user?.email ?? 'unknown'} has just subscribed to Halal Formosa Pro!`,
-          undefined,
-          {
-            source: 'item_details_view',
-            email: user?.email,
-            user_id: user?.id
-          },
-          ['discord']
-        ).catch(console.error);
-
-        return true
-
-      case PAYWALL_RESULT.RESTORED:
-        await refreshSubscriptionStatus({ syncToServer: true })
-        logPaywallRestored("save_item_limit")
-        return true
-
-      case PAYWALL_RESULT.CANCELLED:
-        logPaywallCancelled("save_item_limit")
-        return false
-
-      case PAYWALL_RESULT.ERROR:
-      default:
-        logPaywallFailed("save_item_limit", result)
-        return false
-    }
-
-  } catch (err) {
-    console.error("Paywall failed:", err)
-    logPaywallFailed("save_item_limit", err)
-    return false
-  }
-}
-
 async function openSaveModal() {
   await popoverController.dismiss();
-  
-  if (!isItemSaved.value && !isDonor.value && totalSavedItems.value >= 5) {
-    await ActivityLogService.log("pro_paywall_trigger", {
-      source: "save_item_limit"
-    });
 
-    const purchased = await presentPaywall();
+  if (!isItemSaved.value && !isDonor.value && totalSavedItems.value >= 5) {
+    const purchased = await presentProPaywall("save_item_limit");
 
     if (!purchased) return;
 

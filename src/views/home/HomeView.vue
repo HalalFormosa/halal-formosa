@@ -1169,7 +1169,7 @@ import { isPublicProfile, currentUser } from '@/composables/userProfile';
 import {ActivityLogService} from "@/services/ActivityLogService";
 import {SocialMediaService} from "@/services/SocialMediaService";
 import { isDonor, refreshSubscriptionStatus } from "@/composables/useSubscriptionStatus";
-import { RevenueCatUI, PAYWALL_RESULT } from '@revenuecat/purchases-capacitor-ui';
+import { presentProPaywall } from '@/utils/proPaywall';
 import {Capacitor, type PluginListenerHandle} from "@capacitor/core";
 import { Geolocation } from '@capacitor/geolocation'
 import { Browser } from '@capacitor/browser'
@@ -1580,18 +1580,7 @@ async function presentRcPaywall() {
     return;
   }
 
-  ActivityLogService.log('pro_paywall_trigger', { source: 'home_view_halalify' });
-  try {
-    const { result } = await RevenueCatUI.presentPaywall();
-    if (result === PAYWALL_RESULT.PURCHASED || result === PAYWALL_RESULT.RESTORED) {
-      await refreshSubscriptionStatus({ syncToServer: true });
-      ActivityLogService.log('pro_purchase_success', {
-        source: 'home_view_halalify'
-      });
-    }
-  } catch (err) {
-    console.error("Paywall failed:", err);
-  }
+  await presentProPaywall('home_view_halalify');
 }
 
 async function copyPhrase(text: string) {

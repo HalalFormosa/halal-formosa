@@ -270,17 +270,14 @@ import {
 import { bookmarkOutline, folderOutline, trashOutline, gridOutline, listOutline, arrowBackOutline, addOutline, folderOpenOutline, ellipsisVerticalOutline, createOutline } from 'ionicons/icons';
 import AppHeader from '@/components/AppHeader.vue';
 import { useI18n } from 'vue-i18n';
-import { useNotifier } from "@/composables/useNotifier";
 
 // Subscription Logic
-import { isDonor, refreshSubscriptionStatus } from '@/composables/useSubscriptionStatus';
-import { RevenueCatUI, PAYWALL_RESULT } from '@revenuecat/purchases-capacitor-ui';
-import { Capacitor } from '@capacitor/core';
+import { isDonor } from '@/composables/useSubscriptionStatus';
+import { presentProPaywall } from '@/utils/proPaywall';
 import { ActivityLogService } from '@/services/ActivityLogService';
 
 const router = useRouter();
 const { t } = useI18n();
-const { notifyEvent } = useNotifier();
 const loading = ref(true);
 const folders = ref<any[]>([]);
 
@@ -304,48 +301,8 @@ function closeFolder() {
   activeFolderId.value = null;
 }
 
-async function presentRcPaywall() {
-  if (!Capacitor.isNativePlatform()) {
-    console.warn("[RC] Paywall can only run on native apps.");
-    return false;
-  }
-
-  ActivityLogService.log('pro_paywall_trigger', { source: 'saved_items_view' });
-  try {
-    const { result } = await RevenueCatUI.presentPaywall();
-
-    if (result === PAYWALL_RESULT.PURCHASED) {
-      await refreshSubscriptionStatus({ syncToServer: true });
-      ActivityLogService.log('pro_purchase_success', {
-        source: 'saved_items_view'
-      });
-
-      const { data: { user } } = await supabase.auth.getUser();
-      await notifyEvent(
-        'pro_purchase_success',
-        '💎 New Pro Member!',
-        `User ${user?.email ?? 'unknown'} has just subscribed to Halal Formosa Pro!`,
-        undefined,
-        {
-          source: 'saved_items_view',
-          email: user?.email,
-          user_id: user?.id
-        },
-        ['discord']
-      ).catch(console.error);
-
-      return true;
-    } else if (result === PAYWALL_RESULT.RESTORED) {
-      await refreshSubscriptionStatus({ syncToServer: true });
-      ActivityLogService.log('pro_restore_success', {
-        source: 'saved_items_view'
-      });
-      return true;
-    }
-  } catch (err) {
-    console.error("Paywall failed:", err);
-  }
-  return false;
+function presentRcPaywall() {
+  return presentProPaywall('saved_items_view');
 }
 
 onMounted(async () => {

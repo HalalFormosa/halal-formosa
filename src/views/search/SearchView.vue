@@ -668,14 +668,13 @@ import FilterContent from '@/components/FilterContent.vue'
 
 import StoreLogoBar from "@/components/StoreLogoBar.vue";
 import {ActivityLogService} from "@/services/ActivityLogService";
-import { logPaywallCancelled, logPaywallFailed, logPaywallRestored } from '@/utils/paywallLogging'
+import { presentProPaywall } from '@/utils/proPaywall'
 import { scheduleBannerUpdate } from '@/plugins/admob'
 import HouseAdCard from '@/components/ads/HouseAdCard.vue'
 import HouseAdNativeCard from '@/components/ads/HouseAdNativeCard.vue'
 import { failedAdSpaceId, useHouseAdAtTop, adSpaceStyle } from '@/composables/useAdFallback'
 import {isDonor, refreshSubscriptionStatus} from "@/composables/useSubscriptionStatus";
 import {Purchases} from "@revenuecat/purchases-capacitor";
-import {PAYWALL_RESULT, RevenueCatUI} from "@revenuecat/purchases-capacitor-ui";
 import {getOptimizedImageUrl, onProductImageError} from "@/utils/imageHelpers";
 
 
@@ -868,57 +867,7 @@ async function ensureRevenueCatLoggedIn() {
 }
 
 function onForYouUpgradeClick() {
-  ActivityLogService.log("pro_paywall_trigger", { source: "search_for_you_upgrade_button" });
-  return presentPaywall();
-}
-
-async function presentPaywall(): Promise<boolean> {
-  if (!Capacitor.isNativePlatform()) {
-    console.warn("[RC] Paywall can only run on native (Android/iOS).");
-    return false;
-  }
-
-  try {
-    console.log("[RC] Presenting Paywall...");
-
-    const {result} = await RevenueCatUI.presentPaywall();
-
-    console.log("[RC] Paywall Result:", result);
-
-    switch (result) {
-      case PAYWALL_RESULT.PURCHASED:
-        console.log("[RC] 🎉 User purchased subscription!");
-        ActivityLogService.log("pro_purchase_success", { source: "search_sort_for_you" });
-        return true;
-
-      case PAYWALL_RESULT.RESTORED:
-        console.log("[RC] 🔄 Subscription restored!");
-        await refreshSubscriptionStatus({syncToServer: true});
-        logPaywallRestored("search_sort_for_you");
-        return true;
-
-      case PAYWALL_RESULT.CANCELLED:
-        console.log("[RC] User cancelled paywall.");
-        logPaywallCancelled("search_sort_for_you");
-        return false;
-
-      case PAYWALL_RESULT.ERROR:
-        console.log("[RC] Paywall error.");
-        logPaywallFailed("search_sort_for_you", result);
-        return false;
-
-      case PAYWALL_RESULT.NOT_PRESENTED:
-      default:
-        console.log("[RC] Paywall not presented.");
-        logPaywallFailed("search_sort_for_you", result);
-        return false;
-    }
-
-  } catch (e) {
-    console.error("[RC] Paywall failed:", e);
-    logPaywallFailed("search_sort_for_you", e);
-    return false;
-  }
+  return presentProPaywall("search_for_you_upgrade_button");
 }
 
 async function loadForYouReason() {
@@ -1024,16 +973,8 @@ watch(sortBy, async (val) => {
       sort: val
     })
 
-    ActivityLogService.log("pro_paywall_trigger", {
-      source: "search_sort_for_you"
-    })
-
     await ensureRevenueCatLoggedIn()
-    const purchased = await presentPaywall()
-
-    if (purchased) {
-      await refreshSubscriptionStatus({syncToServer: true})
-    }
+    await presentProPaywall("search_sort_for_you")
 
     // 🔑 IMPORTANT:
     // Do NOT revert sortBy

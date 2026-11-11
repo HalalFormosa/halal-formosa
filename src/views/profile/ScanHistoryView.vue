@@ -95,9 +95,8 @@ import { ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { supabase } from '@/plugins/supabaseClient'
-import { isDonor, refreshSubscriptionStatus } from '@/composables/useSubscriptionStatus'
-import { ActivityLogService } from '@/services/ActivityLogService'
-import { useNotifier } from '@/composables/useNotifier'
+import { isDonor } from '@/composables/useSubscriptionStatus'
+import { presentProPaywall } from '@/utils/proPaywall'
 import {
   IonPage,
   IonHeader,
@@ -120,8 +119,6 @@ import {
   barcodeOutline,
   documentTextOutline
 } from 'ionicons/icons'
-import { Capacitor } from '@capacitor/core'
-import { RevenueCatUI, PAYWALL_RESULT } from '@revenuecat/purchases-capacitor-ui'
 import AppHeader from '@/components/AppHeader.vue'
 import ModalHeader from '@/components/ModalHeader.vue'
 import dayjs from 'dayjs'
@@ -135,7 +132,6 @@ dayjs.extend(relativeTime)
 
 const router = useRouter()
 const { t } = useI18n()
-const { notifyEvent } = useNotifier()
 
 const loading = ref(false)
 const combinedScans = ref<any[]>([])
@@ -270,49 +266,9 @@ function formatFullTime(dateString?: string) {
 }
 
 async function presentRcPaywall() {
-  if (!Capacitor.isNativePlatform()) {
-    console.warn('[RC] Paywall can only run on native apps.')
-    return false
-  }
-
-  ActivityLogService.log('pro_paywall_trigger', { source: 'scan_history_view' })
-  try {
-    const { result } = await RevenueCatUI.presentPaywall()
-
-    if (result === PAYWALL_RESULT.PURCHASED) {
-      await refreshSubscriptionStatus({ syncToServer: true })
-      await ActivityLogService.log('pro_purchase_success', {
-        source: 'scan_history_view'
-      })
-
-      const { data: { user } } = await supabase.auth.getUser()
-      await notifyEvent(
-        'pro_purchase_success',
-        '💎 New Pro Member!',
-        `User ${user?.email ?? 'unknown'} has just subscribed to Halal Formosa Pro!`,
-        undefined,
-        {
-          source: 'scan_history_view',
-          email: user?.email,
-          user_id: user?.id
-        },
-        ['discord']
-      ).catch(console.error)
-
-      await loadScanHistory()
-      return true
-    } else if (result === PAYWALL_RESULT.RESTORED) {
-      await refreshSubscriptionStatus({ syncToServer: true })
-      await ActivityLogService.log('pro_restore_success', {
-        source: 'scan_history_view'
-      })
-      await loadScanHistory()
-      return true
-    }
-  } catch (err) {
-    console.error('Paywall failed:', err)
-  }
-  return false
+  const purchased = await presentProPaywall('scan_history_view')
+  if (purchased) await loadScanHistory()
+  return purchased
 }
 
 // Watch isDonor status change to dynamically reload logs

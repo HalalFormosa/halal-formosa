@@ -280,10 +280,8 @@ import { useSavedLocations } from '@/composables/useSavedLocations';
 import type { SavedLocationFolder } from '@/types/SavedLocation';
 
 // Subscription Logic
-import { isDonor, refreshSubscriptionStatus } from '@/composables/useSubscriptionStatus';
-import { RevenueCatUI, PAYWALL_RESULT } from '@revenuecat/purchases-capacitor-ui';
-import { Capacitor } from '@capacitor/core';
-import { ActivityLogService } from '@/services/ActivityLogService';
+import { isDonor } from '@/composables/useSubscriptionStatus';
+import { presentProPaywall } from '@/utils/proPaywall';
 
 const router = useRouter();
 const { t } = useI18n();
@@ -315,27 +313,8 @@ function closeFolder() {
   activeFolderId.value = null;
 }
 
-async function presentRcPaywall() {
-  if (!Capacitor.isNativePlatform()) {
-    console.warn("[RC] Paywall can only run on native apps.");
-    return false;
-  }
-
-  ActivityLogService.log('pro_paywall_trigger', { source: 'saved_locations_view' });
-  try {
-    const { result } = await RevenueCatUI.presentPaywall();
-
-    if (result === PAYWALL_RESULT.PURCHASED || result === PAYWALL_RESULT.RESTORED) {
-      await refreshSubscriptionStatus({ syncToServer: true });
-      ActivityLogService.log('pro_purchase_success', {
-        source: 'saved_locations_view'
-      });
-      return true;
-    }
-  } catch (err) {
-    console.error("Paywall failed:", err);
-  }
-  return false;
+function presentRcPaywall() {
+  return presentProPaywall('saved_locations_view');
 }
 
 onMounted(async () => {

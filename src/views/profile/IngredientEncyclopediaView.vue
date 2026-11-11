@@ -85,13 +85,9 @@ import {
   IonSegmentButton
 } from '@ionic/vue'
 import { lockClosedOutline, documentTextOutline, libraryOutline } from 'ionicons/icons'
-import { Capacitor } from '@capacitor/core'
-import { RevenueCatUI, PAYWALL_RESULT } from '@revenuecat/purchases-capacitor-ui'
 import AppHeader from '@/components/AppHeader.vue'
-import { isDonor, refreshSubscriptionStatus } from '@/composables/useSubscriptionStatus'
-import { supabase } from '@/plugins/supabaseClient'
-import { ActivityLogService } from '@/services/ActivityLogService'
-import { logPaywallCancelled, logPaywallFailed, logPaywallRestored } from '@/utils/paywallLogging'
+import { isDonor } from '@/composables/useSubscriptionStatus'
+import { presentProPaywall } from '@/utils/proPaywall'
 import {
   fetchIngredientArticles,
   type IngredientArticleListItem,
@@ -123,31 +119,7 @@ async function loadArticles() {
 }
 
 async function presentRcPaywall() {
-  ActivityLogService.log('pro_paywall_trigger', { source: 'ingredient_encyclopedia_view' })
-  if (!Capacitor.isNativePlatform()) {
-    console.warn('[RC] Paywall can only run on native apps.')
-    return
-  }
-
-  try {
-    const { result } = await RevenueCatUI.presentPaywall()
-    if (result === PAYWALL_RESULT.PURCHASED || result === PAYWALL_RESULT.RESTORED) {
-      await refreshSubscriptionStatus({ syncToServer: true })
-      if (result === PAYWALL_RESULT.PURCHASED) {
-        await ActivityLogService.log('pro_purchase_success', { source: 'ingredient_encyclopedia_view' })
-      } else {
-        logPaywallRestored('ingredient_encyclopedia_view')
-      }
-      await loadArticles()
-    } else if (result === PAYWALL_RESULT.CANCELLED) {
-      logPaywallCancelled('ingredient_encyclopedia_view')
-    } else {
-      logPaywallFailed('ingredient_encyclopedia_view', result)
-    }
-  } catch (err) {
-    console.error('Paywall failed:', err)
-    logPaywallFailed('ingredient_encyclopedia_view', err)
-  }
+  if (await presentProPaywall('ingredient_encyclopedia_view')) await loadArticles()
 }
 
 watch(isDonor, (newValue) => {
