@@ -629,14 +629,10 @@
           position="bottom"
           @did-dismiss="showCopied=false"
       />
-      <ion-toast
-          :is-open="showLimitToast"
-          :message="limitReachedMessage"
-          :duration="limitToastButtons.length ? 5000 : 2000"
-          :buttons="limitToastButtons"
-          color="warning"
-          position="bottom"
-          @did-dismiss="showLimitToast=false"
+      <scan-limit-sheet
+          v-model:open="showLimitSheet"
+          :can-earn="canEarnToday"
+          @earn="router.push('/add')"
       />
       
       <!-- Hidden input for Web Gallery selection to avoid garbage collection drop off -->
@@ -745,6 +741,8 @@ import AppHeader from '@/components/AppHeader.vue'
 import IngredientHighlightImage from '@/components/scan/IngredientHighlightImage.vue'
 import ScanDecisionPrompt from '@/components/ScanDecisionPrompt.vue'
 import LiveVerdictHelpModal from '@/components/scan/LiveVerdictHelpModal.vue'
+import ScanLimitSheet from '@/components/scan/ScanLimitSheet.vue'
+import { canEarnMoreScans } from '@/services/ScanLimitService'
 import { buildScanDecisionNotice, type ScanDecisionChoice } from '@/utils/scanDecisionNotice'
 import {ref, onUnmounted, computed, nextTick} from 'vue'
 import { Swiper, SwiperSlide } from 'swiper/vue'
@@ -800,7 +798,7 @@ import { takeScanAction } from '@/composables/useScanModeRequest'
 import { syncScanWidget } from '@/composables/useWidgetSync'
 import { getOptimizedImageUrl, onProductImageError } from '@/utils/imageHelpers'
 
-const { t, te } = useI18n()
+const { t } = useI18n()
 
 /** ---------- Constants ---------- */
 const DAILY_SCAN_LIMIT = 5
@@ -887,7 +885,7 @@ const { errorMsg, showErr, setError, clearError } = useError()
 const { notifyEvent } = useNotifier()
 const showTutorial = ref(true)
 const showMuslimFriendly = ref(false)
-const showLimitToast = ref(false);
+const showLimitSheet = ref(false);
 const bonusScans = ref(0)
 const isNative = ref(Capacitor.isNativePlatform())
 const liveVerdictSupported = isLiveVerdictSupported()
@@ -897,16 +895,8 @@ const liveHelpOpen = ref(false)
 // rewarded-ad flow isn't ready, so bonus scans come from contributions only.
 const REWARDED_SCANS_ENABLED = false
 
-const limitReachedMessage = computed(() =>
-  !REWARDED_SCANS_ENABLED && te('scanIngredients.limit.reachedContribute')
-    ? t('scanIngredients.limit.reachedContribute', { limit: DAILY_SCAN_LIMIT })
-    : t('scanIngredients.limit.reached', { limit: DAILY_SCAN_LIMIT })
-)
-const limitToastButtons = computed(() =>
-  isNative.value && !isDonor.value
-    ? [{ text: t('scanIngredients.limit.upgrade'), handler: () => { void openScanLimitPaywall() } }]
-    : []
-)
+// Whether adding a product or location would still earn a scan today (capped per day).
+const canEarnToday = computed(() => canEarnMoreScans({ bonus: bonusScans.value }))
 const adSlotCollapsed = useAdSlotCollapsed('ad-space-scan-results', isDonor)
 const dailyAdUses = ref(0);
 const loadingAd = ref(false);
@@ -922,7 +912,7 @@ function onWebCameraSelected(e: Event) {
   ActivityLogService.log("scan_ingredients_start", {source: "camera"});
   if (!canScan.value) {
     ActivityLogService.log("scan_ingredients_limit_reached", {source: "camera"});
-    showLimitToast.value = true;
+    showLimitSheet.value = true;
     return;
   }
   currentSource.value = 'camera'
@@ -943,7 +933,7 @@ function onWebFileSelected(e: Event) {
   ActivityLogService.log("scan_ingredients_start", {source: "gallery"});
   if (!canScan.value) {
     ActivityLogService.log("scan_ingredients_limit_reached", {source: "gallery"});
-    showLimitToast.value = true;
+    showLimitSheet.value = true;
     return;
   }
   currentSource.value = 'gallery'
@@ -1354,12 +1344,6 @@ async function presentPaywall(source = "ai_summary"): Promise<boolean> {
   return presentProPaywall(source)
 }
 
-// Offered from the daily-scan-limit toast so the wall has an upgrade path
-// without interrupting people who would rather contribute for bonus scans.
-async function openScanLimitPaywall() {
-  await presentPaywall("scan_limit")
-}
-
 async function handleSummaryClick() {
   await ActivityLogService.log("ai_summary_click", {
     is_pro: isDonor.value
@@ -1629,7 +1613,7 @@ function scanFromCamera() {
 
   if (!canScan.value) {
     ActivityLogService.log("scan_ingredients_limit_reached", {source: "camera"});
-    showLimitToast.value = true;
+    showLimitSheet.value = true;
     return;
   }
 
@@ -1671,7 +1655,7 @@ function scanFromGallery() {
 
   if (!canScan.value) {
     ActivityLogService.log("scan_ingredients_limit_reached", {source: "gallery"});
-    showLimitToast.value = true;
+    showLimitSheet.value = true;
     return;
   }
 
@@ -1713,7 +1697,7 @@ async function handleAutoDetected(result: any) {
   const allowed = await checkDailyScanLimit()
   if (!allowed) {
     ActivityLogService.log("scan_ingredients_limit_reached", {source: "auto_scan"});
-    showLimitToast.value = true
+    showLimitSheet.value = true
     return
   }
 

@@ -479,7 +479,15 @@
       "upgrade": "升級 Pro",
       "bonus": "Watch Ad +1 Scan",
       "adLimit": "You can only watch {count} ads per day.",
-      "contributeTip": "每貢獻一個新產品或地點可獲得 +1 每日掃描次數（每日最多 +3 次）。"
+      "contributeTip": "每貢獻一個新產品或地點可獲得 +1 每日掃描次數（每日最多 +3 次）。",
+      "sheet": {
+        "title": "今天的 {limit} 次掃描已用完",
+        "body": "掃描次數明天會重置。現在升級 Pro 即可繼續，或貢獻缺失的產品或地點來獲得額外掃描次數。",
+        "bodyNoEarn": "掃描次數明天會重置。升級 Pro 即可立即繼續掃描。",
+        "upgrade": "升級 Pro 享無限掃描",
+        "earn": "獲得額外掃描次數",
+        "notNow": "稍後再說"
+      }
     },
     "progress": {
       "initializing": "Initializing...",

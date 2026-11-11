@@ -442,7 +442,15 @@
       "upgrade": "Go Pro",
       "bonus": "Watch Ad +1 Scan",
       "adLimit": "You can only watch {count} ads per day.",
-      "contributeTip": "Earn +1 daily scan for every product or location you contribute (max 3/day)."
+      "contributeTip": "Earn +1 daily scan for every product or location you contribute (max 3/day).",
+      "sheet": {
+        "title": "That's your {limit} scans for today",
+        "body": "Scans reset tomorrow. Keep going now with Pro, or add a missing product or location to earn bonus scans.",
+        "bodyNoEarn": "Scans reset tomorrow. Go Pro to keep scanning now.",
+        "upgrade": "Go Pro for unlimited scans",
+        "earn": "Earn bonus scans",
+        "notNow": "Not now"
+      }
     },
     "failure": {
       "title": "We couldn't read this label",

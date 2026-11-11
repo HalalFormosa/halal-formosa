@@ -159,6 +159,8 @@ const emit = defineEmits<{
   (e: 'detected', result: AutoScanResult): void
   (e: 'stable-result', result: AutoScanResult): void
   (e: 'error', message: string): void
+  /** The daily cap was hit mid-scan. The parent decides how to offer Pro or bonus scans. */
+  (e: 'limit-reached', status: ScanStatus | null): void
   (e: 'close'): void
 }>()
 
@@ -482,10 +484,7 @@ async function startAnalysis() {
           console.log('🚫 [AutoScan] Daily scan limit reached, stopping.')
           ActivityLogService.log('scan_ingredients_limit_reached', { source: 'auto_scan' })
           stopCamera()
-          emit('error', t(
-            'scanIngredients.limit.reached',
-            'Daily scan limit reached. Watch an ad or contribute a missing product/location to get more scans!'
-          ))
+          emit('limit-reached', status)
           return
         }
 

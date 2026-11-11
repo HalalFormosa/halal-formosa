@@ -687,7 +687,15 @@
       "upgrade": "Upgrade ke Pro",
       "bonus": "Watch Ad +1 Scan",
       "adLimit": "You can only watch {count} ads per day.",
-      "contributeTip": "Dapatkan +1 pemindaian harian untuk setiap produk atau lokasi yang Anda kontribusikan (maks 3/hari)."
+      "contributeTip": "Dapatkan +1 pemindaian harian untuk setiap produk atau lokasi yang Anda kontribusikan (maks 3/hari).",
+      "sheet": {
+        "title": "Jatah {limit} pemindaian hari ini sudah habis",
+        "body": "Pemindaian diatur ulang besok. Lanjutkan sekarang dengan Pro, atau tambahkan produk atau lokasi yang belum terdaftar untuk mendapat pemindaian bonus.",
+        "bodyNoEarn": "Pemindaian diatur ulang besok. Beralih ke Pro untuk terus memindai sekarang.",
+        "upgrade": "Upgrade ke Pro untuk pemindaian tanpa batas",
+        "earn": "Dapatkan pemindaian bonus",
+        "notNow": "Nanti saja"
+      }
     },
     "progress": {
       "initializing": "Initializing...",

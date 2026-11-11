@@ -6,6 +6,15 @@
       @stable-result="onStableResult"
       @close="onClose"
       @error="onError"
+      @limit-reached="onLimitReached"
+    />
+
+    <scan-limit-sheet
+      v-model:open="limitSheetOpen"
+      :can-earn="canEarn"
+      @upgraded="router.back()"
+      @earn="router.replace('/add')"
+      @dismissed="router.back()"
     />
     
     <!-- Error Toast -->
@@ -24,6 +33,8 @@ import { ref } from 'vue'
 import { IonPage, IonToast } from '@ionic/vue'
 import { useRouter } from 'vue-router'
 import AutoScanCamera from '@/components/scan/AutoScanCamera.vue'
+import ScanLimitSheet from '@/components/scan/ScanLimitSheet.vue'
+import { canEarnMoreScans, type ScanStatus } from '@/services/ScanLimitService'
 import { useAutoScanStore, type AutoScanResult } from '@/composables/useAutoScanStore'
 import { ActivityLogService } from '@/services/ActivityLogService'
 import { logIngredientScan } from '@/services/IngredientScanLogService'
@@ -31,6 +42,8 @@ import { logIngredientScan } from '@/services/IngredientScanLogService'
 const router = useRouter()
 const { setResult } = useAutoScanStore()
 const errorMsg = ref('')
+const limitSheetOpen = ref(false)
+const canEarn = ref(true)
 
 function onDetected(result: any) {
   setResult(result)
@@ -66,6 +79,12 @@ async function onStableResult(result: AutoScanResult) {
 
 function onClose() {
   router.back()
+}
+
+// The camera stops itself at the daily cap. Offer Pro or bonus scans instead of a dead-end toast.
+function onLimitReached(status: ScanStatus | null) {
+  canEarn.value = canEarnMoreScans(status)
+  limitSheetOpen.value = true
 }
 
 function onError(msg: string) {

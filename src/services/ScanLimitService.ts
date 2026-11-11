@@ -2,7 +2,7 @@ import { supabase } from '@/plugins/supabaseClient'
 import { isDonor } from '@/composables/useSubscriptionStatus'
 
 // Keep in sync with ScanIngredientsView.vue's DAILY_SCAN_LIMIT.
-const DAILY_SCAN_LIMIT = 5
+export const DAILY_SCAN_LIMIT = 5
 
 async function getBonusScans(userId: string): Promise<number> {
     const today = new Date().toISOString().split('T')[0]
@@ -16,17 +16,27 @@ async function getBonusScans(userId: string): Promise<number> {
     return data.last_updated === today ? (data.bonus_scans ?? 0) : 0
 }
 
+// Contributions (a product or a location) earn +1 scan each, up to this many per day.
+export const MAX_CONTRIBUTION_SCANS_PER_DAY = 3
+
 export interface ScanStatus {
     used: number
     limit: number
     remaining: number
     isDonor: boolean
+    /** Bonus scans earned today. Contributions are the only source while rewarded ads are off. */
+    bonus: number
+}
+
+/** True when contributing a product or location would still earn the user another scan today. */
+export function canEarnMoreScans(status: Pick<ScanStatus, 'bonus'> | null): boolean {
+    return (status?.bonus ?? 0) < MAX_CONTRIBUTION_SCANS_PER_DAY
 }
 
 // Mirrors ScanIngredientsView's daily counter, shared so the Auto Scan camera's
 // live overlay can show the same "used/limit" badge without duplicating the query.
 export async function getScanStatus(): Promise<ScanStatus | null> {
-    if (isDonor.value) return { used: 0, limit: Infinity, remaining: Infinity, isDonor: true }
+    if (isDonor.value) return { used: 0, limit: Infinity, remaining: Infinity, isDonor: true, bonus: 0 }
 
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return null
@@ -50,7 +60,7 @@ export async function getScanStatus(): Promise<ScanStatus | null> {
 
     const limit = DAILY_SCAN_LIMIT + bonusScans
     const used = data.length
-    return { used, limit, remaining: Math.max(0, limit - used), isDonor: false }
+    return { used, limit, remaining: Math.max(0, limit - used), isDonor: false, bonus: bonusScans }
 }
 
 // Mirrors ScanIngredientsView's checkDailyScanLimit, shared so the Auto Scan
