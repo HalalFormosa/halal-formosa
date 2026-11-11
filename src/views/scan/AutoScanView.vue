@@ -56,7 +56,7 @@ function onDetected(result: any) {
 // `result` is mutated with `loggedAsScan: true` so ScanIngredientsView.handleAutoDetected
 // (fired if the user does tap View Details) knows not to log/count it a second time.
 async function onStableResult(result: AutoScanResult) {
-  const { success } = await logIngredientScan({
+  const { success, id } = await logIngredientScan({
     source: 'camera',
     productName: result.productName,
     ingredientsTextZh: result.textZh,
@@ -68,6 +68,7 @@ async function onStableResult(result: AutoScanResult) {
 
   if (success) {
     result.loggedAsScan = true
+    result.scanLogId = id
     await ActivityLogService.log('scan_ingredients_success', {
       product_name: result.productName || 'Unknown',
       auto_status: result.autoStatus,

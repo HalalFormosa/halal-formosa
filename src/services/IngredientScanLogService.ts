@@ -17,19 +17,23 @@ export interface LogIngredientScanParams {
 // truth for both the "Today Scans" counter (rows here with success=true) and
 // the ingredient_scan_logs audit trail, so anywhere a scan actually completes
 // (manual crop-and-analyze, or a live Auto Scan detection) should call this.
-export async function logIngredientScan(params: LogIngredientScanParams): Promise<{ success: boolean }> {
+// `id` is the new ingredient_scan_logs row's id (null when nothing was stored), so a later event
+// such as the scan-decision card can point back at its scan.
+export async function logIngredientScan(
+    params: LogIngredientScanParams
+): Promise<{ success: boolean; id: string | number | null }> {
     try {
         const { data: { user } } = await supabase.auth.getUser()
         if (!user) {
             console.warn('⏩ No user logged in, skipping log')
-            return { success: false }
+            return { success: false, id: null }
         }
 
         const success = !!params.ingredientsTextZh?.trim() || !!params.ingredientsTextEn?.trim()
         const duration = params.startTime ? Date.now() - params.startTime : null
         const { model, platform } = await Device.getInfo()
 
-        const { error } = await supabase.from('ingredient_scan_logs').insert([
+        const { data: inserted, error } = await supabase.from('ingredient_scan_logs').insert([
             {
                 user_id: user.id,
                 product_name: params.productName || 'Unknown Product',
@@ -47,17 +51,17 @@ export async function logIngredientScan(params: LogIngredientScanParams): Promis
                 device_model: model,
                 platform
             }
-        ])
+        ]).select('id').maybeSingle()
 
         if (error) {
             console.error('❌ Log insert failed:', error)
-            return { success: false }
+            return { success: false, id: null }
         }
 
         console.log(params.errorMessage ? '⚠️ Logged failed scan' : '✅ Logged successful scan')
-        return { success }
+        return { success, id: inserted?.id ?? null }
     } catch (err) {
         console.error('Error logging scan:', err)
-        return { success: false }
+        return { success: false, id: null }
     }
 }

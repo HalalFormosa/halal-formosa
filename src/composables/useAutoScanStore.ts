@@ -24,6 +24,8 @@ export interface AutoScanResult {
     // (see AutoScanView.vue's onStableResult) — lets ScanIngredientsView avoid
     // double-counting it if the user goes on to tap "View Details".
     loggedAsScan?: boolean
+    // ingredient_scan_logs.id of that logged scan, so the scan-decision events can reference it.
+    scanLogId?: string | number | null
 }
 
 const autoScanResult = ref<AutoScanResult | null>(null)
