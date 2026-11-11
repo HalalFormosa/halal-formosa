@@ -434,7 +434,12 @@
       "thinking": "AI is Thinking...",
       "explanation": "AI Explanation",
       "unlock": "Unlock AI Explanation",
-      "unlockPro": "Unlock AI Explanation (PRO)"
+      "unlockPro": "Unlock AI Explanation (PRO)",
+      "teaser": {
+        "title": "Why is {ingredient} flagged?",
+        "body": "Pro explains in plain language what it is usually made from and what to look for on the label.",
+        "note": "The verdict above stays free."
+      }
     },
     "limit": {
       "reached": "Daily scan limit reached. Watch an ad or contribute a missing product/location to get more scans!",

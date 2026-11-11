@@ -485,8 +485,15 @@
             </div>
           </div>
 
+          <!-- Free users with flagged ingredients see what the AI would explain; the rest keep the plain button. -->
+          <ai-explanation-teaser
+              v-if="showAiTeaser"
+              :ingredient="teaserIngredient"
+              @unlock="handleSummaryClick"
+          />
+
           <ion-button
-              v-if="ingredientsTextZh && !overallNote && !errorSummary"
+              v-if="ingredientsTextZh && !overallNote && !errorSummary && !showAiTeaser"
               expand="block"
               color="carrot"
               :disabled="loadingSummary"
@@ -742,6 +749,7 @@ import IngredientHighlightImage from '@/components/scan/IngredientHighlightImage
 import ScanDecisionPrompt from '@/components/ScanDecisionPrompt.vue'
 import LiveVerdictHelpModal from '@/components/scan/LiveVerdictHelpModal.vue'
 import ScanLimitSheet from '@/components/scan/ScanLimitSheet.vue'
+import AiExplanationTeaser from '@/components/scan/AiExplanationTeaser.vue'
 import { canEarnMoreScans } from '@/services/ScanLimitService'
 import { buildScanDecisionNotice, type ScanDecisionChoice } from '@/utils/scanDecisionNotice'
 import {ref, onUnmounted, computed, nextTick} from 'vue'
@@ -1208,6 +1216,14 @@ const dangerousHighlights = computed(() =>
 )
 const friendlyHighlights = computed(() => 
   ingredientHighlights.value.filter((h: IngredientHighlight) => extractIonColor(h.color) === 'primary')
+)
+// Name of the main flagged ingredient, used to personalise the free-user AI teaser.
+const teaserIngredient = computed(() => {
+  const h = dangerousHighlights.value[0]
+  return h ? (h.keyword || h.keyword_zh || '') : ''
+})
+const showAiTeaser = computed(() =>
+  !isDonor.value && !!ingredientsTextZh.value && !overallNote.value && !errorSummary.value && !!teaserIngredient.value
 )
 const hasFriendlyHighlights = computed(() => 
   ingredientHighlights.value.some((h: IngredientHighlight) => extractIonColor(h.color) === 'primary')

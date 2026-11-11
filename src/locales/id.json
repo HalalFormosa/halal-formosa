@@ -679,7 +679,12 @@
       "thinking": "AI is Thinking...",
       "explanation": "AI Explanation",
       "unlock": "Unlock AI Explanation",
-      "unlockPro": "Unlock AI Explanation (PRO)"
+      "unlockPro": "Unlock AI Explanation (PRO)",
+      "teaser": {
+        "title": "Mengapa {ingredient} ditandai?",
+        "body": "Pro menjelaskan dengan bahasa sederhana bahan ini biasanya berasal dari apa dan apa yang perlu dicek di label.",
+        "note": "Hasil di atas tetap gratis."
+      }
     },
     "limit": {
       "reached": "Batas pemindaian harian tercapai. Tonton iklan atau kontribusikan produk/lokasi yang belum terdaftar untuk mendapatkan lebih banyak pemindaian!",

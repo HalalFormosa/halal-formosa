@@ -471,7 +471,12 @@
       "thinking": "AI is Thinking...",
       "explanation": "AI Explanation",
       "unlock": "Unlock AI Explanation",
-      "unlockPro": "Unlock AI Explanation (PRO)"
+      "unlockPro": "Unlock AI Explanation (PRO)",
+      "teaser": {
+        "title": "為什麼 {ingredient} 被標記？",
+        "body": "Pro 會用淺顯的文字說明它通常來自什麼原料，以及該在標籤上檢查什麼。",
+        "note": "上方的判定結果仍然免費。"
+      }
     },
     "limit": {
       "reached": "已達到每日掃描限制。觀看廣告或貢獻缺失的產品/地點以獲取更多掃描次數！",
