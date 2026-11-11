@@ -12,6 +12,7 @@
       </div>
       <h2 class="sheet-title">{{ title }}</h2>
       <p class="sheet-message">{{ message }}</p>
+      <slot />
 
       <ion-button v-if="canUpgrade" expand="block" shape="round" class="pro-btn" :disabled="busy" @click="upgrade">
         <ion-icon slot="start" :icon="star" />

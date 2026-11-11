@@ -424,6 +424,15 @@
   },
   "home": {
     "title": "Halal Formosa",
+    "scanMilestone": {
+      "title": "Anda sudah memindai {count} produk",
+      "body": "Awal yang bagus. Ini yang ditambahkan Pro.",
+      "benefitScans": "Pemindaian tanpa batas dan Live Scan",
+      "benefitAi": "Penjelasan AI untuk setiap hasil",
+      "benefitHistory": "Riwayat pemindaian dan tanpa iklan",
+      "upgrade": "Lihat isi Pro",
+      "later": "Nanti saja"
+    },
     "scan": "Scan Bahan",
     "scanDesc": "Analisis komposisi untuk status Halal secara instan",
     "scanBarcode": "Scan Barcode",

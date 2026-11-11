@@ -227,6 +227,15 @@
   },
   "home": {
     "title": "Halal Formosa",
+    "scanMilestone": {
+      "title": "您已掃描 {count} 項產品",
+      "body": "好的開始。Pro 還能為您增加這些功能。",
+      "benefitScans": "無限掃描與 Live Scan",
+      "benefitAi": "每個判定都有 AI 說明",
+      "benefitHistory": "掃描紀錄且無廣告",
+      "upgrade": "查看 Pro 內容",
+      "later": "稍後再說"
+    },
     "scan": "掃描成分",
     "home": "首頁",
     "scanDesc": "立即分析成分以獲得清真狀態",

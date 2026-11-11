@@ -236,6 +236,15 @@
   },
   "home": {
     "title": "Halal Formosa",
+    "scanMilestone": {
+      "title": "You've scanned {count} products",
+      "body": "Nice start. Here's what Pro adds on top.",
+      "benefitScans": "Unlimited scans and Live Scan",
+      "benefitAi": "AI explanation of each verdict",
+      "benefitHistory": "Scan history and no ads",
+      "upgrade": "See what Pro includes",
+      "later": "Maybe later"
+    },
     "scan": "Scan Ingredients",
     "scanDesc": "Check Halal status instantly",
     "scanBarcode": "Scan Barcode",

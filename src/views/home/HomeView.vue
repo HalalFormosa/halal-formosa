@@ -1116,6 +1116,8 @@
       </ion-content>
     </ion-modal>
 
+    <scan-milestone-sheet v-model:open="milestoneOpen" />
+
   </ion-page>
 </template>
 
@@ -1125,7 +1127,7 @@ import {ref, nextTick, computed, onBeforeUnmount, watch, onMounted} from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
   IonPage, IonContent, IonCard, IonCardHeader, IonCardTitle,
-  IonCardContent, IonButton, IonIcon, IonHeader, onIonViewWillEnter, IonLabel, IonChip, IonSkeletonText,
+  IonCardContent, IonButton, IonIcon, IonHeader, onIonViewWillEnter, onIonViewDidLeave, IonLabel, IonChip, IonSkeletonText,
   IonList, IonBadge, IonAvatar, IonItem, IonPopover, IonModal, IonToolbar, IonTitle, IonButtons,
   IonSegment, IonSegmentButton, alertController, toastController, IonSelect, IonSelectOption, IonSpinner
 } from '@ionic/vue'
@@ -1183,6 +1185,8 @@ import PrayerSettingsSheet from '@/components/PrayerSettingsSheet.vue'
 import LazySection from '@/components/LazySection.vue'
 import DailyMissions from "@/components/DailyMissions.vue"
 import YearlySurveyCard from "@/components/survey/YearlySurveyCard.vue"
+import ScanMilestoneSheet from "@/components/scan/ScanMilestoneSheet.vue"
+import { useScanMilestone } from "@/composables/useScanMilestone"
 import { useDailyMissions } from '@/composables/useDailyMissions'
 
 const { withCache } = useHomeData()
@@ -2826,9 +2830,35 @@ async function refreshAllData() {
 }
 
 
+// One-time "10 scans" Pro sheet. Waits for Home to settle so it never lands on top of the
+// announcement sheet, and stays quiet if the user has already moved on.
+const { open: milestoneOpen, maybeShow: maybeShowScanMilestone } = useScanMilestone()
+let homeActive = false
+let milestoneTimer: ReturnType<typeof setTimeout> | null = null
+
+function clearMilestoneTimer() {
+  if (milestoneTimer) {
+    clearTimeout(milestoneTimer)
+    milestoneTimer = null
+  }
+}
+
+onIonViewDidLeave(() => {
+  homeActive = false
+  clearMilestoneTimer()
+})
+
 onIonViewWillEnter(async () => {
   loadFavorites()
   ActivityLogService.log("home_page_open");
+
+  homeActive = true
+  clearMilestoneTimer()
+  milestoneTimer = setTimeout(() => {
+    void maybeShowScanMilestone({
+      blocked: () => !homeActive || (showAnnouncement.value && !!announcement.value) || showPrayerSettings.value || !!selectedUser.value,
+    })
+  }, 2500)
   
   const { data } = await supabase.auth.getSession()
   isAuthenticated.value = !!data.session
@@ -2844,6 +2874,7 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+  clearMilestoneTimer()
   if (ttsRangeListenerHandle) {
     ttsRangeListenerHandle.remove()
     ttsRangeListenerHandle = null
