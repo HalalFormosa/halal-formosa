@@ -107,10 +107,10 @@
             <h3 class="gate-heading">{{ $t('facilityReview.gate.didYouVisitPrompt') || 'Did you visit here?' }}</h3>
             <p class="gate-desc">{{ $t('facilityReview.gate.didYouVisitDesc') }}</p>
             <div class="gate-buttons">
-              <ion-button expand="block" color="carrot" class="action-btn" @click="inAppGateStep = 2">
+              <ion-button expand="block" color="carrot" class="action-btn" @click="answerVisitPrompt(true)">
                 {{ $t('facilityReview.gate.yes') }}
               </ion-button>
-              <ion-button expand="block" fill="clear" color="medium" class="cancel-btn" @click="dismissPrompt">
+              <ion-button expand="block" fill="clear" color="medium" class="cancel-btn" @click="answerVisitPrompt(false)">
                 {{ $t('facilityReview.gate.no') }}
               </ion-button>
             </div>
@@ -175,6 +175,7 @@ import { watch } from 'vue';
 import { useTheme } from '@/composables/useTheme';
 import { useAppUpdate } from '@/composables/useAppUpdate';
 import ForceUpdateModal from '@/components/ForceUpdateModal.vue';
+import { shouldShowUpdatePrompt, readUpdatePromptLastShown, markUpdatePromptShown } from '@/utils/updatePromptThrottle';
 import SmartAppBanner from '@/components/SmartAppBanner.vue';
 import { useProximityPrompt } from '@/composables/useProximityPrompt';
 import FacilityReviewModal from '@/components/FacilityReviewModal.vue';
@@ -304,7 +305,9 @@ const checkAppUpdate = async () => {
   if (!Capacitor.isNativePlatform() || Capacitor.getPlatform() !== 'android') return;
   try {
     const info = await AppUpdate.getAppUpdateInfo();
-    if (info.updateAvailability === AppUpdateAvailability.UPDATE_AVAILABLE) {
+    if (info.updateAvailability === AppUpdateAvailability.UPDATE_AVAILABLE
+        && shouldShowUpdatePrompt(Date.now(), readUpdatePromptLastShown())) {
+      markUpdatePromptShown();
       showUpdateAlert.value = true;
       ActivityLogService.log('app_update_prompt_shown', { platform: Capacitor.getPlatform() });
     }
@@ -538,9 +541,22 @@ const closeInAppReviewModal = () => {
   dismissPrompt()
 }
 
+// Only the place id and name are logged, never coordinates.
+const answerVisitPrompt = (visited: boolean) => {
+  const prompt = currentPrompt.value
+  if (!prompt) return
+  ActivityLogService.log(visited ? 'visit_prompt_yes' : 'visit_prompt_no', { id: prompt.id, name: prompt.name })
+  if (visited) {
+    inAppGateStep.value = 2
+  } else {
+    dismissPrompt()
+  }
+}
+
 watch(() => currentPrompt.value, (newVal) => {
   if (newVal) {
     inAppGateStep.value = 1
+    ActivityLogService.log('visit_prompt_shown', { id: newVal.id, name: newVal.name })
   }
 })
 </script>

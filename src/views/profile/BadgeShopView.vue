@@ -249,6 +249,7 @@ import { sparkles, lockClosedOutline, refreshOutline } from 'ionicons/icons'
 import { useI18n } from 'vue-i18n'
 import { supabase } from '@/plugins/supabaseClient'
 import { ActivityLogService } from '@/services/ActivityLogService'
+import { presentProPaywall } from '@/utils/proPaywall'
 import CosmeticBadge from '@/components/CosmeticBadge.vue'
 import { useBadgeCosmetics, type BadgeCosmetic } from '@/composables/useBadgeCosmetics'
 import { Capacitor } from '@capacitor/core'
@@ -644,12 +645,7 @@ async function openProPaywall() {
     await toast.present()
     return
   }
-  try {
-    const { RevenueCatUI } = await import('@revenuecat/purchases-capacitor-ui')
-    await RevenueCatUI.presentPaywall()
-  } catch (err) {
-    console.error('Paywall error:', err)
-  }
+  await presentProPaywall('badge_shop_view')
 }
 
 function fireConfetti() {

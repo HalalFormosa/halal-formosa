@@ -424,6 +424,15 @@
   },
   "home": {
     "title": "Halal Formosa",
+    "scanMilestone": {
+      "title": "Anda sudah memindai {count} produk",
+      "body": "Awal yang bagus. Ini yang ditambahkan Pro.",
+      "benefitScans": "Pemindaian tanpa batas dan Live Scan",
+      "benefitAi": "Penjelasan AI untuk setiap hasil",
+      "benefitHistory": "Riwayat pemindaian dan tanpa iklan",
+      "upgrade": "Lihat isi Pro",
+      "later": "Nanti saja"
+    },
     "scan": "Scan Bahan",
     "scanDesc": "Analisis komposisi untuk status Halal secara instan",
     "scanBarcode": "Scan Barcode",
@@ -471,7 +480,7 @@
     "followUs": "Ikuti Kami",
     "whatsNew": "Apa yang Baru",
     "communityBuzz": "Tren Komunitas",
-    "communityBuzzDesc": "Lihat apa yang sedang tren di @halalformosa",
+    "communityBuzzDesc": "Lihat apa yang sedang tren di {'@'}halalformosa",
     "mediaPartnerContent": "Konten Mitra Media",
     "mediaPartnerDesc": "Pengalaman halal nyata dari mitra media terverifikasi kami",
     "mediaPartner": "Mitra media",
@@ -593,6 +602,10 @@
       "disclaimerNote": "Hasil hanya untuk referensi. Selalu verifikasi dengan sumber terpercaya sebelum dikonsumsi.",
       "gotIt": "Mengerti"
     },
+    "liveVerdict": {
+      "label": "Live Scan",
+      "help": "Apa itu Live Scan?"
+    },
     "autoScan": {
       "title": "Pindai Otomatis",
       "hint": "Posisikan komposisi di dalam bingkai",
@@ -605,7 +618,7 @@
         "notFound": "Komposisi tidak ditemukan, tahan posisi...",
         "analyzing": "Oke! Membaca bahan..."
       },
-      "label": "Auto Scan",
+      "label": "Auto Capture",
       "analyzingHint": "Foto diambil — kamu bisa menurunkan kamera sekarang",
       "highlightsFound": "{count} bahan ditemukan",
       "autoDismiss": "Pindai berikutnya dalam {s} dtk — ketuk untuk jeda",
@@ -614,6 +627,11 @@
       "viewDetails": "Lihat Detail"
     },
     "scan": {
+      "takePhoto": "Ambil foto",
+      "otherWays": "Cara lain memindai",
+      "galleryHint": "Pilih foto",
+      "autoHint": "Foto otomatis",
+      "liveHint": "Langsung",
       "decision": {
         "question": "Apa yang akan Anda lakukan dengan produk ini?",
         "use": "Beli / makan",
@@ -669,14 +687,28 @@
       "thinking": "AI is Thinking...",
       "explanation": "AI Explanation",
       "unlock": "Unlock AI Explanation",
-      "unlockPro": "Unlock AI Explanation (PRO)"
+      "unlockPro": "Unlock AI Explanation (PRO)",
+      "teaser": {
+        "title": "Mengapa {ingredient} ditandai?",
+        "body": "Pro menjelaskan dengan bahasa sederhana bahan ini biasanya berasal dari apa dan apa yang perlu dicek di label.",
+        "note": "Hasil di atas tetap gratis."
+      }
     },
     "limit": {
       "reached": "Batas pemindaian harian tercapai. Tonton iklan atau kontribusikan produk/lokasi yang belum terdaftar untuk mendapatkan lebih banyak pemindaian!",
       "reachedContribute": "Batas pemindaian harian tercapai. Kontribusikan produk/lokasi yang belum terdaftar untuk mendapatkan lebih banyak pemindaian!",
+      "upgrade": "Upgrade ke Pro",
       "bonus": "Watch Ad +1 Scan",
       "adLimit": "You can only watch {count} ads per day.",
-      "contributeTip": "Dapatkan +1 pemindaian harian untuk setiap produk atau lokasi yang Anda kontribusikan (maks 3/hari)."
+      "contributeTip": "Dapatkan +1 pemindaian harian untuk setiap produk atau lokasi yang Anda kontribusikan (maks 3/hari).",
+      "sheet": {
+        "title": "Jatah {limit} pemindaian hari ini sudah habis",
+        "body": "Pemindaian diatur ulang besok. Lanjutkan sekarang dengan Pro, atau tambahkan produk atau lokasi yang belum terdaftar untuk mendapat pemindaian bonus.",
+        "bodyNoEarn": "Pemindaian diatur ulang besok. Beralih ke Pro untuk terus memindai sekarang.",
+        "upgrade": "Upgrade ke Pro untuk pemindaian tanpa batas",
+        "earn": "Dapatkan pemindaian bonus",
+        "notNow": "Nanti saja"
+      }
     },
     "progress": {
       "initializing": "Initializing...",
@@ -689,6 +721,17 @@
       "matchingIng": "Matching ingredients...",
       "finalizing": "Finalizing...",
       "failed": "Failed"
+    },
+    "failure": {
+      "title": "Kami tidak bisa membaca label ini",
+      "empty": "Daftar bahan tidak ditemukan pada foto itu.",
+      "error": "Terjadi kesalahan saat membaca foto.",
+      "offline": "Tidak ada koneksi internet. Periksa koneksi lalu coba lagi.",
+      "tipsTitle": "Tips",
+      "tip1": "Bidik hanya daftar bahan hingga memenuhi bingkai",
+      "tip2": "Gunakan cahaya yang cukup dan pegang ponsel dengan stabil",
+      "tip3": "Hindari pantulan cahaya pada kemasan mengilap",
+      "retry": "Coba lagi"
     },
     "errors": {
       "ocrFailed": "OCR analysis failed. Please try again with a clearer photo.",
@@ -704,6 +747,11 @@
   "search": {
     "title": "Produk",
     "placeholder": "Cari (misal: Teh)",
+    "verdictNote": {
+      "lastUpdated": "Terakhir diperbarui {date}",
+      "changed": "Status berubah dari {from} pada {date}.",
+      "ingredientsUpdated": "Daftar bahan diperbarui pada saat yang sama."
+    },
     "officialPartner": "MITRA RESMI",
     "filtersLabel": "Filter",
     "filters": {
@@ -1608,6 +1656,13 @@
     "freeTier": "Penggunaan Paket Gratis",
     "proUpgrade": "Tingkatkan ke {pro} untuk simpanan tanpa batas.",
     "freeLimitReached": "Anda telah mencapai batas gratis. Tingkatkan ke Pro untuk menyimpan item tanpa batas!",
+    "limitSheet": {
+      "title": "Daftar simpanan Anda penuh",
+      "body": "Akun gratis bisa menyimpan {limit} item. Hapus satu, atau upgrade ke Pro untuk menyimpan tanpa batas.",
+      "upgrade": "Upgrade ke Pro",
+      "manage": "Kelola item tersimpan",
+      "notNow": "Nanti saja"
+    },
     "noCollections": "Belum Ada Koleksi",
     "noCollectionsDesc": "Buat folder untuk mulai mengatur item simpanan Anda!",
     "createFolder": "Buat Folder",
@@ -2380,6 +2435,13 @@
     "freeTier": "Free Tier Usage",
     "proUpgrade": "Upgrade to {pro} for unlimited saves.",
     "freeLimitReached": "You've reached your free limit. Upgrade to Pro to save unlimited locations!",
+    "limitSheet": {
+      "title": "Lokasi tersimpan Anda penuh",
+      "body": "Akun gratis bisa menyimpan {limit} lokasi. Hapus satu, atau upgrade ke Pro untuk menyimpan tanpa batas.",
+      "upgrade": "Upgrade ke Pro",
+      "manage": "Kelola lokasi tersimpan",
+      "notNow": "Nanti saja"
+    },
     "noCollections": "No Collections Yet",
     "noCollectionsDesc": "Create a folder to start organizing your saved locations!",
     "createFolder": "Create Folder",

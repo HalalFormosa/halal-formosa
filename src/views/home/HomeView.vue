@@ -48,6 +48,17 @@
                 <ion-icon :icon="compassOutline" slot="start" />
                 {{ $t('home.qibla') }}
               </ion-button>
+
+              <ion-button
+                  size="small"
+                  fill="clear"
+                  color="carrot"
+                  class="qibla-header-btn"
+                  :aria-label="$t('prayerSettings.title')"
+                  @click="openPrayerSettings"
+              >
+                <ion-icon :icon="settingsOutline" />
+              </ion-button>
             </div>
           </div>
         </ion-card-header>
@@ -1066,6 +1077,11 @@
       </ion-content>
     </ion-popover>
 
+    <PrayerSettingsSheet
+      :is-open="showPrayerSettings"
+      @close="showPrayerSettings = false"
+    />
+
     <!-- 📢 Bottom Sheet Announcement Modal -->
     <ion-modal
       :is-open="showAnnouncement && !!announcement"
@@ -1100,6 +1116,8 @@
       </ion-content>
     </ion-modal>
 
+    <scan-milestone-sheet v-model:open="milestoneOpen" />
+
   </ion-page>
 </template>
 
@@ -1109,7 +1127,7 @@ import {ref, nextTick, computed, onBeforeUnmount, watch, onMounted} from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
   IonPage, IonContent, IonCard, IonCardHeader, IonCardTitle,
-  IonCardContent, IonButton, IonIcon, IonHeader, onIonViewWillEnter, IonLabel, IonChip, IonSkeletonText,
+  IonCardContent, IonButton, IonIcon, IonHeader, onIonViewWillEnter, onIonViewDidLeave, IonLabel, IonChip, IonSkeletonText,
   IonList, IonBadge, IonAvatar, IonItem, IonPopover, IonModal, IonToolbar, IonTitle, IonButtons,
   IonSegment, IonSegmentButton, alertController, toastController, IonSelect, IonSelectOption, IonSpinner
 } from '@ionic/vue'
@@ -1131,6 +1149,7 @@ import {
   closeOutline,
   shieldCheckmarkOutline,
   locateOutline,
+  settingsOutline,
   cartOutline,
   constructOutline,
   chevronForwardOutline,
@@ -1152,7 +1171,7 @@ import { isPublicProfile, currentUser } from '@/composables/userProfile';
 import {ActivityLogService} from "@/services/ActivityLogService";
 import {SocialMediaService} from "@/services/SocialMediaService";
 import { isDonor, refreshSubscriptionStatus } from "@/composables/useSubscriptionStatus";
-import { RevenueCatUI, PAYWALL_RESULT } from '@revenuecat/purchases-capacitor-ui';
+import { presentProPaywall } from '@/utils/proPaywall';
 import {Capacitor, type PluginListenerHandle} from "@capacitor/core";
 import { Geolocation } from '@capacitor/geolocation'
 import { Browser } from '@capacitor/browser'
@@ -1161,9 +1180,13 @@ import { PrayTime } from 'praytime'
 import { useLocation, type LatLng } from '@/composables/useLocation'
 import { useHomeData } from '@/composables/useHomeData'
 import { syncPrayerWidget } from '@/composables/useWidgetSync'
+import { usePrayerSettings } from '@/composables/usePrayerSettings'
+import PrayerSettingsSheet from '@/components/PrayerSettingsSheet.vue'
 import LazySection from '@/components/LazySection.vue'
 import DailyMissions from "@/components/DailyMissions.vue"
 import YearlySurveyCard from "@/components/survey/YearlySurveyCard.vue"
+import ScanMilestoneSheet from "@/components/scan/ScanMilestoneSheet.vue"
+import { useScanMilestone } from "@/composables/useScanMilestone"
 import { useDailyMissions } from '@/composables/useDailyMissions'
 
 const { withCache } = useHomeData()
@@ -1561,17 +1584,7 @@ async function presentRcPaywall() {
     return;
   }
 
-  try {
-    const { result } = await RevenueCatUI.presentPaywall();
-    if (result === PAYWALL_RESULT.PURCHASED || result === PAYWALL_RESULT.RESTORED) {
-      await refreshSubscriptionStatus({ syncToServer: true });
-      ActivityLogService.log('pro_purchase_success', {
-        source: 'home_view_halalify'
-      });
-    }
-  } catch (err) {
-    console.error("Paywall failed:", err);
-  }
+  await presentProPaywall('home_view_halalify');
 }
 
 async function copyPhrase(text: string) {
@@ -2050,13 +2063,15 @@ async function fetchPrayerTimes() {
 
   const location = await getUserLocation()
 
-  const praytime = new PrayTime('MWL')
+  const cfg = prayerSettings.value
+  const praytime = new PrayTime(cfg.method)
 
   praytime
       .location([location.lat, location.lng])
       .timezone(userTimezone.value)
       .format('24h')
-      .adjust({ highLats: 'AngleBased' })
+      .adjust({ highLats: 'AngleBased', asr: cfg.asr })
+      .tune({ ...cfg.tune })
 
   const times = praytime.getTimes(new Date())
 
@@ -2073,6 +2088,17 @@ async function fetchPrayerTimes() {
 
   syncPrayerWidget(prayerTimes.value)
 }
+
+const { settings: prayerSettings } = usePrayerSettings()
+const showPrayerSettings = ref(false)
+
+function openPrayerSettings() {
+  ActivityLogService.log('home_prayer_settings_open')
+  showPrayerSettings.value = true
+}
+
+// Recompute as soon as the user saves new calculation settings.
+watch(prayerSettings, () => { fetchPrayerTimes() }, { deep: true })
 
 async function handleRefreshLocation() {
   ActivityLogService.log("home_prayer_refresh_location");
@@ -2804,9 +2830,35 @@ async function refreshAllData() {
 }
 
 
+// One-time "10 scans" Pro sheet. Waits for Home to settle so it never lands on top of the
+// announcement sheet, and stays quiet if the user has already moved on.
+const { open: milestoneOpen, maybeShow: maybeShowScanMilestone } = useScanMilestone()
+let homeActive = false
+let milestoneTimer: ReturnType<typeof setTimeout> | null = null
+
+function clearMilestoneTimer() {
+  if (milestoneTimer) {
+    clearTimeout(milestoneTimer)
+    milestoneTimer = null
+  }
+}
+
+onIonViewDidLeave(() => {
+  homeActive = false
+  clearMilestoneTimer()
+})
+
 onIonViewWillEnter(async () => {
   loadFavorites()
   ActivityLogService.log("home_page_open");
+
+  homeActive = true
+  clearMilestoneTimer()
+  milestoneTimer = setTimeout(() => {
+    void maybeShowScanMilestone({
+      blocked: () => !homeActive || (showAnnouncement.value && !!announcement.value) || showPrayerSettings.value || !!selectedUser.value,
+    })
+  }, 2500)
   
   const { data } = await supabase.auth.getSession()
   isAuthenticated.value = !!data.session
@@ -2822,6 +2874,7 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+  clearMilestoneTimer()
   if (ttsRangeListenerHandle) {
     ttsRangeListenerHandle.remove()
     ttsRangeListenerHandle = null

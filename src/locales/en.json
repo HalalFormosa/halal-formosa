@@ -236,6 +236,15 @@
   },
   "home": {
     "title": "Halal Formosa",
+    "scanMilestone": {
+      "title": "You've scanned {count} products",
+      "body": "Nice start. Here's what Pro adds on top.",
+      "benefitScans": "Unlimited scans and Live Scan",
+      "benefitAi": "AI explanation of each verdict",
+      "benefitHistory": "Scan history and no ads",
+      "upgrade": "See what Pro includes",
+      "later": "Maybe later"
+    },
     "scan": "Scan Ingredients",
     "scanDesc": "Check Halal status instantly",
     "scanBarcode": "Scan Barcode",
@@ -284,7 +293,7 @@
     "followUs": "Follow Us",
     "whatsNew": "What's New",
     "communityBuzz": "Community Buzz",
-    "communityBuzzDesc": "See what's trending with @halalformosa",
+    "communityBuzzDesc": "See what's trending with {'@'}halalformosa",
     "mediaPartner": "Media partner",
     "noReels": "No recent content found.",
     "viewFullFeed": "View Full Feed",
@@ -434,14 +443,39 @@
       "thinking": "AI is Thinking...",
       "explanation": "AI Explanation",
       "unlock": "Unlock AI Explanation",
-      "unlockPro": "Unlock AI Explanation (PRO)"
+      "unlockPro": "Unlock AI Explanation (PRO)",
+      "teaser": {
+        "title": "Why is {ingredient} flagged?",
+        "body": "Pro explains in plain language what it is usually made from and what to look for on the label.",
+        "note": "The verdict above stays free."
+      }
     },
     "limit": {
       "reached": "Daily scan limit reached. Watch an ad or contribute a missing product/location to get more scans!",
       "reachedContribute": "Daily scan limit reached. Contribute a missing product or location to get more scans!",
+      "upgrade": "Go Pro",
       "bonus": "Watch Ad +1 Scan",
       "adLimit": "You can only watch {count} ads per day.",
-      "contributeTip": "Earn +1 daily scan for every product or location you contribute (max 3/day)."
+      "contributeTip": "Earn +1 daily scan for every product or location you contribute (max 3/day).",
+      "sheet": {
+        "title": "That's your {limit} scans for today",
+        "body": "Scans reset tomorrow. Keep going now with Pro, or add a missing product or location to earn bonus scans.",
+        "bodyNoEarn": "Scans reset tomorrow. Go Pro to keep scanning now.",
+        "upgrade": "Go Pro for unlimited scans",
+        "earn": "Earn bonus scans",
+        "notNow": "Not now"
+      }
+    },
+    "failure": {
+      "title": "We couldn't read this label",
+      "empty": "No ingredient list was found in that photo.",
+      "error": "Something went wrong while reading the photo.",
+      "offline": "No internet connection. Check your connection and try again.",
+      "tipsTitle": "Tips",
+      "tip1": "Fill the frame with the ingredient list only",
+      "tip2": "Use good light and hold the phone steady",
+      "tip3": "Avoid glare on shiny packaging",
+      "retry": "Try again"
     },
     "errors": {
       "ocrFailed": "OCR analysis failed. Please try again with a clearer photo.",
@@ -450,9 +484,13 @@
       "couldNotAccessCamera": "Could not access camera. Please check permissions.",
       "adFailed": "Could not load rewarded ad. Please try again."
     },
+    "liveVerdict": {
+      "label": "Live Scan",
+      "help": "What is Live Scan?"
+    },
     "autoScan": {
-      "label": "Auto Scan",
-      "title": "Auto Scanner",
+      "label": "Auto Capture",
+      "title": "Auto Capture",
       "hint": "Position ingredients inside the frame",
       "status": {
         "init": "Initializing HD Camera...",
@@ -471,9 +509,14 @@
       "viewDetails": "View Details"
     },
     "scan": {
+      "takePhoto": "Take a photo",
+      "otherWays": "Other ways to scan",
+      "galleryHint": "Pick a photo",
+      "autoHint": "Snaps when ready",
+      "liveHint": "Real time",
       "camera": "Camera",
       "gallery": "Gallery",
-      "auto": "Auto Scan (BETA)",
+      "auto": "Auto Capture (BETA)",
       "reCrop": "Re-crop",
       "productName": "Detected Product Name",
       "decision": {
@@ -522,6 +565,11 @@
   "search": {
     "title": "Product",
     "placeholder": "Search (e.g. Tea)",
+    "verdictNote": {
+      "lastUpdated": "Last updated {date}",
+      "changed": "Verdict changed from {from} on {date}.",
+      "ingredientsUpdated": "The ingredient list was updated at the same time."
+    },
     "officialPartner": "OFFICIAL PARTNER",
     "filtersLabel": "Filters",
     "filters": {
@@ -1483,6 +1531,13 @@
     "freeTier": "Free Tier Usage",
     "proUpgrade": "Upgrade to {pro} for unlimited saves.",
     "freeLimitReached": "You've reached your free limit. Upgrade to Pro to save unlimited items!",
+    "limitSheet": {
+      "title": "Your saved list is full",
+      "body": "Free lists hold {limit} items. Remove one, or go Pro to save unlimited items.",
+      "upgrade": "Go Pro",
+      "manage": "Manage saved items",
+      "notNow": "Not now"
+    },
     "noCollections": "No Collections Yet",
     "noCollectionsDesc": "Create a folder to start organizing your saved items!",
     "createFolder": "Create Folder",
@@ -1514,6 +1569,13 @@
     "freeTier": "Free Tier Usage",
     "proUpgrade": "Upgrade to {pro} for unlimited saves.",
     "freeLimitReached": "You've reached your free limit. Upgrade to Pro to save unlimited locations!",
+    "limitSheet": {
+      "title": "Your saved locations are full",
+      "body": "Free lists hold {limit} locations. Remove one, or go Pro to save unlimited locations.",
+      "upgrade": "Go Pro",
+      "manage": "Manage saved locations",
+      "notNow": "Not now"
+    },
     "noCollections": "No Collections Yet",
     "noCollectionsDesc": "Create a folder to start organizing your saved locations!",
     "createFolder": "Create Folder",
@@ -2816,6 +2878,40 @@
       "tileUsage": "Usage",
       "tileAccounts": "Accounts",
       "tileActiveDays": "Active days"
+    }
+  },
+  "prayerSettings": {
+    "title": "Prayer calculation",
+    "close": "Close",
+    "note": "Times are calculated. Your local mosque may differ by a few minutes.",
+    "method": "Method",
+    "asr": "Asr",
+    "asrStandard": "Standard",
+    "asrHanafi": "Hanafi",
+    "adjust": "Adjust minutes",
+    "adjustHelp": "Add or subtract minutes to match your mosque's timetable.",
+    "plus": "Add a minute to {prayer}",
+    "minus": "Subtract a minute from {prayer}",
+    "save": "Save",
+    "reset": "Reset to default",
+    "prayers": {
+      "fajr": "Fajr",
+      "dhuhr": "Dhuhr",
+      "asr": "Asr",
+      "maghrib": "Maghrib",
+      "isha": "Isha"
+    },
+    "methods": {
+      "MWL": "Muslim World League",
+      "ISNA": "ISNA (North America)",
+      "Egypt": "Egyptian General Authority",
+      "Makkah": "Umm al-Qura (Makkah)",
+      "Karachi": "University of Islamic Sciences, Karachi",
+      "Tehran": "Institute of Geophysics, Tehran",
+      "Jafari": "Shia Ithna-Ashari (Jafari)",
+      "France": "Union des Organisations Islamiques de France",
+      "Russia": "Spiritual Administration of Muslims of Russia",
+      "Singapore": "Majlis Ugama Islam Singapura"
     }
   }
 }

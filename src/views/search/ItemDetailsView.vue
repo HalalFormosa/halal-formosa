@@ -182,6 +182,22 @@
                 </div>
               </div>
 
+              <!-- When the verdict last changed, and why we can say so -->
+              <div v-if="verdictChange || lastUpdatedLabel" class="verdict-note" data-testid="verdict-note">
+                <p v-if="verdictChange" class="verdict-note-change">
+                  <ion-icon :icon="informationCircleOutline" />
+                  <span>
+                    {{ $t('search.verdictNote.changed', { from: $t(`search.status.${verdictChange.from}`), date: verdictChange.when }) }}
+                    <template v-if="verdictChange.ingredientsChanged">
+                      {{ $t('search.verdictNote.ingredientsUpdated') }}
+                    </template>
+                  </span>
+                </p>
+                <p v-if="lastUpdatedLabel" class="verdict-note-updated">
+                  {{ $t('search.verdictNote.lastUpdated', { date: lastUpdatedLabel }) }}
+                </p>
+              </div>
+
               <!-- Provided by (brand/merchant partner; campus partners have their own card below) -->
               <div
                   v-if="item?.partner?.is_active && item.partner.partner_type !== 'campus'"
@@ -465,6 +481,13 @@
       </ion-content>
     </ion-modal>
 
+    <save-limit-sheet
+      v-model:open="showSaveLimitSheet"
+      kind="item"
+      @upgraded="onSaveLimitUpgraded"
+      @manage="router.push('/profile/saved-items')"
+    />
+
     <!-- Save to Folder Modal -->
     <ion-modal :is-open="showSaveModal" @didDismiss="showSaveModal = false" :initial-breakpoint="0.5" :breakpoints="[0, 0.5, 0.75]">
       <ion-content class="ion-padding">
@@ -602,18 +625,18 @@ import {
   sparkles,
   star,
   shieldCheckmarkOutline,
+  informationCircleOutline,
   shareSocialOutline,
   sparklesOutline // Added for contribution prompt
 } from "ionicons/icons";
 import AddProductView from "@/views/add-product/AddProductView.vue";
 import { userRole } from '@/composables/userProfile'
-import { isDonor, refreshSubscriptionStatus } from '@/composables/useSubscriptionStatus'
+import { isDonor } from '@/composables/useSubscriptionStatus'
 import { useAdSlotCollapsed, adSpaceStyle } from '@/composables/useAdFallback'
 import { ActivityLogService } from "@/services/ActivityLogService";
-import { logPaywallCancelled, logPaywallFailed, logPaywallRestored } from '@/utils/paywallLogging'
+import SaveLimitSheet from '@/components/SaveLimitSheet.vue'
+import { FREE_SAVE_LIMIT } from '@/constants/savedLimits'
 import { scheduleBannerUpdate } from '@/plugins/admob'
-import { RevenueCatUI, PAYWALL_RESULT } from '@revenuecat/purchases-capacitor-ui'
-import { useNotifier } from "@/composables/useNotifier";
 
 const showContributionPrompt = ref(false) // Added state
 const auditLogRef = ref<InstanceType<typeof AuditHistoryLog> | null>(null)
@@ -624,7 +647,6 @@ const ionRouter = useIonRouter()
 const router = useRouter()
 const barcode = route.params.barcode as string
 const { t } = useI18n()
-const { notifyEvent } = useNotifier()
 
 const isScrolled = ref(false)
 const handleScroll = (ev: any) => {
@@ -646,6 +668,7 @@ const maxVisible = 5
 const ingredientDictionary = ref<Record<string, string>>({});
 
 const showSaveModal = ref(false);
+const showSaveLimitSheet = ref(false);
 const folders = ref<{ id: string, name: string }[]>([]);
 const isItemSaved = ref(false); 
 const newFolderName = ref('');
@@ -717,6 +740,56 @@ function fromNowToTaipei(dateString?: string) {
   if (!dateString) return ''
   return dayjs.utc(dateString).tz('Asia/Taipei').fromNow()
 }
+
+/**
+ * "Last updated" and verdict-change notice. A product's verdict can change when its info is reviewed;
+ * without a hint, users who saw a different verdict days earlier get confused (yearly survey, Nov 2026).
+ */
+interface VerdictInfo {
+  last_updated_at: string | null
+  status_changed_at: string | null
+  previous_status: string | null
+  ingredients_changed: boolean | null
+}
+const verdictInfo = ref<VerdictInfo | null>(null)
+const VERDICT_CHANGE_NOTICE_DAYS = 60
+const KNOWN_VERDICTS = ['Halal', 'Muslim-friendly', 'Syubhah', 'Haram']
+
+async function loadVerdictInfo(productId?: string) {
+  verdictInfo.value = null
+  if (!productId) return
+  try {
+    const { data, error } = await supabase.rpc('product_verdict_info', { p_product_id: productId })
+    if (!error && data) verdictInfo.value = data as VerdictInfo
+  } catch (err) {
+    console.warn('Verdict info load failed:', err)
+  }
+}
+
+function formatTaipeiDate(dateString?: string | null) {
+  if (!dateString) return ''
+  return dayjs.utc(dateString).tz('Asia/Taipei').format('D MMM YYYY')
+}
+
+const lastUpdatedLabel = computed(() => {
+  const when = verdictInfo.value?.last_updated_at || item.value?.created_at
+  return when ? formatTaipeiDate(when) : ''
+})
+
+// Only for a recent change from one real verdict to a different one (not "Unknown" -> first verdict).
+const verdictChange = computed(() => {
+  const info = verdictInfo.value
+  const current = item.value?.status
+  if (!info?.status_changed_at || !info.previous_status || !current) return null
+  if (!KNOWN_VERDICTS.includes(info.previous_status) || info.previous_status === current) return null
+  const ageDays = dayjs().diff(dayjs.utc(info.status_changed_at), 'day')
+  if (ageDays > VERDICT_CHANGE_NOTICE_DAYS) return null
+  return {
+    from: info.previous_status,
+    when: formatTaipeiDate(info.status_changed_at),
+    ingredientsChanged: !!info.ingredients_changed,
+  }
+})
 
 function goToAddProduct() {
   router.push({
@@ -800,79 +873,20 @@ async function loadFoldersAndSavedState() {
   totalSavedItems.value = count || 0;
 }
 
-async function presentPaywall(): Promise<boolean> {
-  if (!Capacitor.isNativePlatform()) {
-    console.warn("[RC] Paywall can only run on native.");
-    return false;
-  }
-
-  try {
-    const { result } = await RevenueCatUI.presentPaywall();
-
-    switch (result) {
-      case PAYWALL_RESULT.PURCHASED:
-        // 🔄 Refresh subscription state
-        await refreshSubscriptionStatus({ syncToServer: true })
-
-        await ActivityLogService.log("pro_purchase_success", {
-          source: "save_item_limit"
-        })
-
-        const { data: { user } } = await supabase.auth.getUser();
-        await notifyEvent(
-          'pro_purchase_success',
-          '💎 New Pro Member!',
-          `User ${user?.email ?? 'unknown'} has just subscribed to Halal Formosa Pro!`,
-          undefined,
-          {
-            source: 'item_details_view',
-            email: user?.email,
-            user_id: user?.id
-          },
-          ['discord']
-        ).catch(console.error);
-
-        return true
-
-      case PAYWALL_RESULT.RESTORED:
-        await refreshSubscriptionStatus({ syncToServer: true })
-        logPaywallRestored("save_item_limit")
-        return true
-
-      case PAYWALL_RESULT.CANCELLED:
-        logPaywallCancelled("save_item_limit")
-        return false
-
-      case PAYWALL_RESULT.ERROR:
-      default:
-        logPaywallFailed("save_item_limit", result)
-        return false
-    }
-
-  } catch (err) {
-    console.error("Paywall failed:", err)
-    logPaywallFailed("save_item_limit", err)
-    return false
-  }
-}
-
 async function openSaveModal() {
   await popoverController.dismiss();
-  
-  if (!isItemSaved.value && !isDonor.value && totalSavedItems.value >= 5) {
-    await ActivityLogService.log("pro_paywall_trigger", {
-      source: "save_item_limit"
-    });
 
-    const purchased = await presentPaywall();
-
-    if (!purchased) return;
-
-    // 🔁 Yield small delay for subscription reactive update
-    await new Promise(r => setTimeout(r, 300));
+  if (!isItemSaved.value && !isDonor.value && totalSavedItems.value >= FREE_SAVE_LIMIT) {
+    showSaveLimitSheet.value = true;
+    return;
   }
   
   showSaveModal.value = true;
+}
+
+// Pro was just bought from the limit sheet: carry on saving once the sheet has finished closing.
+function onSaveLimitUpgraded() {
+  setTimeout(() => { showSaveModal.value = true }, 300);
 }
 
 async function createNewFolder() {
@@ -1325,6 +1339,7 @@ async function loadProductData() {
 
       // ✅ assign once
       item.value = product
+      void loadVerdictInfo(product.id)
 
       // If we got here via a merged-away barcode, fix the URL to the
       // canonical one (bookmarks/shares/QR codes should settle on it too).
@@ -1621,6 +1636,32 @@ const share = async () => {
   font-size: 12px;
   color: var(--ion-color-medium);
   margin: 2px 0 12px 0;
+}
+
+.verdict-note {
+  margin-top: 10px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--ion-color-medium);
+}
+.verdict-note p {
+  margin: 0;
+}
+.verdict-note-change {
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+  margin-bottom: 4px !important;
+  padding: 8px 10px !important;
+  border-radius: 10px;
+  background: rgba(230, 126, 34, 0.1);
+  color: var(--ion-text-color);
+}
+.verdict-note-change ion-icon {
+  flex: 0 0 auto;
+  margin-top: 1px;
+  font-size: 15px;
+  color: #c96718;
 }
 
 .section-title {

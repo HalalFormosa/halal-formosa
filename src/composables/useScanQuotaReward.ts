@@ -2,6 +2,7 @@ import { supabase } from '@/plugins/supabaseClient'
 import { isDonor } from '@/composables/useSubscriptionStatus'
 import { userRole } from '@/composables/userProfile'
 import { ActivityLogService } from '@/services/ActivityLogService'
+import { MAX_CONTRIBUTION_SCANS_PER_DAY } from '@/services/ScanLimitService'
 
 /**
  * Awards bonus scan quota to the current user (e.g. for contributing a product or location).
@@ -46,7 +47,7 @@ export async function awardScanBonus(amount = 1) {
     // 🔒 Cap: limit contribution rewards to a maximum of 3 scans per day
     // contribution_scans = total_bonus_scans - ad_uses
     const contributionScans = currentBonus - currentAdUses
-    if (contributionScans >= 3) {
+    if (contributionScans >= MAX_CONTRIBUTION_SCANS_PER_DAY) {
       console.log('📈 Daily contribution scan reward limit reached (max 3/day). No scans awarded.')
       ActivityLogService.log('scan_bonus_cap_reached', { amount })
       return false
@@ -95,7 +96,7 @@ export async function isContributionLimitReached(): Promise<boolean> {
     if (data.last_updated !== today) return false
 
     const contributionScans = (data.bonus_scans || 0) - (data.daily_ad_uses || 0)
-    return contributionScans >= 3
+    return contributionScans >= MAX_CONTRIBUTION_SCANS_PER_DAY
   } catch {
     return false
   }

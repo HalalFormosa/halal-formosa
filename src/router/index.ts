@@ -236,6 +236,7 @@ const routes: Array<RouteRecordRaw> = [
       }
     },
     { path: '/scan/auto', component: () => import('@/views/scan/AutoScanView.vue'), meta: { requiresAuth: true, noAds: true, noTabs: true } },
+    { path: '/scan/live', component: () => import('@/views/scan/LiveVerdictView.vue'), meta: { requiresAuth: true, noAds: true, noTabs: true } },
     { path: '/scan/barcode', component: () => import('@/views/scan/BarcodeScanView.vue'), meta: { noAds: true, noTabs: true } },
 
     { path: '/news', component: () => import('@/views/news/NewsListView.vue') },

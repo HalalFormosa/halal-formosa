@@ -14,7 +14,7 @@
     <!-- UI Overlay (Controls & Feedback) -->
     <div class="scanner-ui-overlay">
       <div class="top-controls">
-        <span class="scanner-title">{{ $t('scanIngredients.autoScan.title', 'Auto Scanner') }}</span>
+        <span class="scanner-title">{{ $t('scanIngredients.autoScan.title', 'Auto Capture') }}</span>
         <div class="top-controls-actions">
           <div v-if="scanStatus" class="scan-count-chip" :class="{ 'scan-count-empty': scanStatus.remaining <= 0 }">
             <ion-icon :icon="scanOutline" />
@@ -115,7 +115,7 @@
         </div>
       </div>
 
-      <div class="bottom-controls" v-if="phase !== 'result'">
+      <div class="bottom-controls" :class="{ 'with-switcher': phase === 'searching' }" v-if="phase !== 'result'">
         <div class="status-badge" :class="statusClass">
           <ion-spinner v-if="phase !== 'searching' || scanning" name="lines-small" />
           <span>{{ statusMessage }}</span>
@@ -125,6 +125,9 @@
           {{ $t('scanIngredients.autoScan.hint', 'Position ingredients inside the frame') }}
         </div>
       </div>
+
+      <!-- Quick swap to another way of scanning, without going back to the mode picker -->
+      <ScanModeSwitcher v-if="phase === 'searching'" current="auto" />
     </div>
 
     <!-- Hidden canvas for frame analysis -->
@@ -137,6 +140,7 @@ import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
 import { IonIcon, IonSpinner } from '@ionic/vue'
 import { closeOutline, scanOutline, flashOutline, flashOffOutline } from 'ionicons/icons'
 import { useI18n } from 'vue-i18n'
+import ScanModeSwitcher from '@/components/scan/ScanModeSwitcher.vue'
 import useHighlightCache from '@/composables/useHighlightCache'
 import { useOcrService } from '@/composables/useOcrService'
 import type { AutoScanResult } from '@/composables/useAutoScanStore'
@@ -155,6 +159,8 @@ const emit = defineEmits<{
   (e: 'detected', result: AutoScanResult): void
   (e: 'stable-result', result: AutoScanResult): void
   (e: 'error', message: string): void
+  /** The daily cap was hit mid-scan. The parent decides how to offer Pro or bonus scans. */
+  (e: 'limit-reached', status: ScanStatus | null): void
   (e: 'close'): void
 }>()
 
@@ -478,10 +484,7 @@ async function startAnalysis() {
           console.log('🚫 [AutoScan] Daily scan limit reached, stopping.')
           ActivityLogService.log('scan_ingredients_limit_reached', { source: 'auto_scan' })
           stopCamera()
-          emit('error', t(
-            'scanIngredients.limit.reached',
-            'Daily scan limit reached. Watch an ad or contribute a missing product/location to get more scans!'
-          ))
+          emit('limit-reached', status)
           return
         }
 
@@ -866,6 +869,11 @@ onUnmounted(() => {
   align-items: center;
   gap: 16px;
   background: linear-gradient(to top, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0) 100%);
+}
+
+/* the mode switcher below carries the bottom safe-area spacing */
+.bottom-controls.with-switcher {
+  padding-bottom: 8px;
 }
 
 .status-badge {

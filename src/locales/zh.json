@@ -227,6 +227,15 @@
   },
   "home": {
     "title": "Halal Formosa",
+    "scanMilestone": {
+      "title": "您已掃描 {count} 項產品",
+      "body": "好的開始。Pro 還能為您增加這些功能。",
+      "benefitScans": "無限掃描與 Live Scan",
+      "benefitAi": "每個判定都有 AI 說明",
+      "benefitHistory": "掃描紀錄且無廣告",
+      "upgrade": "查看 Pro 內容",
+      "later": "稍後再說"
+    },
     "scan": "掃描成分",
     "home": "首頁",
     "scanDesc": "立即分析成分以獲得清真狀態",
@@ -264,7 +273,7 @@
     "followUs": "關注我們",
     "whatsNew": "最新動態",
     "communityBuzz": "社群焦點",
-    "communityBuzzDesc": "追蹤 @halalformosa 的熱門內容",
+    "communityBuzzDesc": "追蹤 {'@'}halalformosa 的熱門內容",
     "mediaPartnerContent": "媒體合作夥伴內容",
     "mediaPartnerDesc": "來自我們認證媒體合作夥伴的真實清真體驗",
     "mediaPartner": "媒體合作夥伴",
@@ -396,6 +405,10 @@
       "disclaimerNote": "結果僅供參考。食用前請務必向可靠來源確認。",
       "gotIt": "了解"
     },
+    "liveVerdict": {
+      "label": "即時掃描",
+      "help": "什麼是即時掃描？"
+    },
     "autoScan": {
       "title": "自動掃描",
       "hint": "請將成分對準在框內",
@@ -407,9 +420,14 @@
         "found": "找到成分！對焦中...",
         "notFound": "未找到成分，請繼續保持..."
       },
-      "label": "Auto Scan"
+      "label": "自動拍攝"
     },
     "scan": {
+      "takePhoto": "拍照",
+      "otherWays": "其他掃描方式",
+      "galleryHint": "選擇照片",
+      "autoHint": "就緒即拍",
+      "liveHint": "即時",
       "camera": "相機",
       "gallery": "相簿",
       "auto": "自動掃描 (測試版)",
@@ -461,14 +479,28 @@
       "thinking": "AI is Thinking...",
       "explanation": "AI Explanation",
       "unlock": "Unlock AI Explanation",
-      "unlockPro": "Unlock AI Explanation (PRO)"
+      "unlockPro": "Unlock AI Explanation (PRO)",
+      "teaser": {
+        "title": "為什麼 {ingredient} 被標記？",
+        "body": "Pro 會用淺顯的文字說明它通常來自什麼原料，以及該在標籤上檢查什麼。",
+        "note": "上方的判定結果仍然免費。"
+      }
     },
     "limit": {
       "reached": "已達到每日掃描限制。觀看廣告或貢獻缺失的產品/地點以獲取更多掃描次數！",
       "reachedContribute": "已達到每日掃描限制。貢獻缺失的產品或地點即可獲得更多掃描次數！",
+      "upgrade": "升級 Pro",
       "bonus": "Watch Ad +1 Scan",
       "adLimit": "You can only watch {count} ads per day.",
-      "contributeTip": "每貢獻一個新產品或地點可獲得 +1 每日掃描次數（每日最多 +3 次）。"
+      "contributeTip": "每貢獻一個新產品或地點可獲得 +1 每日掃描次數（每日最多 +3 次）。",
+      "sheet": {
+        "title": "今天的 {limit} 次掃描已用完",
+        "body": "掃描次數明天會重置。現在升級 Pro 即可繼續，或貢獻缺失的產品或地點來獲得額外掃描次數。",
+        "bodyNoEarn": "掃描次數明天會重置。升級 Pro 即可立即繼續掃描。",
+        "upgrade": "升級 Pro 享無限掃描",
+        "earn": "獲得額外掃描次數",
+        "notNow": "稍後再說"
+      }
     },
     "progress": {
       "initializing": "Initializing...",
@@ -482,6 +514,17 @@
       "finalizing": "Finalizing...",
       "failed": "Failed"
     },
+    "failure": {
+      "title": "無法讀取這個標籤",
+      "empty": "這張照片裡找不到成分表。",
+      "error": "讀取照片時發生錯誤。",
+      "offline": "沒有網路連線。請檢查連線後再試一次。",
+      "tipsTitle": "小提示",
+      "tip1": "只拍成分表，並讓它佔滿畫面",
+      "tip2": "光線充足並拿穩手機",
+      "tip3": "避免包裝反光",
+      "retry": "再試一次"
+    },
     "errors": {
       "ocrFailed": "OCR analysis failed. Please try again with a clearer photo.",
       "noIngredients": "No ingredients detected. Please try cropping more closely.",
@@ -492,6 +535,11 @@
   "search": {
     "title": "產品",
     "placeholder": "搜尋 (例如：茶)",
+    "verdictNote": {
+      "lastUpdated": "最後更新：{date}",
+      "changed": "判定結果已於 {date} 由「{from}」變更。",
+      "ingredientsUpdated": "成分表同時已更新。"
+    },
     "officialPartner": "官方夥伴",
     "filtersLabel": "篩選",
     "filters": {
@@ -1317,6 +1365,13 @@
     "freeTier": "免費版使用限制",
     "proUpgrade": "升級到 {pro} 以獲得無限儲存次數。",
     "freeLimitReached": "您已達到免費限額。升級到 Pro 以儲存無限項目！",
+    "limitSheet": {
+      "title": "您的收藏已滿",
+      "body": "免費版最多可收藏 {limit} 個項目。請移除一個，或升級 Pro 以無限收藏。",
+      "upgrade": "升級 Pro",
+      "manage": "管理已收藏項目",
+      "notNow": "稍後再說"
+    },
     "noCollections": "尚無收藏",
     "noCollectionsDesc": "創建資料夾以開始整理您的收藏項目！",
     "createFolder": "創建資料夾",
@@ -2009,6 +2064,13 @@
     "freeTier": "Free Tier Usage",
     "proUpgrade": "Upgrade to {pro} for unlimited saves.",
     "freeLimitReached": "You've reached your free limit. Upgrade to Pro to save unlimited locations!",
+    "limitSheet": {
+      "title": "您收藏的地點已滿",
+      "body": "免費版最多可收藏 {limit} 個地點。請移除一個，或升級 Pro 以無限收藏。",
+      "upgrade": "升級 Pro",
+      "manage": "管理已收藏地點",
+      "notNow": "稍後再說"
+    },
     "noCollections": "No Collections Yet",
     "noCollectionsDesc": "Create a folder to start organizing your saved locations!",
     "createFolder": "Create Folder",

@@ -167,7 +167,7 @@
     "followUs": "Ikuti Kami",
     "whatsNew": "Apa yang Baharu",
     "communityBuzz": "Trend Komuniti",
-    "communityBuzzDesc": "Lihat apa yang trending dengan @halal_formosa",
+    "communityBuzzDesc": "Lihat apa yang trending dengan {'@'}halalformosa",
     "mediaPartnerContent": "Kandungan Rakan Media",
     "mediaPartnerDesc": "Pengalaman halal sebenar daripada rakan media kami yang disahkan",
     "mediaPartner": "Rakan media",
@@ -285,6 +285,10 @@
       "disclaimerNote": "Keputusan adalah untuk rujukan sahaja. Sentiasa sahkan dengan sumber dipercayai sebelum makan.",
       "gotIt": "Faham"
     },
+    "liveVerdict": {
+      "label": "Live Scan",
+      "help": "Apakah Live Scan?"
+    },
     "autoScan": {
       "title": "Pengimbas Auto",
       "hint": "Letakkan bahan di dalam bingkai",
@@ -296,9 +300,14 @@
         "found": "Bahan Dijumpai! Memfokus...",
         "notFound": "Bahan tidak dijumpai, teruskan pegang..."
       },
-      "label": "Auto Scan"
+      "label": "Auto Capture"
     },
     "scan": {
+      "takePhoto": "Ambil gambar",
+      "otherWays": "Cara lain mengimbas",
+      "galleryHint": "Pilih gambar",
+      "autoHint": "Tangkap automatik",
+      "liveHint": "Masa nyata",
       "decision": {
         "question": "Apakah tindakan anda terhadap produk ini?",
         "use": "Beli / makan",
@@ -351,6 +360,7 @@
     "limit": {
       "reached": "Had imbasan harian dicapai. Tonton iklan atau sumbangkan produk/lokasi yang tiada untuk imbasan tambahan!",
       "reachedContribute": "Had imbasan harian dicapai. Sumbangkan produk/lokasi yang tiada untuk imbasan tambahan!",
+      "upgrade": "Naik taraf ke Pro",
       "bonus": "Watch Ad +1 Scan",
       "adLimit": "You can only watch {count} ads per day.",
       "contributeTip": "Dapatkan +1 imbasan harian bagi setiap produk atau lokasi yang anda sumbangkan (maks 3/hari)."

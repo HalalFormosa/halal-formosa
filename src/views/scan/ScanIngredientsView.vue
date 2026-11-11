@@ -180,6 +180,26 @@
 
       <!-- 🔍 STEP 1: Capture -->
       <div v-show="currentStep === STEP_CAPTURE" class="step-content">
+        <!-- Scan came back empty or failed: explain, give tips, offer a retry -->
+        <div v-if="scanFailure" class="scan-failure-card" role="alert" data-testid="scan-failure">
+          <div class="scan-failure-head">
+            <ion-icon :icon="alertCircleOutline" />
+            <strong>{{ $t('scanIngredients.failure.title') }}</strong>
+          </div>
+          <p class="scan-failure-body">{{ $t(`scanIngredients.failure.${scanFailure}`) }}</p>
+          <template v-if="scanFailure !== 'offline'">
+            <p class="scan-failure-tips-title">{{ $t('scanIngredients.failure.tipsTitle') }}</p>
+            <ul class="scan-failure-tips">
+              <li>{{ $t('scanIngredients.failure.tip1') }}</li>
+              <li>{{ $t('scanIngredients.failure.tip2') }}</li>
+              <li>{{ $t('scanIngredients.failure.tip3') }}</li>
+            </ul>
+          </template>
+          <ion-button expand="block" class="scan-failure-retry" @click="retryAfterFailure">
+            {{ $t('scanIngredients.failure.retry') }}
+          </ion-button>
+        </div>
+
         <!-- Daily Scan Counter -->
         <div style="margin-bottom: 8px;" v-if="todayScanCount !== null">
           <ion-chip color="primary" style="width: 100%; justify-content: center; height: 32px;">
@@ -244,19 +264,36 @@
           <ion-card-content>
             <ion-button expand="block" color="carrot" style="height: 56px; font-weight: 700;" class="ion-margin-bottom" @click="scanFromCamera">
                 <ion-icon slot="start" :icon="cameraOutline" />
-                {{ $t('scanIngredients.scan.camera') }}
+                {{ $t('scanIngredients.scan.takePhoto') }}
             </ion-button>
 
-            <div style="display: flex; gap: 12px;">
-                <ion-button fill="outline" color="carrot" style="flex: 1; height: 48px;" @click="scanFromGallery">
-                  <ion-icon slot="start" :icon="cloudUploadOutline" />
-                  {{ $t('scanIngredients.scan.gallery') }}
-                </ion-button>
-                <ion-button fill="outline" color="carrot" style="flex: 1; height: 48px;" @click="router.push('/scan/auto')">
-                  <ion-icon slot="start" :icon="eyeOutline" />
-                {{ $t('scanIngredients.autoScan.label') }}
-              </ion-button>
+            <div class="mode-tiles-label">{{ $t('scanIngredients.scan.otherWays') }}</div>
+            <div class="mode-tiles">
+              <button type="button" class="mode-tile" @click="scanFromGallery">
+                <ion-icon :icon="imagesOutline" />
+                <span class="mode-tile-name">{{ $t('scanIngredients.scan.gallery') }}</span>
+                <span class="mode-tile-hint">{{ $t('scanIngredients.scan.galleryHint') }}</span>
+              </button>
+              <button type="button" class="mode-tile" @click="router.push('/scan/auto')">
+                <ion-icon :icon="scanOutline" />
+                <span class="mode-tile-name">{{ $t('scanIngredients.autoScan.label') }}</span>
+                <span class="mode-tile-hint">{{ $t('scanIngredients.scan.autoHint') }}</span>
+              </button>
+              <button v-if="liveVerdictSupported" type="button" class="mode-tile" @click="router.push('/scan/live')">
+                <span v-if="!isDonor" class="mode-tile-pro"><ion-icon :icon="lockClosedOutline" />PRO</span>
+                <ion-icon :icon="pulseOutline" />
+                <span class="mode-tile-name">{{ $t('scanIngredients.liveVerdict.label') }}</span>
+                <span class="mode-tile-hint">{{ $t('scanIngredients.scan.liveHint') }}</span>
+              </button>
             </div>
+
+            <div v-if="liveVerdictSupported" class="mode-help-row">
+              <button type="button" class="mode-help-link" @click="liveHelpOpen = true">
+                {{ $t('scanIngredients.liveVerdict.help') }}
+                <ion-icon :icon="helpCircleOutline" />
+              </button>
+            </div>
+            <LiveVerdictHelpModal v-if="liveVerdictSupported" v-model:open="liveHelpOpen" />
           </ion-card-content>
         </ion-card>
       </div>
@@ -447,8 +484,15 @@
             </div>
           </div>
 
+          <!-- Free users with flagged ingredients see what the AI would explain; the rest keep the plain button. -->
+          <ai-explanation-teaser
+              v-if="showAiTeaser"
+              :ingredient="teaserIngredient"
+              @unlock="handleSummaryClick"
+          />
+
           <ion-button
-              v-if="ingredientsTextZh && !overallNote && !errorSummary"
+              v-if="ingredientsTextZh && !overallNote && !errorSummary && !showAiTeaser"
               expand="block"
               color="carrot"
               :disabled="loadingSummary"
@@ -591,13 +635,10 @@
           position="bottom"
           @did-dismiss="showCopied=false"
       />
-      <ion-toast
-          :is-open="showLimitToast"
-          :message="limitReachedMessage"
-          :duration="2000"
-          color="warning"
-          position="bottom"
-          @did-dismiss="showLimitToast=false"
+      <scan-limit-sheet
+          v-model:open="showLimitSheet"
+          :can-earn="canEarnToday"
+          @earn="router.push('/add')"
       />
       
       <!-- Hidden input for Web Gallery selection to avoid garbage collection drop off -->
@@ -677,7 +718,8 @@ import {
 } from '@ionic/vue'
 import {
   cameraOutline,
-  cloudUploadOutline, 
+  imagesOutline,
+  pulseOutline,
   helpCircleOutline, 
   lockClosedOutline,
   refreshOutline,
@@ -696,14 +738,18 @@ import {
   phonePortraitOutline,
   tabletLandscapeOutline,
   stopCircle,
-  eyeOutline,
   addCircleOutline,
   timeOutline,
-  chevronDownOutline
+  chevronDownOutline,
+  alertCircleOutline
 } from 'ionicons/icons'
 import AppHeader from '@/components/AppHeader.vue'
 import IngredientHighlightImage from '@/components/scan/IngredientHighlightImage.vue'
 import ScanDecisionPrompt from '@/components/ScanDecisionPrompt.vue'
+import LiveVerdictHelpModal from '@/components/scan/LiveVerdictHelpModal.vue'
+import ScanLimitSheet from '@/components/scan/ScanLimitSheet.vue'
+import AiExplanationTeaser from '@/components/scan/AiExplanationTeaser.vue'
+import { canEarnMoreScans } from '@/services/ScanLimitService'
 import { buildScanDecisionNotice, type ScanDecisionChoice } from '@/utils/scanDecisionNotice'
 import {ref, onUnmounted, computed, nextTick} from 'vue'
 import { Swiper, SwiperSlide } from 'swiper/vue'
@@ -741,13 +787,12 @@ dayjs.extend(relativeTime)
 
 import { showLevelPlayRewardedAd } from '@/lib/levelplay'
 import { Capacitor } from '@capacitor/core'
+import { isLiveVerdictSupported } from '@/utils/liveScanPlatform'
 import HouseAdCard from '@/components/ads/HouseAdCard.vue'
 import { ActivityLogService } from "@/services/ActivityLogService";
-import { logPaywallCancelled, logPaywallFailed, logPaywallRestored } from '@/utils/paywallLogging'
+import { presentProPaywall } from '@/utils/proPaywall'
 import { isNetworkError } from '@/utils/offlineFeedback'
 
-import { RevenueCatUI, PAYWALL_RESULT } from '@revenuecat/purchases-capacitor-ui'
-import { refreshSubscriptionStatus } from '@/composables/useSubscriptionStatus'
 import { useRouter } from 'vue-router'
 import { scheduleBannerUpdate } from '@/plugins/admob'
 import { destroyLevelPlayBanner } from '@/lib/levelplay'
@@ -755,10 +800,12 @@ import { onIonViewDidEnter } from '@ionic/vue'
 import { useAutoScanStore } from '@/composables/useAutoScanStore'
 import { useNotifier } from "@/composables/useNotifier"
 import { useI18n } from 'vue-i18n'
+import { extractCoreProductName, wordJaccard } from '@/utils/productNameMatch'
+import { takeScanAction } from '@/composables/useScanModeRequest'
 import { syncScanWidget } from '@/composables/useWidgetSync'
 import { getOptimizedImageUrl, onProductImageError } from '@/utils/imageHelpers'
 
-const { t, te } = useI18n()
+const { t } = useI18n()
 
 /** ---------- Constants ---------- */
 const DAILY_SCAN_LIMIT = 5
@@ -792,6 +839,14 @@ const currentStep = ref(STEP_CAPTURE)
 const contentRef = ref<any>(null)
 
 onIonViewDidEnter(() => {
+  // Arrived from the mode switcher on Auto Scan / Live Verdict: start what was asked for.
+  const requested = takeScanAction()
+  if (requested) {
+    currentStep.value = STEP_CAPTURE
+    if (requested === 'camera') scanFromCamera()
+    else scanFromGallery()
+  }
+
   if (currentStep.value === STEP_RESULTS) {
     scheduleBannerUpdate()
   } else {
@@ -837,19 +892,18 @@ const { errorMsg, showErr, setError, clearError } = useError()
 const { notifyEvent } = useNotifier()
 const showTutorial = ref(true)
 const showMuslimFriendly = ref(false)
-const showLimitToast = ref(false);
+const showLimitSheet = ref(false);
 const bonusScans = ref(0)
 const isNative = ref(Capacitor.isNativePlatform())
+const liveVerdictSupported = isLiveVerdictSupported()
+const liveHelpOpen = ref(false)
 
 // Flip to true to bring back the "Watch Ad +1 Scan" button. Off for now: the
 // rewarded-ad flow isn't ready, so bonus scans come from contributions only.
 const REWARDED_SCANS_ENABLED = false
 
-const limitReachedMessage = computed(() =>
-  !REWARDED_SCANS_ENABLED && te('scanIngredients.limit.reachedContribute')
-    ? t('scanIngredients.limit.reachedContribute', { limit: DAILY_SCAN_LIMIT })
-    : t('scanIngredients.limit.reached', { limit: DAILY_SCAN_LIMIT })
-)
+// Whether adding a product or location would still earn a scan today (capped per day).
+const canEarnToday = computed(() => canEarnMoreScans({ bonus: bonusScans.value }))
 const adSlotCollapsed = useAdSlotCollapsed('ad-space-scan-results', isDonor)
 const dailyAdUses = ref(0);
 const loadingAd = ref(false);
@@ -865,7 +919,7 @@ function onWebCameraSelected(e: Event) {
   ActivityLogService.log("scan_ingredients_start", {source: "camera"});
   if (!canScan.value) {
     ActivityLogService.log("scan_ingredients_limit_reached", {source: "camera"});
-    showLimitToast.value = true;
+    showLimitSheet.value = true;
     return;
   }
   currentSource.value = 'camera'
@@ -886,7 +940,7 @@ function onWebFileSelected(e: Event) {
   ActivityLogService.log("scan_ingredients_start", {source: "gallery"});
   if (!canScan.value) {
     ActivityLogService.log("scan_ingredients_limit_reached", {source: "gallery"});
-    showLimitToast.value = true;
+    showLimitSheet.value = true;
     return;
   }
   currentSource.value = 'gallery'
@@ -924,6 +978,24 @@ const router = useRouter()
 const { autoScanResult, clearResult } = useAutoScanStore()
 
 const isMovingToResults = ref(false)
+
+// A scan that produced nothing readable. Kept on screen (with tips and a retry button) instead of a
+// 2-second toast that vanished and left people staring at a blank step (survey feedback, Nov 2026).
+type ScanFailure = 'empty' | 'error' | 'offline'
+const scanFailure = ref<ScanFailure | null>(null)
+
+function showScanFailure(kind: ScanFailure) {
+  isMovingToResults.value = false
+  clearError()
+  scanFailure.value = kind
+  currentStep.value = STEP_CAPTURE
+  scrollToTop()
+}
+
+function retryAfterFailure() {
+  scanFailure.value = null
+  clearAll()
+}
 
 const truncatedProductName = computed(() => {
   if (!productName.value) return ''
@@ -977,42 +1049,6 @@ const ingredientsMatchPercent = computed(() =>
 // Show the fuller Quran/Hadith reminder only some of the time — the short line the rest,
 // so the prompt doesn't feel repetitive on every scan.
 const contributionMotivationKey = ref('scanIngredients.scan.contributionPrompt.motivation')
-
-// OCR-extracted product names often carry trailing packaging details
-// (e.g. "Coffee Plaza Net Weight: 300ml") that the stored product name
-// won't contain, so an exact substring match against the raw OCR text
-// misses real matches. Strip that noise down to the core name first.
-function extractCoreProductName(raw: string): string {
-  return raw
-    .replace(/net\s*weight\s*[:\-]?\s*[\d.,]+\s*(ml|l|g|kg|oz|lbs?)\b/gi, '')
-    .replace(/\b[\d.,]+\s*(ml|l|g|kg|oz|lbs?)\b/gi, '')
-    .replace(/[:\-–]+\s*$/g, '')
-    .replace(/\s{2,}/g, ' ')
-    .trim()
-}
-
-const STOP_WORDS = new Set(['the', 'and', 'with', 'for', 'net', 'weight'])
-
-function significantWords(name: string): string[] {
-  return name
-    .toLowerCase()
-    .split(/[^a-z0-9]+/)
-    .filter(w => w.length >= 3 && !STOP_WORDS.has(w))
-}
-
-// Jaccard similarity (overlap ÷ union) between two texts' significant words. Used for
-// both name and ingredient comparison — union-based so a short text matching inside a
-// much longer, unrelated one doesn't score as a near-perfect match (overlap ÷ min-size
-// would: e.g. "Strawberry Milk" vs. "Ultra Milk Long-lasting Flavored Milk - Strawberry
-// Flavor" scored 100% under that formula despite being different products).
-function wordJaccard(a: string, b: string): number {
-  const wordsA = new Set(significantWords(a))
-  const wordsB = new Set(significantWords(b))
-  if (wordsA.size === 0 || wordsB.size === 0) return 0
-  const overlap = [...wordsA].filter(w => wordsB.has(w)).length
-  const union = new Set([...wordsA, ...wordsB]).size
-  return overlap / Math.max(1, union)
-}
 
 async function checkProductExistence(name: string) {
   if (!name || name === 'Unknown' || name === 'Scan Results') return false
@@ -1180,6 +1216,14 @@ const dangerousHighlights = computed(() =>
 const friendlyHighlights = computed(() => 
   ingredientHighlights.value.filter((h: IngredientHighlight) => extractIonColor(h.color) === 'primary')
 )
+// Name of the main flagged ingredient, used to personalise the free-user AI teaser.
+const teaserIngredient = computed(() => {
+  const h = dangerousHighlights.value[0]
+  return h ? (h.keyword || h.keyword_zh || '') : ''
+})
+const showAiTeaser = computed(() =>
+  !isDonor.value && !!ingredientsTextZh.value && !overallNote.value && !errorSummary.value && !!teaserIngredient.value
+)
 const hasFriendlyHighlights = computed(() => 
   ingredientHighlights.value.some((h: IngredientHighlight) => extractIonColor(h.color) === 'primary')
 )
@@ -1193,10 +1237,15 @@ async function logIngredientScan({
   source: 'camera' | 'gallery'
   errorMessage?: string | null
   startTime?: number | null
-}) {
+}): Promise<boolean> {
+  // Resolves true only when a successful scan row was actually stored. The daily-limit trigger can
+  // reject the insert, and callers must not record a "scan success" activity event in that case.
   try {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return console.warn('⏩ No user logged in, skipping log');
+    if (!user) {
+      console.warn('⏩ No user logged in, skipping log');
+      return false;
+    }
 
     const success = !!ingredientsTextZh.value?.trim() || !!ingredientsText.value?.trim();
 
@@ -1223,10 +1272,15 @@ async function logIngredientScan({
       }
     ]);
 
-    if (error) console.error('❌ Log insert failed:', error);
-    else console.log(errorMessage ? '⚠️ Logged failed scan' : '✅ Logged successful scan');
+    if (error) {
+      console.error('❌ Log insert failed:', error);
+      return false;
+    }
+    console.log(errorMessage ? '⚠️ Logged failed scan' : '✅ Logged successful scan');
+    return success;
   } catch (err) {
     console.error('Error logging scan:', err);
+    return false;
   }
 }
 
@@ -1301,51 +1355,8 @@ const {
   generateSummary
 } = useAISummary()
 
-async function presentPaywall(): Promise<boolean> {
-  if (!Capacitor.isNativePlatform()) {
-    console.warn("[RC] Paywall can only run on native.");
-    return false;
-  }
-  try {
-    const resultParams = await RevenueCatUI.presentPaywall()
-    const paywallResult = resultParams.result || (resultParams as any)
-    switch (paywallResult) {
-      case PAYWALL_RESULT.PURCHASED:
-        await refreshSubscriptionStatus()
-        await ActivityLogService.log("pro_purchase_success", { source: "ai_summary" })
-
-        const { data: { user } } = await supabase.auth.getUser();
-        await notifyEvent(
-          'pro_purchase_success',
-          '💎 New Pro Member!',
-          `User ${user?.email ?? 'unknown'} has just subscribed to Halal Formosa Pro!`,
-          undefined,
-          {
-            source: 'scan_ingredients_view',
-            email: user?.email,
-            user_id: user?.id
-          },
-          ['discord']
-        ).catch(console.error);
-
-        return true
-      case PAYWALL_RESULT.RESTORED:
-        await refreshSubscriptionStatus()
-        logPaywallRestored("ai_summary")
-        return true
-      case PAYWALL_RESULT.CANCELLED:
-        logPaywallCancelled("ai_summary")
-        return false
-      case PAYWALL_RESULT.ERROR:
-      default:
-        logPaywallFailed("ai_summary", paywallResult)
-        return false
-    }
-  } catch (err) {
-    console.error("Paywall failed:", err)
-    logPaywallFailed("ai_summary", err)
-    return false
-  }
+async function presentPaywall(source = "ai_summary"): Promise<boolean> {
+  return presentProPaywall(source)
 }
 
 async function handleSummaryClick() {
@@ -1355,9 +1366,6 @@ async function handleSummaryClick() {
 
   // 🚫 If not Pro → show paywall
   if (!isDonor.value) {
-    await ActivityLogService.log("pro_paywall_trigger", {
-      source: "ai_summary"
-    })
     const purchased = await presentPaywall()
     if (!purchased) return
     // 🔁 Yield small delay for subscription reactive update
@@ -1400,6 +1408,7 @@ function clearAll() {
   tryingModel.value = ''
   summaryUsed.value = false
   showTutorial.value = true
+  scanFailure.value = null
   currentStep.value = STEP_CAPTURE
   scrollToTop()
 }
@@ -1466,6 +1475,7 @@ async function fetchRandomReflection() {
 }
 
 async function handleConfirmCrop() {
+  scanFailure.value = null
   try {
     ocrStartTime.value = Date.now()
 
@@ -1491,23 +1501,26 @@ async function handleConfirmCrop() {
       )
     }
 
-    showOk.value = true
+    if (ingredientsText.value?.trim()) showOk.value = true
 
     // Only log if ingredients were detected
     if (ingredientsText.value?.trim()) {
       // Logic moved up to handleConfirmCrop level
 
 
-      await ActivityLogService.log("scan_ingredients_success", {
-        product_name: productName.value || "Unknown",
-        auto_status: autoStatus.value,
-        ingredient_count: ingredientHighlights.value?.length ?? 0,
-      });
-
-      await logIngredientScan({
+      const stored = await logIngredientScan({
         source: currentSource.value || 'camera',
         startTime: ocrStartTime.value
       })
+
+      // Only count it as a success if the scan log accepted the row (the daily limit can reject it).
+      if (stored) {
+        await ActivityLogService.log("scan_ingredients_success", {
+          product_name: productName.value || "Unknown",
+          auto_status: autoStatus.value,
+          ingredient_count: ingredientHighlights.value?.length ?? 0,
+        });
+      }
 
 
 
@@ -1547,12 +1560,17 @@ async function handleConfirmCrop() {
 
     } else {
       console.warn('🚫 OCR text found but no ingredient section detected, skipping log')
-      setError(t('scanIngredients.errors.noIngredients'))
+      showScanFailure('empty')
+      ActivityLogService.log("scan_ingredients_error", {
+        error: "no_ingredients_detected",
+        source: currentSource.value,
+        offline: false
+      });
     }
 
   } catch (err: any) {
 
-    setError(err.message || t('scanIngredients.errors.ocrFailed'))
+    showScanFailure(isNetworkError(err) ? 'offline' : 'error')
 
     await ActivityLogService.log("scan_ingredients_error", {
       error: err.message || "OCR failed",
@@ -1610,7 +1628,7 @@ function scanFromCamera() {
 
   if (!canScan.value) {
     ActivityLogService.log("scan_ingredients_limit_reached", {source: "camera"});
-    showLimitToast.value = true;
+    showLimitSheet.value = true;
     return;
   }
 
@@ -1652,7 +1670,7 @@ function scanFromGallery() {
 
   if (!canScan.value) {
     ActivityLogService.log("scan_ingredients_limit_reached", {source: "gallery"});
-    showLimitToast.value = true;
+    showLimitSheet.value = true;
     return;
   }
 
@@ -1694,7 +1712,7 @@ async function handleAutoDetected(result: any) {
   const allowed = await checkDailyScanLimit()
   if (!allowed) {
     ActivityLogService.log("scan_ingredients_limit_reached", {source: "auto_scan"});
-    showLimitToast.value = true
+    showLimitSheet.value = true
     return
   }
 
@@ -1747,27 +1765,36 @@ async function handleAutoDetected(result: any) {
           // Auto Scan already counted/logged this the moment the live detection
           // succeeded (see AutoScanView.vue's onStableResult) — don't double it here.
           if (!result.loggedAsScan) {
-            await ActivityLogService.log("scan_ingredients_success", {
-              product_name: productName.value || "Unknown",
-              auto_status: autoStatus.value,
-              ingredient_count: ingredientHighlights.value?.length ?? 0,
-              source: "auto_scan"
-            });
-
-            await logIngredientScan({
+            const stored = await logIngredientScan({
               source: "camera",
               startTime: ocrStartTime.value
             })
+
+            if (stored) {
+              await ActivityLogService.log("scan_ingredients_success", {
+                product_name: productName.value || "Unknown",
+                auto_status: autoStatus.value,
+                ingredient_count: ingredientHighlights.value?.length ?? 0,
+                source: "auto_scan"
+              });
+            }
 
             await loadTodayScanCount()
           }
           isMovingToResults.value = false
           decisionPromptKey.value++
           nextStep()
+      } else {
+          // Nothing readable: say so, instead of leaving the camera screen with no feedback at all.
+          showScanFailure('empty')
+          ActivityLogService.log("scan_ingredients_error", {
+            error: "no_ingredients_detected",
+            source: "auto_scan",
+            offline: false
+          });
       }
   } catch (err: any) {
-      isMovingToResults.value = false
-      setError(err.message || 'Auto OCR failed')
+      showScanFailure(isNetworkError(err) ? 'offline' : 'error')
 
       await ActivityLogService.log("scan_ingredients_error", {
         error: err.message || "Auto OCR failed",
@@ -1944,6 +1971,27 @@ onUnmounted(() => {
 }
 
 .hero-desc { color: var(--ion-color-step-600); line-height: 1.5; margin-bottom: 16px; }
+
+.scan-failure-card {
+  margin-bottom: 14px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(230, 126, 34, 0.35);
+  background: rgba(230, 126, 34, 0.08);
+}
+.scan-failure-head { display: flex; align-items: center; gap: 8px; font-size: 1rem; }
+.scan-failure-head ion-icon { font-size: 22px; color: #c96718; }
+.scan-failure-body { margin: 6px 0 0; line-height: 1.45; }
+.scan-failure-tips-title {
+  margin: 12px 0 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #c96718;
+}
+.scan-failure-tips { margin: 0; padding-left: 18px; font-size: 0.9rem; line-height: 1.5; }
+.scan-failure-retry { margin-top: 12px; --background: #e67e22; --color: #000; font-weight: 700; }
 
 .db-found-badge {
   font-size: 18px;
@@ -2248,6 +2296,104 @@ onUnmounted(() => {
   margin-top: 8px;
   font-size: 12px;
   opacity: 0.6;
+}
+
+.mode-tiles-label {
+  margin: 4px 2px 6px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ion-color-medium);
+}
+
+.mode-tiles {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 8px;
+}
+
+.mode-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 12px 4px 10px;
+  border-radius: 12px;
+  border: 1px solid var(--ion-color-step-150, rgba(128, 128, 128, 0.25));
+  background: var(--ion-color-step-50, rgba(128, 128, 128, 0.08));
+  color: var(--ion-text-color);
+  font: inherit;
+  cursor: pointer;
+}
+
+.mode-tile:active {
+  transform: scale(0.98);
+}
+
+.mode-tile > ion-icon {
+  font-size: 24px;
+  color: var(--ion-color-carrot);
+}
+
+.mode-tile-name {
+  margin-top: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.mode-tile-hint {
+  font-size: 11px;
+  color: var(--ion-color-medium);
+  text-align: center;
+}
+
+/* Gold is reserved for Pro. */
+.mode-tile-pro {
+  position: absolute;
+  top: -8px;
+  right: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 1px 6px;
+  border-radius: 8px;
+  background: #facc15;
+  color: #422006;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.mode-tile-pro ion-icon {
+  font-size: 10px;
+}
+
+.mode-help-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.mode-help-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border: 0;
+  background: none;
+  color: var(--ion-color-carrot);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.mode-help-link ion-icon {
+  font-size: 16px;
 }
 
 .pro-pill {

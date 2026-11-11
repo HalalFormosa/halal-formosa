@@ -197,7 +197,7 @@
     "followUs": "Sundan Kami",
     "whatsNew": "Ano'ng Bago",
     "communityBuzz": "Buzz ng Komunidad",
-    "communityBuzzDesc": "Tingnan kung ano ang trending sa @halalformosa",
+    "communityBuzzDesc": "Tingnan kung ano ang trending sa {'@'}halalformosa",
     "mediaPartner": "Media partner",
     "noReels": "Walang nakitang kamakailang nilalaman.",
     "viewFullFeed": "Tingnan ang Buong Feed",
@@ -217,7 +217,7 @@
     "unknownAvatar": "?",
     "anonymousWithIndex": "Anonymous #{index}",
     "anonymous": "Anonymous",
-    "pointsCount": "{mga puntos} pts",
+    "pointsCount": "{points} pts",
     "added": "Idinagdag",
     "addedBy": "Idinagdag ni {may-akda}",
     "leaderboard_popover": {
@@ -237,7 +237,7 @@
   },
   "scanIngredients": {
     "title": "I-scan ang mga sangkap",
-    "todayScans": "Mga Pag-scan Ngayon: {nagamit na} / {kabuuan}",
+    "todayScans": "Mga Pag-scan Ngayon: {used} / {total}",
     "help": "Paano ito gumagana",
     "tips": {
       "title": "Mga Tip: Paano Mag-scan ng Tama",
@@ -300,7 +300,7 @@
       "gotIt": "Nakuha ko"
     },
     "autoScan": {
-      "title": "Auto Scanner",
+      "title": "Auto Capture",
       "hint": "Ilagay ang mga sangkap sa loob ng frame",
       "status": {
         "init": "Sinisimulan ang HD Camera...",
@@ -310,12 +310,12 @@
         "found": "Natagpuan ang mga sangkap! Nakatuon...",
         "notFound": "Ang mga sangkap ay hindi natagpuan, panatilihing hawakan ..."
       },
-      "label": "Auto Scan"
+      "label": "Auto Capture"
     },
     "scan": {
       "camera": "Camera",
       "gallery": "Gallery",
-      "auto": "Auto Scan (BETA)",
+      "auto": "Auto Capture (BETA)",
       "reCrop": "Muling i-crop",
       "productName": "Natukoy na Pangalan ng Produkto",
       "ingredientsZh": "Mga Natukoy na Sangkap (Intsik)",

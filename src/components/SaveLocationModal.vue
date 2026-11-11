@@ -42,6 +42,14 @@
     </ion-content>
   </ion-modal>
 
+  <save-limit-sheet
+    v-model:open="showLimitSheet"
+    kind="location"
+    :meta="{ location_id: locationId, location_name: locationName }"
+    @upgraded="continueSaveAfterUpgrade"
+    @manage="manageSavedLocations"
+  />
+
   <!-- Toasts -->
   <ion-toast
     :is-open="showSuccessToast"
@@ -77,12 +85,12 @@ import {
 } from '@ionic/vue';
 import { addOutline, bookmarkOutline, bookmark } from 'ionicons/icons';
 import { useI18n } from 'vue-i18n';
+import { useRouter } from 'vue-router';
 import { useSavedLocations } from '@/composables/useSavedLocations';
 import { isDonor } from '@/composables/useSubscriptionStatus';
-import { Capacitor } from '@capacitor/core';
-import { RevenueCatUI, PAYWALL_RESULT } from '@revenuecat/purchases-capacitor-ui';
 import { ActivityLogService } from '@/services/ActivityLogService';
-import { logPaywallCancelled, logPaywallFailed, logPaywallRestored } from '@/utils/paywallLogging'
+import SaveLimitSheet from '@/components/SaveLimitSheet.vue';
+import { FREE_SAVE_LIMIT } from '@/constants/savedLimits';
 
 const props = defineProps<{
   isOpen: boolean;
@@ -96,10 +104,14 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
+const router = useRouter();
 const { folders, savedLocations, totalSavedCount, loadFoldersAndSavedLocations, createFolder, saveLocation } = useSavedLocations();
 
 const newFolderName = ref('');
 const isSaving = ref(false);
+const showLimitSheet = ref(false);
+// The collection the user picked when the limit sheet interrupted, so a purchase can finish the save.
+const pendingFolderId = ref<string | null>(null);
 const selectedFolderId = ref<string | null>(null);
 const savedFolderIds = ref<Set<string>>(new Set());
 
@@ -135,36 +147,19 @@ function isLocationInFolder(folderId: string): boolean {
   return savedFolderIds.value.has(folderId);
 }
 
-async function presentPaywall(): Promise<boolean> {
-  if (!Capacitor.isNativePlatform()) {
-    console.warn("[RC] Paywall can only run on native.");
-    return false;
-  }
+// Pro was just bought from the limit sheet: finish the save once the sheet has closed.
+function continueSaveAfterUpgrade() {
+  const folderId = pendingFolderId.value;
+  pendingFolderId.value = null;
+  if (!folderId) return;
+  setTimeout(() => { void saveToFolder(folderId); }, 300);
+}
 
-  try {
-    const { result } = await RevenueCatUI.presentPaywall();
-
-    if (result === PAYWALL_RESULT.PURCHASED || result === PAYWALL_RESULT.RESTORED) {
-      // Refresh subscription state
-      const { refreshSubscriptionStatus } = await import('@/composables/useSubscriptionStatus');
-      await refreshSubscriptionStatus({ syncToServer: true });
-      
-      if (result === PAYWALL_RESULT.PURCHASED) {
-        await ActivityLogService.log("pro_purchase_success", {
-          source: "save_location_limit"
-        });
-      } else {
-        logPaywallRestored("save_location_limit");
-      }
-      return true;
-    }
-    if (result === PAYWALL_RESULT.CANCELLED) logPaywallCancelled("save_location_limit");
-    else logPaywallFailed("save_location_limit", result);
-  } catch (err) {
-    console.error("Paywall failed:", err);
-    logPaywallFailed("save_location_limit", err);
-  }
-  return false;
+// Let the user remove a saved location to free a slot.
+function manageSavedLocations() {
+  pendingFolderId.value = null;
+  emit('close');
+  router.push('/profile/saved-locations');
 }
 
 async function createNewFolder() {
@@ -187,18 +182,10 @@ async function saveToFolder(folderId: string) {
   }
 
   // Check free tier limit
-  if (!isDonor.value && totalSavedCount.value >= 5) {
-    await ActivityLogService.log("pro_paywall_trigger", {
-      source: "save_location_limit",
-      location_id: props.locationId,
-      location_name: props.locationName
-    });
-
-    const purchased = await presentPaywall();
-    if (!purchased) return;
-
-    // Yield small delay for subscription reactive update
-    await new Promise(r => setTimeout(r, 300));
+  if (!isDonor.value && totalSavedCount.value >= FREE_SAVE_LIMIT) {
+    pendingFolderId.value = folderId;
+    showLimitSheet.value = true;
+    return;
   }
 
   isSaving.value = true;
