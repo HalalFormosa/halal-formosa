@@ -262,30 +262,42 @@
           </div>
 
           <ion-card-content>
-            <ion-button expand="block" color="carrot" style="height: 56px; font-weight: 700;" class="ion-margin-bottom" @click="scanFromCamera">
+            <ion-button expand="block" color="carrot" style="height: 56px; font-weight: 700;" class="ion-margin-bottom" @click="pickMethod('camera')">
                 <ion-icon slot="start" :icon="cameraOutline" />
                 {{ $t('scanIngredients.scan.takePhoto') }}
             </ion-button>
 
             <div class="mode-tiles-label">{{ $t('scanIngredients.scan.otherWays') }}</div>
             <div class="mode-tiles">
-              <button type="button" class="mode-tile" @click="scanFromGallery">
+              <button type="button" class="mode-tile" @click="pickMethod('gallery')">
                 <ion-icon :icon="imagesOutline" />
                 <span class="mode-tile-name">{{ $t('scanIngredients.scan.gallery') }}</span>
                 <span class="mode-tile-hint">{{ $t('scanIngredients.scan.galleryHint') }}</span>
               </button>
-              <button type="button" class="mode-tile" @click="router.push('/scan/auto')">
+              <button type="button" class="mode-tile" @click="pickMethod('auto')">
                 <ion-icon :icon="scanOutline" />
                 <span class="mode-tile-name">{{ $t('scanIngredients.autoScan.label') }}</span>
                 <span class="mode-tile-hint">{{ $t('scanIngredients.scan.autoHint') }}</span>
               </button>
-              <button v-if="liveVerdictSupported" type="button" class="mode-tile" @click="router.push('/scan/live')">
+              <button v-if="liveVerdictSupported" type="button" class="mode-tile" @click="pickMethod('live')">
                 <span v-if="!isDonor" class="mode-tile-pro"><ion-icon :icon="lockClosedOutline" />PRO</span>
                 <ion-icon :icon="pulseOutline" />
                 <span class="mode-tile-name">{{ $t('scanIngredients.liveVerdict.label') }}</span>
                 <span class="mode-tile-hint">{{ $t('scanIngredients.scan.liveHint') }}</span>
               </button>
             </div>
+
+            <label class="remember-row">
+              <ion-checkbox
+                  label-placement="end"
+                  justify="start"
+                  :checked="rememberScanChoice"
+                  @ionChange="onRememberToggle($event.detail.checked)"
+              >
+                {{ $t('scanIngredients.scan.rememberChoice') }}
+              </ion-checkbox>
+              <span class="remember-note">{{ $t('scanIngredients.scan.rememberChoiceNote') }}</span>
+            </label>
 
             <div v-if="liveVerdictSupported" class="mode-help-row">
               <button type="button" class="mode-help-link" @click="liveHelpOpen = true">
@@ -716,7 +728,7 @@ import {
   IonPage, IonContent, IonButton, IonIcon, IonCard, IonCardContent, IonItem,
   IonTextarea, IonModal, IonHeader, IonToolbar, IonTitle, IonToast,
   IonProgressBar, IonChip, IonLabel, onIonViewWillEnter, IonList, IonSpinner,
-  IonFooter, IonLoading
+  IonFooter, IonLoading, IonCheckbox
 } from '@ionic/vue'
 import {
   cameraOutline,
@@ -805,6 +817,13 @@ import { useNotifier } from "@/composables/useNotifier"
 import { useI18n } from 'vue-i18n'
 import { extractCoreProductName, wordJaccard } from '@/utils/productNameMatch'
 import { takeScanAction } from '@/composables/useScanModeRequest'
+import {
+  defaultScanMethod,
+  rememberScanChoice,
+  setDefaultScanMethod,
+  rememberScanMethodIfEnabled,
+  type RememberedScanMethod
+} from '@/composables/useDefaultScanMethod'
 import { syncScanWidget } from '@/composables/useWidgetSync'
 import { getOptimizedImageUrl, onProductImageError } from '@/utils/imageHelpers'
 
@@ -844,6 +863,44 @@ const onDecisionAnswered = (choice: ScanDecisionChoice) => {
 const currentStep = ref(STEP_CAPTURE)
 const contentRef = ref<any>(null)
 
+/** Runs a scan method (also used to auto-launch the remembered one). */
+function startMethod(method: RememberedScanMethod) {
+  if (method === 'camera') scanFromCamera()
+  else if (method === 'gallery') scanFromGallery()
+  else if (method === 'auto') void router.push('/scan/auto')
+  else if (liveVerdictSupported) void router.push('/scan/live')
+  else scanFromCamera() // remembered Live Scan on a device that cannot run it
+}
+
+function pickMethod(method: RememberedScanMethod) {
+  rememberScanMethodIfEnabled(method)
+  lastPickedMethod = method
+  startMethod(method)
+}
+
+// The method used in this visit, so ticking "Remember my choice" afterwards still saves it.
+let lastPickedMethod: RememberedScanMethod | null = null
+
+function onRememberToggle(checked: boolean) {
+  // ionChange also fires when the :checked binding updates; ignore no-ops.
+  if (checked === rememberScanChoice.value) return
+  // Nothing picked yet: start from the main button (Camera); the next tap will overwrite it.
+  setDefaultScanMethod(checked ? (lastPickedMethod ?? 'camera') : 'ask')
+}
+
+/**
+ * Opening Scan Ingredients fresh (not coming back from a sub-screen or via Back) with a remembered
+ * method goes straight to it.
+ */
+function shouldAutoLaunch(): boolean {
+  if (defaultScanMethod.value === 'ask') return false
+  if (currentStep.value !== STEP_CAPTURE) return false
+  const state = window.history.state as { back?: string | null; forward?: string | null } | null
+  if (state?.forward) return false // arrived by going Back
+  if ((state?.back ?? '').startsWith('/scan')) return false // bounced from another scan screen
+  return true
+}
+
 onIonViewDidEnter(() => {
   // Arrived from the mode switcher on Auto Scan / Live Verdict: start what was asked for.
   const requested = takeScanAction()
@@ -851,6 +908,8 @@ onIonViewDidEnter(() => {
     currentStep.value = STEP_CAPTURE
     if (requested === 'camera') scanFromCamera()
     else scanFromGallery()
+  } else if (shouldAutoLaunch() && defaultScanMethod.value !== 'ask') {
+    startMethod(defaultScanMethod.value)
   }
 
   if (currentStep.value === STEP_RESULTS) {
@@ -2382,6 +2441,20 @@ onUnmounted(() => {
 
 .mode-tile-pro ion-icon {
   font-size: 10px;
+}
+
+.remember-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 14px;
+  font-size: 14px;
+}
+
+.remember-note {
+  padding-left: 30px;
+  font-size: 12px;
+  color: var(--ion-color-medium);
 }
 
 .mode-help-row {

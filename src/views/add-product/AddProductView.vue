@@ -432,6 +432,22 @@
                      </ion-button>
                    </div>
                 </div>
+
+                <!-- 🔦 Scanned ingredients with highlight boxes (same overlay as Scan Ingredients).
+                     Boxes live in the cropped OCR image's pixel space, so they sit on that crop,
+                     not the full back photo. Hidden while analysis is locked. -->
+                <div v-if="showHighlightImage" class="ion-padding-top">
+                  <ion-label class="preview-label">{{ $t('addProduct.highlightedIngredients') || 'Scanned Ingredients' }}</ion-label>
+                  <IngredientHighlightImage
+                      :src="croppedPreviewUrl!"
+                      :ocr-image-width="ocrImageWidth"
+                      :ocr-image-height="ocrImageHeight"
+                      :highlights="dangerousHighlights"
+                      img-class="preview-img-cropped"
+                      zoomable
+                  />
+                  <p class="highlight-image-hint">🔍 {{ $t('scanIngredients.scan.tapToEnlarge') }}</p>
+                </div>
               </div>
 
               <!-- 🕌 Section 2: Halal Status (Segmented) -->
@@ -1073,6 +1089,7 @@ import type { Product } from '@/types/Product'
 import { useRouter, useRoute } from 'vue-router';
 import type { IngredientHighlight } from '@/types/Ingredient'
 import StoreLogoBar from "@/components/StoreLogoBar.vue";
+import IngredientHighlightImage from '@/components/scan/IngredientHighlightImage.vue'
 import { ActivityLogService } from "@/services/ActivityLogService";
 
 const { notifyEvent } = useNotifier();
@@ -1526,7 +1543,9 @@ const {
   productName,
   progress,
   progressLabel,
-  setAspectRatio
+  setAspectRatio,
+  ocrImageWidth,
+  ocrImageHeight
 } = useCropperOcr({
   allHighlights,
   blacklistPatterns,
@@ -1566,8 +1585,17 @@ const dangerousHighlights = computed(() =>
 const friendlyHighlights = computed(() => 
   ingredientHighlights.value.filter((h: IngredientHighlight) => extractIonColor(h.color) === 'primary')
 )
-const hasFriendlyHighlights = computed(() => 
+const hasFriendlyHighlights = computed(() =>
   ingredientHighlights.value.some((h: IngredientHighlight) => extractIonColor(h.color) === 'primary')
+)
+
+// Show the boxed crop only when there is something to draw and the analysis isn't locked.
+const showHighlightImage = computed(() =>
+  !!backPreview.value &&
+  !!croppedPreviewUrl.value &&
+  canScan.value &&
+  ocrImageWidth.value > 0 &&
+  dangerousHighlights.value.some((h: IngredientHighlight) => h.boxes?.length)
 )
 
 
@@ -2119,7 +2147,16 @@ function recheckHighlights() {
       }
     }
 
-    ingredientHighlights.value = found
+    // Keep the OCR bounding boxes for keywords that are still matched, so the
+    // highlight overlay survives blur/typing rechecks (this match works on text only).
+    const boxesByKeyword = new Map(
+      ingredientHighlights.value
+        .filter((h: IngredientHighlight) => h.boxes?.length)
+        .map((h: IngredientHighlight) => [h.keyword, h.boxes] as const)
+    )
+    ingredientHighlights.value = found.map((h: IngredientHighlight) =>
+      boxesByKeyword.has(h.keyword) ? { ...h, boxes: boxesByKeyword.get(h.keyword) } : h
+    )
 
     const hasHaram = found.some(h => extractIonColor(h.color) === 'danger')
     const hasSyubhah = found.some(h => extractIonColor(h.color) === 'warning')
@@ -2934,6 +2971,12 @@ ion-item {
   font-size: 14px;
   font-weight: 600;
   margin-bottom: 8px;
+  color: var(--ion-color-medium);
+}
+
+.highlight-image-hint {
+  margin: 6px 0 0;
+  font-size: 12px;
   color: var(--ion-color-medium);
 }
 
