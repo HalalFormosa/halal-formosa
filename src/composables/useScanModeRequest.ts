@@ -1,5 +1,6 @@
 import { ref } from 'vue'
 import type { Router } from 'vue-router'
+import { rememberScanMethodIfEnabled } from '@/composables/useDefaultScanMethod'
 
 export type ScanMode = 'camera' | 'gallery' | 'auto' | 'live'
 type ScanAction = 'camera' | 'gallery'
@@ -38,6 +39,8 @@ export function switchScanMode(
     mode: ScanMode,
     previousPath?: string | null,
 ) {
+    // Switching mode is a choice too: keep "Remember my choice" in step with it.
+    rememberScanMethodIfEnabled(mode)
     if (mode === 'auto') {
         void router.replace('/scan/auto')
     } else if (mode === 'live') {

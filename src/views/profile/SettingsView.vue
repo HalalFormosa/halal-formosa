@@ -23,6 +23,31 @@
         </ion-item>
       </ion-list>
 
+      <!-- 📷 Scanning -->
+      <ion-list style="border-radius: 12px; margin-top: 20px;">
+        <ion-list-header>{{ $t('settings.scanning') }}</ion-list-header>
+        <ion-item lines="full" style="--border-radius: 12px;">
+          <div style="width: 100%; padding: 8px 0;">
+            <ion-select
+                :label="$t('settings.scanMethod')"
+                label-placement="stacked"
+                interface="popover"
+                :value="defaultScanMethod"
+                @ionChange="(e) => onScanMethodChange(e.detail.value)"
+            >
+              <ion-select-option value="ask">{{ $t('settings.scanMethodAsk') }}</ion-select-option>
+              <ion-select-option value="camera">{{ $t('scanIngredients.scan.camera') }}</ion-select-option>
+              <ion-select-option value="gallery">{{ $t('scanIngredients.scan.gallery') }}</ion-select-option>
+              <ion-select-option value="auto">{{ $t('scanIngredients.autoScan.label') }}</ion-select-option>
+              <ion-select-option v-if="liveSupported" value="live">{{ $t('scanIngredients.liveVerdict.label') }}</ion-select-option>
+            </ion-select>
+            <ion-note style="display: block; margin-top: 8px; font-size: 0.85rem;">
+              {{ $t('settings.scanMethodNote') }}
+            </ion-note>
+          </div>
+        </ion-item>
+      </ion-list>
+
       <!-- 🔒 Privacy -->
       <ion-list
           v-if="currentUser"
@@ -137,6 +162,8 @@ import {
   IonList,
   IonListHeader,
   IonToggle,
+  IonSelect,
+  IonSelectOption,
   IonToolbar,
   IonTitle,
   IonPage,
@@ -164,6 +191,8 @@ import {
   userRole
 } from '@/composables/userProfile'
 import { useTheme } from '@/composables/useTheme'
+import { defaultScanMethod, setDefaultScanMethod, type DefaultScanMethod } from '@/composables/useDefaultScanMethod'
+import { isLiveVerdictSupported } from '@/utils/liveScanPlatform'
 import { useProximityPrompt } from '@/composables/useProximityPrompt'
 import { useNotifier } from '@/composables/useNotifier'
 import { keyOutline, trashOutline, sparkles, chatboxEllipsesOutline } from 'ionicons/icons'
@@ -173,6 +202,14 @@ import { ActivityLogService } from '@/services/ActivityLogService'
 
 const { locale, t } = useI18n()
 const lang = ref(locale.value)
+
+// Default scan method (remembered choice for Scan Ingredients)
+const liveSupported = isLiveVerdictSupported()
+const onScanMethodChange = (value: DefaultScanMethod) => {
+  if (!value || value === defaultScanMethod.value) return
+  setDefaultScanMethod(value)
+  ActivityLogService.log('settings_scan_method_change', { method: value })
+}
 const router = useRouter()
 
 const isSocialLogin = computed(() => {
