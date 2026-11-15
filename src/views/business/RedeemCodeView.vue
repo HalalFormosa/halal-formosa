@@ -59,9 +59,9 @@
 
 <script setup lang="ts">
 import { ref, computed, onBeforeUnmount } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { IonPage, IonHeader, IonContent, IonButton, IonIcon, IonSpinner, onIonViewWillEnter, onIonViewWillLeave } from '@ionic/vue'
+import { IonPage, IonHeader, IonContent, IonButton, IonIcon, IonSpinner, toastController, onIonViewWillEnter, onIonViewWillLeave } from '@ionic/vue'
 import { qrCodeOutline, closeOutline, checkmarkCircle, alertCircle } from 'ionicons/icons'
 import { Html5Qrcode } from 'html5-qrcode'
 import AppHeader from '@/components/AppHeader.vue'
@@ -69,6 +69,7 @@ import { supabase } from '@/plugins/supabaseClient'
 import { OfferService, OfferError, type RedemptionRow } from '@/services/OfferService'
 
 const route = useRoute()
+const router = useRouter()
 const { t, locale } = useI18n()
 
 const locationId = computed(() => Number(route.params.locationId))
@@ -156,8 +157,26 @@ async function toggleScan() {
   }
 }
 
-onIonViewWillEnter(() => {
+// Only this store's owners/managers and admins belong here. The server enforces it
+// on every action anyway; this just keeps everyone else off the page.
+async function hasAccess(): Promise<boolean> {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return false
+  const [roleRes, ownerRes] = await Promise.all([
+    supabase.from('user_roles').select('role').eq('user_id', user.id).maybeSingle(),
+    supabase.from('location_owners').select('role').eq('location_id', locationId.value).eq('user_id', user.id).maybeSingle(),
+  ])
+  return roleRes.data?.role === 'admin' || !!ownerRes.data
+}
+
+onIonViewWillEnter(async () => {
   result.value = null
+  if (!(await hasAccess())) {
+    router.replace(`/place/${locationId.value}`)
+    const toast = await toastController.create({ message: t('offers.redeem.noAccess'), duration: 3000, position: 'bottom' })
+    await toast.present()
+    return
+  }
   loadStore()
   loadHistory()
 })

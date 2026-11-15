@@ -36,8 +36,8 @@
         @click="reveal(offer)"
       >
         <ion-spinner v-if="busy === offer.id" name="crescent" slot="start" />
-        <ion-icon v-else :icon="needsPro(offer) ? lockClosedOutline : ticketOutline" slot="start" />
-        {{ needsPro(offer) ? (offer.free_uses > 0 ? $t('offers.unlockMore') : $t('offers.unlock')) : $t('offers.showCode') }}
+        <ion-icon v-else :icon="!signedIn ? logInOutline : needsPro(offer) ? lockClosedOutline : ticketOutline" slot="start" />
+        {{ !signedIn ? $t('offers.loginToClaim') : needsPro(offer) ? (offer.free_uses > 0 ? $t('offers.unlockMore') : $t('offers.unlock')) : $t('offers.showCode') }}
       </ion-button>
 
       <p v-if="messages[offer.id]" class="offer-msg">{{ messages[offer.id] }}</p>
@@ -46,10 +46,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, onBeforeUnmount } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { IonButton, IonIcon, IonSpinner, toastController } from '@ionic/vue'
-import { pricetagOutline, sparkles, lockClosedOutline, ticketOutline } from 'ionicons/icons'
+import { pricetagOutline, sparkles, lockClosedOutline, ticketOutline, logInOutline } from 'ionicons/icons'
 import QRCode from 'qrcode'
 import { supabase } from '@/plugins/supabaseClient'
 import router from '@/router'
@@ -66,6 +66,7 @@ const qr = ref<Record<string, string | undefined>>({})
 const messages = ref<Record<string, string | undefined>>({})
 const busy = ref<string | null>(null)
 const status = ref<Record<string, OfferStatus | undefined>>({})
+const signedIn = ref(false)
 
 async function load() {
   codes.value = {}
@@ -79,6 +80,7 @@ async function load() {
 // Per-user state (free redemptions left?) — only known once signed in.
 async function loadStatus() {
   const { data: { session } } = await supabase.auth.getSession()
+  signedIn.value = !!session
   if (!session) return
   await Promise.all(offers.value.map(async o => {
     status.value[o.id] = (await OfferService.getMyStatus(o.id)) ?? undefined
@@ -94,6 +96,14 @@ function needsPro(offer: LocationOffer): boolean {
 }
 
 watch(() => props.locationId, load, { immediate: true })
+
+// Keep the button label right after logging in/out.
+const { data: authSub } = supabase.auth.onAuthStateChange((_e, session) => {
+  const was = signedIn.value
+  signedIn.value = !!session
+  if (was !== signedIn.value) loadStatus()
+})
+onBeforeUnmount(() => authSub.subscription.unsubscribe())
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString(locale.value, { year: 'numeric', month: 'short', day: 'numeric' })

@@ -133,6 +133,13 @@
               <span class="rating-count">{{ $t('facilityReview.noReviewsYet') || 'No reviews yet' }}</span>
             </div>
 
+            <!-- Open/closed at a glance -->
+            <div v-if="place.opening_hours" class="open-status-line">
+              <span class="open-status-badge" :class="{ open: isOpenNow, closed: !isOpenNow }">
+                {{ isOpenNow ? $t('explore.details.openNow') : $t('explore.details.closedNow') }}
+              </span>
+            </div>
+
             <!-- Verified owner attribution -->
             <p v-if="place?.is_claimed && ownerName" class="owned-by-line">
               <ion-icon :icon="checkmarkCircle" />
@@ -148,132 +155,29 @@
               </div>
             </div>
 
-            <!-- 🏷️ Location Tags -->
-            <div v-if="place.tags?.length" class="hashtag-row">
-              <template v-if="showAllTags">
-                <span v-for="tag in place.tags" :key="tag" class="location-hashtag">
-                  #{{ tag }}
-                </span>
-                <span class="location-hashtag-more" @click="showAllTags = false">
-                  less
-                </span>
-              </template>
-              <template v-else>
-                <span v-for="tag in place.tags.slice(0, 3)" :key="tag" class="location-hashtag">
-                  #{{ tag }}
-                </span>
-                <span v-if="place.tags.length > 3" class="location-hashtag-more" @click="showAllTags = true">
-                  ... more
-                </span>
-              </template>
-            </div>
-
-            <p v-if="place?.author?.public_profile" class="attribution-text">
-              {{ $t('home.addedBy', { author: place.author.display_name }) }} - {{ fromNowToTaipei(place.created_at) }}
-            </p>
-            <p v-else class="attribution-text">
-              {{ $t('home.added') }} {{ fromNowToTaipei(place.created_at) }}
-            </p>
-
-            <!-- ⚠️ Combined Muslim-friendly Disclaimer Banner -->
-            <div
-                v-if="isMuslimFriendly"
-                class="muslim-friendly-disclaimer-card animate__animated animate__fadeIn"
-                :class="{ 'clickable': !!place.description }"
-                @click="place.description ? scrollToDescription() : null"
-            >
-              <div class="disclaimer-content">
-                <ion-icon :icon="alertCircleOutline" class="disclaimer-icon" />
-                <div class="disclaimer-text">
-                  <strong>If in doubt:</strong> {{ combinedDisclaimer }}
-                </div>
-              </div>
-              <ion-icon v-if="place.description" :icon="chevronDown" class="disclaimer-arrow" />
-            </div>
-
-            <!-- 🕌 Muslim Facilities / Features -->
-            <div v-if="place && isReviewableType" class="facilities-container ion-margin-top ion-margin-bottom">
-              <div class="consensus-squares" v-if="combinedFacilities.length > 0">
-                <div
-                  v-for="fac in (showAllBadges ? combinedFacilities : combinedFacilities.slice(0, 3))"
-                  :key="fac.code"
-                  class="consensus-square"
-                  :class="[fac.status, fac.source === 'owner' ? 'owner-source' : 'visitor-source']"
-                  @click="fac.source === 'owner' ? showVerifiedToast() : null"
-                >
-                  <span class="square-icon">{{ fac.icon }}</span>
-                  <span class="square-label">{{ fac.customLabel || getShortLabel(fac.code) }}</span>
-                  <!-- Verified owner checkmark icon -->
-                  <ion-icon v-if="fac.source === 'owner'" :icon="checkmarkCircle" class="owner-verified-icon" />
-                </div>
-                <div
-                  v-if="!showAllBadges && combinedFacilities.length > 3"
-                  class="consensus-square more-square"
-                  @click="showAllBadges = true"
-                >
-                  <span class="square-label">+{{ combinedFacilities.length - 3 }} more</span>
-                </div>
-                <div
-                  v-if="showAllBadges && combinedFacilities.length > 3"
-                  class="consensus-square more-square"
-                  @click="showAllBadges = false"
-                >
-                  <span class="square-label">show less</span>
-                </div>
-              </div>
-              <p v-else class="no-consensus-text">
-                {{ $t('facilityReview.noConsensusYet') || 'No visitor reports yet. Be the first to share!' }}
-              </p>
-              
-              <!-- Check in + Review buttons -->
-              <div class="action-btn-row ion-margin-top" v-if="!isOwner">
-                <ion-button
-                  :fill="checkedIn ? 'solid' : 'outline'"
-                  color="carrot"
-                  size="small"
-                  class="rate-btn"
-                  :disabled="checkedIn || checkingIn"
-                  @click="checkIn"
-                >
-                  <ion-icon slot="start" :icon="checkedIn ? checkmarkCircle : locationOutline" />
-                  {{ checkedIn ? ($t('explore.details.checkedIn') || 'Checked in') : ($t('explore.details.checkIn') || 'Check in') }}
-                </ion-button>
-                <ion-button
-                  fill="outline"
-                  color="carrot"
-                  size="small"
-                  class="rate-btn"
-                  :disabled="userHasReviewed"
-                  @click="openFacilityReview"
-                >
-                  <ion-icon v-if="userHasReviewed" slot="start" :icon="checkmarkCircle" />
-                  {{ userHasReviewed ? ($t('explore.details.reviewed') || 'Reviewed') : ($t('explore.details.review') || 'Review') }}
-                </ion-button>
-              </div>
-
-              <!-- Sponsored card — placed after the Rate & Review CTA (not
-                   before it) so it doesn't sit between the user and the
-                   engagement action this page wants them to take. Reuses
-                   the tall image-top "trip" card layout (no side margin of
-                   its own, so it fills the page's ion-padding width like
-                   the surrounding Handling Details / Address cards).
-                   Restricted to partner/trip sponsors only (not another
-                   location or product) and gold/silver tier — reserved for
-                   the more prominent sponsors, but not gold-only anymore
-                   since that pool alone is too thin for good variety.
-                   Skipped entirely when this place is itself a gold
-                   partner — showing another sponsor's ad on a gold
-                   partner's own page is redundant, not just duplicative.
-                   Always shown alongside the real banner (not just as a
-                   fallback when it fails to fill) — same always-on treatment
-                   as the recurring native cards in Search/Explore/Trip/Store. -->
-              <HouseAdNativeCard
-                  v-if="showAds && String(place?.partner_tier || '').toLowerCase() !== 'gold'"
-                  mode="trip"
-                  :only-kinds="['partner', 'trip']"
-                  :only-tiers="['gold', 'silver']"
-                  :slot="0"
-              />
+            <!-- Primary actions: reach / get to the place -->
+            <div v-if="place.lat || place.phone || place.instagram || place.facebook || place.tiktok || place.website || place.line_id" class="quick-contact">
+              <a v-if="place.phone" class="qc-btn" :href="`tel:${place.phone}`" :aria-label="$t('common.call')" @click="logCall">
+                <ion-icon :icon="callOutline" /><span>{{ $t('common.call') }}</span>
+              </a>
+              <a class="qc-btn" :href="`https://www.google.com/maps/search/?api=1&query=${mapSearchQuery}&center=${place.lat},${place.lng}&zoom=16`" target="_blank" rel="noopener" :aria-label="$t('business.analytics.directions')" @click="logOpenMaps">
+                <ion-icon :icon="navigateOutline" /><span>{{ $t('business.analytics.directions') }}</span>
+              </a>
+              <a v-if="place.instagram" class="qc-btn" :href="`https://instagram.com/${place.instagram.replace('@','')}`" target="_blank" rel="noopener" aria-label="Instagram" @click="logInstagram">
+                <ion-icon :icon="logoInstagram" /><span>{{ $t('common.instagram') }}</span>
+              </a>
+              <a v-if="place.facebook" class="qc-btn" :href="place.facebook" target="_blank" rel="noopener" aria-label="Facebook">
+                <ion-icon :icon="logoFacebook" /><span>{{ $t('business.info.facebook') }}</span>
+              </a>
+              <a v-if="place.tiktok" class="qc-btn" :href="`https://tiktok.com/@${place.tiktok.replace('@','')}`" target="_blank" rel="noopener" aria-label="TikTok">
+                <ion-icon :icon="logoTiktok" /><span>{{ $t('business.info.tiktok') }}</span>
+              </a>
+              <a v-if="place.website" class="qc-btn" :href="place.website" target="_blank" rel="noopener" :aria-label="$t('business.info.website')">
+                <ion-icon :icon="globeOutline" /><span>{{ $t('business.info.website') }}</span>
+              </a>
+              <a v-if="place.line_id" class="qc-btn" :href="`line://ti/p/~${place.line_id}`" aria-label="LINE" @click="logLine">
+                <ion-icon :icon="chatboxEllipsesOutline" /><span>LINE</span>
+              </a>
             </div>
 
             <!-- Order Via delivery apps -->
@@ -314,9 +218,74 @@
                 </div>
               </div>
             </div>
-
             <!-- Partner-store discount codes (Pro perk) -->
             <OfferCodeCard v-if="place?.id" :location-id="Number(place.id)" />
+
+            <!-- Promotions and Menu Action Buttons -->
+            <div v-if="activePromos.length > 0 || menuItems.length > 0" class="biz-actions-row ion-margin-vertical">
+              <ion-button v-if="activePromos.length > 0" fill="solid" color="carrot" class="action-sheet-btn" @click="showPromosModal = true">
+                <ion-icon :icon="sparkles" slot="start" />
+                {{ $t('business.tabs.promos') || 'Promotions & Offers' }}
+              </ion-button>
+              <ion-button v-if="menuItems.length > 0" fill="outline" color="carrot" class="action-sheet-btn" @click="showMenuModal = true">
+                <ion-icon :icon="restaurantOutline" slot="start" />
+                {{ $t('business.tabs.menu') || 'View Menu' }}
+              </ion-button>
+            </div>
+
+            <!-- ⚠️ Combined Muslim-friendly Disclaimer Banner -->
+            <div
+                v-if="isMuslimFriendly"
+                class="muslim-friendly-disclaimer-card animate__animated animate__fadeIn"
+                :class="{ 'clickable': !!place.description }"
+                @click="place.description ? scrollToDescription() : null"
+            >
+              <div class="disclaimer-content">
+                <ion-icon :icon="alertCircleOutline" class="disclaimer-icon" />
+                <div class="disclaimer-text">
+                  <strong>If in doubt:</strong> {{ combinedDisclaimer }}
+                </div>
+              </div>
+              <ion-icon v-if="place.description" :icon="chevronDown" class="disclaimer-arrow" />
+            </div>
+
+            <!-- 📝 Description (+ hashtags live inside the same block) -->
+            <template v-if="place.description || place.tags?.length">
+              <ion-item lines="none" id="place-description-section">
+                <ion-icon :icon="documentTextOutline" slot="start" color="carrot"/>
+
+                <ion-label>
+                  <template v-if="place.description">
+                    <p class="text-sm text-gray-500">
+                      {{ isMuslimFriendly ? $t('explore.details.handlingDetails') : $t('search.details.description') }}
+                    </p>
+                    <p style="white-space: pre-line;">
+                     {{ place.description }}
+                    </p>
+                  </template>
+
+                  <!-- 🏷️ Location Tags -->
+                  <div v-if="place.tags?.length" class="hashtag-row in-description">
+                    <template v-if="showAllTags">
+                      <span v-for="tag in place.tags" :key="tag" class="location-hashtag">
+                        #{{ tag }}
+                      </span>
+                      <span class="location-hashtag-more" @click="showAllTags = false">
+                        less
+                      </span>
+                    </template>
+                    <template v-else>
+                      <span v-for="tag in place.tags.slice(0, 3)" :key="tag" class="location-hashtag">
+                        #{{ tag }}
+                      </span>
+                      <span v-if="place.tags.length > 3" class="location-hashtag-more" @click="showAllTags = true">
+                        ... more
+                      </span>
+                    </template>
+                  </div>
+                </ion-label>
+              </ion-item>
+            </template>
 
             <!-- Certified By (Gold Partner) -->
             <div
@@ -374,26 +343,6 @@
               </div>
             </div>
 
-
-            <!-- 📝 Description -->
-            <template v-if="place.description">
-              <ion-item lines="none" id="place-description-section">
-                <ion-icon :icon="documentTextOutline" slot="start" color="carrot"/>
-
-                <ion-label>
-                  <p class="text-sm text-gray-500">
-                    {{ isMuslimFriendly ? $t('explore.details.handlingDetails') : $t('search.details.description') }}
-                  </p>
-                  <p style="white-space: pre-line;">
-                   {{ place.description }}
-                  </p>
-                </ion-label>
-              </ion-item>
-            </template>
-
-
-
-
             <!-- 📍 Address + Map (grouped info card) -->
             <div class="info-card address-map-card ion-margin-vertical">
               <ion-item lines="none" class="info-card-item">
@@ -422,18 +371,6 @@
               </div>
             </div>
 
-            <!-- Promotions and Menu Action Buttons -->
-            <div v-if="activePromos.length > 0 || menuItems.length > 0" class="biz-actions-row ion-margin-vertical">
-              <ion-button v-if="activePromos.length > 0" fill="solid" color="carrot" class="action-sheet-btn" @click="showPromosModal = true">
-                <ion-icon :icon="sparkles" slot="start" />
-                {{ $t('business.tabs.promos') || 'Promotions & Offers' }}
-              </ion-button>
-              <ion-button v-if="menuItems.length > 0" fill="outline" color="carrot" class="action-sheet-btn" @click="showMenuModal = true">
-                <ion-icon :icon="restaurantOutline" slot="start" />
-                {{ $t('business.tabs.menu') || 'View Menu' }}
-              </ion-button>
-            </div>
-
             <!-- ⭐ Additional Details -->
             <div class="ion-margin-vertical">
               <!-- 🕒 Opening Hours -->
@@ -447,7 +384,7 @@
                   </div>
 
                   <ion-list>
-                    <ion-item v-for="(value, day) in formattedOpeningHours" :key="day" :class="{ 'today-highlight': day === todayDayLabel }">
+                    <ion-item v-for="(value, day) in visibleOpeningHours" :key="day" :class="{ 'today-highlight': day === todayDayLabel }">
                       <ion-label class="capitalize">{{ day }}</ion-label>
                       <ion-label slot="end" class="ion-text-right">
             <span v-if="value.active">
@@ -460,6 +397,10 @@
                       </ion-label>
                     </ion-item>
                   </ion-list>
+                  <div v-if="Object.keys(formattedOpeningHours).length > 1" class="hours-toggle" @click="showAllHours = !showAllHours">
+                    {{ showAllHours ? $t('explore.details.hideHours') : $t('explore.details.allHours') }}
+                    <ion-icon :icon="showAllHours ? chevronUp : chevronDown" />
+                  </div>
                 </div>
               </template>
 
@@ -568,6 +509,92 @@
 
             </div>
 
+            <!-- Community: visitor reports, check in, review -->
+            <!-- 🕌 Muslim Facilities / Features -->
+            <div v-if="place && isReviewableType" class="facilities-container ion-margin-top ion-margin-bottom">
+              <div class="consensus-squares" v-if="combinedFacilities.length > 0">
+                <div
+                  v-for="fac in (showAllBadges ? combinedFacilities : combinedFacilities.slice(0, 3))"
+                  :key="fac.code"
+                  class="consensus-square"
+                  :class="[fac.status, fac.source === 'owner' ? 'owner-source' : 'visitor-source']"
+                  @click="fac.source === 'owner' ? showVerifiedToast() : null"
+                >
+                  <span class="square-icon">{{ fac.icon }}</span>
+                  <span class="square-label">{{ fac.customLabel || getShortLabel(fac.code) }}</span>
+                  <!-- Verified owner checkmark icon -->
+                  <ion-icon v-if="fac.source === 'owner'" :icon="checkmarkCircle" class="owner-verified-icon" />
+                </div>
+                <div
+                  v-if="!showAllBadges && combinedFacilities.length > 3"
+                  class="consensus-square more-square"
+                  @click="showAllBadges = true"
+                >
+                  <span class="square-label">+{{ combinedFacilities.length - 3 }} more</span>
+                </div>
+                <div
+                  v-if="showAllBadges && combinedFacilities.length > 3"
+                  class="consensus-square more-square"
+                  @click="showAllBadges = false"
+                >
+                  <span class="square-label">show less</span>
+                </div>
+              </div>
+              <p v-else class="no-consensus-text">
+                {{ $t('facilityReview.noConsensusYet') || 'No visitor reports yet. Be the first to share!' }}
+              </p>
+              
+              <!-- Check in + Review buttons -->
+              <div class="action-btn-row ion-margin-top" v-if="!isOwner">
+                <ion-button
+                  :fill="checkedIn ? 'solid' : 'outline'"
+                  color="carrot"
+                  size="small"
+                  class="rate-btn"
+                  :disabled="checkedIn || checkingIn"
+                  @click="checkIn"
+                >
+                  <ion-icon slot="start" :icon="checkedIn ? checkmarkCircle : locationOutline" />
+                  {{ checkedIn ? ($t('explore.details.checkedIn') || 'Checked in') : ($t('explore.details.checkIn') || 'Check in') }}
+                </ion-button>
+                <ion-button
+                  fill="outline"
+                  color="carrot"
+                  size="small"
+                  class="rate-btn"
+                  :disabled="userHasReviewed"
+                  @click="openFacilityReview"
+                >
+                  <ion-icon v-if="userHasReviewed" slot="start" :icon="checkmarkCircle" />
+                  {{ userHasReviewed ? ($t('explore.details.reviewed') || 'Reviewed') : ($t('explore.details.review') || 'Review') }}
+                </ion-button>
+              </div>
+
+              <!-- Sponsored card — placed after the Rate & Review CTA (not
+                   before it) so it doesn't sit between the user and the
+                   engagement action this page wants them to take. Reuses
+                   the tall image-top "trip" card layout (no side margin of
+                   its own, so it fills the page's ion-padding width like
+                   the surrounding Handling Details / Address cards).
+                   Restricted to partner/trip sponsors only (not another
+                   location or product) and gold/silver tier — reserved for
+                   the more prominent sponsors, but not gold-only anymore
+                   since that pool alone is too thin for good variety.
+                   Skipped entirely when this place is itself a gold
+                   partner — showing another sponsor's ad on a gold
+                   partner's own page is redundant, not just duplicative.
+                   Always shown alongside the real banner (not just as a
+                   fallback when it fails to fill) — same always-on treatment
+                   as the recurring native cards in Search/Explore/Trip/Store. -->
+              <HouseAdNativeCard
+                  v-if="showAds && String(place?.partner_tier || '').toLowerCase() !== 'gold'"
+                  mode="trip"
+                  :only-kinds="['partner', 'trip']"
+                  :only-tiers="['gold', 'silver']"
+                  :slot="0"
+              />
+            </div>
+
             <!-- ⭐ Visitor Reviews List -->
             <div v-if="place && isReviewableType" class="reviews-section ion-margin-top" id="visitor-reviews-section">
               <div 
@@ -673,6 +700,14 @@
                 </ion-card>
               </div>
             </div>
+
+            <!-- Footer meta -->
+            <p v-if="place?.author?.public_profile" class="attribution-text">
+              {{ $t('home.addedBy', { author: place.author.display_name }) }} - {{ fromNowToTaipei(place.created_at) }}
+            </p>
+            <p v-else class="attribution-text">
+              {{ $t('home.added') }} {{ fromNowToTaipei(place.created_at) }}
+            </p>
 
             <!-- Audit History Log -->
             <AuditHistoryLog ref="auditLogRef" entityType="location" :entityId="place.id" :createdAt="place.created_at" />
@@ -1103,6 +1138,7 @@ const activePromos = ref<any[]>([])
 const showPromosModal = ref(false)
 const showMenuModal = ref(false)
 const showAdditionalDetails = ref(false)
+const showAllHours = ref(false)
 const showAllReviews = ref(false)
 const displayedReviews = computed(() => {
   if (reviews.value.length <= 1) return reviews.value
@@ -1350,6 +1386,13 @@ const isOpenNow = computed(() => {
   if (!todayHours || !todayHours.active) return false
   
   return currentTime >= todayHours.open && currentTime <= todayHours.close
+})
+
+// Collapsed: only today's row; expanded: the whole week.
+const visibleOpeningHours = computed(() => {
+  const all = formattedOpeningHours.value as Record<string, any>
+  if (showAllHours.value || !(todayDayLabel.value in all)) return all
+  return { [todayDayLabel.value]: all[todayDayLabel.value] }
 })
 
 const todayDayLabel = computed(() => {
@@ -2312,6 +2355,33 @@ const scrollToReviews = () => {
   z-index: 5;
 }
 
+.quick-contact {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 4px 16px 12px;
+}
+.qc-btn {
+  height: 40px;
+  padding: 0 14px;
+  gap: 6px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ion-color-carrot, #ff7a00);
+  border: 1px solid var(--ion-color-carrot, #ff7a00);
+  background: color-mix(in srgb, var(--ion-color-carrot, #ff7a00) 10%, transparent);
+  text-decoration: none;
+}
+.qc-btn ion-icon { font-size: 20px; }
+.qc-btn:active { opacity: 0.7; }
+
+.open-status-line { margin: 0 0 8px; }
+.hours-toggle { display: flex; align-items: center; justify-content: center; gap: 4px; padding: 8px; font-size: 13px; font-weight: 600; color: var(--ion-color-carrot); cursor: pointer; }
+
 /* GROUPED INFO CARDS */
 .info-card {
   background: var(--card-bg);
@@ -2791,6 +2861,7 @@ const scrollToReviews = () => {
   line-height: 1.35;
 }
 
+.hashtag-row.in-description { padding: 0; margin-top: 10px; }
 .hashtag-row {
   display: flex;
   flex-wrap: wrap;
