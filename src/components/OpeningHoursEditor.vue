@@ -1,14 +1,16 @@
 <template>
   <ion-list class="opening-hours-list" lines="none">
     <ion-item v-for="key in DAY_KEYS" :key="key" class="opening-hours-item" lines="full">
-      <ion-checkbox
-        slot="start"
-        :checked="modelValue[key].active"
-        @ionChange="(e: any) => { modelValue[key].active = e.detail.checked; emit('change') }"
-      />
-      <ion-label class="day-label">{{ $t(dayLabelPrefix + key) }}</ion-label>
-      <span v-if="!modelValue[key].active" class="closed-label">{{ $t(closedKey) }}</span>
-      <div v-else class="shifts">
+      <div class="day-block">
+      <div class="day-head">
+        <ion-checkbox
+          :checked="modelValue[key].active"
+          @ionChange="(e: any) => { modelValue[key].active = e.detail.checked; emit('change') }"
+        />
+        <ion-label class="day-label">{{ $t(dayLabelPrefix + key) }}</ion-label>
+        <span v-if="!modelValue[key].active" class="closed-label">{{ $t(closedKey) }}</span>
+      </div>
+      <div v-if="modelValue[key].active" class="shifts">
         <div v-for="(shift, i) in modelValue[key].shifts" :key="i" class="shift-row">
           <ion-input v-model="shift.open" type="time" class="time-field" @ionInput="emit('change')" />
           <span class="dash">-</span>
@@ -30,6 +32,7 @@
           <ion-icon slot="start" :icon="addOutline" />
           {{ $t('addPlace.addShift', 'Add shift') }}
         </ion-button>
+      </div>
       </div>
     </ion-item>
   </ion-list>
@@ -75,9 +78,15 @@ function removeShift(key: DayKey, index: number) {
 .opening-hours-item { --padding-top: 6px; --padding-bottom: 6px; }
 .day-label { flex: 0 0 auto; min-width: 84px; max-width: none; white-space: nowrap; font-weight: 600; }
 .closed-label { color: var(--ion-color-medium); font-size: .85rem; font-style: italic; }
-.shifts { display: flex; flex-direction: column; gap: 4px; margin-left: auto; align-items: flex-end; }
-.shift-row { display: flex; align-items: center; gap: 4px; }
-.time-field { width: 142px; max-width: 142px; --padding-start: 8px; --padding-end: 4px; border: 1px solid var(--ion-color-light-shade); border-radius: 8px; }
+/* The checkbox + day name and the time fields share a row only when there is room;
+   on narrow phones the times wrap underneath so the closing time is never clipped
+   (previously two fixed 142px fields overflowed the row). */
+.day-block { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; width: 100%; }
+.day-head { display: flex; align-items: center; gap: 12px; flex: 0 0 auto; }
+.shifts { display: flex; flex-direction: column; gap: 4px; align-items: stretch; flex: 1 1 260px; min-width: 0; }
+.shift-row { display: flex; align-items: center; gap: 4px; width: 100%; min-width: 0; }
+.time-field { flex: 1 1 0; min-width: 0; width: auto; max-width: 160px; --padding-start: 8px; --padding-end: 4px; border: 1px solid var(--ion-color-light-shade); border-radius: 8px; }
+.add-shift { align-self: flex-end; }
 .dash { color: var(--ion-color-medium); }
 .mini-btn { margin: 0; --padding-start: 2px; --padding-end: 2px; }
 .add-shift { margin: 0; font-size: .8rem; text-transform: none; }
