@@ -1199,6 +1199,8 @@
     "stores": "商店",
     "description": "描述",
     "descriptionPlaceholder": "輸入文字",
+    "otherStoreName": "商店名稱（選填）",
+    "otherStoreNamePlaceholder": "哪間商店有賣？例如：家樂福中山店",
     "frontImage": "正面圖片",
     "backImage": "背面圖片",
     "photoActions": {

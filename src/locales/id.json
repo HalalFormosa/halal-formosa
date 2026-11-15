@@ -1474,6 +1474,8 @@
     "stores": "Toko",
     "description": "Deskripsi",
     "descriptionPlaceholder": "Masukkan teks",
+    "otherStoreName": "Nama toko (opsional)",
+    "otherStoreNamePlaceholder": "Toko mana yang menjualnya? mis. Carrefour Zhongshan",
     "frontImage": "Gambar Depan",
     "backImage": "Gambar Belakang",
     "photoActions": {

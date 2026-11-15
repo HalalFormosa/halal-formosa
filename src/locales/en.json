@@ -1363,6 +1363,8 @@
     "stores": "Store",
     "description": "Description",
     "descriptionPlaceholder": "Enter text",
+    "otherStoreName": "Store name (optional)",
+    "otherStoreNamePlaceholder": "Which store sells this? e.g. Carrefour Zhongshan",
     "frontImage": "Front Image",
     "backImage": "Back Image",
     "photoActions": {
