@@ -45,6 +45,21 @@
         <ion-toggle :checked="f.active" @ionChange="f.active = $event.detail.checked" />
       </div>
 
+      <div class="oc-collapse" @click="showSettings = !showSettings">
+        <span>{{ $t('offers.create.limits') }}</span>
+        <ion-icon :icon="showSettings ? chevronUp : chevronDown" />
+      </div>
+      <template v-if="showSettings">
+        <label class="oc-label">{{ $t('offers.create.validFrom') }}</label>
+        <input v-model="f.validFrom" type="datetime-local" class="oc-native" />
+        <label class="oc-label">{{ $t('offers.create.validUntil') }}</label>
+        <input v-model="f.validUntil" type="datetime-local" class="oc-native" />
+        <label class="oc-label">{{ $t('offers.create.ttl') }}</label>
+        <ion-input v-model="f.ttl" type="number" inputmode="numeric" class="oc-input" placeholder="30" />
+        <label class="oc-label">{{ $t('offers.create.maxCodes') }}</label>
+        <ion-input v-model="f.maxCodes" type="number" inputmode="numeric" class="oc-input" :placeholder="$t('offers.create.maxCodesHint')" />
+      </template>
+
       <div class="oc-collapse" @click="showFollow = !showFollow">
         <span>{{ $t('offers.create.followSettings') }}</span>
         <ion-icon :icon="showFollow ? chevronUp : chevronDown" />
@@ -130,11 +145,13 @@ const { t, locale } = useI18n()
 
 const open = ref(false)
 const showFollow = ref(false)
+const showSettings = ref(false)
 const busy = ref(false)
 
 const blank = () => ({
   prefix: '', kind: 'menu' as 'menu' | 'meat' | 'other', title: '', label: '', description: '',
   active: true, requireFollow: true, ig: '', tt: '', fb: '',
+  validFrom: '', validUntil: '', ttl: '' as string | number, maxCodes: '' as string | number,
 })
 const f = reactive(blank())
 
@@ -146,7 +163,7 @@ watch(sampleCode, async code => {
 }, { immediate: true })
 // Codes last 30 days by default.
 const sampleExpiry = computed(() =>
-  new Date(Date.now() + 30 * 86400000).toLocaleDateString(locale.value, { year: 'numeric', month: 'short', day: 'numeric' }))
+  new Date(Date.now() + (Number(f.ttl) > 0 ? Number(f.ttl) : 30) * 86400000).toLocaleDateString(locale.value, { year: 'numeric', month: 'short', day: 'numeric' }))
 
 const canSubmit = computed(() => /^[A-Za-z0-9]{2,12}$/.test(f.prefix.trim()) && f.title.trim().length > 0)
 
@@ -171,11 +188,16 @@ async function submit() {
       followInstagram: f.ig,
       followTiktok: f.tt,
       followFacebook: f.fb,
+      validFrom: f.validFrom ? new Date(f.validFrom).toISOString() : null,
+      validUntil: f.validUntil ? new Date(f.validUntil).toISOString() : null,
+      codeTtlDays: Number(f.ttl) > 0 ? Math.round(Number(f.ttl)) : 30,
+      maxCodes: Number(f.maxCodes) > 0 ? Math.round(Number(f.maxCodes)) : null,
     })
     await toast(t('offers.create.created'))
     Object.assign(f, blank())
     open.value = false
     showFollow.value = false
+    showSettings.value = false
     emit('created')
   } catch (e) {
     const code = e instanceof OfferError ? e.code : 'unknown'
@@ -184,6 +206,8 @@ async function submit() {
       : code === 'invalid_prefix' ? t('offers.create.errPrefix')
       : code === 'invalid_title' ? t('offers.owner.errTitle')
       : code === 'invalid_follow' ? t('offers.create.errFollow')
+      : code === 'invalid_dates' ? t('offers.create.errDates')
+      : code === 'invalid_ttl' || code === 'invalid_max_codes' ? t('offers.create.errNumbers')
       : code === 'not_allowed' ? t('offers.owner.errNotAllowed')
       : t('offers.owner.errGeneric')
     )
@@ -225,5 +249,6 @@ async function submit() {
 .pv-code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 22px; font-weight: 800; letter-spacing: 2px; margin: 8px 0; }
 .pv-code-hint { font-size: 12px; opacity: 0.75; margin: 0; }
 .pv-sample { margin: 8px 0 0; font-size: 11px; opacity: 0.55; font-style: italic; }
+.oc-native { width: 100%; box-sizing: border-box; padding: 10px; border-radius: 10px; border: 1px solid var(--ion-color-medium, #999); background: transparent; color: inherit; font-family: inherit; font-size: 14px; }
 .oc-collapse { display: flex; align-items: center; justify-content: space-between; margin-top: 12px; padding-top: 10px; border-top: 1px solid rgba(128,128,128,0.3); font-size: 14px; font-weight: 600; cursor: pointer; }
 </style>

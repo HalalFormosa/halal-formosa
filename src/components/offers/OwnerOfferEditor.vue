@@ -24,6 +24,41 @@
         · {{ $t('offers.owner.fixed') }}
       </p>
 
+      <!-- How this code is set up (read-only for owners, editable by admins) -->
+      <div class="oo-settings">
+        <div class="oo-settings-head" @click="toggleSettings(d.id)">
+          <strong>{{ $t('offers.owner.settings') }}</strong>
+          <span class="oo-summary">{{ settingsSummary(d) }}</span>
+          <ion-icon :icon="openSettings === d.id ? chevronUp : chevronDown" />
+        </div>
+        <template v-if="openSettings === d.id">
+          <template v-if="isAdmin && sd[d.id]">
+            <label class="oo-label">{{ $t('offers.create.validFrom') }}</label>
+            <input v-model="sd[d.id].validFrom" type="datetime-local" class="oo-native" />
+            <label class="oo-label">{{ $t('offers.create.validUntil') }}</label>
+            <input v-model="sd[d.id].validUntil" type="datetime-local" class="oo-native" />
+            <label class="oo-label">{{ $t('offers.create.ttl') }}</label>
+            <ion-input v-model="sd[d.id].ttl" type="number" inputmode="numeric" class="oo-input" />
+            <label class="oo-label">{{ $t('offers.create.maxCodes') }}</label>
+            <ion-input v-model="sd[d.id].maxCodes" type="number" inputmode="numeric" class="oo-input" :placeholder="$t('offers.create.maxCodesHint')" />
+            <div class="oo-toggle-row">
+              <span>{{ $t('offers.create.requireFollow') }}</span>
+              <ion-toggle :checked="sd[d.id].requireFollow" @ionChange="sd[d.id].requireFollow = $event.detail.checked" />
+            </div>
+            <label class="oo-label">{{ $t('offers.create.followInstagram') }}</label>
+            <ion-input v-model="sd[d.id].ig" class="oo-input" />
+            <label class="oo-label">{{ $t('offers.create.followTiktok') }}</label>
+            <ion-input v-model="sd[d.id].tt" class="oo-input" />
+            <label class="oo-label">{{ $t('offers.create.followFacebook') }}</label>
+            <ion-input v-model="sd[d.id].fb" class="oo-input" />
+            <ion-button size="small" fill="outline" color="carrot" :disabled="busy === d.id" @click="saveSettings(d)">
+              {{ $t('offers.owner.saveSettings') }}
+            </ion-button>
+          </template>
+          <p v-else class="oo-ro">{{ $t('offers.owner.settingsReadonly') }}</p>
+        </template>
+      </div>
+
       <!-- Live preview, same card customers see -->
       <p class="oo-label">{{ $t('offers.owner.preview') }}</p>
       <div class="oo-preview" :class="{ paused: !d.is_active }">
@@ -52,7 +87,8 @@
 import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { IonButton, IonIcon, IonInput, IonSpinner, IonTextarea, IonToggle, toastController } from '@ionic/vue'
-import { lockClosedOutline, pricetagOutline } from 'ionicons/icons'
+import { lockClosedOutline, pricetagOutline, chevronDown, chevronUp } from 'ionicons/icons'
+import { isAdmin } from '@/composables/userProfile'
 import { OfferService, OfferError, type OwnerOffer } from '@/services/OfferService'
 
 type Draft = OwnerOffer & { description: string; discount_label: string }
@@ -62,10 +98,34 @@ const emit = defineEmits<{ (e: 'saved'): void }>()
 const { t } = useI18n()
 
 const drafts = ref<Draft[]>([])
+
+// Admin-editable settings per offer (dates, code validity, stock, follow).
+type SettingsDraft = { validFrom: string; validUntil: string; ttl: string | number; maxCodes: string | number; requireFollow: boolean; ig: string; tt: string; fb: string }
+const sd = ref<Record<string, SettingsDraft>>({})
+const openSettings = ref<string | null>(null)
+// <input type="datetime-local"> wants local "YYYY-MM-DDTHH:mm".
+const toLocalInput = (iso: string | null) => {
+  if (!iso) return ''
+  const d = new Date(iso)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+function settingsSummary(d: OwnerOffer) {
+  const bits = [t('offers.owner.validDays', { n: d.code_ttl_days })]
+  bits.push(d.max_codes ? t('offers.owner.stock', { n: d.max_codes }) : t('offers.owner.noStockLimit'))
+  if (d.valid_until) bits.push(t('offers.endsOn', { date: new Date(d.valid_until).toLocaleDateString() }))
+  return bits.join(' · ')
+}
+function toggleSettings(id: string) { openSettings.value = openSettings.value === id ? null : id }
 const busy = ref<string | null>(null)
 
 watch(() => props.offers, list => {
   drafts.value = list.map(o => ({ ...o, description: o.description ?? '', discount_label: o.discount_label ?? '' }))
+  sd.value = Object.fromEntries(list.map(o => [o.id, {
+    validFrom: toLocalInput(o.valid_from), validUntil: toLocalInput(o.valid_until),
+    ttl: o.code_ttl_days, maxCodes: o.max_codes ?? '', requireFollow: o.require_follow,
+    ig: o.follow_instagram ?? '', tt: o.follow_tiktok ?? '', fb: o.follow_facebook ?? '',
+  }]))
 }, { immediate: true })
 
 function isDirty(d: Draft) {
@@ -80,6 +140,34 @@ function isDirty(d: Draft) {
 async function toast(message: string) {
   const el = await toastController.create({ message, duration: 2500, position: 'bottom' })
   await el.present()
+}
+
+async function saveSettings(d: Draft) {
+  const v = sd.value[d.id]
+  if (!v) return
+  busy.value = d.id
+  try {
+    await OfferService.adminUpdateSettings(d.id, {
+      validFrom: v.validFrom ? new Date(v.validFrom).toISOString() : null,
+      validUntil: v.validUntil ? new Date(v.validUntil).toISOString() : null,
+      codeTtlDays: Number(v.ttl) > 0 ? Math.round(Number(v.ttl)) : 30,
+      maxCodes: Number(v.maxCodes) > 0 ? Math.round(Number(v.maxCodes)) : null,
+      requireFollow: v.requireFollow,
+      followInstagram: v.ig, followTiktok: v.tt, followFacebook: v.fb,
+    }, d.location_id)
+    await toast(t('offers.owner.settingsSaved'))
+    emit('saved')
+  } catch (e) {
+    const code = e instanceof OfferError ? e.code : 'unknown'
+    await toast(
+      code === 'invalid_dates' ? t('offers.create.errDates')
+      : code === 'invalid_ttl' || code === 'invalid_max_codes' ? t('offers.create.errNumbers')
+      : code === 'invalid_follow' ? t('offers.create.errFollow')
+      : t('offers.owner.errGeneric')
+    )
+  } finally {
+    busy.value = null
+  }
 }
 
 async function save(d: Draft) {
@@ -112,6 +200,12 @@ async function save(d: Draft) {
 .oo-stats { flex: 1; font-size: 12px; opacity: 0.7; }
 .oo-label { font-size: 12px; font-weight: 600; margin: 8px 0 0; opacity: 0.8; }
 .oo-input { --padding-start: 10px; --padding-end: 10px; border: 1px solid var(--ion-color-medium, #999); border-radius: 10px; }
+.oo-settings { margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(128,128,128,0.3); display: flex; flex-direction: column; gap: 6px; }
+.oo-settings-head { display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; }
+.oo-summary { flex: 1; font-size: 11px; opacity: 0.7; }
+.oo-native { width: 100%; box-sizing: border-box; padding: 10px; border-radius: 10px; border: 1px solid var(--ion-color-medium, #999); background: transparent; color: inherit; font-family: inherit; font-size: 14px; }
+.oo-toggle-row { display: flex; align-items: center; justify-content: space-between; margin-top: 6px; font-size: 14px; }
+.oo-ro { margin: 0; font-size: 12px; opacity: 0.7; }
 .oo-fixed { display: flex; align-items: center; gap: 6px; font-size: 12px; opacity: 0.7; margin: 8px 0 0; }
 .oo-preview { border: 1px solid var(--ion-color-carrot, #ff7a00); border-radius: 14px; padding: 12px; background: color-mix(in srgb, var(--ion-color-carrot, #ff7a00) 8%, transparent); }
 .oo-preview.paused { opacity: 0.55; }

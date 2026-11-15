@@ -9,6 +9,7 @@ export interface LocationOffer {
   description: string | null
   discount_label: string | null
   free_uses: number
+  valid_from: string | null
   valid_until: string | null
 }
 
@@ -36,6 +37,8 @@ export interface OfferStatus {
   has_open_code: boolean
   can_get_code: boolean
   follow: FollowStep[]
+  /** The offer's stock is used up (and this user has no open code). */
+  sold_out: boolean
 }
 
 /** An offer as the store's owner sees it (includes inactive ones and usage counts). */
@@ -51,6 +54,26 @@ export interface OwnerOffer {
   code_prefix: string
   issued_count: number
   redeemed_count: number
+  valid_from: string | null
+  valid_until: string | null
+  code_ttl_days: number
+  max_codes: number | null
+  require_follow: boolean
+  follow_instagram: string | null
+  follow_tiktok: string | null
+  follow_facebook: string | null
+}
+
+/** Admin-only settings of an offer. */
+export interface OfferSettings {
+  validFrom: string | null
+  validUntil: string | null
+  codeTtlDays: number
+  maxCodes: number | null
+  requireFollow: boolean
+  followInstagram: string
+  followTiktok: string
+  followFacebook: string
 }
 
 export interface OfferWording {
@@ -102,6 +125,10 @@ export interface NewOffer {
   followInstagram: string
   followTiktok: string
   followFacebook: string
+  validFrom: string | null
+  validUntil: string | null
+  codeTtlDays: number
+  maxCodes: number | null
 }
 
 export interface RedeemResult {
@@ -134,6 +161,10 @@ export type OfferErrorCode =
   | 'offer_not_active'
   | 'not_allowed'
   | 'follow_required'
+  | 'offer_sold_out'
+  | 'invalid_ttl'
+  | 'invalid_max_codes'
+  | 'invalid_dates'
   | 'not_redeemed'
   | 'void_window_passed'
   | 'customer_has_open_code'
@@ -162,6 +193,7 @@ function toOfferError(error: { message?: string } | null): OfferError {
     'not_authenticated', 'pro_required', 'free_limit_reached', 'offer_not_found', 'offer_not_started', 'offer_ended',
     'invalid_code', 'already_used', 'expired', 'offer_not_active', 'not_allowed',
     'invalid_title', 'invalid_description', 'invalid_label', 'follow_required',
+    'offer_sold_out', 'invalid_ttl', 'invalid_max_codes', 'invalid_dates',
     'not_redeemed', 'void_window_passed', 'customer_has_open_code',
     'invalid_prefix', 'prefix_taken', 'invalid_kind', 'invalid_free_uses', 'invalid_follow', 'location_not_found',
   ]
@@ -179,7 +211,7 @@ export class OfferService {
   static async getOffersForLocation(locationId: number): Promise<LocationOffer[]> {
     const { data, error } = await supabase
       .from('location_offers')
-      .select('id, location_id, kind, title, description, discount_label, free_uses, valid_until')
+      .select('id, location_id, kind, title, description, discount_label, free_uses, valid_from, valid_until')
       .eq('location_id', locationId)
       .eq('is_active', true)
       .order('created_at', { ascending: true })
@@ -187,7 +219,9 @@ export class OfferService {
       console.warn('[OfferService] getOffersForLocation', error)
       return []
     }
-    return (data ?? []) as LocationOffer[]
+    // An offer past its end date is no longer shown at all.
+    const now = Date.now()
+    return ((data ?? []) as LocationOffer[]).filter(o => !o.valid_until || new Date(o.valid_until).getTime() > now)
   }
 
   /** Whether the signed-in user can still get a code (free uses left, or Pro). */
@@ -276,6 +310,10 @@ export class OfferService {
       p_follow_instagram: o.followInstagram,
       p_follow_tiktok: o.followTiktok,
       p_follow_facebook: o.followFacebook,
+      p_valid_from: o.validFrom,
+      p_valid_until: o.validUntil,
+      p_code_ttl_days: o.codeTtlDays,
+      p_max_codes: o.maxCodes,
     })
     if (error) throw toOfferError(error)
     ActivityLogService.log('offer_create', { location_id: o.locationId, code_prefix: o.codePrefix.toUpperCase() })
@@ -306,5 +344,22 @@ export class OfferService {
       return new Set()
     }
     return new Set((data ?? []).map(r => Number(r.location_id)))
+  }
+
+  /** Admin only: change dates, code validity, stock and follow settings of an existing offer. */
+  static async adminUpdateSettings(offerId: string, o: OfferSettings, locationId?: number): Promise<void> {
+    const { error } = await supabase.rpc('admin_update_offer_settings', {
+      p_offer_id: offerId,
+      p_valid_from: o.validFrom,
+      p_valid_until: o.validUntil,
+      p_code_ttl_days: o.codeTtlDays,
+      p_max_codes: o.maxCodes,
+      p_require_follow: o.requireFollow,
+      p_follow_instagram: o.followInstagram,
+      p_follow_tiktok: o.followTiktok,
+      p_follow_facebook: o.followFacebook,
+    })
+    if (error) throw toOfferError(error)
+    ActivityLogService.log('offer_edit', { offer_id: offerId, location_id: locationId, settings: true })
   }
 }

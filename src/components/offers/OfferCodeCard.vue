@@ -29,6 +29,10 @@
         </p>
       </div>
 
+      <!-- Not started yet / sold out: say so instead of offering a code -->
+      <p v-if="!codes[offer.id] && notStarted(offer)" class="offer-state">{{ $t('offers.startsOn', { date: formatDate(offer.valid_from!) }) }}</p>
+      <p v-else-if="!codes[offer.id] && soldOut(offer)" class="offer-state">{{ $t('offers.soldOut') }}</p>
+
       <!-- Follow first: one step per social account the store actually has -->
       <div v-if="!codes[offer.id] && showFollow(offer)" class="offer-follow">
         <p class="of-title">{{ $t('offers.followFirst') }}</p>
@@ -50,7 +54,7 @@
       </div>
 
       <ion-button
-        v-if="!codes[offer.id]"
+        v-if="!codes[offer.id] && !notStarted(offer) && !soldOut(offer)"
         expand="block"
         color="carrot"
         mode="md"
@@ -126,8 +130,14 @@ function followIncomplete(offer: LocationOffer): boolean {
   if (status.value[offer.id]?.has_open_code) return false // an open code is just shown again
   return followSteps(offer).some(s => !s.done)
 }
+function notStarted(offer: LocationOffer): boolean {
+  return !!offer.valid_from && new Date(offer.valid_from).getTime() > Date.now()
+}
+function soldOut(offer: LocationOffer): boolean {
+  return !!status.value[offer.id]?.sold_out
+}
 function showFollow(offer: LocationOffer): boolean {
-  return signedIn.value && !needsPro(offer) && !status.value[offer.id]?.has_open_code && followSteps(offer).length > 0
+  return signedIn.value && !notStarted(offer) && !soldOut(offer) && !needsPro(offer) && !status.value[offer.id]?.has_open_code && followSteps(offer).length > 0
 }
 function platformName(p: FollowStep['platform']) {
   return p === 'instagram' ? 'Instagram' : p === 'tiktok' ? 'TikTok' : 'Facebook'
@@ -189,12 +199,13 @@ async function reveal(offer: LocationOffer) {
   } catch (e) {
     const code = e instanceof OfferError ? e.code : 'unknown'
     messages.value[offer.id] =
-      code === 'follow_required' ? t('offers.followRequired')
+      code === 'offer_sold_out' ? t('offers.soldOut')
+      : code === 'follow_required' ? t('offers.followRequired')
       : code === 'free_limit_reached' ? t('offers.limitReached')
       : code === 'pro_required' ? t('offers.proRequired')
       : code === 'offer_ended' || code === 'offer_not_found' ? t('offers.ended')
       : t('offers.error')
-    if (code === 'follow_required') await loadStatus()
+    if (code === 'follow_required' || code === 'offer_sold_out') await loadStatus()
     if (code === 'unknown') {
       const toast = await toastController.create({ message: t('offers.error'), duration: 2500, position: 'bottom' })
       await toast.present()
@@ -229,6 +240,7 @@ async function reveal(offer: LocationOffer) {
 .of-btn { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 12px; border-radius: 999px; font-size: 13px; font-weight: 600; text-decoration: none; color: var(--ion-color-carrot, #ff7a00); border: 1px solid var(--ion-color-carrot, #ff7a00); }
 .of-btn.done { opacity: 0.7; border-style: dashed; }
 .of-btn ion-icon { font-size: 18px; }
+.offer-state { margin: 10px 0 0; text-align: center; font-weight: 600; font-size: 14px; opacity: 0.85; }
 .offer-ends { display: block; font-size: 12px; margin-top: 4px; opacity: 0.85; }
 .offer-code-box { text-align: center; padding: 8px 0 2px; }
 .offer-qr { width: 180px; height: 180px; border-radius: 12px; background: #fff; padding: 6px; }
