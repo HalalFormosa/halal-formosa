@@ -65,6 +65,9 @@ function resolveEntity(activity: string, rawDetail: any): EntityResult {
         case 'related_place_click':
         case 'location_check_in':
         case 'explore_detail_line':
+        case 'explore_detail_website':
+        case 'explore_detail_facebook':
+        case 'explore_detail_tiktok':
         case 'explore_detail_foodpanda':
         case 'explore_detail_ubereats':
         case 'explore_place_impression':
@@ -592,6 +595,17 @@ function resolveEntity(activity: string, rawDetail: any): EntityResult {
                 entity_id: detail.barcode ? String(detail.barcode) : null
             }
 
+        // PARTNER OFFER CODES
+        case 'offer_code_show':
+        case 'offer_code_redeem':
+        case 'offer_edit':
+        case 'offer_create':
+        case 'offer_follow_tap':
+            return {
+                entity_type: 'place',
+                entity_id: detail.location_id ? String(detail.location_id) : null
+            }
+
         // BUSINESS CLAIM
         case 'business_claim_start':
         case 'business_claim_step_view':
@@ -740,6 +754,11 @@ function resolveActivityGroup(activity: string): string | null {
         case 'explore_detail_call':
         case 'explore_detail_report':
         case 'explore_detail_line':
+        case 'explore_detail_website':
+        case 'explore_detail_facebook':
+        case 'explore_detail_tiktok':
+        case 'offer_code_show':
+        case 'offer_follow_tap':
         case 'explore_detail_foodpanda':
         case 'explore_detail_ubereats':
         case 'location_review_edit':
@@ -906,6 +925,9 @@ function resolveActivityGroup(activity: string): string | null {
         case 'business_edit_request_reject':
         case 'business_dashboard_open':
         case 'business_analytics_export':
+        case 'offer_code_redeem':
+        case 'offer_edit':
+        case 'offer_create':
             return 'merchant'
 
         /* -------------------------

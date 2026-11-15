@@ -19,12 +19,60 @@ export interface OfferCode {
   is_new: boolean
 }
 
+export type FollowPlatform = 'instagram' | 'tiktok' | 'facebook'
+
+/** A social account the user must visit before a code is issued. */
+export interface FollowStep {
+  platform: FollowPlatform
+  /** Instagram/TikTok handle (no @) or, for Facebook, the page URL. */
+  account: string
+  done: boolean
+}
+
 export interface OfferStatus {
   is_pro: boolean
   free_uses: number
   redeemed_count: number
   has_open_code: boolean
   can_get_code: boolean
+  follow: FollowStep[]
+}
+
+/** An offer as the store's owner sees it (includes inactive ones and usage counts). */
+export interface OwnerOffer {
+  id: string
+  location_id: number
+  kind: 'menu' | 'meat' | 'other'
+  title: string
+  description: string | null
+  discount_label: string | null
+  free_uses: number
+  is_active: boolean
+  code_prefix: string
+  issued_count: number
+  redeemed_count: number
+}
+
+export interface OfferWording {
+  title: string
+  description: string
+  discount_label: string
+  is_active: boolean
+}
+
+export interface NewOffer {
+  locationId: number
+  codePrefix: string
+  kind: 'menu' | 'meat' | 'other'
+  title: string
+  description: string
+  discountLabel: string
+  freeUses: number
+  isActive: boolean
+  requireFollow: boolean
+  followInstagram: string
+  followTiktok: string
+  followFacebook: string
 }
 
 export interface RedeemResult {
@@ -54,6 +102,16 @@ export type OfferErrorCode =
   | 'expired'
   | 'offer_not_active'
   | 'not_allowed'
+  | 'follow_required'
+  | 'invalid_prefix'
+  | 'prefix_taken'
+  | 'invalid_kind'
+  | 'invalid_free_uses'
+  | 'invalid_follow'
+  | 'location_not_found'
+  | 'invalid_title'
+  | 'invalid_description'
+  | 'invalid_label'
   | 'unknown'
 
 export class OfferError extends Error {
@@ -69,6 +127,8 @@ function toOfferError(error: { message?: string } | null): OfferError {
   const known: OfferErrorCode[] = [
     'not_authenticated', 'pro_required', 'free_limit_reached', 'offer_not_found', 'offer_not_started', 'offer_ended',
     'invalid_code', 'already_used', 'expired', 'offer_not_active', 'not_allowed',
+    'invalid_title', 'invalid_description', 'invalid_label', 'follow_required',
+    'invalid_prefix', 'prefix_taken', 'invalid_kind', 'invalid_free_uses', 'invalid_follow', 'location_not_found',
   ]
   const code = known.find(k => k === head.trim()) ?? 'unknown'
   return new OfferError(code, rest.join(':').trim() || undefined)
@@ -105,6 +165,13 @@ export class OfferService {
     return data as OfferStatus
   }
 
+  /** Records that the user tapped through to an account (the server requires this before issuing a code). */
+  static async recordFollow(offer: LocationOffer, platform: FollowPlatform): Promise<void> {
+    const { error } = await supabase.rpc('record_offer_follow', { p_offer_id: offer.id, p_platform: platform })
+    if (error) throw toOfferError(error)
+    ActivityLogService.log('offer_follow_tap', { offer_id: offer.id, location_id: offer.location_id, platform })
+  }
+
   /** The caller's open code for an offer (same code until it is redeemed). */
   static async getMyCode(offer: LocationOffer): Promise<OfferCode> {
     const { data, error } = await supabase.rpc('get_my_offer_code', { p_offer_id: offer.id })
@@ -116,10 +183,10 @@ export class OfferService {
   }
 
   /** Store side: redeem a typed/scanned code. Owner/manager of the store or admin only. */
-  static async redeem(code: string): Promise<RedeemResult> {
+  static async redeem(code: string, locationId?: number): Promise<RedeemResult> {
     const { data, error } = await supabase.rpc('redeem_offer_code', { p_code: code })
     if (error) throw toOfferError(error)
-    ActivityLogService.log('offer_code_redeem', { code_prefix: code.split('-')[0]?.toUpperCase() })
+    ActivityLogService.log('offer_code_redeem', { location_id: locationId, code_prefix: code.split('-')[0]?.toUpperCase() })
     return data as RedeemResult
   }
 
@@ -130,5 +197,45 @@ export class OfferService {
     })
     if (error) throw toOfferError(error)
     return (data ?? []) as RedemptionRow[]
+  }
+
+  /** Owner/admin: every offer at the store, including paused ones. */
+  static async listMyOffers(locationId: number): Promise<OwnerOffer[]> {
+    const { data, error } = await supabase.rpc('list_my_offers', { p_location_id: locationId })
+    if (error) throw toOfferError(error)
+    return (data ?? []) as OwnerOffer[]
+  }
+
+  /** Owner/admin: change wording and the on/off switch only (the server enforces this). */
+  static async updateMyOffer(offerId: string, w: OfferWording, locationId?: number): Promise<void> {
+    const { error } = await supabase.rpc('update_my_offer', {
+      p_offer_id: offerId,
+      p_title: w.title,
+      p_description: w.description,
+      p_discount_label: w.discount_label,
+      p_is_active: w.is_active,
+    })
+    if (error) throw toOfferError(error)
+    ActivityLogService.log('offer_edit', { offer_id: offerId, location_id: locationId })
+  }
+
+  /** Admin only: create an offer for a store (the server checks admin and validates everything). */
+  static async adminCreateOffer(o: NewOffer): Promise<void> {
+    const { error } = await supabase.rpc('admin_create_offer', {
+      p_location_id: o.locationId,
+      p_code_prefix: o.codePrefix,
+      p_kind: o.kind,
+      p_title: o.title,
+      p_description: o.description,
+      p_discount_label: o.discountLabel,
+      p_free_uses: o.freeUses,
+      p_is_active: o.isActive,
+      p_require_follow: o.requireFollow,
+      p_follow_instagram: o.followInstagram,
+      p_follow_tiktok: o.followTiktok,
+      p_follow_facebook: o.followFacebook,
+    })
+    if (error) throw toOfferError(error)
+    ActivityLogService.log('offer_create', { location_id: o.locationId, code_prefix: o.codePrefix.toUpperCase() })
   }
 }

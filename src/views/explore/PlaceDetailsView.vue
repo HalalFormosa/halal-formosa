@@ -166,18 +166,28 @@
               <a v-if="place.instagram" class="qc-btn" :href="`https://instagram.com/${place.instagram.replace('@','')}`" target="_blank" rel="noopener" aria-label="Instagram" @click="logInstagram">
                 <ion-icon :icon="logoInstagram" /><span>{{ $t('common.instagram') }}</span>
               </a>
-              <a v-if="place.facebook" class="qc-btn" :href="place.facebook" target="_blank" rel="noopener" aria-label="Facebook">
+              <a v-if="place.facebook" class="qc-btn" :href="place.facebook" target="_blank" rel="noopener" aria-label="Facebook" @click="logFacebook">
                 <ion-icon :icon="logoFacebook" /><span>{{ $t('business.info.facebook') }}</span>
               </a>
-              <a v-if="place.tiktok" class="qc-btn" :href="`https://tiktok.com/@${place.tiktok.replace('@','')}`" target="_blank" rel="noopener" aria-label="TikTok">
+              <a v-if="place.tiktok" class="qc-btn" :href="`https://tiktok.com/@${place.tiktok.replace('@','')}`" target="_blank" rel="noopener" aria-label="TikTok" @click="logTiktok">
                 <ion-icon :icon="logoTiktok" /><span>{{ $t('business.info.tiktok') }}</span>
               </a>
-              <a v-if="place.website" class="qc-btn" :href="place.website" target="_blank" rel="noopener" :aria-label="$t('business.info.website')">
+              <a v-if="place.website" class="qc-btn" :href="place.website" target="_blank" rel="noopener" :aria-label="$t('business.info.website')" @click="logWebsite">
                 <ion-icon :icon="globeOutline" /><span>{{ $t('business.info.website') }}</span>
               </a>
               <a v-if="place.line_id" class="qc-btn" :href="`line://ti/p/~${place.line_id}`" aria-label="LINE" @click="logLine">
                 <ion-icon :icon="chatboxEllipsesOutline" /><span>LINE</span>
               </a>
+              <button v-if="isLoggedIn" type="button" class="qc-btn" :aria-label="$t('savedLocations.save')" @click="openSaveModal">
+                <ion-icon :icon="isLocationSaved(place?.id || 0) ? bookmark : bookmarkOutline" />
+                <span>{{ isLocationSaved(place?.id || 0) ? $t('savedLocations.saved') : $t('savedLocations.save') }}</span>
+              </button>
+              <button type="button" class="qc-btn" :aria-label="$t('search.details.share')" @click="share">
+                <ion-icon :icon="shareSocialOutline" /><span>{{ $t('search.details.share') }}</span>
+              </button>
+              <button type="button" class="qc-btn" :aria-label="$t('search.details.report')" @click="reportItem">
+                <ion-icon :icon="alertCircleOutline" /><span>{{ $t('search.details.report') }}</span>
+              </button>
             </div>
 
             <!-- Order Via delivery apps -->
@@ -225,7 +235,7 @@
             <div v-if="activePromos.length > 0 || menuItems.length > 0" class="biz-actions-row ion-margin-vertical">
               <ion-button v-if="activePromos.length > 0" fill="solid" color="carrot" class="action-sheet-btn" @click="showPromosModal = true">
                 <ion-icon :icon="sparkles" slot="start" />
-                {{ $t('business.tabs.promos') || 'Promotions & Offers' }}
+                {{ $t('business.tabs.promos') || 'Promotions' }}
               </ion-button>
               <ion-button v-if="menuItems.length > 0" fill="outline" color="carrot" class="action-sheet-btn" @click="showMenuModal = true">
                 <ion-icon :icon="restaurantOutline" slot="start" />
@@ -466,7 +476,7 @@
                       <p class="text-sm text-gray-500">{{ $t('business.info.facebook') }}</p>
                       <p>Facebook</p>
                     </ion-label>
-                    <ion-button fill="clear" size="small" :href="place.facebook" target="_blank">
+                    <ion-button fill="clear" size="small" @click="logFacebook" :href="place.facebook" target="_blank">
                       {{ $t('common.open') }}
                     </ion-button>
                   </ion-item>
@@ -477,7 +487,7 @@
                       <p class="text-sm text-gray-500">{{ $t('business.info.tiktok') }}</p>
                       <p>@{{ place.tiktok.replace('@', '') }}</p>
                     </ion-label>
-                    <ion-button fill="clear" size="small" :href="`https://tiktok.com/@${place.tiktok.replace('@','')}`" target="_blank">
+                    <ion-button fill="clear" size="small" @click="logTiktok" :href="`https://tiktok.com/@${place.tiktok.replace('@','')}`" target="_blank">
                       {{ $t('common.open') }}
                     </ion-button>
                   </ion-item>
@@ -488,7 +498,7 @@
                       <p class="text-sm text-gray-500">{{ $t('business.info.website') }}</p>
                       <p>{{ place.website.replace(/^https?:\/\//, '') }}</p>
                     </ion-label>
-                    <ion-button fill="clear" size="small" :href="place.website" target="_blank">
+                    <ion-button fill="clear" size="small" @click="logWebsite" :href="place.website" target="_blank">
                       {{ $t('common.open') }}
                     </ion-button>
                   </ion-item>
@@ -887,7 +897,7 @@
     >
       <ion-header>
         <ion-toolbar>
-          <ion-title>{{ $t('business.tabs.promos') || 'Promotions & Offers' }}</ion-title>
+          <ion-title>{{ $t('business.tabs.promos') || 'Promotions' }}</ion-title>
           <ion-buttons slot="end">
             <ion-button @click="showPromosModal = false">{{ $t('common.close') || 'Close' }}</ion-button>
           </ion-buttons>
@@ -1912,7 +1922,7 @@ const editItem = async () => {
 const claimBusiness = async () => {
   if (!place.value) return;
   try { await popoverController.dismiss(); } catch { /* no popover */ }
-  ActivityLogService.log("business_claim_start", { id: place.value.id });
+  ActivityLogService.log("business_claim_start", { id: place.value.id, location_id: place.value.id });
   router.push(`/place/${place.value.id}/claim`);
 };
 
@@ -1945,6 +1955,21 @@ const logLine = () => {
     id: place.value.id,
     line_id: place.value.line_id
   });
+};
+
+const logWebsite = () => {
+  if (!place.value) return;
+  ActivityLogService.log("explore_detail_website", { id: place.value.id, website: place.value.website });
+};
+
+const logFacebook = () => {
+  if (!place.value) return;
+  ActivityLogService.log("explore_detail_facebook", { id: place.value.id, facebook: place.value.facebook });
+};
+
+const logTiktok = () => {
+  if (!place.value) return;
+  ActivityLogService.log("explore_detail_tiktok", { id: place.value.id, tiktok: place.value.tiktok });
 };
 
 const logFoodpanda = () => {
@@ -2418,6 +2443,7 @@ const scrollToReviews = () => {
   background: color-mix(in srgb, var(--ion-color-carrot, #ff7a00) 10%, transparent);
   text-decoration: none;
 }
+button.qc-btn { font-family: inherit; cursor: pointer; }
 .qc-btn ion-icon { font-size: 20px; }
 .qc-btn:active { opacity: 0.7; }
 

@@ -23,16 +23,37 @@
         <p class="offer-hint">
           {{ $t('offers.showAtCounter') }}
           <br />
+          <template v-if="followSteps(offer).length">{{ $t('offers.followStaffNote') }}<br /></template>
           {{ $t('offers.validUntil', { date: formatDate(codes[offer.id]!.expires_at) }) }}
         </p>
       </div>
 
+      <!-- Follow first: one step per social account the store actually has -->
+      <div v-if="!codes[offer.id] && showFollow(offer)" class="offer-follow">
+        <p class="of-title">{{ $t('offers.followFirst') }}</p>
+        <div class="of-row">
+          <a
+            v-for="step in followSteps(offer)"
+            :key="step.platform"
+            class="of-btn"
+            :class="{ done: step.done }"
+            :href="followUrl(step)"
+            target="_blank"
+            rel="noopener"
+            @click="onFollow(offer, step)"
+          >
+            <ion-icon :icon="step.done ? checkmarkCircle : followIcon(step.platform)" />
+            <span>{{ step.done ? $t('offers.followed', { platform: platformName(step.platform) }) : $t('offers.followOn', { platform: platformName(step.platform) }) }}</span>
+          </a>
+        </div>
+      </div>
+
       <ion-button
-        v-else
+        v-if="!codes[offer.id]"
         expand="block"
         color="carrot"
         mode="md"
-        :disabled="busy === offer.id"
+        :disabled="busy === offer.id || followIncomplete(offer)"
         @click="reveal(offer)"
       >
         <ion-spinner v-if="busy === offer.id" name="crescent" slot="start" />
@@ -49,13 +70,13 @@
 import { ref, watch, onBeforeUnmount } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { IonButton, IonIcon, IonSpinner, toastController } from '@ionic/vue'
-import { pricetagOutline, sparkles, lockClosedOutline, ticketOutline, logInOutline } from 'ionicons/icons'
+import { pricetagOutline, sparkles, lockClosedOutline, ticketOutline, logInOutline, logoInstagram, logoTiktok, logoFacebook, checkmarkCircle } from 'ionicons/icons'
 import QRCode from 'qrcode'
 import { supabase } from '@/plugins/supabaseClient'
 import router from '@/router'
 import { isDonor } from '@/composables/useSubscriptionStatus'
 import { presentProPaywall } from '@/utils/proPaywall'
-import { OfferService, OfferError, type LocationOffer, type OfferCode, type OfferStatus } from '@/services/OfferService'
+import { OfferService, OfferError, type LocationOffer, type OfferCode, type OfferStatus, type FollowStep } from '@/services/OfferService'
 
 const props = defineProps<{ locationId: number }>()
 const { t, locale } = useI18n()
@@ -93,6 +114,38 @@ function needsPro(offer: LocationOffer): boolean {
   const st = status.value[offer.id]
   if (st) return !st.can_get_code
   return offer.free_uses <= 0
+}
+
+// ---- Follow-first steps (only for accounts the store actually has) ----
+function followSteps(offer: LocationOffer): FollowStep[] {
+  return status.value[offer.id]?.follow ?? []
+}
+function followIncomplete(offer: LocationOffer): boolean {
+  if (!signedIn.value || needsPro(offer)) return false   // the upgrade prompt is never blocked by this
+  if (status.value[offer.id]?.has_open_code) return false // an open code is just shown again
+  return followSteps(offer).some(s => !s.done)
+}
+function showFollow(offer: LocationOffer): boolean {
+  return signedIn.value && !needsPro(offer) && !status.value[offer.id]?.has_open_code && followSteps(offer).length > 0
+}
+function platformName(p: FollowStep['platform']) {
+  return p === 'instagram' ? 'Instagram' : p === 'tiktok' ? 'TikTok' : 'Facebook'
+}
+function followIcon(p: FollowStep['platform']) {
+  return p === 'instagram' ? logoInstagram : p === 'tiktok' ? logoTiktok : logoFacebook
+}
+function followUrl(s: FollowStep) {
+  return s.platform === 'instagram' ? `https://instagram.com/${s.account}`
+    : s.platform === 'tiktok' ? `https://tiktok.com/@${s.account}`
+    : s.account
+}
+// The link itself opens the account; we only record that they went there.
+async function onFollow(offer: LocationOffer, step: FollowStep) {
+  if (step.done) return
+  try {
+    await OfferService.recordFollow(offer, step.platform)
+    step.done = true
+  } catch { /* the code step re-checks on the server; they can tap again */ }
 }
 
 watch(() => props.locationId, load, { immediate: true })
@@ -135,10 +188,12 @@ async function reveal(offer: LocationOffer) {
   } catch (e) {
     const code = e instanceof OfferError ? e.code : 'unknown'
     messages.value[offer.id] =
-      code === 'free_limit_reached' ? t('offers.limitReached')
+      code === 'follow_required' ? t('offers.followRequired')
+      : code === 'free_limit_reached' ? t('offers.limitReached')
       : code === 'pro_required' ? t('offers.proRequired')
       : code === 'offer_ended' || code === 'offer_not_found' ? t('offers.ended')
       : t('offers.error')
+    if (code === 'follow_required') await loadStatus()
     if (code === 'unknown') {
       const toast = await toastController.create({ message: t('offers.error'), duration: 2500, position: 'bottom' })
       await toast.present()
@@ -167,6 +222,12 @@ async function reveal(offer: LocationOffer) {
 }
 .offer-desc { margin: 4px 0 0; font-size: 13px; opacity: 0.8; }
 .offer-pro { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; margin-top: 6px; opacity: 0.85; }
+.offer-follow { margin: 0 0 10px; }
+.of-title { margin: 0 0 8px; font-size: 13px; font-weight: 600; }
+.of-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.of-btn { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 12px; border-radius: 999px; font-size: 13px; font-weight: 600; text-decoration: none; color: var(--ion-color-carrot, #ff7a00); border: 1px solid var(--ion-color-carrot, #ff7a00); }
+.of-btn.done { opacity: 0.7; border-style: dashed; }
+.of-btn ion-icon { font-size: 18px; }
 .offer-code-box { text-align: center; padding: 8px 0 2px; }
 .offer-qr { width: 180px; height: 180px; border-radius: 12px; background: #fff; padding: 6px; }
 .offer-code {
