@@ -45,4 +45,7 @@ export interface Product {
     partner_id?: string | null;
     partner_tier?: string | null;
     tags?: string[];
+
+    // Contributor-supplied store name when linked to "Other Stores"
+    other_store_name?: string | null;
 }

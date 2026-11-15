@@ -650,6 +650,16 @@
                       />
                     </ion-item>
 
+                    <ion-item v-if="isOtherStoreSelected" lines="full">
+                      <ion-input
+                          v-model="form.other_store_name"
+                          label-placement="stacked"
+                          :label="$t('addProduct.otherStoreName')"
+                          :placeholder="$t('addProduct.otherStoreNamePlaceholder')"
+                          :maxlength="100"
+                      />
+                    </ion-item>
+
                     <ion-item lines="none">
                       <ion-textarea
                           v-model="form.description"
@@ -1412,6 +1422,7 @@ interface ProductForm {
   ingredients: string
   description: string
   store_ids: string[]
+  other_store_name: string
   tags: string[]
   approved: boolean
 }
@@ -1424,9 +1435,14 @@ const form = ref<ProductForm>({
   ingredients: '',
   description: '',
   store_ids: [],
+  other_store_name: '',
   tags: [],
   approved: false
 })
+
+// Contributor picked "Other Stores" (or left the default) -> offer an optional store-name input
+const OTHER_STORES_ID_UI = '2a013308-190c-4684-a607-3bc3d7817115'
+const isOtherStoreSelected = computed(() => form.value.store_ids.includes(OTHER_STORES_ID_UI))
 
 const barcodeInput = ref<any>(null)
 const contentRef = ref<any>(null)
@@ -1642,6 +1658,7 @@ onMounted(async () => {
       ingredients: props.editProduct.ingredients ?? '',
       description: props.editProduct.description ?? '',
       store_ids: [],
+      other_store_name: props.editProduct.other_store_name ?? '',
       tags: props.editProduct.tags ?? [],
       approved: props.editProduct.approved ?? false
     }
@@ -2641,6 +2658,11 @@ async function handleSubmit() {
     if (!props.editProduct && !manualIngredientsMode.value && !backFile.value) return setError('Back image is required.')
 
     const { store_ids, ...productData } = form.value
+    // Only keep the free-text store name when "Other Stores" is the selection
+    const otherStoreName = store_ids.includes(OTHER_STORES_ID_UI)
+      ? form.value.other_store_name.trim().slice(0, 100)
+      : ''
+    productData.other_store_name = otherStoreName || (null as unknown as string)
 
     let frontUrl = props.editProduct?.photo_front_url || ''
     let backUrl  = props.editProduct?.photo_back_url || ''
@@ -2841,7 +2863,7 @@ async function handleSubmit() {
 
       // reset form
       form.value = { barcode: '', name: '', status: 'Muslim-friendly',
-        product_category_id: null, ingredients: '', description: '', store_ids: [], tags: [], approved: false }
+        product_category_id: null, ingredients: '', description: '', store_ids: [], other_store_name: '', tags: [], approved: false }
       frontFile.value = null; backFile.value = null
       frontPreview.value = null; backPreview.value = null
       originalFrontFile.value = null; originalBackFile.value = null

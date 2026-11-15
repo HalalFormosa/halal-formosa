@@ -910,6 +910,8 @@
     "stores": "Kedai",
     "description": "Penerangan",
     "descriptionPlaceholder": "Masukkan teks",
+    "otherStoreName": "Nama kedai (pilihan)",
+    "otherStoreNamePlaceholder": "Kedai mana yang menjualnya? cth. Carrefour Zhongshan",
     "frontImage": "Imej Hadapan",
     "backImage": "Imej Belakang",
     "showMuslimFriendly": "Papar bahan mesra muslim",
