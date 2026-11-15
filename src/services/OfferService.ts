@@ -294,4 +294,17 @@ export class OfferService {
     if (error) throw toOfferError(error)
     return (data ?? []) as AdminOfferCode[]
   }
+
+  /** Ids of places that currently have an active discount code (public marketing info). */
+  static async getLocationIdsWithActiveOffers(): Promise<Set<number>> {
+    const { data, error } = await supabase
+      .from('location_offers')
+      .select('location_id')
+      .eq('is_active', true)
+    if (error) {
+      console.warn('[OfferService] getLocationIdsWithActiveOffers', error)
+      return new Set()
+    }
+    return new Set((data ?? []).map(r => Number(r.location_id)))
+  }
 }
