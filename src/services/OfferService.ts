@@ -87,6 +87,8 @@ export interface RedemptionRow {
   offer_title: string
   issued_at: string
   redeemed_at: string
+  /** Inside the 10-minute undo window (or the viewer is an admin). */
+  can_void: boolean
 }
 
 /** Error codes raised by the offer RPCs (see migration 20261115010000_offer_codes). */
@@ -103,6 +105,9 @@ export type OfferErrorCode =
   | 'offer_not_active'
   | 'not_allowed'
   | 'follow_required'
+  | 'not_redeemed'
+  | 'void_window_passed'
+  | 'customer_has_open_code'
   | 'invalid_prefix'
   | 'prefix_taken'
   | 'invalid_kind'
@@ -128,6 +133,7 @@ function toOfferError(error: { message?: string } | null): OfferError {
     'not_authenticated', 'pro_required', 'free_limit_reached', 'offer_not_found', 'offer_not_started', 'offer_ended',
     'invalid_code', 'already_used', 'expired', 'offer_not_active', 'not_allowed',
     'invalid_title', 'invalid_description', 'invalid_label', 'follow_required',
+    'not_redeemed', 'void_window_passed', 'customer_has_open_code',
     'invalid_prefix', 'prefix_taken', 'invalid_kind', 'invalid_free_uses', 'invalid_follow', 'location_not_found',
   ]
   const code = known.find(k => k === head.trim()) ?? 'unknown'
@@ -188,6 +194,13 @@ export class OfferService {
     if (error) throw toOfferError(error)
     ActivityLogService.log('offer_code_redeem', { location_id: locationId, code_prefix: code.split('-')[0]?.toUpperCase() })
     return data as RedeemResult
+  }
+
+  /** Store side: undo a mistaken redemption (10 minutes for owners, any time for admins). */
+  static async voidRedemption(code: string, locationId?: number): Promise<void> {
+    const { error } = await supabase.rpc('void_offer_redemption', { p_code: code })
+    if (error) throw toOfferError(error)
+    ActivityLogService.log('offer_code_void', { location_id: locationId, code_prefix: code.split('-')[0]?.toUpperCase() })
   }
 
   /** Store side: recent redemptions (codes and times only, no customer identity). */

@@ -50,6 +50,9 @@
           <li v-for="row in history" :key="row.code + row.redeemed_at">
             <span class="h-code">{{ row.code }}</span>
             <span class="h-time">{{ formatTime(row.redeemed_at) }}</span>
+            <button v-if="row.can_void" type="button" class="h-undo" :disabled="voiding === row.code" @click="confirmVoid(row)">
+              {{ $t('offers.redeem.undo') }}
+            </button>
           </li>
         </ul>
       </div>
@@ -61,7 +64,7 @@
 import { ref, computed, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { IonPage, IonHeader, IonContent, IonButton, IonIcon, IonSpinner, toastController, onIonViewWillEnter, onIonViewWillLeave } from '@ionic/vue'
+import { IonPage, IonHeader, IonContent, IonButton, IonIcon, IonSpinner, toastController, alertController, onIonViewWillEnter, onIonViewWillLeave } from '@ionic/vue'
 import { qrCodeOutline, closeOutline, checkmarkCircle, alertCircle } from 'ionicons/icons'
 import { Html5Qrcode } from 'html5-qrcode'
 import AppHeader from '@/components/AppHeader.vue'
@@ -91,6 +94,39 @@ async function loadHistory() {
     history.value = await OfferService.listRedemptions(locationId.value, 20)
   } catch {
     history.value = []
+  }
+}
+
+const voiding = ref<string | null>(null)
+
+async function confirmVoid(row: RedemptionRow) {
+  const alert = await alertController.create({
+    header: t('offers.redeem.undoTitle'),
+    message: t('offers.redeem.undoBody', { code: row.code }),
+    buttons: [
+      { text: t('common.cancel'), role: 'cancel' },
+      { text: t('offers.redeem.undo'), role: 'destructive', handler: () => { void doVoid(row) } },
+    ],
+  })
+  await alert.present()
+}
+
+async function doVoid(row: RedemptionRow) {
+  voiding.value = row.code
+  try {
+    await OfferService.voidRedemption(row.code, locationId.value)
+    result.value = { ok: true, title: t('offers.redeem.undone'), detail: t('offers.redeem.undoneDetail', { code: row.code }) }
+    await loadHistory()
+  } catch (e) {
+    const code = e instanceof OfferError ? e.code : 'unknown'
+    result.value = {
+      ok: false,
+      title: code === 'void_window_passed' ? t('offers.redeem.errWindow')
+        : code === 'customer_has_open_code' ? t('offers.redeem.errOpenCode')
+        : t('offers.redeem.generic'),
+    }
+  } finally {
+    voiding.value = null
   }
 }
 
@@ -197,5 +233,6 @@ onBeforeUnmount(stopScan)
 .history { list-style: none; margin: 0; padding: 0; }
 .history li { display: flex; justify-content: space-between; gap: 8px; padding: 8px 0; border-bottom: 1px solid rgba(128,128,128,0.2); }
 .h-code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 14px; }
+.h-undo { margin-left: 8px; background: none; border: 1px solid var(--ion-color-carrot); color: var(--ion-color-carrot); border-radius: 999px; padding: 2px 10px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; }
 .h-time { font-size: 12px; opacity: 0.7; }
 </style>

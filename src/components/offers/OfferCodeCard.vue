@@ -13,6 +13,7 @@
             <ion-icon :icon="sparkles" />
             {{ offer.free_uses > 0 ? $t('offers.freeThenPro', { n: offer.free_uses }) : $t('offers.proPerk') }}
           </span>
+          <span v-if="offer.valid_until" class="offer-ends">{{ $t('offers.endsOn', { date: formatDate(offer.valid_until) }) }}</span>
         </div>
       </div>
 
@@ -228,6 +229,7 @@ async function reveal(offer: LocationOffer) {
 .of-btn { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 12px; border-radius: 999px; font-size: 13px; font-weight: 600; text-decoration: none; color: var(--ion-color-carrot, #ff7a00); border: 1px solid var(--ion-color-carrot, #ff7a00); }
 .of-btn.done { opacity: 0.7; border-style: dashed; }
 .of-btn ion-icon { font-size: 18px; }
+.offer-ends { display: block; font-size: 12px; margin-top: 4px; opacity: 0.85; }
 .offer-code-box { text-align: center; padding: 8px 0 2px; }
 .offer-qr { width: 180px; height: 180px; border-radius: 12px; background: #fff; padding: 6px; }
 .offer-code {

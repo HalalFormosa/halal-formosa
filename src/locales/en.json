@@ -1672,6 +1672,7 @@
       "errGeneric": "Could not save. Please try again."
     },
     "loginToClaim": "Log in to claim your code",
+    "endsOn": "Ends {date}",
     "followFirst": "Follow first to unlock your code",
     "followOn": "Follow on {platform}",
     "followed": "Followed on {platform}",
@@ -1701,6 +1702,13 @@
       "noAccess": "Only the store's owner can redeem codes.",
       "generic": "Could not redeem the code. Please try again.",
       "cameraDenied": "Camera unavailable. Type the code instead.",
+      "undo": "Undo",
+      "undoTitle": "Undo this redemption?",
+      "undoBody": "{code} will become usable again. Only do this if it was redeemed by mistake.",
+      "undone": "Redemption undone",
+      "undoneDetail": "{code} can be used again.",
+      "errWindow": "The undo window (10 minutes) has passed. Contact Halal Formosa to fix it.",
+      "errOpenCode": "This customer already has a new code for this offer, so this one can't be restored.",
       "recent": "Recently redeemed",
       "none": "No codes redeemed yet.",
       "store": "Store"

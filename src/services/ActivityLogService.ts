@@ -600,6 +600,7 @@ function resolveEntity(activity: string, rawDetail: any): EntityResult {
         case 'offer_code_redeem':
         case 'offer_edit':
         case 'offer_create':
+        case 'offer_code_void':
         case 'offer_follow_tap':
             return {
                 entity_type: 'place',
@@ -928,6 +929,7 @@ function resolveActivityGroup(activity: string): string | null {
         case 'offer_code_redeem':
         case 'offer_edit':
         case 'offer_create':
+        case 'offer_code_void':
             return 'merchant'
 
         /* -------------------------
