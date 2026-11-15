@@ -1,0 +1,39 @@
+name: Sync dev from main
+
+# Keeps the dev branch up to date: whenever main changes, merge main into dev.
+# Fast-forwards when possible; otherwise creates a normal merge commit (no force-push,
+# so nothing on dev is ever overwritten). If the merge conflicts, the job fails visibly
+# and dev is left untouched.
+
+on:
+  push:
+    branches: [ "main" ]
+
+concurrency:
+  group: sync-dev
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+    - name: Checkout dev
+      uses: actions/checkout@v4
+      with:
+        ref: dev
+        fetch-depth: 0
+
+    - name: Merge main into dev
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git fetch origin main
+        if git merge-base --is-ancestor origin/main HEAD; then
+          echo "dev already contains main, nothing to do"
+          exit 0
+        fi
+        git merge origin/main -m "Merge branch 'main' into dev" -m "Automated sync (sync-dev workflow)."
+        git push origin dev
