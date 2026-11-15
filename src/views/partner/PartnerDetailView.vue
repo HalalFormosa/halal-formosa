@@ -43,6 +43,7 @@
                   :src="body.logo"
                   :alt="body.name"
                   class="hero-logo clickable"
+                  @error="(e) => (e.target as any).src = `https://placehold.co/200x200?text=${encodeURIComponent(body.name)}`"
               />
             </div>
 
@@ -65,9 +66,9 @@
             <ion-badge
                 v-else-if="body.verified"
                 color="success"
-                class="verified-badge"
+                class="partner-verified-badge"
             >
-              Verified Halal Certification Body
+              {{ verifiedBadgeLabel(body.partner_type) }}
             </ion-badge>
 
 
@@ -149,26 +150,29 @@
               <ion-skeleton-text animated style="width:80%;height:14px;margin-top:8px;" />
             </template>
 
-            <!-- Products -->
-            <div v-else class="discover-grid">
-              <ion-card
-                  v-for="p in certifiedProducts"
-                  :key="p.id"
-                  class="discover-item"
-                  button
-                  @click="openCertifiedProduct(p)"
-              >
-                <img
-                    :src="p.photo_front_url || 'https://placehold.co/200x200'"
-                    class="discover-img"
-                />
-                <ion-label class="discover-label">
-                  <p class="discover-name">{{ p.name }}</p>
-                  <ion-chip color="success" style="font-size:12px;">
-                    {{ p.status }}
-                  </ion-chip>
-                </ion-label>
-              </ion-card>
+            <!-- Products (Horizontal Scroll) -->
+            <div v-else class="discover-scroll">
+              <div class="discover-track">
+                <ion-card
+                    v-for="p in certifiedProducts"
+                    :key="p.id"
+                    class="discover-item discover-item--scroll"
+                    button
+                    @click="openCertifiedProduct(p)"
+                >
+                  <img
+                      :src="p.photo_front_url || 'https://placehold.co/200x200'"
+                      class="discover-img"
+                      @error="(e) => (e.target as any).src = `https://placehold.co/200x200?text=${encodeURIComponent(p.name)}`"
+                  />
+                  <ion-label class="discover-label">
+                    <p class="discover-name" style="text-align: center;">{{ p.name }}</p>
+                    <ion-chip color="success" style="font-size:10px; height: 20px; margin-top: 4px;">
+                      {{ p.status }}
+                    </ion-chip>
+                  </ion-label>
+                </ion-card>
+              </div>
             </div>
           </ion-card-content>
         </ion-card>
@@ -179,7 +183,7 @@
         >
           <ion-card-header>
             <ion-card-title>
-              Certified Locations
+              {{ body.partner_type === 'halal_body' ? 'Certified Locations' : 'Affiliated Stores' }}
             </ion-card-title>
           </ion-card-header>
 
@@ -190,26 +194,376 @@
               <ion-skeleton-text animated style="width:80%;height:14px;margin-top:8px;" />
             </template>
 
-            <!-- Locations -->
-            <div v-else class="discover-grid">
-              <ion-card
-                  v-for="loc in certifiedLocations"
-                  :key="loc.id"
-                  class="discover-item"
-                  button
-                  @click="openCertifiedLocation(loc)"
+            <!-- Locations (Horizontal Scroll) -->
+            <div v-else class="discover-scroll">
+              <div class="discover-track">
+                <ion-card
+                    v-for="loc in certifiedLocations"
+                    :key="loc.id"
+                    class="discover-item discover-item--scroll"
+                    button
+                    @click="openCertifiedLocation(loc)"
+                >
+                  <img
+                      :src="loc.image || 'https://placehold.co/200x200'"
+                      class="discover-img"
+                      @error="(e) => (e.target as any).src = `https://placehold.co/200x200?text=${encodeURIComponent(loc.name)}`"
+                  />
+                  <ion-label class="discover-label">
+                    <p class="discover-name" style="text-align: center;">{{ loc.name }}</p>
+                    <p style="font-size:12px;color:var(--ion-color-medium)">
+                      {{ loc.location_types?.name }}
+                    </p>
+                  </ion-label>
+                </ion-card>
+              </div>
+            </div>
+          </ion-card-content>
+        </ion-card>
+
+        <!-- Own branches / stores (locations linked to this partner) -->
+        <ion-card
+            v-if="isBrandPartner && (loadingBranches || ownStoreLocations.length)"
+        >
+          <ion-card-header>
+            <ion-card-title>{{ $t('partner.ourStores') }}</ion-card-title>
+          </ion-card-header>
+
+          <ion-card-content>
+            <template v-if="loadingBranches">
+              <ion-skeleton-text animated style="width:100%;height:140px;border-radius:12px;" />
+            </template>
+
+            <div v-else class="discover-scroll">
+              <div class="discover-track">
+                <ion-card
+                    v-for="loc in ownStoreLocations"
+                    :key="loc.id"
+                    class="discover-item discover-item--scroll"
+                    button
+                    @click="openCertifiedLocation(loc)"
+                >
+                  <img
+                      :src="loc.image || 'https://placehold.co/200x200'"
+                      class="discover-img"
+                      @error="(e) => (e.target as any).src = `https://placehold.co/200x200?text=${encodeURIComponent(loc.name)}`"
+                  />
+                  <ion-label class="discover-label">
+                    <p class="discover-name" style="text-align: center;">{{ loc.name }}</p>
+                    <p style="font-size:12px;color:var(--ion-color-medium)">
+                      {{ loc.location_types?.name }}
+                    </p>
+                  </ion-label>
+                </ion-card>
+              </div>
+            </div>
+          </ion-card-content>
+        </ion-card>
+
+        <!-- Stores that carry this partner's products -->
+        <ion-card
+            v-if="isBrandPartner && (loadingStockists || stockists.length)"
+        >
+          <ion-card-header>
+            <ion-card-title>{{ $t('partner.availableAt') }}</ion-card-title>
+          </ion-card-header>
+
+          <ion-card-content>
+            <template v-if="loadingStockists">
+              <ion-skeleton-text animated style="width:100%;height:80px;border-radius:12px;" />
+            </template>
+
+            <div v-else class="stockist-row">
+              <div
+                  v-for="s in stockists"
+                  :key="s.id"
+                  class="stockist-item"
+                  :role="s.website ? 'button' : undefined"
+                  @click="openStockist(s)"
               >
-                <img
-                    :src="loc.image || 'https://placehold.co/200x200'"
-                    class="discover-img"
-                />
-                <ion-label class="discover-label">
-                  <p class="discover-name">{{ loc.name }}</p>
-                  <p style="font-size:12px;color:var(--ion-color-medium)">
-                    {{ loc.location_types?.name }}
-                  </p>
-                </ion-label>
-              </ion-card>
+                <img v-if="s.logo_url" :src="s.logo_url" :alt="s.name" class="stockist-logo" />
+                <span class="stockist-name">{{ s.name }}</span>
+              </div>
+            </div>
+          </ion-card-content>
+        </ion-card>
+
+        <!-- Produced Products (Campus) / Provided Products (brand & merchant partners) -->
+        <ion-card
+            v-if="hasProducedProducts && (loadingProducedProducts || producedProducts.length)"
+        >
+          <ion-card-header>
+            <ion-card-title>
+              {{ body.partner_type === 'campus' ? $t('partner.producedProducts') : $t('partner.productsBy', { name: body.name }) }}
+            </ion-card-title>
+          </ion-card-header>
+
+          <ion-card-content>
+            <!-- Skeleton -->
+            <template v-if="loadingProducedProducts">
+              <ion-skeleton-text animated style="width:100%;height:140px;border-radius:12px;" />
+              <ion-skeleton-text animated style="width:80%;height:14px;margin-top:8px;" />
+            </template>
+
+            <!-- Products (Horizontal Scroll) -->
+            <div v-else class="discover-scroll">
+              <div class="discover-track">
+                <ion-card
+                    v-for="p in producedProducts"
+                    :key="p.id"
+                    class="discover-item discover-item--scroll"
+                    button
+                    @click="openProducedProduct(p)"
+                >
+                  <img
+                      :src="p.photo_front_url || 'https://placehold.co/200x200'"
+                      class="discover-img"
+                      @error="(e) => (e.target as any).src = `https://placehold.co/200x200?text=${encodeURIComponent(p.name)}`"
+                  />
+                  <ion-label class="discover-label">
+                    <p class="discover-name" style="text-align: center;">{{ p.name }}</p>
+                    <ion-chip
+                        v-if="p.status"
+                        :color="p.status === 'Halal' ? 'success' : 'primary'"
+                        style="font-size:10px; height: 20px; margin-top: 4px;"
+                    >
+                      {{ p.status }}
+                    </ion-chip>
+                  </ion-label>
+                </ion-card>
+              </div>
+            </div>
+          </ion-card-content>
+        </ion-card>
+
+        <!-- Nearby Locations (Tag-based matching to Partner Slug) -->
+        <ion-card
+            v-if="(body.partner_type === 'campus') && (loadingNearby || nearbyLocations.length)"
+        >
+          <ion-card-header>
+            <div class="card-header-row">
+              <ion-card-title>Nearby Locations</ion-card-title>
+              <ion-button
+                  fill="clear"
+                  size="small"
+                  color="carrot"
+                  @click="viewAllNearbyLocations"
+              >
+                {{ $t('home.viewMore') }}
+              </ion-button>
+            </div>
+          </ion-card-header>
+
+          <ion-card-content>
+            <!-- Skeleton -->
+            <template v-if="loadingNearby">
+              <ion-skeleton-text animated style="width:100%;height:140px;border-radius:12px;" />
+              <ion-skeleton-text animated style="width:80%;height:14px;margin-top:8px;" />
+            </template>
+
+            <!-- Locations -->
+            <!-- Locations (Horizontal Scroll) -->
+            <div v-else class="discover-scroll">
+              <div class="discover-track">
+                <ion-card
+                    v-for="loc in nearbyLocations"
+                    :key="loc.id"
+                    :class="[
+                      'discover-item', 
+                      'discover-item--scroll',
+                      loc.partner?.partner_tier ? 'tier-card-' + loc.partner.partner_tier.toLowerCase() : ''
+                    ]"
+                    button
+                    @click="openNearbyLocation(loc)"
+                >
+                  <!-- Tier Badge -->
+                  <ion-badge
+                      v-if="loc.partner?.partner_tier"
+                      :class="['tier-badge', loc.partner.partner_tier.toLowerCase()]"
+                  >
+                    <ion-icon :icon="sparkles" />
+                    <span>{{ $t('home.partnerTier', { tier: (loc.partner.partner_tier || '').toUpperCase() }) }}</span>
+                  </ion-badge>
+
+                  <!-- Premium Flare -->
+                  <div v-if="['gold', 'silver'].includes(String(loc.partner?.partner_tier || '').toLowerCase())" class="premium-flare"></div>
+
+                  <img
+                      :src="loc.image || 'https://placehold.co/200x200'"
+                      :alt="$t('home.altLocation')"
+                      class="discover-img"
+                      @error="(e) => (e.target as any).src = `https://placehold.co/200x200?text=${encodeURIComponent(loc.name)}`"
+                  />
+                  <ion-label class="discover-label">
+                    <div class="name-row">
+                      <h3 class="discover-name">{{ loc.name }}</h3>
+                      <div v-if="loc.partner?.partner_tier" class="home-partner-verified">
+                        <ion-icon :icon="shieldCheckmarkOutline" />
+                      </div>
+                    </div>
+                    <!-- Distance label -->
+                    <p v-if="loc.distance" class="distance-label">
+                      <ion-icon :icon="locationOutline" />
+                      {{ loc.distance }} km from {{ body.slug === 'ntu' ? 'NTU' : body.name }}
+                    </p>
+                    <p class="added-label">{{ $t('home.added') }} {{ fromNowToTaipei(loc.created_at) }}</p>
+                  </ion-label>
+                </ion-card>
+              </div>
+            </div>
+          </ion-card-content>
+        </ion-card>
+
+        <!-- Product from Indonesia (IETO/KDEI only) -->
+        <ion-card
+            v-if="body.slug === 'kdei-taipei' && (loadingIndonesianProducts || indonesianProducts.length)"
+        >
+          <ion-card-header>
+            <div class="card-header-row">
+              <ion-card-title>Product from Indonesia</ion-card-title>
+              <ion-button
+                  fill="clear"
+                  size="small"
+                  color="carrot"
+                  @click="viewAllIndonesianProducts"
+              >
+                {{ $t('home.viewMore') }}
+              </ion-button>
+            </div>
+          </ion-card-header>
+
+          <ion-card-content>
+            <template v-if="loadingIndonesianProducts">
+              <ion-skeleton-text animated style="width:100%;height:140px;border-radius:12px;" />
+              <ion-skeleton-text animated style="width:80%;height:14px;margin-top:8px;" />
+            </template>
+
+            <div v-else class="discover-scroll">
+              <div class="discover-track">
+                <ion-card
+                    v-for="p in indonesianProducts"
+                    :key="p.id"
+                    class="discover-item discover-item--scroll"
+                    button
+                    @click="openProducedProduct(p)"
+                >
+                  <img
+                      :src="p.photo_front_url || 'https://placehold.co/200x200'"
+                      class="discover-img"
+                      @error="(e) => (e.target as any).src = `https://placehold.co/200x200?text=${encodeURIComponent(p.name)}`"
+                  />
+                  <ion-label class="discover-label">
+                    <p class="discover-name" style="text-align: center;">{{ p.name }}</p>
+                    <ion-chip
+                        v-if="p.status"
+                        :color="p.status === 'Halal' ? 'success' : 'primary'"
+                        style="font-size:10px; height: 20px; margin-top: 4px;"
+                    >
+                      {{ p.status }}
+                    </ion-chip>
+                  </ion-label>
+                </ion-card>
+              </div>
+            </div>
+          </ion-card-content>
+        </ion-card>
+
+        <!-- Halal Indonesian Restaurant List (IETO/KDEI only) -->
+        <ion-card
+            v-if="body.slug === 'kdei-taipei' && (loadingHalalIndoRestaurants || halalIndoRestaurants.length)"
+        >
+          <ion-card-header>
+            <div class="card-header-row">
+              <ion-card-title>Halal Indonesian Restaurant List</ion-card-title>
+              <ion-button
+                  fill="clear"
+                  size="small"
+                  color="carrot"
+                  @click="viewAllHalalIndoRestaurants"
+              >
+                {{ $t('home.viewMore') }}
+              </ion-button>
+            </div>
+          </ion-card-header>
+
+          <ion-card-content>
+            <template v-if="loadingHalalIndoRestaurants">
+              <ion-skeleton-text animated style="width:100%;height:140px;border-radius:12px;" />
+              <ion-skeleton-text animated style="width:80%;height:14px;margin-top:8px;" />
+            </template>
+
+            <div v-else class="discover-scroll">
+              <div class="discover-track">
+                <ion-card
+                    v-for="loc in halalIndoRestaurants"
+                    :key="loc.id"
+                    class="discover-item discover-item--scroll"
+                    button
+                    @click="openCertifiedLocation(loc)"
+                >
+                  <img
+                      :src="loc.image || 'https://placehold.co/200x200'"
+                      class="discover-img"
+                      @error="(e) => (e.target as any).src = `https://placehold.co/200x200?text=${encodeURIComponent(loc.name)}`"
+                  />
+                  <ion-label class="discover-label">
+                    <p class="discover-name" style="text-align: center;">{{ loc.name }}</p>
+                    <p style="font-size:12px;color:var(--ion-color-medium)">
+                      {{ loc.location_types?.name }}
+                    </p>
+                  </ion-label>
+                </ion-card>
+              </div>
+            </div>
+          </ion-card-content>
+        </ion-card>
+
+        <!-- Muslim-friendly Indonesian Restaurant List (IETO/KDEI only) -->
+        <ion-card
+            v-if="body.slug === 'kdei-taipei' && (loadingMuslimFriendlyIndoRestaurants || muslimFriendlyIndoRestaurants.length)"
+        >
+          <ion-card-header>
+            <div class="card-header-row">
+              <ion-card-title>Muslim-friendly Indonesian Restaurant List</ion-card-title>
+              <ion-button
+                  fill="clear"
+                  size="small"
+                  color="carrot"
+                  @click="viewAllMuslimFriendlyIndoRestaurants"
+              >
+                {{ $t('home.viewMore') }}
+              </ion-button>
+            </div>
+          </ion-card-header>
+
+          <ion-card-content>
+            <template v-if="loadingMuslimFriendlyIndoRestaurants">
+              <ion-skeleton-text animated style="width:100%;height:140px;border-radius:12px;" />
+              <ion-skeleton-text animated style="width:80%;height:14px;margin-top:8px;" />
+            </template>
+
+            <div v-else class="discover-scroll">
+              <div class="discover-track">
+                <ion-card
+                    v-for="loc in muslimFriendlyIndoRestaurants"
+                    :key="loc.id"
+                    class="discover-item discover-item--scroll"
+                    button
+                    @click="openCertifiedLocation(loc)"
+                >
+                  <img
+                      :src="loc.image || 'https://placehold.co/200x200'"
+                      class="discover-img"
+                      @error="(e) => (e.target as any).src = `https://placehold.co/200x200?text=${encodeURIComponent(loc.name)}`"
+                  />
+                  <ion-label class="discover-label">
+                    <p class="discover-name" style="text-align: center;">{{ loc.name }}</p>
+                    <p style="font-size:12px;color:var(--ion-color-medium)">
+                      {{ loc.location_types?.name }}
+                    </p>
+                  </ion-label>
+                </ion-card>
+              </div>
             </div>
           </ion-card-content>
         </ion-card>
@@ -232,32 +586,35 @@
               <ion-skeleton-text animated style="width:80%;height:14px;margin-top:8px;" />
             </template>
 
-            <!-- Trips -->
-            <div v-else class="discover-grid">
-              <ion-card
-                  v-for="trip in partnerTrips"
-                  :key="trip.id"
-                  class="discover-item"
-                  button
-                  @click="openTrip(trip)"
-              >
-                <img
-                    :src="trip.cover_url || 'https://placehold.co/200x200'"
-                    class="discover-img"
-                />
+            <!-- Trips (Horizontal Scroll) -->
+            <div v-else class="discover-scroll">
+              <div class="discover-track">
+                <ion-card
+                    v-for="trip in partnerTrips"
+                    :key="trip.id"
+                    class="discover-item discover-item--scroll"
+                    button
+                    @click="openTrip(trip)"
+                >
+                  <img
+                      :src="trip.cover_url || 'https://placehold.co/200x200'"
+                      class="discover-img"
+                      @error="(e) => (e.target as any).src = `https://placehold.co/200x200?text=${encodeURIComponent($i18n.locale === 'zh-tw' ? (trip.title_zh || trip.title) : trip.title)}`"
+                  />
 
-                <ion-label class="discover-label">
-                  <p class="discover-name">
-                    {{ $i18n.locale === 'zh-tw'
-                      ? (trip.title_zh || trip.title)
-                      : trip.title }}
-                  </p>
+                  <ion-label class="discover-label">
+                    <p class="discover-name" style="text-align: center;">
+                      {{ $i18n.locale === 'zh-tw'
+                        ? (trip.title_zh || trip.title)
+                        : trip.title }}
+                    </p>
 
-                  <p style="font-size:12px;color:var(--ion-color-medium)">
-                    🕒 {{ trip.duration }}
-                  </p>
-                </ion-label>
-              </ion-card>
+                    <p style="font-size:12px;color:var(--ion-color-medium); margin-top: 4px;">
+                      🕒 {{ trip.duration }}
+                    </p>
+                  </ion-label>
+                </ion-card>
+              </div>
             </div>
 
           </ion-card-content>
@@ -327,6 +684,7 @@
               <img
                   :src="body.logo"
                   :alt="body.name"
+                  @error="(e) => (e.target as any).src = `https://placehold.co/400x400?text=${encodeURIComponent(body.name)}`"
               />
             </div>
           </SwiperSlide>
@@ -339,7 +697,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import {
   IonPage,
@@ -354,7 +712,9 @@ import {
   IonHeader,
     IonSkeletonText,
     IonLabel,
-    IonButton
+    IonButton,
+    IonIcon,
+    useIonRouter
 } from '@ionic/vue'
 import AppHeader from '@/components/AppHeader.vue'
 import { supabase } from '@/plugins/supabaseClient'
@@ -365,8 +725,43 @@ import 'swiper/css/zoom'
 import {Browser} from "@capacitor/browser";
 import {ActivityLogService} from "@/services/ActivityLogService";
 import router from "@/router";
+import { sparkles, shieldCheckmarkOutline, locationOutline } from 'ionicons/icons'
+import dayjs from 'dayjs'
+import relativeTime from 'dayjs/plugin/relativeTime'
+import utc from 'dayjs/plugin/utc'
+import timezone from 'dayjs/plugin/timezone'
+
+dayjs.extend(relativeTime)
+dayjs.extend(utc)
+dayjs.extend(timezone)
+
+const fromNowToTaipei = (date: string | undefined) => {
+  if (!date) return ''
+  return dayjs(date).tz('Asia/Taipei').fromNow()
+}
+
+/**
+ * Haversine formula to calculate straight-line distance in km
+ */
+function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
+  const R = 6371; // Radius of Earth in km
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = 
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return (R * c).toFixed(1);
+}
+
+const PARTNER_COORDS: Record<string, { lat: number; lng: number }> = {
+  'ntu': { lat: 25.01737, lng: 121.5398 } // NTU Main Campus center
+}
+
 
 const route = useRoute()
+const ionRouter = useIonRouter()
 const id = route.params.id as string
 
 const loading = ref(true)
@@ -390,9 +785,11 @@ function closeLogoPreview() {
 type Partner = {
   id: string
   name: string
+  slug: string
   logo: string
   verified: boolean
   partner_tier?: 'gold' | 'silver' | 'bronze' | null
+  partner_type?: 'campus' | 'halal_body' | 'vendor' | 'merchant' | 'organization' | 'government' | null
   scopes: string[]
   about: string
   programs: string[]
@@ -406,9 +803,11 @@ type Partner = {
 const body = ref<Partner>({
   id: '',
   name: '',
+  slug: '',
   logo: '',
   verified: false,
   partner_tier: null,
+  partner_type: null,
   scopes: [],
   about: '',
   programs: [],
@@ -419,6 +818,17 @@ const body = ref<Partner>({
 })
 
 
+
+const verifiedBadgeLabel = (type?: Partner['partner_type']) => {
+  switch (type) {
+    case 'halal_body': return 'Verified Halal Certification Body'
+    case 'campus': return 'Verified Campus Partner'
+    case 'vendor': return 'Verified Vendor'
+    case 'merchant': return 'Verified Merchant'
+    case 'government': return 'Verified Government Partner'
+    default: return 'Verified Partner'
+  }
+}
 
 /* ---------------- Fetch ---------------- */
 async function fetchPartner(id: string) {
@@ -431,6 +841,7 @@ async function fetchPartner(id: string) {
     logo_url,
     verified,
     partner_tier,
+    partner_type,
     about,
     address,
     phone,
@@ -464,9 +875,11 @@ async function fetchPartner(id: string) {
   body.value = {
     id: data.id,
     name: data.name,
+    slug: data.slug,
     logo: data.logo_url,
     verified: data.verified,
     partner_tier: data.partner_tier,
+    partner_type: data.partner_type,
     about: data.about ?? '',
     address: data.address ?? '',
     phone: data.phone ?? '',
@@ -517,6 +930,108 @@ async function fetchCertifiedProducts() {
   loadingProducts.value = false
 }
 
+const producedProducts = ref<any[]>([])
+const loadingProducedProducts = ref(false)
+
+const PRODUCT_PROVIDER_TYPES = ['campus', 'merchant', 'vendor', 'organization']
+const hasProducedProducts = computed(() => PRODUCT_PROVIDER_TYPES.includes(body.value.partner_type || ''))
+const isBrandPartner = computed(() => hasProducedProducts.value && body.value.partner_type !== 'campus')
+
+// Branches / own stores: map places linked to this partner via locations.partner_id
+const branchLocations = ref<any[]>([])
+const loadingBranches = ref(false)
+
+async function fetchBranchLocations() {
+  loadingBranches.value = true
+
+  const { data, error } = await supabase
+      .from('locations')
+      .select('id, name, image, address, location_types ( name )')
+      .eq('partner_id', body.value.id)
+      .eq('approved', true)
+      .eq('is_archived', false)
+      .order('name', { ascending: true })
+
+  if (!error && data) {
+    branchLocations.value = data
+  }
+
+  loadingBranches.value = false
+}
+
+// Gold partners may already list the same place under "Affiliated Stores"
+const ownStoreLocations = computed(() => {
+  const listed = new Set(certifiedLocations.value.map(l => l.id))
+  return branchLocations.value.filter(l => !listed.has(l.id))
+})
+
+// Stores that carry this partner's products (derived from product_stores)
+const stockists = ref<any[]>([])
+const loadingStockists = ref(false)
+
+async function fetchStockists() {
+  loadingStockists.value = true
+
+  const { data, error } = await supabase
+      .from('product_stores')
+      .select('stores ( id, name, logo_url, website, sort_order ), products!inner ( partner_id )')
+      .eq('products.partner_id', body.value.id)
+
+  if (!error && data) {
+    const byId = new Map<string, any>()
+    for (const row of data as any[]) {
+      const s = Array.isArray(row.stores) ? row.stores[0] : row.stores
+      if (s && !byId.has(s.id)) byId.set(s.id, s)
+    }
+    stockists.value = [...byId.values()].sort(
+        (a, b) => (a.sort_order ?? 999) - (b.sort_order ?? 999) || a.name.localeCompare(b.name)
+    )
+  }
+
+  loadingStockists.value = false
+}
+
+async function openStockist(s: any) {
+  if (!s.website) return
+
+  ActivityLogService.log('partner_stockist_click', {
+    partner_id: body.value.id,
+    partner_name: body.value.name,
+    store_id: s.id,
+    store_name: s.name
+  })
+
+  await Browser.open({
+    url: s.website,
+    windowName: '_self',
+    toolbarColor: '#e67e22',
+    presentationStyle: 'fullscreen',
+  })
+}
+
+async function fetchProducedProducts() {
+  loadingProducedProducts.value = true
+
+  const { data, error } = await supabase
+      .from('products')
+      .select(`
+        id,
+        barcode,
+        name,
+        status,
+        photo_front_url
+      `)
+      .eq('partner_id', body.value.id)
+      .order('name', { ascending: true })
+      .limit(50)
+
+  if (!error && data) {
+    producedProducts.value = data
+  }
+
+  loadingProducedProducts.value = false
+}
+
 const certifiedLocations = ref<any[]>([])
 const loadingLocations = ref(false)
 
@@ -550,6 +1065,138 @@ async function fetchCertifiedLocations() {
   }
 
   loadingLocations.value = false
+}
+
+const nearbyLocations = ref<any[]>([])
+const loadingNearby = ref(false)
+
+async function fetchNearbyLocations() {
+  if (!body.value.slug) return
+
+  loadingNearby.value = true
+
+  const { data, error } = await supabase
+      .from('locations')
+      .select(`
+        id,
+        name,
+        image,
+        address,
+        location_types ( name ),
+        created_at,
+        partner:partners(partner_tier),
+        lat,
+        lng
+      `)
+      .contains('tags', [body.value.slug])
+      .eq('approved', true)
+      .eq('is_archived', false)
+
+  if (!error && data) {
+    const partnerPos = PARTNER_COORDS[body.value.slug]
+    
+    const mapped = data.map(loc => {
+      const d = (partnerPos && loc.lat && loc.lng) 
+        ? Number(haversineDistance(partnerPos.lat, partnerPos.lng, loc.lat, loc.lng))
+        : null
+        
+      return {
+        ...loc,
+        distance: d !== null ? d.toFixed(1) : null,
+        _dist: d
+      }
+    })
+
+    // Sort by distance (asc)
+    mapped.sort((a, b) => {
+      if (a._dist === null) return 1
+      if (b._dist === null) return -1
+      return a._dist - b._dist
+    })
+
+    nearbyLocations.value = mapped
+  }
+
+  loadingNearby.value = false
+}
+
+const indonesianProducts = ref<any[]>([])
+const loadingIndonesianProducts = ref(false)
+
+async function fetchIndonesianProducts() {
+  loadingIndonesianProducts.value = true
+
+  const { data, error } = await supabase
+      .from('products')
+      .select(`
+        id,
+        barcode,
+        name,
+        status,
+        photo_front_url
+      `)
+      .contains('tags', ['IndonesiadiTaiwan'])
+      .eq('approved', true)
+      .eq('is_archived', false)
+      .limit(20)
+
+  if (!error && data) {
+    indonesianProducts.value = data
+  }
+
+  loadingIndonesianProducts.value = false
+}
+
+const halalIndoRestaurants = ref<any[]>([])
+const loadingHalalIndoRestaurants = ref(false)
+
+async function fetchHalalIndoRestaurants() {
+  loadingHalalIndoRestaurants.value = true
+
+  const { data, error } = await supabase
+      .from('locations')
+      .select(`
+        id,
+        name,
+        image,
+        address,
+        location_types ( name )
+      `)
+      .eq('type_id', 16)
+      .eq('approved', true)
+      .eq('is_archived', false)
+
+  if (!error && data) {
+    halalIndoRestaurants.value = data
+  }
+
+  loadingHalalIndoRestaurants.value = false
+}
+
+const muslimFriendlyIndoRestaurants = ref<any[]>([])
+const loadingMuslimFriendlyIndoRestaurants = ref(false)
+
+async function fetchMuslimFriendlyIndoRestaurants() {
+  loadingMuslimFriendlyIndoRestaurants.value = true
+
+  const { data, error } = await supabase
+      .from('locations')
+      .select(`
+        id,
+        name,
+        image,
+        address,
+        location_types ( name )
+      `)
+      .eq('type_id', 17)
+      .eq('approved', true)
+      .eq('is_archived', false)
+
+  if (!error && data) {
+    muslimFriendlyIndoRestaurants.value = data
+  }
+
+  loadingMuslimFriendlyIndoRestaurants.value = false
 }
 
 const partnerTrips = ref<any[]>([])
@@ -634,6 +1281,19 @@ function openCertifiedProduct(p: any) {
   router.push(`/item/${p.barcode}`)
 }
 
+function openProducedProduct(p: any) {
+  ActivityLogService.log('partner_produced_product_click', {
+    partner_id: body.value.id,
+    partner_name: body.value.name,
+    partner_tier: body.value.partner_tier,
+    product_id: p.id,
+    product_barcode: p.barcode,
+    product_name: p.name
+  })
+
+  router.push(`/item/${p.barcode}`)
+}
+
 function openCertifiedLocation(loc: any) {
   ActivityLogService.log('partner_certified_location_click', {
     partner_id: body.value.id,
@@ -644,6 +1304,56 @@ function openCertifiedLocation(loc: any) {
   })
 
   router.push(`/place/${loc.id}`)
+}
+
+function openNearbyLocation(loc: any) {
+  ActivityLogService.log('partner_nearby_location_click', {
+    partner_id: body.value.id,
+    partner_name: body.value.name,
+    partner_tier: body.value.partner_tier,
+    location_id: loc.id,
+    location_name: loc.name
+  })
+
+  router.push(`/place/${loc.id}`)
+}
+
+function viewAllNearbyLocations() {
+  ActivityLogService.log('partner_nearby_view_more_click', {
+    partner_id: body.value.id,
+    partner_name: body.value.name,
+    partner_slug: body.value.slug
+  })
+  
+  // Use ionRouter to navigate 'back' to the explore tab, ensuring the current view is dismissed
+  ionRouter.navigate(`/explore?tag=${body.value.slug}`, 'back', 'replace');
+}
+
+function viewAllIndonesianProducts() {
+  ActivityLogService.log('partner_indonesian_products_view_more_click', {
+    partner_id: body.value.id,
+    partner_name: body.value.name
+  })
+
+  ionRouter.navigate(`/search?q=IndonesiadiTaiwan`, 'back', 'replace');
+}
+
+function viewAllHalalIndoRestaurants() {
+  ActivityLogService.log('partner_halal_indo_restaurants_view_more_click', {
+    partner_id: body.value.id,
+    partner_name: body.value.name
+  })
+
+  ionRouter.navigate(`/explore?type=${encodeURIComponent('Halal Indonesian Restaurant')}`, 'back', 'replace');
+}
+
+function viewAllMuslimFriendlyIndoRestaurants() {
+  ActivityLogService.log('partner_muslim_friendly_indo_restaurants_view_more_click', {
+    partner_id: body.value.id,
+    partner_name: body.value.name
+  })
+
+  ionRouter.navigate(`/explore?type=${encodeURIComponent('Muslim-friendly Indonesian Restaurant')}`, 'back', 'replace');
 }
 
 
@@ -667,6 +1377,25 @@ onMounted(async () => {
     fetchCertifiedProducts()
     fetchCertifiedLocations()
     fetchPartnerTrips()
+  }
+  
+  if (body.value.partner_type === 'campus') {
+    fetchNearbyLocations()
+  }
+
+  if (isBrandPartner.value) {
+    fetchBranchLocations()
+    fetchStockists()
+  }
+
+  if (hasProducedProducts.value) {
+    fetchProducedProducts()
+  }
+
+  if (body.value.slug === 'kdei-taipei') {
+    fetchIndonesianProducts()
+    fetchHalalIndoRestaurants()
+    fetchMuslimFriendlyIndoRestaurants()
   }
 })
 
@@ -747,7 +1476,7 @@ onMounted(async () => {
 .external-link {
   display: inline-block;
   margin-top: 6px;
-  color: var(--ion-color-primary);
+  color: var(--ion-color-carrot);
 }
 
 /* =========================
@@ -763,11 +1492,12 @@ onMounted(async () => {
   margin-left: calc(-50vw + 50%);
   margin-right: calc(-50vw + 50%);
 
-  /* Remove card feel */
-  border-radius: 0;
+  /* Rounded bottom edge flows into the content sheet below */
+  border-radius: 0 0 var(--radius-xl) var(--radius-xl);
   overflow: hidden;
 
-  margin-bottom: 16px;
+  margin-bottom: 20px;
+  box-shadow: var(--card-shadow);
 }
 
 
@@ -805,7 +1535,7 @@ onMounted(async () => {
   height: 96px;
   object-fit: contain;
   background: #fff;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   padding: 8px;
 
 
@@ -816,12 +1546,13 @@ onMounted(async () => {
 /* Name */
 .body-name {
   margin: 4px 0;
-  font-size: 1.2rem;
-  font-weight: 600;
+  font-size: 1.3rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
 }
 
 /* Badge */
-.verified-badge {
+.partner-verified-badge {
   margin-top: 4px;
 }
 /* Fullscreen swiper */
@@ -909,5 +1640,236 @@ onMounted(async () => {
   z-index: 1;
 }
 
+/* ===============================
+   Discover Grid & Item Styles
+   =============================== */
+.card-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+}
 
+.discover-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  padding: 4px 0;
+}
+
+/* Horizontal Scroll Styles */
+.stockist-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.stockist-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 72px;
+}
+
+.stockist-logo {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #fff;
+}
+
+.stockist-name {
+  font-size: 12px;
+  text-align: center;
+  color: var(--ion-color-medium);
+}
+
+.discover-scroll {
+  display: flex;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  margin: 0 -8px; /* Slight bleed */
+  padding: 8px;
+}
+
+.discover-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.discover-track {
+  display: flex;
+  gap: 14px;
+}
+
+.discover-item {
+  margin: 0;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--card-shadow);
+  border: 1px solid var(--card-border);
+  position: relative;
+  transition: transform 0.2s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.2s ease;
+}
+
+.discover-item:hover {
+  box-shadow: var(--card-shadow-hover);
+}
+
+.discover-item--scroll {
+  flex: 0 0 240px; /* Fixed width for scrolling cards */
+  scroll-snap-align: center;
+}
+
+
+.discover-item:active {
+  transform: scale(0.97);
+}
+
+.discover-img {
+  width: 100%;
+  height: 130px;
+  object-fit: cover;
+  border-radius: 0;
+}
+
+.discover-label {
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.name-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+}
+
+.discover-name {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--ion-color-dark);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
+}
+
+.discover-label p {
+  margin: 2px 0 0;
+  font-size: 0.75rem;
+  color: var(--ion-color-medium);
+}
+
+.distance-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  color: var(--ion-color-carrot) !important;
+  font-weight: 600;
+  margin-top: 6px !important;
+  width: 100%;
+}
+
+.distance-label ion-icon {
+  font-size: 14px;
+}
+
+.added-label {
+  opacity: 0.8;
+  font-size: 0.7rem !important;
+  display: block;
+  width: 100%;
+  text-align: center;
+}
+
+.home-partner-verified {
+  color: var(--ion-color-carrot);
+  font-size: 16px;
+  flex-shrink: 0;
+  display: flex;
+}
+
+/* Tier Badges */
+.tier-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 2;
+  padding: 4px 8px;
+  border-radius: 8px;
+  font-size: 0.65rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+  text-transform: uppercase;
+}
+
+.tier-badge.gold {
+  background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);
+  color: #fff;
+}
+
+.tier-badge.silver {
+  background: linear-gradient(135deg, #64748b 0%, #94a3b8 100%);
+  color: #fff;
+}
+
+.tier-badge.bronze {
+  background: linear-gradient(135deg, #92400e 0%, #b45309 100%);
+  color: #fff;
+}
+
+/* Tier Cards Glow & Border */
+.tier-card-gold { border: 1.5px solid #fbbf24; }
+.tier-card-silver { border: 1.5px solid #94a3b8; }
+
+/* Premium Flare */
+.premium-flare {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.premium-flare::after {
+  content: '';
+  position: absolute;
+  top: -100%;
+  left: -100%;
+  width: 300%;
+  height: 300%;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0) 45%,
+    rgba(255, 255, 255, 0.4) 50%,
+    rgba(255, 255, 255, 0) 55%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  animation: flare-slide 4s infinite linear;
+}
+
+@keyframes flare-slide {
+  0% { transform: translate(-10%, -10%); }
+  100% { transform: translate(10%, 10%); }
+}
 </style>

@@ -1,7 +1,23 @@
 import {supabase} from '@/plugins/supabaseClient'
 import SessionService from '@/services/SessionService'
+import { useDailyMissions } from '@/composables/useDailyMissions'
 
-// 🔧 TEMPORARY GLOBAL SWITCH
+// Activity types useDailyMissions.fetchProgress() actually scores (see its
+// switch statement). Re-checking mission progress right after one of these
+// is logged — rather than only on Home's own mount/enter — means a mission
+// completed while on Explore/Search/Scan/etc. gets detected and celebrated
+// immediately, not just the next time the user happens to visit Home.
+const MISSION_ACTIVITY_TYPES = new Set([
+    'home_page_open',
+    'scan_ingredients_success',
+    'barcode_scan_success',
+    'explore_place_detail_open',
+    'add_product_success',
+    'add_place_success',
+    'location_review_success',
+])
+
+// ðŸ”§ TEMPORARY GLOBAL SWITCH
 const ACTIVITY_LOG_ENABLED = true
 
 /* -------------------------
@@ -24,7 +40,7 @@ function resolveEntity(activity: string, rawDetail: any): EntityResult {
 
     switch (activity) {
 
-        // 🟢 PLACE interactions
+        // ðŸŸ¢ PLACE interactions
         case 'home_location_click':
         case 'explore_share_place':
         case 'explore_place_detail_view':
@@ -34,21 +50,57 @@ function resolveEntity(activity: string, rawDetail: any): EntityResult {
         case 'explore_detail_open_maps':
         case 'explore_marker_click':
         case 'explore_detail_edit':
+        case 'explore_navigate_click':
+        case 'location_save_click':
+        case 'location_save_success':
+        case 'explore_detail_instagram':
+        case 'explore_detail_share':
+        case 'explore_detail_call':
+        case 'explore_detail_report':
+        case 'location_report_submit':
+        case 'location_move':
+        case 'location_report_failed':
+        case 'location_review_failed':
+        case 'edit_place_failed':
+        case 'related_place_click':
+        case 'location_check_in':
+        case 'explore_detail_line':
+        case 'explore_detail_foodpanda':
+        case 'explore_detail_ubereats':
+        case 'explore_place_impression':
+        case 'explore_place_search_hit':
+        case 'edit_place_success':
+        case 'add_place_success':
+        case 'location_review_success':
+        case 'visit_prompt_shown':
+        case 'visit_prompt_yes':
+        case 'visit_prompt_no':
             return {
                 entity_type: 'place',
                 entity_id: detail.id ? String(detail.id) : null
             }
 
-        // 🟢 PRODUCT interactions
+        // ðŸŸ¢ PRODUCT interactions
         case 'barcode_scan_success':
         case 'product_details_open':
         case 'search_product_click':
         case 'home_product_click':
         case 'product_image_open':
-        case 'related_product_click': {
+        case 'related_product_click':
+        case 'product_edit_click':
+        case 'product_report_click':
+        case 'product_report_submit':
+        case 'product_save_success':
+        case 'product_save_failed':
+        case 'product_unsave':
+        case 'product_move':
+        case 'product_report_failed':
+        case 'product_not_found':
+        case 'home_scan_ingredient': {
             const raw =
                 detail.barcode ??
                 detail.clicked_barcode ??
+                detail.product_id ??
                 null
 
             return {
@@ -57,7 +109,7 @@ function resolveEntity(activity: string, rawDetail: any): EntityResult {
             }
         }
 
-        // 🟢 TRIP interactions
+        // ðŸŸ¢ TRIP interactions
         case 'trip_open':
         case 'trip_click':
             return {
@@ -86,7 +138,7 @@ function resolveEntity(activity: string, rawDetail: any): EntityResult {
             }
 
 
-        // 🟢 NEWS interactions
+        // ðŸŸ¢ NEWS interactions
         case 'home_news_click':
         case 'news_page_open':
         case 'news_detail_open':
@@ -100,7 +152,7 @@ function resolveEntity(activity: string, rawDetail: any): EntityResult {
                         : null
             }
 
-        // 🟢 PARTNER interactions
+        // ðŸŸ¢ PARTNER interactions
         case 'partner_click':
         case 'partner_detail_open':
         case 'partner_logo_preview':
@@ -108,6 +160,9 @@ function resolveEntity(activity: string, rawDetail: any): EntityResult {
         case 'partner_trip_click':
         case 'partner_certified_product_click':
         case 'partner_certified_location_click':
+        case 'partner_produced_product_click':
+        case 'partner_nearby_location_click':
+        case 'partner_nearby_view_more_click':
             return {
                 entity_type: 'partner',
                 entity_id: detail.partner_id
@@ -142,46 +197,86 @@ function resolveEntity(activity: string, rawDetail: any): EntityResult {
                 entity_id: null
             }
 
+        // 🟢 HOUSE AD (sponsored/fallback content) interactions — the ad
+        // can point at any of four different entity types depending on
+        // which kind of content was actually featured (detail.ad_kind).
+        case 'house_ad_impression':
+        case 'house_ad_click': {
+            const AD_KIND_TO_ENTITY: Record<string, string> = {
+                partner: 'partner',
+                product: 'product',
+                location: 'place',
+                trip: 'trip',
+            }
+            return {
+                entity_type: AD_KIND_TO_ENTITY[detail.ad_kind] ?? null,
+                entity_id: detail.ad_id != null ? String(detail.ad_id) : null
+            }
+        }
 
-        // 🟢 SEARCH FILTER interactions
+
+        // 🟢 SEARCH interactions
+        case 'search_query':
+        case 'explore_search_query':
+        case 'store_search':
+        case 'trip_search':
+        case 'explore_address_search':
+        case 'search_no_results':
+        case 'search_results':
+             return {
+                entity_type: 'search_query',
+                entity_id: detail.query ? String(detail.query) : null
+            }
+
+
+        // ðŸŸ¢ SEARCH FILTER interactions
         case 'search_filter_category':
             return {
                 entity_type: 'category',
                 entity_id: detail.category_id
                     ? String(detail.category_id)
-                    : null
+                    : (detail.category_ids && detail.category_ids.length > 0)
+                        ? String(detail.category_ids[detail.category_ids.length - 1])
+                        : null
             }
 
         case 'search_filter_store':
             return {
                 entity_type: 'store',
-                entity_id: detail.store_id ?? null
+                entity_id: detail.store_id
+                    ? String(detail.store_id)
+                    : (detail.store_ids && detail.store_ids.length > 0)
+                        ? String(detail.store_ids[detail.store_ids.length - 1])
+                        : null
             }
 
-        // Optional: keep status as non-entity
         case 'search_filter_status':
             return {
-                entity_type: null,
-                entity_id: null
+                entity_type: 'status',
+                entity_id: (detail.statuses && detail.statuses.length > 0)
+                    ? String(detail.statuses[detail.statuses.length - 1])
+                    : null
             }
 
-        // 🟢 CATEGORY interactions
+        // ðŸŸ¢ CATEGORY interactions
         case 'explore_filter_category':
             return {
                 entity_type: 'category',
                 entity_id: detail.category_id
                     ? String(detail.category_id)
-                    : null
+                    : (detail.category_ids && detail.category_ids.length > 0)
+                        ? String(detail.category_ids[detail.category_ids.length - 1])
+                        : null
             }
 
-        // 🟢 USER-to-USER interactions
+        // ðŸŸ¢ USER-to-USER interactions
         case 'home_leaderboard_profile':
             return {
                 entity_type: 'user',
                 entity_id: detail.user_id ?? null
             }
 
-        // 🟢 USER
+        // ðŸŸ¢ USER
         case 'profile_page_open':
         case 'profile_edit_open':
         case 'profile_logout':
@@ -190,15 +285,20 @@ function resolveEntity(activity: string, rawDetail: any): EntityResult {
                 entity_id: detail.user_id ?? null
             }
 
-// 🟢 MONETIZATION
+// ðŸŸ¢ MONETIZATION
         case 'pro_paywall_open':
         case 'pro_purchase_success':
+        case 'pro_restore_success':
+        case 'pro_restore_empty':
+        case 'pro_paywall_trigger':
+        case 'pro_purchase_cancelled':
+        case 'pro_purchase_failed':
             return {
                 entity_type: 'entitlement',
                 entity_id: detail.entitlement ?? 'Halal Formosa Pro'
             }
 
-// 🟢 DONATION
+// ðŸŸ¢ DONATION
         case 'donation_click':
         case 'donation_success':
             return {
@@ -206,20 +306,332 @@ function resolveEntity(activity: string, rawDetail: any): EntityResult {
                 entity_id: detail.product ?? null
             }
 
-// 🟢 SOCIAL
+        // ðŸŸ¢ SOCIAL
         case 'social_link_click':
             return {
                 entity_type: 'external_link',
                 entity_id: detail.platform ?? null
             }
 
+        // ðŸŸ¢ STORE / MERCHANT
+        case 'store_product_click':
+        case 'store_product_detail_open':
+        case 'store_add_to_cart':
+        case 'store_buy_now':
+        case 'store_chat_open':
+            return {
+                entity_type: 'store_product',
+                entity_id: detail.product_id ? String(detail.product_id) : null
+            }
 
-        // ❌ Everything else
+        case 'store_merchant_click':
+        case 'store_visit_merchant':
+            return {
+                entity_type: 'merchant_store',
+                entity_id: detail.store_id ? String(detail.store_id) : null
+            }
+
+        case 'store_checkout_submit':
+        case 'store_pay_now_click':
+        case 'store_order_success':
+            return {
+                entity_type: 'store_order',
+                entity_id: detail.order_id ? String(detail.order_id) : null
+            }
+
+        case 'merchant_application_submit':
+        case 'merchant_application_approve':
+        case 'merchant_application_reject':
+            return {
+                entity_type: 'merchant_application',
+                entity_id: detail.application_id ? String(detail.application_id) : null
+            }
+
+        // ðŸŸ¢ REELS
+        case 'reels_item_view':
+        case 'reels_preview_limit_reached':
+        case 'reels_view_original_click':
+        case 'reels_restart_preview':
+        case 'explore_reel_open':
+        case 'explore_reel_open_choice':
+        case 'home_media_partner_open':
+        case 'reels_audio_toggle':
+            return {
+                entity_type: 'reel',
+                entity_id: detail.reel_id ? String(detail.reel_id) : null
+            }
+
+        case 'reels_page_open':
+        case 'reels_section_view_more':
+            return {
+                entity_type: null,
+                entity_id: null
+            }
+
+        // ðŸŸ¢ AUTH interactions
+        case 'auth_login_success':
+        case 'auth_login_failed':
+        case 'auth_signup_success':
+        case 'auth_signup_failed':
+            return {
+                entity_type: 'auth_method',
+                entity_id: detail.method ?? 'email'
+            }
+
+        // ðŸŸ¢ SETTINGS
+        case 'settings_language_change':
+            return {
+                entity_type: 'language',
+                entity_id: detail.language ?? null
+            }
+
+        case 'settings_theme_toggle':
+            return {
+                entity_type: 'theme',
+                entity_id: detail.theme ?? null
+            }
+
+        // ðŸŸ¢ UTILITIES
+        // 🟢 PROFILE / ACCOUNT
+        case 'profile_update_success':
+        case 'profile_update_failed':
+        case 'account_delete_confirm':
+        case 'account_delete_failed':
+            return {
+                entity_type: 'user',
+                entity_id: detail.user_id ?? null
+            }
+
+        case 'referral_code_redeem_success':
+        case 'referral_code_redeem_failed':
+            return {
+                entity_type: 'referral',
+                entity_id: detail.source ?? null
+            }
+
+        // 🟢 BADGE COSMETICS
+        case 'badge_purchase_success':
+        case 'badge_purchase_failed':
+        case 'badge_equip':
+        case 'badge_unequip':
+        case 'badge_refund_success':
+        case 'badge_refund_failed':
+            return {
+                entity_type: 'cosmetic',
+                entity_id: detail.cosmetic_id ? String(detail.cosmetic_id) : null
+            }
+
+        // 🟢 ADS (LevelPlay) — entity is the placement; init failures have none
+        case 'ad_impression':
+        case 'ad_click':
+        case 'ad_load_failed':
+        case 'ad_display_failed':
+        case 'ad_reward_earned':
+        case 'ad_rewarded_requested':
+        case 'ad_rewarded_failed':
+        case 'ad_rewarded_closed_no_reward': {
+            const placement = detail.space_id ?? detail.ad_unit_id ?? null
+            return {
+                entity_type: placement != null ? 'ad_placement' : null,
+                entity_id: placement != null ? String(placement) : null
+            }
+        }
+
+        // 🟢 APP UPDATE — entity is the version the user is on (null for the optional store prompt)
+        case 'app_update_required_shown':
+        case 'app_update_store_click':
+            return {
+                entity_type: 'app_version',
+                entity_id: detail.current_version ? String(detail.current_version) : null
+            }
+
+        case 'app_update_prompt_shown':
+        case 'app_update_prompt_accept':
+            return { entity_type: null, entity_id: null }
+
+        // 🟢 REWARDS (points, levels, achievements, missions, scan bonus)
+        case 'points_awarded':
+        case 'points_award_failed':
+            return {
+                entity_type: 'point_action',
+                entity_id: detail.action ? String(detail.action) : null
+            }
+
+        case 'level_up':
+            return {
+                entity_type: 'level',
+                entity_id: detail.to != null ? String(detail.to) : null
+            }
+
+        case 'achievement_unlocked':
+            return {
+                entity_type: 'achievement',
+                entity_id: detail.achievement_id != null ? String(detail.achievement_id) : null
+            }
+
+        case 'mission_completed':
+            return {
+                entity_type: 'mission',
+                entity_id: detail.mission_id ? String(detail.mission_id) : null
+            }
+
+        case 'daily_mission_bonus_claimed':
+        case 'scan_bonus_granted':
+        case 'scan_bonus_cap_reached':
+            return { entity_type: null, entity_id: null }
+
+        // 🟢 PRIVACY / CONSENT SETTINGS
+        case 'privacy_setting_change':
+        case 'privacy_setting_change_failed':
+            return {
+                entity_type: 'privacy_setting',
+                entity_id: detail.setting ? String(detail.setting) : null
+            }
+
+        // 🟢 SAVED FOLDERS / UNSAVE
+        case 'saved_folder_create':
+        case 'saved_folder_rename':
+        case 'saved_folder_delete':
+            return {
+                entity_type: 'saved_folder',
+                entity_id: detail.folder_id ? String(detail.folder_id) : null
+            }
+
+        case 'location_unsave':
+            return {
+                entity_type: 'saved_location',
+                entity_id: detail.saved_id ? String(detail.saved_id) : null
+            }
+
+        // 🟢 SHARING / COPY
+        case 'referral_invite_share':
+            return {
+                entity_type: 'share_method',
+                entity_id: detail.method ? String(detail.method) : null
+            }
+
+        case 'scan_result_share':
+        case 'halalify_phrase_copy':
+            return { entity_type: null, entity_id: null }
+
+        // 🟢 STORE CHAT / ORDERS / REPORT REPLIES
+        case 'store_chat_start':
+            return {
+                entity_type: 'merchant_user',
+                entity_id: detail.store_user_id ? String(detail.store_user_id) : null
+            }
+
+        case 'store_chat_message_sent':
+            return {
+                entity_type: 'store_conversation',
+                entity_id: detail.conversation_id ? String(detail.conversation_id) : null
+            }
+
+        case 'store_orders_page_open':
+            return { entity_type: null, entity_id: null }
+
+        case 'report_reply_sent':
+            return {
+                entity_type: 'report',
+                entity_id: detail.report_id ? String(detail.report_id) : null
+            }
+
+        // 🟢 ONBOARDING / APP LIFECYCLE
+        case 'onboarding_step_view':
+            return {
+                entity_type: 'onboarding_step',
+                entity_id: detail.step != null ? String(detail.step) : null
+            }
+
+        case 'app_review_prompt_response':
+            return {
+                entity_type: 'review_choice',
+                entity_id: detail.choice ? String(detail.choice) : null
+            }
+
+        case 'app_open':
+        case 'app_resume':
+        case 'app_review_prompt_shown':
+            return { entity_type: null, entity_id: null }
+
+        // 🟢 NAVIGATION / CLIENT ERRORS — entity is the route pattern / the error signature
+        case 'screen_view':
+            return {
+                entity_type: 'screen',
+                entity_id: detail.screen ? String(detail.screen) : null
+            }
+
+        case 'client_error':
+            return {
+                entity_type: 'error',
+                entity_id: detail.signature ? String(detail.signature) : null
+            }
+
+        // 🟢 PERMISSIONS
+        case 'permission_result':
+            return {
+                entity_type: 'permission',
+                entity_id: detail.permission ? String(detail.permission) : null
+            }
+
+        case 'utility_qibla_open':
+            return {
+                entity_type: null,
+                entity_id: null
+            }
+
+        // ðŸŸ¢ CONTRIBUTIONS
+        case 'add_product_start':
+        case 'add_product_ocr_start':
+        case 'add_product_success':
+        case 'add_product_submit_success':
+        case 'add_product_failed':
+        case 'add_product_ocr_failed':
+            return {
+                entity_type: 'product',
+                entity_id: detail.barcode ? String(detail.barcode) : null
+            }
+
+        // BUSINESS CLAIM
+        case 'business_claim_start':
+        case 'business_claim_step_view':
+        case 'business_claim_submit':
+        case 'business_claim_submit_error':
+        case 'business_claim_approve':
+        case 'business_claim_reject':
+            return {
+                entity_type: 'place',
+                entity_id: detail.location_id ? String(detail.location_id) : null
+            }
+
+        // NOTIFICATIONS
+        case 'notification_received':
+        case 'notification_opened':
+            return {
+                entity_type: 'notification',
+                entity_id: detail.notification_id ? String(detail.notification_id) : null
+            }
+
+        // âŒ Everything else
         default:
             return {
                 entity_type: null,
                 entity_id: null
             }
+    }
+}
+
+/**
+ * Who is logging, from the locally stored session. supabase.auth.getUser() asks the auth server every
+ * time, which made every logged event (and now every screen_view) cost an extra network request.
+ * This is for analytics attribution only. If the session cannot be read the event is still logged
+ * as anonymous rather than lost.
+ */
+async function currentUserId(): Promise<string | null> {
+    try {
+        return (await supabase.auth.getSession()).data.session?.user?.id ?? null
+    } catch {
+        return null
     }
 }
 
@@ -233,6 +645,30 @@ function resolveActivityGroup(activity: string): string | null {
         case 'home_scan_barcode':
         case 'home_product_click':
         case 'home_location_click':
+        case 'announcement_click':
+        case 'home_prayer_refresh_location':
+        case 'home_leaderboard_profile':
+        case 'home_view_more_trips':
+        case 'home_view_more_marketplace':
+        case 'home_trip_click':
+        case 'home_marketplace_click':
+        case 'home_scan_ingredient':
+        case 'home_find_qibla_click':
+        case 'home_viewmore_partners':
+        case 'home_viewmore_products':
+        case 'home_viewmore_locations':
+        case 'home_viewmore_news':
+        case 'home_social_follow_click':
+        case 'smart_banner_click':
+        case 'home_viewmore_phrases':
+        case 'home_partner_click':
+        case 'home_open_products':
+        case 'home_open_locations':
+        case 'home_viewmore_scans':
+        case 'home_cert_body_click':
+        case 'home_viewmore_cert_bodies':
+        case 'home_prayer_popover_open':
+        case 'home_prayer_settings_open':
             return 'home'
 
         /* -------------------------
@@ -244,6 +680,8 @@ function resolveActivityGroup(activity: string): string | null {
         case 'search_filter_store':
         case 'search_filter_status':
         case 'search_sort_change':
+        case 'search_results':
+        case 'search_query':
             return 'search'
 
         /* -------------------------
@@ -251,9 +689,25 @@ function resolveActivityGroup(activity: string): string | null {
         -------------------------- */
         case 'barcode_scan_start':
         case 'barcode_scan_success':
+        case 'barcode_scan_error':
         case 'product_details_open':
         case 'product_image_open':
         case 'related_product_click':
+        case 'product_edit_click':
+        case 'product_report_click':
+        case 'product_report_submit':
+        case 'product_report_failed':
+        case 'product_not_found':
+        case 'product_share':
+        case 'scan_ingredients_start':
+        case 'scan_ingredients_success':
+        case 'scan_ingredients_error':
+        case 'scan_ingredients_limit_reached':
+        case 'scan_decision':
+        case 'scan_decision_shown':
+        case 'ai_summary_click':
+        case 'ai_summary_used':
+        case 'product_detail_open':
             return 'product'
 
         /* -------------------------
@@ -263,6 +717,10 @@ function resolveActivityGroup(activity: string): string | null {
         case 'explore_center_user':
         case 'explore_place_card_click':
         case 'explore_marker_click':
+        case 'explore_place_impression':
+        case 'explore_search_query':
+        case 'explore_address_search':
+        case 'explore_filter_category':
             return 'explore'
 
         /* -------------------------
@@ -274,6 +732,26 @@ function resolveActivityGroup(activity: string): string | null {
         case 'explore_detail_open_maps':
         case 'explore_detail_edit':
         case 'explore_share_place':
+        case 'explore_navigate_click':
+        case 'location_save_click':
+        case 'location_save_success':
+        case 'explore_detail_instagram':
+        case 'explore_detail_share':
+        case 'explore_detail_call':
+        case 'explore_detail_report':
+        case 'explore_detail_line':
+        case 'explore_detail_foodpanda':
+        case 'explore_detail_ubereats':
+        case 'location_review_edit':
+        case 'location_review_success':
+        case 'location_report_submit':
+        case 'location_report_failed':
+        case 'location_review_failed':
+        case 'related_place_click':
+        case 'location_check_in':
+        case 'visit_prompt_shown':
+        case 'visit_prompt_yes':
+        case 'visit_prompt_no':
             return 'place'
 
         /* -------------------------
@@ -295,11 +773,10 @@ function resolveActivityGroup(activity: string): string | null {
         /* -------------------------
            NEWS
         -------------------------- */
-        case 'home_news_click':
-        case 'home_viewmore_news':
         case 'news_page_open':
         case 'news_detail_open':
         case 'news_share':
+        case 'home_news_click':
             return 'news'
 
         /* -------------------------
@@ -317,6 +794,12 @@ function resolveActivityGroup(activity: string): string | null {
         case 'partner_trip_click':
         case 'partner_certified_product_click':
         case 'partner_certified_location_click':
+        case 'partner_produced_product_click':
+        case 'partner_nearby_location_click':
+        case 'partner_nearby_view_more_click':
+        case 'partner_halal_indo_restaurants_view_more_click':
+        case 'partner_indonesian_products_view_more_click':
+        case 'partner_muslim_friendly_indo_restaurants_view_more_click':
             return 'partner'
 
 
@@ -326,14 +809,46 @@ function resolveActivityGroup(activity: string): string | null {
         case 'profile_page_open':
         case 'profile_edit_open':
         case 'profile_logout':
+        case 'profile_update_success':
+        case 'profile_update_failed':
+        case 'account_delete_confirm':
+        case 'account_delete_failed':
+        case 'referral_code_redeem_success':
+        case 'referral_code_redeem_failed':
+        case 'badge_purchase_success':
+        case 'badge_purchase_failed':
+        case 'badge_equip':
+        case 'badge_unequip':
+        case 'badge_refund_success':
+        case 'badge_refund_failed':
             return 'profile'
+
+        /* -------------------------
+           ADVERTISING / HOUSE ADS
+        -------------------------- */
+        case 'house_ad_impression':
+        case 'house_ad_click':
+        case 'ad_impression':
+        case 'ad_click':
+        case 'ad_load_failed':
+        case 'ad_display_failed':
+        case 'ad_init_failed':
+        case 'ad_reward_earned':
+        case 'ad_rewarded_requested':
+        case 'ad_rewarded_failed':
+        case 'ad_rewarded_closed_no_reward':
+            return 'advertising'
 
         /* -------------------------
            MONETIZATION
         -------------------------- */
         case 'pro_paywall_open':
         case 'pro_purchase_success':
+        case 'pro_restore_success':
+        case 'pro_restore_empty':
         case 'pro_paywall_trigger':
+        case 'pro_purchase_cancelled':
+        case 'pro_purchase_failed':
         case 'donation_click':
         case 'donation_success':
             return 'monetization'
@@ -343,6 +858,191 @@ function resolveActivityGroup(activity: string): string | null {
         -------------------------- */
         case 'social_link_click':
             return 'social'
+
+        /* -------------------------
+           STORE / MERCHANT
+        -------------------------- */
+        case 'store_page_open':
+        case 'store_search':
+        case 'store_filter_category':
+        case 'store_product_click':
+        case 'store_banner_click':
+        case 'store_cart_open':
+        case 'store_checkout_click':
+        case 'store_product_detail_open':
+        case 'store_add_to_cart':
+        case 'store_buy_now':
+        case 'store_visit_merchant':
+        case 'store_chat_open':
+        case 'store_checkout_page_open':
+        case 'store_order_submit':
+        case 'store_order_success':
+        case 'store_payment_failed':
+        case 'store_checkout_failed':
+        case 'store_chat_start':
+        case 'store_chat_message_sent':
+        case 'store_orders_page_open':
+        case 'store_pay_now_click':
+            return 'store'
+
+        case 'merchant_application_submit':
+        case 'merchant_application_approve':
+        case 'merchant_application_reject':
+        case 'merchant_admin_view_applications':
+        case 'merchant_registration_page_open':
+        case 'merchant_registration_step_view':
+        case 'merchant_registration_success':
+        case 'business_listing_edit':
+        case 'business_listing_draft_save':
+        case 'business_listing_publish':
+        case 'business_promo_create':
+        case 'business_claim_start':
+        case 'business_claim_step_view':
+        case 'business_claim_submit':
+        case 'business_claim_submit_error':
+        case 'business_claim_approve':
+        case 'business_claim_reject':
+        case 'business_edit_request_approve':
+        case 'business_edit_request_reject':
+        case 'business_dashboard_open':
+        case 'business_analytics_export':
+            return 'merchant'
+
+        /* -------------------------
+           SOCIAL REELS
+        -------------------------- */
+        case 'reels_page_open':
+        case 'reels_section_view_more':
+        case 'reels_item_view':
+        case 'reels_preview_limit_reached':
+        case 'reels_view_original_click':
+        case 'reels_restart_preview':
+        case 'explore_reel_open':
+        case 'explore_reel_open_choice':
+        case 'home_media_partner_open':
+        case 'reels_audio_toggle':
+        case 'explore_reel_placeholder_click':
+            return 'social_reels'
+
+        /* -------------------------
+           AUTH
+        -------------------------- */
+        case 'auth_login_success':
+        case 'auth_login_failed':
+        case 'auth_signup_success':
+        case 'auth_signup_failed':
+        case 'auth_password_reset_requested':
+        case 'auth_password_update_success':
+        case 'auth_password_update_failed':
+            return 'auth'
+
+        /* -------------------------
+           SETTINGS
+        -------------------------- */
+        case 'settings_language_change':
+        case 'settings_theme_toggle':
+            return 'settings'
+
+        /* -------------------------
+           UTILITIES
+        -------------------------- */
+        case 'permission_result':
+            return 'permissions'
+
+        case 'screen_view':
+            return 'navigation'
+
+        case 'client_error':
+            return 'errors'
+
+        case 'app_open':
+        case 'app_resume':
+        case 'app_review_prompt_shown':
+        case 'app_review_prompt_response':
+            return 'app'
+
+        case 'saved_folder_create':
+        case 'saved_folder_rename':
+        case 'saved_folder_delete':
+        case 'location_unsave':
+        case 'location_move':
+        case 'product_save_success':
+        case 'product_save_failed':
+        case 'product_unsave':
+        case 'product_move':
+            return 'saved'
+
+        case 'referral_invite_share':
+        case 'scan_result_share':
+        case 'halalify_phrase_copy':
+            return 'sharing'
+
+        case 'report_reply_sent':
+            return 'reports'
+
+        case 'onboarding_step_view':
+            return 'onboarding'
+
+        case 'app_update_required_shown':
+        case 'app_update_store_click':
+        case 'app_update_prompt_shown':
+        case 'app_update_prompt_accept':
+            return 'app_update'
+
+        case 'points_awarded':
+        case 'points_award_failed':
+        case 'level_up':
+        case 'achievement_unlocked':
+        case 'mission_completed':
+        case 'daily_mission_bonus_claimed':
+        case 'scan_bonus_granted':
+        case 'scan_bonus_cap_reached':
+            return 'rewards'
+
+        case 'privacy_setting_change':
+        case 'privacy_setting_change_failed':
+            return 'privacy'
+
+        case 'utility_qibla_open':
+            return 'utilities'
+
+        /* -------------------------
+           CONTRIBUTIONS
+        -------------------------- */
+        case 'add_product_start':
+        case 'add_product_ocr_start':
+        case 'add_product_success':
+        case 'add_product_submit_success':
+        case 'add_place_success':
+        case 'edit_place_success':
+        case 'add_place_source_input':
+        case 'add_product_failed':
+        case 'add_product_ocr_failed':
+        case 'add_place_failed':
+        case 'edit_place_failed':
+            return 'contributions'
+
+        /* -------------------------
+           SEARCH NO RESULTS
+        -------------------------- */
+        case 'search_no_results':
+            return 'search'
+
+        /* -------------------------
+           ADMIN
+        -------------------------- */
+        case 'admin_hide_location':
+            return 'admin'
+
+        /* -------------------------
+           NOTIFICATIONS
+        -------------------------- */
+        case 'notification_received':
+        case 'notification_opened':
+        case 'notification_category_opened':
+        case 'notification_newitem_opened':
+        case 'notification_daily_mission_opened':
+            return 'notifications'
 
         /* -------------------------
            FALLBACK
@@ -356,25 +1056,30 @@ function resolveActivityGroup(activity: string): string | null {
    Service
 -------------------------- */
 export class ActivityLogService {
+    // Logging is best-effort and almost always fire-and-forget, so it must never throw into a caller
+    // (an unawaited rejection would surface as an unhandled promise rejection).
     static async log(activity: string, detail: any = {}) {
+        try {
+            await ActivityLogService.write(activity, detail)
+        } catch (err) {
+            console.warn('[ActivityLogService] log skipped:', err)
+        }
+    }
 
-        // 🚫 HARD STOP (no Supabase, no auth, no side effects)
+    private static async write(activity: string, detail: any) {
+
+        // ðŸš« HARD STOP (no Supabase, no auth, no side effects)
         if (!ACTIVITY_LOG_ENABLED) {
             console.log("[ActivityLogService] Skipped")
             return
         }
 
-        const user = (await supabase.auth.getUser()).data.user
+        const userId = await currentUserId()
         const session_id = SessionService.getSessionId()
-
-        if (!user) {
-            console.warn('[ActivityLogService] No user logged in')
-            return
-        }
 
         const { entity_type, entity_id } = resolveEntity(activity, detail)
 
-        if (entity_type && !entity_id) {
+        const skipWarn = activity === 'add_product_start' || activity === 'add_product_ocr_start'; if (entity_type && !entity_id && !skipWarn) {
             console.warn(
                 `[ActivityLogService] Missing entity_id for activity "${activity}"`,
                 detail
@@ -384,7 +1089,7 @@ export class ActivityLogService {
         const activity_group = resolveActivityGroup(activity)
 
         const payload = {
-            user_id: user.id,
+            user_id: userId,
             session_id,
             activity_type: activity,
             activity_group,
@@ -399,6 +1104,14 @@ export class ActivityLogService {
 
         if (error) {
             console.error('[ActivityLogService] Insert error:', error)
+            return
+        }
+
+        if (payload.user_id && MISSION_ACTIVITY_TYPES.has(activity)) {
+            // Fire-and-forget: don't make every log() call across the app
+            // wait on a full mission re-check + potential award/celebration
+            // round-trip.
+            useDailyMissions().fetchProgress()
         }
     }
 }

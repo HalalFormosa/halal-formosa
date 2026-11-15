@@ -37,3 +37,52 @@ export function blobToBase64(file: Blob): Promise<string> {
         r.readAsDataURL(file)
     })
 }
+
+const PLACEHOLDER_IMAGE = 'https://via.placeholder.com/150x150.webp?text=No+Photo'
+
+// Flip to true only once every existing product has a front_thumb.jpg (all 2,107 did as of
+// 2026-10-27, and new uploads create one), otherwise a product without one would show a broken
+// image instead of falling back to the transform.
+const USE_STORED_PRODUCT_THUMBS = true
+
+// Requests a downsized/compressed rendition from Supabase Storage's image
+// transform endpoint instead of shipping the full ~1000px upload for a
+// thumbnail-sized slot — the main win on slow connections. Falls back to
+// the original URL untouched for anything that isn't one of our storage
+// object URLs (e.g. the placeholder).
+//
+// Both width AND height must be passed: giving the transform only a width
+// does NOT scale proportionally — it silently returns the image cropped to
+// that width while keeping the full original height, producing a mangled
+// sliver instead of a resize.
+export function getOptimizedImageUrl(
+    url: string | undefined | null,
+    width: number,
+    height: number,
+    resize: 'contain' | 'cover' = 'contain',
+    quality = 60
+): string {
+    if (!url) return PLACEHOLDER_IMAGE
+    if (!url.includes('/storage/v1/object/public/')) return url
+
+    // Product fronts have a stored 500px thumbnail (front_thumb.jpg, written at
+    // upload and by the backfill script) — serving it costs nothing, unlike the
+    // per-image-billed transform below.
+    if (USE_STORED_PRODUCT_THUMBS && /\/product-images\/[^/]+\/front\.jpg(\?|$)/.test(url)) {
+        return url.replace('/front.jpg', '/front_thumb.jpg')
+    }
+
+    const transformed = url.replace('/storage/v1/object/public/', '/storage/v1/render/image/public/')
+    const separator = transformed.includes('?') ? '&' : '?'
+    return `${transformed}${separator}width=${width}&height=${height}&resize=${resize}&quality=${quality}`
+}
+
+// If a product's stored thumbnail is missing (front_thumb.jpg 404s), retry once with the
+// original front.jpg so the card shows the photo instead of broken-image alt text.
+export function onProductImageError(event: Event): void {
+    const img = event.target as HTMLImageElement | null
+    if (!img || img.dataset.thumbFallback === '1') return
+    if (!/\/front_thumb\.jpg(\?|$)/.test(img.src)) return
+    img.dataset.thumbFallback = '1'
+    img.src = img.src.replace('/front_thumb.jpg', '/front.jpg')
+}

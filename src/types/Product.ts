@@ -17,6 +17,8 @@ export interface Product {
     // 🟢 new fields
     approved_by?: string | null   // uuid of the approver (admin/contributor)
     approved_at?: string | null   // ISO timestamp when approved
+    is_rejected?: boolean
+    rejection_reason?: string | null
 
     // ✅ relation
     product_categories: { id: number; name: string }
@@ -34,8 +36,16 @@ export interface Product {
         id: string;
         name: string;
         partner_tier: string | null;
+        partner_type: string | null;
+        logo_url: string | null;
+        verified: boolean;
+        is_active?: boolean | null;
     } | null;
 
     partner_id?: string | null;
     partner_tier?: string | null;
+    tags?: string[];
+
+    // Contributor-supplied store name when linked to "Other Stores"
+    other_store_name?: string | null;
 }

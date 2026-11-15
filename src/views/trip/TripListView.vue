@@ -2,7 +2,15 @@
   <ion-page>
 
     <!-- ================= HEADER ================= -->
-    <ion-header>
+    <ion-header :class="{ 'house-ad-top': houseAdAtTop }">
+
+      <!-- Native (mobile) AdMob banner -->
+      <div v-if="isNative && !isDonor" id="ad-space-trip" :style="adSpaceStyle(houseAdAtTop)"></div>
+      <!-- House-ad fallback banner (web, or the real banner failed to fill /
+           LevelPlay is disabled), like Explore — minus the 'trip' kind,
+           since this IS the trip list. The feed also gets recurring native
+           cards (see HouseAdNativeCard below). -->
+      <HouseAdCard v-if="!isDonor && (!isNative || failedAdSpaceId === 'ad-space-trip')" variant="banner" exclude-kind="trip" />
 
       <!-- Top App Header -->
       <app-header
@@ -11,139 +19,98 @@
           :showProfile="true"
       />
 
-      <ion-toolbar class="actions-toolbar">
-        <div class="header-main-actions">
-          <!-- Sort Button (Left Side) -->
-          <ion-button fill="clear" class="classic-action-btn sort-btn-wrapper" id="sort-trigger-trip">
-            <ion-icon :icon="sortIcon" />
-            <span class="btn-label" v-if="!showSearchbar">{{ sortLabel }}</span>
-          </ion-button>
-
-          <ion-popover trigger="sort-trigger-trip" trigger-action="click" :dismiss-on-select="true" class="width-190">
-            <ion-list lines="none">
-              <ion-item button @click="sortBy = 'recent'">
-                <ion-icon :icon="timeOutline" slot="start" />
-                <ion-label>{{ $t('trip.sortRecentShort') }}</ion-label>
-                <ion-icon v-if="sortBy === 'recent'" :icon="checkmarkCircle" slot="end" color="success" style="font-size: 14px;" />
-              </ion-item>
-              
-              <ion-item button @click="sortBy = 'views'">
-                <ion-icon :icon="flameOutline" slot="start" />
-                <ion-label>{{ $t('trip.sortViewsShort') }}</ion-label>
-                <ion-icon v-if="sortBy === 'views'" :icon="checkmarkCircle" slot="end" color="success" style="font-size: 14px;" />
-              </ion-item>
-            </ion-list>
-          </ion-popover>
-
-          <!-- Inline Search Input -->
-          <transition name="expand">
-            <div v-if="showSearchbar" class="inline-searchbar-container">
-              <ion-searchbar
-                  v-model="searchQuery"
-                  :placeholder="$t('trip.searchPlaceholder')"
-                  :debounce="500"
-                  @ionInput="handleSearchInput"
-                  class="compact-searchbar"
-                  :animated="true"
-              ></ion-searchbar>
-            </div>
-          </transition>
-
-          <div class="right-actions-group">
-            <!-- Search Toggle Button -->
-            <ion-button
-                fill="clear"
-                @click="showSearchbar = !showSearchbar"
-                :color="showSearchbar ? 'carrot' : 'dark'"
-                class="classic-action-btn"
-            >
-              <ion-icon :icon="showSearchbar ? closeCircle : searchOutline" />
-            </ion-button>
-
-            <!-- Filter Toggle -->
-            <ion-button fill="clear" @click="showFilters = !showFilters" class="classic-action-btn">
-              <ion-icon :icon="funnelOutline" />
-              <div v-if="hasActiveFilters" class="badge-dot"></div>
-            </ion-button>
-          </div>
-        </div>
-      </ion-toolbar>
-
-      <!-- Collapsible Filters -->
+      <!-- Desktop Filters (Toggleable Toolbar) -->
       <transition name="collapse">
-        <ion-toolbar v-show="showFilters" class="filter-toolbar">
+        <ion-toolbar v-if="!isSmallScreen && showFilters" class="filter-toolbar">
           <div class="filter-section">
-
-            <!-- Categories -->
-            <div class="filter-group">
-              <div class="filter-title">
-                <ion-icon :icon="mapOutline" />
-                {{ $t('trip.categories') }}
-              </div>
-              <div class="category-bar">
-                <ion-chip
-                    v-for="cat in categories"
-                    :key="cat.id"
-                    class="modern-category-chip"
-                    :class="{ active: activeCategoryIds.includes(cat.id) }"
-                    :style="{ 
-                      '--cat-color': 'var(--ion-color-carrot)',
-                      '--cat-contrast': 'var(--ion-color-carrot-contrast)',
-                      '--cat-bg': activeCategoryIds.includes(cat.id) ? 'var(--ion-color-carrot)' : 'transparent'
-                    }"
-                    @click="toggleCategory(cat.id)"
-                >
-                  <span class="category-emoji">{{ cat.emoji }}</span>
-                  <ion-label>{{ $t(cat.name) }}</ion-label>
-                </ion-chip>
-              </div>
-            </div>
-
-            <!-- Cities -->
-            <div class="filter-group">
-              <div class="filter-title">
-                <ion-icon :icon="locationOutline" />
-                {{ $t('trip.cities') }}
-              </div>
-              <div class="category-bar">
-                <ion-chip
-                    v-for="city in cities"
-                    :key="city.slug"
-                    class="modern-category-chip"
-                    :class="{ active: activeCityIds.includes(city.slug) }"
-                    :style="{ 
-                      '--cat-color': 'var(--ion-color-carrot)',
-                      '--cat-contrast': 'var(--ion-color-carrot-contrast)',
-                      '--cat-bg': activeCityIds.includes(city.slug) ? 'var(--ion-color-carrot)' : 'transparent'
-                    }"
-                    @click="toggleCity(city.slug)"
-                >
-                  <span class="category-emoji">{{ city.emoji }}</span>
-                  <ion-label>
-                    {{ $i18n.locale === 'zh-tw' ? city.name_zh : city.name }}
-                  </ion-label>
-                </ion-chip>
-              </div>
-            </div>
-
-            <!-- Clear Filters -->
-            <div class="filter-clear-row" v-if="hasActiveFilters">
-              <ion-chip
-                  class="clear-chip"
-                  @click="clearFilters"
-              >
-                {{ $t('common.clearFilters') }}
-              </ion-chip>
-            </div>
-
+            <TripFilterContent
+                :categories="categories"
+                :activeCategoryIds="activeCategoryIds"
+                :cities="cities"
+                :activeCityIds="activeCityIds"
+                :hasActiveFilters="hasActiveFilters"
+                @toggleCategory="toggleCategory"
+                @toggleCity="toggleCity"
+                @clearFilters="clearFilters"
+                :sortBy="sortBy"
+                @update:sortBy="sortBy = $event"
+            />
           </div>
         </ion-toolbar>
       </transition>
 
+      <!-- Mobile Filters (Modal Bottom Sheet) -->
+      <ion-modal
+          :is-open="isFilterModalOpen"
+          @didDismiss="isFilterModalOpen = false"
+          :initial-breakpoint="0.5"
+          :breakpoints="[0, 0.5, 0.8]"
+          handle-behavior="cycle"
+          class="filter-modal"
+      >
+        <ion-header class="ion-no-border">
+          <ion-toolbar>
+            <ion-title>{{ $t('common.filter') || 'Filter' }}</ion-title>
+            <ion-buttons slot="end">
+              <ion-button v-if="hasActiveFilters" @click="clearFilters" color="carrot" class="modal-reset-btn">
+                {{ $t('common.reset') || 'RESET' }}
+              </ion-button>
+              <ion-button @click="isFilterModalOpen = false">
+                <ion-icon :icon="closeOutline" />
+              </ion-button>
+            </ion-buttons>
+          </ion-toolbar>
+        </ion-header>
+        <ion-content class="ion-padding filter-modal-content">
+          <TripFilterContent
+              :categories="categories"
+              :activeCategoryIds="activeCategoryIds"
+              :cities="cities"
+              :activeCityIds="activeCityIds"
+              :hasActiveFilters="hasActiveFilters"
+              @toggleCategory="toggleCategory"
+              @toggleCity="toggleCity"
+              @clearFilters="clearFilters"
+              :sortBy="sortBy"
+              @update:sortBy="sortBy = $event"
+          />
+        </ion-content>
+      </ion-modal>
+
     </ion-header>
 
     <!-- ================= CONTENT ================= -->
-    <ion-content class="ion-padding">
+    <ion-content class="ion-padding trip-content">
+
+      <ion-refresher style="margin-top: 78px;" slot="fixed" @ionRefresh="refreshList">
+        <ion-refresher-content
+            :pulling-icon="chevronDownCircleOutline"
+            :pullingText="$t('search.pullToRefresh')"
+            refreshingSpinner="circles"
+        >
+        </ion-refresher-content>
+      </ion-refresher>
+
+      <!-- Search bar + filter button float over the content instead of
+           sitting in their own ion-toolbar — matching Product's pattern. -->
+      <div class="header-main-actions" slot="fixed">
+        <ion-searchbar
+            v-model="searchQuery"
+            :placeholder="$t('trip.searchPlaceholder')"
+            :debounce="500"
+            @ionInput="handleSearchInput"
+            class="compact-searchbar inline-searchbar"
+            :animated="true"
+        ></ion-searchbar>
+
+        <div class="right-actions-group">
+          <!-- Filter Toggle (sort now lives inside here too) -->
+          <ion-button fill="clear" @click="toggleFilters" class="classic-action-btn">
+            <ion-icon :icon="optionsOutline" />
+            <div v-if="activeFiltersCount > 0" class="badge-count">{{ activeFiltersCount }}</div>
+          </ion-button>
+        </div>
+      </div>
 
       <!-- Trip Grid Container -->
       <div class="trip-grid">
@@ -172,9 +139,8 @@
 
         <!-- Trip List -->
         <template v-else>
+          <template v-for="(trip, tripIndex) in filteredTrips" :key="trip.id">
           <div
-              v-for="trip in filteredTrips"
-              :key="trip.id"
               :class="[
                 'trip-card-v2', 
                 trip.provider?.partner_tier ? 'tier-card-' + trip.provider.partner_tier.toLowerCase() : ''
@@ -223,6 +189,8 @@
                 </span>
               </div>
 
+              <div class="trip-card-divider"></div>
+
               <!-- Meta Grid -->
               <div class="trip-meta-grid">
                 <div class="trip-meta-chip">
@@ -252,61 +220,94 @@
             <!-- Premium Flare for Gold/Silver -->
             <div v-if="['gold', 'silver'].includes(String(trip.provider?.partner_tier || '').toLowerCase())" class="premium-flare"></div>
           </div>
+
+          <!-- Recurring native sponsored card, woven into the trip feed
+               every HOUSE_AD_NATIVE_INTERVAL trips. -->
+          <HouseAdNativeCard
+              v-if="!isDonor && (tripIndex + 1) % HOUSE_AD_NATIVE_INTERVAL === 0"
+              mode="trip"
+              :slot="Math.floor(tripIndex / HOUSE_AD_NATIVE_INTERVAL)"
+          />
+          </template>
         </template>
       </div>
 
     </ion-content>
+
 
   </ion-page>
 </template>
 
 
 <script setup lang="ts">
-import {ref, computed, onMounted, watch} from 'vue'
-import { useI18n } from 'vue-i18n'
+import {ref, computed, onMounted, onUnmounted, watch} from 'vue'
 import {
   IonPage, IonContent, IonSearchbar, IonToolbar,
   IonButton, IonIcon, IonText,
-  IonCard, IonCardContent, IonChip, IonSkeletonText, IonLabel, IonHeader, IonBadge, IonSelect,IonSelectOption,
-  IonPopover, IonList, IonItem
+  IonCard, IonCardContent, IonChip, IonSkeletonText, IonLabel, IonHeader, IonBadge, IonSelect, IonSelectOption,
+  IonPopover, IonList, IonItem, IonModal, IonTitle, IonButtons, onIonViewDidEnter,
+  IonRefresher, IonRefresherContent
 } from '@ionic/vue'
+import { Capacitor } from '@capacitor/core'
+import HouseAdCard from '@/components/ads/HouseAdCard.vue'
+import HouseAdNativeCard from '@/components/ads/HouseAdNativeCard.vue'
+import { failedAdSpaceId, useHouseAdAtTop, adSpaceStyle } from '@/composables/useAdFallback'
+import { isDonor } from "@/composables/useSubscriptionStatus"
+import { scheduleBannerUpdate } from '@/plugins/admob'
 
 import {
-  funnelOutline, chevronUpOutline, chevronDownOutline, mapOutline, compassOutline, locationOutline,
-  searchOutline, closeCircle, timeOutline, checkmarkCircle, sparkles, shieldCheckmarkOutline, eyeOutline, flameOutline, calendarOutline
+  optionsOutline, chevronUpOutline, chevronDownOutline, mapOutline, compassOutline, locationOutline,
+  timeOutline, sparkles, shieldCheckmarkOutline, eyeOutline, calendarOutline, closeOutline,
+  chevronDownCircleOutline
 } from 'ionicons/icons'
 import AppHeader from '@/components/AppHeader.vue'
+import TripFilterContent from '@/components/TripFilterContent.vue'
 import { ActivityLogService } from '@/services/ActivityLogService'
 import { supabase } from '@/plugins/supabaseClient'
+import { notifyFetchError } from '@/utils/offlineFeedback'
 import { Browser } from '@capacitor/browser'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import utc from 'dayjs/plugin/utc'
 import timezone from 'dayjs/plugin/timezone'
+import { delayForHuman } from '@/utils/interactionShield'
+import { useRecaptcha } from '@/composables/useRecaptcha'
 
 dayjs.extend(utc)
 dayjs.extend(timezone)
 dayjs.extend(relativeTime)
 
+// How often a native sponsored card appears in the trip feed (every Nth
+// trip), replacing the old fixed top-banner house-ad fallback on this view.
+const HOUSE_AD_NATIVE_INTERVAL = 4
+
 
 const loading = ref(true)
 const searchQuery = ref('')
-const showSearchbar = ref(false)
 const showFilters = ref(false)
+const isFilterModalOpen = ref(false)
 const activeCategoryIds = ref<number[]>([])
 const sortBy = ref<'recent' | 'views'>('recent')
+const isNative = ref(Capacitor.isNativePlatform())
+const houseAdAtTop = useHouseAdAtTop('ad-space-trip', isDonor)
+const { execute: executeRecaptcha, isCaptchaEnabled } = useRecaptcha()
 
-const { t } = useI18n()
+// Same tier weighting as Home's partner rotation, so "featured first" reads
+// consistently across the app.
+const TRIP_TIER_WEIGHTS: Record<string, number> = { gold: 3, silver: 2, bronze: 1 }
+function getTripTierWeight(trip: any): number {
+  return TRIP_TIER_WEIGHTS[(trip.provider?.partner_tier || '').toLowerCase()] || 0
+}
 
-const sortLabel = computed(() => {
-  if (sortBy.value === 'views') return t('trip.sortViewsShort')
-  return t('trip.sortRecentShort')
+onIonViewDidEnter(() => {
+  scheduleBannerUpdate()
 })
 
-const sortIcon = computed(() => {
-  if (sortBy.value === 'views') return flameOutline
-  return timeOutline
-})
+const isSmallScreen = ref(window.innerWidth < 768)
+
+const handleResize = () => {
+  isSmallScreen.value = window.innerWidth < 768
+}
 
 const hasActiveFilters = computed(() => {
   return (
@@ -314,6 +315,10 @@ const hasActiveFilters = computed(() => {
       activeCityIds.value.length > 0 ||
       searchQuery.value.length > 0
   )
+})
+
+const activeFiltersCount = computed(() => {
+  return activeCategoryIds.value.length + activeCityIds.value.length
 })
 
 /* Categories using i18n keys */
@@ -340,6 +345,8 @@ async function fetchCities() {
 
   if (!error && data) {
     cities.value = data
+  } else if (error) {
+    notifyFetchError(error)
   }
 
   loadingCities.value = false
@@ -410,6 +417,7 @@ async function fetchTrips() {
 
   if (error) {
     console.error('[Trips]', error)
+    notifyFetchError(error)
     loading.value = false
     return
   }
@@ -456,17 +464,32 @@ const filteredTrips = computed(() => {
     return matchesSearch && matchesCategory && matchesCity
   })
 
-  // 🔥 Sort logic (basic UI-level for now)
+  // 🔥 Sort logic — tiered partners (Gold/Silver/Bronze) always float above
+  // untiered listings, matching the tier weighting used on Home; recency/
+  // views only break ties within the same tier.
+  const tierDiff = (a: any, b: any) =>
+      getTripTierWeight(b) - getTripTierWeight(a)
+
   if (sortBy.value === 'views') {
-    return [...list].sort((a, b) => (b.view_count ?? 0) - (a.view_count ?? 0))
+    return [...list].sort((a, b) =>
+        tierDiff(a, b) || ((b.view_count ?? 0) - (a.view_count ?? 0))
+    )
   }
 
-  return [...list].sort((a, b) => {
-    return new Date(b.created_at ?? '').getTime()
-        - new Date(a.created_at ?? '').getTime()
-  })
+  return [...list].sort((a, b) =>
+      tierDiff(a, b) ||
+      (new Date(b.created_at ?? '').getTime() - new Date(a.created_at ?? '').getTime())
+  )
 })
 
+
+function toggleFilters() {
+  if (isSmallScreen.value) {
+    isFilterModalOpen.value = !isFilterModalOpen.value
+  } else {
+    showFilters.value = !showFilters.value
+  }
+}
 
 function clearFilters() {
   ActivityLogService.log("trip_filter_clear", {
@@ -514,7 +537,23 @@ function handleSearchInput(ev: Event) {
   if (searchTimeout) clearTimeout(searchTimeout)
 
   if (q.length > 1) {
-    searchTimeout = window.setTimeout(() => {
+    searchTimeout = window.setTimeout(async () => {
+      // Execute reCAPTCHA invisibly. A failed token is never proof of a bot,
+      // so fall through and let the server decide.
+      let captchaToken = 'disabled';
+      if (isCaptchaEnabled) {
+        try {
+          captchaToken = await executeRecaptcha('trip');
+        } catch (e) {
+          console.warn('reCAPTCHA token unavailable in trip:', e);
+          captchaToken = 'none';
+        }
+      }
+      (window as any)._recaptchaToken = captchaToken;
+
+      // Organic randomized human delay
+      await delayForHuman();
+
       ActivityLogService.log("trip_search", { query: q })
     }, 800)
   }
@@ -558,13 +597,29 @@ watch(sortBy, (val) => {
   })
 })
 
-onMounted(() => {
+async function refreshList(event: CustomEvent) {
+  try {
+    await Promise.all([
+      fetchTrips(),
+      fetchCities(),
+    ])
+  } finally {
+    event.detail.complete()
+  }
+}
+
+onMounted(async () => {
   ActivityLogService.log("trip_page_open", {
     source: "main_navigation"
   })
 
   fetchTrips()
   fetchCities()
+  window.addEventListener('resize', handleResize)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize)
 })
 
 
@@ -598,14 +653,19 @@ onMounted(() => {
 
 .trip-card-v2 {
   margin: 0; /* Reset margin for grid layout */
-  background: var(--ion-card-background, #ffffff);
-  border-radius: 20px;
+  background: var(--card-bg);
+  border-radius: var(--radius-lg);
   overflow: hidden;
-  box-shadow: 0 6px 24px rgba(0,0,0,0.08);
-  border: 1px solid rgba(var(--ion-color-dark-rgb), 0.05);
-  transition: transform 0.2s ease, box-shadow 0.3s ease;
+  box-shadow: var(--card-shadow);
+  border: 1px solid var(--card-border);
+  transition: transform 0.2s ease, box-shadow 0.25s ease, border-color 0.25s ease;
   cursor: pointer;
   position: relative;
+}
+
+.trip-card-v2:hover {
+  box-shadow: var(--card-shadow-hover);
+  border-color: rgba(var(--ion-color-carrot-rgb), 0.25);
 }
 
 /* Mobile: restore bottom margin if grid is 1 column */
@@ -617,16 +677,17 @@ onMounted(() => {
 
 .trip-card-v2:active {
   transform: scale(0.985);
-  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  box-shadow: var(--card-shadow-hover);
 }
 
 /* Cover Image */
 .trip-cover-wrap {
   position: relative;
   width: 100%;
-  height: 200px;
+  height: 190px;
   overflow: hidden;
   background: var(--ion-background-color-step-100, #f0f0f0);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
 }
 
 .trip-cover {
@@ -651,6 +712,21 @@ onMounted(() => {
   background: linear-gradient(to bottom, transparent, rgba(0,0,0,0.35));
 }
 
+.premium-flare {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.05) 0%, transparent 50%, rgba(255, 215, 0, 0.05) 100%);
+  z-index: 1;
+}
+
+.has-ads {
+  background: var(--ion-background-color);
+}
+
 /* Tier badge overlay */
 .trip-tier-badge {
   position: absolute;
@@ -659,15 +735,16 @@ onMounted(() => {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 4px 10px;
-  border-radius: 10px;
-  font-size: 0.68rem;
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 0.66rem;
   font-weight: 800;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255,255,255,0.3);
+  border: 1px solid rgba(255,255,255,0.35);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
 }
 
 .trip-tier-badge ion-icon {
@@ -694,13 +771,14 @@ onMounted(() => {
   padding: 16px 18px 18px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
 .trip-card-title {
   margin: 0;
-  font-size: 1.18rem;
+  font-size: 1.1rem;
   font-weight: 800;
+  letter-spacing: -0.01em;
   color: var(--ion-color-dark);
   line-height: 1.3;
   display: -webkit-box;
@@ -720,23 +798,43 @@ onMounted(() => {
 }
 
 .trip-card-provider {
-  font-size: 0.78rem;
+  font-size: 0.74rem;
+  font-weight: 600;
   color: var(--ion-color-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.trip-card-provider strong {
+  color: var(--ion-color-dark);
+  font-weight: 700;
+  text-transform: none;
+  letter-spacing: normal;
 }
 
 .trip-official-tag {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: 0.65rem;
-  font-weight: 700;
+  font-size: 0.64rem;
+  font-weight: 800;
   color: var(--ion-color-carrot);
+  background: rgba(var(--ion-color-carrot-rgb), 0.1);
+  padding: 3px 8px;
+  border-radius: 999px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
 
 .trip-official-tag ion-icon {
   font-size: 12px;
+}
+
+/* Divider between provider row and meta */
+.trip-card-divider {
+  height: 1px;
+  background: var(--card-border);
+  margin: 2px 0;
 }
 
 /* Meta Grid */
@@ -750,16 +848,13 @@ onMounted(() => {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  background: rgba(var(--ion-color-dark-rgb), 0.05);
-  border-radius: 8px;
+  background: transparent;
+  border: 1px solid var(--card-border);
+  border-radius: 999px;
   padding: 5px 10px;
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 600;
-  color: var(--ion-color-dark);
-}
-
-.ion-palette-dark .trip-meta-chip {
-  background: rgba(255,255,255,0.07);
+  color: var(--ion-color-medium);
 }
 
 .trip-meta-icon {
@@ -884,43 +979,80 @@ ion-header :deep(app-header ion-toolbar) {
   border-bottom: none !important;
 }
 
+/* Floats over the trip grid (slot="fixed" in the template) instead of
+   sitting in its own ion-toolbar — matches Product's search/filter bar.
+   Fixed positioning + explicit left/right (not width:100% + margin,
+   which overflows by exactly the margin amount) avoids the overflow
+   bug that hit Product's equivalent bar. */
 .header-main-actions {
+  position: absolute;
+  top: 10px;
+  left: 16px;
+  right: 16px;
+  z-index: 5;
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 8px;
-  padding: 8px 16px;
-  width: 100%;
+}
+
+.inline-searchbar {
+  flex: 1;
+  min-width: 0;
 }
 
 .classic-action-btn {
-  height: 50px;
+  /* !important + min/max on all four needed: iOS mode's own ion-button
+     internal padding/min-height (different from md/Android) otherwise
+     wins over a plain height/width here, making the button render a
+     different size on iPhone than on Android. */
+  height: 44px !important;
+  width: 44px !important;
+  min-width: 44px !important;
+  max-width: 44px !important;
+  min-height: 44px !important;
+  max-height: 44px !important;
   margin: 0;
   --color: var(--ion-color-dark);
+  /* !important needed: ion-button's fill="clear" sets --background:
+     transparent via its own .button-clear class at higher specificity
+     than a plain class selector here. Frosted-glass tint (not the
+     opaque --card-bg) to match the see-through searchbar next to it. */
+  --background: rgba(255, 255, 255, 0.65) !important;
+  --border-radius: var(--radius-md);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--card-shadow);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   position: relative;
   font-weight: 700;
   text-transform: none;
 }
 
+.ion-palette-dark .classic-action-btn {
+  --background: rgba(20, 20, 22, 0.65) !important;
+}
+
 .classic-action-btn ion-icon {
-  font-size: 22px;
-}
-
-.sort-btn-wrapper {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.btn-label {
-  margin-left: 4px;
-  font-size: 13px;
+  font-size: 24px;
+  color: var(--ion-color-dark);
 }
 
 .right-actions-group {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.trip-content {
+  /* Ionic's .ion-padding utility sets padding-top via !important, so a
+     plain override here never wins without matching it. */
+  --padding-top: 78px;
+}
+
+.trip-content::part(scroll) {
+  padding-top: 78px !important;
 }
 
 .badge-dot {
@@ -934,32 +1066,41 @@ ion-header :deep(app-header ion-toolbar) {
   border: 2px solid var(--ion-background-color);
 }
 
-.compact-searchbar {
-  --border-radius: 12px;
-  --background: var(--ion-background-color);
-  padding: 0;
-  width: 100%;
+
+
+.search-container {
+  padding: 0 16px 12px;
 }
 
-.inline-searchbar-container {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  overflow: hidden;
+.search-row-toolbar {
+  --min-height: auto;
 }
 
-/* Animation for searchbar expansion */
-.expand-enter-active,
-.expand-leave-active {
-  transition: all 0.3s ease-out;
-  max-width: 500px;
+/* Animation for searchbar row */
+.fade-down-enter-active,
+.fade-down-leave-active {
+  transition: all 0.25s ease-out;
+  transform-origin: top;
 }
 
-.expand-enter-from,
-.expand-leave-to {
-  max-width: 0;
+.fade-down-enter-from,
+.fade-down-leave-to {
   opacity: 0;
+  transform: translateY(-10px);
+}
+
+.actions-toolbar,
+.search-row-toolbar,
+.filter-toolbar {
+  --background: var(--ion-background-color);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  --border-width: 0;
+}
+
+.collapse-enter-active,
+.collapse-leave-active {
+  transition: max-height 0.3s ease, opacity 0.3s ease;
 }
 
 .collapse-enter-active,
@@ -1017,6 +1158,25 @@ ion-header :deep(app-header ion-toolbar) {
   font-weight: 500;
   font-size: 13px;
   padding: 0 10px;
+}
+
+/* Badge Count for Filters */
+.badge-count {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background: var(--ion-color-carrot);
+  color: white;
+  font-size: 10px;
+  min-width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-weight: bold;
+  border: 1.5px solid var(--ion-background-color);
+  pointer-events: none;
 }
 
 </style>

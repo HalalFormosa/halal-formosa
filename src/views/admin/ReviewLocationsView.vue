@@ -7,6 +7,50 @@
           :showBack="true"
           backRoute="/profile"
       />
+      <ion-toolbar class="actions-toolbar">
+        <div class="header-main-actions">
+          <ion-segment v-model="viewMode" mode="ios" class="view-segment">
+            <ion-segment-button value="pending">
+              <ion-label>{{ $t('admin.review') }}</ion-label>
+            </ion-segment-button>
+            <ion-segment-button value="archived">
+              <ion-label>{{ $t('admin.archive') }}</ion-label>
+            </ion-segment-button>
+          </ion-segment>
+
+          <ion-button fill="clear" class="sort-icon-btn" id="sort-trigger" :title="sortLabel">
+            <ion-icon :icon="sortIcon" slot="icon-only" />
+          </ion-button>
+
+          <ion-popover trigger="sort-trigger" trigger-action="click" :dismiss-on-select="true" class="sort-popover">
+            <ion-list lines="none" class="sort-popover-list">
+              <ion-item button :detail="false" @click="sortBy = 'recent'">
+                <ion-icon :icon="timeOutline" slot="start" />
+                <ion-label>{{ $t('admin.sortRecent') }}</ion-label>
+                <ion-icon v-if="sortBy === 'recent'" :icon="checkmarkCircle" slot="end" color="success" style="font-size: 14px;" />
+              </ion-item>
+
+              <ion-item button :detail="false" @click="sortBy = 'alpha'">
+                <ion-icon :icon="listOutline" slot="start" />
+                <ion-label>{{ $t('admin.sortAlpha') }}</ion-label>
+                <ion-icon v-if="sortBy === 'alpha'" :icon="checkmarkCircle" slot="end" color="success" style="font-size: 14px;" />
+              </ion-item>
+            </ion-list>
+          </ion-popover>
+        </div>
+      </ion-toolbar>
+
+      <ion-toolbar class="search-row-toolbar">
+        <div class="search-container">
+          <ion-searchbar
+              v-model="searchQuery"
+              :placeholder="$t('explore.placeholder')"
+              :debounce="500"
+              class="compact-searchbar"
+              :animated="true"
+          />
+        </div>
+      </ion-toolbar>
     </ion-header>
 
     <ion-content class="ion-padding">
@@ -31,9 +75,9 @@
       </div>
 
       <!-- Pending Locations -->
-      <ion-list v-else-if="pendingLocations.length">
+      <ion-list v-else-if="filteredLocations.length">
         <ion-item
-            v-for="loc in pendingLocations"
+            v-for="loc in filteredLocations"
             :key="loc.id"
             button
             detail
@@ -45,7 +89,13 @@
 
           <ion-label>
             <h2>{{ loc.name }}</h2>
-            <p>{{ loc.address }}</p>
+            <p>
+              <ion-text color="primary" style="font-weight: 600;">
+                {{ loc.location_types?.name || $t('common.unknown') }}
+              </ion-text>
+              <span style="margin: 0 4px;">•</span>
+              {{ loc.address }}
+            </p>
           </ion-label>
         </ion-item>
       </ion-list>
@@ -55,61 +105,215 @@
         {{ $t('admin.noPendingLocations') }}
       </ion-text>
 
-      <!-- Modal -->
-      <ion-modal :is-open="showModal" @didDismiss="closeModal">
+      <!-- ✅ Location Detail Modal -->
+      <ion-modal :is-open="showModal" @didDismiss="closeModal" class="review-modal">
         <ion-header>
-          <ion-toolbar>
-            <ion-title>{{ $t('admin.reviewLocation') }}</ion-title>
-            <ion-buttons slot="end">
-              <ion-button @click="closeModal">{{ $t('admin.close') }}</ion-button>
-            </ion-buttons>
-          </ion-toolbar>
+          <ModalHeader :title="$t('admin.reviewLocation')" @close="closeModal">
+            <template #end>
+              <ion-button @click="approveLocation(selectedLocation)">
+                <ion-icon slot="start" :icon="checkmarkOutline" />
+                {{ $t('review.approve') }}
+              </ion-button>
+            </template>
+          </ModalHeader>
         </ion-header>
 
         <ion-content class="ion-padding">
-          <ion-list v-if="selectedLocation">
-
-            <ion-item>
-              <ion-label position="stacked">{{ $t('admin.name') }}</ion-label>
-              <ion-input v-model="selectedLocation.name" />
+          <div v-if="selectedLocation" class="form-container">
+            <!-- 👤 Uploader Attribution -->
+            <ion-item lines="none" class="uploader-info ion-margin-bottom">
+              <ion-avatar slot="start">
+                <img :src="selectedLocation.uploader?.avatar_url || 'https://placehold.co/100x100?text=👤'" @error="handleImgError" />
+              </ion-avatar>
+              <ion-label>
+                <p style="font-size: 12px; margin-bottom: 2px;">{{ $t('review.uploadedBy') }}</p>
+                <h3 style="font-weight: 600;">{{ selectedLocation.uploader?.display_name || $t('home.anonymous') }}</h3>
+              </ion-label>
+              <ion-badge v-if="selectedLocation.uploaderRole === 'contributor'" slot="end" color="warning" style="margin-right: 6px;">Dedicated Contributor</ion-badge>
+              <ion-badge slot="end" color="medium">{{ selectedLocation.uploader?.donor_type || $t('profile.donors.Free') }}</ion-badge>
             </ion-item>
 
-            <ion-item>
-              <ion-label position="stacked">{{ $t('admin.address') }}</ion-label>
-              <ion-input v-model="selectedLocation.address" />
-            </ion-item>
+            <ion-item-group>
+              <!-- Name -->
+              <ion-item>
+                <ion-input
+                    v-model="selectedLocation.name"
+                    label-placement="floating"
+                    :label="$t('admin.name')"
+                ></ion-input>
+              </ion-item>
 
-            <ion-item>
-              <ion-label position="stacked">{{ $t('admin.description') }}</ion-label>
-              <ion-textarea v-model="selectedLocation.description" auto-grow />
-            </ion-item>
+              <!-- Category (Location Type) -->
+              <ion-item>
+                <ion-select
+                    v-model.number="selectedLocation.type_id"
+                    interface="popover"
+                    :label="$t('explore.categories')"
+                    label-placement="floating"
+                >
+                  <ion-select-option v-for="type in locationTypes" :key="type.id" :value="type.id">
+                    {{ type.name }}
+                  </ion-select-option>
+                </ion-select>
+              </ion-item>
 
-            <div class="ion-margin-top">
-              <img
-                  :src="selectedLocation.image"
-                  style="width:100%;border-radius:12px"
-              />
-            </div>
+              <!-- Address -->
+              <ion-item>
+                <ion-input
+                    v-model="selectedLocation.address"
+                    label-placement="floating"
+                    :label="$t('admin.address')"
+                ></ion-input>
+              </ion-item>
 
-            <div style="margin-top:20px;display:flex;gap:12px;">
-              <ion-button
-                  expand="block"
-                  color="success"
-                  @click="approveLocation(selectedLocation)"
-              >
-                {{ $t('admin.approve') }}
+              <!-- Pinpoint (Lat/Lng) -->
+              <div class="coordinates-row">
+                <ion-item style="flex: 1">
+                  <ion-input
+                      v-model.number="selectedLocation.lat"
+                      type="number"
+                      label-placement="floating"
+                      :label="$t('admin.latitude')"
+                  ></ion-input>
+                </ion-item>
+                <ion-item style="flex: 1">
+                  <ion-input
+                      v-model.number="selectedLocation.lng"
+                      type="number"
+                      label-placement="floating"
+                      :label="$t('admin.longitude')"
+                  ></ion-input>
+                </ion-item>
+              </div>
+
+              <!-- Map Preview -->
+              <div class="map-preview-container ion-margin-vertical">
+                <iframe
+                    v-if="selectedLocation.lat && selectedLocation.lng"
+                    width="100%"
+                    height="180"
+                    style="border:0; border-radius: 12px;"
+                    loading="lazy"
+                    allowfullscreen
+                    :src="`https://maps.google.com/maps?q=${selectedLocation.lat},${selectedLocation.lng}&z=16&output=embed`"
+                ></iframe>
+              </div>
+
+              <!-- Description -->
+              <ion-item>
+                <ion-textarea
+                    v-model="selectedLocation.description"
+                    label-placement="floating"
+                    :label="$t('admin.description')"
+                    auto-grow
+                ></ion-textarea>
+              </ion-item>
+
+              <!-- Contact Info -->
+              <ion-item>
+                <ion-icon :icon="callOutline" slot="start" size="small" />
+                <ion-input
+                    v-model="selectedLocation.phone"
+                    label-placement="floating"
+                    :label="$t('explore.details.phone')"
+                ></ion-input>
+              </ion-item>
+
+              <ion-item>
+                <ion-icon :icon="logoInstagram" slot="start" size="small" />
+                <ion-input
+                    v-model="selectedLocation.instagram"
+                    label-placement="floating"
+                    :label="$t('addPlace.instagramLabel')"
+                ></ion-input>
+              </ion-item>
+
+              <ion-item>
+                <ion-icon :icon="chatboxEllipsesOutline" slot="start" size="small" />
+                <ion-input
+                    v-model="selectedLocation.line_id"
+                    label-placement="floating"
+                    :label="$t('addPlace.lineIdLabel')"
+                ></ion-input>
+              </ion-item>
+
+              <!-- Price Range -->
+              <ion-item>
+                <ion-icon :icon="cashOutline" slot="start" size="small" />
+                <ion-select
+                    v-model="selectedLocation.price_range"
+                    interface="popover"
+                    :label="$t('explore.filters.priceRange')"
+                    label-placement="floating"
+                >
+                  <ion-select-option value="$">{{ $t('addPlace.priceLevels.low') }}</ion-select-option>
+                  <ion-select-option value="$$">{{ $t('addPlace.priceLevels.medium') }}</ion-select-option>
+                  <ion-select-option value="$$$">{{ $t('addPlace.priceLevels.high') }}</ion-select-option>
+                </ion-select>
+              </ion-item>
+
+              <!-- Tags Section -->
+              <ion-item>
+                <ion-input
+                    v-model="tagInput"
+                    :label="$t('addPlace.addTagLabel')"
+                    label-placement="floating"
+                    :placeholder="$t('addPlace.tagPlaceholder')"
+                    @ionInput="handleTagInput"
+                    @keyup.enter="addTag"
+                />
+                <ion-button slot="end" fill="clear" @click="addTag" style="margin-top: 14px;">
+                  {{ $t('common.add') }}
+                </ion-button>
+              </ion-item>
+              <div v-if="selectedLocation.tags && selectedLocation.tags.length > 0" class="tag-chips ion-padding-horizontal ion-padding-bottom" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px;">
+                <ion-chip v-for="tag in selectedLocation.tags" :key="tag" color="primary" outline class="tag-chip" style="margin: 0;">
+                  <ion-label>{{ tag }}</ion-label>
+                  <ion-icon :icon="closeCircle" @click="removeTag(tag)" />
+                </ion-chip>
+              </div>
+
+              <!-- Opening Hours Section -->
+              <ion-item-divider mode="md">
+                <ion-label>{{ $t('addPlace.openingHours') }}</ion-label>
+              </ion-item-divider>
+              <OpeningHoursEditor :model-value="selectedLocation.opening_hours" @change="hoursTouched = true" />
+
+              <!-- Image Section -->
+              <div class="ion-margin-top ion-padding-horizontal">
+                <ion-label><strong>{{ $t('admin.locationImage') }}</strong></ion-label>
+                <div class="img-preview-container ion-margin-top">
+                  <div class="img-preview-box">
+                    <img :src="imagePreviewUrl || 'https://placehold.co/300x200?text=No+Image'" />
+                  </div>
+                  <div class="img-controls">
+                    <ion-button size="small" fill="clear" @click="takePicture">
+                      <ion-icon slot="icon-only" :icon="cameraOutline" />
+                    </ion-button>
+                    <ion-button size="small" fill="clear" @click="uploadFromGallery">
+                      <ion-icon slot="icon-only" :icon="cloudUploadOutline" />
+                    </ion-button>
+                  </div>
+                </div>
+              </div>
+
+            </ion-item-group>
+
+            <div class="ion-padding-top ion-margin-top" style="border-top: 1px solid var(--ion-color-step-150); display: flex; gap: 8px;">
+              <ion-button v-if="viewMode === 'pending'" @click="archiveLocation(selectedLocation.id)" color="warning" style="flex: 1;">
+                <ion-icon slot="start" :icon="trashOutline" />
+                {{ $t('admin.archive') }}
               </ion-button>
-
-              <ion-button
-                  expand="block"
-                  color="danger"
-                  @click="rejectLocation(selectedLocation.id)"
-              >
+              <ion-button v-else @click="restoreLocation(selectedLocation.id)" color="success" style="flex: 1;">
+                <ion-icon slot="start" :icon="swapVerticalOutline" />
+                {{ $t('admin.restore') }}
+              </ion-button>
+              <ion-button @click="rejectLocation(selectedLocation.id)" color="danger" fill="outline" style="flex: 1;">
+                <ion-icon slot="start" :icon="trashOutline" />
                 {{ $t('admin.reject') }}
               </ion-button>
             </div>
-
-          </ion-list>
+          </div>
         </ion-content>
       </ion-modal>
 
@@ -121,73 +325,655 @@
 import {
   IonPage, IonHeader, IonContent, IonList,
   IonItem, IonThumbnail, IonLabel, IonText,
-  IonModal, IonToolbar, IonTitle, IonButtons,
-  IonButton, IonInput, IonTextarea, IonSkeletonText
+  IonModal, IonToolbar, IonTitle, IonButtons, IonAvatar, IonBadge, IonItemGroup,
+  IonButton, IonInput, IonTextarea, IonSkeletonText, IonSelect, IonSelectOption,
+  IonSearchbar, IonSegment, IonSegmentButton, IonPopover, IonIcon,
+  IonItemDivider, IonChip, IonCheckbox, toastController,
+  IonCard, IonListHeader, alertController
 } from '@ionic/vue'
 
-import { ref, onMounted, reactive } from 'vue'
+import { ref, onMounted, reactive, computed, watch } from 'vue'
+import { useRoute } from 'vue-router'
+import OpeningHoursEditor from '@/components/OpeningHoursEditor.vue'
+import { weekFromDb, weekToDb } from '@/utils/openingHours'
 import { supabase } from '@/plugins/supabaseClient'
-import { listOutline } from 'ionicons/icons'
+import {
+  listOutline, timeOutline, checkmarkCircle, swapVerticalOutline,
+  checkmarkOutline, cameraOutline, cloudUploadOutline,
+  trashOutline, callOutline, logoInstagram, chatboxEllipsesOutline,
+  cashOutline, locationOutline, shieldCheckmarkOutline, sparkles,
+  closeCircle
+} from 'ionicons/icons'
 import AppHeader from '@/components/AppHeader.vue'
+import ModalHeader from '@/components/ModalHeader.vue'
+import { useI18n } from 'vue-i18n'
+import { Camera, CameraDirection, CameraResultType, CameraSource } from '@capacitor/camera'
+import { useImageResizer } from "@/composables/useImageResizer"
+import { useNotifier } from "@/composables/useNotifier"
+
+const { t } = useI18n()
+const { notifyEvent } = useNotifier()
 
 const pendingLocations = ref<any[]>([])
 const loadingLocations = ref(true)
 const showModal = ref(false)
 const selectedLocation = ref<any | null>(null)
+const locationTypes = ref<{ id: number, name: string }[]>([])
+const isUnmounted = ref(false)
+const { resizeImage } = useImageResizer()
+
+// Tags logic
+const tagInput = ref('')
+const dayLabels = {
+  mon: 'Monday', tue: 'Tuesday', wed: 'Wednesday', thu: 'Thursday',
+  fri: 'Friday', sat: 'Saturday', sun: 'Sunday'
+}
+
+function addTag(e?: any) {
+  if (e) e.preventDefault()
+  if (!tagInput.value.trim() || !selectedLocation.value) return
+  const val = tagInput.value.trim().replace(/,/g, '')
+  if (val) {
+    if (!selectedLocation.value.tags) selectedLocation.value.tags = []
+    if (!selectedLocation.value.tags.includes(val)) {
+      selectedLocation.value.tags.push(val)
+    }
+  }
+  tagInput.value = ''
+}
+
+function removeTag(tag: string) {
+  if (!selectedLocation.value?.tags) return
+  selectedLocation.value.tags = selectedLocation.value.tags.filter((t: string) => t !== tag)
+}
+
+function handleImgError(ev: Event) {
+  const target = ev.target as HTMLImageElement | null
+  if (target) {
+    target.onerror = null
+    target.src = 'https://placehold.co/100x100?text=👤'
+  }
+}
+
+function handleTagInput(ev: any) {
+  const val = ev.target.value
+  if (val.endsWith(',')) {
+    const tag = val.slice(0, -1).trim()
+    if (tag && selectedLocation.value) {
+      if (!selectedLocation.value.tags) selectedLocation.value.tags = []
+      if (!selectedLocation.value.tags.includes(tag)) {
+        selectedLocation.value.tags.push(tag)
+      }
+    }
+    tagInput.value = ''
+  }
+}
+
+// Opening hours are edited as shifts (see OpeningHoursEditor); untouched hours are left exactly as stored.
+const hoursTouched = ref(false)
+
+// Image states
+const imageFile = ref<File | null>(null)
+const imagePreviewUrl = ref<string | null>(null)
+
+const searchQuery = ref('')
+const viewMode = ref<'pending' | 'archived'>('pending')
+const sortBy = ref<'recent' | 'alpha'>('recent')
+
+import { onUnmounted } from 'vue'
+onUnmounted(() => {
+  isUnmounted.value = true
+})
+
+const sortIcon = computed(() => {
+  return sortBy.value === 'recent' ? timeOutline : listOutline
+})
+
+const sortLabel = computed(() => {
+  return sortBy.value === 'recent' ? t('admin.sortRecent') : t('admin.sortAlpha')
+})
+
+const filteredLocations = computed(() => {
+  let result = [...pendingLocations.value]
+
+  // View Mode Filter
+  if (viewMode.value === 'pending') {
+    result = result.filter(loc => !loc.approved && !loc.is_archived && !loc.is_rejected)
+  } else {
+    result = result.filter(loc => loc.is_archived)
+  }
+
+  // Search
+  if (searchQuery.value.trim()) {
+    const q = searchQuery.value.toLowerCase()
+    result = result.filter(loc => 
+      loc.name?.toLowerCase().includes(q) || 
+      loc.address?.toLowerCase().includes(q)
+    )
+  }
+
+  // Sort
+  if (sortBy.value === 'alpha') {
+    result.sort((a, b) => (a.name || '').localeCompare(b.name || ''))
+  } else {
+    // recent - pendingLocations is already sorted by created_at DESC from supabase
+    // but we resort here if search/filter made it messy or to be safe
+    result.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+  }
+
+  return result
+})
+
+async function loadLocationTypes() {
+  const { data, error } = await supabase.from('location_types').select('id, name')
+  if (!error && data) locationTypes.value = data
+}
 
 async function loadPendingLocations() {
   loadingLocations.value = true
 
-  const { data } = await supabase
+  const { data: locations, error: locError } = await supabase
       .from('locations')
-      .select('*')
-      .eq('approved', false)
+      .select('*, location_types(name)')
+      .or('approved.eq.false,is_archived.eq.true')
       .order('created_at', { ascending: false })
 
-  pendingLocations.value = data || []
+  if (locError) {
+    console.error("❌ Error fetching pending locations:", locError)
+    loadingLocations.value = false
+    return
+  }
+
+  if (locations && locations.length > 0) {
+    const uploaderIds = [...new Set(locations.map(l => l.created_by).filter(Boolean))]
+
+    if (uploaderIds.length > 0) {
+      const [profilesResult, rolesResult] = await Promise.all([
+        supabase
+          .from('user_profiles')
+          .select('id, display_name, avatar_url, donor_type')
+          .in('id', uploaderIds),
+        supabase
+          .from('user_roles')
+          .select('user_id, role')
+          .in('user_id', uploaderIds)
+      ])
+      const profiles = profilesResult.data
+      const profError = profilesResult.error
+      const roles = rolesResult.data
+
+      if (!profError && profiles) {
+        const profileMap = Object.fromEntries(profiles.map(p => [p.id, p]))
+        const rolesMap = Object.fromEntries((roles || []).map(r => [r.user_id, r.role]))
+        pendingLocations.value = locations.map(l => ({
+          ...l,
+          uploader: profileMap[l.created_by] || null,
+          uploaderRole: rolesMap[l.created_by] || 'user'
+        }))
+      } else {
+        pendingLocations.value = locations
+      }
+    } else {
+      pendingLocations.value = locations
+    }
+  } else {
+    pendingLocations.value = []
+  }
+
   loadingLocations.value = false
 }
 
 function openLocationModal(loc: any) {
-  selectedLocation.value = reactive({ ...loc })
+  // Ensure opening_hours has the right structure
+  hoursTouched.value = false
+  const hours = weekFromDb(loc.opening_hours, false)
+
+  selectedLocation.value = reactive({ 
+    ...loc,
+    tags: loc.tags || [],
+    opening_hours: hours
+  })
+  imageFile.value = null
+  imagePreviewUrl.value = loc.image
   showModal.value = true
 }
 
 function closeModal() {
   selectedLocation.value = null
+  imageFile.value = null
+  imagePreviewUrl.value = null
   showModal.value = false
+}
+
+async function showToast(message: string, color: string) {
+  const toast = await toastController.create({ message, duration: 2000, color, position: 'bottom' })
+  await toast.present()
+}
+
+async function takePicture() {
+  if (isUnmounted.value) return
+  try {
+    const image = await Camera.getPhoto({
+      quality: 90,
+      allowEditing: false,
+      resultType: CameraResultType.Uri,
+      source: CameraSource.Camera,
+      direction: CameraDirection.Rear
+    })
+    imagePreviewUrl.value = image.webPath || null
+    imageFile.value = await resizeImage(image.webPath || '')
+  } catch (error) {
+    console.error('Error taking photo:', error)
+  }
+}
+
+function uploadFromGallery() {
+  const input = document.createElement('input')
+  input.type = 'file'
+  input.accept = 'image/*'
+  input.onchange = (event: Event) => {
+    const target = event.target as HTMLInputElement
+    if (target.files && target.files[0]) {
+      const file = target.files[0]
+      const reader = new FileReader()
+      reader.onload = async () => {
+        imagePreviewUrl.value = reader.result as string
+        imageFile.value = await resizeImage(reader.result as string)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+  input.click()
 }
 
 async function approveLocation(loc: any) {
   const { data } = await supabase.auth.getUser()
   const user = data?.user
-  if (!user) return
+  if (!user) {
+    showToast(t('common.sessionExpired'), 'danger')
+    return
+  }
 
-  await supabase
+  let imageUrl = loc.image
+
+  // 1. Upload image if changed
+  if (imageFile.value && loc.id) {
+    // Bucket is `location-image` (singular). A fresh file name each time avoids the CDN serving the old main.jpg.
+    const path = `${loc.id}/main-${Date.now()}.jpg`
+    const { error: uploadError } = await supabase.storage
+        .from('location-image')
+        .upload(path, imageFile.value, { upsert: false, contentType: 'image/jpeg' })
+
+    if (uploadError) {
+      // Don't approve with the old picture and hide the failure.
+      console.error('❌ Location image upload failed:', uploadError)
+      showToast(`Image upload failed: ${uploadError.message}`, 'danger')
+      return
+    }
+    const { data: publicUrl } = supabase.storage
+        .from('location-image')
+        .getPublicUrl(path)
+    imageUrl = publicUrl.publicUrl
+  }
+
+  // 2. Update location
+  const { error } = await supabase
       .from('locations')
       .update({
         name: loc.name,
         address: loc.address,
         description: loc.description,
+        lat: loc.lat,
+        lng: loc.lng,
+        phone: loc.phone,
+        instagram: loc.instagram,
+        line_id: loc.line_id,
+        price_range: loc.price_range,
+        type_id: loc.type_id,
+        tags: loc.tags,
+        ...(hoursTouched.value ? { opening_hours: weekToDb(loc.opening_hours) } : {}),
+        image: imageUrl,
         approved: true,
         approved_by: user.id,
-        approved_at: new Date().toISOString()
+        // Only stamp approved_at on first publish — re-approving an edit to an
+        // already-published (e.g. archived) location shouldn't make it look
+        // like a brand new place in the "What's new" notification feed.
+        ...(loc.approved ? {} : { approved_at: new Date().toISOString() })
       })
       .eq('id', loc.id)
 
-  await loadPendingLocations()
+  if (!error) {
+    // 🔔 Announce the published place (shared cooldown with new_place adds)
+    const selectedType = locationTypes.value.find(ty => ty.id === loc.type_id)
+    const placeTypeName = selectedType?.name || 'Halal Place'
+
+    await notifyEvent(
+        'new_place',
+        `🕌 New ${placeTypeName} Added!`,
+        `${loc.name} (${placeTypeName})\nAddress: ${loc.address || 'N/A'}\nAdded by: ${loc.uploader?.display_name || t('home.anonymous')}`,
+        imageUrl ?? undefined,
+        { id: loc.id, lat: loc.lat, lng: loc.lng, isNative: true, user_id: loc.created_by }
+    )
+
+    closeModal()
+    showToast(t('review.publishSuccess'), 'success')
+    await loadPendingLocations()
+  } else {
+    console.error("❌ Error approving location:", error)
+    showToast(t('review.approveFailed'), 'danger')
+  }
+}
+
+async function archiveLocation(id: number) {
+  if (!confirm(t('admin.confirmArchive'))) return
+
+  await supabase
+      .from('locations')
+      .update({ is_archived: true })
+      .eq('id', id)
+
   closeModal()
+  await loadPendingLocations()
+}
+
+async function restoreLocation(id: number) {
+  if (!confirm(t('admin.confirmRestore'))) return
+
+  await supabase
+      .from('locations')
+      .update({ is_archived: false })
+      .eq('id', id)
+
+  closeModal()
+  await loadPendingLocations()
 }
 
 async function rejectLocation(id: number) {
-  await supabase
-      .from('locations')
-      .delete()
-      .eq('id', id)
+  const alert = await alertController.create({
+    header: t('review.confirmRejectHeader', 'Reject Submission'),
+    message: t('review.confirmRejectMsg', 'Please provide a reason for rejecting this submission:'),
+    inputs: [
+      {
+        name: 'reason',
+        type: 'textarea',
+        placeholder: t('review.reasonPlaceholder', 'e.g. Duplicate listing, incorrect location, not halal-relevant...')
+      }
+    ],
+    buttons: [
+      { text: t('common.cancel', 'Cancel'), role: 'cancel' },
+      {
+        text: t('review.reject', 'Reject'),
+        handler: async (data) => {
+          if (!data.reason || !data.reason.trim()) {
+            alert.message = t('review.reasonRequired', 'A reason is required to reject the submission.');
+            return false // Keep alert open
+          }
 
-  await loadPendingLocations()
-  closeModal()
+          const { error } = await supabase
+              .from('locations')
+              .update({
+                approved: false,
+                is_rejected: true,
+                rejection_reason: data.reason.trim()
+              })
+              .eq('id', id)
+
+          if (!error) {
+            closeModal()
+            await loadPendingLocations()
+          } else {
+            console.error('Error rejecting location:', error)
+          }
+        }
+      }
+    ]
+  })
+  await alert.present()
 }
 
-onMounted(loadPendingLocations)
+const route = useRoute()
+
+// Admin push notification deep link: /admin/review-locations?id=... opens that place's review straight away.
+function openFromPushLink() {
+  const id = route.query.id
+  if (typeof id !== 'string' || !id) return
+  const loc = pendingLocations.value.find(l => String(l.id) === id)
+  if (loc) openLocationModal(loc)
+}
+watch(() => route.query.id, () => { if (pendingLocations.value.length) openFromPushLink() })
+
+onMounted(async () => {
+  loadLocationTypes()
+  await loadPendingLocations()
+  openFromPushLink()
+})
 </script>
+<style scoped>
+/* Consolidated Search Header Styles from SearchView.vue */
+.header-main-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px;
+  width: 100%;
+}
+
+.view-segment {
+  flex: 1;
+  min-width: 0;
+}
+
+.sort-icon-btn {
+  height: 38px;
+  width: 38px;
+  margin: 0;
+  flex-shrink: 0;
+  --color: var(--ion-color-dark);
+  --background: var(--ion-color-step-100);
+  --border-radius: 10px;
+  --padding-start: 0;
+  --padding-end: 0;
+}
+
+.sort-icon-btn ion-icon {
+  font-size: 19px;
+}
+
+.search-container {
+  padding: 0 16px 12px;
+}
+
+
+
+.search-row-toolbar {
+  --min-height: auto;
+}
+
+.actions-toolbar,
+.search-row-toolbar {
+  --background: var(--ion-background-color);
+  --border-width: 0;
+}
+
+.sort-popover {
+  --width: 200px;
+}
+
+.sort-popover-list ion-item {
+  --min-height: 44px;
+}
+
+.sort-popover-list ion-label {
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+ion-header {
+  border-bottom: none !important;
+  box-shadow: none !important;
+}
+
+/* Force neutral text color in toolbar controls */
+.actions-toolbar ion-button,
+.actions-toolbar ion-icon {
+  color: var(--ion-color-dark);
+}
+
+/* Review Modal Styles */
+.review-modal {
+  --width: 100%;
+  --height: 100%;
+}
+
+.form-container {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.uploader-info {
+  --background: var(--ion-color-step-50);
+  border-radius: 12px;
+  margin-bottom: 20px;
+}
+
+.coordinates-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.map-preview-container {
+  overflow: hidden;
+  border: 1px solid var(--ion-color-step-200);
+  border-radius: 12px;
+}
+
+.img-preview-container {
+  position: relative;
+  width: 100%;
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--ion-background-color-step-100);
+  border: 1px solid var(--ion-color-step-200);
+}
+
+.img-preview-box {
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.img-preview-box img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.img-controls {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 8px;
+  backdrop-filter: blur(4px);
+}
+
+.img-controls ion-button {
+  --color: var(--ion-color-dark);
+}
+
+@media (prefers-color-scheme: dark) {
+  .img-controls {
+    background: rgba(0, 0, 0, 0.6);
+  }
+  .img-controls ion-button {
+    --color: white;
+  }
+}
+
+/* Tags and Opening Hours */
+.tag-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.tag-chip {
+  height: 28px;
+  font-size: 12px;
+  margin: 0;
+}
+
+.opening-hours-list {
+  background: transparent;
+}
+
+.opening-hours-item {
+  --padding-start: 16px;
+  --min-height: 48px;
+  font-size: 14px;
+}
+
+.day-label {
+  min-width: 80px;
+  font-weight: 500;
+}
+
+.time-inputs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.time-field {
+  max-width: 90px;
+  --padding-start: 4px;
+  --padding-end: 4px;
+  text-align: center;
+  background: var(--ion-color-step-100);
+  border-radius: 6px;
+}
+
+.closed-label {
+  margin-left: auto;
+  color: var(--ion-color-medium);
+  font-size: 13px;
+}
+
+.form-section {
+  margin-bottom: 8px;
+}
+.form-section ion-list-header {
+  padding-inline-start: 16px;
+  min-height: 32px;
+  margin-bottom: 4px;
+}
+.form-section ion-list-header ion-label {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--ion-color-medium);
+}
+.input-card {
+  margin: 0 12px;
+  border-radius: 16px;
+  box-shadow: var(--card-shadow);
+  background: var(--ion-card-background, white);
+  border: 1px solid var(--ion-color-light-shade);
+}
+.input-card ion-item {
+  --background-active: transparent;
+  --ripple-color: transparent;
+}
+</style>

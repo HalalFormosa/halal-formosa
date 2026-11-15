@@ -1,5 +1,10 @@
 import { ref, computed } from "vue";
 import { supabase } from "@/plugins/supabaseClient";
+import { getMyPrivateProfile } from "@/services/PrivateProfileService";
+import { recordAppVersion } from "@/services/AppVersionService";
+import { ActivityLogService } from "@/services/ActivityLogService";
+import { isDonor, resolveIsDonor, clearRcProActive } from "./useSubscriptionStatus";
+import { urlHostMatches } from "@/utils/urlHost"
 
 export const profileLoaded = ref(false)
 
@@ -11,29 +16,40 @@ export const isContributor = computed(() => userRole.value === "contributor");
 // Leaderboard privacy
 export const currentUser = ref<any | null>(null);
 export const isPublicProfile = ref<boolean | null>(null);
+export const showLastSeen = ref<boolean>(true);
+export const hasReviewedApp = ref<boolean>(false);
+export const nearbyPromptsEnabled = ref<boolean>(true);
+export const researchOptOut = ref<boolean>(false);
 
 /* ---------------- Profile fields ---------------- */
 export const donorType = ref("Free");
 export const editDOB = ref<string | null>(null);
 export const editNationality = ref<string | null>(null);
-export const editGender = ref<string | null>(null);
+export const editGender = ref<string | null>('Other');
 export const editBio = ref<string | null>(null);
+export const editPhone = ref<string | null>(null);
+export const editAvatarUrl = ref<string | null>(null);
+export const editDisplayName = ref<string | null>(null);
 
 export const selectedCountry = ref<any | null>(null); // for display
 export const acknowledged = ref(false);
+export const profileSkipped = ref(false);
+
+/** A display name is required: at least one non-whitespace character. */
+export const hasValidDisplayName = computed(
+    () => (editDisplayName.value?.trim().length ?? 0) >= 1
+);
 
 export const isProfileComplete = computed(() => {
     return (
-        !!editDOB.value &&
-        !!editNationality.value &&
-        !!editGender.value &&
-        !!editBio.value?.trim()
+        acknowledged.value && hasValidDisplayName.value
     );
 });
 
 const donorKey = (userId: string) => `donor_type:${userId}`
 const roleKey = (userId: string) => `user_role:${userId}`
 const pubKey = (userId: string) => `public_profile:${userId}`
+const promptKey = (userId: string) => `nearby_prompts_enabled:${userId}`
 
 
 /* ---------------- Types ---------------- */
@@ -44,6 +60,13 @@ type UserProfileRow = {
     nationality: string | null;
     gender: string | null;
     bio: string | null;
+    phone: string | null;
+    show_last_seen: boolean;
+    has_reviewed_app: boolean;
+    consent_acknowledged: boolean;
+    avatar_url: string | null;
+    nearby_prompts_enabled: boolean;
+    research_opt_out: boolean;
     user_roles: {
         role: string;
     } | null;
@@ -53,6 +76,8 @@ type UserProfileRow = {
 export async function setPublicProfile(value: boolean) {
     if (!currentUser.value?.id) return
 
+    // The toggle's ionChange also fires when its bound value loads, so only record real changes.
+    if (isPublicProfile.value !== value) ActivityLogService.log('privacy_setting_change', { setting: 'public_profile', enabled: value })
     isPublicProfile.value = value
     localStorage.setItem(
         pubKey(currentUser.value.id),
@@ -65,17 +90,88 @@ export async function setPublicProfile(value: boolean) {
         .eq("id", currentUser.value.id)
 }
 
+export async function setShowLastSeen(value: boolean) {
+    if (!currentUser.value?.id) return
+    if (showLastSeen.value !== value) ActivityLogService.log('privacy_setting_change', { setting: 'show_last_seen', enabled: value })
+    showLastSeen.value = value
+    await supabase
+        .from("user_profiles")
+        .update({ show_last_seen: value })
+        .eq("id", currentUser.value.id)
+}
+
+export async function updateLastSeen() {
+    if (!currentUser.value?.id) return
+    // Fire-and-forget; throttled inside (new version/user, else every 12h).
+    void recordAppVersion(currentUser.value.id)
+    await supabase
+        .from("user_profiles")
+        .update({ last_seen_at: new Date().toISOString() })
+        .eq("id", currentUser.value.id)
+}
+
+export async function setHasReviewedApp(value: boolean) {
+    if (!currentUser.value?.id) return
+    hasReviewedApp.value = value
+    await supabase
+        .from("user_profiles")
+        .update({ has_reviewed_app: value })
+        .eq("id", currentUser.value.id)
+}
+
+export async function setNearbyPromptsEnabled(value: boolean) {
+    if (!currentUser.value?.id) return
+    if (nearbyPromptsEnabled.value !== value) ActivityLogService.log('privacy_setting_change', { setting: 'nearby_prompts', enabled: value })
+    nearbyPromptsEnabled.value = value
+    localStorage.setItem(
+        promptKey(currentUser.value.id),
+        JSON.stringify(value)
+    )
+    await supabase
+        .from("user_profiles")
+        .update({ nearby_prompts_enabled: value })
+        .eq("id", currentUser.value.id)
+}
+
+/** `includeInResearch` is the toggle's polarity; the column stores the opt-out. */
+export async function setResearchParticipation(includeInResearch: boolean) {
+    if (!currentUser.value?.id) return
+    const previous = researchOptOut.value
+    researchOptOut.value = !includeInResearch
+    const { error } = await supabase
+        .from("user_profiles")
+        .update({ research_opt_out: !includeInResearch })
+        .eq("id", currentUser.value.id)
+    if (error) {
+        console.error("❌ setResearchParticipation failed", error)
+        researchOptOut.value = previous
+        ActivityLogService.log('privacy_setting_change_failed', { setting: 'research_participation', enabled: includeInResearch, error_message: error.message })
+    } else if (previous !== !includeInResearch) {
+        ActivityLogService.log('privacy_setting_change', { setting: 'research_participation', enabled: includeInResearch })
+    }
+    return error
+}
+
 
 
 /* ---------------- Donor helpers ---------------- */
 export function setDonorType(userId: string, value: string) {
     donorType.value = value
     localStorage.setItem(donorKey(userId), value)
+
+    const isProOrSupporter = resolveIsDonor(value);
+    isDonor.value = isProOrSupporter;
+    localStorage.setItem("user_pro_status", String(isProOrSupporter));
 }
 
 export function loadDonorFromCache(userId: string) {
     const storedType = localStorage.getItem(donorKey(userId))
-    donorType.value = storedType ?? "Free"
+    const type = storedType ?? "Free"
+    donorType.value = type
+
+    const isProOrSupporter = resolveIsDonor(type);
+    isDonor.value = isProOrSupporter;
+    localStorage.setItem("user_pro_status", String(isProOrSupporter));
 }
 
 export function loadUserRoleFromCache(userId: string) {
@@ -86,6 +182,11 @@ export function loadUserRoleFromCache(userId: string) {
 export function loadPublicLeaderboardFromCache(userId: string) {
     const stored = localStorage.getItem(pubKey(userId))
     isPublicProfile.value = stored !== null ? JSON.parse(stored) : false
+}
+
+export function loadNearbyPromptsFromCache(userId: string) {
+    const stored = localStorage.getItem(promptKey(userId))
+    nearbyPromptsEnabled.value = stored !== null ? JSON.parse(stored) : true
 }
 
 
@@ -107,25 +208,54 @@ export function setUserRole(userId: string, value: string | null) {
     else localStorage.removeItem(roleKey(userId))
 }
 
+/* ---------------- Google avatar mirroring ---------------- */
+// Google profile photos are hotlinked from lh3.googleusercontent.com, which throttles (429) when
+// many load at once, leaving broken avatars. The mirror-avatars edge function copies the caller's
+// photo into our own avatars bucket; it only runs once per user since the URL then changes.
+const mirrorAttempted = new Set<string>()
+
+async function mirrorGoogleAvatar(userId: string, avatarUrl: string | null) {
+    if (!avatarUrl || !urlHostMatches(avatarUrl, "googleusercontent.com") || mirrorAttempted.has(userId)) return
+    mirrorAttempted.add(userId) // at most one try per session, so a failing photo can't loop
+    try {
+        const { data, error } = await supabase.functions.invoke("mirror-avatars", { body: {} })
+        if (error || data?.status !== "mirrored") return
+        const { data: row } = await supabase.from("user_profiles").select("avatar_url").eq("id", userId).maybeSingle()
+        if (row?.avatar_url) editAvatarUrl.value = row.avatar_url
+    } catch (e) {
+        console.warn("Avatar mirroring failed", e)
+    }
+}
+
 /* ---------------- Profile load/save ---------------- */
 export async function loadUserProfile(userId: string) {
     profileLoaded.value = false // ⬅️ NEW (start)
+
+    // Sensitive fields (birth date, nationality, gender, phone) come from a server function,
+    // not from user_profiles, so they can be hidden from other users' queries.
+    const privatePromise = getMyPrivateProfile()
 
     const { data, error } = await supabase
         .from("user_profiles")
         .select(`
           donor_type,
           public_profile,
-          date_of_birth,
-          nationality,
-          gender,
+          display_name,
           bio,
+          show_last_seen,
+          has_reviewed_app,
+          consent_acknowledged,
+          avatar_url,
+          nearby_prompts_enabled,
+          research_opt_out,
           user_roles (
             role
           )
         `)
         .eq("id", userId)
-        .maybeSingle<UserProfileRow>();
+        .maybeSingle<UserProfileRow & { display_name: string | null }>();
+
+    const priv = await privatePromise
 
     if (!error && data) {
         setDonorType(userId, data.donor_type || "Free")
@@ -134,10 +264,21 @@ export async function loadUserProfile(userId: string) {
         isPublicProfile.value = data.public_profile ?? false;
         localStorage.setItem(pubKey(userId), JSON.stringify(isPublicProfile.value));
 
-        editDOB.value = data.date_of_birth;
-        editNationality.value = data.nationality;
-        editGender.value = data.gender;
+        editDOB.value = priv?.date_of_birth ?? null;
+        editNationality.value = priv?.nationality ?? null;
+        editGender.value = priv?.gender ?? 'Other';
         editBio.value = data.bio;
+        editPhone.value = priv?.phone ?? null;
+        editAvatarUrl.value = data.avatar_url;
+        editDisplayName.value = data.display_name;
+        showLastSeen.value = data.show_last_seen ?? true;
+        hasReviewedApp.value = data.has_reviewed_app ?? false;
+        acknowledged.value = data.consent_acknowledged ?? false;
+        nearbyPromptsEnabled.value = data.nearby_prompts_enabled ?? true;
+        localStorage.setItem(promptKey(userId), JSON.stringify(nearbyPromptsEnabled.value));
+        researchOptOut.value = data.research_opt_out ?? false;
+
+        void mirrorGoogleAvatar(userId, data.avatar_url) // fire and forget: never blocks the profile load
     } else {
         console.warn("⚠️ No profile found, resetting defaults");
 
@@ -149,8 +290,13 @@ export async function loadUserProfile(userId: string) {
 
         editDOB.value = null;
         editNationality.value = null;
-        editGender.value = null;
+        editGender.value = 'Other';
         editBio.value = null;
+        editPhone.value = null;
+        editAvatarUrl.value = null;
+        editDisplayName.value = null;
+        nearbyPromptsEnabled.value = true;
+        localStorage.setItem(promptKey(userId), JSON.stringify(true));
     }
 
     profileLoaded.value = true // ⬅️ NEW (end)
@@ -160,16 +306,21 @@ export async function updateUserProfile(userId: string) {
     const { error } = await supabase
         .from("user_profiles")
         .update({
+            display_name: editDisplayName.value?.trim() || null,
             date_of_birth: editDOB.value,
             nationality: editNationality.value,
             gender: editGender.value,
-            bio: editBio.value
+            bio: editBio.value,
+            phone: editPhone.value,
+            show_last_seen: showLastSeen.value,
+            consent_acknowledged: acknowledged.value
         })
         .eq("id", userId);
 
     if (error) {
         console.error("❌ updateUserProfile failed", error);
     }
+    return error;
 }
 
 export function resetUserProfileState() {
@@ -178,11 +329,23 @@ export function resetUserProfileState() {
     isPublicProfile.value = false
     currentUser.value = null
 
+    // Reset donor status and clear cached pro entitlement
+    isDonor.value = false
+    localStorage.removeItem("user_pro_status")
+    clearRcProActive()
+
     editDOB.value = null
     editNationality.value = null
-    editGender.value = null
+    editGender.value = 'Other'
     editBio.value = null
+    editPhone.value = null
+    editAvatarUrl.value = null
+    editDisplayName.value = null
 
     selectedCountry.value = null
+    hasReviewedApp.value = false
     acknowledged.value = false
+    profileSkipped.value = false
+    nearbyPromptsEnabled.value = true
+    researchOptOut.value = false
 }

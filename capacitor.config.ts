@@ -9,7 +9,7 @@ const config: CapacitorConfig = {
   },
   plugins: {
     CapacitorHttp: {
-      enabled: true,
+      enabled: false,
     },
     Keyboard: {
       resize: 'body',           // or 'native' for Android 12+

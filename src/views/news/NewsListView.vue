@@ -104,6 +104,7 @@ import {
   IonInfiniteScrollContent, IonCard, IonCardTitle, IonCardContent, IonCardSubtitle, IonCardHeader, IonIcon, IonFabButton, IonFab, IonSkeletonText
 } from '@ionic/vue';
 import { supabase } from '@/plugins/supabaseClient';
+import { ActivityLogService } from '@/services/ActivityLogService'
 import {addOutline, chevronDownCircleOutline} from 'ionicons/icons';
 
 
@@ -134,6 +135,7 @@ import AppHeader from "@/components/AppHeader.vue";
 
 // 🟢 import role state from userProfile composable
 import { isAdmin, isContributor } from '@/composables/userProfile'
+import { htmlToText } from '@/utils/htmlToText';
 
 // Extend dayjs
 dayjs.extend(utc)
@@ -147,6 +149,7 @@ function fromNowToTaipei(dateString?: string) {
 
 
 onMounted(async () => {
+  ActivityLogService.log('news_page_open')
   await loadInitialNews()
 })
 
@@ -202,7 +205,7 @@ function truncateText(text: string, wordLimit = 10) {
 }
 
 function generateSummary(content: string, title: string, wordLimit = 20) {
-  const text = content.replace(/<[^>]+>/g, '').trim();
+  const text = htmlToText(content);
   const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
   const filtered = lines.filter(line => !line.includes(title)).join(' ');
   const allWords = filtered.split(/\s+/);

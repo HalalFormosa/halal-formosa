@@ -1,97 +1,99 @@
 <template>
   <ion-page>
-    <ion-header class="ion-no-border immersive-header" :class="{ 'is-scrolled': isScrolled }">
-      <app-header 
-        :title="$t('search.details.title')" 
-        show-back 
-        back-route="/search" 
-        :icon="bagOutline"
+    <ion-header class="ion-no-border immersive-header" :class="{ 'is-scrolled': isScrolled, 'has-ads': isNative && showAds, 'house-ad-top': adSlotCollapsed }">
+      <!-- Native (mobile) AdMob banner -->
+      <div v-if="isNative && showAds" id="ad-space-item-details" :style="adSpaceStyle(adSlotCollapsed)"></div>
+      <!-- No house-ad fallback banner here — when there's no real ad, the
+           sponsored slot instead appears further down the page, right
+           before Description, so it doesn't delay the content someone
+           opened this page to see (see the HouseAdNativeCard below). -->
+
+      <app-header
+        :title="$t('search.details.title')"
+        show-back
+        backRoute="/search"
+        icon="none"
+        :centerTitle="true"
         :transparent="!isScrolled"
         :contrast="!isScrolled"
       >
         <template #actions>
-          <ion-item v-if="userId" button @click="openSaveModal" lines="none">
+          <ion-item v-if="userId" button :detail="false" @click="openSaveModal" lines="none">
             <ion-icon :icon="isItemSaved ? bookmark : bookmarkOutline" slot="start" />
             <ion-label>{{ $t('search.details.save') }}</ion-label>
           </ion-item>
 
-          <ion-item v-if="canEdit" button @click="editItem" lines="none">
+          <ion-item v-if="canEdit" button :detail="false" @click="editItem" lines="none">
             <ion-icon :icon="createOutline" slot="start" />
             <ion-label>{{ $t('search.details.edit') }}</ion-label>
           </ion-item>
 
-          <ion-item button @click="share" lines="none">
+          <ion-item button :detail="false" @click="share" lines="none">
             <ion-icon :icon="shareSocialOutline" slot="start" />
             <ion-label>{{ $t('search.details.share') }}</ion-label>
+          </ion-item>
+
+          <ion-item button :detail="false" @click="reportItem" lines="none">
+            <ion-icon :icon="alertCircleOutline" slot="start" />
+            <ion-label>{{ $t('search.details.report') }}</ion-label>
           </ion-item>
         </template>
       </app-header>
     </ion-header>
 
 
-    <!-- If this page should show ads, include this slot and set meta.adSpaceId above -->
-    <div v-if="isNative && showAds" id="ad-space-item-details" style="height:60px;"></div>
+
 
     <ion-content :scroll-events="true" @ionScroll="handleScroll" fullscreen>
 
-      <div v-if="loading">
-        <!-- Image carousel skeleton -->
-        <ion-skeleton-text
-            animated
-            style="width: 100%; height: 300px;"
-        />
+      <div v-if="loading" class="skeleton-container">
+        <!-- Hero image placeholder -->
+        <ion-skeleton-text animated class="skeleton-hero" />
 
-        <div class="ion-padding-horizontal">
-          <!-- Title -->
-          <ion-skeleton-text
-              animated
-              style="width: 70%; height: 22px; margin-top: 16px;"
-          />
-          <!-- Barcode -->
-          <ion-skeleton-text
-              animated
-              style="width: 40%; height: 16px; margin-top: 8px;"
-          />
+        <div class="ion-padding">
+          <!-- Title & Subtitle/attribution -->
+          <ion-skeleton-text animated class="skeleton-title-line" />
+          <ion-skeleton-text animated class="skeleton-subtitle-line" />
+          <ion-skeleton-text animated class="skeleton-meta-line" />
 
-          <!-- Status chip -->
-          <ion-skeleton-text
-              animated
-              style="width: 100%; height: 40px; border-radius: 5px; margin-top: 16px;"
-          />
+          <!-- Status badge capsule -->
+          <ion-skeleton-text animated class="skeleton-status-badge" />
 
-          <!-- Description header + text -->
-          <ion-skeleton-text
-              animated
-              style="width: 50%; height: 16px; margin-top: 20px;"
-          />
-          <ion-skeleton-text
-              animated
-              style="width: 90%; height: 14px; margin-top: 8px;"
-          />
-          <ion-skeleton-text
-              animated
-              style="width: 85%; height: 14px; margin-top: 4px;"
-          />
-
-          <!-- Ingredients header + list -->
-          <ion-skeleton-text
-              animated
-              style="width: 60%; height: 16px; margin-top: 20px;"
-          />
-          <div style="margin-top: 8px;">
-            <ion-skeleton-text
-                v-for="n in 4"
-                :key="n"
-                animated
-                style="width: 90%; height: 14px; margin-bottom: 6px;"
-            />
+          <!-- Available At header + Store circles -->
+          <div class="skeleton-section-group">
+            <ion-skeleton-text animated class="skeleton-section-title" />
+            <div class="skeleton-stores-row">
+              <ion-skeleton-text animated class="skeleton-store-circle" />
+              <ion-skeleton-text animated class="skeleton-store-circle" />
+            </div>
           </div>
 
-          <!-- Action buttons -->
-          <ion-skeleton-text
-              animated
-              style="width: 100%; height: 44px; border-radius: 4px; margin-top: 12px;"
-          />
+          <!-- Description block -->
+          <div class="skeleton-section-group">
+            <ion-skeleton-text animated class="skeleton-section-title" />
+            <ion-skeleton-text animated class="skeleton-desc-line" />
+          </div>
+
+          <!-- Tags row -->
+          <div class="skeleton-section-group">
+            <ion-skeleton-text animated class="skeleton-section-title" />
+            <div class="skeleton-tags-row">
+              <ion-skeleton-text animated class="skeleton-tag-pill" />
+              <ion-skeleton-text animated class="skeleton-tag-pill" />
+              <ion-skeleton-text animated class="skeleton-tag-pill" />
+            </div>
+          </div>
+
+          <!-- Ingredients list -->
+          <div class="skeleton-section-group">
+            <ion-skeleton-text animated class="skeleton-section-title" />
+            <div class="skeleton-ingredients-list">
+              <ion-skeleton-text animated class="skeleton-ingredient-item" />
+              <ion-skeleton-text animated class="skeleton-ingredient-item" />
+              <ion-skeleton-text animated class="skeleton-ingredient-item" />
+              <ion-skeleton-text animated class="skeleton-ingredient-item" />
+            </div>
+          </div>
         </div>
       </div>
 
@@ -134,51 +136,128 @@
           <div v-if="['gold', 'silver'].includes(String(item?.partner_tier || '').toLowerCase())" class="premium-flare"></div>
 
           <div class="ion-padding" style="position: relative; z-index: 2;">
-            <div class="title-row">
-              <h2 class="product-title">{{ item?.name }}</h2>
-              <div v-if="item?.partner_tier" class="premium-badge-wrapper">
-                <div :class="['premium-badge-pill', item.partner_tier.toLowerCase()]">
-                  <ion-icon :icon="sparkles" />
-                  <span>{{ $t('home.partnerTier', { tier: item.partner_tier.toUpperCase() }) }}</span>
+            <!-- Details: one continuous sheet from title through ingredients,
+                 sections separated by spacing alone (no hairlines/boxes),
+                 closer to a flowing product-detail page. -->
+            <div class="details-flow">
+            <div class="hero-card info-card">
+              <div class="title-row">
+                <h2 class="product-title">{{ item?.name }}</h2>
+                <div v-if="item?.partner_tier" class="premium-badge-wrapper">
+                  <div :class="['premium-badge-pill', item.partner_tier.toLowerCase()]">
+                    <ion-icon :icon="sparkles" />
+                    <span>{{ item.partner_tier.toUpperCase() }}</span>
+                  </div>
                 </div>
+              </div>
+
+              <!-- Barcode row -->
+              <p class="barcode-row">
+                <!-- Left side: barcode(s) -->
+                <span class="barcode-wrapper">
+                  <ion-icon :icon="barcodeOutline" />
+                  <small>{{ [item.barcode, ...alternateBarcodes].join(', ') }}</small>
+                </span>
+
+                <!-- Right side: category -->
+                <small class="category-text">{{ $te('search.categoriesList.' + item.product_categories?.name) ? $t('search.categoriesList.' + item.product_categories?.name) : item.product_categories?.name }}</small>
+              </p>
+
+              <p v-if="item.author?.public_profile" class="attribution-text">
+                {{ $t('home.addedBy', { author: item.author.display_name }) }} - {{ fromNowToTaipei(item.created_at) }}
+              </p>
+              <p v-else class="attribution-text">
+                {{ $t('home.added') }} {{ fromNowToTaipei(item.created_at) }}
+              </p>
+
+              <!-- Status & Verified Tag -->
+              <div class="status-action-row">
+                <ion-chip :class="statusToChipClass(item?.status || '')" class="verdict-chip">
+                  {{ $t(`search.status.${item?.status}`) }}
+                </ion-chip>
+
+                <div v-if="item?.partner_tier" class="official-verified-tag">
+                  <ion-icon :icon="shieldCheckmarkOutline" />
+                  <span>{{ $t('search.officialPartner') }}</span>
+                </div>
+              </div>
+
+              <!-- When the verdict last changed, and why we can say so -->
+              <div v-if="verdictChange || lastUpdatedLabel" class="verdict-note" data-testid="verdict-note">
+                <p v-if="verdictChange" class="verdict-note-change">
+                  <ion-icon :icon="informationCircleOutline" />
+                  <span>
+                    {{ $t('search.verdictNote.changed', { from: $t(`search.status.${verdictChange.from}`), date: verdictChange.when }) }}
+                    <template v-if="verdictChange.ingredientsChanged">
+                      {{ $t('search.verdictNote.ingredientsUpdated') }}
+                    </template>
+                  </span>
+                </p>
+                <p v-if="lastUpdatedLabel" class="verdict-note-updated">
+                  {{ $t('search.verdictNote.lastUpdated', { date: lastUpdatedLabel }) }}
+                </p>
+              </div>
+
+              <!-- Provided by (brand/merchant partner; campus partners have their own card below) -->
+              <div
+                  v-if="item?.partner?.is_active && item.partner.partner_type !== 'campus'"
+                  class="provided-by-row"
+                  role="button"
+                  tabindex="0"
+                  @click="goToPartner(item.partner.id)"
+              >
+                <img v-if="item.partner.logo_url" :src="item.partner.logo_url" alt="" class="provided-by-logo" />
+                <span class="provided-by-text">
+                  {{ $t('home.houseAdProvider.providedBy', { name: item.partner.name }) }}
+                </span>
               </div>
             </div>
 
-            <!-- Barcode row -->
-            <p class="barcode-row">
-              <!-- Left side: barcode -->
-              <span class="barcode-wrapper">
-                <ion-icon :icon="barcodeOutline" />
-                <small>{{ item.barcode }}</small>
-              </span>
+            <!-- Produced By (Campus Partner) -->
+            <div
+                v-if="item?.partner?.partner_type === 'campus' && item?.partner?.partner_tier === 'gold'"
+                class="info-card"
+            >
+              <p class="section-title">
+                <strong><small>{{ $t('search.details.producedBy') }}</small></strong>
+              </p>
 
-              <!-- Right side: category -->
-              <small class="category-text">{{ $te('search.categoriesList.' + item.product_categories?.name) ? $t('search.categoriesList.' + item.product_categories?.name) : item.product_categories?.name }}</small>
-            </p>
+              <div
+                  class="gold-cert-card"
+                  role="button"
+                  tabindex="0"
+                  @click="goToPartner(item.partner.id)"
+              >
+                <!-- Glow layer -->
+                <div class="gold-glow"></div>
 
-            <p v-if="item.author?.public_profile" class="attribution-text">
-              {{ $t('home.addedBy', { author: item.author.display_name }) }} - {{ fromNowToTaipei(item.created_at) }}
-            </p>
-            <p v-else class="attribution-text">
-              {{ $t('home.added') }} {{ fromNowToTaipei(item.created_at) }}
-            </p>
+                <!-- Content -->
+                <div class="gold-cert-content">
+                  <div class="gold-cert-left">
+                    <img
+                        v-if="item.partner.logo_url"
+                        :src="item.partner.logo_url"
+                        alt="logo"
+                        class="gold-cert-logo"
+                    />
 
-            <!-- Status & Verified Tag -->
-            <div class="status-action-row">
-              <ion-chip :class="statusToChipClass(item?.status || '')">
-                {{ $t(`search.status.${item?.status}`) }}
-              </ion-chip>
-              
-              <div v-if="item?.partner_tier" class="official-verified-tag">
-                <ion-icon :icon="shieldCheckmarkOutline" />
-                <span>{{ $t('search.officialPartner') }}</span>
+                    <div class="gold-cert-text">
+                      <div class="gold-cert-name">
+                        {{ item.partner.name }}
+                      </div>
+                      <div class="premium-verified-tag">
+                        {{ $t('home.partnerTier', { tier: (item.partner.partner_tier || '').toUpperCase() }) }} • {{ $t('partner.verifiedLabelShort') || 'Verified' }}
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
             <!-- Certified By (Gold Partner) -->
             <div
                 v-if="!loadingCertifications && certifications.length"
-                class="ion-margin-top"
+                class="info-card"
             >
               <p class="section-title">
                 <strong><small>{{ $t('search.details.certifiedBy') }}</small></strong>
@@ -210,8 +289,7 @@
                           {{ c.partner.name }}
                         </div>
                         <div class="premium-verified-tag">
-                          <ion-icon :icon="sparkles" />
-                          {{ $t('search.details.verifiedGoldPartner') }}
+                          {{ $t('home.partnerTier', { tier: (c.partner.partner_tier || '').toUpperCase() }) }} • {{ $t('partner.verifiedLabelShort') || 'Verified' }}
                         </div>
                       </div>
                   </div>
@@ -219,60 +297,94 @@
               </div>
             </div>
 
-            <!-- Stores where this product is available -->
-            <div v-if="item.stores?.length" class="ion-margin-top">
-              <p class="section-title">
-                <strong><small>{{ $t('search.details.availableAt') }}</small></strong>
-              </p>
-              <StoreLogoBar
-                  :stores="item.stores"
-                  mode="readonly"
+              <!-- Stores where this product is available -->
+              <div v-if="item.stores?.length" class="info-card">
+                <p class="section-title">
+                  <strong><small>{{ $t('search.details.availableAt') }}</small></strong>
+                </p>
+                <StoreLogoBar
+                    :stores="item.stores"
+                    mode="readonly"
+                />
+              </div>
+
+              <!-- Sponsored card — appears here (scrolled into view) rather
+                   than glued to the top, so it doesn't delay the content
+                   someone opened this page to see. Same as PlaceDetailsView:
+                   partner/trip sponsors only, gold tier only, and skipped
+                   entirely when this product is itself a gold partner's.
+                   Always shown alongside the real banner (not just as a
+                   fallback when it fails to fill) — same always-on treatment
+                   as the recurring native cards in Search/Explore/Trip/Store. -->
+              <HouseAdNativeCard
+                  v-if="showAds && String(item?.partner_tier || '').toLowerCase() !== 'gold'"
+                  class="item-sponsored-card"
+                  mode="trip"
+                  :only-kinds="['partner', 'trip']"
+                  :only-tiers="['gold', 'silver']"
+                  :slot="0"
               />
-            </div>
 
-            <!-- Description -->
-            <p class="section-title ion-margin-top">
-              <strong><small>{{ $t('search.details.description') }}</small></strong>
-            </p>
-            <h5
-                class="description-text ion-no-margin"
-                v-html="highlightedDescription"
-            ></h5>
+              <!-- Description -->
+              <div class="info-card">
+                <p class="section-title">
+                  <strong><small>{{ $t('search.details.description') }}</small></strong>
+                </p>
+                <h5
+                    class="description-text ion-no-margin"
+                    v-html="highlightedDescription"
+                ></h5>
+              </div>
 
-            <!-- Ingredients -->
-            <p class="section-title ion-margin-top">
-              <strong><small>{{ $t('search.details.ingredients') }}</small></strong>
-            </p>
+              <!-- Tags -->
+              <div v-if="item.tags && item.tags.length > 0" class="info-card">
+                <p class="section-title">
+                  <strong><small>{{ $t('addPlace.tagsAndCategories', 'Tags') }}</small></strong>
+                </p>
+                <div class="tag-chips" style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px;">
+                  <ion-chip v-for="tag in item.tags" :key="tag" style="margin: 0; font-size: 12px; height: 24px; padding: 0 10px;">
+                    <ion-label>{{ tag }}</ion-label>
+                  </ion-chip>
+                </div>
+              </div>
 
-            <ul class="ingredients-list">
-              <li v-for="(ing, idx) in visibleIngredients"
-                  :key="idx"
-                  v-html="ing.html">
-              </li>
-            </ul>
+              <!-- Ingredients -->
+              <div class="info-card ingredients-card">
+                <p class="section-title">
+                  <strong><small>{{ $t('search.details.ingredients') }}</small></strong>
+                </p>
 
-            <!-- Toggle button -->
-            <div v-if="highlightedIngredients.length > maxVisible" class="ion-margin-top">
-              <ion-button
-                  fill="clear"
-                  size="small"
-                  @click="showAllIngredients = !showAllIngredients"
-              >
-                {{ !showAllIngredients ? $t('search.details.viewMore') : $t('search.details.viewLess') }}
-              </ion-button>
-            </div>
+                <ul class="ingredients-list">
+                  <li v-for="(ing, idx) in visibleIngredients"
+                      :key="idx"
+                      v-html="ing.html">
+                  </li>
+                </ul>
 
-            <!-- Color Legend -->
-            <div v-if="usedColors.length" class="ion-margin-top ingredient-legend">
-              <p class="section-title"><strong><small>{{ $t('search.details.colorLegend') }}</small></strong></p>
-              <div class="legend-chips">
-                <ion-chip
-                    v-for="color in usedColors"
-                    :key="color"
-                    :class="colorToChipClass(color)"
-                >
-                  {{ $t(colorLabels[color]) }}
-                </ion-chip>
+                <!-- Toggle button -->
+                <div v-if="highlightedIngredients.length > maxVisible" class="ion-margin-top">
+                  <ion-button
+                      fill="clear"
+                      size="small"
+                      @click="showAllIngredients = !showAllIngredients"
+                  >
+                    {{ !showAllIngredients ? $t('search.details.viewMore') : $t('search.details.viewLess') }}
+                  </ion-button>
+                </div>
+
+                <!-- Color Legend -->
+                <div v-if="usedColors.length" class="ion-margin-top ingredient-legend">
+                  <p class="section-title"><strong><small>{{ $t('search.details.colorLegend') }}</small></strong></p>
+                  <div class="legend-chips">
+                    <ion-chip
+                        v-for="color in usedColors"
+                        :key="color"
+                        :class="colorToChipClass(color)"
+                    >
+                      {{ $t(colorLabels[color]) }}
+                    </ion-chip>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -292,7 +404,7 @@
                 >
                   <div v-if="p.partner_tier" class="tier-badge" :class="p.partner_tier.toLowerCase()">
                     <ion-icon :icon="sparkles" />
-                    {{ $t('home.partnerTier', { tier: p.partner_tier.toUpperCase() }) }}
+                    {{ p.partner_tier.toUpperCase() }}
                   </div>
 
                   <div v-if="p.partner_tier === 'Gold' || p.partner_tier === 'Silver'" class="premium-flare"></div>
@@ -322,11 +434,15 @@
                 </ion-card>
               </div>
             </div>
+
+            <!-- Audit History Log -->
+            <AuditHistoryLog ref="auditLogRef" entityType="product" :entityId="item.id" :createdAt="item.created_at" />
           </div>
         </div>
 
       </div>
-      <p v-else class="ion-text-center ion-margin-top">❌ {{ $t('search.details.no-item') }}</p>
+      <!-- Not found: the contribution modal below is the actual prompt — no need for a blank/errorish page behind it -->
+      <p v-else-if="!showContributionPrompt" class="ion-text-center ion-margin-top">❌ {{ $t('search.details.no-item') }}</p>
     </ion-content>
 
     <!-- 🟢 Fullscreen Image Modal -->
@@ -364,6 +480,13 @@
         </Swiper>
       </ion-content>
     </ion-modal>
+
+    <save-limit-sheet
+      v-model:open="showSaveLimitSheet"
+      kind="item"
+      @upgraded="onSaveLimitUpgraded"
+      @manage="router.push('/profile/saved-items')"
+    />
 
     <!-- Save to Folder Modal -->
     <ion-modal :is-open="showSaveModal" @didDismiss="showSaveModal = false" :initial-breakpoint="0.5" :breakpoints="[0, 0.5, 0.75]">
@@ -404,6 +527,44 @@
       />
     </ion-modal>
 
+    <!-- Contribution Prompt Modal -->
+    <ion-modal :is-open="showContributionPrompt" class="contribution-modal" @didDismiss="dismissContributionPrompt">
+      <div class="modal-wrapper ion-padding">
+        <div class="modal-header ion-text-center">
+           <div class="icon-circle">
+             <ion-icon :icon="sparklesOutline" color="carrot" />
+           </div>
+           <h2 class="modal-title">{{ $t('scanIngredients.scan.contributionPrompt.title') }}</h2>
+        </div>
+
+        <div class="modal-body">
+          <p class="main-message">
+            {{ $t('search.details.no-item') }}: <strong>{{ barcode }}</strong>.
+            <br><br>
+            {{ $t('scanIngredients.scan.contributionPrompt.message', { name: barcode, status: $t('search.status.Unknown') }) }}
+          </p>
+
+          <div class="motivation-box">
+             <div class="islamic-ornament">📿</div>
+             <p class="religious-text">
+               {{ $t('scanIngredients.scan.contributionPrompt.motivation') }}
+             </p>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <ion-button expand="block" color="carrot" class="action-btn" @click="() => { showContributionPrompt = false; goToAddProduct(); }">
+            <ion-icon slot="start" :icon="addOutline" />
+            {{ $t('scanIngredients.scan.contributionPrompt.action') }}
+          </ion-button>
+          <ion-button expand="block" fill="clear" color="medium" @click="dismissContributionPrompt">
+            {{ $t('scanIngredients.scan.contributionPrompt.skip') }}
+          </ion-button>
+        </div>
+
+      </div>
+    </ion-modal>
+
     <!-- Toasts for save actions -->
     <ion-toast
       :is-open="showSuccessToast"
@@ -437,13 +598,14 @@ import {
   IonPage,
   IonContent, IonSkeletonText, IonChip, IonButton, IonHeader, IonModal,
   IonIcon, IonItem, IonLabel, IonCard, IonInput, IonList, IonListHeader, IonToast,
-  popoverController
+  popoverController, onIonViewDidEnter, onIonViewWillEnter
 } from '@ionic/vue'
 import { onMounted, ref, nextTick, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { useIonRouter } from '@ionic/vue'
 import { Capacitor } from '@capacitor/core'
+import HouseAdNativeCard from '@/components/ads/HouseAdNativeCard.vue'
 import { supabase } from '@/plugins/supabaseClient'
 import {Swiper, SwiperSlide} from "swiper/vue";
 import {Pagination, Zoom} from "swiper/modules";
@@ -451,13 +613,33 @@ import 'swiper/css'
 import 'swiper/css/pagination'
 import 'swiper/css/zoom'
 import AppHeader from "@/components/AppHeader.vue";
-import {alertCircleOutline, bagOutline, barcodeOutline, createOutline, bookmarkOutline, bookmark, addOutline, folderOutline, sparkles, star, shieldCheckmarkOutline, shareSocialOutline} from "ionicons/icons";
+import AuditHistoryLog from "@/components/AuditHistoryLog.vue";
+import {
+  alertCircleOutline,
+  barcodeOutline,
+  createOutline,
+  bookmarkOutline,
+  bookmark,
+  addOutline,
+  folderOutline,
+  sparkles,
+  star,
+  shieldCheckmarkOutline,
+  informationCircleOutline,
+  shareSocialOutline,
+  sparklesOutline // Added for contribution prompt
+} from "ionicons/icons";
 import AddProductView from "@/views/add-product/AddProductView.vue";
 import { userRole } from '@/composables/userProfile'
-import { isDonor, refreshSubscriptionStatus } from '@/composables/useSubscriptionStatus'
+import { isDonor } from '@/composables/useSubscriptionStatus'
+import { useAdSlotCollapsed, adSpaceStyle } from '@/composables/useAdFallback'
 import { ActivityLogService } from "@/services/ActivityLogService";
-import { RevenueCatUI, PAYWALL_RESULT } from '@revenuecat/purchases-capacitor-ui'
-import { useNotifier } from "@/composables/useNotifier";
+import SaveLimitSheet from '@/components/SaveLimitSheet.vue'
+import { FREE_SAVE_LIMIT } from '@/constants/savedLimits'
+import { scheduleBannerUpdate } from '@/plugins/admob'
+
+const showContributionPrompt = ref(false) // Added state
+const auditLogRef = ref<InstanceType<typeof AuditHistoryLog> | null>(null)
 
 const showEditModal = ref(false)
 const route = useRoute()
@@ -465,15 +647,19 @@ const ionRouter = useIonRouter()
 const router = useRouter()
 const barcode = route.params.barcode as string
 const { t } = useI18n()
-const { notifyEvent } = useNotifier()
 
 const isScrolled = ref(false)
 const handleScroll = (ev: any) => {
   isScrolled.value = ev.detail.scrollTop > 80
 }
 
+onIonViewDidEnter(() => {
+  scheduleBannerUpdate()
+})
+
 const loading = ref(true)
 const isNative = ref(Capacitor.isNativePlatform())
+const adSlotCollapsed = useAdSlotCollapsed('ad-space-item-details', isDonor)
 const modules = [Pagination, Zoom];
 
 const showAllIngredients = ref(false)
@@ -482,6 +668,7 @@ const maxVisible = 5
 const ingredientDictionary = ref<Record<string, string>>({});
 
 const showSaveModal = ref(false);
+const showSaveLimitSheet = ref(false);
 const folders = ref<{ id: string, name: string }[]>([]);
 const isItemSaved = ref(false); 
 const newFolderName = ref('');
@@ -530,6 +717,7 @@ const item = ref<Product | null>(null)
 const showImageModal = ref(false)
 const activeImageIndex = ref(0)
 const relatedProducts = ref<RelatedProduct[]>([])
+const alternateBarcodes = ref<string[]>([])
 
 const colorPriority: Record<string, number> = {
   "--ion-color-danger": 1,   // haram
@@ -542,7 +730,7 @@ const colorPriority: Record<string, number> = {
 
 // If this page should show ads (set meta accordingly), keep this true and include the slot.
 // If you used meta:{noAds:true} you can leave the slot out and keep showAds = false.
-const showAds = false // set true only if meta.adSpaceId is configured
+const showAds = computed(() => !isDonor.value)
 
 dayjs.extend(utc)
 dayjs.extend(timezone)
@@ -551,6 +739,70 @@ dayjs.extend(relativeTime)
 function fromNowToTaipei(dateString?: string) {
   if (!dateString) return ''
   return dayjs.utc(dateString).tz('Asia/Taipei').fromNow()
+}
+
+/**
+ * "Last updated" and verdict-change notice. A product's verdict can change when its info is reviewed;
+ * without a hint, users who saw a different verdict days earlier get confused (yearly survey, Nov 2026).
+ */
+interface VerdictInfo {
+  last_updated_at: string | null
+  status_changed_at: string | null
+  previous_status: string | null
+  ingredients_changed: boolean | null
+}
+const verdictInfo = ref<VerdictInfo | null>(null)
+const VERDICT_CHANGE_NOTICE_DAYS = 60
+const KNOWN_VERDICTS = ['Halal', 'Muslim-friendly', 'Syubhah', 'Haram']
+
+async function loadVerdictInfo(productId?: string) {
+  verdictInfo.value = null
+  if (!productId) return
+  try {
+    const { data, error } = await supabase.rpc('product_verdict_info', { p_product_id: productId })
+    if (!error && data) verdictInfo.value = data as VerdictInfo
+  } catch (err) {
+    console.warn('Verdict info load failed:', err)
+  }
+}
+
+function formatTaipeiDate(dateString?: string | null) {
+  if (!dateString) return ''
+  return dayjs.utc(dateString).tz('Asia/Taipei').format('D MMM YYYY')
+}
+
+const lastUpdatedLabel = computed(() => {
+  const when = verdictInfo.value?.last_updated_at || item.value?.created_at
+  return when ? formatTaipeiDate(when) : ''
+})
+
+// Only for a recent change from one real verdict to a different one (not "Unknown" -> first verdict).
+const verdictChange = computed(() => {
+  const info = verdictInfo.value
+  const current = item.value?.status
+  if (!info?.status_changed_at || !info.previous_status || !current) return null
+  if (!KNOWN_VERDICTS.includes(info.previous_status) || info.previous_status === current) return null
+  const ageDays = dayjs().diff(dayjs.utc(info.status_changed_at), 'day')
+  if (ageDays > VERDICT_CHANGE_NOTICE_DAYS) return null
+  return {
+    from: info.previous_status,
+    when: formatTaipeiDate(info.status_changed_at),
+    ingredientsChanged: !!info.ingredients_changed,
+  }
+})
+
+function goToAddProduct() {
+  router.push({
+    path: '/add',
+    query: { barcode: barcode }
+  })
+}
+
+function dismissContributionPrompt() {
+  showContributionPrompt.value = false
+  // Skipping here means there's no item to show behind the modal — send the
+  // user back to the product list instead of stranding them on a blank page.
+  ionRouter.navigate('/search', 'back', 'replace')
 }
 
 function getColorFromHtml(html: string): string {
@@ -565,7 +817,7 @@ async function fetchProductCertifications(productId: string) {
       .from('product_certifications')
       .select(`
       certified_at,
-      partners (
+      partners:partner_id (
         id,
         name,
         logo_url,
@@ -578,11 +830,14 @@ async function fetchProductCertifications(productId: string) {
 
   if (!error && data) {
     certifications.value = (data as any[])
-        .filter(c => c.partner && c.partner.partner_tier === 'gold')
-        .map(c => ({
-          certified_at: c.certified_at,
-          partner: c.partner // This is now treated as a single object
-        })) as ProductCertification[]
+        .map(c => {
+          const body = Array.isArray(c.partners) ? c.partners[0] : c.partners
+          return {
+            certified_at: c.certified_at,
+            partner: body
+          }
+        })
+        .filter(c => c.partner && (c.partner.partner_tier || '').toLowerCase() === 'gold') as ProductCertification[]
   }
 
   loadingCertifications.value = false
@@ -618,72 +873,20 @@ async function loadFoldersAndSavedState() {
   totalSavedItems.value = count || 0;
 }
 
-async function presentPaywall(): Promise<boolean> {
-  if (!Capacitor.isNativePlatform()) {
-    console.warn("[RC] Paywall can only run on native.");
-    return false;
-  }
-
-  try {
-    const { result } = await RevenueCatUI.presentPaywall();
-
-    switch (result) {
-      case PAYWALL_RESULT.PURCHASED:
-      case PAYWALL_RESULT.RESTORED:
-        // 🔄 Refresh subscription state
-        await refreshSubscriptionStatus({ syncToServer: true })
-
-        await ActivityLogService.log("pro_purchase_success", {
-          source: "save_item_limit"
-        })
-
-        const { data: { user } } = await supabase.auth.getUser();
-        await notifyEvent(
-          'pro_purchase_success',
-          '💎 New Pro Member!',
-          `User ${user?.email ?? 'unknown'} has just subscribed to Halal Formosa Pro!`,
-          undefined,
-          {
-            source: 'item_details_view',
-            email: user?.email,
-            user_id: user?.id
-          },
-          ['discord']
-        ).catch(console.error);
-
-        return true
-
-      case PAYWALL_RESULT.CANCELLED:
-        return false
-
-      case PAYWALL_RESULT.ERROR:
-      default:
-        return false
-    }
-
-  } catch (err) {
-    console.error("Paywall failed:", err)
-    return false
-  }
-}
-
 async function openSaveModal() {
   await popoverController.dismiss();
-  
-  if (!isItemSaved.value && !isDonor.value && totalSavedItems.value >= 10) {
-    await ActivityLogService.log("pro_paywall_trigger", {
-      source: "save_item_limit"
-    });
 
-    const purchased = await presentPaywall();
-
-    if (!purchased) return;
-
-    // 🔁 Yield small delay for subscription reactive update
-    await new Promise(r => setTimeout(r, 300));
+  if (!isItemSaved.value && !isDonor.value && totalSavedItems.value >= FREE_SAVE_LIMIT) {
+    showSaveLimitSheet.value = true;
+    return;
   }
   
   showSaveModal.value = true;
+}
+
+// Pro was just bought from the limit sheet: carry on saving once the sheet has finished closing.
+function onSaveLimitUpgraded() {
+  setTimeout(() => { showSaveModal.value = true }, 300);
 }
 
 async function createNewFolder() {
@@ -696,6 +899,7 @@ async function createNewFolder() {
     .single();
 
   if (data && !error) {
+    ActivityLogService.log('saved_folder_create', { kind: 'product', folder_id: data.id });
     folders.value.unshift(data);
     newFolderName.value = ''; // Reset input
     
@@ -742,10 +946,12 @@ async function saveToFolder(folderId: string) {
       toastMessage.value = t('search.details.itemAlreadySaved');
       showWarningToast.value = true;
     } else {
+      ActivityLogService.log('product_save_success', { barcode: item.value.barcode, folder_id: folderId });
       toastMessage.value = t('search.details.itemSavedSuccess');
       showSuccessToast.value = true;
     }
   } else {
+    ActivityLogService.log('product_save_failed', { barcode: item.value.barcode, folder_id: folderId, error_message: error?.message });
     console.error("Failed to save", error);
     toastMessage.value = t('search.details.saveFailed');
     showErrorToast.value = true;
@@ -761,6 +967,7 @@ async function fetchRelatedProducts() {
       .from("products")
       .select("barcode, name, status, photo_front_url, product_category_id, created_at, partner:partners(partner_tier)")
       .eq("approved", true)
+      .eq("is_archived", false)
       .eq("product_category_id", item.value.product_category_id)
       .neq("barcode", item.value.barcode)
       .order("created_at", { ascending: false })
@@ -867,6 +1074,16 @@ async function editItem() {
 
 async function reportItem() {
   if (item.value) {
+    if (!userId.value) {
+      // If not logged in, we need to dismiss the popover first then redirect
+      await popoverController.dismiss();
+      router.push({
+        path: '/login',
+        query: { redirect: route.fullPath }
+      });
+      return;
+    }
+
     ActivityLogService.log("product_report_click", {
       barcode: item.value.barcode,
       product_name: item.value.name
@@ -929,6 +1146,7 @@ async function handleProductUpdated() {
         item.value.author = authorData
       }
     }
+    auditLogRef.value?.fetchLogs()
   }
 }
 
@@ -1033,48 +1251,86 @@ function colorToChipClass(color: string): string {
   }
 }
 
-onMounted(async () => {
+async function loadProductData() {
   loading.value = true
 
   try {
-    const [
-      { data: { user } },
-      prodRes,
-      hlRes
-    ] = await Promise.all([
-      supabase.auth.getUser(),
-      supabase
-          .from('products')
-          .select(`
+    // Kick these off now but don't let them gate the found/not-found signal —
+    // they're not needed to answer "does this item exist".
+    const userPromise: Promise<void> = (async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) userId.value = user.id
+    })().catch(err => console.error('Auth lookup failed:', err))
+
+    ;(async () => {
+      const { data, error } = await supabase
+          .from('ingredient_highlights')
+          .select('keyword, color')
+
+      if (error) {
+        console.error('Highlights load error:', error)
+      } else if (data) {
+        ingredientDictionary.value = Object.fromEntries(
+            data.map(h => [h.keyword, h.color])
+        )
+      }
+    })().catch(err => console.error('Highlights load failed:', err))
+
+    // The one query that decides "found" vs "not found" — resolves on its
+    // own so that signal reaches the user as fast as possible.
+    let { data: prodData, error: prodError } = await supabase
+        .from('products')
+        .select(`
           *,
           product_categories ( id, name ),
           product_stores (
             store_id,
             stores ( id, name, logo_url )
           ),
-          partner:partners(partner_tier)
+          partner:partners(id, name, partner_tier, partner_type, logo_url, verified, is_active)
         `)
-          .eq('barcode', barcode)
-          .maybeSingle(),
-      supabase
-          .from('ingredient_highlights')
-          .select('keyword, color')
-    ])
+        .eq('barcode', barcode)
+        .maybeSingle()
 
-    // ✅ current user (READ ONLY)
-    if (user) {
-      userId.value = user.id
+    // This barcode might have been merged into another product — before
+    // treating it as genuinely unknown, check whether it now resolves to a
+    // survivor product via product_barcodes.
+    let resolvedAliasBarcode: string | null = null
+    if (!prodData && !prodError) {
+      const { data: aliasData } = await supabase
+          .from('product_barcodes')
+          .select(`
+            products (
+              *,
+              product_categories ( id, name ),
+              product_stores (
+                store_id,
+                stores ( id, name, logo_url )
+              ),
+              partner:partners(id, name, partner_tier, partner_type, logo_url, verified, is_active)
+            )
+          `)
+          .eq('barcode', barcode)
+          .maybeSingle()
+
+      const aliasedProduct: any = Array.isArray(aliasData?.products) ? aliasData?.products[0] : aliasData?.products
+      if (aliasedProduct) {
+        prodData = aliasedProduct
+        resolvedAliasBarcode = aliasedProduct.barcode
+      }
     }
 
     // ✅ product
-    if (prodRes.error) {
-      console.error('Product load error:', prodRes.error)
-    } else if (prodRes.data) {
+    if (prodError) {
+      console.error('Product load error:', prodError)
+    } else if (prodData) {
+      const partnerBody = Array.isArray(prodData.partner) ? prodData.partner[0] : prodData.partner
       const product: Product = {
-        ...prodRes.data,
+        ...prodData,
         author: null,
-        partner_tier: Array.isArray(prodRes.data.partner) ? prodRes.data.partner[0]?.partner_tier : (prodRes.data.partner as any)?.partner_tier,
-        stores: prodRes.data.product_stores?.map((ps: any) => ({
+        partner: partnerBody,
+        partner_tier: partnerBody?.partner_tier,
+        stores: prodData.product_stores?.map((ps: any) => ({
           id: ps.stores.id as string,
           name: ps.stores.name,
           logo_url: ps.stores.logo_url ?? undefined,
@@ -1083,48 +1339,131 @@ onMounted(async () => {
 
       // ✅ assign once
       item.value = product
+      void loadVerdictInfo(product.id)
 
-      // Fetch author separately due to missing schema relationship
-      if (prodRes.data.added_by) {
-        const { data: authorData } = await supabase
-          .from('user_profiles')
-          .select('display_name, public_profile')
-          .eq('id', prodRes.data.added_by)
-          .maybeSingle()
-        if (authorData && item.value) {
-          item.value.author = authorData
-        }
+      // If we got here via a merged-away barcode, fix the URL to the
+      // canonical one (bookmarks/shares/QR codes should settle on it too).
+      if (resolvedAliasBarcode && resolvedAliasBarcode !== barcode) {
+        router.replace(`/item/${resolvedAliasBarcode}`)
       }
+
+      // Reveal the page now — core product data is ready. Everything below
+      // (author, certifications, related products, folders, view logging)
+      // is secondary and loads in behind it instead of blocking the skeleton.
+      loading.value = false
+      await nextTick()
+      scheduleBannerUpdate()
+
+      const secondary: Promise<void>[] = []
+
+      // Author profiles
+      if (prodData.added_by) {
+        secondary.push((async () => {
+          const { data: authorData } = await supabase
+            .from('user_profiles')
+            .select('display_name, public_profile')
+            .eq('id', prodData.added_by)
+            .maybeSingle()
+          if (authorData && item.value) {
+            item.value.author = authorData
+          }
+        })())
+      }
+
+      // Certifications
       if (product.id) {
-        await fetchProductCertifications(product.id)
+        secondary.push((async () => {
+          await fetchProductCertifications(product.id)
+        })())
       }
 
+      // View counts & Logging
+      secondary.push((async () => {
+        await userPromise
+        let hasViewed = false
+        const viewedKey = `viewed_prod_${product.barcode}`
+        if (localStorage.getItem(viewedKey)) {
+          hasViewed = true
+        } else {
+          if (userId.value) {
+            const { data: existingLogs, error: logError } = await supabase
+              .from('activity_log')
+              .select('id')
+              .eq('user_id', userId.value)
+              .eq('activity_type', 'product_details_open')
+              .eq('entity_id', product.barcode)
+              .limit(1)
 
-      // ✅ TS now knows this is non-null
-      await ActivityLogService.log("product_details_open", {
-        barcode: product.barcode,
-        product_name: product.name,
-        status: product.status,
-        category: product.product_categories?.name || null,
-      })
+            if (!logError && existingLogs && existingLogs.length > 0) {
+              hasViewed = true
+              localStorage.setItem(viewedKey, 'true')
+            }
+          }
+        }
 
-      await fetchRelatedProducts()
-      await loadFoldersAndSavedState()
+        if (!hasViewed) {
+          await ActivityLogService.log("product_details_open", {
+            barcode: product.barcode,
+            product_name: product.name,
+            status: product.status,
+            category: product.product_categories?.name || null,
+          })
+          localStorage.setItem(viewedKey, 'true')
+        }
+      })())
+
+      // Related Products
+      secondary.push((async () => {
+        await fetchRelatedProducts()
+      })())
+
+      // Other barcodes merged into this same product, if any
+      secondary.push((async () => {
+        const { data } = await supabase
+          .from('product_barcodes')
+          .select('barcode')
+          .eq('product_id', product.id)
+          .neq('barcode', product.barcode)
+        alternateBarcodes.value = (data ?? []).map(r => r.barcode)
+      })())
+
+      // Folders & Saved state
+      secondary.push((async () => {
+        await userPromise
+        await loadFoldersAndSavedState()
+      })())
+
+      Promise.all(secondary).catch(err => console.error('Secondary product data load failed:', err))
+    } else if (!prodData && !prodError) {
+      // Product not found in database -> Show contribution prompt
+      ActivityLogService.log('product_not_found', { barcode })
+      showContributionPrompt.value = true
+      loading.value = false
+      await nextTick()
+      scheduleBannerUpdate()
+
+      // 📝 Silently log the unknown scan. The weekly `scan-digest` function
+      // aggregates & ranks these — no per-scan Discord spam.
+      const { error: logScanError } = await supabase.rpc('log_unknown_scan', { p_barcode: barcode })
+      if (logScanError) console.error('log_unknown_scan failed:', logScanError)
     }
 
-    // ✅ ingredient highlights
-    if (hlRes.error) {
-      console.error('Highlights load error:', hlRes.error)
-    } else if (hlRes.data) {
-      ingredientDictionary.value = Object.fromEntries(
-          hlRes.data.map(h => [h.keyword, h.color])
-      )
-    }
-
+  } catch (err) {
+    console.error('loadProductData failed:', err)
   } finally {
+    // Safety net in case an error above skipped the branch-local loading.value = false
     loading.value = false
-    await nextTick()
-    ;(window as any).scheduleBannerUpdate?.()
+  }
+}
+
+onIonViewWillEnter(async () => {
+  await loadProductData()
+  auditLogRef.value?.fetchLogs()
+
+  // Deep-linked here from a rejection notification to fix and resubmit.
+  if (route.query.edit === 'true' && canEdit.value) {
+    showEditModal.value = true
+    router.replace({ path: route.path, query: {} })
   }
 })
 
@@ -1162,6 +1501,58 @@ const share = async () => {
 </script>
 
 <style scoped>
+/* ===============================
+   Premium card-grouped sections
+   =============================== */
+.info-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--card-shadow);
+  padding: 14px 16px 16px;
+}
+
+.info-card .section-title {
+  margin-bottom: 6px;
+}
+
+/* Flowing details sheet: one card surface from title through ingredients.
+   Sections are told apart by spacing alone (no hairlines/nested boxes),
+   matching a reference design that uses generous whitespace instead of
+   dividers. */
+/* No card surface of its own — the outer .details-container sheet
+   (rounded top, curving over the hero image) already separates this
+   from the page; a second nested card here was redundant. */
+.details-flow {
+  background: transparent;
+  padding: 18px 0 20px;
+}
+
+.details-flow .info-card {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  border-radius: 0;
+  padding: 0 16px;
+}
+
+.details-flow .info-card + .info-card {
+  margin-top: 22px;
+}
+
+.ingredients-card .ingredient-legend {
+  margin-top: 16px;
+}
+
+/* Verdict chip: same semantic colors, bigger and bolder for a "hero" feel */
+.verdict-chip {
+  height: 34px;
+  padding: 0 16px;
+  font-size: 0.92rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
 /* TIERED PAGE STYLES - Inherit from global variables if needed, otherwise clean up redundant local backgrounds */
 .tier-gold .official-verified-tag {
   color: #ca8a04;
@@ -1170,15 +1561,9 @@ const share = async () => {
   color: #64748b;
 }
 
-.details-container {
-  background: var(--ion-background-color); /* Default theme background */
-  margin-top: -24px;
-  position: relative;
-  border-radius: 24px 24px 0 0;
-  min-height: 100vh; /* Ensure background fills to bottom */
-  z-index: 10;
-  overflow: hidden;
-}
+
+
+
 
 /* PREMIUM FLARE */
 .premium-flare {
@@ -1217,8 +1602,14 @@ const share = async () => {
 .product-title {
   margin: 0;
   font-weight: 800;
-  font-size: 1.6rem;
+  font-size: 1.65rem;
+  letter-spacing: -0.02em;
   line-height: 1.2;
+  /* A global, unscoped .product-title rule in SearchView.vue also targets this class
+     and falls back to white text when --ion-text-color isn't set (i.e. outside dark
+     palette) — declare color explicitly here so this scoped rule's higher specificity
+     wins instead of leaking that fallback in. */
+  color: var(--ion-text-color, var(--ion-color-step-900));
 }
 
 .barcode-row {
@@ -1245,6 +1636,32 @@ const share = async () => {
   font-size: 12px;
   color: var(--ion-color-medium);
   margin: 2px 0 12px 0;
+}
+
+.verdict-note {
+  margin-top: 10px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--ion-color-medium);
+}
+.verdict-note p {
+  margin: 0;
+}
+.verdict-note-change {
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+  margin-bottom: 4px !important;
+  padding: 8px 10px !important;
+  border-radius: 10px;
+  background: rgba(230, 126, 34, 0.1);
+  color: var(--ion-text-color);
+}
+.verdict-note-change ion-icon {
+  flex: 0 0 auto;
+  margin-top: 1px;
+  font-size: 15px;
+  color: #c96718;
 }
 
 .section-title {
@@ -1303,6 +1720,28 @@ const share = async () => {
   color: #ca8a04;
 }
 
+.provided-by-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  font-size: 0.85rem;
+  color: var(--ion-color-medium);
+  cursor: pointer;
+}
+
+.provided-by-row strong {
+  color: var(--ion-text-color);
+}
+
+.provided-by-logo {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  object-fit: contain;
+  background: #fff;
+}
+
 /* TEXT CONTENT */
 .description-text {
   font-size: 1.1rem;
@@ -1324,11 +1763,29 @@ const share = async () => {
 .legend-chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 4px;
+  gap: 4px;
+  margin-top: 2px;
+}
+
+/* Legend is a small key, not content — keep the chips compact */
+.legend-chips ion-chip {
+  margin: 0;
+  height: 20px;
+  min-height: 0;
+  padding: 0 8px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  line-height: 20px;
+  border-radius: 6px;
 }
 
 /* RELATED SECTION */
+/* Breathing room around the sponsored card, between "Available at" and Description */
+.item-sponsored-card.item-sponsored-card {
+  margin-top: 24px;
+  margin-bottom: 28px;
+}
+
 .related-section {
   margin-top: 24px;
   padding-top: 16px;
@@ -1461,8 +1918,246 @@ ion-skeleton-text {
   color: var(--ion-color-dark); /* default: theme-based */
 }
 
+/* === GOLD CERTIFICATION BADGE === */
+.gold-cert-card {
+  position: relative;
+  background: linear-gradient(135deg, #fef9c3 0%, #fef3c7 100%);
+  border: 1px solid #facc15;
+  border-radius: 16px;
+  padding: 12px;
+  margin-top: 12px;
+  box-shadow: 0 4px 12px rgba(250, 204, 21, 0.15);
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  cursor: pointer;
+}
+
+.gold-cert-card:active {
+  transform: scale(0.98);
+}
+
+.gold-cert-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+  z-index: 2;
+}
+
+.gold-cert-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.gold-cert-logo {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  background: white;
+  padding: 4px;
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+}
+
+.gold-cert-name {
+  font-weight: 700;
+  font-size: 1rem;
+  color: #854d0e;
+}
+
+.premium-verified-tag {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #a16207;
+  margin-top: 2px;
+}
+
+/* Dark mode overrides */
+.ion-palette-dark .gold-cert-card {
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.1) 0%, rgba(245, 158, 11, 0.05) 100%);
+  border-color: rgba(250, 204, 21, 0.4);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3), 0 0 10px rgba(250, 204, 21, 0.1);
+}
+
+.ion-palette-dark .gold-cert-name {
+  color: #fbbf24;
+}
+
+.ion-palette-dark .premium-verified-tag {
+  color: #fcd34d;
+  opacity: 0.9;
+}
+
+.ion-palette-dark .gold-cert-logo {
+  background: white; /* Keep logo readable */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
 /* Tier-specific product name colors in related list */
 .product-name-gold   { color: #ca8a04 !important; }
 .product-name-silver { color: #475569 !important; }
 .product-name-bronze { color: #b45309 !important; }
+
+/* 🎁 Contribution Modal Styles */
+.contribution-modal {
+  --height: auto;
+  --border-radius: 28px 28px 0 0;
+  align-items: flex-end;
+}
+
+.contribution-modal .modal-wrapper {
+  background: var(--ion-background-color);
+  padding: 32px 24px;
+  border-radius: 28px 28px 0 0;
+}
+
+.contribution-modal .modal-header {
+  margin-bottom: 24px;
+}
+
+.contribution-modal .icon-circle {
+  width: 64px;
+  height: 64px;
+  background: rgba(var(--ion-color-carrot-rgb), 0.1);
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 0 auto 16px;
+  font-size: 32px;
+  box-shadow: 0 4px 12px rgba(var(--ion-color-carrot-rgb), 0.1);
+}
+
+.contribution-modal .modal-title {
+  font-weight: 800;
+  font-size: 24px;
+  margin: 0;
+  color: var(--ion-color-step-900);
+}
+
+.contribution-modal .main-message {
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--ion-color-step-700);
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.contribution-modal .motivation-box {
+  background: var(--card-inner-bg);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  text-align: center;
+  margin-bottom: 32px;
+  border: 1px dashed rgba(var(--ion-color-carrot-rgb), 0.3);
+  box-shadow: var(--card-shadow);
+}
+
+.contribution-modal .islamic-ornament {
+  font-size: 24px;
+  margin-bottom: 8px;
+}
+
+.contribution-modal .religious-text {
+  font-size: 14px;
+  font-style: italic;
+  line-height: 1.6;
+  color: var(--ion-color-step-600);
+  margin: 0;
+}
+
+.contribution-modal .modal-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+
+
+.contribution-modal .action-btn {
+  height: 54px;
+  font-weight: 700;
+  font-size: 16px;
+  --border-radius: 14px;
+}
+.skeleton-container {
+  display: flex;
+  flex-direction: column;
+}
+.skeleton-hero {
+  width: 100%;
+  height: 300px;
+  margin-top: 0;
+  margin-bottom: 8px;
+}
+.skeleton-title-line {
+  width: 85%;
+  height: 24px;
+  border-radius: 4px;
+  margin-bottom: 8px;
+}
+.skeleton-subtitle-line {
+  width: 50%;
+  height: 14px;
+  border-radius: 4px;
+  margin-bottom: 8px;
+}
+.skeleton-meta-line {
+  width: 35%;
+  height: 12px;
+  border-radius: 4px;
+  margin-bottom: 16px;
+}
+.skeleton-status-badge {
+  width: 90px;
+  height: 32px;
+  border-radius: 16px;
+  margin-bottom: 24px;
+}
+.skeleton-section-group {
+  margin-bottom: 20px;
+}
+.skeleton-section-title {
+  width: 30%;
+  height: 12px;
+  border-radius: 2px;
+  margin-bottom: 12px;
+}
+.skeleton-stores-row {
+  display: flex;
+  gap: 12px;
+}
+.skeleton-store-circle {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+}
+.skeleton-desc-line {
+  width: 75%;
+  height: 16px;
+  border-radius: 4px;
+}
+.skeleton-tags-row {
+  display: flex;
+  gap: 8px;
+}
+.skeleton-tag-pill {
+  width: 70px;
+  height: 28px;
+  border-radius: 14px;
+}
+.skeleton-ingredients-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.skeleton-ingredient-item {
+  width: 60%;
+  height: 14px;
+  border-radius: 4px;
+}
 </style>

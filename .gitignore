@@ -31,3 +31,15 @@ npm-debug.log*
 /platforms
 /plugins
 /www
+/cblink
+/halalformosa
+/screenshots
+/scratch
+/temp
+/supabase/*
+!/supabase/functions/
+
+# Old build backup (compiled bundle)
+/App_Backup/
+# Welcome Party 2026 email/report working files (contain registrant personal data)
+/event-email/

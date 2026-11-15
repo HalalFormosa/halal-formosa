@@ -1,12 +1,23 @@
 import { createRouter, createWebHistory } from '@ionic/vue-router';
 import { RouteRecordRaw } from 'vue-router';
 import { supabase } from '@/plugins/supabaseClient';
+import { performBotChecks } from '@/utils/botShield';
+import { Capacitor } from '@capacitor/core';
+import { isDeviceOnline } from '@/utils/connectivity';
+
+const isIos = Capacitor.getPlatform() === 'ios';
+// LevelPlay mediation (ironSource, with AdMob wired in as one of its mediated
+// networks) serves every banner placement — see src/plugins/admob.ts.
+const getLevelPlayAdId = (iosId: string, androidId: string) => isIos ? iosId : androidId;
+
 
 import {
     isAdmin,
     isContributor,
     isProfileComplete,
-    profileLoaded
+    profileLoaded,
+    profileSkipped,
+    currentUser
 } from '@/composables/userProfile'
 
 
@@ -14,6 +25,7 @@ import {
 import SearchView from '@/views/search/SearchView.vue';
 import ExploreView from '@/views/explore/ExploreView.vue';
 import ScanIngredientsView from '@/views/scan/ScanIngredientsView.vue';
+import { requestYearlySurveyFlow } from '@/composables/useYearlySurvey';
 
 const ALLOWED_WHEN_PROFILE_INCOMPLETE = [
     '/profile',
@@ -30,15 +42,39 @@ const routes: Array<RouteRecordRaw> = [
         children: [
             { path: '', redirect: '/home' },
             { path: 'home', component: () => import('@/views/home/HomeView.vue') },
-            { path: 'search', component: SearchView, meta: { adSpaceId: 'ad-space-search', adId: import.meta.env.VITE_ADMOB_SEARCH_BANNER_ID } },
-            { path: 'explore', component: ExploreView, meta: { adSpaceId: 'ad-space-explore', adId: import.meta.env.VITE_ADMOB_EXPLORE_BANNER_ID } },
+            { path: 'search', component: SearchView, meta: { adSpaceId: 'ad-space-search', levelPlayAdId: getLevelPlayAdId(import.meta.env.VITE_LEVELPLAY_IOS_SEARCH_BANNER_ID, import.meta.env.VITE_LEVELPLAY_ANDROID_SEARCH_BANNER_ID) } },
+            { path: 'explore', component: ExploreView, meta: { adSpaceId: 'ad-space-explore', levelPlayAdId: getLevelPlayAdId(import.meta.env.VITE_LEVELPLAY_IOS_EXPLORE_BANNER_ID, import.meta.env.VITE_LEVELPLAY_ANDROID_EXPLORE_BANNER_ID) } },
+            { path: 'explore/add', name: 'ExploreAdd', component: () => import('@/views/explore/AddPlaceView.vue'), meta: { requiresAuth: true } },
             {
                 path: 'trip',
                 component: () => import('@/views/trip/TripListView.vue'),
-                meta: { noAds: false }
+                meta: {
+                    adSpaceId: 'ad-space-trip',
+                    levelPlayAdId: getLevelPlayAdId(import.meta.env.VITE_LEVELPLAY_IOS_TRIP_BANNER_ID, import.meta.env.VITE_LEVELPLAY_ANDROID_TRIP_BANNER_ID)
+                }
             },
-            { path: 'add', component: () => import('@/views/add-product/AddProductView.vue'), meta: { requiresAuth: true } },
+            {
+                path: 'store',
+                component: () => import('@/views/store/StoreView.vue'),
+                meta: {
+                    adSpaceId: 'ad-space-store',
+                    levelPlayAdId: getLevelPlayAdId(import.meta.env.VITE_LEVELPLAY_IOS_STORE_BANNER_ID, import.meta.env.VITE_LEVELPLAY_ANDROID_STORE_BANNER_ID)
+                }
+            },
+            { path: 'add', component: () => import('@/views/add-product/AddProductView.vue'), meta: { requiresAuth: true, noTabs: true } },
             { path: 'profile', component: () => import('@/views/profile/ProfileView.vue'), meta: { noAds: true } },
+            {
+        path: '/reels',
+        name: 'FullReels',
+        component: () => import('@/views/home/FullReelsView.vue'),
+        meta: { noAds: true, noTabs: true }
+    },
+    {
+        path: '/analytics/:type',
+        name: 'Analytics',
+        component: () => import('@/views/analytics/AnalyticsView.vue'),
+        meta: { noTabs: true, noAds: true }
+    }
         ],
     },
     {
@@ -53,12 +89,117 @@ const routes: Array<RouteRecordRaw> = [
         component: () => import('@/views/profile/SavedItemsView.vue'),
         meta: { requiresAuth: true, noTabs: true, noAds: true }
     },
+    {
+        path: '/profile/saved-locations',
+        name: 'SavedLocations',
+        component: () => import('@/views/profile/SavedLocationsView.vue'),
+        meta: { requiresAuth: true, noTabs: true, noAds: true }
+    },
+    {
+        path: '/profile/scan-history',
+        name: 'ScanHistory',
+        component: () => import('@/views/profile/ScanHistoryView.vue'),
+        meta: { requiresAuth: true, noTabs: true, noAds: true }
+    },
+    {
+        path: '/profile/ingredient-encyclopedia',
+        name: 'IngredientEncyclopedia',
+        component: () => import('@/views/profile/IngredientEncyclopediaView.vue'),
+        meta: { requiresAuth: true, noTabs: true, noAds: true }
+    },
+    {
+        path: '/profile/ingredient-encyclopedia/:slug',
+        name: 'IngredientArticleDetail',
+        component: () => import('@/views/profile/IngredientArticleDetailView.vue'),
+        props: true,
+        meta: { requiresAuth: true, noTabs: true, noAds: true }
+    },
+    {
+        path: '/profile/achievements',
+        name: 'Achievements',
+        component: () => import('@/views/profile/AchievementsView.vue'),
+        meta: { requiresAuth: true, noTabs: true, noAds: true }
+    },
+    {
+        path: '/profile/invite-earn',
+        name: 'InviteEarn',
+        component: () => import('@/views/profile/InviteEarnView.vue'),
+        meta: { requiresAuth: true, noTabs: true, noAds: true }
+    },
+    {
+        path: '/notifications',
+        name: 'Notifications',
+        component: () => import('@/views/notifications/NotificationsView.vue'),
+        meta: { requiresAuth: true, noTabs: true, noAds: true }
+    },
+    {
+        path: '/submissions/products',
+        name: 'MyProducts',
+        component: () => import('@/views/profile/MyProductsView.vue'),
+        meta: { requiresAuth: true, noTabs: true, noAds: true }
+    },
+    {
+        path: '/submissions/locations',
+        name: 'MyLocations',
+        component: () => import('@/views/profile/MyLocationsView.vue'),
+        meta: { requiresAuth: true, noTabs: true, noAds: true }
+    },
+    {
+        path: '/submissions/product-reports',
+        name: 'MyProductReports',
+        component: () => import('@/views/profile/MyProductReportsView.vue'),
+        meta: { requiresAuth: true, noTabs: true, noAds: true }
+    },
+    {
+        path: '/submissions/location-reports',
+        name: 'MyLocationReports',
+        component: () => import('@/views/profile/MyLocationReportsView.vue'),
+        meta: { requiresAuth: true, noTabs: true, noAds: true }
+    },
+    {
+        path: '/profile/linked-accounts',
+        name: 'LinkedAccounts',
+        component: () => import('@/views/profile/LinkedAccountsView.vue'),
+        meta: { requiresAuth: true, noTabs: true, noAds: true }
+    },
+    {
+        path: '/profile/badge-shop',
+        name: 'BadgeShop',
+        component: () => import('@/views/profile/BadgeShopView.vue'),
+        meta: { requiresAuth: true, noTabs: true, noAds: true }
+    },
+    {
+        path: '/profile/badge-customize',
+        name: 'BadgeCustomize',
+        component: () => import('@/views/profile/BadgeCustomizeView.vue'),
+        meta: { requiresAuth: true, noTabs: true, noAds: true }
+    },
+    {
+        path: '/leaderboard',
+        name: 'Leaderboard',
+        component: () => import('@/views/leaderboard/LeaderboardView.vue'),
+        meta: { noTabs: true, noAds: true }
+    },
 
-    { path: '/place/:id', name: 'PlaceDetail', component: () => import('@/views/explore/PlaceDetailsView.vue'), props: true, meta: { noAds: true } },
+    { 
+        path: '/place/:id', 
+        name: 'PlaceDetail', 
+        component: () => import('@/views/explore/PlaceDetailsView.vue'), 
+        props: true, 
+        meta: {
+            adSpaceId: 'ad-space-place-detail',
+            levelPlayAdId: getLevelPlayAdId(import.meta.env.VITE_LEVELPLAY_IOS_PLACE_DETAIL_BANNER_ID, import.meta.env.VITE_LEVELPLAY_ANDROID_PLACE_DETAIL_BANNER_ID)
+        }
+    },
     { path: '/place/:id/edit', name: 'EditPlace', component: () => import('@/views/explore/AddPlaceView.vue'), },
     { path: '/place/:id/report', name: 'ReportPlaceView', component: () => import('@/views/explore/ReportPlaceView.vue'), props: true },
 
-    { path: '/item/:barcode', name: 'item-details', component: () => import('@/views/search/ItemDetailsView.vue'), meta: { noAds: true } },
+    // Business claim & dashboard
+    { path: '/place/:id/claim', name: 'ClaimBusiness', component: () => import('@/views/business/ClaimBusinessView.vue'), meta: { requiresAuth: true, noTabs: true, noAds: true } },
+    { path: '/business', name: 'BusinessDashboard', component: () => import('@/views/business/BusinessDashboardView.vue'), meta: { requiresAuth: true, noAds: true } },
+    { path: '/business/:locationId', name: 'BusinessManage', component: () => import('@/views/business/BusinessManageView.vue'), props: true, meta: { requiresAuth: true, noTabs: true, noAds: true } },
+
+    { path: '/item/:barcode', name: 'item-details', component: () => import('@/views/search/ItemDetailsView.vue'), meta: { adSpaceId: 'ad-space-item-details', levelPlayAdId: getLevelPlayAdId(import.meta.env.VITE_LEVELPLAY_IOS_ITEM_DETAILS_BANNER_ID, import.meta.env.VITE_LEVELPLAY_ANDROID_ITEM_DETAILS_BANNER_ID) } },
 
     {
         path: '/partners',
@@ -78,16 +219,30 @@ const routes: Array<RouteRecordRaw> = [
         name: 'Qibla',
         component: () => import('@/views/utilities/QiblaFinderView.vue')
     },
+    {
+        path: '/halalify',
+        name: 'Halalify',
+        component: () => import('@/views/home/HalalifyView.vue')
+    },
 
-    { path: '/scan', component: ScanIngredientsView, meta: { requiresAuth: true, noAds: true } },
+
+    { 
+      path: '/scan', 
+      component: ScanIngredientsView, 
+      meta: {
+        requiresAuth: true,
+        adSpaceId: 'ad-space-scan-results',
+        levelPlayAdId: getLevelPlayAdId(import.meta.env.VITE_LEVELPLAY_IOS_SCAN_RESULTS_BANNER_ID, import.meta.env.VITE_LEVELPLAY_ANDROID_SCAN_RESULTS_BANNER_ID)
+      }
+    },
     { path: '/scan/auto', component: () => import('@/views/scan/AutoScanView.vue'), meta: { requiresAuth: true, noAds: true, noTabs: true } },
+    { path: '/scan/live', component: () => import('@/views/scan/LiveVerdictView.vue'), meta: { requiresAuth: true, noAds: true, noTabs: true } },
+    { path: '/scan/barcode', component: () => import('@/views/scan/BarcodeScanView.vue'), meta: { noAds: true, noTabs: true } },
 
     { path: '/news', component: () => import('@/views/news/NewsListView.vue') },
-    { path: '/news/:id', name: 'news-detail', component: () => import('@/views/news/NewsDetailView.vue'), props: true, meta: { adSpaceId: 'ad-space-news-detail', adId: import.meta.env.VITE_ADMOB_NEWS_BANNER_ID } },
+    { path: '/news/:id', name: 'news-detail', component: () => import('@/views/news/NewsDetailView.vue'), props: true, meta: { adSpaceId: 'ad-space-news-detail', levelPlayAdId: getLevelPlayAdId(import.meta.env.VITE_LEVELPLAY_IOS_NEWS_BANNER_ID, import.meta.env.VITE_LEVELPLAY_ANDROID_NEWS_BANNER_ID) } },
     { path: '/news/add', component: () => import('@/views/news/AddNewsView.vue'), meta: { requiresAuth: true, requiresAdmin: true } },
     { path: '/news/edit/:id', component: () => import('@/views/news/AddNewsView.vue'), meta: { requiresAuth: true, requiresAdmin: true } },
-
-    { path: '/explore/add', name: 'ExploreAdd', component: () => import('@/views/explore/AddPlaceView.vue'), meta: { requiresAuth: true } },
 
     { path: '/report/:barcode', name: 'report', component: () => import('@/views/search/ReportView.vue'), meta: { requiresAuth: true }, props: true },
 
@@ -96,6 +251,14 @@ const routes: Array<RouteRecordRaw> = [
     { path: '/credits', component: () => import('@/views/profile/CreditsView.vue') },
     { path: '/signup', component: () => import('@/views/auth/SignUpView.vue') },
     { path: '/login', component: () => import('@/views/auth/LoginView.vue') },
+    { path: '/auth/line/callback', component: () => import('@/views/auth/LineCallbackView.vue') },
+    { path: '/auth/line/native-callback', component: () => import('@/views/auth/LineNativeCallbackView.vue') },
+    {
+        path: '/update-password',
+        name: 'UpdatePassword',
+        component: () => import('@/views/auth/UpdatePasswordView.vue'),
+        meta: { requiresAuth: true, noTabs: true, noAds: true }
+    },
     {
         path: '/admin/review-products',
         component: () => import('@/views/admin/ReviewProductsView.vue'),
@@ -104,7 +267,8 @@ const routes: Array<RouteRecordRaw> = [
     {
         path: '/admin/review-locations',
         name: 'ReviewLocations',
-        component: () => import('@/views/admin/ReviewLocationsView.vue')
+        component: () => import('@/views/admin/ReviewLocationsView.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true }
     },
     {
         path: '/admin/points-logs',
@@ -114,6 +278,77 @@ const routes: Array<RouteRecordRaw> = [
     {
         path: '/admin/scan-logs',
         component: () => import('@/views/admin/ScanLogsView.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true }
+    },
+    {
+        path: '/admin/audit-log',
+        component: () => import('@/views/admin/AuditLogView.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true }
+    },
+    {
+        // Deep link target for notifications and the web (myapp://survey, https://halalformosa.com/survey).
+        // Not a page of its own: after the auth guard has run it asks Home to open the survey flow.
+        path: '/survey',
+        component: { render: () => null },
+        meta: { requiresAuth: true, noTabs: true, noAds: true },
+        beforeEnter: () => {
+            requestYearlySurveyFlow()
+            return { path: '/home', replace: true }
+        }
+    },
+    {
+        path: '/admin/tools',
+        component: () => import('@/views/admin/AdminToolsView.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true }
+    },
+    {
+        path: '/admin/app-versions',
+        component: () => import('@/views/admin/AppVersionsView.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true }
+    },
+    {
+        path: '/admin/app-settings',
+        component: () => import('@/views/admin/AppSettingsView.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true }
+    },
+    {
+        path: '/admin/system-health',
+        component: () => import('@/views/admin/SystemHealthView.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true }
+    },
+    {
+        path: '/admin/subscriptions',
+        component: () => import('@/views/admin/SubscriptionsView.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true }
+    },
+    {
+        path: '/admin/announcements',
+        component: () => import('@/views/admin/AnnouncementsAdminView.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true }
+    },
+    {
+        path: '/admin/unknown-barcodes',
+        component: () => import('@/views/admin/UnknownBarcodesView.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true }
+    },
+    {
+        path: '/admin/app-errors',
+        component: () => import('@/views/admin/AppErrorsView.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true }
+    },
+    {
+        path: '/admin/reviews',
+        component: () => import('@/views/admin/ReviewModerationView.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true }
+    },
+    {
+        path: '/admin/line-activity',
+        component: () => import('@/views/admin/LineActivityView.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true }
+    },
+    {
+        path: '/admin/survey',
+        component: () => import('@/views/admin/SurveyResultsView.vue'),
         meta: { requiresAuth: true, requiresAdmin: true }
     },
     {
@@ -133,6 +368,23 @@ const routes: Array<RouteRecordRaw> = [
         meta: { requiresAdmin: true }
     },
     {
+        path: '/admin/referrals',
+        component: () => import('@/views/admin/ReferralsView.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true, noAds: true }
+    },
+    {
+        path: '/admin/duplicate-products',
+        name: 'DuplicateProducts',
+        component: () => import('@/views/admin/DuplicateProductsView.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true, noAds: true }
+    },
+    {
+        path: '/admin/halalify-phrases',
+        name: 'HalalifyPhrasesEditor',
+        component: () => import('@/views/admin/HalalifyPhrasesEditorView.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true, noAds: true }
+    },
+    {
         path: '/admin/users',
         name: 'UsersList',
         component: () => import('@/views/admin/UsersListView.vue'),
@@ -141,9 +393,166 @@ const routes: Array<RouteRecordRaw> = [
     {
         path: '/admin/users/:id',
         name: 'UserDetail',
-        component: () => import('@/views/admin/UserDetailView.vue')
+        component: () => import('@/views/admin/UserDetailView.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true }
+    },
+    {
+        path: '/admin/merchant/applications',
+        name: 'AdminMerchantApplications',
+        component: () => import('@/views/admin/MerchantApplicationsView.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true, noAds: true }
+    },
+    {
+        path: '/admin/location-reports',
+        name: 'LocationReports',
+        component: () => import('@/views/admin/LocationReportsView.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true, noAds: true }
+    },
+    {
+        path: '/admin/location-claims',
+        name: 'AdminLocationClaims',
+        component: () => import('@/views/admin/LocationClaimsView.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true, noAds: true }
+    },
+    {
+        path: '/admin/location-edit-requests',
+        name: 'AdminLocationEditRequests',
+        component: () => import('@/views/admin/LocationEditRequestsView.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true, noAds: true }
+    },
+    {
+        path: '/admin/product-reports',
+        name: 'ProductReports',
+        component: () => import('@/views/admin/ProductReportsView.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true, noAds: true }
+    },
+    {
+        path: '/admin/contributor-applications',
+        name: 'ContributorApplications',
+        component: () => import('@/views/admin/ContributorApplicationsView.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true, noAds: true }
+    },
+
+
+    // Store sub-routes (outside tabs)
+    {
+        path: '/store/product/:id',
+        name: 'StoreProductDetail',
+        component: () => import('@/views/store/StoreProductDetailView.vue'),
+        props: true,
+        meta: {
+            adSpaceId: 'ad-space-store-detail',
+            levelPlayAdId: getLevelPlayAdId(import.meta.env.VITE_LEVELPLAY_IOS_STORE_DETAIL_BANNER_ID, import.meta.env.VITE_LEVELPLAY_ANDROID_STORE_DETAIL_BANNER_ID)
+        }
+    },
+    {
+        path: '/store/merchant/:id',
+        name: 'MerchantStore',
+        component: () => import('@/views/store/MerchantStoreView.vue'),
+        props: true,
+        meta: { noAds: true }
+    },
+    {
+        path: '/store/checkout',
+        name: 'StoreCheckout',
+        component: () => import('@/views/store/StoreCheckoutView.vue'),
+        meta: { requiresAuth: true, noAds: true }
+    },
+    {
+        path: '/store/order-success',
+        name: 'StoreOrderSuccess',
+        component: () => import('@/views/store/StoreOrderSuccessView.vue'),
+        meta: { requiresAuth: true, noAds: true }
+    },
+    {
+        path: '/store/payment-result/:orderId?',
+        name: 'PaymentResult',
+        component: () => import('@/views/store/PaymentResultView.vue'),
+        meta: { noAds: true }
+    },
+    {
+        path: '/store/my-orders',
+        name: 'UserOrders',
+        component: () => import('@/views/store/UserOrdersView.vue'),
+        meta: { requiresAuth: true, noAds: true }
+    },
+    {
+        path: '/merchant/store/product/add',
+        name: 'MerchantAddProduct',
+        component: () => import('@/views/store/MerchantAddProductView.vue'),
+        meta: { requiresAuth: true, noAds: true }
+    },
+    {
+        path: '/merchant/store/product/edit/:id',
+        name: 'MerchantEditProduct',
+        component: () => import('@/views/store/MerchantAddProductView.vue'),
+        props: true,
+        meta: { requiresAuth: true, noAds: true }
+    },
+    {
+        path: '/admin/store/orders',
+        name: 'AdminStoreOrders',
+        component: () => import('@/views/store/AdminStoreOrdersView.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true, noAds: true }
+    },
+    {
+        path: '/store/chat/:conversationId',
+        name: 'StoreChat',
+        component: () => import('@/views/store/StoreChatView.vue'),
+        meta: { requiresAuth: true, noAds: true }
+    },
+    {
+        path: '/admin/store/chat-inbox',
+        name: 'AdminStoreChatInbox',
+        component: () => import('@/views/store/AdminStoreChatInboxView.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true, noAds: true }
+    },
+    {
+        path: '/store/chat-inbox',
+        name: 'UserStoreChatInbox',
+        component: () => import('@/views/store/UserStoreChatInboxView.vue'),
+        meta: { requiresAuth: true, noAds: true }
+    },
+    {
+        path: '/merchant/store/settings',
+        name: 'MerchantStoreSettings',
+        component: () => import('@/views/store/MerchantStoreSettingsView.vue'),
+        meta: { requiresAuth: true, noAds: true }
+    },
+    {
+        path: '/merchant/store/products',
+        name: 'MerchantProductList',
+        component: () => import('@/views/store/MerchantProductListView.vue'),
+        meta: { requiresAuth: true, noAds: true }
+    },
+    {
+        path: '/merchant/store/orders',
+        name: 'MerchantStoreOrders',
+        component: () => import('@/views/store/AdminStoreOrdersView.vue'),
+        meta: { requiresAuth: true, noAds: true }
+    },
+    {
+        path: '/merchant/store/chat-inbox',
+        name: 'MerchantStoreChatInbox',
+        component: () => import('@/views/store/AdminStoreChatInboxView.vue'),
+        meta: { requiresAuth: true, noAds: true }
+    },
+    {
+        path: '/merchant/register',
+        name: 'MerchantRegistration',
+        component: () => import('@/views/store/MerchantRegistrationView.vue'),
+        meta: { requiresAuth: true, noAds: true }
+    },
+    {
+        path: '/maintenance',
+        name: 'Maintenance',
+        component: {
+            render() { return null; }
+        },
+        meta: { noAds: true, noTabs: true }
     }
 
+    
 
 ];
 
@@ -154,12 +563,27 @@ const router = createRouter({
 
 // ✅ Cleaner guard
 router.beforeEach(async (to, from, next) => {
+    // 🛡️ Anti-Bot & Anti-Scraping Guard
+    if (performBotChecks()) {
+        if (to.path !== '/maintenance') {
+            return next('/maintenance');
+        }
+    }
+
     let session = null;
     try {
         const { data } = await supabase.auth.getSession()
         session = data.session;
     } catch (e) {
         console.warn('⚠️ [Router] getSession timeout/error:', e);
+    }
+
+    // getSession() can come back empty offline with an expired access token —
+    // it tries to refresh over the network, fails, and reports "no session"
+    // even though the user never logged out. Don't bounce them to /login for
+    // that; trust the already-restored in-memory user instead.
+    if (!session && !isDeviceOnline() && currentUser.value) {
+        session = { user: currentUser.value } as any;
     }
 
     // 🚫 Needs auth but not logged in
@@ -184,13 +608,16 @@ router.beforeEach(async (to, from, next) => {
     if (
         session?.user &&
         !isProfileComplete.value &&
-        !ALLOWED_WHEN_PROFILE_INCOMPLETE.includes(to.path)
+        !profileSkipped.value
     ) {
-        return next({
-            path: '/profile/edit',
-            replace: true,
-            query: { redirect: to.fullPath }
-        })
+        const allowedWithoutCompletion = ['/profile/edit', '/logout'];
+        if (!allowedWithoutCompletion.includes(to.path)) {
+            return next({
+                path: '/profile/edit',
+                replace: true,
+                query: { redirect: to.fullPath }
+            })
+        }
     }
 
     next()

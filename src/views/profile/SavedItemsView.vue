@@ -16,12 +16,12 @@
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
               <span style="font-size: 14px; font-weight: 600; color: var(--ion-color-medium);">{{ $t('savedItems.freeTier') }}</span>
               <span style="font-size: 14px; font-weight: bold; color: var(--ion-color-carrot);">
-                {{ totalSavedItems }} / 10
+                {{ totalSavedItems }} / 5
               </span>
             </div>
-            <ion-progress-bar :value="totalSavedItems / 10" color="carrot" style="border-radius: 4px; height: 8px;"></ion-progress-bar>
+            <ion-progress-bar :value="totalSavedItems / 5" color="carrot" style="border-radius: 4px; height: 8px;"></ion-progress-bar>
             
-            <p v-if="totalSavedItems >= 10" style="font-size: 12px; color: var(--ion-color-danger); margin-top: 12px; margin-bottom: 0;">
+            <p v-if="totalSavedItems >= 5" style="font-size: 12px; color: var(--ion-color-danger); margin-top: 12px; margin-bottom: 0;">
               {{ $t('savedItems.freeLimitReached') }}
             </p>
             <p v-else style="font-size: 12px; color: var(--ion-color-medium); margin-top: 12px; margin-bottom: 0;">
@@ -80,6 +80,15 @@
               class="folder-card"
               @click="openFolder(folder)"
             >
+              <!-- Folder Option Button -->
+              <ion-button
+                fill="clear"
+                color="medium"
+                class="folder-option-btn"
+                @click.stop="presentFolderOptions(folder)"
+              >
+                <ion-icon :icon="ellipsisVerticalOutline" />
+              </ion-button>
               <div class="folder-icon-wrapper">
                 <ion-icon :icon="folderOutline" class="folder-icon" />
               </div>
@@ -105,6 +114,14 @@
                 <h3>{{ folder.name }}</h3>
                 <p style="font-size: 13px; color: var(--ion-color-medium);">{{ $t('savedItems.itemsCount', { count: folder.saved_items.length }) }}</p>
               </ion-label>
+              <ion-button
+                fill="clear"
+                color="medium"
+                slot="end"
+                @click.stop="presentFolderOptions(folder)"
+              >
+                <ion-icon :icon="ellipsisVerticalOutline" />
+              </ion-button>
             </ion-item>
           </ion-list>
         </div>
@@ -113,10 +130,15 @@
         <div v-else>
           <!-- Back button & View Toggle Header -->
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-            <ion-button fill="clear" @click="closeFolder" style="margin: 0; margin-left: -10px;">
-              <ion-icon :icon="arrowBackOutline" slot="start" />
-              <span style="font-weight: 600;">{{ activeFolder.name }}</span>
-            </ion-button>
+            <div style="display: flex; align-items: center;">
+              <ion-button fill="clear" @click="closeFolder" style="margin: 0; margin-left: -10px;">
+                <ion-icon :icon="arrowBackOutline" slot="start" />
+                <span style="font-weight: 600;">{{ activeFolder.name }}</span>
+              </ion-button>
+              <ion-button fill="clear" color="medium" @click="presentFolderOptions(activeFolder)" style="--padding-start: 4px; --padding-end: 4px; margin-left: -4px;">
+                <ion-icon :icon="ellipsisVerticalOutline" />
+              </ion-button>
+            </div>
             <div style="background: var(--ion-color-light); border-radius: 8px; display: flex; padding: 2px;">
               <ion-button 
                 fill="clear" 
@@ -245,20 +267,17 @@ import {
   IonItem, IonIcon, IonLabel, IonList, IonThumbnail, IonChip, IonButton,
   IonCard, IonProgressBar, alertController, IonFab, IonFabButton, actionSheetController, toastController
 } from '@ionic/vue';
-import { bookmarkOutline, folderOutline, trashOutline, gridOutline, listOutline, arrowBackOutline, addOutline, folderOpenOutline } from 'ionicons/icons';
+import { bookmarkOutline, folderOutline, trashOutline, gridOutline, listOutline, arrowBackOutline, addOutline, folderOpenOutline, ellipsisVerticalOutline, createOutline } from 'ionicons/icons';
 import AppHeader from '@/components/AppHeader.vue';
 import { useI18n } from 'vue-i18n';
-import { useNotifier } from "@/composables/useNotifier";
 
 // Subscription Logic
-import { isDonor, refreshSubscriptionStatus } from '@/composables/useSubscriptionStatus';
-import { RevenueCatUI, PAYWALL_RESULT } from '@revenuecat/purchases-capacitor-ui';
-import { Capacitor } from '@capacitor/core';
+import { isDonor } from '@/composables/useSubscriptionStatus';
+import { presentProPaywall } from '@/utils/proPaywall';
 import { ActivityLogService } from '@/services/ActivityLogService';
 
 const router = useRouter();
 const { t } = useI18n();
-const { notifyEvent } = useNotifier();
 const loading = ref(true);
 const folders = ref<any[]>([]);
 
@@ -282,41 +301,8 @@ function closeFolder() {
   activeFolderId.value = null;
 }
 
-async function presentRcPaywall() {
-  if (!Capacitor.isNativePlatform()) {
-    console.warn("[RC] Paywall can only run on native apps.");
-    return false;
-  }
-
-  try {
-    const { result } = await RevenueCatUI.presentPaywall();
-
-    if (result === PAYWALL_RESULT.PURCHASED || result === PAYWALL_RESULT.RESTORED) {
-      await refreshSubscriptionStatus({ syncToServer: true });
-      ActivityLogService.log('pro_purchase_success', {
-        source: 'saved_items_view'
-      });
-
-      const { data: { user } } = await supabase.auth.getUser();
-      await notifyEvent(
-        'pro_purchase_success',
-        '💎 New Pro Member!',
-        `User ${user?.email ?? 'unknown'} has just subscribed to Halal Formosa Pro!`,
-        undefined,
-        {
-          source: 'saved_items_view',
-          email: user?.email,
-          user_id: user?.id
-        },
-        ['discord']
-      ).catch(console.error);
-
-      return true;
-    }
-  } catch (err) {
-    console.error("Paywall failed:", err);
-  }
-  return false;
+function presentRcPaywall() {
+  return presentProPaywall('saved_items_view');
 }
 
 onMounted(async () => {
@@ -403,6 +389,7 @@ async function createFolder(name: string) {
     .insert({ user_id: user.id, name });
     
   if (!error) {
+    ActivityLogService.log('saved_folder_create', { kind: 'product' });
     await loadFoldersAndItems();
   }
 }
@@ -421,7 +408,9 @@ async function removeItem(saveId: string) {
         text: t('savedItems.remove'),
         role: 'destructive',
         handler: async () => {
+          const barcode = folders.value.flatMap((f: any) => f.saved_items ?? []).find((s: any) => s.id === saveId)?.products?.barcode;
           await supabase.from('saved_items').delete().eq('id', saveId);
+          ActivityLogService.log('product_unsave', { barcode, saved_id: saveId });
           await loadFoldersAndItems();
         }
       }
@@ -470,6 +459,7 @@ async function moveItem(saveId: string, currentFolderId: string, productId: stri
       } else if (!error) {
         // Success! Now delete the old relation
         await supabase.from('saved_items').delete().eq('id', saveId);
+        ActivityLogService.log('product_move', { product_id: productId, to_folder_id: folder.id });
         
         // Refresh local data completely to instantly reflect the jump
         await loadFoldersAndItems();
@@ -511,6 +501,133 @@ async function moveItem(saveId: string, currentFolderId: string, productId: stri
   await actionSheet.present();
 }
 
+async function renameFolder(folderId: string, newName: string) {
+  const { error } = await supabase
+    .from('saved_item_folders')
+    .update({ name: newName })
+    .eq('id', folderId);
+  
+  if (error) {
+    console.error('Error renaming folder:', error);
+    return false;
+  }
+  ActivityLogService.log('saved_folder_rename', { kind: 'product', folder_id: folderId });
+  await loadFoldersAndItems();
+  return true;
+}
+
+async function deleteFolder(folderId: string) {
+  const { error } = await supabase
+    .from('saved_item_folders')
+    .delete()
+    .eq('id', folderId);
+  
+  if (error) {
+    console.error('Error deleting folder:', error);
+    return false;
+  }
+  ActivityLogService.log('saved_folder_delete', { kind: 'product', folder_id: folderId });
+  await loadFoldersAndItems();
+  return true;
+}
+
+async function presentFolderOptions(folder: any) {
+  const actionSheet = await actionSheetController.create({
+    header: folder.name,
+    buttons: [
+      {
+        text: t('savedItems.renameFolder') || 'Rename Folder',
+        icon: createOutline,
+        handler: () => {
+          promptRenameFolder(folder);
+        }
+      },
+      {
+        text: t('savedItems.deleteFolder') || 'Delete Folder',
+        icon: trashOutline,
+        role: 'destructive',
+        handler: () => {
+          promptDeleteFolder(folder);
+        }
+      },
+      {
+        text: t('common.cancel'),
+        role: 'cancel',
+        icon: 'close'
+      } as any
+    ]
+  });
+  await actionSheet.present();
+}
+
+async function promptRenameFolder(folder: any) {
+  const alert = await alertController.create({
+    header: t('savedItems.renameFolder') || 'Rename Folder',
+    inputs: [
+      {
+        name: 'folderName',
+        type: 'text',
+        value: folder.name,
+        placeholder: t('savedItems.folderName')
+      }
+    ],
+    buttons: [
+      {
+        text: t('common.cancel'),
+        role: 'cancel'
+      },
+      {
+        text: t('common.save') || 'Save',
+        handler: async (data) => {
+          if (data.folderName && data.folderName.trim() !== '') {
+            const success = await renameFolder(folder.id, data.folderName.trim());
+            if (success) {
+              const toast = await toastController.create({
+                message: t('savedItems.renameSuccess') || 'Folder renamed successfully',
+                duration: 2000,
+                color: 'success',
+                position: 'bottom'
+              });
+              await toast.present();
+            }
+          }
+        }
+      }
+    ]
+  });
+  await alert.present();
+}
+
+async function promptDeleteFolder(folder: any) {
+  const alert = await alertController.create({
+    header: t('savedItems.deleteFolder') || 'Delete Folder',
+    message: t('savedItems.deleteConfirm') || `Are you sure you want to delete "${folder.name}"? This will also remove all saved items in it.`,
+    buttons: [
+      { text: t('common.cancel'), role: 'cancel' },
+      {
+        text: t('common.delete') || 'Delete',
+        role: 'destructive',
+        handler: async () => {
+          const success = await deleteFolder(folder.id);
+          if (success) {
+            if (activeFolderId.value === folder.id) {
+              activeFolderId.value = null;
+            }
+            const toast = await toastController.create({
+              message: t('savedItems.deleteSuccess') || 'Folder deleted successfully',
+              duration: 2000,
+              color: 'success',
+              position: 'bottom'
+            });
+            await toast.present();
+          }
+        }
+      }
+    ]
+  });
+  await alert.present();
+}
+
 </script>
 
 <style scoped>
@@ -530,9 +647,22 @@ async function moveItem(saveId: string, currentFolderId: string, productId: stri
   cursor: pointer;
   box-shadow: 0 4px 6px rgba(0,0,0,0.02);
   transition: transform 0.2s ease;
+  position: relative;
 }
 .folder-card:active {
   transform: scale(0.96);
+}
+
+.folder-option-btn {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  margin: 0;
+  --padding-start: 4px;
+  --padding-end: 4px;
+  width: 32px;
+  height: 32px;
+  z-index: 2;
 }
 
 .folder-icon-wrapper {
@@ -622,7 +752,7 @@ async function moveItem(saveId: string, currentFolderId: string, productId: stri
 .item-img-wrapper img {
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  object-fit: cover;
 }
 
 .item-info {

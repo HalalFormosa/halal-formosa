@@ -9,7 +9,8 @@ android {
 
 apply from: "../capacitor-cordova-android-plugins/cordova.variables.gradle"
 dependencies {
-    implementation project(':capacitor-community-admob')
+    implementation project(':capacitor-community-in-app-review')
+    implementation project(':capacitor-community-text-to-speech')
     implementation project(':capacitor-mlkit-barcode-scanning')
     implementation project(':capacitor-app')
     implementation project(':capacitor-app-launcher')
@@ -21,16 +22,17 @@ dependencies {
     implementation project(':capacitor-geolocation')
     implementation project(':capacitor-haptics')
     implementation project(':capacitor-keyboard')
+    implementation project(':capacitor-network')
     implementation project(':capacitor-preferences')
     implementation project(':capacitor-share')
     implementation project(':capacitor-status-bar')
     implementation project(':capawesome-team-capacitor-datetime-picker')
-    implementation project(':capawesome-capacitor-app-review')
     implementation project(':capawesome-capacitor-app-update')
+    implementation project(':capawesome-capacitor-apple-sign-in')
     implementation project(':capgo-capacitor-navigation-bar')
-    implementation project(':capgo-native-purchases')
     implementation project(':revenuecat-purchases-capacitor')
     implementation project(':revenuecat-purchases-capacitor-ui')
+    implementation project(':capacitor-levelplay-ads')
     implementation project(':capacitor-plugin-safe-area')
     implementation "com.onesignal:OneSignal:5.6.1"
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.7.10"

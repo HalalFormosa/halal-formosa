@@ -1,15 +1,33 @@
 <template>
   <ion-page>
-    <ion-header>
+    <ion-header :class="{ 'has-ads': isNative && !isDonor && currentStep === STEP_RESULTS, 'house-ad-top': adSlotCollapsed && currentStep === STEP_RESULTS }">
+      <!-- Native (mobile) AdMob banner - shown only on results step -->
+      <div v-if="isNative && !isDonor && currentStep === STEP_RESULTS" id="ad-space-scan-results" :style="adSpaceStyle(adSlotCollapsed)"></div>
+      <!-- House-ad banner (web, or the real banner failed to fill / LevelPlay is
+           disabled), like Trip/Store/Search — minus 'product' ads, since this
+           IS the product/ingredient flow. Replaces the in-content native card
+           that used to sit under the result actions. -->
+      <HouseAdCard
+          v-if="!isDonor && currentStep === STEP_RESULTS && (!isNative || failedAdSpaceId === 'ad-space-scan-results')"
+          variant="banner"
+          exclude-kind="product"
+      />
+
       <app-header
           :title="$t('scanIngredients.title')"
           :icon="scanOutline"
           :showBack="true"
           backRoute="/home"
       >
+        <template #end>
+          <ion-button @click="$router.push('/profile/scan-history')">
+            <ion-icon slot="icon-only" :icon="timeOutline" />
+          </ion-button>
+        </template>
         <template #actions>
           <ion-item
               button
+              :detail="false"
               lines="none"
               @click="showDetailedDisclaimer = true"
           >
@@ -20,7 +38,7 @@
       </app-header>
     </ion-header>
 
-    <ion-content class="ion-padding">
+    <ion-content ref="contentRef" class="ion-padding">
 
       <ion-modal :is-open="showSimpleDisclaimer" backdrop-dismiss="false">
         <ion-header>
@@ -141,361 +159,469 @@
       </ion-modal>
 
 
-      <ion-card>
-        <ion-card-content>
-          <!-- Daily Scan Counter -->
-          <div class="ion-margin-bottom" v-if="todayScanCount !== null">
-            <ion-chip color="primary" style="width: 100%; justify-content: center;">
-              <ion-icon :icon="scanOutline"></ion-icon>
-              <ion-label>
-                {{ $t('scanIngredients.todayScans', {
-                used: todayScanCount,
-                total: isDonor ? '∞' : 10 + bonusScans
-              }) }}
-              </ion-label>
-            </ion-chip>
+      <!-- 🟢 Step Indicator -->
+      <div class="step-container ion-margin-bottom">
+        <div class="step-item" :class="{ active: currentStep >= 0 }">
+           <div class="step-dot">
+              <ion-icon :icon="cameraOutline" v-if="currentStep <= 0" />
+              <ion-icon :icon="checkmarkCircle" v-else />
+           </div>
+           <span class="step-label">{{ $t('scanIngredients.steps.scan') }}</span>
+        </div>
+        <div class="step-line" :class="{ active: currentStep >= 1 }"></div>
+        <div class="step-item" :class="{ active: currentStep >= 1 }">
+           <div class="step-dot">
+              <ion-icon :icon="sparklesOutline" v-if="currentStep <= 1" />
+              <ion-icon :icon="checkmarkCircle" v-else />
+           </div>
+           <span class="step-label">{{ $t('scanIngredients.scan.results') }}</span>
+        </div>
+      </div>
 
-            <!-- Watch Ad Button -->
-            <ion-button
-                v-if="isNative && !isDonor"
-                color="warning"
-                style="width: 100%; justify-content: center;"
-                @click="watchAdForExtraScans"
-            >
-              🎁 Watch Ad +5 Scans
-            </ion-button>
+      <!-- 🔍 STEP 1: Capture -->
+      <div v-show="currentStep === STEP_CAPTURE" class="step-content">
+        <!-- Scan came back empty or failed: explain, give tips, offer a retry -->
+        <div v-if="scanFailure" class="scan-failure-card" role="alert" data-testid="scan-failure">
+          <div class="scan-failure-head">
+            <ion-icon :icon="alertCircleOutline" />
+            <strong>{{ $t('scanIngredients.failure.title') }}</strong>
           </div>
+          <p class="scan-failure-body">{{ $t(`scanIngredients.failure.${scanFailure}`) }}</p>
+          <template v-if="scanFailure !== 'offline'">
+            <p class="scan-failure-tips-title">{{ $t('scanIngredients.failure.tipsTitle') }}</p>
+            <ul class="scan-failure-tips">
+              <li>{{ $t('scanIngredients.failure.tip1') }}</li>
+              <li>{{ $t('scanIngredients.failure.tip2') }}</li>
+              <li>{{ $t('scanIngredients.failure.tip3') }}</li>
+            </ul>
+          </template>
+          <ion-button expand="block" class="scan-failure-retry" @click="retryAfterFailure">
+            {{ $t('scanIngredients.failure.retry') }}
+          </ion-button>
+        </div>
 
-          <!-- Tutorial Image Carousel (shows before scanning) -->
-          <div v-if="showTutorial" style="text-align:center; margin-bottom:24px;">
-            <h2 style="font-size:16px; font-weight:700; color:var(--ion-color-carrot); margin-bottom:12px;">
-              🧭 {{ $t('scanIngredients.tips.title') }}
-            </h2>
+        <!-- Daily Scan Counter -->
+        <div style="margin-bottom: 8px;" v-if="todayScanCount !== null">
+          <ion-chip color="primary" style="width: 100%; justify-content: center; height: 32px;">
+            <ion-icon :icon="scanOutline"></ion-icon>
+            <ion-label>
+              {{ $t('scanIngredients.todayScans', {
+              used: todayScanCount,
+              total: isDonor ? '∞' : DAILY_SCAN_LIMIT + bonusScans
+            }) }}
+            </ion-label>
+          </ion-chip>
 
+          <!-- "Watch ad for +1 scan" is switched off for now (see
+               REWARDED_SCANS_ENABLED) — extra scans come from contributions only. -->
+          <ion-button
+              v-if="REWARDED_SCANS_ENABLED && isNative && !isDonor"
+              color="warning"
+              expand="block"
+              size="small"
+              class="ion-margin-top"
+              :disabled="loadingAd"
+              @click="watchAdForExtraScans"
+          >
+            <ion-spinner v-if="loadingAd" name="crescent" style="zoom: 0.6; margin-right: 8px;"></ion-spinner>
+            <span>🎁 {{ loadingAd ? 'Loading Ad...' : $t('scanIngredients.limit.bonus') }}</span>
+          </ion-button>
+
+          <!-- Contribution quota tip -->
+          <p v-if="!isDonor" style="font-size: 11px; color: var(--ion-color-medium); text-align: center; margin-top: 8px; margin-bottom: 0; line-height: 1.4;">
+            💡 {{ $t('scanIngredients.limit.contributeTip') }}
+          </p>
+        </div>
+
+        <!-- Hero Header -->
+        <div class="ion-text-center">
+          <p class="hero-desc">
+            {{ $t('scanIngredients.tips.content') || 'Capture the ingredients list to see their halal status in seconds.' }}
+          </p>
+        </div>
+
+        <!-- Capture Card: tutorial carousel + buttons live in one panel, not two stacked boxes -->
+        <ion-card class="action-card ion-no-margin">
+          <!-- Tutorial Hint Carousel -->
+          <div v-if="showTutorial" class="tutorial-carousel-wrap">
             <swiper
                 :modules="[Autoplay, Pagination]"
                 :autoplay="{ delay: 5000 }"
                 :loop="false"
                 :pagination="{ clickable: true }"
-                style="width:100%; max-width:340px; border-radius:12px; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,0.1);"
+                style="width:100%;"
             >
               <swiper-slide v-for="n in 5" :key="n" style="display:flex; align-items:center; justify-content:center; background:var(--ion-color-light);">
                 <img
                     :src="`/hints/hints${n}.png`"
                     :alt="`Tutorial hint ${n}`"
-                    style="max-width:100%; max-height:220px; object-fit:contain; border-radius:8px;"
+                    style="max-width:100%; max-height:220px; object-fit:contain;"
                 />
               </swiper-slide>
             </swiper>
-
-            <div style="margin-top:14px; line-height:1.6;">
-              <p>{{ $t('scanIngredients.tips.content') }}</p>
-            </div>
           </div>
 
-
-          <!-- Main Action Buttons -->
-          <div v-if="!ingredientsText" style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px;">
-            <div style="display: flex; gap: 12px;">
-              <!-- Camera Button -->
-              <div
-                  @click="scanFromCamera"
-                  style="flex: 1; background: var(--ion-color-carrot); border-radius: 12px; padding: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer;"
-              >
-                <ion-icon :icon="cameraOutline" style="font-size: 32px; color: var(--ion-color-light);" />
-                <span style="color: var(--ion-color-light); margin-top: 4px; font-size: 14px; font-weight: 500;">{{ $t('scanIngredients.scan.camera') }}</span>
-              </div>
-
-              <!-- Gallery Button -->
-              <div
-                  @click="scanFromGallery"
-                  style="flex: 1; background: var(--ion-color-carrot); border-radius: 12px; padding: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer;"
-              >
-                <ion-icon :icon="cloudUploadOutline" style="font-size: 32px; color: var(--ion-color-light);" />
-                <span style="color: var(--ion-color-light); margin-top: 4px; font-size: 14px; font-weight: 500;">{{ $t('scanIngredients.scan.gallery') }}</span>
-              </div>
-            </div>
-
-            <!-- Auto Scan Button -->
-            <div
-                @click="router.push('/scan/auto')"
-                style="flex: 1; background: var(--ion-color-carrot); border-radius: 12px; padding: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer;"
-            >
-              <ion-icon :icon="eyeOutline" style="font-size: 32px; color: var(--ion-color-light);" />
-              <span style="color: var(--ion-color-light); margin-top: 4px; font-size: 14px; font-weight: 500;">{{ $t('scanIngredients.scan.auto', 'Auto Scan (BETA)') }}</span>
-            </div>
-          </div>
-
-
-          <ion-progress-bar
-              v-if="ocrLoading"
-              type="indeterminate"
-              class="ion-margin-top"
-          />
-
-          <!-- Original image preview inside Accordion -->
-          <ion-accordion-group v-if="originalPreviewUrl">
-            <ion-accordion value="original">
-              <ion-item slot="header" color="light">
-                <ion-label>{{ $t('scanIngredients.scan.originalImage') }}</ion-label>
-              </ion-item>
-              <div slot="content">
-                <img :src="originalPreviewUrl" alt="Original" class="preview-img" />
-
-                <ion-button
-                    size="small"
-                    class="ion-no-margin"
-                    expand="block"
-                    @click="recrop"
-                >
-                  {{ $t('scanIngredients.scan.reCrop') }}
-                </ion-button>
-              </div>
-            </ion-accordion>
-          </ion-accordion-group>
-
-          <!-- Cropped image preview -->
-          <div v-if="croppedPreviewUrl" class="preview-block ion-margin-top">
-
-            <img :src="croppedPreviewUrl" alt="Cropped" class="preview-img-cropped" />
-          </div>
-
-          <!-- Auto status -->
-          <ion-chip
-              v-if="autoStatus"
-              class="ion-margin-top"
-              :class="{
-    'chip-success': autoStatus === 'Halal',
-    'chip-primary': autoStatus === 'Muslim-friendly',
-    'chip-warning': autoStatus === 'Syubhah',
-    'chip-danger': autoStatus === 'Haram',
-    'chip-medium': !['Halal', 'Muslim-friendly', 'Syubhah', 'Haram'].includes(autoStatus)
-  }"
-          >
-            {{ $t(`search.status.${autoStatus}`, autoStatus) }}
-          </ion-chip>
-
-
-          <ion-item class="ion-margin-top">
-            <ion-input
-                v-model="productName"
-                :label="$t('scanIngredients.scan.productName')"
-                label-placement="stacked"
-                :value="productName || 'Unknown Product'"
-                readonly
-            />
-          </ion-item>
-
-          <div class="ion-margin-top">
-            <ion-item
-                v-if="detectedLanguage !== 'english' && ingredientsTextZh"
-                lines="full"
-                class="ion-margin-top"
-            >
-              <ion-textarea
-                  v-model="ingredientsTextZh"
-                  :label="$t('scanIngredients.scan.ingredientsZh')"
-                  label-placement="stacked"
-                  :auto-grow="true"
-                  readonly
-              />
-            </ion-item>
-
-            <ion-item lines="full">
-              <ion-textarea
-                  v-model="ingredientsText"
-                  :label="$t('scanIngredients.scan.ingredientsEn')"
-                  label-placement="stacked"
-                  :auto-grow="true"
-                  readonly
-                  @ionBlur="() => recheckHighlightsSmart()"
-              />
-            </ion-item>
-
-            <!-- Highlights (skip Muslim-Friendly) -->
-            <div v-if="ingredientHighlights.some(h => extractIonColor(h.color) !== 'primary')" class="ion-padding-top">
-              <ion-chip
-                  v-for="(h, idx) in ingredientHighlights.filter(h => extractIonColor(h.color) !== 'primary')"
-                  :key="idx"
-                  class="ion-margin-end ion-margin-bottom"
-                  :class="['chip-' + extractIonColor(h.color)]"
-              >
-                {{ h.keyword_zh || h.keyword }}
-                <template v-if="h.keyword && h.keyword_zh">
-                  ({{ toProperCase(h.keyword) }})
-                </template>
-                — {{ colorMeaning(extractIonColor(h.color)) }}
-
-              </ion-chip>
-            </div>
-
-            <!-- Muslim-Friendly Toggle -->
-            <div v-if="ingredientHighlights.some(h => extractIonColor(h.color) === 'primary')" class="ion-margin-vertical">
-              <ion-button
-                  fill="outline"
-                  expand="block"
-                  size="small"
-                  color="primary"
-                  @click="showMuslimFriendly = !showMuslimFriendly"
-              >
-                {{ showMuslimFriendly
-                  ? $t('scanIngredients.muslimFriendly.hide')
-                  : $t('scanIngredients.muslimFriendly.show')
-                }}
-              </ion-button>
-
-              <div v-if="showMuslimFriendly" class="ion-padding-top">
-                <ion-chip
-                    v-for="(h, idx) in ingredientHighlights.filter(h => extractIonColor(h.color) === 'primary')"
-                    :key="idx"
-                    class="ion-margin-end ion-margin-bottom"
-                    :class="['chip-' + extractIonColor(h.color)]"
-                >
-                  {{ h.keyword_zh || h.keyword }}
-                  <template v-if="h.keyword && h.keyword_zh">
-                    ({{ toProperCase(h.keyword) }})
-                  </template>
-                  — {{ colorMeaning(extractIonColor(h.color)) }}
-                </ion-chip>
-              </div>
-            </div>
-
-            <ion-button
-                v-if="ingredientsTextZh && !summaryUsed"
-                expand="block"
-                color="carrot"
-                :disabled="loadingSummary"
-                @click="handleSummaryClick"
-                class="ai-button"
-            >
-              <ion-icon
-                  v-if="!isDonor"
-                  slot="start"
-                  :icon="lockClosedOutline"
-              />
-
-              <span class="ai-label">
-    {{ loadingSummary ? 'Analyzing…' : 'AI Explanation' }}
-  </span>
-
-              <span
-                  v-if="!isDonor"
-                  class="pro-pill"
-              >
-    PRO
-  </span>
+          <ion-card-content>
+            <ion-button expand="block" color="carrot" style="height: 56px; font-weight: 700;" class="ion-margin-bottom" @click="pickMethod('camera')">
+                <ion-icon slot="start" :icon="cameraOutline" />
+                {{ $t('scanIngredients.scan.takePhoto') }}
             </ion-button>
 
-
-
-            <p
-                v-if="!isDonor && ingredientsTextZh && !summaryUsed"
-                style="
-    text-align:center;
-    font-size:13px;
-    margin-top:6px;
-    color: var(--ion-color-medium);
-  "
-            >
-              Unlock AI ingredient analysis explanation with Pro ✨
-            </p>
-
-
-            <!-- AI Summary Section -->
-            <div v-if="isDonor && (loadingSummary || overallNote || errorSummary)" class="ai-summary-block">
-              <h3 class="ai-summary-title">AI Summary</h3>
-              <div class="ai-summary-text" v-html="errorSummary || overallNote"></div>
+            <div class="mode-tiles-label">{{ $t('scanIngredients.scan.otherWays') }}</div>
+            <div class="mode-tiles">
+              <button type="button" class="mode-tile" @click="pickMethod('gallery')">
+                <ion-icon :icon="imagesOutline" />
+                <span class="mode-tile-name">{{ $t('scanIngredients.scan.gallery') }}</span>
+                <span class="mode-tile-hint">{{ $t('scanIngredients.scan.galleryHint') }}</span>
+              </button>
+              <button type="button" class="mode-tile" @click="pickMethod('auto')">
+                <ion-icon :icon="scanOutline" />
+                <span class="mode-tile-name">{{ $t('scanIngredients.autoScan.label') }}</span>
+                <span class="mode-tile-hint">{{ $t('scanIngredients.scan.autoHint') }}</span>
+              </button>
+              <button v-if="liveVerdictSupported" type="button" class="mode-tile" @click="pickMethod('live')">
+                <span v-if="!isDonor" class="mode-tile-pro"><ion-icon :icon="lockClosedOutline" />PRO</span>
+                <ion-icon :icon="pulseOutline" />
+                <span class="mode-tile-name">{{ $t('scanIngredients.liveVerdict.label') }}</span>
+                <span class="mode-tile-hint">{{ $t('scanIngredients.scan.liveHint') }}</span>
+              </button>
             </div>
 
+            <label class="remember-row">
+              <ion-checkbox
+                  label-placement="end"
+                  justify="start"
+                  :checked="rememberScanChoice"
+                  @ionChange="onRememberToggle($event.detail.checked)"
+              >
+                {{ $t('scanIngredients.scan.rememberChoice') }}
+              </ion-checkbox>
+              <span class="remember-note">{{ $t('scanIngredients.scan.rememberChoiceNote') }}</span>
+            </label>
 
-            <div v-if="ingredientsText" class="actions">
-              <ion-button size="small" fill="outline" @click="onShareClick">
-                <ion-icon slot="start" :icon="shareSocialOutline" />
-                {{ $t('scanIngredients.scan.share') }}
-              </ion-button>
-              <ion-button size="small" color="medium" fill="outline" @click="clearAll">
-                <ion-icon slot="start" :icon="refreshOutline" /> <!-- optional different icon -->
-                {{ $t('scanIngredients.scan.clear') }}
-              </ion-button>
+            <div v-if="liveVerdictSupported" class="mode-help-row">
+              <button type="button" class="mode-help-link" @click="liveHelpOpen = true">
+                {{ $t('scanIngredients.liveVerdict.help') }}
+                <ion-icon :icon="helpCircleOutline" />
+              </button>
+            </div>
+            <LiveVerdictHelpModal v-if="liveVerdictSupported" v-model:open="liveHelpOpen" />
+          </ion-card-content>
+        </ion-card>
+      </div>
+
+      <!-- 🔬 STEP 2: Results -->
+      <div v-show="currentStep === STEP_RESULTS" class="step-content">
+        <div class="form-section">
+          <!-- Cropped Image Preview -->
+          <div v-if="croppedPreviewUrl" class="ion-margin-bottom ion-text-center">
+            <IngredientHighlightImage
+                :src="croppedPreviewUrl"
+                :ocr-image-width="ocrImageWidth"
+                :ocr-image-height="ocrImageHeight"
+                :highlights="dangerousHighlights"
+                img-class="preview-img-cropped"
+                zoomable
+            />
+            <p class="tap-to-enlarge-hint">
+              🔍 {{ $t('scanIngredients.scan.tapToEnlarge') }}
+            </p>
+          </div>
+
+          <!-- Status & Identity -->
+          <div class="ion-text-center ion-margin-bottom">
+            <div class="status-badge-container">
+              <ion-chip
+                  v-if="displayStatus"
+                  :class="`chip-${statusChipColor(displayStatus)} status-large`"
+              >
+                {{ $t(`search.status.${displayStatus}`, displayStatus) }}
+              </ion-chip>
+            </div>
+            <h2 style="font-weight: 700; margin-top: 12px; font-size: 22px;">
+              {{ productName || $t('scanIngredients.scan.results') }}
+              <ion-icon
+                  v-if="productFoundInDb"
+                  :icon="checkmarkCircle"
+                  color="success"
+                  class="db-found-badge"
+                  :title="$t('scanIngredients.scan.alreadyInDb')"
+              />
+            </h2>
+          </div>
+
+          <!-- One-tap "what will you do?" (shown on a random subset of results) -->
+          <ScanDecisionPrompt
+              :scan-key="decisionPromptKey"
+              :status="autoStatus"
+              :shown-status="displayStatus"
+              :in-database="productFoundInDb"
+              :scan-log-id="decisionScanLogId"
+              :flagged-ingredients="flaggedForDecision"
+              @answered="onDecisionAnswered"
+          />
+
+          <!-- Matched Product Preview -->
+          <div v-if="productFoundInDb && matchedDbProduct">
+            <p class="matched-product-eyebrow">{{ $t('scanIngredients.scan.alreadyInDb') }}</p>
+            <p class="matched-product-confidence">
+              {{ $t('scanIngredients.scan.nameMatch', { percent: nameMatchPercent }) }}
+              <template v-if="ingredientsMatchPercent !== null">
+                · {{ $t('scanIngredients.scan.ingredientsMatch', { percent: ingredientsMatchPercent }) }}
+              </template>
+            </p>
+            <div
+                class="matched-product-card"
+                :class="{ clickable: !!matchedDbProduct.barcode }"
+                @click="matchedDbProduct.barcode && router.push(`/item/${matchedDbProduct.barcode}`)"
+            >
+              <img
+                  :src="getOptimizedImageUrl(matchedDbProduct.photo_front_url, 120, 120, 'cover')"
+                  @error="onProductImageError"
+                  class="matched-product-thumb"
+                  alt=""
+              />
+              <div class="matched-product-info">
+                <p class="matched-product-name">{{ matchedDbProduct.name }}</p>
+                <p v-if="matchedDbProduct.category" class="matched-product-category">
+                  {{ matchedDbProduct.category }}
+                </p>
+                <div class="matched-product-footer">
+                  <ion-chip
+                      v-if="matchedDbProduct.status"
+                      :class="`chip-${statusChipColor(matchedDbProduct.status)}`"
+                      class="matched-status-chip"
+                  >
+                    {{ $t(`search.status.${matchedDbProduct.status}`, matchedDbProduct.status) }}
+                  </ion-chip>
+                  <span v-if="matchedDbProduct.created_at" class="matched-product-added">
+                    {{ $t('scanIngredients.scan.addedAgo', { time: fromNowToTaipei(matchedDbProduct.created_at) }) }}
+                  </span>
+                </div>
+              </div>
+              <ion-icon v-if="matchedDbProduct.barcode" :icon="arrowForwardOutline" class="matched-product-arrow" />
             </div>
           </div>
-        </ion-card-content>
-      </ion-card>
 
-      <!-- Global OCR Loading Overlay (for Auto Scan) -->
-      <div v-if="ocrLoading && !showCropper" class="ocr-overlay" style="position: fixed; z-index: 3000;">
-        <ion-progress-bar
-            :value="progress"
-            color="carrot"
-            class="ocr-progress"
-        />
+          <!-- Results Card -->
+          <ion-card class="input-card ion-no-margin">
+            <ion-card-content class="ion-no-padding">
+              <ion-item
+                  v-if="productFoundInDb"
+                  button
+                  :detail="false"
+                  lines="full"
+                  @click="showIngredientDetails = !showIngredientDetails"
+              >
+                <ion-label>{{ $t('scanIngredients.scan.ingredientDetails') }}</ion-label>
+                <ion-icon
+                    slot="end"
+                    :icon="chevronDownOutline"
+                    class="collapse-chevron"
+                    :class="{ 'is-expanded': showIngredientDetails }"
+                />
+              </ion-item>
 
-        <p class="ocr-progress-text">
-          {{ progressLabel }}
-        </p>
+              <div v-show="showIngredientDetails">
+                <ion-item v-if="detectedLanguage !== 'english' && ingredientsTextZh" lines="full">
+                  <ion-textarea
+                      v-model="ingredientsTextZh"
+                      :label="$t('scanIngredients.scan.ingredientsZh')"
+                      label-placement="stacked"
+                      :auto-grow="true"
+                      readonly
+                  />
+                </ion-item>
 
-        <div v-if="loadingReflection" class="reflection-box">
-          <p v-if="loadingReflection.text_ar" class="reflection-ar">
-            {{ loadingReflection.text_ar }}
-          </p>
+                <ion-item lines="none">
+                  <ion-textarea
+                      v-model="ingredientsText"
+                      :label="$t('scanIngredients.scan.ingredientsEn')"
+                      label-placement="stacked"
+                      :auto-grow="true"
+                      readonly
+                      @ionBlur="() => recheckHighlightsSmart()"
+                  />
+                </ion-item>
 
-          <p class="reflection-en">
-            "{{ loadingReflection.text_en }}"
-          </p>
+                <!-- Highlights -->
+                <div v-if="ingredientHighlights.length" class="highlights-preview ion-padding">
+                  <div class="highlights-title">{{ $t('scanIngredients.scan.highlights') || 'Detected Ingredients' }}</div>
+                  <div class="chip-group">
+                    <ion-chip
+                        v-for="(h, idx) in dangerousHighlights"
+                        :key="idx"
+                        class="compact-chip"
+                        :class="['chip-' + extractIonColor(h.color)]"
+                    >
+                      {{ formatHighlight(h) }}
+                    </ion-chip>
+                  </div>
 
-          <small class="reflection-ref">
-            — {{ loadingReflection.reference }}
-          </small>
+                  <!-- Muslim Friendly Toggle -->
+                  <div v-if="hasFriendlyHighlights" class="ion-margin-top">
+                    <ion-button fill="clear" size="small" @click="showMuslimFriendly = !showMuslimFriendly" style="font-size: 11px; --padding-start: 0;">
+                      {{ showMuslimFriendly ? $t('scanIngredients.muslimFriendly.hide') : $t('scanIngredients.muslimFriendly.show') }}
+                    </ion-button>
+                    <div v-if="showMuslimFriendly" style="display: flex; flex-wrap: wrap; gap: 4px;">
+                       <ion-chip
+                          v-for="(h, idx) in friendlyHighlights"
+                          :key="idx"
+                          class="compact-chip chip-primary"
+                       >
+                         {{ formatHighlight(h) }}
+                       </ion-chip>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </ion-card-content>
+          </ion-card>
+
+          <!-- AI Summary -->
+          <div v-if="isDonor && (loadingSummary || overallNote || errorSummary)" class="ai-summary-card animate__animated animate__fadeInUp">
+            <h3 class="ai-summary-title">🤖 {{ $t('scanIngredients.aiSummary.title') }}</h3>
+            
+            <!-- Initial Loader -->
+            <div v-if="loadingSummary && !overallNote && !errorSummary" class="ai-initial-loader">
+              <ion-spinner name="crescent" color="secondary"></ion-spinner>
+              <div class="ai-status-msg">{{ $t('scanIngredients.aiSummary.preparing') }}</div>
+            </div>
+
+            <div v-if="loadingSummary && !overallNote && tryingModel" class="ai-trying-text">
+              <ion-spinner name="dots" color="medium" style="zoom: 0.6; margin-right: 4px;"></ion-spinner>
+              <span>{{ $t('scanIngredients.aiSummary.connecting', { model: tryingModel.split('/')[0].toUpperCase() + ' ' + (tryingModel.split('/')[1]?.split('-')[0].replace('it', '').toUpperCase() || '') }) }}</span>
+            </div>
+            <div class="ai-summary-text" v-html="errorSummary || overallNote"></div>
+            <div v-if="activeModel" class="ai-summary-footer">
+              {{ $t('scanIngredients.aiSummary.footer', { model: activeModel.split('/')[0].toUpperCase() + ' ' + (activeModel.split('/')[1]?.split('-')[0].replace('it', '').toUpperCase() || '') }) }}
+            </div>
+          </div>
+
+          <!-- Free users with flagged ingredients see what the AI would explain; the rest keep the plain button. -->
+          <ai-explanation-teaser
+              v-if="showAiTeaser"
+              :ingredient="teaserIngredient"
+              @unlock="handleSummaryClick"
+          />
+
+          <ion-button
+              v-if="ingredientsTextZh && !overallNote && !errorSummary && !showAiTeaser"
+              expand="block"
+              color="carrot"
+              :disabled="loadingSummary"
+              @click="handleSummaryClick"
+              class="ai-button ion-margin-top"
+          >
+            <ion-icon v-if="!isDonor && !loadingSummary" slot="start" :icon="lockClosedOutline" />
+            <ion-spinner v-if="loadingSummary" name="crescent" slot="start"></ion-spinner>
+            <ion-icon v-if="!loadingSummary" :icon="sparklesOutline" style="margin-right: 6px; font-size: 18px; vertical-align: middle;"></ion-icon>
+            <span style="vertical-align: middle;">
+              {{ loadingSummary ? $t('scanIngredients.aiSummary.thinking') : (isDonor ? $t('scanIngredients.aiSummary.explanation') : $t('scanIngredients.aiSummary.unlock')) }}
+            </span>
+            <span v-if="!isDonor && !loadingSummary" class="pro-pill">PRO</span>
+          </ion-button>
+
+          <!-- Step 2 Actions -->
+          <div class="actions-group ion-margin-top">
+            <ion-button fill="outline" color="carrot" style="flex: 1; height: 48px;" @click="onShareClick">
+              <ion-icon slot="start" :icon="shareSocialOutline" />
+              {{ $t('scanIngredients.scan.share') }}
+            </ion-button>
+            <ion-button fill="solid" color="carrot" style="flex: 1; height: 48px;" @click="clearAll">
+              <ion-icon slot="start" :icon="refreshOutline" />
+              {{ $t('scanIngredients.scan.clear') || 'Scan Again' }}
+            </ion-button>
+          </div>
+
+          <ion-button
+            expand="block"
+            fill="clear"
+            color="primary"
+            class="ion-margin-top"
+            @click="goToAddProduct"
+            style="font-weight: 600;"
+          >
+            <ion-icon slot="start" :icon="addCircleOutline" />
+            {{ $t('scanIngredients.scan.contribute') }}
+          </ion-button>
         </div>
       </div>
 
-      <!-- Cropper Modal -->
+      <!-- 🎨 Premium Cropper Modal -->
       <ion-modal :is-open="showCropper" @didDismiss="closeCropper">
         <ion-header>
-          <ion-toolbar>
-            <ion-title>{{ $t('scanIngredients.scan.cropTitle') }}</ion-title>
-            <ion-buttons slot="end">
-              <ion-button @click="handleConfirmCrop">{{ $t('scanIngredients.scan.done') }}</ion-button>
-            </ion-buttons>
-          </ion-toolbar>
+          <app-header
+              :title="$t('scanIngredients.scan.cropTitle')"
+              show-back
+              :useRouterBack="false"
+              @back="closeCropper"
+          />
         </ion-header>
 
-        <ion-content>
+        <ion-content :scroll-y="false" class="modal-no-scroll">
           <cropper
               :key="cropperSrc"
               ref="cropperRef"
               class="cropper"
               :src="cropperSrc"
-              :stencil-props="{ aspectRatio: null }"
+              :transitions="true"
+              :stencil-props="{
+                aspectRatio: stencilProps.aspectRatio,
+                resizable: true,
+                movable: true
+              }"
               @ready="onCropperReady"
           />
+          
           <!-- Full-screen loading overlay inside the cropper modal -->
           <div v-if="ocrLoading" class="ocr-overlay">
-            <ion-progress-bar
-                :value="progress"
-                color="carrot"
-                class="ocr-progress"
-            />
-
-            <p class="ocr-progress-text">
-              {{ progressLabel }}
-            </p>
+            <ion-progress-bar :value="progress" color="carrot" class="ocr-progress" />
+            <p class="ocr-progress-text">{{ progressLabel }}</p>
 
             <div v-if="loadingReflection" class="reflection-box">
-              <p v-if="loadingReflection.text_ar" class="reflection-ar">
-                {{ loadingReflection.text_ar }}
-              </p>
-
-              <p class="reflection-en">
-                "{{ loadingReflection.text_en }}"
-              </p>
-
-              <small class="reflection-ref">
-                — {{ loadingReflection.reference }}
-              </small>
+              <p v-if="loadingReflection.text_ar" class="reflection-ar">{{ loadingReflection.text_ar }}</p>
+              <p class="reflection-en">"{{ loadingReflection.text_en }}"</p>
+              <small class="reflection-ref">— {{ loadingReflection.reference }}</small>
             </div>
           </div>
         </ion-content>
+
+        <ion-footer>
+          <!-- 🛠️ Ratio Toolbar -->
+          <div class="ratio-toolbar ion-padding-horizontal">
+            <ion-button 
+                v-for="r in [
+                    { label: 'Free', value: null, icon: expandOutline },
+                    { label: '1:1', value: 1, icon: squareOutline },
+                    { label: '3:4', value: 3/4, icon: phonePortraitOutline },
+                    { label: '2:1', value: 2, icon: tabletLandscapeOutline },
+                ]"
+                :key="r.label"
+                size="small"
+                :fill="stencilProps.aspectRatio === r.value ? 'solid' : 'clear'"
+                color="dark"
+                @click="changeRatio(r.value)"
+                class="ratio-btn"
+            >
+              <ion-icon slot="start" :icon="r.icon" style="font-size: 14px;" />
+              {{ r.label }}
+            </ion-button>
+          </div>
+
+          <ion-toolbar class="ion-padding">
+            <ion-button 
+              expand="block" 
+              color="carrot" 
+              :disabled="ocrLoading" 
+              @click="handleConfirmCrop" 
+              style="font-weight: 700; height: 48px;"
+            >
+               <ion-spinner v-if="ocrLoading" name="crescent" style="zoom: 0.6; margin-right: 8px;"></ion-spinner>
+               {{ ocrLoading ? 'Processing...' : $t('scanIngredients.scan.done') }}
+            </ion-button>
+          </ion-toolbar>
+        </ion-footer>
       </ion-modal>
 
       <!-- Toasts -->
@@ -518,18 +644,15 @@
       />
       <ion-toast
           :is-open="showCopied"
-          message="Copied to clipboard"
+          :message="$t('common.copied')"
           :duration="1200"
           position="bottom"
           @did-dismiss="showCopied=false"
       />
-      <ion-toast
-          :is-open="showLimitToast"
-          message="Daily scan limit reached (10/day)"
-          :duration="2000"
-          color="warning"
-          position="bottom"
-          @did-dismiss="showLimitToast=false"
+      <scan-limit-sheet
+          v-model:open="showLimitSheet"
+          :can-earn="canEarnToday"
+          @earn="router.push('/add')"
       />
       
       <!-- Hidden input for Web Gallery selection to avoid garbage collection drop off -->
@@ -550,25 +673,100 @@
         @change="onWebCameraSelected" 
         style="display: none;" 
       />
+
+      <!-- Contribution Prompt Modal -->
+      <ion-modal :is-open="showContributionPrompt" class="contribution-modal" @didDismiss="showContributionPrompt = false">
+        <div class="modal-wrapper ion-padding">
+          <div class="modal-header ion-text-center">
+             <div class="icon-circle">
+               <ion-icon :icon="sparklesOutline" color="carrot" />
+             </div>
+             <h2 class="modal-title">{{ $t('scanIngredients.scan.contributionPrompt.title') }}</h2>
+          </div>
+
+          <div class="modal-body">
+            <i18n-t keypath="scanIngredients.scan.contributionPrompt.message" tag="p" class="main-message">
+              <template #name>
+                <strong style="color: var(--ion-color-dark);">{{ truncatedProductName }}</strong>
+              </template>
+              <template #status>
+                <span :class="'status-text-' + statusChipColor(autoStatus)">
+                  {{ $t(`search.status.${autoStatus}`, autoStatus) }}
+                </span>
+              </template>
+            </i18n-t>
+
+            <p class="sub-message">
+              {{ $t(contributionMotivationKey) }}
+            </p>
+          </div>
+
+          <div class="modal-footer">
+            <ion-button expand="block" color="carrot" class="action-btn" @click="() => { showContributionPrompt = false; goToAddProduct(); }">
+              <ion-icon slot="start" :icon="addOutline" />
+              {{ $t('scanIngredients.scan.contributionPrompt.action') }}
+            </ion-button>
+            <ion-button expand="block" fill="clear" color="medium" @click="showContributionPrompt = false">
+              {{ $t('scanIngredients.scan.contributionPrompt.skip') }}
+            </ion-button>
+          </div>
+
+        </div>
+      </ion-modal>
+
+      <ion-loading
+        :is-open="isMovingToResults"
+        :message="$t('scanIngredients.scan.preparingResults')"
+        duration="3500"
+      />
     </ion-content>
   </ion-page>
 </template>
 
 <script setup lang="ts">
 import {
-  IonPage, IonContent, IonButton, IonIcon, IonCard, IonCardContent, IonInput, IonItem,
-  IonTextarea, IonModal, IonHeader, IonToolbar, IonTitle, IonButtons, IonToast,
-  IonProgressBar, IonChip, IonLabel, onIonViewWillEnter, IonList, IonAccordionGroup, IonAccordion
+  IonPage, IonContent, IonButton, IonIcon, IonCard, IonCardContent, IonItem,
+  IonTextarea, IonModal, IonHeader, IonToolbar, IonTitle, IonToast,
+  IonProgressBar, IonChip, IonLabel, onIonViewWillEnter, IonList, IonSpinner,
+  IonFooter, IonLoading, IonCheckbox
 } from '@ionic/vue'
 import {
   cameraOutline,
-  cloudUploadOutline, helpCircleOutline, lockClosedOutline,
+  imagesOutline,
+  pulseOutline,
+  helpCircleOutline, 
+  lockClosedOutline,
   refreshOutline,
   scanOutline,
-  shareSocialOutline
+  shareSocialOutline,
+  barcodeOutline,
+  sparklesOutline,
+  addOutline,
+  checkmarkCircle,
+  closeCircle,
+  arrowForwardOutline,
+  arrowBackOutline,
+  checkmarkCircleOutline,
+  expandOutline,
+  squareOutline,
+  phonePortraitOutline,
+  tabletLandscapeOutline,
+  stopCircle,
+  addCircleOutline,
+  timeOutline,
+  chevronDownOutline,
+  alertCircleOutline
 } from 'ionicons/icons'
 import AppHeader from '@/components/AppHeader.vue'
-import {ref, onUnmounted, computed} from 'vue'
+import IngredientHighlightImage from '@/components/scan/IngredientHighlightImage.vue'
+import ScanDecisionPrompt from '@/components/ScanDecisionPrompt.vue'
+import LiveVerdictHelpModal from '@/components/scan/LiveVerdictHelpModal.vue'
+import ScanLimitSheet from '@/components/scan/ScanLimitSheet.vue'
+import AiExplanationTeaser from '@/components/scan/AiExplanationTeaser.vue'
+import { canEarnMoreScans } from '@/services/ScanLimitService'
+import { buildScanDecisionNotice, type ScanDecisionChoice } from '@/utils/scanDecisionNotice'
+import { flaggedIngredientNames, type ScanLogId } from '@/utils/scanDecisionLog'
+import {ref, onUnmounted, computed, nextTick} from 'vue'
 import { Swiper, SwiperSlide } from 'swiper/vue'
 import { Autoplay, Pagination } from 'swiper/modules'
 import 'swiper/css'
@@ -585,24 +783,173 @@ import useShareCard from "@/composables/useShareCard";
 import useError from '@/composables/useError'
 import useHighlightCache from '@/composables/useHighlightCache'
 import { extractIonColor, colorMeaning } from '@/utils/ingredientHelpers'
-import {BlacklistPattern} from "@/types/Ingredient";
+import type { IngredientHighlight, BlacklistPattern } from "@/types/Ingredient";
 import useAISummary from '@/composables/useAISummary'
 import { isDonor } from "@/composables/useSubscriptionStatus";
+import { failedAdSpaceId, useAdSlotCollapsed, adSpaceStyle } from '@/composables/useAdFallback'
 import { useCropperOcr } from "@/composables/useCropperOcr"
 import { Device } from '@capacitor/device'
 import { supabase } from '@/plugins/supabaseClient'
 import { watch } from 'vue'
+import dayjs from 'dayjs'
+import utc from 'dayjs/plugin/utc'
+import timezone from 'dayjs/plugin/timezone'
+import relativeTime from 'dayjs/plugin/relativeTime'
 
-import { showRewardedAd } from '@/lib/admobReward'
+dayjs.extend(utc)
+dayjs.extend(timezone)
+dayjs.extend(relativeTime)
+
+import { showLevelPlayRewardedAd } from '@/lib/levelplay'
 import { Capacitor } from '@capacitor/core'
+import { isLiveVerdictSupported } from '@/utils/liveScanPlatform'
+import HouseAdCard from '@/components/ads/HouseAdCard.vue'
 import { ActivityLogService } from "@/services/ActivityLogService";
+import { presentProPaywall } from '@/utils/proPaywall'
+import { isNetworkError } from '@/utils/offlineFeedback'
 
-import { RevenueCatUI, PAYWALL_RESULT } from '@revenuecat/purchases-capacitor-ui'
-import { refreshSubscriptionStatus } from '@/composables/useSubscriptionStatus'
 import { useRouter } from 'vue-router'
+import { scheduleBannerUpdate } from '@/plugins/admob'
+import { destroyLevelPlayBanner } from '@/lib/levelplay'
+import { onIonViewDidEnter } from '@ionic/vue'
 import { useAutoScanStore } from '@/composables/useAutoScanStore'
-import { eyeOutline } from 'ionicons/icons'
 import { useNotifier } from "@/composables/useNotifier"
+import { useI18n } from 'vue-i18n'
+import { extractCoreProductName, wordJaccard } from '@/utils/productNameMatch'
+import { takeScanAction } from '@/composables/useScanModeRequest'
+import {
+  defaultScanMethod,
+  rememberScanChoice,
+  setDefaultScanMethod,
+  rememberScanMethodIfEnabled,
+  type RememberedScanMethod
+} from '@/composables/useDefaultScanMethod'
+import { syncScanWidget } from '@/composables/useWidgetSync'
+import { getOptimizedImageUrl, onProductImageError } from '@/utils/imageHelpers'
+
+const { t } = useI18n()
+
+/** ---------- Constants ---------- */
+const DAILY_SCAN_LIMIT = 5
+
+/** ---------- Wizard Steps ---------- */
+const STEP_CAPTURE = 0
+const STEP_RESULTS = 1
+// Bumped once per new scan result; ScanDecisionPrompt re-rolls on each change.
+const decisionPromptKey = ref(0)
+// ingredient_scan_logs.id of the scan on screen (null when its log insert failed or was skipped);
+// passed to ScanDecisionPrompt so its activity events can point back at the scan.
+const decisionScanLogId = ref<ScanLogId>(null)
+
+// Tell the team (Discord only, no user identity) what was scanned and what the user decided.
+// The type contains "product" on purpose: notify-event routes those to the contributions channel.
+const onDecisionAnswered = (choice: ScanDecisionChoice) => {
+  const { title, message } = buildScanDecisionNotice({
+    productName: productName.value,
+    status: displayStatus.value || autoStatus.value,
+    choice,
+    flagged: dangerousHighlights.value.map((h: IngredientHighlight) => h.keyword),
+    ingredientsZh: ingredientsTextZh.value,
+    ingredients: ingredientsText.value,
+    inDatabase: productFoundInDb.value,
+    matchedName: matchedDbProduct.value?.name,
+  })
+  // Attach the database product's photo (public URL) like real contributions do. A product that is
+  // not in the database has no public photo: the scan crop only exists on this device.
+  const photo = productFoundInDb.value ? matchedDbProduct.value?.photo_front_url : null
+  const image = photo && /^https?:\/\//.test(photo) ? photo : undefined
+  void notifyEvent('product_scan_decision', title, message, image, {}, ['discord']).catch(console.error)
+}
+const currentStep = ref(STEP_CAPTURE)
+const contentRef = ref<any>(null)
+
+/** Runs a scan method (also used to auto-launch the remembered one). */
+function startMethod(method: RememberedScanMethod) {
+  if (method === 'camera') scanFromCamera()
+  else if (method === 'gallery') scanFromGallery()
+  else if (method === 'auto') void router.push('/scan/auto')
+  else if (liveVerdictSupported) void router.push('/scan/live')
+  else scanFromCamera() // remembered Live Scan on a device that cannot run it
+}
+
+function pickMethod(method: RememberedScanMethod) {
+  rememberScanMethodIfEnabled(method)
+  lastPickedMethod = method
+  startMethod(method)
+}
+
+// The method used in this visit, so ticking "Remember my choice" afterwards still saves it.
+let lastPickedMethod: RememberedScanMethod | null = null
+
+function onRememberToggle(checked: boolean) {
+  // ionChange also fires when the :checked binding updates; ignore no-ops.
+  if (checked === rememberScanChoice.value) return
+  // Nothing picked yet: start from the main button (Camera); the next tap will overwrite it.
+  setDefaultScanMethod(checked ? (lastPickedMethod ?? 'camera') : 'ask')
+}
+
+/**
+ * Opening Scan Ingredients fresh (not coming back from a sub-screen or via Back) with a remembered
+ * method goes straight to it.
+ */
+function shouldAutoLaunch(): boolean {
+  if (defaultScanMethod.value === 'ask') return false
+  if (currentStep.value !== STEP_CAPTURE) return false
+  const state = window.history.state as { back?: string | null; forward?: string | null } | null
+  if (state?.forward) return false // arrived by going Back
+  if ((state?.back ?? '').startsWith('/scan')) return false // bounced from another scan screen
+  return true
+}
+
+onIonViewDidEnter(() => {
+  // Arrived from the mode switcher on Auto Scan / Live Verdict: start what was asked for.
+  const requested = takeScanAction()
+  if (requested) {
+    currentStep.value = STEP_CAPTURE
+    if (requested === 'camera') scanFromCamera()
+    else scanFromGallery()
+  } else if (shouldAutoLaunch() && defaultScanMethod.value !== 'ask') {
+    startMethod(defaultScanMethod.value)
+  }
+
+  if (currentStep.value === STEP_RESULTS) {
+    scheduleBannerUpdate()
+  } else {
+    destroyLevelPlayBanner().catch(() => {})
+  }
+})
+
+// Update banner when step changes
+watch([currentStep, isDonor], ([newStep, donorStatus]) => {
+  if (newStep === STEP_RESULTS && !donorStatus) {
+    // Small delay to ensure DOM is updated with the ad slot
+    setTimeout(() => {
+      scheduleBannerUpdate()
+    }, 100)
+  } else {
+    destroyLevelPlayBanner().catch(() => {})
+  }
+})
+
+const scrollToTop = () => {
+  nextTick(() => {
+    contentRef.value?.$el.scrollToTop(300);
+  });
+}
+
+const nextStep = () => {
+  if (currentStep.value < STEP_RESULTS) {
+    currentStep.value++
+    scrollToTop()
+  }
+}
+
+const prevStep = () => {
+  if (currentStep.value > STEP_CAPTURE) {
+    currentStep.value--
+    scrollToTop()
+  }
+}
 
 /** ---------- State ---------- */
 const showCopied = ref(false)
@@ -610,10 +957,21 @@ const { errorMsg, showErr, setError, clearError } = useError()
 const { notifyEvent } = useNotifier()
 const showTutorial = ref(true)
 const showMuslimFriendly = ref(false)
-const showLimitToast = ref(false);
+const showLimitSheet = ref(false);
 const bonusScans = ref(0)
 const isNative = ref(Capacitor.isNativePlatform())
+const liveVerdictSupported = isLiveVerdictSupported()
+const liveHelpOpen = ref(false)
+
+// Flip to true to bring back the "Watch Ad +1 Scan" button. Off for now: the
+// rewarded-ad flow isn't ready, so bonus scans come from contributions only.
+const REWARDED_SCANS_ENABLED = false
+
+// Whether adding a product or location would still earn a scan today (capped per day).
+const canEarnToday = computed(() => canEarnMoreScans({ bonus: bonusScans.value }))
+const adSlotCollapsed = useAdSlotCollapsed('ad-space-scan-results', isDonor)
 const dailyAdUses = ref(0);
+const loadingAd = ref(false);
 
 const originalFile = ref<File | null>(null)
 const croppedFile = ref<File | null>(null)
@@ -625,7 +983,8 @@ const hiddenWebCameraInput = ref<HTMLInputElement | null>(null)
 function onWebCameraSelected(e: Event) {
   ActivityLogService.log("scan_ingredients_start", {source: "camera"});
   if (!canScan.value) {
-    showLimitToast.value = true;
+    ActivityLogService.log("scan_ingredients_limit_reached", {source: "camera"});
+    showLimitSheet.value = true;
     return;
   }
   currentSource.value = 'camera'
@@ -645,7 +1004,8 @@ function onWebCameraSelected(e: Event) {
 function onWebFileSelected(e: Event) {
   ActivityLogService.log("scan_ingredients_start", {source: "gallery"});
   if (!canScan.value) {
-    showLimitToast.value = true;
+    ActivityLogService.log("scan_ingredients_limit_reached", {source: "gallery"});
+    showLimitSheet.value = true;
     return;
   }
   currentSource.value = 'gallery'
@@ -666,11 +1026,166 @@ const ocrStartTime = ref<number | null>(null)
 // @ts-expect-error – injected global
 const appVersion = __APP_VERSION__;
 const todayScanCount = ref(0)
+
+// Keep the home screen widget's "scans left today" line in sync.
+watch([todayScanCount, bonusScans, isDonor], ([count, bonus, donor]) => {
+  syncScanWidget({
+    loggedIn: true,
+    unlimited: donor,
+    remaining: DAILY_SCAN_LIMIT + bonus - count,
+  }).catch(() => {})
+})
+
 const loadingReflection = ref<any>(null)
 const scanMode = ref<'manual' | 'auto'>('manual')
 
 const router = useRouter()
 const { autoScanResult, clearResult } = useAutoScanStore()
+
+const isMovingToResults = ref(false)
+
+// A scan that produced nothing readable. Kept on screen (with tips and a retry button) instead of a
+// 2-second toast that vanished and left people staring at a blank step (survey feedback, Nov 2026).
+type ScanFailure = 'empty' | 'error' | 'offline'
+const scanFailure = ref<ScanFailure | null>(null)
+
+function showScanFailure(kind: ScanFailure) {
+  isMovingToResults.value = false
+  clearError()
+  scanFailure.value = kind
+  currentStep.value = STEP_CAPTURE
+  scrollToTop()
+}
+
+function retryAfterFailure() {
+  scanFailure.value = null
+  clearAll()
+}
+
+const truncatedProductName = computed(() => {
+  if (!productName.value) return ''
+  const max = 60
+  return productName.value.length > max 
+    ? productName.value.substring(0, max) + '...' 
+    : productName.value
+})
+
+const showContributionPrompt = ref(false)
+const checkingExistence = ref(false)
+// null = not checked yet, true = found in our database, false = not found
+const productFoundInDb = ref<boolean | null>(null)
+// The matched product's own listing data, so the user can visually confirm it's
+// really the same item (the lookup is a fuzzy full-text match) via a preview card.
+interface MatchedDbProduct {
+  name: string
+  barcode: string
+  photo_front_url?: string | null
+  status?: string | null
+  created_at?: string | null
+  category?: string | null
+  // Jaccard word-overlap (0-1) between the OCR'd name/ingredients and this listing's
+  // own name/ingredients — a rough proxy for how confident the match is, shown to
+  // the user so they can sanity-check it themselves instead of trusting it blindly.
+  nameConfidence: number
+  ingredientsConfidence: number | null
+}
+const matchedDbProduct = ref<MatchedDbProduct | null>(null)
+// Collapse the raw OCR ingredient breakdown by default once we know the product is
+// already listed — it's redundant with the verified listing, so keep it out of the
+// way but let the user expand it if they want to double-check.
+const showIngredientDetails = ref(true)
+
+// When the scanned product is already listed, the database's own (admin-reviewed)
+// status is authoritative — prefer it over the AI's fresh-scan ingredient analysis,
+// which can disagree with the verified listing.
+const displayStatus = computed(() => {
+  return (productFoundInDb.value && matchedDbProduct.value?.status) || autoStatus.value
+})
+
+function toPercent(ratio: number | null | undefined): number {
+  return Math.round(Math.min(1, Math.max(0, ratio ?? 0)) * 100)
+}
+
+const nameMatchPercent = computed(() => toPercent(matchedDbProduct.value?.nameConfidence))
+const ingredientsMatchPercent = computed(() =>
+  matchedDbProduct.value?.ingredientsConfidence == null ? null : toPercent(matchedDbProduct.value.ingredientsConfidence)
+)
+
+// Show the fuller Quran/Hadith reminder only some of the time — the short line the rest,
+// so the prompt doesn't feel repetitive on every scan.
+const contributionMotivationKey = ref('scanIngredients.scan.contributionPrompt.motivation')
+
+async function checkProductExistence(name: string) {
+  if (!name || name === 'Unknown' || name === 'Scan Results') return false
+  checkingExistence.value = true
+  try {
+    const coreName = extractCoreProductName(name) || name
+
+    // Reuse the same ranked full-text search the Search tab uses (search_products RPC)
+    // instead of a raw ilike scan — it's relevance-ranked, so the right product surfaces
+    // first even when many rows share a common word like "coffee".
+    const { data, error } = await supabase.rpc('search_products', {
+      p_query: coreName,
+      p_limit: 5,
+      p_offset: 0,
+      p_sort: 'relevance',
+    })
+
+    if (error) throw error
+
+    type SearchProductRow = {
+      name: string
+      barcode: string
+      photo_front_url?: string | null
+      status?: string | null
+      created_at?: string | null
+      product_categories?: { name?: string | null } | null
+    }
+
+    const best = ((data ?? []) as SearchProductRow[])
+      .map(product => ({ product, ratio: wordJaccard(coreName, product.name) }))
+      .filter(entry => entry.ratio >= 0.6)
+      .sort((a, b) => b.ratio - a.ratio)[0]
+
+    if (!best) {
+      matchedDbProduct.value = null
+      return false
+    }
+
+    // Name match alone can't tell "Strawberry Milk" from a differently-branded product
+    // that just happens to share both words — cross-check against the DB's own stored
+    // ingredient list (same OCR'd/translated text format we already show the user) as
+    // a second, independent signal.
+    const { data: ingredientsRow } = await supabase
+      .from('products')
+      .select('ingredients')
+      .eq('barcode', best.product.barcode)
+      .maybeSingle()
+
+    const dbIngredients = ingredientsRow?.ingredients as string | undefined
+    const ingredientsRatio = dbIngredients && ingredientsText.value
+      ? wordJaccard(ingredientsText.value, dbIngredients)
+      : null
+
+    matchedDbProduct.value = {
+      name: best.product.name,
+      barcode: best.product.barcode,
+      photo_front_url: best.product.photo_front_url,
+      status: best.product.status,
+      created_at: best.product.created_at,
+      category: best.product.product_categories?.name,
+      nameConfidence: best.ratio,
+      ingredientsConfidence: ingredientsRatio,
+    }
+    return true
+  } catch (err) {
+    console.error("❌ Failed to check product existence:", err)
+    matchedDbProduct.value = null
+    return true // Assume exists on error to avoid false positives
+  } finally {
+    checkingExistence.value = false
+  }
+}
 
 // Watch for Auto Scan results returned via the store
 watch(autoScanResult, (newResult) => {
@@ -684,6 +1199,21 @@ watch(autoScanResult, (newResult) => {
 watch(scanMode, () => {
   clearAll()
 })
+
+const statusChipColor = (status: string) => {
+   switch(status) {
+     case 'Halal': return 'success'
+     case 'Muslim-friendly': return 'primary'
+     case 'Syubhah': return 'warning'
+     case 'Haram': return 'danger'
+     default: return 'medium'
+   }
+}
+
+function fromNowToTaipei(dateString?: string | null) {
+  if (!dateString) return ''
+  return dayjs.utc(dateString).tz('Asia/Taipei').fromNow()
+}
 
 /** ---------- Show the Disclaimer of Usage ---------- */
 
@@ -731,14 +1261,39 @@ const {
   recheckHighlightsSmart,
   detectedLanguage,
   progress,
-  progressLabel
+  progressLabel,
+  stencilProps,
+  setAspectRatio,
+  ocrImageWidth,
+  ocrImageHeight
 } = useCropperOcr({
   allHighlights,
   blacklistPatterns,
   fetchHighlightsWithCache,
   incrementUsageCount,
   setError,
+  t,
 })
+
+const dangerousHighlights = computed(() =>
+  ingredientHighlights.value.filter((h: IngredientHighlight) => extractIonColor(h.color) !== 'primary')
+)
+const friendlyHighlights = computed(() => 
+  ingredientHighlights.value.filter((h: IngredientHighlight) => extractIonColor(h.color) === 'primary')
+)
+// Same flagged set the result screen highlights, as short English names for the decision event.
+const flaggedForDecision = computed(() => flaggedIngredientNames(dangerousHighlights.value))
+// Name of the main flagged ingredient, used to personalise the free-user AI teaser.
+const teaserIngredient = computed(() => {
+  const h = dangerousHighlights.value[0]
+  return h ? (h.keyword || h.keyword_zh || '') : ''
+})
+const showAiTeaser = computed(() =>
+  !isDonor.value && !!ingredientsTextZh.value && !overallNote.value && !errorSummary.value && !!teaserIngredient.value
+)
+const hasFriendlyHighlights = computed(() => 
+  ingredientHighlights.value.some((h: IngredientHighlight) => extractIonColor(h.color) === 'primary')
+)
 
 /** ---------- Log Scan ------------ */
 async function logIngredientScan({
@@ -749,10 +1304,16 @@ async function logIngredientScan({
   source: 'camera' | 'gallery'
   errorMessage?: string | null
   startTime?: number | null
-}) {
+}): Promise<boolean> {
+  // Resolves true only when a successful scan row was actually stored. The daily-limit trigger can
+  // reject the insert, and callers must not record a "scan success" activity event in that case.
+  decisionScanLogId.value = null // a new scan: never keep the previous scan's id
   try {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return console.warn('⏩ No user logged in, skipping log');
+    if (!user) {
+      console.warn('⏩ No user logged in, skipping log');
+      return false;
+    }
 
     const success = !!ingredientsTextZh.value?.trim() || !!ingredientsText.value?.trim();
 
@@ -760,7 +1321,7 @@ async function logIngredientScan({
     const info = await Device.getInfo();
     const { model, platform } = info;
 
-    const { error } = await supabase.from('ingredient_scan_logs').insert([
+    const { data: inserted, error } = await supabase.from('ingredient_scan_logs').insert([
       {
         user_id: user.id,
         product_name: productName.value || 'Unknown Product',
@@ -777,12 +1338,18 @@ async function logIngredientScan({
         device_model: model,
         platform
       }
-    ]);
+    ]).select('id').maybeSingle();
 
-    if (error) console.error('❌ Log insert failed:', error);
-    else console.log(errorMessage ? '⚠️ Logged failed scan' : '✅ Logged successful scan');
+    if (error) {
+      console.error('❌ Log insert failed:', error);
+      return false;
+    }
+    decisionScanLogId.value = inserted?.id ?? null;
+    console.log(errorMessage ? '⚠️ Logged failed scan' : '✅ Logged successful scan');
+    return success;
   } catch (err) {
     console.error('Error logging scan:', err);
+    return false;
   }
 }
 
@@ -794,15 +1361,14 @@ async function loadTodayScanCount() {
     return;
   }
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const today = new Date().toISOString().split('T')[0];
 
   const { data, error } = await supabase
       .from('ingredient_scan_logs')
       .select('id')
       .eq('user_id', user.id)
       .eq('success', true)       // 👈 ONLY count successful scans
-      .gte('created_at', today.toISOString());
+      .gte('created_at', today);
 
   if (error) {
     console.error("Failed to load daily scan count:", error);
@@ -814,37 +1380,36 @@ async function loadTodayScanCount() {
 }
 
 async function checkDailyScanLimit() {
-  // Donors → unlimited scans
-  if (isDonor.value) return true;
+  // DEV mode or Donors → unlimited scans
+  if (import.meta.env.DEV || isDonor.value) return true;
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return true;
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const today = new Date().toISOString().split('T')[0];
 
   const { data, error } = await supabase
       .from('ingredient_scan_logs')
       .select('id')
       .eq('user_id', user.id)
       .eq('success', true)
-      .gte('created_at', today.toISOString());
+      .gte('created_at', today);
 
   if (error) {
     console.error("Daily scan check error:", error);
     return true;   // fail-open instead of blocking users
   }
 
-  return data.length < (10 + bonusScans.value);
+  return data.length < (DAILY_SCAN_LIMIT + bonusScans.value);
 }
 // Gallery
 
 
-function calculateReadingTime(text: string) {
+function calculateReadingTime(text: string, minMs = 2500, maxMs = 4000) {
   const words = text.trim().split(/\s+/).length
   const wordsPerSecond = 3.2
   const ms = (words / wordsPerSecond) * 1000
-  return Math.min(4000, Math.max(2500, ms))
+  return Math.min(maxMs, Math.max(minMs, ms))
 }
 
 const summaryUsed = ref(false)
@@ -854,48 +1419,13 @@ const {
   overallNote,
   loadingSummary,
   errorSummary,
+  activeModel,
+  tryingModel,
   generateSummary
 } = useAISummary()
 
-async function presentPaywall(): Promise<boolean> {
-  if (!Capacitor.isNativePlatform()) {
-    console.warn("[RC] Paywall can only run on native.");
-    return false;
-  }
-  try {
-    const resultParams = await RevenueCatUI.presentPaywall()
-    const paywallResult = resultParams.result || (resultParams as any)
-    switch (paywallResult) {
-      case PAYWALL_RESULT.PURCHASED:
-      case PAYWALL_RESULT.RESTORED:
-        await refreshSubscriptionStatus()
-        await ActivityLogService.log("pro_purchase_success", { source: "ai_summary" })
-
-        const { data: { user } } = await supabase.auth.getUser();
-        await notifyEvent(
-          'pro_purchase_success',
-          '💎 New Pro Member!',
-          `User ${user?.email ?? 'unknown'} has just subscribed to Halal Formosa Pro!`,
-          undefined,
-          {
-            source: 'scan_ingredients_view',
-            email: user?.email,
-            user_id: user?.id
-          },
-          ['discord']
-        ).catch(console.error);
-
-        return true
-      case PAYWALL_RESULT.CANCELLED:
-        return false
-      case PAYWALL_RESULT.ERROR:
-      default:
-        return false
-    }
-  } catch (err) {
-    console.error("Paywall failed:", err)
-    return false
-  }
+async function presentPaywall(source = "ai_summary"): Promise<boolean> {
+  return presentProPaywall(source)
 }
 
 async function handleSummaryClick() {
@@ -905,9 +1435,6 @@ async function handleSummaryClick() {
 
   // 🚫 If not Pro → show paywall
   if (!isDonor.value) {
-    await ActivityLogService.log("pro_paywall_trigger", {
-      source: "ai_summary"
-    })
     const purchased = await presentPaywall()
     if (!purchased) return
     // 🔁 Yield small delay for subscription reactive update
@@ -939,36 +1466,57 @@ function toProperCase(str: string) {
 
 function clearAll() {
   reset()
+  productFoundInDb.value = null
+  matchedDbProduct.value = null
+  showIngredientDetails.value = true
   originalFile.value = null
   croppedFile.value = null
   overallNote.value = ''
+  errorSummary.value = null
+  activeModel.value = ''
+  tryingModel.value = ''
   summaryUsed.value = false
   showTutorial.value = true
+  scanFailure.value = null
+  currentStep.value = STEP_CAPTURE
+  scrollToTop()
 }
 
 async function watchAdForExtraScans() {
   if (dailyAdUses.value >= 2) {
     showErr.value = true;
-    errorMsg.value = "You can only watch 2 ads per day.";
+    errorMsg.value = t('scanIngredients.limit.adLimit', { count: 2 });
     return;
   }
 
-  await showRewardedAd("ca-app-pub-9588373061537955/8695189722", async () => {
-    bonusScans.value += 5;
-    dailyAdUses.value += 1;
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      await supabase
-          .from("user_scan_bonus")
-          .upsert({
-            user_id: user.id,
-            bonus_scans: bonusScans.value,
-            daily_ad_uses: dailyAdUses.value,
-            last_updated: new Date().toISOString().split("T")[0]
-          });
-    }
-    await loadTodayScanCount();
-  });
+  const rewardAdId = Capacitor.getPlatform() === 'ios'
+    ? import.meta.env.VITE_LEVELPLAY_IOS_REWARDED_AD_ID
+    : import.meta.env.VITE_LEVELPLAY_ANDROID_REWARDED_AD_ID;
+
+  loadingAd.value = true;
+  try {
+    await showLevelPlayRewardedAd(rewardAdId, async () => {
+      bonusScans.value += 1;
+      dailyAdUses.value += 1;
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase
+            .from("user_scan_bonus")
+            .upsert({
+              user_id: user.id,
+              bonus_scans: bonusScans.value,
+              daily_ad_uses: dailyAdUses.value,
+              last_updated: new Date().toISOString().split("T")[0]
+            });
+      }
+      await loadTodayScanCount();
+    });
+  } catch (error) {
+    console.error("AdMob Error in watchAdForExtraScans:", error);
+    setError(t('scanIngredients.errors.adFailed') || 'Could not load rewarded ad. Please try again.');
+  } finally {
+    loadingAd.value = false;
+  }
 }
 /** ---------- Share card ------------*/
 const { shareResult } = useShareCard(
@@ -979,6 +1527,7 @@ const { shareResult } = useShareCard(
 )
 
 function onShareClick() {
+  ActivityLogService.log('scan_result_share', { product_name: productName.value, status: autoStatus.value })
   shareResult(originalFile)
 }
 
@@ -995,6 +1544,7 @@ async function fetchRandomReflection() {
 }
 
 async function handleConfirmCrop() {
+  scanFailure.value = null
   try {
     ocrStartTime.value = Date.now()
 
@@ -1003,6 +1553,7 @@ async function handleConfirmCrop() {
     const reflectionStart = Date.now()
 
     await confirmCrop()
+    isMovingToResults.value = true // ⚡ Show transition loader immediately after OCR finishes
 
     // 🕊 Ensure reflection shown minimum 3 seconds
     const reflectionElapsed = Date.now() - reflectionStart
@@ -1019,39 +1570,81 @@ async function handleConfirmCrop() {
       )
     }
 
-    showOk.value = true
+    if (ingredientsText.value?.trim()) showOk.value = true
 
     // Only log if ingredients were detected
     if (ingredientsText.value?.trim()) {
+      // Logic moved up to handleConfirmCrop level
 
 
-      await ActivityLogService.log("scan_ingredients_success", {
-        product_name: productName.value || "Unknown",
-        auto_status: autoStatus.value,
-        ingredient_count: ingredientHighlights.value?.length ?? 0,
-      });
-
-      await logIngredientScan({
+      const stored = await logIngredientScan({
         source: currentSource.value || 'camera',
         startTime: ocrStartTime.value
       })
+
+      // Only count it as a success if the scan log accepted the row (the daily limit can reject it).
+      if (stored) {
+        await ActivityLogService.log("scan_ingredients_success", {
+          product_name: productName.value || "Unknown",
+          auto_status: autoStatus.value,
+          ingredient_count: ingredientHighlights.value?.length ?? 0,
+        });
+      }
 
 
 
 
       await loadTodayScanCount()
+      isMovingToResults.value = false
+      decisionPromptKey.value++
+      nextStep()
+
+      // 🔍 Proactively check if product exists in database by name
+      productFoundInDb.value = null
+      matchedDbProduct.value = null
+      if (productName.value) {
+        checkProductExistence(productName.value).then(exists => {
+          productFoundInDb.value = exists
+          showIngredientDetails.value = !exists
+          if (!exists) {
+            console.log("🕵️‍♂️ Product not found in DB, showing contribution prompt")
+            // Give the user time to actually read the results (status, product name,
+            // ingredient highlights) before interrupting with this prompt — scale the
+            // wait with how much there is to read instead of a flat 1s.
+            const resultsText = [productName.value, ingredientsText.value, ingredientsTextZh.value]
+                .filter(Boolean)
+                .join(' ')
+            const readDelay = calculateReadingTime(resultsText, 3500, 8000)
+            setTimeout(() => {
+              if (currentStep.value === STEP_RESULTS) {
+                contributionMotivationKey.value = Math.random() < 0.3
+                    ? 'scanIngredients.scan.contributionPrompt.motivationQuote'
+                    : 'scanIngredients.scan.contributionPrompt.motivation'
+                showContributionPrompt.value = true
+              }
+            }, readDelay)
+          }
+        })
+      }
 
     } else {
       console.warn('🚫 OCR text found but no ingredient section detected, skipping log')
+      showScanFailure('empty')
+      ActivityLogService.log("scan_ingredients_error", {
+        error: "no_ingredients_detected",
+        source: currentSource.value,
+        offline: false
+      });
     }
 
   } catch (err: any) {
 
-    setError(err.message || 'OCR failed')
+    showScanFailure(isNetworkError(err) ? 'offline' : 'error')
 
     await ActivityLogService.log("scan_ingredients_error", {
       error: err.message || "OCR failed",
-      source: currentSource.value
+      source: currentSource.value,
+      offline: isNetworkError(err)
     });
 
     await logIngredientScan({
@@ -1067,15 +1660,44 @@ async function handleConfirmCrop() {
 
 const canScan = computed(() => {
   if (isDonor.value) return true;
-  return todayScanCount.value < (10 + bonusScans.value);
+  return todayScanCount.value < (DAILY_SCAN_LIMIT + bonusScans.value);
 });
+
+function changeRatio(ratio: number | null) {
+  setAspectRatio(ratio)
+}
+
+function formatHighlight(h: any) {
+  if (h.keyword_zh && h.keyword && h.keyword_zh.trim().toLowerCase() !== h.keyword.trim().toLowerCase()) {
+    return `${h.keyword_zh} (${h.keyword})`;
+  }
+  return h.keyword_zh || h.keyword;
+}
+
+function goToAddProduct() {
+  const imageUrl = originalFile.value ? URL.createObjectURL(originalFile.value) : null;
+
+  router.push({
+    path: '/add',
+    query: {
+      fromScan: 'true',
+      name: productName.value,
+      ingredients: ingredientsText.value || ingredientsTextZh.value,
+      status: autoStatus.value,
+      image: imageUrl,
+      analysis: JSON.stringify(ingredientHighlights.value),
+      rawOcr: ingredientsTextZh.value
+    }
+  })
+}
 
 /** ---------- UI actions ---------- */
 function scanFromCamera() {
   ActivityLogService.log("scan_ingredients_start", {source: "camera"});
 
   if (!canScan.value) {
-    showLimitToast.value = true;
+    ActivityLogService.log("scan_ingredients_limit_reached", {source: "camera"});
+    showLimitSheet.value = true;
     return;
   }
 
@@ -1103,7 +1725,7 @@ function scanFromCamera() {
     }).catch((err) => {
       console.warn('Camera failed:', err)
       if (err.message !== 'User cancelled photos app' && !err.message?.includes('cancelled')) {
-        setError(err.message || 'Could not access camera')
+        setError(err.message || t('scanIngredients.errors.couldNotAccessCamera'))
       }
     });
   } else {
@@ -1116,7 +1738,8 @@ function scanFromGallery() {
   ActivityLogService.log("scan_ingredients_start", {source: "gallery"});
 
   if (!canScan.value) {
-    showLimitToast.value = true;
+    ActivityLogService.log("scan_ingredients_limit_reached", {source: "gallery"});
+    showLimitSheet.value = true;
     return;
   }
 
@@ -1157,9 +1780,13 @@ async function handleAutoDetected(result: any) {
   
   const allowed = await checkDailyScanLimit()
   if (!allowed) {
-    showLimitToast.value = true
+    ActivityLogService.log("scan_ingredients_limit_reached", {source: "auto_scan"});
+    showLimitSheet.value = true
     return
   }
+
+  // Auto Capture may have logged this scan already; if so, reuse its row id for the decision events.
+  decisionScanLogId.value = result.loggedAsScan ? (result.scanLogId ?? null) : null
 
   currentSource.value = 'camera'
   const file = new File([blob], `auto-ingredients-${Date.now()}.jpg`, { type: 'image/jpeg' })
@@ -1179,7 +1806,25 @@ async function handleAutoDetected(result: any) {
   await ActivityLogService.log("scan_ingredients_start", {source: "auto_scan"});
 
   try {
-      await autoProcess(file, roi)
+      // 🔴 The live scanner already ran the full OCR/translation pipeline while the
+      // camera was open (see AutoScanCamera.vue) — reuse that result instead of
+      // re-analyzing the same image a second time.
+      if (result.autoStatus !== undefined) {
+        productName.value = result.productName || ''
+        ingredientsText.value = result.textEn || ''
+        ingredientsTextZh.value = result.textZh || ''
+        ingredientHighlights.value = result.highlights || []
+        autoStatus.value = result.autoStatus || ''
+        detectedLanguage.value = result.detectedLanguage || 'unknown'
+        ocrRaw.value = result.ocrRaw || ''
+        ocrImageWidth.value = result.ocrImageWidth || 0
+        ocrImageHeight.value = result.ocrImageHeight || 0
+        if (croppedPreviewUrl.value) URL.revokeObjectURL(croppedPreviewUrl.value)
+        croppedPreviewUrl.value = URL.createObjectURL(file)
+      } else {
+        await autoProcess(file, roi)
+      }
+      isMovingToResults.value = true // ⚡ Show transition loader immediately
       
       const reflectionElapsed = Date.now() - reflectionStart
       const minReflectionTime = calculateReadingTime(loadingReflection.value?.text_en || '')
@@ -1189,26 +1834,44 @@ async function handleAutoDetected(result: any) {
       }
       
       if (ingredientsText.value?.trim() || ingredientsTextZh.value?.trim()) {
-          await ActivityLogService.log("scan_ingredients_success", {
-            product_name: productName.value || "Unknown",
-            auto_status: autoStatus.value,
-            ingredient_count: ingredientHighlights.value?.length ?? 0,
-            source: "auto_scan"
+          // Auto Scan already counted/logged this the moment the live detection
+          // succeeded (see AutoScanView.vue's onStableResult) — don't double it here.
+          if (!result.loggedAsScan) {
+            const stored = await logIngredientScan({
+              source: "camera",
+              startTime: ocrStartTime.value
+            })
+
+            if (stored) {
+              await ActivityLogService.log("scan_ingredients_success", {
+                product_name: productName.value || "Unknown",
+                auto_status: autoStatus.value,
+                ingredient_count: ingredientHighlights.value?.length ?? 0,
+                source: "auto_scan"
+              });
+            }
+
+            await loadTodayScanCount()
+          }
+          isMovingToResults.value = false
+          decisionPromptKey.value++
+          nextStep()
+      } else {
+          // Nothing readable: say so, instead of leaving the camera screen with no feedback at all.
+          showScanFailure('empty')
+          ActivityLogService.log("scan_ingredients_error", {
+            error: "no_ingredients_detected",
+            source: "auto_scan",
+            offline: false
           });
-
-          await logIngredientScan({
-            source: "camera",
-            startTime: ocrStartTime.value
-          })
-
-          await loadTodayScanCount()
       }
   } catch (err: any) {
-      setError(err.message || 'Auto OCR failed')
+      showScanFailure(isNetworkError(err) ? 'offline' : 'error')
 
       await ActivityLogService.log("scan_ingredients_error", {
         error: err.message || "Auto OCR failed",
-        source: "auto_scan"
+        source: "auto_scan",
+        offline: isNetworkError(err)
       });
 
       await logIngredientScan({
@@ -1302,164 +1965,644 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-ion-card { border-radius: 12px; }
-.actions { display: flex; gap: 8px; align-items: center; margin-top: 12px; }
-
-.preview-block {
+/* 🟢 Stepper UI */
+.step-container {
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  background: var(--ion-color-light);
+  border-radius: 12px;
+  margin-top: 8px;
+}
+
+.step-item {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex: 1;
+  opacity: 0.4;
+  transition: all 0.3s ease;
+}
+
+.step-item.active {
+  opacity: 1;
+}
+
+.step-dot {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--ion-color-step-150);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ion-color-step-500);
+  font-size: 12px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+}
+
+.active .step-dot {
+  background: var(--ion-color-carrot);
+  color: white;
+}
+
+.step-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ion-color-step-600);
+  white-space: nowrap;
+}
+
+.active .step-label {
+  color: var(--ion-color-carrot);
+}
+
+.step-line {
+  flex: 0.5;
+  height: 2px;
+  background: var(--ion-color-step-300);
+}
+
+.step-line.active {
+  background: var(--ion-color-carrot);
+}
+
+/* 🔍 Content Layout */
+.step-content {
+  padding-top: 8px;
+  animation: fadeInStep 0.3s ease;
+}
+
+@keyframes fadeInStep {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.hero-desc { color: var(--ion-color-step-600); line-height: 1.5; margin-bottom: 16px; }
+
+.scan-failure-card {
+  margin-bottom: 14px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(230, 126, 34, 0.35);
+  background: rgba(230, 126, 34, 0.08);
+}
+.scan-failure-head { display: flex; align-items: center; gap: 8px; font-size: 1rem; }
+.scan-failure-head ion-icon { font-size: 22px; color: #c96718; }
+.scan-failure-body { margin: 6px 0 0; line-height: 1.45; }
+.scan-failure-tips-title {
+  margin: 12px 0 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #c96718;
+}
+.scan-failure-tips { margin: 0; padding-left: 18px; font-size: 0.9rem; line-height: 1.5; }
+.scan-failure-retry { margin-top: 12px; --background: #e67e22; --color: #000; font-weight: 700; }
+
+.db-found-badge {
+  font-size: 18px;
+  vertical-align: middle;
+  margin-left: 4px;
+  transform: translateY(-2px);
+}
+
+.collapse-chevron {
+  transition: transform 0.2s ease;
+}
+
+.collapse-chevron.is-expanded {
+  transform: rotate(180deg);
+}
+
+.matched-product-eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--ion-color-success);
+  margin: 12px 0 0;
+}
+
+.matched-product-confidence {
+  font-size: 11px;
+  color: var(--ion-color-step-600);
+  font-weight: 600;
+  margin: 2px 0 4px;
+}
+
+.matched-product-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 20px;
+  padding: 10px;
+  border-radius: var(--radius-lg, 12px);
+  background: var(--ion-color-light, #f4f4f4);
+  border: 1px solid rgba(var(--ion-color-success-rgb), 0.25);
+  text-align: left;
+}
+
+.matched-product-card.clickable {
+  cursor: pointer;
+}
+
+.matched-product-thumb {
+  width: 56px;
+  height: 56px;
+  border-radius: 8px;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: var(--ion-color-step-100, #e6e6e6);
+}
+
+.matched-product-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.matched-product-name {
+  font-size: 14px;
+  font-weight: 700;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.matched-product-category {
+  font-size: 12px;
+  color: var(--ion-color-step-600);
+  margin: 2px 0 0;
+}
+
+.matched-product-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+
+.matched-status-chip {
+  height: 20px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  margin: 0;
+}
+
+.matched-product-added {
+  font-size: 11px;
+  color: var(--ion-color-step-500);
+}
+
+.matched-product-arrow {
+  font-size: 16px;
+  color: var(--ion-color-success);
+  flex-shrink: 0;
+}
+
+.action-card {
+  border-radius: var(--radius-lg);
+  box-shadow: var(--card-shadow);
+  overflow: hidden;
+}
+
+.tutorial-carousel-wrap {
+  margin-bottom: 4px;
+}
+
+.tutorial-carousel-wrap :deep(.swiper-pagination) {
+  position: relative;
+  margin-top: 8px;
+}
+
+/* 🔬 Results UI */
+.status-badge-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 8px;
+}
+
+.status-large {
+  font-size: 16px;
+  font-weight: 800;
+  height: 36px;
+  padding: 0 20px;
+  border-radius: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.input-card {
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: var(--card-shadow);
+}
+
+.highlights-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ion-color-step-600);
+  margin-bottom: 12px;
+}
+
+.chip-group {
+  display: flex;
+  flex-wrap: wrap;
   gap: 6px;
 }
-.preview-title {
+
+.compact-chip {
   font-weight: 600;
-  opacity: 0.8;
-}
-
-.preview-img {
-  width: 100%;
-  max-height: 320px;
-  object-fit: contain;
-  margin-bottom: 0;
-  box-shadow: 0 1px 6px rgba(0,0,0,0.08);
-  background: var(--ion-color-light);
-}
-
-.preview-img-cropped {
-  width: 100%;
-  max-height: 320px;
-  object-fit: contain;
-  border-radius: 10px;
-  box-shadow: 0 1px 6px rgba(0,0,0,0.08);
-  background: var(--ion-color-light);
-}
-
-.category-item h2 {
-  margin: 0 0 4px;
-}
-.category-item p {
-  margin: 0 0 4px;
-  font-size: 14px;
-}
-.category-item small {
-  display: block;
-  color: var(--ion-color-medium);
   font-size: 13px;
+  height: 28px;
 }
 
-.actions {
-  display: flex;
-  gap: 8px;           /* spacing between buttons */
-}
-
-.actions ion-button {
-  flex: 1;            /* each button takes equal space */
-}
-
-.ai-summary-block {
-  margin-top: 10px;
-  padding-left: 10px;
-  padding-right: 10px;
+/* 🤖 AI Summary Card */
+.ai-summary-card {
+  margin-top: 20px;
+  background: var(--soft-warning-bg);
+  border-radius: 16px;
+  padding: 16px;
+  border: 1px solid var(--soft-warning-border);
 }
 
 .ai-summary-title {
   font-size: 16px;
-  font-weight: 600;
+  font-weight: 700;
+  color: var(--soft-warning-text);
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ai-initial-loader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 30px 10px;
+  text-align: center;
+}
+
+.ai-status-msg {
+  margin-top: 15px;
+  font-size: 14px;
+  color: var(--ion-color-step-600);
+  font-weight: 500;
+}
+
+.ai-trying-text {
+  font-size: 13px;
+  color: var(--ion-color-medium);
   margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  font-style: italic;
+  opacity: 0.8;
 }
 
 .ai-summary-text {
-  white-space: pre-wrap;     /* ✅ keeps line breaks from AI response */
-  font-size: 16px;
-  color: var(--ion-color-dark);
-  line-height: 1.5;          /* ✅ improves readability */
-  border-radius: 8px;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--soft-warning-text);
+  opacity: 0.9;
 }
 
-.ai-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  font-weight: 600;
+.ai-summary-text p {
+  margin-bottom: 12px;
 }
 
-.ai-label {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
+.ai-summary-text ul {
+  padding-left: 20px !important;
+  margin: 12px 0 !important;
+  list-style-type: disc !important;
 }
 
-.pro-pill {
+.ai-summary-text li {
+  margin-bottom: 8px !important;
+  display: list-item !important;
+}
+
+.ai-summary-footer {
+  margin-top: 12px;
   font-size: 11px;
-  font-weight: 700;
-  padding: 3px 8px;
-  border-radius: 999px;
-  background: #ffd54f;
-  color: #000;
+  color: var(--soft-warning-text);
+  opacity: 0.5;
+  text-align: right;
+  font-style: italic;
+  border-top: 1px solid rgba(var(--ion-color-step-300-rgb), 0.2);
+  padding-top: 8px;
+}
+
+.actions-group {
+  display: flex;
+  gap: 12px;
+}
+
+.tap-to-enlarge-hint {
+  font-size: 12px;
+  color: var(--ion-color-step-600);
+  margin-top: 6px;
+  margin-bottom: 0;
 }
 
 /* 🔹 OCR Loading Overlay */
 .ocr-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.65);
-  backdrop-filter: blur(4px);
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
   z-index: 9999;
-
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  text-align: center;
-
-  padding: 20px;
+  padding: 30px;
   color: white;
-}
-
-.ocr-spinner {
-  transform: scale(1.4);
-}
-
-.reflection-box {
-  margin-top: 18px;
-  max-width: 320px;
-}
-
-.reflection-ar {
-  font-size: 18px;
-  font-weight: 600;
-  line-height: 1.6;
-}
-
-.reflection-en {
-  font-style: italic;
-  margin-top: 10px;
-  line-height: 1.5;
-}
-
-.reflection-ref {
-  opacity: 0.75;
-}
-
-.ocr-overlay {
-  animation: fadeInOverlay 0.3s ease;
-}
-
-@keyframes fadeInOverlay {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  text-align: center;
 }
 
 .ocr-progress {
-  width: 240px;
-  height: 6px;
-  border-radius: 8px;
-  transition: all 0.2s ease;
+  width: 100%;
+  max-width: 260px;
+  height: 8px;
+  border-radius: 10px;
 }
 
 .ocr-progress-text {
-  font-size: 14px;
+  margin-top: 12px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.reflection-box {
+  margin-top: 24px;
+  max-width: 300px;
+}
+
+.reflection-ar {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  line-height: 1.4;
+}
+
+.reflection-en {
+  font-size: 15px;
+  font-style: italic;
+  line-height: 1.5;
   opacity: 0.9;
+}
+
+.reflection-ref {
+  display: block;
   margin-top: 8px;
+  font-size: 12px;
+  opacity: 0.6;
+}
+
+.mode-tiles-label {
+  margin: 4px 2px 6px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ion-color-medium);
+}
+
+.mode-tiles {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 8px;
+}
+
+.mode-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 12px 4px 10px;
+  border-radius: 12px;
+  border: 1px solid var(--ion-color-step-150, rgba(128, 128, 128, 0.25));
+  background: var(--ion-color-step-50, rgba(128, 128, 128, 0.08));
+  color: var(--ion-text-color);
+  font: inherit;
+  cursor: pointer;
+}
+
+.mode-tile:active {
+  transform: scale(0.98);
+}
+
+.mode-tile > ion-icon {
+  font-size: 24px;
+  color: var(--ion-color-carrot);
+}
+
+.mode-tile-name {
+  margin-top: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.mode-tile-hint {
+  font-size: 11px;
+  color: var(--ion-color-medium);
+  text-align: center;
+}
+
+/* Gold is reserved for Pro. */
+.mode-tile-pro {
+  position: absolute;
+  top: -8px;
+  right: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 1px 6px;
+  border-radius: 8px;
+  background: #facc15;
+  color: #422006;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.mode-tile-pro ion-icon {
+  font-size: 10px;
+}
+
+.remember-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 14px;
+  font-size: 14px;
+}
+
+.remember-note {
+  padding-left: 30px;
+  font-size: 12px;
+  color: var(--ion-color-medium);
+}
+
+.mode-help-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.mode-help-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border: 0;
+  background: none;
+  color: var(--ion-color-carrot);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.mode-help-link ion-icon {
+  font-size: 16px;
+}
+
+.pro-pill {
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: #ffd54f;
+  color: #000;
+  margin-left: 8px;
+}
+
+.ai-button {
+  height: 52px;
+  font-weight: 700;
+  --border-radius: 12px;
+}
+
+/* ⚙️ Ratio Toolbar */
+.ratio-toolbar {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+  background: var(--ion-color-step-50);
+  border-top: 1px solid var(--ion-color-step-150);
+  padding: 8px 4px;
+}
+
+.ratio-btn {
+  margin: 0;
+  --padding-start: 8px;
+  --padding-end: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  height: 32px;
+}
+
+.modal-no-scroll {
+  --overflow: hidden;
+}
+
+.cropper {
+  height: 100%;
+  background: black;
+}
+
+/* 🎁 Contribution Modal Styles */
+.contribution-modal {
+  --height: auto;
+  --border-radius: 28px 28px 0 0;
+  align-items: flex-end;
+}
+
+.modal-wrapper {
+  background: var(--ion-background-color);
+  padding: 32px 24px;
+}
+
+.modal-header {
+  margin-bottom: 16px;
+}
+
+.icon-circle {
+  width: 48px;
+  height: 48px;
+  background: rgba(var(--ion-color-carrot-rgb), 0.1);
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 0 auto 12px;
+  font-size: 24px;
+  box-shadow: 0 4px 12px rgba(var(--ion-color-carrot-rgb), 0.1);
+}
+
+.modal-title {
+  font-weight: 800;
+  font-size: 20px;
+  margin: 0;
+  color: var(--ion-color-step-900);
+}
+
+.main-message {
+  font-size: 15px;
+  line-height: 1.4;
+  color: var(--ion-color-step-700);
+  text-align: center;
+  margin-bottom: 4px;
+}
+
+.sub-message {
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--ion-color-step-600);
+  text-align: center;
+  margin: 0 0 20px;
+}
+
+.modal-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.action-btn {
+  height: 54px;
+  font-weight: 700;
+  font-size: 16px;
+  --border-radius: 14px;
+}
+
+/* 🎨 Status Text Colors for Modal */
+.status-text-success { color: var(--ion-color-success); font-weight: 700; }
+.status-text-primary { color: var(--ion-color-primary); font-weight: 700; }
+.status-text-warning { color: var(--ion-color-warning); font-weight: 700; }
+.status-text-danger  { color: var(--ion-color-danger);  font-weight: 700; }
+.status-text-medium  { color: var(--ion-color-medium);  font-weight: 700; }
+
+.has-ads {
+  background: var(--ion-background-color);
+}
+.has-ads {
+  background: var(--ion-background-color);
 }
 </style>

@@ -1,23 +1,42 @@
 import { ref } from 'vue'
-import { GoogleGenAI } from '@google/genai'
 import { extractIonColor, colorMeaning } from '@/utils/ingredientHelpers'
 import { marked } from 'marked'
 import DOMPurify from 'dompurify'
+import { supabase } from '@/plugins/supabaseClient'
+import { i18n } from '@/i18n'
+
+// Server codes from generate-ai-explanation -> translated, user-safe messages. Anything else
+// (network drop, Gemini outage, old server response) shows the generic "unavailable" text so
+// raw provider or billing errors are never shown to users; details stay in the console.
+export class AiRequestError extends Error {
+    constructor(public status: number, public code?: string, message?: string) {
+        super(`AI request failed [${status}${code ? ' ' + code : ''}]: ${message || 'no detail'}`)
+    }
+}
+
+const AI_ERROR_KEYS: Record<string, string> = {
+    UNAUTHORIZED: 'signIn',
+    PRO_ONLY: 'proOnly',
+    AI_DAILY_LIMIT: 'dailyLimit',
+}
+
+export function friendlyAiError(err: unknown): string {
+    const code = err instanceof AiRequestError ? err.code : undefined
+    const key = (code && AI_ERROR_KEYS[code]) || 'unavailable'
+    return i18n.global.t(`scanIngredients.aiErrors.${key}`)
+}
 
 export default function useAISummary() {
     const overallNote = ref<string>('') // summary text (HTML after parsing)
     const loadingSummary = ref(false)
     const errorSummary = ref<string | null>(null)
-
-    const ai = new GoogleGenAI({
-        apiKey: import.meta.env.VITE_GEMINI_API_KEY
-    })
+    const activeModel = ref<string>('')
+    const tryingModel = ref<string>('')
 
     async function renderMarkdown(text: string): Promise<string> {
-        const raw = await marked.parseInline(text)
+        const raw = await marked.parse(text)
         return DOMPurify.sanitize(raw)
     }
-
 
     async function generateSummary(ingredientsText: string, highlights: any[] = [], systemStatus: string = '') {
         if (!ingredientsText) return
@@ -25,64 +44,114 @@ export default function useAISummary() {
         loadingSummary.value = true
         errorSummary.value = null
         overallNote.value = ''
+        activeModel.value = ''
+        tryingModel.value = 'AI Cloud' // Initial feedback
+
+        // 1. Prepare data for the path
+        const input = ingredientsText
+            .replace(/\s+/g, ' ')
+            .trim()
+            .slice(0, 1500)
+
+        const highlightInfo = highlights.length
+            ? highlights.map(h => `${h.keyword}: ${colorMeaning(extractIonColor(h.color))}`).join(', ')
+            : 'None'
+
+        let accumulatedText = ''
 
         try {
-            const input = ingredientsText
-                .replace(/\s+/g, ' ')
-                .trim()
-                .slice(0, 1500)
+            const { data: { session } } = await supabase.auth.getSession()
 
-            const highlightInfo = highlights.length
-                ? highlights.map(h => `${h.keyword}: ${colorMeaning(extractIonColor(h.color))}`).join(', ')
-                : 'None'
-
-            const response = await ai.models.generateContent({
-                model: 'gemini-2.5-flash-lite',
-                contents: `You are providing official but friendly explanations on behalf of Halal Formosa. 
-Do NOT include greetings, OCR results, introductions, or disclaimers. Go straight to the ingredient analysis.
-
-Ingredients (OCR result):
-${input}
-
-Trusted ingredient status from the Halal Formosa database:
-${highlightInfo}
-
-Strict instructions:
-1. ONLY explain ingredients flagged in the database (*Muslim-friendly*, *Haram*, *Syubhah*). 
-2. For *Muslim-friendly* items, group them into one efficient sentence (e.g., "**Sugar and Water** are *Muslim-friendly* because they are plant-based or natural").
-3. For **Haram** or **Syubhah** items, you MUST provide a detailed "Why." Do not use generic summaries. Instead, use specific reasoning like scientific origins (e.g., "extracted from animal fat") or scriptural references (e.g., "Pork is *Haram* per Quranic verse Al-Baqarah 2:173").
-4. If the database provides a specific verse or a chemical source, it is MANDATORY to include it.
-5. Total explanation must be descriptive but concise, between 4 to 8 sentences.
-Overall system status:
-${systemStatus}
-6. Always end exactly with:
-"Based on our Halal Formosa ingredients database, this product is ${systemStatus}."
-7. Use Markdown (**bold** names, *italic* statuses).`,
-                config: { thinkingConfig: { thinkingBudget: 0 } } // Set budget > 0 if you want the model to 'reason' internally first
+            const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-ai-explanation`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${session?.access_token || import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+                },
+                body: JSON.stringify({
+                    ingredientsText: input,
+                    highlightInfo: highlightInfo,
+                    systemStatus: systemStatus
+                })
             })
 
-            const text =
-                response.text ||
-                response.candidates?.[0]?.content?.parts?.[0]?.text ||
-                ''
-
-            if (!text) {
-                throw new Error('Empty AI response')
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}))
+                throw new AiRequestError(response.status, errorData.code, errorData.error)
             }
 
-            overallNote.value = await renderMarkdown(text)
+            // Capture which model finally answered
+            const modelUsed = response.headers.get('X-Model-Used')
+            if (modelUsed) {
+                activeModel.value = modelUsed
+            }
+
+            const reader = response.body?.getReader()
+            if (!reader) throw new Error("No stream reader available from Edge Function")
+
+            const decoder = new TextDecoder()
+            let buffer = ""
+
+            tryingModel.value = '' 
+
+            const processLine = (line: string) => {
+                const trimmed = line.trim()
+                if (!trimmed || trimmed === "data: [DONE]") return
+
+                if (trimmed.startsWith("data: ")) {
+                    try {
+                        const jsonStr = trimmed.replace("data: ", "")
+                        const json = JSON.parse(jsonStr)
+                        const content = json.choices?.[0]?.delta?.content || ""
+                        if (content) {
+                            accumulatedText += content
+                            return true
+                        }
+                    } catch (e) {
+                        console.warn("⚠️ [AI] Partial segment ignored:", trimmed)
+                    }
+                }
+                return false
+            }
+
+            while (true) {
+                const { done, value } = await reader.read()
+                if (done) break
+
+                buffer += decoder.decode(value, { stream: true })
+                const lines = buffer.split("\n")
+                buffer = lines.pop() || ""
+
+                for (const line of lines) {
+                    if (processLine(line)) {
+                        overallNote.value = await renderMarkdown(accumulatedText)
+                    }
+                }
+            }
+
+            if (buffer.trim() && processLine(buffer)) {
+                overallNote.value = await renderMarkdown(accumulatedText)
+            }
+
+            if (!accumulatedText) {
+                throw new Error('Empty AI response from Edge Function')
+            }
+
         } catch (err: any) {
-            errorSummary.value = err.message || 'Failed to generate summary.'
+            console.error("AI Summary Error:", err)
+            errorSummary.value = friendlyAiError(err)
         } finally {
             loadingSummary.value = false
+            tryingModel.value = ''
         }
     }
-
 
     return {
         overallNote,
         loadingSummary,
         errorSummary,
+        activeModel,
+        tryingModel,
         generateSummary
     }
 }

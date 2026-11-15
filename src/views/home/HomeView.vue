@@ -5,33 +5,14 @@
     </ion-header>
 
     <ion-content class="ion-padding">
-      <!-- === Announcement Banner === -->
-      <transition name="slide-down">
-        <div v-if="showAnnouncement && announcement" class="announcement-banner" :class="[announcement.type || 'info', { 'clickable': announcement.link_url }]">
-          <div class="announcement-content" @click="handleBannerClick">
-            <template v-if="announcement.image_url">
-              <div class="announcement-thumb-wrapper">
-                <img :src="announcement.image_url" class="announcement-thumb" alt="announcement" />
-              </div>
-            </template>
-            <ion-icon v-else :icon="sparkles" class="announcement-icon" />
-            <div class="announcement-text">
-              <span class="announcement-title">{{ announcement.title }}</span>
-              <p class="announcement-body">{{ announcement.content }}</p>
-            </div>
-          </div>
-          <ion-button fill="clear" color="dark" class="close-btn" @click.stop="dismissAnnouncement">
-            <ion-icon :icon="closeOutline" />
-          </ion-button>
-        </div>
-      </transition>
-
       <!-- === Prayer Times Horizontal === -->
-      <ion-card>
+      <ion-card class="prayer-hero-card">
+        <div class="prayer-hero-glow" aria-hidden="true"></div>
         <ion-card-header>
           <div class="prayer-header-row">
-            <ion-card-title>
+            <ion-card-title class="prayer-hero-title">
               <template v-if="nextPrayer && userLocation">
+                <div class="prayer-eyebrow">{{ $t('home.prayerTimes') }}</div>
                 <div class="prayer-title-main">
                   {{ $t('home.prayerNotification', { label: nextPrayer.label, time: upcomingCountdown }) }}
                 </div>
@@ -66,6 +47,17 @@
               >
                 <ion-icon :icon="compassOutline" slot="start" />
                 {{ $t('home.qibla') }}
+              </ion-button>
+
+              <ion-button
+                  size="small"
+                  fill="clear"
+                  color="carrot"
+                  class="qibla-header-btn"
+                  :aria-label="$t('prayerSettings.title')"
+                  @click="openPrayerSettings"
+              >
+                <ion-icon :icon="settingsOutline" />
               </ion-button>
             </div>
           </div>
@@ -135,36 +127,8 @@
 
 
 
-      <!-- === Main Feature: Scan === -->
-      <ion-card class="main-feature-section clear-card">
-        <div class="main-features-grid">
-          <button class="feature-card feature-primary" @click="goScan">
-            <div class="feature-icon-wrapper">
-              <ion-icon :icon="scanOutline" />
-            </div>
-            <div class="feature-text">
-              <h3>{{ $t('home.scan') }}</h3>
-              <p>{{ $t('home.scanDesc') }}</p>
-            </div>
-            <div class="feature-bg-icon">
-              <ion-icon :icon="scanOutline" />
-            </div>
-          </button>
-          
-          <button class="feature-card feature-secondary" @click="goToSearchAndScan">
-            <div class="feature-icon-wrapper">
-              <ion-icon :icon="barcodeOutline" />
-            </div>
-            <div class="feature-text">
-              <h3>{{ $t('home.scanBarcode') }}</h3>
-              <p>{{ $t('home.scanBarcodeDesc') }}</p>
-            </div>
-            <div class="feature-bg-icon">
-              <ion-icon :icon="barcodeOutline" />
-            </div>
-          </button>
-        </div>
-      </ion-card>
+      <!-- === Yearly evaluation: one question per session === -->
+      <YearlySurveyCard v-if="isAuthenticated" />
 
       <!-- === Our Partner=== -->
       <ion-card>
@@ -197,9 +161,9 @@
             </ion-card>
           </div>
 
-          <div v-else class="discover-grid compact-grid">
+          <transition-group v-else name="partner-list" tag="div" class="discover-grid compact-grid">
             <ion-card
-                v-for="partner in displayedPartners"
+                v-for="partner in halalPartners"
                 :key="partner.id"
                 :class="[
   'discover-item',
@@ -234,13 +198,47 @@
               <div v-if="['gold', 'silver'].includes(String(partner.partner_tier || '').toLowerCase())" class="premium-flare"></div>
             </ion-card>
 
-          </div>
+          </transition-group>
         </ion-card-content>
 
       </ion-card>
 
+
+      <!-- === Main Feature: Scan === -->
+      <ion-card class="main-feature-section clear-card">
+        <div class="main-features-grid">
+          <button class="feature-card feature-primary" @click="goScan">
+            <div class="feature-icon-wrapper">
+              <ion-icon :icon="scanOutline" />
+            </div>
+            <div class="feature-text">
+              <h3>{{ $t('home.scan') }}</h3>
+              <p>{{ $t('home.scanDesc') }}</p>
+            </div>
+            <div class="feature-bg-icon">
+              <ion-icon :icon="scanOutline" />
+            </div>
+          </button>
+
+          <button class="feature-card feature-secondary" @click="goToSearchAndScan">
+            <div class="feature-icon-wrapper">
+              <ion-icon :icon="barcodeOutline" />
+            </div>
+            <div class="feature-text">
+              <h3>{{ $t('home.scanBarcode') }}</h3>
+              <p>{{ $t('home.scanBarcodeDesc') }}</p>
+            </div>
+            <div class="feature-bg-icon">
+              <ion-icon :icon="barcodeOutline" />
+            </div>
+          </button>
+        </div>
+      </ion-card>
+
       <!-- === Daily Missions === -->
-      <DailyMissions v-if="isAuthenticated" />
+      <LazySection placeholderHeight="120px" @load="isAuthenticated && fetchProgress()">
+        <DailyMissions v-if="isAuthenticated" />
+      </LazySection>
 
 
       <!-- === Discover Products === -->
@@ -261,7 +259,7 @@
 
         <ion-card-content>
           <!-- 🔹 Skeleton loader -->
-          <div v-if="loadingProducts" class="discover-grid">
+          <div v-if="loadingProducts" class="discover-grid discover-grid--products">
             <ion-card v-for="n in 5" :key="'skeleton-p-' + n" class="discover-item">
               <ion-skeleton-text animated style="width: 100%; height: 140px; border-radius: 12px;" />
               <ion-skeleton-text animated style="width: 95%; height: 30px; margin: 6px auto;" />
@@ -270,12 +268,66 @@
           </div>
 
           <!-- 🔹 Real content -->
-          <div v-else class="discover-grid">
+          <div v-else class="discover-grid discover-grid--products">
+            <!-- Featured gold slot — crossfades to the next rotated gold
+                 partner product instead of hard-cutting, same mechanic as
+                 Discover Locations' featured-fade above. -->
+            <div
+                v-if="featuredProduct"
+                :class="[
+                  'featured-fade-wrapper',
+                  'discover-item',
+                  featuredProduct.partner_tier ? 'tier-card-' + featuredProduct.partner_tier.toLowerCase() : ''
+                ]"
+                @click="openProduct(featuredProduct)"
+            >
+              <!-- Tier Badge (Fixed on frame) -->
+              <ion-badge
+                  v-if="featuredProduct.partner_tier"
+                  :class="['tier-badge', featuredProduct.partner_tier.toLowerCase()]"
+              >
+                <ion-icon :icon="sparkles" />
+                <span>{{ (featuredProduct.partner_tier || '').toUpperCase() }}</span>
+              </ion-badge>
+
+              <!-- Inner Content Crossfade -->
+              <Transition name="featured-content-fade">
+                <div :key="featuredProduct.barcode" class="featured-inner-content">
+                  <img :src="featuredProduct.image || 'https://placehold.co/200x200'" :alt="$t('home.altProduct')" class="discover-img" loading="lazy" />
+                  <ion-label class="discover-label">
+                    <div class="name-row">
+                      <h3 class="discover-name">
+                        {{ featuredProduct.name }}
+                        <span v-if="featuredProduct.partner_tier" class="home-partner-verified">
+                          <ion-icon :icon="shieldCheckmarkOutline" />
+                        </span>
+                      </h3>
+                    </div>
+                    <div class="status-row">
+                      <ion-chip
+                          :class="featuredProduct.status === 'Halal' ? 'chip-success'
+                    : featuredProduct.status === 'Muslim-friendly' ? 'chip-primary'
+                    : featuredProduct.status === 'Syubhah' ? 'chip-warning'
+                    : featuredProduct.status === 'Haram' ? 'chip-danger'
+                    : 'chip-medium'"
+                      >
+                        {{ $t('search.status.' + featuredProduct.status) }}
+                      </ion-chip>
+                    </div>
+                    <p class="added-time">{{ $t('home.added') }} {{ fromNowToTaipei(featuredProduct.created_at) }}</p>
+                  </ion-label>
+                </div>
+              </Transition>
+
+              <!-- Premium Flare (Fixed on frame) -->
+              <div v-if="['gold', 'silver'].includes(String(featuredProduct.partner_tier || '').toLowerCase())" class="premium-flare"></div>
+            </div>
+
             <ion-card
-                v-for="p in recentProducts"
+                v-for="p in otherProducts"
                 :key="p.barcode"
                 :class="[
-                  'discover-item', 
+                  'discover-item',
                   p.partner_tier ? 'tier-card-' + p.partner_tier.toLowerCase() : ''
                 ]"
                 button
@@ -287,14 +339,22 @@
                   :class="['tier-badge', p.partner_tier.toLowerCase()]"
               >
                 <ion-icon :icon="sparkles" />
-                <span>{{ $t('home.partnerTier', { tier: (p.partner_tier || '').toUpperCase() }) }}</span>
+                <span>{{ (p.partner_tier || '').toUpperCase() }}</span>
               </ion-badge>
 
               <!-- Shine Effect (Gold ONLY) -->
               <div v-if="['gold', 'silver'].includes(String(p.partner_tier || '').toLowerCase())" class="premium-flare"></div>
 
-              <img :src="p.image || 'https://placehold.co/200x200'" :alt="$t('home.altProduct')" class="discover-img" />
+              <img :src="p.image || 'https://placehold.co/200x200'" :alt="$t('home.altProduct')" class="discover-img" loading="lazy" />
               <ion-label class="discover-label">
+                <div class="name-row">
+                  <h3 class="discover-name">
+                    {{ p.name }}
+                    <span v-if="p.partner_tier" class="home-partner-verified">
+                      <ion-icon :icon="shieldCheckmarkOutline" />
+                    </span>
+                  </h3>
+                </div>
                 <div class="status-row">
                   <ion-chip
                       :class="p.status === 'Halal' ? 'chip-success'
@@ -302,17 +362,12 @@
                 : p.status === 'Syubhah' ? 'chip-warning'
                 : p.status === 'Haram' ? 'chip-danger'
                 : 'chip-medium'"
-                      style="font-size: 14px; margin-bottom: 4px;"
+                      style="font-size: 13px; margin-bottom: 2px;"
                   >
                     {{ $t('search.status.' + p.status) }}
                   </ion-chip>
-
-                  <!-- Official Partner Tag -->
-                  <div v-if="p.partner_tier" class="home-partner-verified">
-                    <ion-icon :icon="shieldCheckmarkOutline" />
-                  </div>
                 </div>
-                <p>{{ $t('home.added') }} {{ fromNowToTaipei(p.created_at) }}</p>
+                <p class="added-time">{{ $t('home.added') }} {{ fromNowToTaipei(p.created_at) }}</p>
               </ion-label>
             </ion-card>
           </div>
@@ -321,36 +376,91 @@
 
 
       <!-- === Discover Locations === -->
-      <ion-card>
-        <ion-card-header>
-          <div class="card-header-row">
-            <ion-card-title>{{ $t('home.discoverLocations') }}</ion-card-title>
-            <ion-button
-                fill="clear"
-                size="small"
-                color="carrot"
-                @click="viewMoreLocations"
-            >
-              {{ $t('home.viewMore') }}
-            </ion-button>
-          </div>
-        </ion-card-header>
-        <ion-card-content>
-          <div v-if="loadingLocations" class="discover-grid">
-            <ion-card v-for="n in 5" :key="'skeleton-l-' + n" class="discover-item">
-              <ion-skeleton-text animated style="width: 100%; height: 140px; border-radius: 12px;" />
-              <ion-skeleton-text animated style="width: 90%; height: 12px; margin: 6px auto;" />
-              <ion-skeleton-text animated style="width: 80%; height: 12px; margin: 6px auto;" />
-              <ion-skeleton-text animated style="width: 40%; height: 12px; margin: 0 auto;" />
-            </ion-card>
-          </div>
+      <LazySection placeholderHeight="200px" @load="fetchRecentLocations">
+        <ion-card>
+          <ion-card-header>
+            <div class="card-header-row">
+              <ion-card-title>{{ $t('home.discoverLocations') }}</ion-card-title>
+              <ion-button
+                  fill="clear"
+                  size="small"
+                  color="carrot"
+                  @click="viewMoreLocations"
+              >
+                {{ $t('home.viewMore') }}
+              </ion-button>
+            </div>
+          </ion-card-header>
+          <ion-card-content>
+            <div v-if="loadingLocations" class="discover-grid discover-grid--locations">
+              <ion-card v-for="n in 5" :key="'skeleton-l-' + n" class="discover-item">
+                <ion-skeleton-text animated style="width: 100%; height: 140px; border-radius: 12px;" />
+                <ion-skeleton-text animated style="width: 90%; height: 12px; margin: 6px auto;" />
+                <ion-skeleton-text animated style="width: 80%; height: 12px; margin: 6px auto;" />
+                <ion-skeleton-text animated style="width: 40%; height: 12px; margin: 0 auto;" />
+              </ion-card>
+            </div>
 
-          <div v-else class="discover-grid">
+          <div v-else class="discover-grid discover-grid--locations">
+            <!-- Featured gold slot — crossfades to the next rotated gold
+                 partner instead of hard-cutting, same mechanic as Explore's
+                 featured-fade (see ExploreView.vue). Taken out of the plain
+                 v-for below so swapping it never reflows the rest of the grid. -->
+            <div
+                v-if="featuredLocation"
+                :class="[
+                  'featured-fade-wrapper',
+                  'discover-item',
+                  featuredLocation.partner_tier ? 'tier-card-' + featuredLocation.partner_tier.toLowerCase() : ''
+                ]"
+                @click="openLocation(featuredLocation)"
+            >
+              <!-- Tier Badge (Fixed on frame) -->
+              <ion-badge
+                  v-if="featuredLocation.partner_tier"
+                  :class="['tier-badge', featuredLocation.partner_tier.toLowerCase()]"
+              >
+                <ion-icon :icon="sparkles" />
+                <span>{{ (featuredLocation.partner_tier || '').toUpperCase() }}</span>
+              </ion-badge>
+
+              <!-- Inner Content Crossfade -->
+              <Transition name="featured-content-fade">
+                <div :key="featuredLocation.id" class="featured-inner-content">
+                  <img
+                      :src="featuredLocation.image || 'https://placehold.co/200x200'"
+                      :alt="$t('home.altLocation')"
+                      class="discover-img"
+                      loading="lazy"
+                  />
+                  <ion-label class="discover-label">
+                    <div class="name-row">
+                      <h3>
+                        {{ featuredLocation.name }}
+                        <span v-if="featuredLocation.partner_tier" class="home-partner-verified">
+                          <ion-icon :icon="shieldCheckmarkOutline" />
+                        </span>
+                      </h3>
+                    </div>
+                    <div v-if="featuredLocation.type" class="status-row">
+                      <ion-chip class="chip-medium location-type-chip">
+                        {{ featuredLocation.type }}
+                      </ion-chip>
+                    </div>
+                    <p class="added-time">{{ $t('home.added') }} {{ fromNowToTaipei(featuredLocation.created_at) }}</p>
+                  </ion-label>
+                </div>
+              </Transition>
+
+              <!-- Premium Flare (Fixed on frame) -->
+              <div v-if="['gold', 'silver'].includes(String(featuredLocation.partner_tier || '').toLowerCase())" class="premium-flare"></div>
+            </div>
+
             <ion-card
-                v-for="loc in recentLocations"
+                v-for="loc in otherLocations"
                 :key="loc.id"
                 :class="[
-                  'discover-item', 
+                  'discover-item',
                   loc.partner_tier ? 'tier-card-' + loc.partner_tier.toLowerCase() : ''
                 ]"
                 button
@@ -362,7 +472,7 @@
                   :class="['tier-badge', loc.partner_tier.toLowerCase()]"
               >
                 <ion-icon :icon="sparkles" />
-                <span>{{ $t('home.partnerTier', { tier: (loc.partner_tier || '').toUpperCase() }) }}</span>
+                <span>{{ (loc.partner_tier || '').toUpperCase() }}</span>
               </ion-badge>
 
               <!-- Premium Flare for Gold/Silver -->
@@ -372,23 +482,157 @@
                   :src="loc.image || 'https://placehold.co/200x200'"
                   :alt="$t('home.altLocation')"
                   class="discover-img"
+                  loading="lazy"
               />
               <ion-label class="discover-label">
                 <div class="name-row">
-                  <h3>{{ loc.name }}</h3>
-                  <!-- Official Partner Tag -->
-                  <div v-if="loc.partner_tier" class="home-partner-verified">
-                    <ion-icon :icon="shieldCheckmarkOutline" />
-                  </div>
+                  <h3>
+                    {{ loc.name }}
+                    <span v-if="loc.partner_tier" class="home-partner-verified">
+                      <ion-icon :icon="shieldCheckmarkOutline" />
+                    </span>
+                  </h3>
                 </div>
-                <p>{{ $t('home.added') }} {{ fromNowToTaipei(loc.created_at) }}</p>
+                <div v-if="loc.type" class="status-row">
+                  <ion-chip class="chip-medium location-type-chip">
+                    {{ loc.type }}
+                  </ion-chip>
+                </div>
+                <p class="added-time">{{ $t('home.added') }} {{ fromNowToTaipei(loc.created_at) }}</p>
               </ion-label>
             </ion-card>
           </div>
         </ion-card-content>
       </ion-card>
+      </LazySection>
+
+      <!-- === Discover Trips === -->
+      <LazySection placeholderHeight="200px" @load="fetchTrips">
+      <ion-card>
+        <ion-card-header>
+          <div class="card-header-row">
+            <ion-card-title>{{ $t('home.discoverTrips') }}</ion-card-title>
+            <ion-button
+                fill="clear"
+                size="small"
+                color="carrot"
+                @click="viewMoreTrips"
+            >
+              {{ $t('home.viewMore') }}
+            </ion-button>
+          </div>
+        </ion-card-header>
+        <ion-card-content>
+          <div v-if="loadingTrips" class="discover-grid">
+            <ion-card v-for="n in 5" :key="'skeleton-t-' + n" class="discover-item">
+              <ion-skeleton-text animated style="width: 100%; height: 140px; border-radius: 12px;" />
+              <ion-skeleton-text animated style="width: 90%; height: 12px; margin: 6px auto;" />
+              <ion-skeleton-text animated style="width: 40%; height: 12px; margin: 0 auto;" />
+            </ion-card>
+          </div>
+
+          <div v-else class="discover-grid">
+            <ion-card
+                v-for="trip in recentTrips"
+                :key="trip.id"
+                :class="[
+                  'discover-item', 
+                  trip.provider?.partner_tier ? 'tier-card-' + trip.provider.partner_tier.toLowerCase() : ''
+                ]"
+                button
+                @click="openTrip(trip)"
+            >
+              <!-- Tier Badge -->
+              <div v-if="trip.provider?.partner_tier" :class="['tier-badge', trip.provider.partner_tier.toLowerCase()]">
+                <ion-icon :icon="sparkles" />
+                <span>{{ $t('home.partnerTier', { tier: (trip.provider.partner_tier || '').toUpperCase() }) }}</span>
+              </div>
+              <div v-if="['gold', 'silver'].includes(String(trip.provider?.partner_tier || '').toLowerCase())" class="premium-flare"></div>
+
+              <img :src="trip.cover_url || 'https://placehold.co/400x250?text=Trip'" class="discover-img" alt="trip" loading="lazy" />
+              <ion-label class="discover-label">
+                <h3 class="discover-name">{{ localized(trip.title_zh, trip.title) }}</h3>
+                <p>{{ trip.duration }} • {{ trip.provider?.name }}</p>
+              </ion-label>
+            </ion-card>
+          </div>
+        </ion-card-content>
+      </ion-card>
+      </LazySection>
+
+      <!-- === Store === -->
+      <LazySection placeholderHeight="200px" @load="fetchMarketplaceProducts">
+      <ion-card style="position: relative;">
+        <ion-card-header>
+          <div class="card-header-row">
+            <ion-card-title>{{ $t('home.marketplace') }}</ion-card-title>
+            <ion-button
+                fill="clear"
+                size="small"
+                color="carrot"
+                @click="viewMoreMarketplace"
+            >
+              {{ $t('home.viewMore') }}
+            </ion-button>
+          </div>
+        </ion-card-header>
+        <ion-card-content>
+          <div v-if="loadingMarketplace" class="discover-grid">
+            <ion-card v-for="n in 5" :key="'skeleton-m-' + n" class="discover-item">
+              <ion-skeleton-text animated style="width: 100%; height: 140px; border-radius: 12px;" />
+              <ion-skeleton-text animated style="width: 80%; height: 12px; margin: 6px auto;" />
+              <ion-skeleton-text animated style="width: 40%; height: 12px; margin: 0 auto;" />
+            </ion-card>
+          </div>
+
+          <div v-else class="discover-grid">
+            <ion-card
+                v-for="p in marketplaceProducts"
+                :key="p.id"
+                class="discover-item"
+                button
+                @click="openMarketplaceProduct(p)"
+            >
+              <img :src="(p.images && p.images[0]) || 'https://placehold.co/200x200?text=Product'" class="discover-img" alt="product" loading="lazy" />
+              <ion-label class="discover-label">
+                <h3 class="discover-name">{{ localized(p.name_zh, p.name) }}</h3>
+                <p class="marketplace-price">{{ $t('store.twd') }}{{ p.price?.toLocaleString() }}</p>
+              </ion-label>
+            </ion-card>
+          </div>
+        </ion-card-content>
+      </ion-card>
+      </LazySection>
+
+      <!-- === Community Buzz (Instagram & TikTok) === -->
+      <LazySection placeholderHeight="250px" @load="fetchCommunityReels">
+      <ion-card class="reels-section">
+        <ion-card-header>
+          <div class="card-header-row">
+            <ion-card-title class="section-title">{{ $t('home.whatsNew') || "What's New" }}</ion-card-title>
+            <ion-button 
+              fill="clear" 
+              size="small" 
+              color="carrot" 
+              @click="handleViewMoreReels"
+            >
+              {{ $t('home.viewMore') }}
+            </ion-button>
+          </div>
+          
+        </ion-card-header>
+
+        <CommunityReels 
+          :reels="communityReels" 
+          :loading="loadingReels" 
+          mode="home" 
+          @refresh-needed="handleReelsRefreshNeeded"
+        />
+      </ion-card>
+      </LazySection>
 
       <!-- === Latest News === -->
+      <LazySection placeholderHeight="200px" @load="fetchRecentNews">
       <ion-card>
         <ion-card-header>
           <div class="card-header-row">
@@ -434,6 +678,7 @@
                   :src="news.cover || 'https://placehold.co/400x250?text=News'"
                   class="discover-img"
                   :alt="$t('home.altNews')"
+                  loading="lazy"
               />
 
               <ion-label class="discover-label">
@@ -449,9 +694,120 @@
           </div>
         </ion-card-content>
       </ion-card>
+      </LazySection>
+
+      <!-- === Halal Card Feature === -->
+      <ion-card>
+        <ion-card-header>
+          <div class="card-header-row">
+            <ion-card-title>Halalify</ion-card-title>
+
+            <ion-button
+                fill="clear"
+                size="small"
+                color="carrot"
+                @click="viewMorePhrases"
+            >
+              {{ $t('home.viewMore') }}
+            </ion-button>
+          </div>
+        </ion-card-header>
+
+        <ion-card-content>
+          <div class="halal-phrases-scroller">
+            <div
+                v-for="(p, index) in displayedHomePhrases"
+                :key="'phrase-' + index"
+                :class="['phrase-card', 'animate__animated', 'animate__fadeIn', { 'locked-card': isPhrasePremium(p) && !isDonor }]"
+                style="width: 100%; min-width: 100%; box-sizing: border-box;"
+            >
+              <div class="phrase-header">
+                <span class="phrase-tag">Phrase {{ index + 1 }}</span>
+                <div class="phrase-actions">
+                  <ion-button
+                      fill="clear"
+                      size="small"
+                      color="carrot"
+                      class="phrase-action-btn"
+                      @click="isPhrasePremium(p) && !isDonor ? presentRcPaywall() : toggleFavorite(p)"
+                  >
+                    <ion-icon slot="icon-only" :icon="isPhrasePremium(p) && !isDonor ? lockClosed : (isFavorite(p.chinese) ? star : starOutline)" />
+                  </ion-button>
+                  <ion-button
+                      fill="clear"
+                      size="small"
+                      color="carrot"
+                      class="phrase-action-btn"
+                      @click="isPhrasePremium(p) && !isDonor ? presentRcPaywall() : copyPhrase(p.chinese)"
+                  >
+                    <ion-icon slot="icon-only" :icon="copyOutline" />
+                  </ion-button>
+                </div>
+              </div>
+
+              <div class="phrase-body">
+                <h4 class="phrase-english">{{ getLocalizedExplanation(p) }}</h4>
+                <template v-if="isPhrasePremium(p) && !isDonor">
+                  <div class="locked-content-placeholder" @click="presentRcPaywall">
+                    <ion-icon :icon="lockClosed" class="lock-placeholder-icon" />
+                    <span class="lock-placeholder-text">Unlock Pro to see translation & pronunciation</span>
+                  </div>
+                </template>
+                <template v-else>
+                  <div class="phrase-chinese-row">
+                    <div class="phrase-chinese-box">
+                      <div class="phrase-chinese-segments">
+                        <div
+                            v-for="(seg, segIdx) in segmentPhrase(p)"
+                            :key="segIdx"
+                            class="chinese-segment"
+                        >
+                          <div class="chinese-segment-chars">
+                            <span
+                                v-for="(char, charIdx) in seg.text.split('')"
+                                :key="charIdx"
+                                :class="{ 'highlight-active': isCharHighlighted(p, seg.start + charIdx) }"
+                                class="align-char"
+                            >{{ char }}</span>
+                          </div>
+                          <span v-if="seg.gloss" class="segment-gloss">{{ seg.gloss }}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <ion-button
+                        fill="solid"
+                        color="carrot"
+                        class="play-btn"
+                        :class="{ 'speaking': activeSpeechText === p.chinese }"
+                        @click="playPhrase(p.chinese)"
+                    >
+                      <ion-icon slot="icon-only" :icon="activeSpeechText === p.chinese ? pauseCircleOutline : playCircleOutline" />
+                    </ion-button>
+                  </div>
+                  <p class="phrase-pinyin">
+                    <span class="label">Pinyin:</span>
+                    <span
+                        v-for="(word, wordIdx) in p.pinyin.split(' ')"
+                        :key="wordIdx"
+                        :class="{ 'highlight-active': isPinyinWordHighlighted(p, wordIdx) }"
+                        style="margin-right: 4px;"
+                    >{{ word.replace(/-/g, '') }}</span>
+                  </p>
+                  <p class="phrase-pronunciation">
+                    <span class="label">Pronounce:</span> "{{ p.pronunciation }}"
+                  </p>
+                </template>
+              </div>
+            </div>
+            <!-- Spacer to prevent the last card from being cropped -->
+            <div class="scroller-spacer"></div>
+          </div>
+        </ion-card-content>
+      </ion-card>
 
 
       <!-- === Insights Horizontal Scroll === -->
+      <LazySection placeholderHeight="120px" rootMargin="1000px" @load="() => { fetchStats(); fetchLocationCategoryStats(); }">
       <div class="insights-container">
         <div class="insights-scroll">
           <!-- Card 1: Total Products -->
@@ -475,91 +831,140 @@
               <h2 class="stat-value">{{ totalLocationCount }}</h2>
             </div>
           </div>
-
-          <!-- Card 3: Product Status Chart -->
-          <div class="insight-card chart-card">
-            <div class="insight-header">
-              <h3>{{ $t('home.productStatus') }}</h3>
-            </div>
-            <div class="chart-wrapper">
-              <DoughnutChart ref="doughnutRef" :data="statusChartData" :options="chartOptions" />
-            </div>
-          </div>
-
-          <!-- Card 4: Location Categories Chart -->
-          <div class="insight-card chart-card">
-            <div class="insight-header">
-              <h3>{{ $t('home.locationCategories') }}</h3>
-            </div>
-            <div class="chart-wrapper">
-              <DoughnutChart ref="locationChartRef" :data="locationChartData" :options="chartOptions" />
-            </div>
-          </div>
         </div>
       </div>
+      </LazySection>
 
       <!-- === Leaderboard === -->
+      <LazySection placeholderHeight="300px" rootMargin="1000px" @load="fetchLeaderboard(leaderboardType, 10)">
       <ion-card >
         <ion-card-header>
-          <ion-card-title>{{ $t('home.leaderboard') }}</ion-card-title>
+          <div class="card-header-row">
+            <ion-card-title>{{ $t('home.leaderboard') }}</ion-card-title>
+            <ion-button
+                fill="clear"
+                size="small"
+                color="carrot"
+                @click="router.push('/leaderboard')"
+            >
+              {{ $t('home.viewMore') }}
+            </ion-button>
+          </div>
         </ion-card-header>
 
         <ion-card-content>
-          <ion-list v-if="!loadingLeaderboard">
+          <!-- Segment control to toggle Daily / Weekly / Monthly / All Time -->
+          <ion-segment :value="leaderboardType" @ionChange="changeLeaderboardType($event)" @click.stop mode="ios" class="ion-margin-bottom" style="margin: 0 auto 16px; width: fit-content; display: flex;">
+            <ion-segment-button value="daily">
+              <ion-label>{{ $t('home.leaderboardDaily') }}</ion-label>
+            </ion-segment-button>
+            <ion-segment-button value="weekly">
+              <ion-label>{{ $t('home.leaderboardWeekly') }}</ion-label>
+            </ion-segment-button>
+            <ion-segment-button value="monthly">
+              <ion-label>{{ $t('home.leaderboardMonthly') }}</ion-label>
+            </ion-segment-button>
+            <ion-segment-button value="all_time">
+              <ion-label>{{ $t('home.leaderboardAllTime') }}</ion-label>
+            </ion-segment-button>
+          </ion-segment>
+          <!-- 💡 Public Profile Hint Banner -->
+          <div v-if="!isPublicProfile" class="leaderboard-hint-banner" @click="router.push('/settings')">
+            <ion-icon :icon="sparkles" class="hint-icon" />
+            <div class="hint-text">
+              {{ $t('home.leaderboard_privacy_hint') || 'Want your name to be shown in the leaderboard? Go to settings and make your profile public.' }}
+            </div>
+            <ion-icon :icon="chevronForwardOutline" class="hint-arrow" />
+          </div>
+
+          <!-- 🔄 First-load spinner: nothing cached yet, list & empty-state are both hidden -->
+          <div v-if="loadingLeaderboard && leaderboard.length === 0" class="leaderboard-loading">
+            <ion-spinner name="crescent" color="carrot" />
+          </div>
+
+          <div v-if="leaderboard.length > 0" class="leaderboard-list-wrapper">
+            <div v-if="loadingLeaderboard" class="leaderboard-loading-overlay">
+              <ion-spinner name="crescent" color="carrot" />
+            </div>
+            <ion-list class="leaderboard-list" :style="{ opacity: loadingLeaderboard ? 0.5 : 1, transition: 'opacity 0.2s ease', pointerEvents: loadingLeaderboard ? 'none' : 'auto' }">
             <ion-item
                 v-for="(user, index) in leaderboard"
                 :key="user.id"
                 lines="none"
                 button
+                class="leaderboard-item"
+                :style="getLeaderboardRowStyle(user)"
                 @click="openUserProfile(user, $event)"
             >
-              <div style="display: flex; align-items: center; width: 100%;">
-
-                <!-- Rank -->
-                <div style="width: 28px; text-align: center; font-weight: 600; display: flex; align-items: center; justify-content: center;">
-                  <ion-icon v-if="index === 0" :icon="medalOutline" style="color: #FFD700; font-size: 1.2rem;" />
-                  <ion-icon v-else-if="index === 1" :icon="medalOutline" style="color: #C0C0C0; font-size: 1.2rem;" />
-                  <ion-icon v-else-if="index === 2" :icon="medalOutline" style="color: #CD7F32; font-size: 1.2rem;" />
-                  <span v-else>{{ index + 1 }}</span>
-                </div>
-
-                <!-- Avatar -->
-                <ion-avatar style="width: 40px; height: 40px; margin: 0 10px;">
-                  <img
-                      :src="user.public_profile ? (user.avatar_url || 'https://placehold.co/64x64') : `https://placehold.co/64x64?text=${$t('home.unknownAvatar')}`"
-                       :alt="$t('home.altAvatar')"/>
-                </ion-avatar>
-
-                <!-- Info -->
-                <ion-label style="flex: 1; min-width: 0;">
-                  <h2 style="margin: 0; font-weight: 600; font-size: 1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                    {{ user.public_profile ? user.display_name : $t('home.anonymousWithIndex', { index: index + 1 }) }}
-                  </h2>
-                  <p style="margin: 0; font-size: 0.8rem; color: var(--ion-color-medium);">
-                    {{ $t('profile.level', { level: getLevelFromPoints(user.points) }) }}
-                  </p>
-                </ion-label>
-
-                <!-- Points Badge -->
-                <ion-badge
-                    :color="getLevelColor(user.points)"
-                    style="white-space: nowrap; font-size: 0.75rem; min-width: 70px; text-align: center;"
-                >
-                  {{ $t('home.pointsCount', { points: user.points }) }}
-                </ion-badge>
-
+              <!-- Rank -->
+              <div slot="start" style="width: 18px; text-align: center; font-weight: 600; display: flex; align-items: center; justify-content: center; color: inherit; margin-right: 6px; flex-shrink: 0;">
+                <ion-icon v-if="index === 0" :icon="medalOutline" style="color: #FFD700; font-size: 1.1rem;" />
+                <ion-icon v-else-if="index === 1" :icon="medalOutline" style="color: #C0C0C0; font-size: 1.1rem;" />
+                <ion-icon v-else-if="index === 2" :icon="medalOutline" style="color: #CD7F32; font-size: 1.1rem;" />
+                <span v-else style="font-size: 0.85rem;">{{ index + 1 }}</span>
               </div>
+
+              <!-- Avatar with Cosmetics -->
+              <div slot="start" class="leaderboard-avatar-cell" :style="getLeaderboardGlowStyle(user)" style="margin-right: 10px;">
+                <ion-avatar style="width: 36px; height: 36px; position: relative;" :style="getLeaderboardFrameStyle(user)">
+                  <img
+                      :src="(user.public_profile || currentUser?.id === user.id) ? (user.public_profile ? (user.avatar_url || 'https://placehold.co/64x64/e5e7eb/374151') : (currentUser?.user_metadata?.avatar_url || 'https://placehold.co/64x64/e5e7eb/374151')) : `https://placehold.co/64x64/e5e7eb/374151?text=${$t('home.unknownAvatar')}`"
+                       :alt="$t('home.altAvatar')"
+                       loading="lazy"/>
+                  <span v-if="user.donor_type && user.donor_type.toLowerCase().includes('pro')" class="avatar-pro-badge" :title="$t('home.pro') || 'Pro'">
+                    <ion-icon :icon="diamond" />
+                  </span>
+                </ion-avatar>
+              </div>
+
+              <!-- Info -->
+              <ion-label style="min-width: 0; flex: 1; overflow: hidden; width: 0; margin-right: 6px;">
+                <h2 style="margin: 0; font-weight: 700; font-size: 1rem; letter-spacing: -0.01em; display: flex; align-items: center; gap: 4px; color: inherit; min-width: 0; overflow: hidden; width: 100%;">
+                  <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0; color: inherit;">
+                    {{ formatDisplayName(currentUser?.id === user.id && !user.public_profile ? (currentUser?.user_metadata?.full_name || currentUser?.user_metadata?.display_name || 'Me') : user.display_name) }}
+                  </span>
+                  <ion-badge v-if="currentUser?.id === user.id && !user.public_profile" color="medium" style="font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; flex-shrink: 0;" @click="showPrivateInfoAlert($event)">Private</ion-badge>
+                </h2>
+                <p style="margin: 0; font-size: 0.8rem; color: var(--sub-color, var(--ion-color-medium));">
+                  {{ $t('profile.levelShort', { level: getLevelFromPoints(user.total_points || user.points) }) }}
+                </p>
+              </ion-label>
+
+              <!-- Points Badge -->
+              <ion-badge
+                  slot="end"
+                  class="leaderboard-points-badge"
+                  :style="{ '--pts-rgb': getLevelAccentRgb(user.points) }"
+              >
+                {{ formatCompactPoints(user.points) }} pts
+              </ion-badge>
             </ion-item>
-          </ion-list>
+            </ion-list>
+          </div>
 
-
-          <ion-skeleton-text
-              v-else
-              animated
-              style="width:100%;height:120px;border-radius:8px;"
-          />
+          <!-- 📭 Empty state for Home Leaderboard -->
+          <div v-if="!loadingLeaderboard && leaderboard.length === 0" class="home-leaderboard-empty">
+            <p class="empty-title">{{ leaderboardType === 'daily' ? $t('home.leaderboardHomeEmptyDaily') : leaderboardType === 'weekly' ? $t('home.leaderboardHomeEmptyWeekly') : $t('search.noResults') }}</p>
+            <p class="empty-tip">{{ $t('home.leaderboardEmptyDailyDesc') }}</p>
+            
+            <div class="empty-actions-grid">
+              <ion-button size="small" fill="outline" color="carrot" @click="router.push('/scan')">
+                <ion-icon :icon="scanOutline" slot="start" />
+                {{ locale.startsWith('zh') ? '掃描' : 'Scan' }}
+              </ion-button>
+              <ion-button size="small" fill="outline" color="carrot" @click="router.push('/add')">
+                <ion-icon :icon="addOutline" slot="start" />
+                {{ locale.startsWith('zh') ? '新增產品' : 'Add Product' }}
+              </ion-button>
+              <ion-button size="small" fill="outline" color="carrot" @click="router.push('/explore/add')">
+                <ion-icon :icon="locationOutline" slot="start" />
+                {{ locale.startsWith('zh') ? '新增地點' : 'Add Place' }}
+              </ion-button>
+            </div>
+          </div>
         </ion-card-content>
       </ion-card>
+      </LazySection>
     </ion-content>
 
     <!-- 👇 Popover instead of modal -->
@@ -567,43 +972,151 @@
         :is-open="!!selectedUser"
         :event="popoverEvent"
         class="leaderboard-popover"
+        :style="getPopoverCardVariables(selectedUser)"
         @didDismiss="closePopover"
     >
-      <ion-content class="ion-padding" style="text-align:center; min-width: 250px;">
-        <div v-if="selectedUser">
+      <ion-content class="ion-padding popover-custom-content" style="text-align:center; min-width: 250px;" :style="getPopoverContentStyle(selectedUser)" :class="{ 'is-light-bg': isBackgroundLight(getCosmeticByCategory(selectedUser, 'background')) }">
+        <div v-if="selectedUser" style="position: relative;">
+          <!-- Aura backdrop layer -->
+          <div v-if="getCosmeticByCategory(selectedUser, 'aura')" class="popover-aura-backdrop" :style="getPopoverAuraStyle(selectedUser)"></div>
 
-          <!-- ✅ Public profile shown -->
-          <template v-if="selectedUser.public_profile">
-            <ion-avatar style="width:60px;height:60px;margin:auto;">
-              <img :src="selectedUser.avatar_url || 'https://placehold.co/60x60?text=?'"  :alt="$t('home.altAvatar')"/>
-            </ion-avatar>
+          <div style="position: relative; z-index: 1;">
+            <!-- ✅ Public profile shown or is current logged-in user -->
+            <template v-if="selectedUser.public_profile || currentUser?.id === selectedUser.id">
+              <div class="popover-cosmetic-wrapper" :style="getPopoverGlowStyle(selectedUser)">
+                <ion-avatar style="width:72px;height:72px;margin:0;" :style="getPopoverFrameStyle(selectedUser)">
+                  <img :src="(selectedUser.public_profile ? selectedUser.avatar_url : currentUser?.user_metadata?.avatar_url) || 'https://placehold.co/72px/e5e7eb/374151?text=?'"  :alt="$t('home.altAvatar')"/>
+                </ion-avatar>
+              </div>
 
-            <h3 style="margin-top:6px; font-size:1rem;">
-              {{ selectedUser.display_name }}
+            <div v-if="selectedUser.donor_type && selectedUser.donor_type.toLowerCase().includes('pro')" class="mock-popover-pro-badge">
+              <ion-icon :icon="sparkles" class="pro-icon" />
+              <span>Pro</span>
+            </div>
+
+            <div v-if="currentUser?.id === selectedUser.id && !selectedUser.public_profile" style="margin-bottom: 8px;">
+              <ion-badge color="medium" style="font-size: 0.7rem; padding: 4px 8px; border-radius: 12px;" @click="showPrivateInfoAlert($event)">
+                Private
+              </ion-badge>
+            </div>
+
+            <h3 class="mock-popover-name">
+              <span>
+                {{ selectedUser.public_profile ? selectedUser.display_name : (currentUser?.user_metadata?.full_name || currentUser?.user_metadata?.display_name || 'Me') }}
+              </span>
             </h3>
 
-            <p style="margin:4px 0; font-size:0.85rem; color:var(--ion-color-medium);">
-              {{ $t('profile.level', { level: getLevelFromPoints(selectedUser.points) }) }} ({{ $t('home.pointsCount', { points: selectedUser.points }) }})
+            <div v-if="selectedUser.showcase_achievement" class="mock-popover-trophy-badge">
+              <span>{{ selectedUser.showcase_achievement.icon }}</span>
+              <span>{{ $t('achievements.categories.' + selectedUser.showcase_achievement.category + '.tiers.' + selectedUser.showcase_achievement.tier) }}</span>
+            </div>
+
+            <p class="mock-popover-stats">
+              {{ $t('profile.level', { level: getLevelFromPoints(selectedUser.total_points || selectedUser.points) }) }}
+              <ion-badge
+                class="leaderboard-points-badge"
+                style="margin-left: 6px; border-radius: 8px; font-weight: bold; font-size: 0.75rem; padding: 4px 8px; display: inline-block; vertical-align: middle;"
+              >
+                {{ selectedUser.points }} pts
+              </ion-badge>
             </p>
 
-            <p v-if="selectedUser.bio" style="margin-top:6px; font-size:0.8rem; color:var(--ion-color-dark)">
-              {{ selectedUser.bio }}
+            <!-- Stats Grid -->
+            <div class="mock-popover-grid">
+              <div class="grid-col">
+                <div class="grid-label">{{ $t('home.productsCount') }}</div>
+                <div class="grid-val">{{ selectedUser.product_count || 0 }}</div>
+              </div>
+              <div class="grid-col">
+                <div class="grid-label">{{ $t('home.locationsCount') }}</div>
+                <div class="grid-val">{{ selectedUser.location_count || 0 }}</div>
+              </div>
+            </div>
+
+            <p v-if="selectedUser.bio" class="mock-popover-bio">
+              "{{ selectedUser.bio }}"
             </p>
           </template>
 
-          <!-- ❌ No public profile: only show XP -->
+          <!-- ❌ No public profile: only show XP and basic stats -->
           <template v-else>
-            <p style="margin:4px 0; font-size:0.9rem; font-weight:600;">
-              {{ $t('home.anonymous') }}
-            </p>
-            <p style="margin:4px 0; font-size:0.85rem; color:var(--ion-color-medium);">
-              {{ $t('profile.level', { level: getLevelFromPoints(selectedUser.points) }) }} ({{ $t('home.pointsCount', { points: selectedUser.points }) }})
-            </p>
-          </template>
+            <ion-avatar style="width:72px;height:72px;margin:12px auto 8px; border: 2px solid var(--ion-color-step-200);">
+               <div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; background: var(--ion-color-step-100); color: var(--ion-color-step-400); font-size: 24px; font-weight: 800;">?</div>
+            </ion-avatar>
 
+            <h3 class="mock-popover-name" style="color: var(--ion-color-medium);">
+              <span>
+                {{ selectedUser.display_name }}
+              </span>
+            </h3>
+
+            <p class="mock-popover-stats">
+              {{ $t('profile.level', { level: getLevelFromPoints(selectedUser.total_points || selectedUser.points) }) }}
+              <ion-badge
+                class="leaderboard-points-badge"
+                style="margin-left: 6px; border-radius: 8px; font-weight: bold; font-size: 0.75rem; padding: 4px 8px; display: inline-block; vertical-align: middle;"
+              >
+                {{ selectedUser.points }} pts
+              </ion-badge>
+            </p>
+
+            <!-- Stats for Anonymous -->
+            <div class="mock-popover-grid">
+              <div class="grid-col">
+                <div class="grid-label">{{ $t('home.productsCount') }}</div>
+                <div class="grid-val">{{ selectedUser.product_count || 0 }}</div>
+              </div>
+              <div class="grid-col">
+                <div class="grid-label">{{ $t('home.locationsCount') }}</div>
+                <div class="grid-val">{{ selectedUser.location_count || 0 }}</div>
+              </div>
+            </div>
+          </template>
+          </div>
         </div>
       </ion-content>
     </ion-popover>
+
+    <PrayerSettingsSheet
+      :is-open="showPrayerSettings"
+      @close="showPrayerSettings = false"
+    />
+
+    <!-- 📢 Bottom Sheet Announcement Modal -->
+    <ion-modal
+      :is-open="showAnnouncement && !!announcement"
+      @didDismiss="dismissAnnouncement"
+      :initial-breakpoint="0.75"
+      :breakpoints="[0, 0.5, 0.75, 0.95]"
+      class="announcement-sheet"
+    >
+      <ion-header>
+        <ion-toolbar>
+          <ion-title>{{ announcement ? announcement.title : '' }}</ion-title>
+          <ion-buttons slot="end">
+            <ion-button @click="dismissAnnouncement">
+              <ion-icon :icon="closeOutline" />
+            </ion-button>
+          </ion-buttons>
+        </ion-toolbar>
+      </ion-header>
+      <ion-content class="ion-padding">
+        <div v-if="announcement && announcement.image_url" class="announcement-hero-wrapper">
+          <img :src="announcement.image_url" class="announcement-hero-img" alt="announcement image" />
+        </div>
+        <div v-if="announcement" class="announcement-html-body" v-html="announcement.content"></div>
+        <div class="announcement-actions">
+          <ion-button v-if="announcement && announcement.link_url" expand="block" fill="outline" color="carrot" @click="handleBannerClick" class="learn-more-btn ion-margin-bottom">
+            {{ $t('home.viewMore') || 'Learn More' }}
+          </ion-button>
+          <ion-button expand="block" color="carrot" @click="dismissAnnouncement" class="got-it-btn">
+            {{ $t('scanIngredients.details.gotIt') || 'Got It' }}
+          </ion-button>
+        </div>
+      </ion-content>
+    </ion-modal>
+
+    <scan-milestone-sheet v-model:open="milestoneOpen" />
 
   </ion-page>
 </template>
@@ -614,14 +1127,12 @@ import {ref, nextTick, computed, onBeforeUnmount, watch, onMounted} from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
   IonPage, IonContent, IonCard, IonCardHeader, IonCardTitle,
-  IonCardContent, IonButton, IonIcon, IonHeader, onIonViewWillEnter, IonLabel, IonChip, IonSkeletonText,
-    IonList, IonBadge, IonAvatar, IonItem, IonPopover
+  IonCardContent, IonButton, IonIcon, IonHeader, onIonViewWillEnter, onIonViewDidLeave, IonLabel, IonChip, IonSkeletonText,
+  IonList, IonBadge, IonAvatar, IonItem, IonPopover, IonModal, IonToolbar, IonTitle, IonButtons,
+  IonSegment, IonSegmentButton, alertController, toastController, IonSelect, IonSelectOption, IonSpinner
 } from '@ionic/vue'
 import { useRouter } from 'vue-router'
-import { Chart as ChartJS, Title, Tooltip, Legend, ArcElement, BarElement, CategoryScale, LinearScale } from 'chart.js'
-import { Doughnut } from 'vue-chartjs'
 import { supabase } from '@/plugins/supabaseClient'
-import type { ChartData, ChartOptions } from 'chart.js'
 import AppHeader from "@/components/AppHeader.vue"
 import relativeTime from 'dayjs/plugin/relativeTime'
 import dayjs from 'dayjs'
@@ -634,46 +1145,724 @@ import {
   compassOutline,
   medalOutline,
   sparkles,
+  diamond,
   closeOutline,
   shieldCheckmarkOutline,
-  locateOutline
+  locateOutline,
+  settingsOutline,
+  cartOutline,
+  constructOutline,
+  chevronForwardOutline,
+  addOutline,
+  copyOutline,
+  bookOutline,
+  volumeMediumOutline,
+  star,
+  starOutline,
+  playCircleOutline,
+  pauseCircleOutline,
+  lockClosed
 } from "ionicons/icons"
 import { useLeaderboard } from "@/composables/useLeaderboard";
-import {getLevelColor} from "@/composables/useLevels";
+import {getLevelColor, getLevelAccentRgb, formatCompactPoints} from "@/composables/useLevels";
 import {getLevelFromPoints} from "@/utils/xp";
+import {formatDisplayName} from "@/utils/nameHelpers";
+import { isPublicProfile, currentUser } from '@/composables/userProfile';
 import {ActivityLogService} from "@/services/ActivityLogService";
-import { refreshSubscriptionStatus} from "@/composables/useSubscriptionStatus";
-import {Capacitor} from "@capacitor/core";
+import {SocialMediaService} from "@/services/SocialMediaService";
+import { isDonor, refreshSubscriptionStatus } from "@/composables/useSubscriptionStatus";
+import { presentProPaywall } from '@/utils/proPaywall';
+import {Capacitor, type PluginListenerHandle} from "@capacitor/core";
 import { Geolocation } from '@capacitor/geolocation'
+import { Browser } from '@capacitor/browser'
+import { TextToSpeech } from '@capacitor-community/text-to-speech'
 import { PrayTime } from 'praytime'
+import { useLocation, type LatLng } from '@/composables/useLocation'
+import { useHomeData } from '@/composables/useHomeData'
+import { syncPrayerWidget } from '@/composables/useWidgetSync'
+import { usePrayerSettings } from '@/composables/usePrayerSettings'
+import PrayerSettingsSheet from '@/components/PrayerSettingsSheet.vue'
+import LazySection from '@/components/LazySection.vue'
 import DailyMissions from "@/components/DailyMissions.vue"
+import YearlySurveyCard from "@/components/survey/YearlySurveyCard.vue"
+import ScanMilestoneSheet from "@/components/scan/ScanMilestoneSheet.vue"
+import { useScanMilestone } from "@/composables/useScanMilestone"
 import { useDailyMissions } from '@/composables/useDailyMissions'
 
+const { withCache } = useHomeData()
+const { userLocation: sharedLocation, startWatching } = useLocation()
+const { t, te, locale } = useI18n()
+
+/* ---------------- Halal Card Feature ---------------- */
+const activeSpeechText = ref<string | null>(null)
+const availableVoices = ref<SpeechSynthesisVoice[]>([])
+const selectedVoiceName = ref<string>('')
+
+const currentSpeechCharIndex = ref(-1)
+const currentSpeechCharLength = ref(0)
+
+function segmentPhrase(phrase: HalalifyPhrase): Array<{ text: string; gloss: string; start: number }> {
+  if (!phrase.alignments || phrase.alignments.length === 0) {
+    return phrase.chinese.split('').map((char, idx) => ({ text: char, gloss: '', start: idx }))
+  }
+
+  const currentLang = (locale.value || 'en').split('-')[0].toLowerCase()
+  const segments: Array<{ text: string; gloss: string; start: number }> = []
+  const matchedRanges: Array<{ start: number; end: number }> = []
+  const sortedAlignments = [...phrase.alignments].sort((a, b) => (b.zh?.length || 0) - (a.zh?.length || 0))
+  
+  for (const align of sortedAlignments) {
+    if (!align.zh) continue
+    let pos = phrase.chinese.indexOf(align.zh)
+    while (pos !== -1) {
+      const end = pos + align.zh.length
+      const overlap = matchedRanges.some(r => (pos >= r.start && pos < r.end) || (end > r.start && end <= r.end))
+      if (!overlap) {
+        matchedRanges.push({ start: pos, end })
+        const glossWord = align[currentLang] || align['en'] || ''
+        segments.push({
+          text: align.zh,
+          gloss: glossWord,
+          start: pos
+        })
+      }
+      pos = phrase.chinese.indexOf(align.zh, pos + 1)
+    }
+  }
+  
+  for (let i = 0; i < phrase.chinese.length; i++) {
+    const isMapped = matchedRanges.some(r => i >= r.start && i < r.end)
+    if (!isMapped) {
+      segments.push({
+        text: phrase.chinese[i],
+        gloss: '',
+        start: i
+      })
+    }
+  }
+  
+  segments.sort((a, b) => a.start - b.start)
+  return segments
+}
+
+function isCharHighlighted(phrase: HalalifyPhrase, charIdx: number): boolean {
+  if (activeSpeechText.value !== phrase.chinese) return false
+  return charIdx >= currentSpeechCharIndex.value && 
+         charIdx < (currentSpeechCharIndex.value + currentSpeechCharLength.value)
+}
+
+function getCleanIndex(text: string, rawCharIdx: number): number {
+  let cleanIdx = 0
+  for (let i = 0; i < rawCharIdx; i++) {
+    const char = text[i]
+    if (char && !/[，。？、！；：()[\]{}""'',.!?／]/.test(char)) {
+      cleanIdx++
+    }
+  }
+  return cleanIdx
+}
+
+function isPinyinWordHighlighted(phrase: any, wordIdx: number): boolean {
+  if (activeSpeechText.value !== phrase.chinese) return false
+  
+  const pinyinWords = phrase.pinyin.split(' ')
+  let charStart = 0
+  for (let i = 0; i < wordIdx; i++) {
+    const word = pinyinWords[i]
+    const syllableCount = word.split('-').length
+    charStart += syllableCount
+  }
+  
+  const currentWord = pinyinWords[wordIdx]
+  const syllableCount = currentWord.split('-').length
+  const charEnd = charStart + syllableCount
+  
+  const cleanSpeakStart = getCleanIndex(phrase.chinese, currentSpeechCharIndex.value)
+  const cleanSpeakEnd = cleanSpeakStart + currentSpeechCharLength.value
+  
+  return cleanSpeakStart < charEnd && cleanSpeakEnd > charStart
+}
+
+
+function getLocalizedExplanation(p: any): string {
+  const currentLang = (locale.value || 'en').split('-')[0].toLowerCase()
+  if (p && p.translations) {
+    if (p.translations[locale.value]) return p.translations[locale.value]
+    if (p.translations[currentLang]) return p.translations[currentLang]
+  }
+  return p ? p.english : ''
+}
+
+import { useHalalifyFavorites } from '@/composables/useHalalifyFavorites'
+import { useHalalifyPhrases } from '@/composables/useHalalifyPhrases'
+import type { HalalifyPhrase } from '@/data/halalifyPhrases'
+
+const { phrases, initPhrases } = useHalalifyPhrases()
+const { favorites, loadFavorites, toggleFavorite, isFavorite } = useHalalifyFavorites()
+
+const displayedHomePhrases = computed(() => {
+  if (favorites.value.length > 0) {
+    return favorites.value.map(fav => {
+      const latest = phrases.value.find(p => p.chinese === fav.chinese)
+      return latest || fav
+    })
+  }
+  return phrases.value.slice(0, 5)
+})
+
+function getFriendlyVoiceName(voice: SpeechSynthesisVoice): string {
+  const nameLower = voice.name.toLowerCase()
+  if (nameLower.includes('meijia') || nameLower.includes('mei-jia')) {
+    return 'Meijia (Taiwan Female)'
+  }
+  if (nameLower.includes('tingting') || nameLower.includes('ting-ting')) {
+    return 'Tingting (Mainland Female)'
+  }
+  if (voice.default) {
+    return 'Latest Voice (System Default)'
+  }
+  return voice.name.split('(')[0].replace('Microsoft', '').replace('Google', '').trim() + ' (' + voice.lang + ')'
+}
+
+let ttsRangeListenerHandle: PluginListenerHandle | null = null
+
+async function loadVoices() {
+  if (Capacitor.getPlatform() === 'android') {
+    try {
+      const { voices } = await TextToSpeech.getSupportedVoices()
+      const rawFiltered = voices.filter(v => v.lang.toLowerCase().startsWith('zh'))
+      const seen = new Set<string>()
+      const uniqueVoices = rawFiltered.filter(v => {
+        if (seen.has(v.name)) return false
+        seen.add(v.name)
+        return true
+      })
+      availableVoices.value = uniqueVoices.length > 0 ? uniqueVoices : voices.filter(v => v.lang.toLowerCase().startsWith('zh'))
+      if (availableVoices.value.length > 0) {
+        if (!selectedVoiceName.value) {
+          const preferred = availableVoices.value.find(v => v.name.toLowerCase().includes('taiwan') || v.name.toLowerCase().includes('tw')) 
+                         || availableVoices.value[0]
+          selectedVoiceName.value = preferred.name
+        }
+      }
+    } catch (e) {
+      console.error('Failed to load Android native voices:', e)
+    }
+    return
+  }
+
+  if ('speechSynthesis' in window) {
+    const voices = window.speechSynthesis.getVoices()
+    
+    // Filter to retain only Meijia and Tingting
+    const rawFiltered = voices.filter(v => {
+      const nameLower = v.name.toLowerCase()
+      const langLower = v.lang.toLowerCase()
+      
+      if (!langLower.startsWith('zh')) return false
+      
+      const isMeijia = nameLower.includes('meijia') || nameLower.includes('mei-jia')
+      const isTingting = nameLower.includes('tingting') || nameLower.includes('ting-ting')
+      
+      return isMeijia || isTingting
+    })
+    
+    // De-duplicate voices by name
+    const seen = new Set<string>()
+    const uniqueVoices = rawFiltered.filter(v => {
+      if (seen.has(v.name)) return false
+      seen.add(v.name)
+      return true
+    })
+    
+    // Always guarantee we have at least one fallback if somehow the filter was too aggressive
+    availableVoices.value = uniqueVoices.length > 0 ? uniqueVoices : voices.filter(v => v.lang.toLowerCase().startsWith('zh'))
+    
+    if (availableVoices.value.length > 0) {
+      if (!selectedVoiceName.value) {
+        // Pre-select Meijia, default or first
+        const preferred = availableVoices.value.find(v => v.name.toLowerCase().includes('meijia')) 
+                       || availableVoices.value.find(v => v.default) 
+                       || availableVoices.value[0]
+        selectedVoiceName.value = preferred.name
+      }
+    }
+  }
+}
+
+function getWordLengthAt(phrase: any, cleanIdx: number): number {
+  const pinyinWords = phrase.pinyin.split(' ')
+  let charStart = 0
+  for (let i = 0; i < pinyinWords.length; i++) {
+    const word = pinyinWords[i]
+    const syllableCount = word.split('-').length
+    const charEnd = charStart + syllableCount
+    if (cleanIdx >= charStart && cleanIdx < charEnd) {
+      return syllableCount
+    }
+    charStart = charEnd
+  }
+  return 1
+}
+
+// The Android System WebView does not support the Web Speech API (no Chinese
+// voices), so on Android we use the native TextToSpeech plugin instead. iOS's
+// WKWebView supports speechSynthesis (incl. word-boundary highlighting), so it
+// keeps the web path below.
+let cachedTtsLang: string | null | undefined
+async function pickChineseTtsLang(): Promise<string | null> {
+  if (cachedTtsLang !== undefined) return cachedTtsLang
+  try {
+    const { languages } = await TextToSpeech.getSupportedLanguages()
+    const lower = languages.map(l => l.toLowerCase())
+    const preferred = ['zh-tw', 'zh-hant-tw', 'cmn-hant-tw', 'zh-hant', 'zh', 'zh-cn', 'zh-hans', 'cmn-hans-cn']
+    let idx = -1
+    for (const p of preferred) {
+      idx = lower.indexOf(p)
+      if (idx !== -1) break
+    }
+    if (idx === -1) idx = lower.findIndex(l => l.startsWith('zh') || l.startsWith('cmn'))
+    cachedTtsLang = idx !== -1 ? languages[idx] : null
+  } catch {
+    cachedTtsLang = 'zh-TW'
+  }
+  return cachedTtsLang
+}
+
+async function playPhraseNative(text: string) {
+  if (activeSpeechText.value === text) {
+    try { await TextToSpeech.stop() } catch { /* ignore */ }
+    activeSpeechText.value = null
+    currentSpeechCharIndex.value = -1
+    currentSpeechCharLength.value = 0
+    return
+  }
+  try { await TextToSpeech.stop() } catch { /* ignore */ }
+
+  const lang = await pickChineseTtsLang()
+  if (!lang) {
+    const toast = await toastController.create({
+      message: 'Chinese text-to-speech is not installed on this device. Enable it in Settings → System → Languages & input → Text-to-speech output.',
+      duration: 4000,
+      position: 'bottom',
+      color: 'warning'
+    })
+    await toast.present()
+    return
+  }
+
+  activeSpeechText.value = text
+  currentSpeechCharIndex.value = -1
+  currentSpeechCharLength.value = 0
+  
+  try {
+    const { voices } = await TextToSpeech.getSupportedVoices()
+    const voiceIndex = voices.findIndex(v => v.name === selectedVoiceName.value)
+    
+    await TextToSpeech.speak({
+      text,
+      lang,
+      rate: 1.0,
+      pitch: 1.0,
+      volume: 1.0,
+      voice: voiceIndex !== -1 ? voiceIndex : undefined,
+      category: 'playback'
+    })
+  } catch (err) {
+    console.error('Native TTS failed:', err)
+  } finally {
+    if (activeSpeechText.value === text) {
+      activeSpeechText.value = null
+      currentSpeechCharIndex.value = -1
+      currentSpeechCharLength.value = 0
+    }
+  }
+}
+
+function playPhrase(text: string) {
+  if (Capacitor.getPlatform() === 'android') {
+    playPhraseNative(text)
+    return
+  }
+  if ('speechSynthesis' in window) {
+    if (activeSpeechText.value === text) {
+      window.speechSynthesis.cancel()
+      activeSpeechText.value = null
+      currentSpeechCharIndex.value = -1
+      currentSpeechCharLength.value = 0
+      return
+    }
+    window.speechSynthesis.cancel()
+    const utterance = new SpeechSynthesisUtterance(text)
+    
+    const chosenVoice = availableVoices.value.find(v => v.name === selectedVoiceName.value)
+    if (chosenVoice) {
+      utterance.voice = chosenVoice
+      utterance.lang = chosenVoice.lang
+    } else {
+      utterance.lang = 'zh-TW'
+    }
+    
+    utterance.rate = 0.75 // Slightly slower for maximum legibility and clarity
+    utterance.onstart = () => {
+      activeSpeechText.value = text
+      currentSpeechCharIndex.value = -1
+      currentSpeechCharLength.value = 0
+    }
+    utterance.onboundary = (event) => {
+      if (event.name === 'word') {
+        currentSpeechCharIndex.value = event.charIndex
+        const phraseObj = phrases.value.find(pr => pr.chinese === text)
+        if (phraseObj) {
+          const cleanIdx = getCleanIndex(text, event.charIndex)
+          currentSpeechCharLength.value = getWordLengthAt(phraseObj, cleanIdx)
+        } else {
+          currentSpeechCharLength.value = event.charLength || 1
+        }
+      }
+    }
+    utterance.onend = () => {
+      setTimeout(() => {
+        if (activeSpeechText.value === text) {
+          activeSpeechText.value = null
+          currentSpeechCharIndex.value = -1
+          currentSpeechCharLength.value = 0
+        }
+      }, 500)
+    }
+    utterance.onerror = () => {
+      activeSpeechText.value = null
+      currentSpeechCharIndex.value = -1
+      currentSpeechCharLength.value = 0
+    }
+    window.speechSynthesis.speak(utterance)
+  }
+}
+
+function isCategoryPremium(catId: string): boolean {
+  return catId !== 'all' && catId !== 'favorites' && catId !== 'dining'
+}
+
+function isPhrasePremium(p: HalalifyPhrase): boolean {
+  if (p.catId !== 'dining') return true
+  return p.id ? (p.id > 5) : false
+}
+
+async function presentRcPaywall() {
+  if (!Capacitor.isNativePlatform()) {
+    if (import.meta.env.DEV) {
+      console.warn("[RC] Paywall can only run on native apps.");
+      const alert = await alertController.create({
+        header: 'DEV Bypass',
+        message: 'Unlock Pro features for local testing?',
+        buttons: [
+          { text: 'Cancel', role: 'cancel' },
+          {
+            text: 'Unlock',
+            handler: () => {
+              isDonor.value = true
+              localStorage.setItem("user_pro_status", "true")
+            }
+          }
+        ]
+      })
+      await alert.present()
+    } else {
+      const isZh = (locale.value || '').startsWith('zh')
+      const headerText = isZh ? 'Halalify Pro 功能' : 'Halalify Pro Feature'
+      const messageText = isZh 
+        ? '單字翻譯、拼音發音拆解及語音播放功能僅在行動應用程式中提供。請在 iOS 或 Android 下載 Halal Formosa 以解鎖 Pro 專業版。' 
+        : 'Word-by-word translations, pronunciation breakdowns, and audio playback are only available in our mobile app. Please download Halal Formosa on iOS or Android to unlock Pro.'
+      
+      const alert = await alertController.create({
+        header: headerText,
+        message: messageText,
+        buttons: ['OK']
+      })
+      await alert.present()
+    }
+    return;
+  }
+
+  await presentProPaywall('home_view_halalify');
+}
+
+async function copyPhrase(text: string) {
+  try {
+    await navigator.clipboard.writeText(text)
+    ActivityLogService.log('halalify_phrase_copy', { phrase: text.slice(0, 80) })
+    const toast = await toastController.create({
+      message: 'Copied Chinese phrase to clipboard!',
+      duration: 2000,
+      position: 'bottom',
+      color: 'success'
+    })
+    await toast.present()
+  } catch (err) {
+    console.error('Failed to copy', err)
+  }
+}
+
+/* ---------------- Community Reels (Instagram & TikTok) ---------------- */
+const communityReels = ref<any[]>([])
+const loadingReels = ref(true)
+
+const fetchCommunityReels = async () => {
+  loadingReels.value = true
+  try {
+    const data = await withCache('community_reels', async () => {
+      // 📸 Fetch Instagram
+      const { data: igData, error: igError } = await supabase
+        .from('instagram_posts')
+        .select('*')
+        .order('timestamp', { ascending: false })
+        .limit(10)
+
+      // 🎵 Fetch TikTok
+      const { data: ttData, error: ttError } = await supabase
+        .from('tiktok_posts')
+        .select('*')
+        .order('timestamp', { ascending: false })
+        .limit(10)
+
+      if (igError) console.error('IG Fetch Error:', igError)
+      if (ttError) console.error('TikTok Fetch Error:', ttError)
+
+      // 🔀 Merge and Sort by deduplicating
+      return SocialMediaService.mergeSocialPosts(igData, ttData)
+    })
+    communityReels.value = data
+  } catch (err) {
+    console.error('Error fetching community reels:', err)
+  } finally {
+    loadingReels.value = false
+  }
+}
+
+// 🔄 Auto-Refresh Logic for Instagram
+const isRefreshingInstagram = ref(false)
+const lastRefreshTime = ref(0)
+const REFRESH_THROTTLE = 1000 * 60 * 30 // 30 minutes throttle
+
+async function handleReelsRefreshNeeded() {
+  const now = Date.now()
+  
+  if (isRefreshingInstagram.value || (now - lastRefreshTime.value < REFRESH_THROTTLE)) {
+    return
+  }
+
+  isRefreshingInstagram.value = true
+  console.log('[Home] Social media links expired. Triggering background refresh...')
+
+  try {
+    // 🌐 Refresh both in parallel
+    await Promise.allSettled([
+      supabase.functions.invoke('fetch-instagram'),
+      supabase.functions.invoke('fetch-tiktok')
+    ])
+    
+    lastRefreshTime.value = Date.now()
+    await fetchCommunityReels()
+    console.log('[Home] Social media refresh complete.')
+  } catch (err) {
+    console.error('[Home] Failed to refresh social media links:', err)
+  } finally {
+    isRefreshingInstagram.value = false
+  }
+}
+
 let timeInterval: number | null = null
+
+import CommunityReels from "@/components/CommunityReels.vue"
+
+// ✅ Cosmetic helpers for leaderboard
+function getCosmeticByCategory(user: any, category: string) {
+  if (category === 'background' || category === 'nameplate') {
+    return user?.equipped_cosmetics?.find((c: any) => c.category === 'background' || c.category === 'nameplate')
+  }
+  return user?.equipped_cosmetics?.find((c: any) => c.category === category)
+}
+
+function getLeaderboardGlowStyle(user: any) {
+  const glow = getCosmeticByCategory(user, 'glow')
+  const aura = getCosmeticByCategory(user, 'aura')
+  const styles: Record<string, string> = { margin: '0 10px', position: 'relative' }
+  if (glow?.css_value?.boxShadow) styles.boxShadow = glow.css_value.boxShadow
+  if (glow?.css_value?.animation) styles.animation = glow.css_value.animation
+  if (aura?.css_value?.background) styles.background = aura.css_value.background
+  if (aura?.css_value?.animation && !glow?.css_value?.animation) styles.animation = aura.css_value.animation
+  return styles
+}
+
+function getLeaderboardFrameStyle(user: any) {
+  const frame = getCosmeticByCategory(user, 'frame')
+  const outline = getCosmeticByCategory(user, 'outline')
+  const styles: Record<string, string> = {}
+  if (frame?.css_value?.border) styles.border = frame.css_value.border
+  if (frame?.css_value?.boxShadow) styles.boxShadow = frame.css_value.boxShadow
+  if (outline?.css_value?.border) styles.border = outline.css_value.border
+  return styles
+}
+
+function getLeaderboardRowStyle(user: any) {
+  const np = getCosmeticByCategory(user, 'background')
+  const styles: Record<string, string> = {}
+  if (np?.css_value?.background) {
+    styles['--background'] = np.css_value.background
+    styles.background = np.css_value.background
+    
+    let textColor = ''
+    let subTextColor = ''
+    
+    if (np.css_value.color) {
+      textColor = np.css_value.color
+      subTextColor = np.css_value.color
+    } else {
+      const isLight = isBackgroundLight(np)
+      textColor = isLight ? '#121212' : '#ffffff'
+      subTextColor = isLight ? '#444444' : 'rgba(255, 255, 255, 0.7)'
+    }
+    
+    styles['--color'] = textColor
+    styles.color = textColor
+    styles['--sub-color'] = subTextColor
+    styles['--ion-text-color'] = textColor
+    
+    if (np.css_value.animation) styles.animation = np.css_value.animation
+    if (np.css_value.backgroundSize) styles.backgroundSize = np.css_value.backgroundSize
+  }
+  return styles
+}
+
+function getPopoverGlowStyle(user: any) {
+  if (!user) return {}
+  const glow = getCosmeticByCategory(user, 'glow')
+  const styles: Record<string, string> = {}
+  if (glow?.css_value?.boxShadow) styles.boxShadow = glow.css_value.boxShadow
+  if (glow?.css_value?.animation) styles.animation = glow.css_value.animation
+  return styles
+}
+
+function getPopoverAuraStyle(user: any) {
+  if (!user) return {}
+  const aura = getCosmeticByCategory(user, 'aura')
+  if (!aura?.css_value?.background) return {}
+  const styles: Record<string, string> = {
+    background: aura.css_value.background
+  }
+  if (aura.css_value.animation) styles.animation = aura.css_value.animation
+  return styles
+}
+
+function getPopoverFrameStyle(user: any) {
+  const frame = getCosmeticByCategory(user, 'frame')
+  const styles: Record<string, string> = { border: '2px solid var(--ion-color-primary-tint)' }
+  if (frame?.css_value?.border) styles.border = frame.css_value.border
+  if (frame?.css_value?.boxShadow) styles.boxShadow = frame.css_value.boxShadow
+  return styles
+}
+
+function getPopoverContentStyle(user: any) {
+  if (!user) return {}
+  const bg = getCosmeticByCategory(user, 'background')
+  const styles: Record<string, string> = {}
+  
+  if (bg?.css_value?.background) {
+    if (bg.css_value.color) {
+      styles['--color'] = bg.css_value.color
+      styles.color = bg.css_value.color
+      styles['--sub-color'] = bg.css_value.color
+    } else {
+      const isLight = isBackgroundLight(bg)
+      const textColor = isLight ? '#121212' : '#ffffff'
+      const subTextColor = isLight ? '#444444' : 'rgba(255, 255, 255, 0.75)'
+      styles['--color'] = textColor
+      styles.color = textColor
+      styles['--sub-color'] = subTextColor
+    }
+    if (bg.css_value.animation) styles.animation = bg.css_value.animation
+    if (bg.css_value.backgroundSize) styles.backgroundSize = bg.css_value.backgroundSize
+  }
+  return styles
+}
+
+function getPopoverCardVariables(user: any) {
+  if (!user) return {}
+  const bg = getCosmeticByCategory(user, 'background')
+  const outline = getCosmeticByCategory(user, 'outline')
+  const styles: Record<string, string> = {}
+  
+  if (bg?.css_value?.background) {
+    styles['--leaderboard-popover-bg'] = bg.css_value.background
+  }
+  if (outline?.css_value) {
+    if (outline.css_value.border) {
+      styles['--leaderboard-popover-border'] = outline.css_value.border
+    }
+    if (outline.css_value.borderImage) {
+      styles['--leaderboard-popover-border-image'] = outline.css_value.borderImage
+    }
+    if (outline.css_value.animation) {
+      styles['--leaderboard-popover-animation'] = outline.css_value.animation
+    }
+  }
+  return styles
+}
+
+function isBackgroundLight(cosmetic?: any | null): boolean {
+  if (!cosmetic) return false
+  const slug = cosmetic.slug?.toLowerCase() || cosmetic.name?.toLowerCase() || ''
+  return slug.includes('sakura') || slug.includes('sunset') || slug.includes('light') || slug.includes('gold')
+}
 
 const selectedUser = ref<any | null>(null)
 const popoverEvent = ref<Event | null>(null)
 
 /* ---------------- Chart Setup ---------------- */
-ChartJS.register(Title, Tooltip, Legend, ArcElement, BarElement, CategoryScale, LinearScale)
-const DoughnutChart = Doughnut
+// Removed ChartJS registration to improve performance
+
 
 /* ---------------- State ---------------- */
 const router = useRouter()
-const { t, te, locale } = useI18n()
 const { fetchProgress } = useDailyMissions()
-const doughnutRef = ref<any>(null)
-const locationChartRef = ref<any>(null)
 const RECENT_DISCOVER_LIMIT = 15
 const loadingStats = ref(true)
+
 const loadingProducts = ref(true)
 const loadingLocations = ref(true)
 const recentProducts = ref<any[]>([])
 const recentLocations = ref<any[]>([])
+// Unweighted pool, sorted purely by recency — the "rest of the grid" part
+// of Discover Products.
+const recentProductsFull = ref<any[]>([])
+// All gold-tier products — the candidates the featured slot rotates through.
+const goldProductPool = ref<any[]>([])
+const productRotationTimer = ref<any>(null)
+// recentProducts[0] is the featured gold slot whenever one is being rotated
+// in — split out so its own crossfade doesn't reflow the rest of the grid.
+const featuredProduct = computed(() => goldProductPool.value.length ? recentProducts.value[0] : null)
+const otherProducts = computed(() => goldProductPool.value.length ? recentProducts.value.slice(1) : recentProducts.value)
+// Unweighted pool, sorted purely by recency — the "rest of the grid" part
+// of Discover Locations.
+const recentLocationsFull = ref<any[]>([])
+// All gold-tier locations (not just ones recent enough to be in the pool
+// above) — the candidates the featured slot rotates through.
+const goldLocationPool = ref<any[]>([])
+const locationRotationTimer = ref<any>(null)
+// recentLocations[0] is the featured gold slot whenever one is being
+// rotated in — split out so its own crossfade doesn't reflow the rest of
+// the grid below it.
+const featuredLocation = computed(() => goldLocationPool.value.length ? recentLocations.value[0] : null)
+const otherLocations = computed(() => goldLocationPool.value.length ? recentLocations.value.slice(1) : recentLocations.value)
 const loadingNews = ref(true)
 const recentNews = ref<any[]>([])
 const totalProductCount = ref(0)
 const totalLocationCount = ref(0)
+
+const loadingTrips = ref(true)
+const recentTrips = ref<any[]>([])
+const loadingMarketplace = ref(true)
+const marketplaceProducts = ref<any[]>([])
 
 /* ---------------- Announcement logic ---------------- */
 const announcement = ref<any | null>(null)
@@ -719,89 +1908,68 @@ function handleBannerClick() {
 }
 
 
-const userLocation = ref<{
-  lat: number
-  lng: number
-  city?: string
-} | null>(null)
+const userLocation = computed(() => sharedLocation.value)
 
 
 const { leaderboard, loading: loadingLeaderboard, fetchLeaderboard } = useLeaderboard();
+const leaderboardType = ref<'daily' | 'weekly' | 'monthly' | 'all_time'>('daily')
+
+function changeLeaderboardType(ev: any) {
+  leaderboardType.value = ev.detail.value
+  fetchLeaderboard(leaderboardType.value, 10)
+}
 const isAuthenticated = ref(false)
 
 const isDark = ref(document.documentElement.classList.contains('ion-palette-dark'))
 
-onMounted(() => {
+onMounted(async () => {
+  loadFavorites()
+  initPhrases()
+  startWatching()
   fetchLatestAnnouncement()
+  
+  loadVoices()
+  if ('speechSynthesis' in window) {
+    window.speechSynthesis.onvoiceschanged = loadVoices
+  }
+  if (Capacitor.getPlatform() === 'android') {
+    try {
+      ttsRangeListenerHandle = await TextToSpeech.addListener('onRangeStart', (info: { start: number; end: number; spokenWord?: string }) => {
+        currentSpeechCharIndex.value = info.start
+        currentSpeechCharLength.value = (info.end > info.start) ? (info.end - info.start) : (info.spokenWord ? info.spokenWord.length : 1)
+      })
+    } catch (e) {
+      console.error('Failed to register native TTS range listener:', e)
+    }
+  }
+  
   const observer = new MutationObserver(() => {
     isDark.value = document.documentElement.classList.contains('ion-palette-dark')
   })
   observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
 })
 
-const chartOptions = computed<ChartOptions<'doughnut'>>(() => ({
-  responsive: true,
-  maintainAspectRatio: false,
-  plugins: {
-    legend: {
-      position: 'right',
-      align: 'center',
-      labels: {
-        color: isDark.value ? '#ffffff' : '#1e1e1e',
-        boxWidth: 14,
-        font: { size: 12 },
-        padding: 8
-      }
-    }
-  }
-}))
 
-/* ---------------- Product Status Chart ---------------- */
-const statusChartData = ref<ChartData<'doughnut'>>({
-  labels: [],
-  datasets: [{
-    backgroundColor: ['#28a745', '#007bff', '#ffc107', '#dc3545'],
-    data: []
-  }]
-})
 
-watch([() => locale.value, isDark], () => {
-  // Update status labels if we have data
-  if (statusChartData.value && statusChartData.value.labels && statusChartData.value.labels.length > 0) {
-    statusChartData.value = {
-      ...statusChartData.value,
-      labels: [
-        t('home.statuses.halal'),
-        t('home.statuses.muslimFriendly'),
-        t('home.statuses.syubhah'),
-        t('home.statuses.haram')
-      ]
-    }
-  }
 
-  // Refresh location category labels because they are translated in the fetcher
+
+
+watch([() => locale.value], () => {
+  // Refresh location category stats because they might have changed
   fetchLocationCategoryStats()
-  
-  // Re-render charts
-  nextTick(() => {
-    if (doughnutRef.value?.chart) doughnutRef.value.chart.update();
-    if (locationChartRef.value?.chart) locationChartRef.value.chart.update();
-  })
 })
 
-/* ---------------- Location Categories Chart ---------------- */
-const locationChartData = ref<ChartData<'doughnut'>>({
-  labels: [],
-  datasets: [{
-    backgroundColor: [
-      '#3498db', '#2ecc71', '#f1c40f',
-      '#e74c3c', '#9b59b6', '#1abc9c', '#e67e22'
-    ],
-    data: []
-  }]
+watch(sharedLocation, (newLoc) => {
+  if (newLoc) {
+    fetchPrayerTimes()
+  }
 })
+
+
 
 const halalPartners = ref<any[]>([])
+const halalPartnersFull = ref<any[]>([])
+const rotationTimer = ref<any>(null)
 const loadingPartners = ref(true)
 
 type PrayerTimes = {
@@ -840,19 +2008,24 @@ function startClock() {
 async function fetchRecentNews() {
   loadingNews.value = true
 
-  const { data, error } = await supabase
-      .from('news')
-      .select('id, title, header_image, created_at') // 👈 FIX HERE
-      .order('created_at', { ascending: false })
-      .limit(RECENT_DISCOVER_LIMIT)
+  const data = await withCache('recent_news', async () => {
+    const { data, error } = await supabase
+        .from('news')
+        .select('id, title, header_image, created_at')
+        .order('created_at', { ascending: false })
+        .limit(RECENT_DISCOVER_LIMIT)
 
-  if (!error && data) {
-    recentNews.value = data.map(n => ({
+    if (error) throw error
+    return data.map(n => ({
       id: n.id,
       title: n.title,
-      cover: n.header_image || 'https://placehold.co/400x250?text=News', // 👈 FIX
+      cover: n.header_image || 'https://placehold.co/400x250?text=News',
       created_at: n.created_at
     }))
+  })
+
+  if (data) {
+    recentNews.value = data
   }
 
   loadingNews.value = false
@@ -864,123 +2037,41 @@ const TIER_PRIORITY: Record<string, number> = {
   bronze: 1
 }
 
-const displayedPartners = computed(() => {
-  return [...halalPartners.value].sort((a, b) => {
-    return (TIER_PRIORITY[b.partner_tier] || 0)
-        - (TIER_PRIORITY[a.partner_tier] || 0)
-  })
-})
+// Removed displayedPartners computed property to allow direct control over rotation order via halalPartners.value
 
-async function getUserLocation(): Promise<{
-  lat: number
-  lng: number
-  city?: string
-}> {
-  // 1️⃣ Cached first
-  const cached = localStorage.getItem('hf_user_location')
-  if (cached) {
-    const parsed = JSON.parse(cached) as {
-      lat: number
-      lng: number
-      city?: string
-    }
-
-    userLocation.value = parsed
-    return parsed
-  }
-
-  try {
-    let lat: number
-    let lng: number
-
-    if (Capacitor.isNativePlatform()) {
-      // 📱 Native app
-      const permission = await Geolocation.requestPermissions()
-
-      if (permission.location !== 'granted') {
-        throw new Error('Location permission denied')
-      }
-
-      const position = await Geolocation.getCurrentPosition({
-        enableHighAccuracy: true
-      })
-
-      lat = position.coords.latitude
-      lng = position.coords.longitude
-
-    } else {
-      // 🌐 Web browser fallback
-      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(resolve, reject)
-      })
-
-      lat = position.coords.latitude
-      lng = position.coords.longitude
-    }
-
-    let city = t('home.currentLocation')
-
-    try {
-      const res = await fetch(
-          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`,
-          {
-            headers: {
-              'Accept': 'application/json',
-              'User-Agent': 'HalalFormosaApp/1.0'
-            }
-          }
-      )
-
-      console.log('Reverse status:', res.status)
-
-      const data = await res.json()
-
-      city =
-          data.address?.city ||
-          data.address?.town ||
-          data.address?.municipality ||
-          data.address?.state ||
-          t('home.currentLocation')
-
-    } catch (e) {
-      console.warn('[Reverse Geocode Failed]', e)
-    }
-
-    userLocation.value = { lat, lng, city }
-
-
-    localStorage.setItem(
-        'hf_user_location',
-        JSON.stringify(userLocation.value)
-    )
-
-    return userLocation.value
-
-  } catch {
-    console.warn('[GPS] Using fallback Taipei')
-
-    userLocation.value = {
-      lat: 25.0330,
-      lng: 121.5654,
-      city: t('home.taipei')
-    }
-
-    return userLocation.value
+async function getUserLocation(): Promise<LatLng> {
+  // Use shared location if available, otherwise return Taipei fallback
+  return sharedLocation.value || {
+    lat: 25.0330,
+    lng: 121.5654,
+    city: t('home.taipei')
   }
 }
 
 async function fetchPrayerTimes() {
-  loadingPrayerTimes.value = true
+  // Only show the skeleton on the very first load. `sharedLocation` keeps
+  // getting reassigned to a new object on every GPS watch ping (even when
+  // the coordinates haven't meaningfully changed), which re-triggers this
+  // function repeatedly in the background — toggling loadingPrayerTimes
+  // back to true on every refresh would remount the pill row (v-if/v-else)
+  // and reset its scrollLeft, undoing the auto-scroll-to-current-prayer
+  // effect below since that watcher only re-fires when the *key* changes,
+  // not on every recompute.
+  if (!prayerTimes.value) {
+    loadingPrayerTimes.value = true
+  }
 
   const location = await getUserLocation()
 
-  const praytime = new PrayTime('MWL')
+  const cfg = prayerSettings.value
+  const praytime = new PrayTime(cfg.method)
 
   praytime
       .location([location.lat, location.lng])
       .timezone(userTimezone.value)
       .format('24h')
-      .adjust({ highLats: 'AngleBased' })
+      .adjust({ highLats: 'AngleBased', asr: cfg.asr })
+      .tune({ ...cfg.tune })
 
   const times = praytime.getTimes(new Date())
 
@@ -994,7 +2085,20 @@ async function fetchPrayerTimes() {
   }
 
   loadingPrayerTimes.value = false
+
+  syncPrayerWidget(prayerTimes.value)
 }
+
+const { settings: prayerSettings } = usePrayerSettings()
+const showPrayerSettings = ref(false)
+
+function openPrayerSettings() {
+  ActivityLogService.log('home_prayer_settings_open')
+  showPrayerSettings.value = true
+}
+
+// Recompute as soon as the user saves new calculation settings.
+watch(prayerSettings, () => { fetchPrayerTimes() }, { deep: true })
 
 async function handleRefreshLocation() {
   ActivityLogService.log("home_prayer_refresh_location");
@@ -1092,35 +2196,52 @@ const scrollPrayerKey = computed(() => {
   return currentPrayerKey.value
 })
 
+function scrollToCurrentPrayer(smooth = true) {
+  const key = scrollPrayerKey.value
+  if (!key) return
+
+  const container = prayerScroll.value
+  if (!container) return
+
+  const target = container.querySelector(
+      `.prayer-pill[data-key="${key}"]`
+  ) as HTMLElement
+
+  if (!target) return
+
+  const offset =
+      target.offsetLeft -
+      container.clientWidth / 2 +
+      target.clientWidth / 2
+
+  container.scrollTo({
+    left: offset,
+    behavior: smooth ? 'smooth' : 'instant'
+  })
+}
+
+// Re-scroll whenever the active prayer changes...
 watch(
     () => scrollPrayerKey.value,
-    async (key) => {
-      if (!key) return
-
-      // wait for DOM + Ionic layout
+    async () => {
       await nextTick()
-      requestAnimationFrame(() => {
-        const container = prayerScroll.value
-        if (!container) return
-
-        const target = container.querySelector(
-            `.prayer-pill[data-key="${key}"]`
-        ) as HTMLElement
-
-        if (!target) return
-
-        const offset =
-            target.offsetLeft -
-            container.clientWidth / 2 +
-            target.clientWidth / 2
-
-        container.scrollTo({
-          left: offset,
-          behavior: 'smooth'
-        })
-      })
+      requestAnimationFrame(() => scrollToCurrentPrayer(true))
     },
     { immediate: true }
+)
+
+// ...and also whenever the pill row (re)mounts — `sharedLocation` keeps
+// getting reassigned on every GPS watch ping, and while fetchPrayerTimes
+// no longer remounts the list on every one of those refreshes, this is a
+// safety net so the scroll is always correct once the real content is on
+// screen, regardless of what triggered the mount.
+watch(
+    () => loadingPrayerTimes.value,
+    async (loading) => {
+      if (loading) return
+      await nextTick()
+      requestAnimationFrame(() => scrollToCurrentPrayer(false))
+    }
 )
 
 const upcomingCountdown = computed(() => {
@@ -1160,52 +2281,51 @@ function closePopover() {
   popoverEvent.value = null
 }
 
+async function showPrivateInfoAlert(ev?: Event) {
+  if (ev) {
+    ev.stopPropagation(); // prevent triggering row click / popover opening
+  }
+  const isZh = locale.value === 'zh' || locale.value?.startsWith('zh');
+  const alert = await alertController.create({
+    header: isZh ? '個人檔案已設為不公開' : 'Profile is Private',
+    message: isZh 
+      ? '您的個人檔案目前設定為不公開。您的姓名與頭像僅對您自己顯示，其他使用者將會看到您顯示為「匿名」。' 
+      : 'Your profile is set to private. Your name and details are only visible to you. Other users will see you as Anonymous.',
+    buttons: [isZh ? '我知道了' : 'Got It']
+  });
+  await alert.present();
+}
+
 /* ---------------- Data Fetching ---------------- */
 async function fetchRecentProducts() {
   loadingProducts.value = true
-  const { data, error } = await supabase
-      .from("products")
-      .select(`
-        barcode, 
-        name, 
-        status, 
-        photo_front_url, 
-        created_at, 
-        updated_at, 
-        product_categories(name),
-        partner:partners(partner_tier)
-      `)
-      .eq("approved", true)
-      .order("created_at", { ascending: false })
-      .limit(100) // 🏁 Fetch more to ensure we catch recent Gold items
+  const data = await withCache('recent_products', async () => {
+    const { data, error } = await supabase
+        .from("products")
+        .select(`
+          barcode,
+          name,
+          status,
+          photo_front_url,
+          created_at,
+          approved_at,
+          updated_at,
+          product_categories(name),
+          partner:partners(partner_tier)
+        `)
+        .eq("approved", true)
+        .order("approved_at", { ascending: false })
+        .limit(100)
 
-  if (!error && data) {
-    // 📅 Determine "New Gold" threshold (7 days)
-    const sevenDaysAgo = dayjs().subtract(7, 'day');
+    if (error) throw error
 
-    // 🏎️ Sort: Gold/Silver < 7 days old go to the top
-    const sortedData = [...data].sort((a: any, b: any) => {
-      const getWeight = (p: any) => {
-        const t = Array.isArray(p.partner) ? p.partner[0]?.partner_tier : p.partner?.partner_tier;
-        const tier = String(t || '').toLowerCase();
-        // Check both created_at and potentially updated_at if available
-        const isNew = dayjs(p.created_at).isAfter(sevenDaysAgo) || (p.updated_at && dayjs(p.updated_at).isAfter(sevenDaysAgo));
-        
-        if (tier === 'gold' && isNew) return 3; // Absolute priority for fresh Gold
-        if (tier === 'gold') return 2;          // Regular Gold
-        if (tier === 'silver' && isNew) return 1;
-        return 0;
-      };
+    // Purely chronological — no tier weighting here. updateProductRotation()
+    // below is what surfaces a single gold partner product up front, on rotation.
+    const sortedData = [...data]
+      .sort((a: any, b: any) => dayjs(b.created_at).valueOf() - dayjs(a.created_at).valueOf())
+      .slice(0, RECENT_DISCOVER_LIMIT);
 
-      const weightA = getWeight(a);
-      const weightB = getWeight(b);
-
-      if (weightA !== weightB) return weightB - weightA;
-      
-      return dayjs(b.created_at).valueOf() - dayjs(a.created_at).valueOf();
-    }).slice(0, RECENT_DISCOVER_LIMIT);
-
-    recentProducts.value = sortedData.map(p => ({
+    return sortedData.map(p => ({
       barcode: p.barcode,
       name: p.name,
       status: p.status,
@@ -1214,53 +2334,119 @@ async function fetchRecentProducts() {
       created_at: p.created_at,
       partner_tier: Array.isArray(p.partner) ? p.partner[0]?.partner_tier : (p.partner as any)?.partner_tier
     }))
+  })
+
+  // Candidates for the featured slot — ALL gold-tier products, not just
+  // ones recent enough to land in the 15-item pool above.
+  const goldData = await withCache('discover_products_gold_pool', async () => {
+    const { data: golds, error: goldError } = await supabase
+        .from('products')
+        .select(`
+          barcode,
+          name,
+          status,
+          photo_front_url,
+          created_at,
+          product_categories(name),
+          partner:partners!inner(partner_tier)
+        `)
+        .eq('approved', true)
+        .eq('partner.partner_tier', 'gold')
+        .order('barcode', { ascending: true })
+        .limit(50)
+
+    if (goldError) throw goldError
+
+    return golds.map(p => ({
+      barcode: p.barcode,
+      name: p.name,
+      status: p.status,
+      category: (p.product_categories as any)?.name || "",
+      image: p.photo_front_url,
+      created_at: p.created_at,
+      partner_tier: Array.isArray(p.partner) ? p.partner[0]?.partner_tier : (p.partner as any)?.partner_tier
+    }))
+  })
+
+  if (data) {
+    recentProductsFull.value = data
+  }
+  if (goldData) {
+    goldProductPool.value = goldData
+    // Warm the cache for every gold candidate's photo up front, so rotating
+    // the featured slot never shows a blank card while a fresh image loads.
+    goldData.forEach((p: any) => {
+      if (p.image) { const img = new Image(); img.src = p.image }
+    })
+  }
+  if (data || goldData) {
+    updateProductRotation()
   }
   loadingProducts.value = false
 }
 
+/**
+ * At most one gold partner product leads the Discover Products grid,
+ * rotating (same mechanic as updateLocationRotation()) on a timer — never a
+ * wall of gold cards. Everyone else, including gold products not featured
+ * this turn, is excluded from the chronological "rest" so it never shows
+ * twice.
+ */
+function updateProductRotation() {
+  if (productRotationTimer.value) clearTimeout(productRotationTimer.value)
+  if (recentProductsFull.value.length === 0) return
+
+  const goldPool = goldProductPool.value
+
+  if (goldPool.length === 0) {
+    recentProducts.value = recentProductsFull.value
+    return
+  }
+
+  const rotationIndexStr = localStorage.getItem('home_product_rotation_index') || '0'
+  const rotationIndex = parseInt(rotationIndexStr, 10)
+  const featured = goldPool[rotationIndex % goldPool.length]
+  const rest = recentProductsFull.value
+    .filter(p => String(p.partner_tier || '').toLowerCase() !== 'gold')
+    .slice(0, RECENT_DISCOVER_LIMIT - 1)
+
+  recentProducts.value = [featured, ...rest]
+  localStorage.setItem('home_product_rotation_index', (rotationIndex + 1).toString())
+
+  productRotationTimer.value = setTimeout(() => {
+    updateProductRotation()
+  }, 10000)
+}
+
 async function fetchRecentLocations() {
   loadingLocations.value = true
-  const { data, error } = await supabase
-      .from('locations')
-      .select(`
-        id, 
-        name, 
-        image, 
-        type_id, 
-        location_types(name), 
-        created_at, 
-        updated_at, 
-        partner:partners(partner_tier)
-      `)
-      .eq('approved', true)
-      .order('created_at', { ascending: false })
-      .limit(100)
+  const data = await withCache('recent_locations', async () => {
+    const { data, error } = await supabase
+        .from('locations')
+        .select(`
+          id, 
+          name, 
+          image, 
+          type_id, 
+          location_types(name), 
+          created_at, 
+          updated_at, 
+          partner:partners(partner_tier)
+        `)
+        .eq('approved', true)
+        .eq('is_archived', false)
+        .order('created_at', { ascending: false })
+        .limit(100)
 
-  if (!error && data) {
-    const sevenDaysAgo = dayjs().subtract(7, 'day');
+    if (error) throw error
 
-    // 🏎️ Sort: Gold/Silver < 7 days old go to the top
-    const sortedData = [...data].sort((a: any, b: any) => {
-      const getWeight = (p: any) => {
-        const t = Array.isArray(p.partner) ? p.partner[0]?.partner_tier : p.partner?.partner_tier;
-        const tier = String(t || '').toLowerCase();
-        const isNew = dayjs(p.created_at).isAfter(sevenDaysAgo) || (p.updated_at && dayjs(p.updated_at).isAfter(sevenDaysAgo));
-        
-        if (tier === 'gold' && isNew) return 3;
-        if (tier === 'gold') return 2;
-        if (tier === 'silver' && isNew) return 1;
-        return 0;
-      };
+    // Purely chronological — no tier weighting here. withFeaturedGoldRotation()
+    // below is what surfaces a single gold partner up front, on rotation.
+    const sortedData = [...data]
+      .sort((a: any, b: any) => dayjs(b.created_at).valueOf() - dayjs(a.created_at).valueOf())
+      .slice(0, RECENT_DISCOVER_LIMIT);
 
-      const weightA = getWeight(a);
-      const weightB = getWeight(b);
-
-      if (weightA !== weightB) return weightB - weightA;
-      
-      return dayjs(b.created_at).valueOf() - dayjs(a.created_at).valueOf();
-    }).slice(0, RECENT_DISCOVER_LIMIT);
-
-    recentLocations.value = sortedData.map(l => ({
+    return sortedData.map(l => ({
       id: l.id,
       name: l.name,
       image: l.image,
@@ -1268,143 +2454,411 @@ async function fetchRecentLocations() {
       created_at: l.created_at,
       partner_tier: Array.isArray(l.partner) ? l.partner[0]?.partner_tier : (l.partner as any)?.partner_tier
     }))
+  })
+
+  // Candidates for the featured slot — ALL gold-tier locations, not just
+  // ones recent enough to land in the 15-item pool above (otherwise, on a
+  // slow week, there's only ever one gold location to "rotate" through).
+  const goldData = await withCache('discover_locations_gold_pool', async () => {
+    const { data: golds, error: goldError } = await supabase
+        .from('locations')
+        .select(`
+          id,
+          name,
+          image,
+          type_id,
+          location_types(name),
+          created_at,
+          partner:partners!inner(partner_tier)
+        `)
+        .eq('approved', true)
+        .eq('is_archived', false)
+        .eq('partner.partner_tier', 'gold')
+        .order('id', { ascending: true })
+        .limit(50)
+
+    if (goldError) throw goldError
+
+    return golds.map(l => ({
+      id: l.id,
+      name: l.name,
+      image: l.image,
+      type: (l.location_types as any)?.name || '',
+      created_at: l.created_at,
+      partner_tier: Array.isArray(l.partner) ? l.partner[0]?.partner_tier : (l.partner as any)?.partner_tier
+    }))
+  })
+
+  if (data) {
+    recentLocationsFull.value = data
+  }
+  if (goldData) {
+    goldLocationPool.value = goldData
+    // Warm the browser cache for every gold candidate's photo up front, so
+    // rotating the featured slot never shows a blank card while a fresh
+    // image loads over the network — by the time its turn comes up the
+    // image is already cached and the crossfade is instant.
+    goldData.forEach((l: any) => {
+      if (l.image) { const img = new Image(); img.src = l.image }
+    })
+  }
+  if (data || goldData) {
+    updateLocationRotation()
   }
   loadingLocations.value = false
 }
 
-async function fetchStats() {
-  loadingStats.value = true
-  const { data: products } = await supabase.from('products').select('status')
-  if (products) {
-    totalProductCount.value = products.length
-    const statusCount = { Halal:0,'Muslim-friendly':0,Syubhah:0,Haram:0 }
-    
-    products.forEach((p) => {
-      const s = p.status as keyof typeof statusCount
-      if (statusCount[s] !== undefined) {
-        statusCount[s]++
-      }
-    })
+/**
+ * At most one gold partner leads the Discover Locations grid, rotating
+ * (Round-Robin, same mechanic as updatePartnerRotation() for Our Partners)
+ * on a timer — never a wall of gold cards. Everyone else, including gold
+ * locations not featured this turn, stays in actual chronological order.
+ */
+function updateLocationRotation() {
+  if (locationRotationTimer.value) clearTimeout(locationRotationTimer.value)
+  if (recentLocationsFull.value.length === 0) return
 
-    statusChartData.value = {
-      labels: [
-        t('home.statuses.halal'),
-        t('home.statuses.muslimFriendly'),
-        t('home.statuses.syubhah'),
-        t('home.statuses.haram')
-      ],
-      datasets: [{
-        backgroundColor: ['#28a745', '#007bff', '#ffc107', '#dc3545'],
-        data: [statusCount.Halal, statusCount['Muslim-friendly'], statusCount.Syubhah, statusCount.Haram]
-      }]
-    }
+  const goldPool = goldLocationPool.value
+
+  if (goldPool.length === 0) {
+    recentLocations.value = recentLocationsFull.value
+    return
   }
 
+  const rotationIndexStr = localStorage.getItem('home_location_rotation_index') || '0'
+  const rotationIndex = parseInt(rotationIndexStr, 10)
+  const featured = goldPool[rotationIndex % goldPool.length]
+  // Exclude EVERY gold-tier location here, not just the featured one — a
+  // gold location that's also recent enough to land in this chronological
+  // pool would otherwise show up a second time with its own gold badge.
+  const rest = recentLocationsFull.value
+    .filter(l => String(l.partner_tier || '').toLowerCase() !== 'gold')
+    .slice(0, RECENT_DISCOVER_LIMIT - 1)
+
+  recentLocations.value = [featured, ...rest]
+  localStorage.setItem('home_location_rotation_index', (rotationIndex + 1).toString())
+
+  locationRotationTimer.value = setTimeout(() => {
+    updateLocationRotation()
+  }, 10000)
+}
+
+async function fetchStats() {
+  loadingStats.value = true
+  const stats = await withCache('product_total_stats', async () => {
+    const { count, error } = await supabase.from('products').select('*', { count: 'exact', head: true }).eq('is_archived', false)
+    if (error) throw error
+    return { totalCount: count || 0 }
+  })
+  if (stats) totalProductCount.value = stats.totalCount
   loadingStats.value = false
 }
 
 async function fetchLocationCategoryStats() {
-  const { data, error } = await supabase
-      .from("locations")
-      .select(`
-    id,
-    location_types ( name )
-  `)
-      .eq('approved', true)
+  const stats = await withCache('location_total_stats', async () => {
+    const { count, error } = await supabase
+        .from("locations")
+        .select('*', { count: 'exact', head: true })
+        .eq('approved', true)
+        .eq('is_archived', false)
 
-  if (!error && data) {
-    totalLocationCount.value = data.length
-    const counts: Record<string, number> = {}
+    if (error) throw error
+    return { totalCount: count || 0 }
+  })
 
-    data?.forEach(loc => {
-      // Handle potential array or object response for location_types
-      const rawType = Array.isArray(loc.location_types) ? loc.location_types[0] : loc.location_types
-      const typeKey = rawType?.name || 'Unknown'
-      
-      // Try to translate the type, fallback to raw name
-      const typeName = te(`explore.types.${typeKey}`) ? t(`explore.types.${typeKey}`) : typeKey
-      counts[typeName] = (counts[typeName] || 0) + 1
-    })
-
-    const labels = Object.keys(counts)
-    const values = Object.values(counts)
-
-    locationChartData.value = {
-      labels,
-      datasets: [
-        {
-          backgroundColor: ['#3498db', '#2ecc71', '#e67e22', '#9b59b6', '#f1c40f', '#e74c3c', '#1abc9c'],
-          data: values
-        }
-      ]
-    }
-  }
+  if (stats) totalLocationCount.value = stats.totalCount
 }
 
 async function fetchHomePartners() {
   loadingPartners.value = true
 
-  const { data, error } = await supabase
-      .from('partners')
-      .select(`
-    id,
-    name,
-    logo_url,
-    partner_tier
-  `)
-      .eq('is_active', true)
-      .order('partner_tier', { ascending: false }) // tiers still float up
-      .limit(6)
+  const data = await withCache('home_partners', async () => {
+    // 1. Fetch more partners (up to 100) to ensure we can rotate fairly
+    const { data, error } = await supabase
+        .from('partners')
+        .select(`
+      id,
+      name,
+      logo_url,
+      partner_tier
+    `)
+        .eq('is_active', true)
+        .limit(100)
 
-  if (error) {
-    console.error('[Home Partners]', error)
-    loadingPartners.value = false
-    return
+    if (error || !data) {
+      console.error('[Home Partners] fetch error:', error)
+      return null
+    }
+    return data
+  })
+
+  if (data) {
+    // 2. Define Tier Weights
+    const tierWeights: Record<string, number> = {
+      'gold': 3,
+      'silver': 2,
+      'bronze': 1
+    }
+
+    // 3. Map to stable format
+    halalPartnersFull.value = data.map((b: any) => ({
+      id: b.id,
+      name: b.name,
+      partner_tier: b.partner_tier,
+      logo:
+          b.logo_url ||
+          `https://placehold.co/300x300?text=${encodeURIComponent(b.name)}`,
+      _weight: tierWeights[(b.partner_tier || '').toLowerCase()] || 0
+    }))
+
+    // 4. Start the first rotation
+    updatePartnerRotation()
   }
 
-  halalPartners.value = (data ?? []).map(b => ({
-    id: b.id,
-    name: b.name,
-    partner_tier: b.partner_tier,
-    logo:
-        b.logo_url ||
-        `https://placehold.co/300x300?text=${encodeURIComponent(b.name)}`
-  }))
-
   loadingPartners.value = false
+}
+
+const PARTNER_TIER_ORDER = ['gold', 'silver', 'bronze'] as const
+// Ionic can fire onMounted + onIonViewWillEnter back-to-back on first load,
+// each calling fetchHomePartners() -> updatePartnerRotation(). Two rotations
+// milliseconds apart retrigger a card's enter transition before its previous
+// one finishes, which the browser never resolves — transitionend never
+// fires, so <transition-group> never removes the stuck node and gold cards
+// pile up permanently. Debounce covers that near-simultaneous double-fire.
+let lastPartnerRotationAt = 0
+
+/**
+ * At most ONE partner per tier (gold, then silver, then bronze) leads the
+ * strip, each rotating independently through that tier's own partners —
+ * never a pile-up of several oversized gold cards back to back (which used
+ * to swallow the whole row and make it look stuck/cut off instead of
+ * cycling through partners). Everyone else, including same-tier partners
+ * not featured this turn, just fills out the rest normally.
+ */
+function updatePartnerRotation() {
+  const now = Date.now()
+  if (now - lastPartnerRotationAt < 500) return
+  lastPartnerRotationAt = now
+
+  if (rotationTimer.value) clearTimeout(rotationTimer.value)
+  if (halalPartnersFull.value.length === 0) return
+
+  const rotationIndexStr = localStorage.getItem('partner_rotation_index') || '0'
+  const rotationIndex = parseInt(rotationIndexStr, 10)
+
+  const byTier: Record<string, any[]> = { gold: [], silver: [], bronze: [] }
+  const rest: any[] = []
+  for (const p of halalPartnersFull.value) {
+    const tier = (p.partner_tier || '').toLowerCase()
+    if (tier === 'gold' || tier === 'silver' || tier === 'bronze') {
+      byTier[tier].push(p)
+    } else {
+      rest.push(p)
+    }
+  }
+  Object.values(byTier).forEach(group => group.sort((a, b) => a.name.localeCompare(b.name)))
+  rest.sort((a, b) => a.name.localeCompare(b.name))
+
+  // Same-tier leftovers (other gold/silver/bronze partners not featured
+  // this turn) go right after the featured ones, ahead of the untiered
+  // "rest" — every partner still shows, none dropped, just not all up front.
+  const featured: any[] = []
+  const tierLeftovers: any[] = []
+  for (const tier of PARTNER_TIER_ORDER) {
+    const group = byTier[tier]
+    if (!group.length) continue
+    const featuredIndex = rotationIndex % group.length
+    featured.push(group[featuredIndex])
+    tierLeftovers.push(...group.filter((_, i) => i !== featuredIndex))
+  }
+
+  const finalSelection = [...featured, ...tierLeftovers, ...rest]
+  halalPartners.value = finalSelection
+
+  // Increment rotation index for the next turn
+  localStorage.setItem('partner_rotation_index', (rotationIndex + 1).toString())
+
+  // --- Tiered Autoplay Logic ---
+  // The delay before the next turn depends on the current featured partner (#1 spot)
+  const featuredTier = (finalSelection[0]?.partner_tier || '').toLowerCase()
+  
+  let nextRotationDelay = 3500 // Default for Normal/Bronze
+  if (featuredTier === 'gold') {
+    nextRotationDelay = 10000 // 10s for Gold
+  } else if (featuredTier === 'silver') {
+    nextRotationDelay = 7000  // 7s for Silver
+  } else if (featuredTier === 'bronze') {
+    nextRotationDelay = 5000  // 5s for Bronze
+  }
+
+  rotationTimer.value = setTimeout(() => {
+    updatePartnerRotation()
+  }, nextRotationDelay)
 }
 
 
 
 
+/* ---------------- Trips & Marketplace ---------------- */
+
+async function fetchTrips() {
+  loadingTrips.value = true
+  const data = await withCache('recent_trips', async () => {
+    const { data, error } = await supabase
+      .from('trips')
+      .select(`
+        id,
+        title,
+        title_zh,
+        duration,
+        cover_url,
+        external_url,
+        created_at,
+        provider:partners (
+          name,
+          partner_tier
+        )
+      `)
+      .eq('is_active', true)
+      .order('created_at', { ascending: false })
+      .limit(6)
+    
+    if (error) throw error
+    return (data as any[])
+      .map(t => ({
+        ...t,
+        provider: Array.isArray(t.provider) ? t.provider[0] : t.provider
+      }))
+      .sort((a, b) => {
+        const aTier = TIER_PRIORITY[String(a.provider?.partner_tier || '').toLowerCase()] || 0
+        const bTier = TIER_PRIORITY[String(b.provider?.partner_tier || '').toLowerCase()] || 0
+        return bTier - aTier
+      })
+  })
+
+  if (data) {
+    recentTrips.value = data
+  }
+  loadingTrips.value = false
+}
+
+async function fetchMarketplaceProducts() {
+  loadingMarketplace.value = true
+  const data = await withCache('marketplace_products', async () => {
+    const { data, error } = await supabase
+      .from('store_products')
+      .select(`
+        id,
+        name,
+        name_zh,
+        price,
+        images,
+        created_at,
+        sale_count
+      `)
+      .eq('is_active', true)
+      .order('created_at', { ascending: false })
+      .limit(6)
+    
+    if (error) throw error
+    return data
+  })
+
+  if (data) {
+    marketplaceProducts.value = data
+  }
+  loadingMarketplace.value = false
+}
+
+function viewMoreTrips() {
+  ActivityLogService.log("home_view_more_trips");
+  router.push('/trip')
+}
+
+function viewMoreMarketplace() {
+  ActivityLogService.log("home_view_more_marketplace");
+  router.push('/store')
+}
+
+async function openTrip(trip: any) {
+  ActivityLogService.log("home_trip_click", {
+    trip_id: trip.id,
+    trip_title: trip.title
+  })
+  
+  await supabase.rpc('increment_trip_view', {
+    p_trip_id: trip.id
+  })
+
+  await Browser.open({
+    url: trip.external_url,
+    windowName: '_self',
+    toolbarColor: '#e67e22',
+    presentationStyle: 'fullscreen',
+  })
+}
+
+function openMarketplaceProduct(p: any) {
+  ActivityLogService.log("home_marketplace_click", { product_id: p.id, product_name: p.name })
+  router.push(`/store/product/${p.id}`)
+}
+
+function localized(zh: string | null | undefined, en: string | null | undefined): string {
+  if (locale.value === 'zh') return zh || en || ''
+  return en || zh || ''
+}
+
 /* ---------------- Lifecycle ---------------- */
 
 async function refreshAllData() {
-  console.log('🏠 [Home] Refreshing all data...')
+  console.log('🏠 [Home] Refreshing Priority Data...')
   
-  // Run these in parallel for speed
-  const tasks: Promise<any>[] = [
-    fetchStats(),
-    fetchLocationCategoryStats(),
+  // 🚀 PRIORITY: Load top-of-page content immediately
+  const priorityTasks = [
     fetchRecentProducts(),
-    fetchRecentLocations(),
-    fetchRecentNews(),
-    fetchLeaderboard(),
     fetchHomePartners(),
+    fetchLeaderboard(leaderboardType.value, 10)
   ]
-
+  
   if (isAuthenticated.value) {
-    tasks.push(fetchProgress()) // Also refresh missions if logged in
+    priorityTasks.push(fetchProgress())
   }
 
-  await Promise.allSettled(tasks)
+  await Promise.allSettled(priorityTasks)
   
   if (Capacitor.isNativePlatform()) refreshSubscriptionStatus();
 }
 
 
+// One-time "10 scans" Pro sheet. Waits for Home to settle so it never lands on top of the
+// announcement sheet, and stays quiet if the user has already moved on.
+const { open: milestoneOpen, maybeShow: maybeShowScanMilestone } = useScanMilestone()
+let homeActive = false
+let milestoneTimer: ReturnType<typeof setTimeout> | null = null
+
+function clearMilestoneTimer() {
+  if (milestoneTimer) {
+    clearTimeout(milestoneTimer)
+    milestoneTimer = null
+  }
+}
+
+onIonViewDidLeave(() => {
+  homeActive = false
+  clearMilestoneTimer()
+})
+
 onIonViewWillEnter(async () => {
+  loadFavorites()
   ActivityLogService.log("home_page_open");
+
+  homeActive = true
+  clearMilestoneTimer()
+  milestoneTimer = setTimeout(() => {
+    void maybeShowScanMilestone({
+      blocked: () => !homeActive || (showAnnouncement.value && !!announcement.value) || showPrayerSettings.value || !!selectedUser.value,
+    })
+  }, 2500)
   
   const { data } = await supabase.auth.getSession()
   isAuthenticated.value = !!data.session
@@ -1420,9 +2874,26 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+  clearMilestoneTimer()
+  if (ttsRangeListenerHandle) {
+    ttsRangeListenerHandle.remove()
+    ttsRangeListenerHandle = null
+  }
   if (timeInterval) {
     clearInterval(timeInterval)
     timeInterval = null
+  }
+  if (rotationTimer.value) {
+    clearTimeout(rotationTimer.value)
+    rotationTimer.value = null
+  }
+  if (locationRotationTimer.value) {
+    clearTimeout(locationRotationTimer.value)
+    locationRotationTimer.value = null
+  }
+  if (productRotationTimer.value) {
+    clearTimeout(productRotationTimer.value)
+    productRotationTimer.value = null
   }
 })
 
@@ -1435,7 +2906,7 @@ function goScan() {
 
 function goToSearchAndScan() {
   ActivityLogService.log("home_scan_barcode");
-  router.push({ path: '/search', query: { scan: 'true' } });
+  router.push('/scan/barcode');
 }
 
 function goQibla() {
@@ -1464,6 +2935,11 @@ function viewMoreNews() {
   router.push('/news')
 }
 
+function viewMorePhrases() {
+  ActivityLogService.log("home_viewmore_phrases")
+  router.push('/halalify')
+}
+
 function openNews(news: any) {
   ActivityLogService.log("home_news_click", {
     id: news.id,
@@ -1474,6 +2950,11 @@ function openNews(news: any) {
 }
 
 
+
+function handleViewMoreReels() {
+  ActivityLogService.log("reels_section_view_more");
+  router.push('/reels');
+}
 
 async function openProduct(p: any) {
   ActivityLogService.log("home_product_click", {
@@ -1512,6 +2993,30 @@ function openPartner(partner: any) {
 
 <style scoped>
 
+/* Section header typography (.card-header-row) and the flattened
+   section-wrapper ion-card treatment now live globally in
+   src/theme/variables.css so every component using this pattern
+   (Home's own sections, DailyMissions.vue, etc.) looks consistent —
+   see that file instead of duplicating the rules here. */
+
+/* === Compact Segment === */
+ion-segment {
+  --background: var(--ion-color-step-100);
+  border-radius: 8px;
+  min-height: 32px;
+}
+ion-segment-button {
+  --padding-top: 4px;
+  --padding-bottom: 4px;
+  --margin-top: 2px;
+  --margin-bottom: 2px;
+  --margin-start: 2px;
+  --margin-end: 2px;
+  min-height: 28px;
+  font-size: 0.82rem;
+  letter-spacing: 0;
+}
+
 /* === Announcement Banner === */
 .announcement-banner {
   display: flex;
@@ -1523,7 +3028,7 @@ function openPartner(partner: any) {
   position: relative;
   overflow: hidden;
   border: 1px solid rgba(0,0,0,0.05);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  box-shadow: var(--card-shadow);
   transition: all 0.2s ease;
 }
 
@@ -1532,7 +3037,6 @@ function openPartner(partner: any) {
 }
 
 .announcement-banner.clickable:active {
-  transform: scale(0.98);
   opacity: 0.9;
 }
 
@@ -1639,14 +3143,14 @@ function openPartner(partner: any) {
 
 .main-feature-section {
   padding: 0;
-  margin-top: 10px;
-  margin-bottom: 10px;
+  margin-top: 14px;
+  margin-bottom: 22px;
 }
 
 .main-features-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 12px;
+  gap: 10px;
 }
 
 .feature-card {
@@ -1654,48 +3158,55 @@ function openPartner(partner: any) {
   flex-direction: column;
   align-items: flex-start;
   justify-content: space-between;
-  padding: 16px;
-  border-radius: 16px;
-  border: none;
+  padding: 20px;
+  border-radius: var(--radius-xl);
+  border: 1px solid rgba(255, 255, 255, 0.14);
   text-align: left;
-  height: 150px;
+  height: 156px;
   width: 100%;
   margin: 0;
   box-sizing: border-box;
-  transition: transform 0.2s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.2s;
+  transition: transform 0.18s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.18s;
   cursor: pointer;
   position: relative;
   overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  isolation: isolate;
 }
 
-.feature-card:active {
-  transform: scale(0.96);
+.feature-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0) 45%);
+  pointer-events: none;
+  z-index: 1;
 }
 
 .feature-primary {
-  background: linear-gradient(135deg, var(--ion-color-carrot) 0%, #ff8c3a 100%);
+  background: linear-gradient(150deg, #ff8a1e 0%, var(--ion-color-carrot, #d97706) 55%, #c2660a 100%);
   color: white;
-  box-shadow: 0 8px 16px rgba(217, 119, 6, 0.25);
+  box-shadow: 0 10px 28px -6px rgba(217, 119, 6, 0.5), 0 4px 10px rgba(217, 119, 6, 0.25);
 }
 
 .feature-secondary {
   /* Using a contrasting premium color for barcode */
-  background: linear-gradient(135deg, var(--ion-color-tertiary, #5260ff) 0%, #7b88ff 100%);
+  background: linear-gradient(150deg, #8b7cf6 0%, #6c5ce7 55%, #4b3fc4 100%);
   color: white;
-  box-shadow: 0 8px 16px rgba(82, 96, 255, 0.25);
+  box-shadow: 0 10px 28px -6px rgba(108, 92, 231, 0.5), 0 4px 10px rgba(108, 92, 231, 0.25);
 }
 
 .feature-icon-wrapper {
-  background: rgba(255, 255, 255, 0.25);
-  border-radius: 12px;
-  width: 44px;
-  height: 44px;
+  background: rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: var(--radius-md);
+  width: 42px;
+  height: 42px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 24px;
-  backdrop-filter: blur(4px);
+  font-size: 21px;
   z-index: 2;
 }
 
@@ -1707,15 +3218,16 @@ function openPartner(partner: any) {
 .feature-text h3 {
   margin: 0 0 4px;
   font-size: 1.1rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
+  font-weight: 800;
+  letter-spacing: -0.01em;
   white-space: normal;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.15);
 }
 
 .feature-text p {
   margin: 0;
-  font-size: 0.75rem;
-  opacity: 0.9;
+  font-size: 0.74rem;
+  opacity: 0.92;
   line-height: 1.3;
   white-space: normal;
   word-wrap: break-word;
@@ -1723,12 +3235,12 @@ function openPartner(partner: any) {
 
 .feature-bg-icon {
   position: absolute;
-  right: -10px;
-  bottom: -15px;
-  font-size: 90px;
-  opacity: 0.15;
+  right: -14px;
+  bottom: -20px;
+  font-size: 88px;
+  opacity: 0.14;
   z-index: 1;
-  transform: rotate(-10deg);
+  transform: rotate(-8deg);
   pointer-events: none;
 }
 
@@ -1790,8 +3302,9 @@ function openPartner(partner: any) {
   flex: 0 0 80px;
   scroll-snap-align: center;
 
-  border-radius: 6px;
-  padding: 7px 6px;
+  border-radius: var(--radius-md);
+  padding: 8px 6px;
+  background: rgba(var(--ion-color-dark-rgb, 0, 0, 0), 0.03);
 
   display: flex;
   flex-direction: column;
@@ -1835,14 +3348,119 @@ function openPartner(partner: any) {
 
 
 .prayer-title-main {
-  font-size: 1rem;
-  font-weight: 600;
+  font-size: 1.22rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  color: var(--ion-color-dark);
 }
 
 .prayer-title-location {
-  font-size: 0.75rem;
+  font-size: 0.78rem;
+  font-weight: 600;
   color: var(--ion-color-medium);
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+/* ===============================
+   2.0 — Prayer Hero Treatment
+   =============================== */
+.prayer-hero-card {
+  position: relative;
+  overflow: hidden;
+  margin-block: 10px 8px;
+  background: linear-gradient(165deg, rgba(var(--ion-color-carrot-rgb), 0.12) 0%, var(--card-bg) 60%);
+}
+
+.prayer-hero-glow {
+  position: absolute;
+  top: -70px;
+  right: -60px;
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(var(--ion-color-carrot-rgb), 0.28) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.prayer-hero-card ion-card-header,
+.prayer-hero-card ion-card-content {
+  position: relative;
+  z-index: 1;
+}
+
+.prayer-hero-title {
+  display: block !important;
+}
+
+.prayer-eyebrow {
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ion-color-carrot);
+  margin-bottom: 3px;
+}
+
+/* Compact prayer widget — tighter padding, smaller headline and pills so the
+   card takes less of the first screen and the scan buttons below stay in view. */
+.prayer-hero-card {
+  margin-block: 6px 4px;
+}
+
+.prayer-hero-card ion-card-header {
+  padding: 12px 14px 2px;
+}
+
+.prayer-hero-card ion-card-content {
+  padding: 2px 10px 6px;
+}
+
+.prayer-hero-card .prayer-eyebrow {
+  margin-bottom: 1px;
+}
+
+.prayer-hero-card .prayer-title-main {
+  font-size: 1.02rem;
+  line-height: 1.2;
+}
+
+.prayer-hero-card .prayer-title-location {
   margin-top: 2px;
+  font-size: 0.72rem;
+}
+
+.prayer-hero-card .qibla-header-btn {
+  --padding-start: 6px;
+  --padding-end: 6px;
+  margin: 0;
+  font-size: 0.8rem;
+}
+
+.prayer-hero-card .prayer-horizontal {
+  gap: 8px;
+  padding: 2px 4px 8px;
+}
+
+.prayer-hero-card .prayer-pill {
+  flex: 0 0 74px;
+  padding: 5px 6px;
+}
+
+.prayer-hero-card .prayer-pill .label {
+  font-size: 0.66rem;
+}
+
+.prayer-hero-card .prayer-pill .time {
+  font-size: 0.92rem;
+}
+
+.prayer-hero-card .prayer-pill.active {
+  transform: scale(1.03);
 }
 
 /* === Insights Dashboard Section === */
@@ -1851,58 +3469,34 @@ function openPartner(partner: any) {
 }
 
 .insights-scroll {
-  display: flex;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  padding: 0px; /* Allow card margins to breathe */
-  scrollbar-width: none;
-  -ms-overflow-style: none; 
-}
-
-/* 🖥️ Desktop: Transform Scroll to Grid */
-@media (min-width: 1024px) {
-  .insights-scroll {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    overflow-x: visible;
-    padding: 8px 16px; /* Match standard page margins */
-  }
-}
-
-.insights-scroll::-webkit-scrollbar {
-  display: none;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  padding: 0px;
 }
 
 .insight-card {
-  flex: 0 0 280px;
-  scroll-snap-align: center;
-  margin: 8px; /* Match the exact 8px margin from the inspector */
+  min-width: 0;
+  margin: 12px 10px;
   background: var(--card-bg);
   border-radius: 16px; /* Match the exact 16px radius from the inspector */
   padding: 16px; /* Match the 16px inner padding */
   box-shadow: var(--card-shadow);
   border: 1px solid var(--card-border);
   display: flex;
-  flex-direction: column;
-  height: 220px;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-@media (min-width: 1024px) {
-  .insight-card {
-    flex: 1; /* Fit width */
-    min-width: 0;
-  }
+  align-items: center;
+  height: 90px;
+  transition: transform 0.2s ease, background 0.2s ease;
+  position: relative;
+  cursor: default;
 }
 
 /* Stat Cards (Centered Icons) */
 .stat-card {
-  flex: 0 0 220px;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
   gap: 16px;
+  text-align: left;
+  justify-content: flex-start;
 }
+
 
 .stat-icon-wrapper {
   width: 48px;
@@ -1944,28 +3538,1109 @@ function openPartner(partner: any) {
   color: var(--ion-color-dark);
 }
 
-/* Chart Cards */
-.chart-card {
-  flex: 0 0 320px;
-}
 
-.insight-header h3 {
-  margin: 0 0 12px;
-  font-size: 1rem;
-  font-weight: 700;
-  color: var(--ion-color-dark);
-}
-
-.chart-wrapper {
-  flex: 1;
-  width: 100%;
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
 
 /* Dark mode handled by global variables */
 
 
+/* --- Partner List Transition ---
+   Smooth scale-fade crossfade across rotating gold placements. */
+.partner-list-move {
+  transition: transform 0.6s ease;
+}
+.partner-list-enter-active, .partner-list-leave-active {
+  transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1), transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.partner-list-enter-from {
+  opacity: 0;
+  transform: scale(0.96);
+}
+.partner-list-leave-to {
+  opacity: 0;
+  transform: scale(1.02);
+}
+.partner-list-leave-active {
+  position: absolute;
+}
+
+/* --- Featured Card Frame & Inner Content --- */
+.featured-fade-wrapper {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.discover-grid .featured-fade-wrapper {
+  flex: 0 0 300px;
+}
+
+.featured-inner-content {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Card Height Lock: 265px ensures title (2 lines), status chip, and timestamp fit with generous padding without any trimmed text */
+.discover-grid--locations .discover-item,
+.discover-grid--locations .featured-fade-wrapper,
+.discover-grid--products .discover-item,
+.discover-grid--products .featured-fade-wrapper {
+  height: 265px;
+}
+
+.discover-grid .discover-img {
+  height: 135px;
+  width: 100%;
+  object-fit: cover;
+}
+
+/* Partner logos: show the whole logo (not a cropped fill) on a plain
+   backdrop, like the compact card was meant to. */
+.discover-grid .discover-img.discover-img--compact {
+  object-fit: contain;
+  background: #fff;
+  padding: 6px;
+  box-sizing: border-box;
+  /* Compact heights (the generic 135px carousel image rule was making the
+     partner card tall enough to push the two scan buttons off the first
+     screen). Whole logo still shows — object-fit: contain. */
+  height: 76px;
+}
+
+.discover-grid .discover-item--compact.tier-card-gold .discover-img--compact {
+  height: 88px;
+}
+
+.discover-grid .discover-item--compact.tier-card-silver .discover-img--compact {
+  height: 80px;
+}
+
+.discover-label {
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+  box-sizing: border-box;
+  text-align: center;
+}
+
+.discover-label h3,
+.discover-label .discover-name {
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.25;
+  margin: 0;
+  max-height: 35px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-align: center;
+}
+
+.status-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin: 0;
+  width: 100%;
+}
+
+.status-row ion-chip {
+  margin: 0 auto;
+  font-size: 12px;
+  height: 24px;
+}
+
+.location-type-chip {
+  --background: rgba(249, 115, 22, 0.12);
+  --color: var(--ion-color-carrot);
+  font-size: 11px;
+  font-weight: 700;
+  height: 22px;
+  border: 1px solid rgba(249, 115, 22, 0.25);
+  margin: 0 auto;
+}
+
+.ion-palette-dark .location-type-chip {
+  --background: rgba(249, 115, 22, 0.22);
+  --color: #ff9800;
+  border: 1px solid rgba(249, 115, 22, 0.4);
+}
+
+.added-time {
+  font-size: 11px;
+  color: var(--ion-color-medium);
+  margin: 0;
+  text-align: center;
+}
+
+/* In-place content crossfade inside the static gold frame */
+.featured-content-fade-enter-active,
+.featured-content-fade-leave-active {
+  transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.featured-content-fade-enter-from,
+.featured-content-fade-leave-to {
+  opacity: 0;
+}
+.featured-content-fade-leave-active {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* ===============================
+   2.0 — Discover Card Refresh
+   =============================== */
+.discover-grid {
+  gap: 12px;
+  padding: 2px 2px 6px;
+  /* Positioning context for .partner-list-leave-active's position:absolute
+     (standard Vue <TransitionGroup> pattern — lets the leaving card animate
+     out independently while the rest immediately shift into their final
+     slots, instead of it jumping to whatever ancestor happens to be
+     positioned). No visual effect on its own since nothing here sets an
+     offset. */
+  position: relative;
+}
+
+.discover-item {
+  border-radius: var(--radius-lg);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.discover-item:active {
+  box-shadow: var(--card-shadow-hover);
+}
+
+.discover-img {
+  border-top-left-radius: var(--radius-lg);
+  border-top-right-radius: var(--radius-lg);
+}
+
+.discover-label {
+  padding: 13px 10px;
+}
+
+.discover-label h3,
+.discover-label .discover-name {
+  letter-spacing: -0.01em;
+}
+
+/* Keeps the verified-partner shield on the same line as the title instead
+   of wrapping to its own row below (name-row/home-partner-verified have no
+   layout of their own otherwise, since they're plain divs). */
+/* align-items: flex-start (not center) — .discover-grid--locations reserves
+   2 lines of height on the title (min-height: 36px) so single-vs-double-line
+   names never resize the card, but that leaves empty space below a 1-line
+   name. Centering against the whole reserved box put the shield below the
+   actual (first) line of text; flex-start keeps it pinned to where that line
+   really is regardless of whether the name wraps to one line or two. */
+.name-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.name-row h3 {
+  margin: 0;
+  min-width: 0;
+}
+
+.home-partner-verified {
+  color: var(--ion-color-carrot);
+  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+  margin-left: 4px;
+}
+
+.discover-item--compact {
+  border-radius: var(--radius-md);
+}
+
+.discover-img--compact {
+  border-radius: var(--radius-sm);
+}
+
+.tier-badge {
+  top: 8px;
+  left: 8px;
+  border-radius: var(--radius-sm);
+}
+
+/* === Community Reels / What's New === */
+.reels-section {
+  margin: 10px;
+}
+
+.card-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.section-title {
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.section-subtitle {
+  margin: -4px 0 0;
+  font-size: 0.75rem;
+  color: var(--ion-color-medium);
+}
+
+/* === Announcement Bottom Sheet Styles === */
+.announcement-sheet {
+  --border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  --box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.announcement-hero-wrapper {
+  width: 100%;
+  max-height: 200px;
+  overflow: hidden;
+  border-radius: 16px;
+  margin-bottom: 20px;
+  box-shadow: var(--card-shadow);
+}
+
+.announcement-hero-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.announcement-html-body {
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--ion-color-step-800);
+}
+
+.announcement-html-body h1,
+.announcement-html-body h2,
+.announcement-html-body h3 {
+  color: var(--ion-color-dark);
+  font-weight: 700;
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.announcement-html-body p {
+  margin-bottom: 1rem;
+}
+
+.announcement-html-body strong {
+  font-weight: 700;
+  color: var(--ion-color-dark);
+}
+
+.announcement-html-body a {
+  color: var(--ion-color-carrot);
+  text-decoration: underline;
+  font-weight: 600;
+}
+
+.announcement-html-body ul, 
+.announcement-html-body ol {
+  padding-left: 20px;
+  margin-bottom: 1.2rem;
+}
+
+.announcement-html-body li {
+  margin-bottom: 0.5rem;
+}
+
+.announcement-actions {
+  margin-top: 32px;
+  margin-bottom: 16px;
+}
+
+.learn-more-btn {
+  --border-width: 2px;
+  --border-radius: 12px;
+  font-weight: 600;
+}
+
+.got-it-btn {
+  --border-radius: 12px;
+  font-weight: 600;
+}
+
+/* === Leaderboard Hint Banner === */
+.leaderboard-hint-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.08) 0%, rgba(251, 146, 60, 0.08) 100%);
+  border: 1px solid rgba(249, 115, 22, 0.15);
+  border-radius: 12px;
+  margin-bottom: 16px;
+  cursor: pointer;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.leaderboard-hint-banner:active {
+  opacity: 0.9;
+}
+
+.hint-icon {
+  font-size: 20px;
+  color: var(--ion-color-carrot);
+  flex-shrink: 0;
+  animation: pulse 2s infinite;
+}
+
+.hint-text {
+  font-size: 0.85rem;
+  line-height: 1.4;
+  color: var(--ion-color-step-800);
+  flex: 1;
+}
+
+.hint-arrow {
+  font-size: 16px;
+  color: var(--ion-color-medium);
+  flex-shrink: 0;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+
+/* Dark mode adjustment */
+.ion-palette-dark .leaderboard-hint-banner {
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.15) 0%, rgba(251, 146, 60, 0.15) 100%);
+  border-color: rgba(249, 115, 22, 0.3);
+}
+
+/* ========= Leaderboard Cosmetic Effects ========= */
+.leaderboard-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 32px 0;
+}
+.leaderboard-list-wrapper {
+  position: relative;
+}
+.leaderboard-loading-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1;
+}
+.leaderboard-list {
+  overflow: visible;
+}
+.leaderboard-item {
+  --overflow: visible;
+  overflow: visible !important;
+  contain: none !important;
+  margin: 8px 0;
+  border-radius: var(--radius-lg);
+}
+.leaderboard-item::part(native) {
+  overflow: visible !important;
+  border-radius: var(--radius-lg) !important;
+  background: var(--background, var(--card-bg)) !important;
+  color: var(--color, var(--text-main, var(--ion-text-color))) !important;
+  border: 1px solid var(--card-border);
+  box-shadow: var(--card-shadow);
+  transition: box-shadow 0.2s ease, transform 0.15s ease;
+}
+.leaderboard-item::part(inner) {
+  overflow: visible !important;
+}
+
+/* Top-3 get stronger visual rhythm: elevated card + tier-colored accent edge */
+.leaderboard-list ion-item:nth-of-type(1)::part(native),
+.leaderboard-list ion-item:nth-of-type(2)::part(native),
+.leaderboard-list ion-item:nth-of-type(3)::part(native) {
+  box-shadow: var(--card-shadow-hover);
+  border-width: 1.5px;
+}
+
+.leaderboard-list ion-item:nth-of-type(1)::part(native) {
+  border-left: 4px solid #FFD700;
+}
+
+.leaderboard-list ion-item:nth-of-type(2)::part(native) {
+  border-left: 4px solid #C0C0C0;
+}
+
+.leaderboard-list ion-item:nth-of-type(3)::part(native) {
+  border-left: 4px solid #CD7F32;
+}
+
+.leaderboard-list ion-item:nth-of-type(n+4) {
+  margin: 6px 0;
+}
+
+.leaderboard-avatar-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  padding: 2px;
+  transition: all 0.3s ease;
+}
+
+.leaderboard-points-badge {
+  --pts-rgb: var(--pts-rgb, 245, 158, 11);
+  --background: rgba(var(--pts-rgb), 0.12);
+  --color: rgb(var(--pts-rgb));
+  background: rgba(var(--pts-rgb), 0.12);
+  color: rgb(var(--pts-rgb));
+  border: 1px solid rgba(var(--pts-rgb), 0.28);
+  border-radius: 20px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 4px 8px;
+  flex-shrink: 0;
+  white-space: nowrap;
+  box-shadow: none;
+  transition: all 0.3s ease;
+}
+
+.avatar-pro-badge {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 15px;
+  height: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #fde68a 0%, #d4a017 100%);
+  border: 2px solid var(--card-bg, #18181a);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  z-index: 2;
+}
+
+.avatar-pro-badge ion-icon {
+  font-size: 8px;
+  color: #78350f;
+}
+
+.list-trophy-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+
+
+.popover-cosmetic-wrapper {
+  display: flex;
+  justify-content: center;
+  padding: 4px;
+  border-radius: 50%;
+  margin: 0 auto;
+  width: fit-content;
+  transition: all 0.3s ease;
+}
+
+.popover-custom-content {
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  --border-radius: var(--radius-xl);
+  --padding-start: 20px !important;
+  --padding-end: 20px !important;
+  --padding-top: 20px !important;
+  --padding-bottom: 16px !important;
+}
+
+.mock-popover-pro-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #ffd700;
+  color: #111;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 750;
+  margin: 8px auto 12px;
+  width: fit-content;
+  box-shadow: 0 0 10px rgba(250, 204, 21, 0.4);
+}
+
+.mock-popover-pro-badge .pro-icon {
+  font-size: 0.85rem;
+}
+
+.mock-popover-trophy-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(255, 159, 67, 0.15);
+  color: var(--ion-color-carrot, #ff9f43);
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  margin: 4px auto 0;
+  width: fit-content;
+}
+
+.mock-popover-name {
+  margin: 8px 0 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--color, var(--ion-text-color));
+}
+
+.mock-popover-stats {
+  margin: 4px 0 16px;
+  font-size: 0.85rem;
+  color: var(--sub-color, var(--ion-color-medium));
+  font-weight: 600;
+}
+
+.mock-popover-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin: 16px 0;
+  padding: 0;
+  background: transparent;
+  border: none;
+}
+
+.grid-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.grid-label {
+  font-size: 0.7rem;
+  color: var(--sub-color, var(--ion-color-medium));
+  text-transform: uppercase;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  margin-bottom: 2px;
+}
+
+.grid-val {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--color, var(--ion-color-dark));
+}
+
+.ion-palette-dark .grid-val {
+  color: #ffffff;
+}
+
+.mock-popover-bio {
+  margin: 16px 0 0;
+  font-size: 0.85rem;
+  color: var(--sub-color, var(--ion-color-step-700));
+  font-style: italic;
+  line-height: 1.45;
+}
+
+.ion-palette-dark .mock-popover-bio {
+  color: #e5e5ea;
+}
+
+/* Cosmetic Animations */
+@keyframes pulse-glow {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.05); }
+}
+
+@keyframes shimmer {
+  0% { opacity: 0.5; }
+  50% { opacity: 1; }
+  100% { opacity: 0.5; }
+}
+
+@keyframes flame-dance {
+  0% { opacity: 0.7; filter: hue-rotate(0deg); }
+  100% { opacity: 1; filter: hue-rotate(15deg); }
+}
+
+@keyframes neon-rainbow {
+  0% { filter: hue-rotate(0deg); }
+  100% { filter: hue-rotate(360deg); }
+}
+
+@keyframes dragon-shimmer {
+  0% { opacity: 0.7; filter: hue-rotate(0deg) brightness(1); }
+  100% { opacity: 1; filter: hue-rotate(20deg) brightness(1.2); }
+}
+
+@keyframes aurora-wave {
+  0%, 100% { opacity: 0.6; filter: hue-rotate(0deg); }
+  50% { opacity: 1; filter: hue-rotate(30deg); }
+}
+
+@keyframes sparkle-border {
+  0%, 100% { opacity: 0.8; }
+  50% { opacity: 1; filter: brightness(1.3); }
+}
+
+@keyframes holo-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.home-leaderboard-empty {
+  text-align: center;
+  padding: 24px 12px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.home-leaderboard-empty .empty-title {
+  margin: 0 0 6px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--ion-color-dark);
+}
+.home-leaderboard-empty .empty-tip {
+  margin: 0 0 16px;
+  font-size: 0.78rem;
+  color: var(--ion-color-medium);
+  line-height: 1.45;
+  max-width: 320px;
+}
+.empty-actions-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  width: 100%;
+}
+.empty-actions-grid ion-button {
+  --border-radius: 20px;
+  font-weight: 600;
+  margin: 0;
+}
+
+/* === Halal Card styling === */
+
+.halal-card-subtitle {
+  font-size: 0.85rem;
+  color: var(--ion-color-medium);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.halal-phrases-scroller {
+  display: flex;
+  overflow-x: auto;
+  gap: 14px;
+  scroll-snap-type: x mandatory;
+  padding: 4px 0 12px 0;
+  -webkit-overflow-scrolling: touch;
+  min-height: 172px;
+}
+
+.scroller-spacer {
+  flex: 0 0 15%;
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.halal-phrases-scroller::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+.halal-phrases-scroller {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.phrase-card {
+  width: 100%;
+  min-width: 100%;
+  flex: 0 0 100%;
+  box-sizing: border-box;
+  scroll-snap-align: start;
+  background: var(--ion-color-step-50, #f8f9fa);
+  border: 1px solid var(--ion-color-step-150, #e2e8f0);
+  border-radius: 16px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: var(--card-shadow);
+}
+
+.ion-palette-dark .phrase-card {
+  background: var(--ion-color-step-100, #1e1e1e);
+  border-color: var(--ion-color-step-200, #2d2d2d);
+  box-shadow: var(--card-shadow);
+}
+
+.phrase-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.phrase-tag {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ion-color-carrot);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: rgba(var(--ion-color-carrot-rgb, 255, 159, 64), 0.1);
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.phrase-action-btn {
+  --padding-start: 6px;
+  --padding-end: 6px;
+  height: 32px;
+  margin: 0;
+}
+
+.phrase-chinese-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+.play-btn {
+  --background: var(--ion-color-carrot);
+  --color: #ffffff;
+  --border-radius: 50%;
+  --box-shadow: 0 4px 10px rgba(217, 119, 6, 0.3);
+  width: 46px;
+  height: 46px;
+  min-height: 46px;
+  min-width: 46px;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  --padding-start: 0;
+  --padding-end: 0;
+}
+
+.play-btn ion-icon {
+  font-size: 24px;
+}
+
+.play-btn.speaking {
+  --background: var(--ion-color-success, #2dd36f);
+  --box-shadow: 0 4px 12px rgba(45, 211, 111, 0.4);
+  animation: pulse-speaker 1.5s infinite;
+}
+
+@keyframes pulse-speaker {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.15);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.phrase-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.phrase-english {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--ion-text-color);
+}
+
+.language-sub-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 4px;
+}
+
+.language-sub-section.border-top {
+  border-top: 1px dashed var(--ion-color-step-200, #e2e8f0);
+  padding-top: 12px;
+  margin-top: 4px;
+}
+
+.sub-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sub-lang-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.sub-lang-label.Mandarin {
+  color: var(--ion-color-carrot);
+}
+
+.sub-lang-label.Taiwanese {
+  color: var(--ion-color-success);
+}
+
+.sub-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.mini-btn {
+  --padding-start: 4px;
+  --padding-end: 4px;
+  height: 24px;
+  margin: 0;
+  font-size: 16px;
+}
+
+.phrase-chinese-box {
+  flex: 1;
+  min-width: 0;
+  background: rgba(var(--ion-color-carrot-rgb, 255, 159, 64), 0.05);
+  border-left: 3px solid var(--ion-color-carrot);
+  padding: 8px 12px;
+  border-radius: 0 8px 8px 0;
+  margin: 4px 0;
+}
+
+.phrase-chinese-box.Taiwanese {
+  border-left-color: var(--ion-color-success, #2dd36f);
+  background: rgba(var(--ion-color-success-rgb, 45, 211, 111), 0.05);
+}
+
+.phrase-chinese {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--ion-text-color);
+  letter-spacing: 0.5px;
+}
+
+.phrase-chinese span {
+  transition: background-color 0.1s ease, color 0.1s ease;
+  border-radius: 4px;
+  padding: 0 1px;
+}
+
+.phrase-chinese span.highlight-active {
+  background-color: rgba(var(--ion-color-carrot-rgb, 255, 159, 64), 0.25);
+  color: var(--ion-color-carrot);
+  font-weight: 900;
+}
+
+.phrase-pinyin,
+.phrase-pronunciation {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--ion-color-step-600, #718096);
+  line-height: 1.4;
+}
+
+.phrase-pinyin span {
+  transition: background-color 0.1s ease, color 0.1s ease;
+  border-radius: 4px;
+  padding: 0 2px;
+}
+
+.phrase-pinyin span.highlight-active {
+  background-color: rgba(var(--ion-color-carrot-rgb, 255, 159, 64), 0.25);
+  color: var(--ion-color-carrot);
+  font-weight: 700;
+}
+
+.ion-palette-dark .phrase-pinyin,
+.ion-palette-dark .phrase-pronunciation {
+  color: var(--ion-color-step-400, #a0aec0);
+}
+
+.phrase-pinyin .label,
+.phrase-pronunciation .label {
+  font-weight: 700;
+  color: var(--ion-text-color);
+  margin-right: 4px;
+}
+
+.phrase-pronunciation {
+  font-style: italic;
+}
+
+.voice-selector-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--ion-color-step-100, #edf2f7);
+  padding: 2px 10px;
+  border-radius: 20px;
+  max-width: 210px;
+}
+
+.ion-palette-dark .voice-selector-wrapper {
+  background: var(--ion-color-step-150, #2d3748);
+}
+
+.voice-icon {
+  font-size: 16px;
+  color: var(--ion-color-carrot);
+  flex-shrink: 0;
+}
+
+.voice-select {
+  --padding-top: 0;
+  --padding-bottom: 0;
+  --padding-start: 0;
+  --padding-end: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--ion-color-carrot, #e67e22);
+  --color: var(--ion-color-carrot, #e67e22);
+  min-height: 24px;
+}
+
+.phrase-card.locked-card {
+  opacity: 0.85;
+  border: 1px dashed var(--ion-color-medium, #92949c);
+  background: var(--ion-color-step-50, #f8f9fa);
+}
+
+.ion-palette-dark .phrase-card.locked-card {
+  background: var(--ion-color-step-100, #1e1e1e);
+}
+
+.play-btn.locked-play {
+  --background: var(--ion-color-medium, #92949c);
+  --box-shadow: none;
+}
+
+.locked-content-placeholder {
+  background: var(--ion-color-step-100, #edf2f7);
+  border: 1px dashed var(--ion-color-medium, #92949c);
+  border-radius: 12px;
+  padding: 20px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  margin-top: 10px;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.locked-content-placeholder:active {
+  background: var(--ion-color-step-150, #e2e8f0);
+}
+
+.lock-placeholder-icon {
+  font-size: 28px;
+  color: var(--ion-color-carrot, #e67e22);
+}
+
+.lock-placeholder-text {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ion-color-step-700, #4a5568);
+  text-align: center;
+}
+
+.ion-palette-dark .locked-content-placeholder {
+  background: var(--ion-color-step-150, #2d3748);
+}
+
+.ion-palette-dark .locked-content-placeholder:active {
+  background: var(--ion-color-step-200, #4a5568);
+}
+
+.ion-palette-dark .lock-placeholder-text {
+  color: var(--ion-color-step-400, #cbd5e0);
+}
+
+.phrase-chinese-segments {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px 12px;
+  line-height: 1.2;
+}
+
+.chinese-segment {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.chinese-segment-chars {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.chinese-segment .align-char {
+  font-size: 1.7rem;
+  font-weight: 600;
+  color: var(--ion-text-color, #2d3748);
+  transition: background-color 0.15s ease, color 0.15s ease;
+  border-radius: 4px;
+  padding: 0 1px;
+}
+
+.chinese-segment .align-char.highlight-active {
+  background-color: rgba(var(--ion-color-carrot-rgb, 255, 159, 64), 0.25);
+  color: var(--ion-color-carrot);
+}
+
+.segment-gloss {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--ion-color-medium, #718096);
+  margin-top: 5px;
+  text-transform: lowercase;
+  opacity: 0.85;
+}
 </style>

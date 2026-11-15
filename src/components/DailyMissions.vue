@@ -14,7 +14,7 @@
           class="view-all-btn"
         >
           {{ $t('dailyMissions.viewAll') }}
-          <div v-if="!claimedBonus" class="red-dot"></div>
+          <div v-if="remainingCount > 0" class="red-dot">{{ remainingCount > 9 ? '9+' : remainingCount }}</div>
         </ion-button>
       </div>
     </ion-card-header>
@@ -92,7 +92,7 @@
     </ion-card-content>
 
     <!-- Details Modal -->
-    <ion-modal :is-open="showModal" @didDismiss="showModal = false" :initial-breakpoint="0.75" :breakpoints="[0, 0.75, 1]">
+    <ion-modal :is-open="showModal" @didDismiss="showModal = false" :initial-breakpoint="0.75" :breakpoints="[0, 0.75, 0.95]" class="missions-modal">
       <ion-header>
         <ion-toolbar>
           <ion-title>{{ $t('dailyMissions.title') }}</ion-title>
@@ -165,23 +165,41 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { 
+import {
   IonIcon, IonButton, IonModal,
   IonHeader, IonToolbar, IonTitle, IonButtons, IonContent, IonProgressBar,
   IonCard, IonCardHeader, IonCardTitle, IonCardContent, onIonViewWillEnter, IonSkeletonText, IonLabel
 } from '@ionic/vue'
-import { 
-  rocketOutline, scanOutline, heartOutline, locationOutline, 
+import {
+  rocketOutline, scanOutline, heartOutline, locationOutline,
   barcodeOutline, addCircleOutline, checkmarkCircle, homeOutline,
   giftOutline
 } from 'ionicons/icons'
 import { useDailyMissions } from '@/composables/useDailyMissions'
 
 const showModal = ref(false)
-const { missions, loading, claimedBonus, allCompleted, fetchProgress, checkAndAwardBonus } = useDailyMissions()
+const { missions, loading, claimedBonus, allCompleted, openModalRequested, fetchProgress, checkAndAwardBonus } = useDailyMissions()
 const router = useRouter()
+
+// Lets external entry points (e.g. the notifications feed's "Daily Mission
+// still available" nudge) open the details modal directly. A reactive flag
+// rather than a route query param: `immediate: true` catches a request made
+// before this component even mounted, with no dependency on route-guard/
+// auth-check/mount-order timing across the navigation.
+watch(openModalRequested, (requested) => {
+  if (!requested) return
+  showModal.value = true
+  openModalRequested.value = false
+}, { immediate: true })
+
+// Missions still to complete, plus the bonus itself once every mission is
+// done but the bonus hasn't been claimed yet.
+const remainingCount = computed(() => {
+  const incomplete = missions.value.filter(m => !m.completed).length
+  return incomplete + (allCompleted.value && !claimedBonus.value ? 1 : 0)
+})
 
 const navigateToMission = (id: string) => {
   showModal.value = false
@@ -234,6 +252,10 @@ onIonViewWillEnter(() => {
 </script>
 
 <style scoped>
+.missions-modal {
+  --border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+}
+
 .mission-icon-container {
   width: 100%;
   height: 70px;
@@ -393,13 +415,22 @@ onIonViewWillEnter(() => {
 }
 
 .red-dot {
+  box-sizing: border-box;
   position: absolute;
-  top: -2px;
-  right: -4px;
-  width: 9px;
-  height: 9px;
+  top: -9px;
+  right: -10px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background-color: var(--ion-color-danger);
-  border-radius: 50%;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+  border-radius: 999px;
   border: 2px solid var(--ion-card-background, #fff);
   box-shadow: 0 0 5px rgba(var(--ion-color-danger-rgb), 0.5);
   z-index: 10;

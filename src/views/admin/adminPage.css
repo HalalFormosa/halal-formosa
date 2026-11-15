@@ -1,0 +1,50 @@
+/* Shared look for the operations admin pages (versions, settings, health, subscriptions, ...). Not scoped on
+   purpose: every page imports this one file so they stay visually identical. Prefixed ap- to avoid clashes. */
+
+.ap-content { --background: var(--ion-background-color); }
+
+.ap-filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
+.ap-select { flex: 1 1 150px; min-width: 0; }
+.ap-segment { margin-bottom: 12px; }
+
+.ap-tiles { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 12px; }
+@media (min-width: 640px) { .ap-tiles { grid-template-columns: repeat(4, 1fr); } }
+.ap-tile { background: var(--ion-card-background, #fff); border-radius: 14px; padding: 14px; text-align: center; }
+.ap-tile-value { font-size: 1.6rem; font-weight: 800; line-height: 1.1; }
+.ap-tile-value.good { color: var(--ion-color-success); }
+.ap-tile-value.warn { color: var(--ion-color-warning); }
+.ap-tile-value.bad { color: var(--ion-color-danger); }
+.ap-tile-label { margin-top: 4px; font-size: 0.72rem; color: var(--ion-color-medium); text-transform: uppercase; letter-spacing: 0.04em; }
+
+.ap-card { background: var(--ion-card-background, #fff); border-radius: 14px; padding: 14px; margin-bottom: 10px; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08); }
+.ap-card h3 { margin: 0 0 6px; font-size: 1rem; font-weight: 700; }
+.ap-card p { margin: 4px 0; }
+.ap-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.ap-wrap { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.ap-muted { color: var(--ion-color-medium); }
+.ap-small { font-size: 0.78rem; }
+.ap-mono { font-family: ui-monospace, monospace; font-size: 0.8rem; word-break: break-all; }
+.ap-section { margin: 16px 2px 8px; font-size: 0.78rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ion-color-medium); }
+
+.ap-state { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 40px 16px; text-align: center; color: var(--ion-color-medium); }
+.ap-note { background: rgba(var(--ion-color-carrot-rgb), 0.09); border-radius: 12px; padding: 10px 12px; font-size: 0.82rem; margin-bottom: 12px; }
+.ap-error { color: var(--ion-color-danger); }
+
+.ap-pill { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 0.72rem; font-weight: 700; white-space: nowrap; background: rgba(127, 127, 127, 0.15); }
+.ap-pill.good { background: rgba(var(--ion-color-success-rgb), 0.16); color: var(--ion-color-success-shade, var(--ion-color-success)); }
+.ap-pill.warn { background: rgba(var(--ion-color-warning-rgb), 0.2); color: var(--ion-color-warning-shade, var(--ion-color-warning)); }
+.ap-pill.bad { background: rgba(var(--ion-color-danger-rgb), 0.16); color: var(--ion-color-danger); }
+.ap-pill.info { background: rgba(var(--ion-color-carrot-rgb), 0.16); color: var(--ion-color-carrot); }
+
+.ap-bar-row { display: grid; grid-template-columns: minmax(70px, 30%) 1fr auto; align-items: center; gap: 10px; margin: 6px 0; font-size: 0.85rem; }
+.ap-bar-track { height: 10px; border-radius: 6px; background: rgba(var(--ion-color-carrot-rgb), 0.12); overflow: hidden; }
+.ap-bar-fill { height: 100%; background: var(--ion-color-carrot); border-radius: 6px; }
+.ap-bar-fill.bad { background: var(--ion-color-danger); }
+.ap-bar-count { font-weight: 700; white-space: nowrap; }
+
+.ap-link { background: none; border: none; padding: 0; color: var(--ion-color-carrot); font: inherit; text-decoration: underline; cursor: pointer; text-align: left; }
+.ap-pre { margin: 6px 0 0; padding: 8px 10px; border-radius: 10px; background: rgba(127, 127, 127, 0.1); font-family: ui-monospace, monospace; font-size: 0.72rem; white-space: pre-wrap; word-break: break-word; max-height: 220px; overflow: auto; }
+
+/* Dark palette: cards and tiles sit on a near-identical background, so give them a faint edge. */
+.ion-palette-dark .ap-card,
+.ion-palette-dark .ap-tile { border: 1px solid rgba(255, 255, 255, 0.09); box-shadow: none; }

@@ -1,0 +1,1421 @@
+<template>
+  <ion-page>
+    <ion-header>
+      <AppHeader :title="$t('home.leaderboard')" show-back :icon="medalOutline" />
+    </ion-header>
+
+    <ion-content class="ion-padding">
+      <!-- 💡 Public Profile Hint Banner -->
+      <div v-if="!isPublicProfile" class="leaderboard-hint-banner" @click="router.push('/settings')">
+        <ion-icon :icon="sparkles" class="hint-icon" />
+        <div class="hint-text">
+          {{ $t('home.leaderboard_privacy_hint') || 'Want your name to be shown in the leaderboard? Go to settings and make your profile public.' }}
+        </div>
+        <ion-icon :icon="chevronForwardOutline" class="hint-arrow" />
+      </div>
+
+      <!-- 🔍 Search Bar -->
+      <ion-searchbar
+        :value="searchQuery"
+        :placeholder="$t('search.placeholder') || 'Search users...'"
+        @ionInput="onSearchInput"
+        @ionClear="onSearchClear"
+        show-clear-button="always"
+        animated
+        class="ion-margin-bottom"
+      />
+      <!-- Segment control to toggle Daily / Weekly / Monthly / All Time -->
+      <ion-segment :value="leaderboardType" @ionChange="changeLeaderboardType($event)" mode="ios" class="ion-margin-bottom" style="margin: 0 auto 16px; width: fit-content; display: flex;">
+        <ion-segment-button value="daily">
+          <ion-label>{{ $t('home.leaderboardDaily') }}</ion-label>
+        </ion-segment-button>
+        <ion-segment-button value="weekly">
+          <ion-label>{{ $t('home.leaderboardWeekly') }}</ion-label>
+        </ion-segment-button>
+        <ion-segment-button value="monthly">
+          <ion-label>{{ $t('home.leaderboardMonthly') }}</ion-label>
+        </ion-segment-button>
+        <ion-segment-button value="all_time">
+          <ion-label>{{ $t('home.leaderboardAllTime') }}</ion-label>
+        </ion-segment-button>
+      </ion-segment>
+
+      <!-- 📊 Floating Leaderboard Summary Statistics Bar -->
+      <div v-if="users.length > 0" class="leaderboard-summary-bar" slot="fixed">
+        <span class="summary-text">{{ $t('home.leaderboardShowing', { count: users.length, total: totalUsers }) }}</span>
+        <button 
+          v-if="currentUser" 
+          class="my-rank-btn" 
+          :class="{ 'is-loading': rankingLoading }"
+          :disabled="rankingLoading" 
+          @click="scrollToMyRank"
+        >
+          <ion-spinner v-if="rankingLoading" name="crescent" class="btn-spinner" />
+          <ion-icon v-else :icon="personOutline" style="margin-right: 4px; font-size: 0.9rem;" />
+          <span>{{ rankingLoading ? (locale.startsWith('zh') ? '載入中...' : 'Loading...') : (locale.startsWith('zh') ? '我的排名' : 'My Rank') }}</span>
+        </button>
+      </div>
+
+      <!-- 🏆 Leaderboard List -->
+      <ion-list v-if="users.length > 0" class="leaderboard-list">
+        <ion-item
+          v-for="(user, index) in users"
+          :key="user.id"
+          :id="'leaderboard-user-' + user.id"
+          lines="none"
+          button
+          class="leaderboard-item"
+          :class="{ 'highlighted-row': highlightedUserId === user.id }"
+          :style="getLeaderboardRowStyle(user)"
+          @click="openUserProfile(user, $event)"
+        >
+          <!-- Rank -->
+          <div slot="start" style="width: 18px; text-align: center; font-weight: 600; display: flex; align-items: center; justify-content: center; color: inherit; margin-right: 6px; flex-shrink: 0;">
+            <ion-icon v-if="getDisplayRank(user, index) === 1" :icon="medalOutline" style="color: #FFD700; font-size: 1.1rem;" />
+            <ion-icon v-else-if="getDisplayRank(user, index) === 2" :icon="medalOutline" style="color: #C0C0C0; font-size: 1.1rem;" />
+            <ion-icon v-else-if="getDisplayRank(user, index) === 3" :icon="medalOutline" style="color: #CD7F32; font-size: 1.1rem;" />
+            <span v-else style="font-size: 0.85rem;">{{ getDisplayRank(user, index) }}</span>
+          </div>
+
+          <!-- Avatar with Cosmetics -->
+          <div slot="start" class="leaderboard-avatar-cell" :style="getLeaderboardGlowStyle(user)" style="margin-right: 10px;">
+            <ion-avatar style="width: 36px; height: 36px; position: relative;" :style="getLeaderboardFrameStyle(user)">
+              <img
+                :src="(user.public_profile || currentUser?.id === user.id) ? (user.public_profile ? (user.avatar_url || 'https://placehold.co/64x64/e5e7eb/374151') : (currentUser?.user_metadata?.avatar_url || 'https://placehold.co/64x64/e5e7eb/374151')) : `https://placehold.co/64x64/e5e7eb/374151?text=${$t('home.unknownAvatar')}`"
+                :alt="$t('home.altAvatar')"
+                loading="lazy"
+                @error="handleImgError"
+              />
+              <span v-if="user.donor_type && user.donor_type.toLowerCase().includes('pro')" class="avatar-pro-badge" :title="$t('home.pro') || 'Pro'">
+                <ion-icon :icon="diamond" />
+              </span>
+            </ion-avatar>
+          </div>
+
+          <!-- Info -->
+          <ion-label style="min-width: 0; flex: 1; overflow: hidden; width: 0; margin-right: 6px;">
+            <h2 style="margin: 0; font-weight: 700; font-size: 1rem; letter-spacing: -0.01em; display: flex; align-items: center; gap: 4px; color: inherit; min-width: 0; overflow: hidden; width: 100%;">
+              <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0; color: inherit;">
+                {{ user.public_profile ? user.display_name : formatDisplayName(currentUser?.id === user.id ? (currentUser?.user_metadata?.full_name || currentUser?.user_metadata?.display_name || 'Me') : user.display_name) }}
+              </span>
+              <span v-if="user.donor_type && user.donor_type.toLowerCase() === 'contributor'" class="list-contributor-badge">
+                <ion-icon :icon="star" style="font-size: 0.6rem; margin-right: 2px;" />
+                {{ $t('profile.donors.Contributor') }}
+              </span>
+              <ion-badge v-if="currentUser?.id === user.id && !user.public_profile" color="medium" style="font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; flex-shrink: 0;" @click="showPrivateInfoAlert($event)">Private</ion-badge>
+            </h2>
+            <p style="margin: 0; font-size: 0.8rem; color: var(--sub-color, var(--ion-color-medium));">
+              {{ $t('profile.levelShort', { level: getLevelFromPoints(user.total_points || user.points) }) }}
+            </p>
+          </ion-label>
+
+          <!-- Points Badge -->
+          <ion-badge
+            slot="end"
+            class="leaderboard-points-badge"
+            :style="{ '--pts-rgb': getLevelAccentRgb(user.points) }"
+          >
+            {{ formatCompactPoints(user.points) }} pts
+          </ion-badge>
+        </ion-item>
+      </ion-list>
+
+      <!-- 🔎 Loading skeletons -->
+      <ion-list v-if="loading && users.length === 0" class="leaderboard-list">
+        <ion-item v-for="n in 8" :key="n" lines="none" class="leaderboard-item leaderboard-skeleton-item">
+          <!-- Rank -->
+          <div slot="start" style="width: 24px; display: flex; align-items: center; justify-content: center; margin-right: 8px;">
+            <ion-skeleton-text v-if="n <= 3" animated style="width: 19px; height: 19px; border-radius: 50%; margin: 0;" />
+            <ion-skeleton-text v-else animated style="width: 14px; height: 14px; border-radius: 3px; margin: 0;" />
+          </div>
+
+          <!-- Avatar -->
+          <div slot="start" class="leaderboard-avatar-cell" style="margin-right: 12px;">
+            <ion-avatar style="width: 40px; height: 40px;">
+              <ion-skeleton-text animated />
+            </ion-avatar>
+          </div>
+
+          <!-- Info -->
+          <ion-label style="min-width: 0; flex: 1; margin-right: 8px;">
+            <h2 style="margin: 0;">
+              <ion-skeleton-text animated style="width: 55%; height: 16px; margin: 0;" />
+            </h2>
+            <p style="margin: 6px 0 0;">
+              <ion-skeleton-text animated style="width: 35%; height: 12px; margin: 0;" />
+            </p>
+          </ion-label>
+
+          <!-- Points Badge -->
+          <ion-skeleton-text slot="end" animated style="width: 60px; height: 24px; border-radius: 8px; margin: 0;" />
+        </ion-item>
+      </ion-list>
+
+      <!-- 📭 Empty state -->
+      <div v-if="!loading && users.length === 0" class="empty-state-container">
+        <div v-if="leaderboardType === 'daily' || leaderboardType === 'weekly'" class="empty-state-card">
+          <div class="trophy-badge-container">
+            <ion-icon :icon="medalOutline" class="gold-trophy-icon" />
+            <ion-icon :icon="sparkles" class="sparkle-icon" />
+          </div>
+          <h2>{{ leaderboardType === 'daily' ? $t('home.leaderboardEmptyDailyTitle') : $t('home.leaderboardEmptyWeeklyTitle') }}</h2>
+          <p>{{ leaderboardType === 'daily' ? $t('home.leaderboardEmptyDailyDesc') : $t('home.leaderboardEmptyWeeklyDesc') }}</p>
+          
+          <div class="empty-actions-grid">
+            <ion-button color="carrot" class="cta-button" @click="router.push('/scan')">
+              <ion-icon :icon="scanOutline" slot="start" />
+              {{ locale.startsWith('zh') ? '掃描' : 'Scan' }}
+            </ion-button>
+            <ion-button color="carrot" class="cta-button" @click="router.push('/add')">
+              <ion-icon :icon="addOutline" slot="start" />
+              {{ locale.startsWith('zh') ? '新增產品' : 'Add Product' }}
+            </ion-button>
+            <ion-button color="carrot" class="cta-button" @click="router.push('/explore/add')">
+              <ion-icon :icon="locationOutline" slot="start" />
+              {{ locale.startsWith('zh') ? '新增地點' : 'Add Place' }}
+            </ion-button>
+          </div>
+        </div>
+        <div v-else class="empty-state">
+          <p>{{ $t('search.noResults') || 'No users found.' }}</p>
+        </div>
+      </div>
+
+      <!-- 🔄 Infinite Scroll -->
+      <ion-infinite-scroll :key="infiniteScrollKey" @ionInfinite="loadNextPage" :disabled="isInfiniteScrollDisabled">
+        <ion-infinite-scroll-content loading-spinner="bubbles" :loading-text="$t('common.loading') || 'Loading more players...'" />
+      </ion-infinite-scroll>
+    </ion-content>
+
+    <!-- 👤 User Profile popover -->
+    <ion-popover
+      :is-open="!!selectedUser"
+      :event="popoverEvent"
+      class="leaderboard-popover"
+      :style="getPopoverCardVariables(selectedUser)"
+      @didDismiss="closePopover"
+    >
+      <ion-content :scroll-y="false" class="ion-padding popover-custom-content" style="text-align:center; min-width: 250px;" :style="getPopoverContentStyle(selectedUser)" :class="{ 'is-light-bg': isBackgroundLight(getCosmeticByCategory(selectedUser, 'background')) }">
+        <div v-if="selectedUser" style="position: relative;">
+          <!-- Aura backdrop layer -->
+          <div v-if="getCosmeticByCategory(selectedUser, 'aura')" class="popover-aura-backdrop" :style="getPopoverAuraStyle(selectedUser)"></div>
+
+          <div style="position: relative; z-index: 1;">
+            <!-- ✅ Public profile shown or is current logged-in user -->
+            <template v-if="selectedUser.public_profile || currentUser?.id === selectedUser.id">
+              <div class="popover-cosmetic-wrapper" :style="getPopoverGlowStyle(selectedUser)">
+                <ion-avatar style="width:72px;height:72px;margin:0;" :style="getPopoverFrameStyle(selectedUser)">
+                  <img :src="(selectedUser.public_profile ? selectedUser.avatar_url : currentUser?.user_metadata?.avatar_url) || 'https://placehold.co/72px/e5e7eb/374151?text=?'" :alt="$t('home.altAvatar')" @error="handleImgError"/>
+                </ion-avatar>
+              </div>
+
+              <div v-if="selectedUser.donor_type && selectedUser.donor_type.toLowerCase().includes('pro')" class="mock-popover-pro-badge">
+                <ion-icon :icon="sparkles" class="pro-icon" />
+                <span>Pro</span>
+              </div>
+              <div v-else-if="selectedUser.donor_type && selectedUser.donor_type.toLowerCase() === 'contributor'" class="mock-popover-contributor-badge">
+                <ion-icon :icon="star" class="contributor-icon" />
+                <span>{{ $t('profile.donors.Contributor') }}</span>
+              </div>
+
+              <div v-if="currentUser?.id === selectedUser.id && !selectedUser.public_profile" style="margin-bottom: 8px;">
+                <ion-badge color="medium" style="font-size: 0.7rem; padding: 4px 8px; border-radius: 12px;" @click="showPrivateInfoAlert($event)">
+                  Private
+                </ion-badge>
+              </div>
+
+              <h3 class="mock-popover-name">
+                <span>
+                  {{ selectedUser.public_profile ? selectedUser.display_name : (currentUser?.user_metadata?.full_name || currentUser?.user_metadata?.display_name || 'Me') }}
+                </span>
+              </h3>
+
+              <div v-if="selectedUser.showcase_achievement" class="mock-popover-trophy-badge">
+                <span>{{ selectedUser.showcase_achievement.icon }}</span>
+                <span>{{ $t('achievements.categories.' + selectedUser.showcase_achievement.category + '.tiers.' + selectedUser.showcase_achievement.tier) }}</span>
+              </div>
+
+              <p class="mock-popover-stats">
+                {{ $t('profile.level', { level: getLevelFromPoints(selectedUser.total_points || selectedUser.points) }) }}
+                <ion-badge
+                  class="leaderboard-points-badge"
+                  style="margin-left: 6px; border-radius: 8px; font-weight: bold; font-size: 0.75rem; padding: 4px 8px; display: inline-block; vertical-align: middle;"
+                >
+                  {{ selectedUser.points }} pts
+                </ion-badge>
+              </p>
+
+              <!-- Stats Grid -->
+              <div class="mock-popover-grid">
+                <div class="grid-col">
+                  <div class="grid-label">{{ $t('home.productsCount') }}</div>
+                  <div class="grid-val">{{ selectedUser.product_count || 0 }}</div>
+                </div>
+                <div class="grid-col">
+                  <div class="grid-label">{{ $t('home.locationsCount') }}</div>
+                  <div class="grid-val">{{ selectedUser.location_count || 0 }}</div>
+                </div>
+              </div>
+
+              <p v-if="selectedUser.bio" class="mock-popover-bio">
+                "{{ selectedUser.bio }}"
+              </p>
+            </template>
+
+            <!-- ❌ No public profile: only show XP and basic stats -->
+            <template v-else>
+              <ion-avatar style="width:72px;height:72px;margin:12px auto 8px; border: 2px solid var(--ion-color-step-200);">
+                 <div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; background: var(--ion-color-step-100); color: var(--ion-color-step-400); font-size: 24px; font-weight: 800;">?</div>
+              </ion-avatar>
+
+              <h3 class="mock-popover-name" style="color: var(--ion-color-medium);">
+                <span>
+                  {{ selectedUser.display_name }}
+                </span>
+              </h3>
+
+              <p class="mock-popover-stats">
+                {{ $t('profile.level', { level: getLevelFromPoints(selectedUser.total_points || selectedUser.points) }) }}
+                <ion-badge
+                  class="leaderboard-points-badge"
+                  style="margin-left: 6px; border-radius: 8px; font-weight: bold; font-size: 0.75rem; padding: 4px 8px; display: inline-block; vertical-align: middle;"
+                >
+                  {{ selectedUser.points }} pts
+                </ion-badge>
+              </p>
+
+              <!-- Stats for Anonymous -->
+              <div class="mock-popover-grid">
+                <div class="grid-col">
+                  <div class="grid-label">{{ $t('home.productsCount') }}</div>
+                  <div class="grid-val">{{ selectedUser.product_count || 0 }}</div>
+                </div>
+                <div class="grid-col">
+                  <div class="grid-label">{{ $t('home.locationsCount') }}</div>
+                  <div class="grid-val">{{ selectedUser.location_count || 0 }}</div>
+                </div>
+              </div>
+            </template>
+          </div>
+        </div>
+      </ion-content>
+    </ion-popover>
+  </ion-page>
+</template>
+
+<script setup lang="ts">
+import { ref, onMounted, nextTick } from 'vue'
+import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
+import {
+  IonPage, IonContent, IonHeader, IonSearchbar, IonList, IonItem, IonAvatar, IonLabel, IonBadge,
+  IonIcon, IonPopover, IonInfiniteScroll, IonInfiniteScrollContent, IonSkeletonText,
+  IonSegment, IonSegmentButton, alertController, IonButton, IonSpinner
+} from '@ionic/vue'
+import AppHeader from '@/components/AppHeader.vue'
+import {
+  medalOutline,
+  sparkles,
+  diamond,
+  star,
+  chevronForwardOutline,
+  scanOutline,
+  personOutline,
+  addOutline,
+  locationOutline
+} from 'ionicons/icons'
+import { supabase } from '@/plugins/supabaseClient'
+import { getThemedAnonymousName } from '@/composables/useLeaderboard'
+import { getLevelAccentRgb, formatCompactPoints } from '@/composables/useLevels'
+import { getLevelFromPoints } from '@/utils/xp'
+import { formatDisplayName } from '@/utils/nameHelpers'
+import { isPublicProfile, currentUser } from '@/composables/userProfile'
+import { ActivityLogService } from '@/services/ActivityLogService'
+
+const router = useRouter()
+const { t, locale } = useI18n()
+
+/* ---------------- State ---------------- */
+const users = ref<any[]>([])
+const loading = ref(false)
+const searchQuery = ref('')
+const page = ref(0)
+const pageSize = 20
+const isInfiniteScrollDisabled = ref(false)
+const infiniteScrollKey = ref(0)
+const totalUsers = ref(0)
+const currentUserRank = ref<number | null>(null)
+const highlightedUserId = ref<string | null>(null)
+const rankingLoading = ref(false)
+const leaderboardType = ref<'daily' | 'weekly' | 'monthly' | 'all_time'>('daily')
+
+const selectedUser = ref<any | null>(null)
+const popoverEvent = ref<Event | null>(null)
+
+function changeLeaderboardType(ev: any) {
+  leaderboardType.value = ev.detail.value as 'daily' | 'weekly' | 'monthly' | 'all_time'
+  resetAndFetch()
+}
+
+/* ---------------- Functions ---------------- */
+function getDisplayRank(user: any, index: number): number {
+  return user.rank || (page.value * pageSize) + index + 1
+}
+
+function handleImgError(ev: Event) {
+  (ev.target as HTMLImageElement).src = 'https://placehold.co/64x64?text=👤'
+}
+
+async function resolveRanks(usersList: any[]) {
+  let table = 'leaderboard_view'
+  if (leaderboardType.value === 'daily') {
+    table = 'leaderboard_daily_view'
+  } else if (leaderboardType.value === 'weekly') {
+    table = 'leaderboard_weekly_view'
+  } else if (leaderboardType.value === 'monthly') {
+    table = 'leaderboard_monthly_view'
+  }
+  const promises = usersList.map(async (u) => {
+    try {
+      const { count, error } = await supabase
+        .from(table)
+        .select('*', { count: 'exact', head: true })
+        .gt('points', u.points)
+      
+      if (!error && count !== null) {
+        u.rank = count + 1
+      }
+    } catch (e) {
+      console.warn('Failed to resolve rank for user:', u.id, e)
+    }
+  })
+  await Promise.all(promises)
+}
+
+async function fetchUsersPage(isAppend = false) {
+  if (loading.value) return
+  loading.value = true
+
+  const from = page.value * pageSize
+  const to = from + pageSize - 1
+
+  try {
+    let table = 'leaderboard_view'
+    if (leaderboardType.value === 'daily') {
+      table = 'leaderboard_daily_view'
+    } else if (leaderboardType.value === 'weekly') {
+      table = 'leaderboard_weekly_view'
+    } else if (leaderboardType.value === 'monthly') {
+      table = 'leaderboard_monthly_view'
+    }
+    let queryBuilder = supabase
+      .from(table)
+      .select('*', { count: 'exact' })
+      .order('points', { ascending: false })
+      .range(from, to)
+
+    if (searchQuery.value) {
+      queryBuilder = queryBuilder
+        .ilike('display_name', `%${searchQuery.value}%`)
+        .eq('public_profile', true)
+    }
+
+    const { data, error, count } = await queryBuilder
+
+    if (error) {
+      console.error('Error fetching leaderboard pages:', error)
+      return
+    }
+
+    if (data) {
+      totalUsers.value = count ?? 0
+      const mapped = data.map((u: any, idx: number) => {
+        const absRank = searchQuery.value ? null : from + idx + 1
+        return {
+          ...u,
+          display_name: u.public_profile ? u.display_name : getThemedAnonymousName(u.id, absRank || 1),
+          avatar_url: u.public_profile ? u.avatar_url : 'https://placehold.co/64x64',
+          rank: absRank,
+          total_points: u.total_points ?? u.points
+        }
+      })
+
+      if (searchQuery.value && mapped.length > 0) {
+        await resolveRanks(mapped)
+      }
+
+      if (isAppend) {
+        users.value.push(...mapped)
+      } else {
+        users.value = mapped
+      }
+
+      if (data.length < pageSize) {
+        isInfiniteScrollDisabled.value = true
+      }
+    }
+  } catch (err) {
+    console.error('Exception in fetchUsersPage:', err)
+  } finally {
+    loading.value = false
+  }
+}
+
+async function fetchCurrentUserRank() {
+  if (!currentUser.value?.id) return
+  
+  let table = 'leaderboard_view'
+  if (leaderboardType.value === 'daily') {
+    table = 'leaderboard_daily_view'
+  } else if (leaderboardType.value === 'weekly') {
+    table = 'leaderboard_weekly_view'
+  } else if (leaderboardType.value === 'monthly') {
+    table = 'leaderboard_monthly_view'
+  }
+  
+  try {
+    const { data: userData, error: userError } = await supabase
+      .from(table)
+      .select('points')
+      .eq('id', currentUser.value.id)
+      .maybeSingle()
+      
+    if (userError || !userData) {
+      currentUserRank.value = null
+      return
+    }
+    
+    const { count, error: countError } = await supabase
+      .from(table)
+      .select('*', { count: 'exact', head: true })
+      .gt('points', userData.points)
+      
+    if (!countError && count !== null) {
+      currentUserRank.value = count + 1
+    }
+  } catch (e) {
+    console.warn('Failed to fetch current user rank:', e)
+  }
+}
+
+async function fetchUsersUpToPage(targetPage: number) {
+  loading.value = true
+  try {
+    let table = 'leaderboard_view'
+    if (leaderboardType.value === 'daily') {
+      table = 'leaderboard_daily_view'
+    } else if (leaderboardType.value === 'weekly') {
+      table = 'leaderboard_weekly_view'
+    } else if (leaderboardType.value === 'monthly') {
+      table = 'leaderboard_monthly_view'
+    }
+
+    // Fetch pages concurrently in parallel
+    const pagePromises = Array.from({ length: targetPage + 1 }, (_, p) => {
+      const from = p * pageSize
+      const to = from + pageSize - 1
+      return supabase
+        .from(table)
+        .select('*')
+        .order('points', { ascending: false })
+        .range(from, to)
+    })
+
+    const results = await Promise.all(pagePromises)
+    
+    const allFetchedData: any[] = []
+    let hasReachedEnd = false
+    
+    for (const res of results) {
+      if (res.error) {
+        console.error('Error fetching page in parallel:', res.error)
+        continue
+      }
+      if (res.data) {
+        allFetchedData.push(...res.data)
+        if (res.data.length < pageSize) {
+          hasReachedEnd = true
+        }
+      }
+    }
+
+    // Map the ranks correctly
+    const mapped = allFetchedData.map((u: any, idx: number) => {
+      const absRank = searchQuery.value ? null : idx + 1
+      return {
+        ...u,
+        display_name: u.public_profile ? u.display_name : getThemedAnonymousName(u.id, absRank || 1),
+        avatar_url: u.public_profile ? u.avatar_url : 'https://placehold.co/64x64',
+        rank: absRank,
+        total_points: u.total_points ?? u.points
+      }
+    })
+
+    if (searchQuery.value && mapped.length > 0) {
+      await resolveRanks(mapped)
+    }
+
+    users.value = mapped
+    page.value = targetPage
+    if (hasReachedEnd) {
+      isInfiniteScrollDisabled.value = true
+    }
+  } catch (err) {
+    console.error('Exception in fetchUsersUpToPage:', err)
+  } finally {
+    loading.value = false
+  }
+}
+
+async function scrollToMyRank() {
+  if (!currentUser.value?.id) return
+
+  const idx = users.value.findIndex(u => u.id === currentUser.value?.id)
+  if (idx !== -1) {
+    const el = document.getElementById(`leaderboard-user-${currentUser.value.id}`)
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      highlightedUserId.value = currentUser.value.id
+      setTimeout(() => {
+        highlightedUserId.value = null
+      }, 2500)
+    }
+    return
+  }
+
+  if (currentUserRank.value) {
+    const targetPage = Math.floor((currentUserRank.value - 1) / pageSize)
+    
+    rankingLoading.value = true
+    try {
+      await fetchUsersUpToPage(targetPage)
+      
+      await nextTick()
+      
+      setTimeout(() => {
+        const el = document.getElementById(`leaderboard-user-${currentUser.value.id}`)
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+          highlightedUserId.value = currentUser.value.id
+          setTimeout(() => {
+            highlightedUserId.value = null
+          }, 2500)
+        }
+      }, 100)
+    } finally {
+      rankingLoading.value = false
+    }
+  } else {
+    const isZh = locale.value === 'zh' || locale.value?.startsWith('zh')
+    const alert = await alertController.create({
+      header: isZh ? '個人排名' : 'My Rank',
+      message: isZh 
+        ? '在此排行榜中未找到您的紀錄。開始進行貢獻以獲得積分吧！' 
+        : 'No points record found for you on this leaderboard. Start contributing to earn points!',
+      buttons: [isZh ? '確定' : 'OK']
+    })
+    await alert.present()
+  }
+}
+
+function resetAndFetch() {
+  page.value = 0
+  isInfiniteScrollDisabled.value = false
+  infiniteScrollKey.value++
+  // Clear stale results so the loading skeleton shows immediately instead of
+  // leaving the previous tab's list on screen with no loading indicator.
+  users.value = []
+  fetchUsersPage(false)
+  fetchCurrentUserRank()
+}
+
+let searchTimeout: any = null
+function onSearchInput(ev: any) {
+  clearTimeout(searchTimeout)
+  searchTimeout = setTimeout(() => {
+    const val = ev.detail.value || ''
+    searchQuery.value = val.trim()
+    resetAndFetch()
+  }, 300)
+}
+
+function onSearchClear() {
+  searchQuery.value = ''
+  resetAndFetch()
+}
+
+async function loadNextPage(ev: any) {
+  page.value++
+  await fetchUsersPage(true)
+  ev.target.complete()
+}
+
+function openUserProfile(user: any, ev: Event) {
+  ActivityLogService.log("home_leaderboard_profile", {
+    user_id: user.id,
+    display_name: user.display_name
+  })
+
+  selectedUser.value = user
+  popoverEvent.value = ev
+}
+
+function closePopover() {
+  selectedUser.value = null
+  popoverEvent.value = null
+}
+
+async function showPrivateInfoAlert(ev?: Event) {
+  if (ev) {
+    ev.stopPropagation()
+  }
+  const isZh = locale.value === 'zh' || locale.value?.startsWith('zh')
+  const alert = await alertController.create({
+    header: isZh ? '個人檔案已設為不公開' : 'Profile is Private',
+    message: isZh 
+      ? '您的個人檔案目前設定為不公開。您的姓名與頭像僅對您自己顯示，其他使用者將會看到您顯示為「匿名」。' 
+      : 'Your profile is set to private. Your name and details are only visible to you. Other users will see you as Anonymous.',
+    buttons: [isZh ? '我知道了' : 'Got It']
+  })
+  await alert.present()
+}
+
+/* ---------------- Cosmetic Helpers ---------------- */
+function getCosmeticByCategory(user: any, category: string) {
+  if (category === 'background' || category === 'nameplate') {
+    return user?.equipped_cosmetics?.find((c: any) => c.category === 'background' || c.category === 'nameplate')
+  }
+  return user?.equipped_cosmetics?.find((c: any) => c.category === category)
+}
+
+function getLeaderboardGlowStyle(user: any) {
+  const glow = getCosmeticByCategory(user, 'glow')
+  const aura = getCosmeticByCategory(user, 'aura')
+  const styles: Record<string, string> = { margin: '0 10px', position: 'relative' }
+  if (glow?.css_value?.boxShadow) styles.boxShadow = glow.css_value.boxShadow
+  if (glow?.css_value?.animation) styles.animation = glow.css_value.animation
+  if (aura?.css_value?.background) styles.background = aura.css_value.background
+  if (aura?.css_value?.animation && !glow?.css_value?.animation) styles.animation = aura.css_value.animation
+  return styles
+}
+
+function getLeaderboardFrameStyle(user: any) {
+  const frame = getCosmeticByCategory(user, 'frame')
+  const outline = getCosmeticByCategory(user, 'outline')
+  const styles: Record<string, string> = {}
+  if (frame?.css_value?.border) styles.border = frame.css_value.border
+  if (frame?.css_value?.boxShadow) styles.boxShadow = frame.css_value.boxShadow
+  if (outline?.css_value?.border) styles.border = outline.css_value.border
+  return styles
+}
+
+function getLeaderboardRowStyle(user: any) {
+  const np = getCosmeticByCategory(user, 'background')
+  const styles: Record<string, string> = {}
+  if (np?.css_value?.background) {
+    styles['--background'] = np.css_value.background
+    styles.background = np.css_value.background
+    
+    let textColor = ''
+    let subTextColor = ''
+    
+    if (np.css_value.color) {
+      textColor = np.css_value.color
+      subTextColor = np.css_value.color
+    } else {
+      const isLight = isBackgroundLight(np)
+      textColor = isLight ? '#121212' : '#ffffff'
+      subTextColor = isLight ? '#444444' : 'rgba(255, 255, 255, 0.7)'
+    }
+    
+    styles['--color'] = textColor
+    styles.color = textColor
+    styles['--sub-color'] = subTextColor
+    styles['--ion-text-color'] = textColor
+    
+    if (np.css_value.animation) styles.animation = np.css_value.animation
+    if (np.css_value.backgroundSize) styles.backgroundSize = np.css_value.backgroundSize
+  }
+  return styles
+}
+
+function getPopoverGlowStyle(user: any) {
+  if (!user) return {}
+  const glow = getCosmeticByCategory(user, 'glow')
+  const styles: Record<string, string> = {}
+  if (glow?.css_value?.boxShadow) styles.boxShadow = glow.css_value.boxShadow
+  if (glow?.css_value?.animation) styles.animation = glow.css_value.animation
+  return styles
+}
+
+function getPopoverAuraStyle(user: any) {
+  if (!user) return {}
+  const aura = getCosmeticByCategory(user, 'aura')
+  if (!aura?.css_value?.background) return {}
+  const styles: Record<string, string> = {
+    background: aura.css_value.background
+  }
+  if (aura.css_value.animation) styles.animation = aura.css_value.animation
+  return styles
+}
+
+function getPopoverFrameStyle(user: any) {
+  const frame = getCosmeticByCategory(user, 'frame')
+  const styles: Record<string, string> = { border: '2px solid var(--ion-color-primary-tint)' }
+  if (frame?.css_value?.border) styles.border = frame.css_value.border
+  if (frame?.css_value?.boxShadow) styles.boxShadow = frame.css_value.boxShadow
+  return styles
+}
+
+function getPopoverContentStyle(user: any) {
+  if (!user) return {}
+  const bg = getCosmeticByCategory(user, 'background')
+  const styles: Record<string, string> = {}
+  
+  if (bg?.css_value?.background) {
+    if (bg.css_value.color) {
+      styles['--color'] = bg.css_value.color
+      styles.color = bg.css_value.color
+      styles['--sub-color'] = bg.css_value.color
+    } else {
+      const isLight = isBackgroundLight(bg)
+      const textColor = isLight ? '#121212' : '#ffffff'
+      const subTextColor = isLight ? '#444444' : 'rgba(255, 255, 255, 0.75)'
+      styles['--color'] = textColor
+      styles.color = textColor
+      styles['--sub-color'] = subTextColor
+    }
+    if (bg.css_value.animation) styles.animation = bg.css_value.animation
+    if (bg.css_value.backgroundSize) styles.backgroundSize = bg.css_value.backgroundSize
+  }
+  return styles
+}
+
+function getPopoverCardVariables(user: any) {
+  if (!user) return {}
+  const bg = getCosmeticByCategory(user, 'background')
+  const outline = getCosmeticByCategory(user, 'outline')
+  const styles: Record<string, string> = {}
+  
+  if (bg?.css_value?.background) {
+    styles['--leaderboard-popover-bg'] = bg.css_value.background
+  }
+  if (outline?.css_value) {
+    if (outline.css_value.border) {
+      styles['--leaderboard-popover-border'] = outline.css_value.border
+    }
+    if (outline.css_value.borderImage) {
+      styles['--leaderboard-popover-border-image'] = outline.css_value.borderImage
+    }
+    if (outline.css_value.animation) {
+      styles['--leaderboard-popover-animation'] = outline.css_value.animation
+    }
+  }
+  return styles
+}
+
+function isBackgroundLight(cosmetic?: any | null): boolean {
+  if (!cosmetic) return false
+  const slug = cosmetic.slug?.toLowerCase() || cosmetic.name?.toLowerCase() || ''
+  return slug.includes('sakura') || slug.includes('sunset') || slug.includes('light') || slug.includes('gold')
+}
+
+/* ---------------- Lifecycle ---------------- */
+onMounted(() => {
+  fetchUsersPage(false)
+  fetchCurrentUserRank()
+})
+</script>
+
+<style scoped>
+/* === Compact Segment === */
+ion-segment {
+  --background: var(--card-inner-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 999px;
+  min-height: 36px;
+  padding: 3px;
+}
+ion-segment-button {
+  --padding-top: 4px;
+  --padding-bottom: 4px;
+  --margin-top: 2px;
+  --margin-bottom: 2px;
+  --margin-start: 2px;
+  --margin-end: 2px;
+  --border-radius: 999px;
+  --indicator-color: var(--ion-color-carrot);
+  --color-checked: var(--ion-color-carrot-contrast, #fff);
+  min-height: 28px;
+  font-size: 0.82rem;
+  letter-spacing: 0;
+  font-weight: 600;
+}
+
+ion-searchbar {
+  --border-radius: var(--radius-lg);
+  --box-shadow: none;
+  --background: var(--card-inner-bg);
+}
+
+/* === Leaderboard Hint Banner === */
+.leaderboard-hint-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.08) 0%, rgba(251, 146, 60, 0.08) 100%);
+  border: 1px solid rgba(249, 115, 22, 0.15);
+  border-radius: var(--radius-lg);
+  margin-bottom: 16px;
+  cursor: pointer;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.leaderboard-hint-banner:active {
+  transform: scale(0.98);
+  opacity: 0.9;
+}
+
+.hint-icon {
+  font-size: 20px;
+  color: var(--ion-color-carrot);
+  flex-shrink: 0;
+  animation: pulse 2s infinite;
+}
+
+.hint-text {
+  font-size: 0.85rem;
+  line-height: 1.4;
+  color: var(--ion-color-step-800);
+  flex: 1;
+}
+
+.hint-arrow {
+  font-size: 16px;
+  color: var(--ion-color-medium);
+  flex-shrink: 0;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+
+.ion-palette-dark .leaderboard-hint-banner {
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.15) 0%, rgba(251, 146, 60, 0.15) 100%);
+  border-color: rgba(249, 115, 22, 0.3);
+}
+
+/* ========= Leaderboard Cosmetic Effects ========= */
+.leaderboard-list {
+  overflow: visible;
+  background: transparent;
+  padding-bottom: 32px;
+}
+.leaderboard-item {
+  --overflow: visible;
+  overflow: visible !important;
+  contain: none !important;
+  margin: 8px 0;
+  border-radius: var(--radius-lg);
+}
+.leaderboard-item::part(native) {
+  overflow: visible !important;
+  border-radius: var(--radius-lg) !important;
+  background: var(--background, var(--card-bg)) !important;
+  color: var(--color, var(--text-main, var(--ion-text-color))) !important;
+  border: 1px solid var(--card-border);
+  box-shadow: var(--card-shadow);
+  transition: box-shadow 0.2s ease, transform 0.15s ease;
+}
+
+/* Loading rows: no solid card fill, just the shimmering placeholders themselves */
+.leaderboard-skeleton-item::part(native) {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+.leaderboard-item::part(inner) {
+  overflow: visible !important;
+}
+
+/* Top-3 get stronger visual rhythm: elevated card + tier-colored accent edge */
+.leaderboard-list ion-item:nth-of-type(1)::part(native),
+.leaderboard-list ion-item:nth-of-type(2)::part(native),
+.leaderboard-list ion-item:nth-of-type(3)::part(native) {
+  box-shadow: var(--card-shadow-hover);
+  border-width: 1.5px;
+}
+
+.leaderboard-list ion-item:nth-of-type(1)::part(native) {
+  border-left: 4px solid #FFD700;
+}
+
+.leaderboard-list ion-item:nth-of-type(2)::part(native) {
+  border-left: 4px solid #C0C0C0;
+}
+
+.leaderboard-list ion-item:nth-of-type(3)::part(native) {
+  border-left: 4px solid #CD7F32;
+}
+
+.leaderboard-list ion-item:nth-of-type(n+4) {
+  margin: 6px 0;
+}
+.leaderboard-item ion-label {
+  min-width: 0 !important;
+  width: 0 !important;
+  flex: 1 1 0% !important;
+  margin-right: 8px !important;
+}
+
+.leaderboard-avatar-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  padding: 2px;
+  transition: all 0.3s ease;
+}
+
+.leaderboard-points-badge {
+  --pts-rgb: var(--pts-rgb, 245, 158, 11);
+  --background: rgba(var(--pts-rgb), 0.12);
+  --color: rgb(var(--pts-rgb));
+  background: rgba(var(--pts-rgb), 0.12);
+  color: rgb(var(--pts-rgb));
+  border: 1px solid rgba(var(--pts-rgb), 0.28);
+  border-radius: 20px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 4px 8px;
+  flex-shrink: 0;
+  white-space: nowrap;
+  box-shadow: none;
+  transition: all 0.3s ease;
+}
+
+.avatar-pro-badge {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 15px;
+  height: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #fde68a 0%, #d4a017 100%);
+  border: 2px solid var(--card-bg, #18181a);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  z-index: 2;
+}
+
+.avatar-pro-badge ion-icon {
+  font-size: 8px;
+  color: #78350f;
+}
+
+.list-contributor-badge {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(var(--ion-color-primary-rgb), 0.14);
+  color: var(--ion-color-primary);
+  border: 1px solid rgba(var(--ion-color-primary-rgb), 0.32);
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 0.6rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.list-trophy-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+
+
+.popover-cosmetic-wrapper {
+  display: flex;
+  justify-content: center;
+  padding: 4px;
+  border-radius: 50%;
+  margin: 0 auto;
+  width: fit-content;
+  transition: all 0.3s ease;
+}
+
+.popover-custom-content {
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  --border-radius: var(--radius-xl);
+}
+
+.mock-popover-pro-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #ffd700;
+  color: #111;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 750;
+  margin: 8px auto 12px;
+  width: fit-content;
+  box-shadow: 0 0 10px rgba(250, 204, 21, 0.4);
+}
+
+.mock-popover-contributor-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--ion-color-primary);
+  color: #fff;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 750;
+  margin: 8px auto 12px;
+  width: fit-content;
+  box-shadow: 0 0 10px rgba(var(--ion-color-primary-rgb, 0, 0, 0), 0.4);
+}
+
+.mock-popover-contributor-badge .contributor-icon {
+  font-size: 0.85rem;
+}
+
+.mock-popover-pro-badge .pro-icon {
+  font-size: 0.85rem;
+}
+
+.mock-popover-trophy-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(255, 159, 67, 0.15);
+  color: var(--ion-color-carrot, #ff9f43);
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  margin: 4px auto 0;
+  width: fit-content;
+}
+
+.mock-popover-name {
+  margin: 8px 0 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--color, var(--ion-text-color));
+}
+
+.mock-popover-stats {
+  margin: 4px 0 16px;
+  font-size: 0.85rem;
+  color: var(--sub-color, var(--ion-color-medium));
+  font-weight: 600;
+}
+
+.mock-popover-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin: 16px 0;
+  padding: 0;
+  background: transparent;
+  border: none;
+}
+
+.grid-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.grid-label {
+  font-size: 0.7rem;
+  color: var(--sub-color, var(--ion-color-medium));
+  text-transform: uppercase;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  margin-bottom: 2px;
+}
+
+.grid-val {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--color, var(--ion-color-dark));
+}
+
+.ion-palette-dark .grid-val {
+  color: #ffffff;
+}
+
+.mock-popover-bio {
+  margin: 16px 0 0;
+  font-size: 0.85rem;
+  color: var(--sub-color, var(--ion-color-step-700));
+  font-style: italic;
+  line-height: 1.45;
+}
+
+.ion-palette-dark .mock-popover-bio {
+  color: #e5e5ea;
+}
+
+/* Cosmetic Animations */
+@keyframes pulse-glow {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.05); }
+}
+
+@keyframes shimmer {
+  0% { opacity: 0.5; }
+  50% { opacity: 1; }
+  100% { opacity: 0.5; }
+}
+
+@keyframes flame-dance {
+  0% { opacity: 0.7; filter: hue-rotate(0deg); }
+  100% { opacity: 1; filter: hue-rotate(15deg); }
+}
+
+@keyframes neon-rainbow {
+  0% { filter: hue-rotate(0deg); }
+  100% { filter: hue-rotate(360deg); }
+}
+
+@keyframes dragon-shimmer {
+  0% { opacity: 0.7; filter: hue-rotate(0deg) brightness(1); }
+  100% { opacity: 1; filter: hue-rotate(20deg) brightness(1.2); }
+}
+
+@keyframes aurora-wave {
+  0%, 100% { opacity: 0.6; filter: hue-rotate(0deg); }
+  50% { opacity: 1; filter: hue-rotate(30deg); }
+}
+
+@keyframes sparkle-border {
+  0%, 100% { opacity: 0.8; }
+  50% { opacity: 1; filter: brightness(1.3); }
+}
+
+@keyframes holo-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes gold-shimmer {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.2); }
+}
+
+/* Aura Popover Backdrop */
+.popover-aura-backdrop {
+  position: absolute;
+  top: -20px;
+  left: -20px;
+  right: -20px;
+  bottom: -20px;
+  filter: blur(25px);
+  opacity: 0.15;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.leaderboard-summary-bar {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--card-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  padding: 6px 8px 6px 16px;
+  border-radius: 999px;
+  box-shadow: var(--card-shadow-hover);
+  border: 1px solid var(--card-border);
+}
+
+.summary-text {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--ion-color-medium);
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.my-rank-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--ion-color-carrot);
+  color: var(--ion-color-carrot-contrast, #fff);
+  border: none;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.my-rank-btn:active {
+  transform: scale(0.95);
+  opacity: 0.9;
+}
+
+.my-rank-btn.is-loading {
+  opacity: 0.85;
+  background: var(--ion-color-step-300, rgba(128, 128, 128, 0.3));
+  color: var(--ion-color-medium, #aaa);
+  cursor: not-allowed;
+}
+
+.btn-spinner {
+  width: 14px;
+  height: 14px;
+  margin-right: 4px;
+  --color: currentColor;
+}
+
+.highlighted-row::part(native) {
+  animation: highlight-pulse 2.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+
+@keyframes highlight-pulse {
+  0% {
+    transform: scale(1);
+    box-shadow: inset 0 0 0 0 rgba(230, 126, 34, 0);
+  }
+  15% {
+    transform: scale(1);
+    box-shadow: inset 0 0 0 2px rgba(230, 126, 34, 0.85), inset 0 0 8px rgba(230, 126, 34, 0.3);
+    background: rgba(230, 126, 34, 0.15) !important;
+  }
+  80% {
+    transform: scale(1);
+    box-shadow: inset 0 0 0 2px rgba(230, 126, 34, 0.85), inset 0 0 8px rgba(230, 126, 34, 0.3);
+    background: rgba(230, 126, 34, 0.15) !important;
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: inset 0 0 0 0 rgba(230, 126, 34, 0);
+  }
+}
+
+.empty-state-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  padding: 32px 16px;
+}
+
+.empty-state-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-lg);
+  padding: 32px 24px;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: var(--card-shadow);
+}
+
+.trophy-badge-container {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(var(--ion-color-carrot-rgb, 249, 115, 22), 0.12);
+  border-radius: 50%;
+  margin-bottom: 16px;
+}
+
+.gold-trophy-icon {
+  font-size: 36px;
+  color: #FFD700;
+  animation: bounce 2s infinite;
+}
+
+.sparkle-icon {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  font-size: 16px;
+  color: #FFD700;
+  animation: spin-glow 3s infinite linear;
+}
+
+.empty-state-card h2 {
+  margin: 0 0 8px;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--ion-text-color, #ffffff);
+}
+
+.empty-state-card p {
+  margin: 0 0 20px;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: var(--ion-color-medium);
+}
+
+.cta-button {
+  --border-radius: 10px;
+  --padding-top: 12px;
+  --padding-bottom: 12px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  width: 100%;
+  margin: 0;
+}
+
+.empty-actions-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+@keyframes spin-glow {
+  0% { transform: rotate(0deg) scale(1); opacity: 0.8; }
+  50% { transform: rotate(180deg) scale(1.2); opacity: 1; }
+  100% { transform: rotate(360deg) scale(1); opacity: 0.8; }
+}
+
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--ion-color-medium);
+}
+.empty-state p {
+  margin: 8px 0 0;
+  font-size: 0.95rem;
+}
+</style>

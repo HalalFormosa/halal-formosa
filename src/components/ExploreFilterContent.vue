@@ -1,0 +1,340 @@
+<script setup lang="ts">
+import { computed } from 'vue'
+import {
+  IonIcon, IonChip, IonLabel, IonSkeletonText
+} from '@ionic/vue'
+import {
+  pricetagOutline, closeCircleOutline, school, sparkles, businessOutline, bicycleOutline,
+  swapVerticalOutline, locationOutline, timeOutline, trendingUpOutline, flameOutline,
+  sparklesOutline, lockClosedOutline
+} from 'ionicons/icons'
+
+interface Category {
+  id: number
+  name: string
+  color: string | null
+  emoji: string | null
+  icon: string | null
+  icon_url: string | null
+}
+
+interface Campus {
+  id: string
+  name: string
+  slug: string
+}
+
+type SortOption = 'nearest' | 'recent' | 'popular' | 'trending' | 'for_you'
+
+const props = withDefaults(defineProps<{
+  categories: Category[]
+  activeCategoryIds: number[]
+  campusPartners: Campus[]
+  activeTag: string | null
+  hasDeliveryFilter: boolean
+  loadingCategories: boolean
+  categoryIconMap: Record<string, any>
+  categoryImageMap: Record<string, string>
+  sortBy?: SortOption
+  canShowForYouSort?: boolean
+  isDonor?: boolean
+}>(), {
+  sortBy: 'recent',
+  canShowForYouSort: false,
+  isDonor: false
+})
+
+defineEmits<{
+  (e: 'toggleCategory', cat: Category): void
+  (e: 'toggleTag', slug: string): void
+  (e: 'toggleDelivery'): void
+  (e: 'clearFilters'): void
+  (e: 'update:sortBy', value: SortOption): void
+}>()
+
+const sortOptions: { key: SortOption; icon: string; labelKey: string }[] = [
+  { key: 'nearest', icon: locationOutline, labelKey: 'search.sortNearest' },
+  { key: 'recent', icon: timeOutline, labelKey: 'search.sortRecent' },
+  { key: 'trending', icon: trendingUpOutline, labelKey: 'search.sortTrending' },
+  { key: 'popular', icon: flameOutline, labelKey: 'search.sortViews' },
+  { key: 'for_you', icon: sparklesOutline, labelKey: 'search.sortForYou' },
+]
+
+const GOV_PARTNER_CATEGORY_NAMES = ['Halal Indonesian Restaurant', 'Muslim-friendly Indonesian Restaurant']
+
+const govPartnerCategories = computed(() =>
+  props.categories.filter(c => GOV_PARTNER_CATEGORY_NAMES.includes(c.name))
+)
+
+// Regular Categories section excludes gov-partner-only categories; they're
+// shown solely under "Government Partners" below.
+const regularCategories = computed(() =>
+  props.categories.filter(c => !GOV_PARTNER_CATEGORY_NAMES.includes(c.name))
+)
+</script>
+
+<template>
+  <div class="filter-modal-inner">
+    <!-- Sort -->
+    <div class="filter-section">
+      <h3 class="filter-section-title">
+        <ion-icon :icon="swapVerticalOutline" />
+        {{ $t('search.filters.sort') || 'Sort' }}
+      </h3>
+      <div class="category-bar">
+        <template v-for="opt in sortOptions" :key="opt.key">
+          <ion-chip
+              v-if="opt.key !== 'for_you' || canShowForYouSort"
+              class="modern-category-chip"
+              :class="{ active: sortBy === opt.key, 'is-locked': opt.key === 'for_you' && !isDonor }"
+              :style="{
+                '--cat-color': 'var(--ion-color-carrot)',
+                '--cat-bg': sortBy === opt.key ? 'var(--ion-color-carrot)' : 'transparent'
+              }"
+              @click="$emit('update:sortBy', opt.key)"
+          >
+            <ion-icon :icon="opt.icon" class="category-icon" />
+            <ion-label>{{ $t(opt.labelKey) }}</ion-label>
+            <ion-icon v-if="opt.key === 'for_you' && !isDonor" :icon="lockClosedOutline" class="lock-icon" />
+          </ion-chip>
+        </template>
+      </div>
+    </div>
+
+    <!-- Active Tags Row (Show only if not a campus partner tag) -->
+    <div v-if="activeTag && !campusPartners.some(c => c.slug === activeTag)" class="filter-section">
+      <h3 class="filter-section-title">
+        <ion-icon :icon="pricetagOutline" />
+        {{ $t('explore.activeFilters') }}
+      </h3>
+      <div class="category-bar">
+        <ion-chip
+            class="modern-category-chip active"
+            style="--cat-color: var(--ion-color-tertiary); --cat-bg: var(--ion-color-tertiary);"
+            @click="$emit('toggleTag', activeTag!)"
+        >
+          <ion-icon :icon="pricetagOutline" class="category-icon" />
+          <ion-label style="text-transform: capitalize">{{ activeTag }}</ion-label>
+          <ion-icon :icon="closeCircleOutline" style="margin-left: 4px; font-size: 16px;" />
+        </ion-chip>
+      </div>
+    </div>
+
+    <!-- Categories -->
+    <div class="filter-section">
+      <h3 class="filter-section-title">
+        <ion-icon :icon="pricetagOutline" />
+        {{ $t('explore.categories') }}
+      </h3>
+      <div v-if="loadingCategories" class="category-skeletons" style="display: flex; gap: 10px; padding: 0 16px;">
+        <ion-skeleton-text animated style="width:110px; height:36px; border-radius:100px; margin: 0;"/>
+        <ion-skeleton-text animated style="width:85px; height:36px; border-radius:100px; margin: 0;"/>
+        <ion-skeleton-text animated style="width:120px; height:36px; border-radius:100px; margin: 0;"/>
+      </div>
+      <div v-else class="category-bar">
+        <ion-chip
+            v-for="cat in regularCategories"
+            :key="cat.id"
+            class="modern-category-chip"
+            :class="{ active: activeCategoryIds.includes(cat.id) }"
+            :style="{
+              '--cat-color': cat.color || 'var(--ion-color-carrot)',
+              '--cat-bg': activeCategoryIds.includes(cat.id) ? (cat.color || 'var(--ion-color-carrot)') : 'transparent'
+            }"
+            @click="$emit('toggleCategory', cat)"
+        >
+          <img v-if="categoryImageMap[cat.name]" :src="categoryImageMap[cat.name]" class="category-image" :alt="cat.name" />
+          <span v-else-if="typeof categoryIconMap[cat.name] === 'string' && categoryIconMap[cat.name].length === 2" class="category-emoji">
+            {{ categoryIconMap[cat.name] }}
+          </span>
+          <ion-icon v-else-if="categoryIconMap[cat.name]" :icon="categoryIconMap[cat.name]" class="category-icon" />
+          <ion-label>{{ cat.name }}</ion-label>
+        </ion-chip>
+      </div>
+    </div>
+
+    <!-- Delivery -->
+    <div class="filter-section">
+      <h3 class="filter-section-title">
+        <ion-icon :icon="bicycleOutline" />
+        {{ $t('explore.delivery') }}
+      </h3>
+      <div class="category-bar">
+        <ion-chip
+            class="modern-category-chip"
+            :class="{ active: hasDeliveryFilter }"
+            style="--cat-color: var(--ion-color-carrot); --cat-bg: var(--ion-color-carrot);"
+            @click="$emit('toggleDelivery')"
+        >
+          <ion-icon :icon="bicycleOutline" class="category-icon" />
+          <ion-label>{{ $t('explore.deliveryFilter') }}</ion-label>
+        </ion-chip>
+      </div>
+    </div>
+
+    <!-- Campus Partners -->
+    <div v-if="campusPartners.length > 0" class="filter-section">
+      <h3 class="filter-section-title">
+        <ion-icon :icon="school" />
+        {{ $t('explore.campusPartners') }}
+      </h3>
+      <div class="category-bar campus-bar">
+        <div
+            v-for="campus in campusPartners"
+            :key="campus.id"
+            class="campus-filter-wrapper"
+        >
+          <div class="special-promo-tag">{{ $t('explore.specialPromo') }}</div>
+          <ion-chip
+              class="modern-category-chip campus-chip"
+              :class="{ active: activeTag === campus.slug }"
+              style="--cat-color: var(--ion-color-tertiary); --cat-bg: var(--ion-color-tertiary);"
+              @click="$emit('toggleTag', campus.slug)"
+          >
+            <ion-icon :icon="school" class="category-icon" />
+            <ion-label>{{ $t('explore.campusFilter', { name: campus.slug.toUpperCase() }) }}</ion-label>
+          </ion-chip>
+        </div>
+      </div>
+    </div>
+
+    <!-- Government Partners -->
+    <div v-if="govPartnerCategories.length > 0" class="filter-section">
+      <h3 class="filter-section-title">
+        <ion-icon :icon="businessOutline" />
+        Government Partners
+      </h3>
+      <div class="category-bar campus-bar">
+        <ion-chip
+            v-for="cat in govPartnerCategories"
+            :key="cat.id"
+            class="modern-category-chip campus-chip"
+            :class="{ active: activeCategoryIds.includes(cat.id) }"
+            style="--cat-color: var(--ion-color-tertiary); --cat-bg: var(--ion-color-tertiary);"
+            @click="$emit('toggleCategory', cat)"
+        >
+          <img v-if="categoryImageMap[cat.name]" :src="categoryImageMap[cat.name]" class="category-image" :alt="cat.name" />
+          <span v-else-if="typeof categoryIconMap[cat.name] === 'string' && categoryIconMap[cat.name].length === 2" class="category-emoji">
+            {{ categoryIconMap[cat.name] }}
+          </span>
+          <ion-icon v-else-if="categoryIconMap[cat.name]" :icon="categoryIconMap[cat.name]" class="category-icon" />
+          <ion-label>{{ cat.name }}</ion-label>
+        </ion-chip>
+      </div>
+    </div>
+  </div>
+</template>
+
+<style scoped>
+.filter-modal-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.filter-section {
+  margin-bottom: 16px;
+}
+
+.filter-section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--ion-text-color);
+  padding: 0 16px;
+  margin-bottom: 12px;
+}
+
+.filter-section-title ion-icon {
+  font-size: 16px;
+  color: var(--ion-color-carrot);
+}
+
+.category-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 0 16px 8px;
+}
+
+
+.campus-bar {
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+
+.campus-filter-wrapper {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 14px;
+}
+
+.special-promo-tag {
+  position: absolute;
+  top: 0;
+  font-size: 0.55rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  background: linear-gradient(135deg, #facc15 0%, #ca8a04 100%);
+  color: #422006;
+  padding: 1px 6px;
+  border-radius: 4px;
+  box-shadow: 0 2px 6px rgba(250, 204, 21, 0.4);
+  z-index: 10;
+  white-space: nowrap;
+  transform: translateY(8px);
+}
+
+.modern-category-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ion-background-color) !important;
+  color: var(--cat-color);
+  height: 38px;
+  border-radius: 100px;
+  padding: 0 16px;
+  border: 1px solid rgba(var(--ion-color-dark-rgb), 0.12);
+  font-weight: 700;
+  font-size: 0.82rem;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  box-shadow: var(--card-shadow);
+  margin: 0;
+}
+
+.modern-category-chip.active {
+  background: var(--cat-color) !important;
+  color: #ffffff !important;
+  border-color: var(--cat-color) !important;
+  box-shadow: var(--card-shadow-hover);
+  transform: translateY(-1px);
+}
+
+.category-emoji, .category-icon { margin-right: 6px; font-size: 1.1rem; }
+
+.modern-category-chip.is-locked {
+  opacity: 0.75;
+}
+
+.modern-category-chip .lock-icon {
+  margin-left: 6px;
+  margin-right: 0;
+  font-size: 0.85rem;
+  opacity: 0.7;
+}
+
+.category-image {
+  width: 18px;
+  height: 18px;
+  margin-right: 6px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+</style>

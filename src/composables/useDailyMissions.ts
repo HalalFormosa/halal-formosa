@@ -4,6 +4,7 @@ import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
 import timezone from 'dayjs/plugin/timezone'
 import { usePoints } from '@/composables/usePoints'
+import { ActivityLogService } from '@/services/ActivityLogService'
 
 dayjs.extend(utc)
 dayjs.extend(timezone)
@@ -72,11 +73,31 @@ const missions = ref<Mission[]>([
         points: 10,
         completed: false,
         icon: 'add-circle-outline'
+    },
+    {
+        id: 'review_place',
+        label: 'Review a Location',
+        required: 1,
+        current: 0,
+        points: 10,
+        completed: false,
+        icon: 'star-outline'
     }
 ])
 
 const loading = ref(false)
 const claimedBonus = ref(false)
+
+// Lets a caller elsewhere in the app (e.g. the notifications feed's "Daily
+// Mission still available" nudge) ask DailyMissions.vue to open its details
+// modal, without needing a route query param — a plain reactive flag avoids
+// any timing dependency on route-guard/auth-check/mount-order sequencing
+// across navigation, since DailyMissions.vue just watches it immediately at
+// setup regardless of when it was set.
+const openModalRequested = ref(false)
+function requestOpenMissionsModal() {
+  openModalRequested.value = true
+}
 
 const claimedMissions = ref<Record<string, boolean>>({})
 const awardingMissions = new Set<string>() // 🛡️ Prevent double-awarding during rapid refresh
@@ -158,6 +179,27 @@ export function useDailyMissions() {
                     case 'add_place_success': {
                         const mAddProd = missions.value.find(m => m.id === 'add_product')
                         if (mAddProd && mAddProd.current < mAddProd.required) mAddProd.current++
+
+                        if (log.activity_type === 'add_product_success') {
+                            // 🟢 Also count for "Scan Barcode" mission (implicitly done during add)
+                            const mBarcode = missions.value.find(m => m.id === 'scan_barcode')
+                            if (mBarcode && mBarcode.current < mBarcode.required) mBarcode.current++
+
+                            // 🟢 Also count for "Scan Ingredients" mission
+                            const mScan = missions.value.find(m => m.id === 'scan_ingredients')
+                            if (mScan && mScan.current < mScan.required) mScan.current++
+
+                            // 🟢 Also count for "Find muslim-friendly product" if status matches
+                            if (detail?.status === 'Muslim-friendly') {
+                                const mMF = missions.value.find(m => m.id === 'find_muslim_friendly')
+                                if (mMF && mMF.current < mMF.required) mMF.current++
+                            }
+                        }
+                        break
+                    }
+                    case 'location_review_success': {
+                        const mReview = missions.value.find(m => m.id === 'review_place')
+                        if (mReview && mReview.current < mReview.required) mReview.current++
                         break
                     }
                 }
@@ -194,6 +236,7 @@ export function useDailyMissions() {
                     ) {
                         console.log(`[Missions] Awarding points for: ${missionClaimAction}`)
                         awardingMissions.add(m.id)
+                        ActivityLogService.log('mission_completed', { mission_id: m.id })
 
                         awardAndCelebrate(missionClaimAction).finally(() => {
                             // We keep it in the set for a few seconds to let DB catch up
@@ -209,6 +252,12 @@ export function useDailyMissions() {
 
             claimedBonus.value = logActions.includes('daily_mission_bonus')
 
+            // Auto-award the completion bonus as soon as every mission is
+            // done, instead of waiting for the user to tap the bonus card.
+            if (allCompleted.value && !claimedBonus.value) {
+                await checkAndAwardBonus()
+            }
+
         } catch (err) {
             console.error('Error fetching mission progress:', err)
         } finally {
@@ -223,6 +272,7 @@ export function useDailyMissions() {
 
             console.log('[Missions] Awarding daily bonus...')
             awardingMissions.add('daily_bonus')
+            ActivityLogService.log('daily_mission_bonus_claimed')
 
             await awardAndCelebrate('daily_mission_bonus').finally(() => {
                 setTimeout(() => {
@@ -239,6 +289,8 @@ export function useDailyMissions() {
         loading,
         claimedBonus,
         allCompleted,
+        openModalRequested,
+        requestOpenMissionsModal,
         fetchProgress,
         checkAndAwardBonus
     }

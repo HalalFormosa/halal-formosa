@@ -3,6 +3,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { ref, onMounted } from 'vue';
 import { onIonViewWillEnter } from '@ionic/vue';
 import { supabase } from '@/plugins/supabaseClient';
+import { ActivityLogService } from '@/services/ActivityLogService'
 import {
   IonPage, IonContent, IonHeader, IonToolbar, IonTitle, IonItem, IonLabel,
   IonTextarea, IonButton, IonInput, IonCard, IonCardHeader, IonCardContent, IonCardTitle, IonToast,
@@ -11,6 +12,7 @@ import {
 import { cameraOutline, cloudUploadOutline, closeCircle, alertCircleOutline } from 'ionicons/icons';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 import { useImageResizer } from '@/composables/useImageResizer';
+import { useNotifier } from '@/composables/useNotifier';
 import AppHeader from '@/components/AppHeader.vue';
 
 const props = defineProps<{
@@ -78,6 +80,7 @@ async function fetchProduct() {
       .from('products')
       .select('*')
       .eq('barcode', props.barcode)
+      .eq('is_archived', false)
       .single();
 
   if (error) {
@@ -135,11 +138,27 @@ async function submitReport() {
 
     if (error) throw error;
 
+    ActivityLogService.log('product_report_submit', { barcode: product.value.barcode, has_image: !!imageUrl });
+
+    // 🔔 Notify Discord
+    const { notifyEvent } = useNotifier()
+    const userName = freshUser?.user_metadata?.name || freshUser?.email || 'Anonymous'
+
+    await notifyEvent(
+      'product_report',
+      '🚩 Product Reported',
+      `Product: ${product.value.name}\nBarcode: ${product.value.barcode}\nReason: ${reportDescription.value.trim()}\nBy: ${userName}`,
+      imageUrl || product.value.photo_front_url,
+      { barcode: product.value.barcode, isNative: true },
+      ['discord']
+    )
+
     toastMessage.value = '✅ Report submitted!';
     toastColor.value = 'success';
     setTimeout(() => router.back(), 1000);
   } catch (error: any) {
     console.error('Error submitting report:', error);
+    ActivityLogService.log('product_report_failed', { barcode: product.value?.barcode, error_message: error?.message });
     toastMessage.value = error.message || 'Failed to submit report.';
     toastColor.value = 'danger';
   } finally {
@@ -176,6 +195,18 @@ onIonViewWillEnter(() => {
             <ion-label position="stacked">Barcode</ion-label>
             <ion-input :value="product.barcode" readonly />
           </ion-item>
+
+          <!-- Product Images Display -->
+          <div v-if="product.photo_front_url || product.photo_back_url" class="product-images-row">
+            <div v-if="product.photo_front_url" class="product-image-container">
+              <small class="image-label">Front</small>
+              <img :src="product.photo_front_url" class="product-image-thumb" />
+            </div>
+            <div v-if="product.photo_back_url" class="product-image-container">
+              <small class="image-label">Back</small>
+              <img :src="product.photo_back_url" class="product-image-thumb" />
+            </div>
+          </div>
 
           <ion-item lines="none" class="ion-margin-top">
             <ion-label>Evidence Image (Optional)</ion-label>
@@ -251,6 +282,36 @@ onIonViewWillEnter(() => {
 .image-preview {
   max-width: 100%;
   object-fit: contain;
+}
+
+.product-images-row {
+  display: flex;
+  gap: 12px;
+  margin: 16px 0;
+  padding: 0 16px;
+}
+
+.product-image-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.product-image-thumb {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--ion-color-light);
+}
+
+.image-label {
+  color: var(--ion-color-medium);
+  text-transform: uppercase;
+  font-size: 10px;
+  font-weight: 700;
+  margin-bottom: 4px;
 }
 
 .clear-image-btn {

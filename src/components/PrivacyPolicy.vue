@@ -3,7 +3,7 @@
     <h1>Privacy Policy</h1>
 
     <p>
-      This Privacy Policy ("Policy") explains how <strong>R Creative</strong> ("we", "our", or "us") handles
+      This Privacy Policy ("Policy") explains how <strong>YiQi Global Consulting (藝啟文創行銷有限公司)</strong> ("we", "our", or "us"), which operates the Service in partnership with the Halal Formosa founding team, handles
       personal and non-personal information collected through the <strong>Halal Formosa</strong> mobile application
       ("Service"). By using the Service, you agree to the collection, storage, and use of information in accordance
       with this Policy.
@@ -126,10 +126,10 @@
     <h2>Article 14 – Contact</h2>
     <p>
       For privacy-related inquiries, please contact:<br/>
-      <strong>R Creative</strong><br/>
+      <strong>YiQi Global Consulting (藝啟文創行銷有限公司)</strong><br/>
       Email: <em>halalformosa@gmail.com</em><br/>
     </p>
 
-    <p><em>Effective Date: August 2025</em></p>
+    <p><em>Effective Date: August 2025 &middot; Last updated: October 2026</em></p>
   </div>
 </template>

@@ -2,9 +2,39 @@ import { ref } from "vue";
 import { Purchases } from "@revenuecat/purchases-capacitor";
 import { Capacitor } from "@capacitor/core";
 import { supabase } from "@/plugins/supabaseClient";
+import { withTimeout } from "@/plugins/RevenueCat";
+import { isDeviceOnline } from "@/utils/connectivity";
 
-export const isDonor = ref(false);
+const SUB_CACHE_KEY = "user_pro_status";
+const REFRESH_TIMEOUT_MS = 6000;
+
+// Initialize from cache if available to prevent UI flicker/ads on bad internet
+const cachedStatus = localStorage.getItem(SUB_CACHE_KEY) === "true";
+// Ads are ON by default in both Production and Development for non-pro/logged-out users.
+// Set VITE_DISABLE_ADS=true in .env if you want to suppress ads during local dev work.
+const disableDevAds = import.meta.env.DEV && (import.meta.env.VITE_DISABLE_ADS === "true" || import.meta.env.VITE_DISABLE_ADS === "1");
+export const isDonor = ref(disableDevAds ? true : cachedStatus);
 export const lastSyncedEntitlement = ref<string | null>(null);
+
+// RevenueCat's last known answer for "Halal Formosa Pro" (null = never checked on this device).
+// Profile loads (user_profiles.donor_type) also write isDonor, and that row can lag behind a
+// fresh purchase, so they must never downgrade a user RevenueCat already says is Pro.
+const RC_PRO_CACHE_KEY = "rc_pro_active";
+export const rcProActive = ref<boolean | null>(
+    localStorage.getItem(RC_PRO_CACHE_KEY) === "true" ? true : null
+);
+
+const PRO_DONOR_TYPES = ["pro", "supporter", "founding supporter", "developer", "contributor"];
+
+/** Pro access = the profile's donor tier OR an active RevenueCat entitlement. */
+export function resolveIsDonor(donorType: string): boolean {
+    return PRO_DONOR_TYPES.includes(donorType.toLowerCase()) || rcProActive.value === true;
+}
+
+export function clearRcProActive() {
+    rcProActive.value = null;
+    localStorage.removeItem(RC_PRO_CACHE_KEY);
+}
 
 export async function refreshSubscriptionStatus(options?: {
     syncToServer?: boolean;
@@ -14,17 +44,30 @@ export async function refreshSubscriptionStatus(options?: {
         return;
     }
 
+    // Already offline — don't bother RevenueCat, just keep the cached entitlement.
+    if (!isDeviceOnline()) {
+        console.warn("📴 [Sub] Device offline, keeping cached Pro status:", isDonor.value);
+        return;
+    }
+
     try {
         console.log("🔄 [Sub] Fetching RevenueCat customer info...");
 
-        const { customerInfo } = await Purchases.getCustomerInfo();
+        const { customerInfo } = await withTimeout(
+            Purchases.getCustomerInfo(),
+            REFRESH_TIMEOUT_MS,
+            'RevenueCat getCustomerInfo'
+        );
 
         const hasPro = Boolean(
             customerInfo.entitlements.active["Halal Formosa Pro"]
         );
 
-        // ✅ ONLY responsibility
+        // ✅ Update ref and cache
         isDonor.value = hasPro;
+        localStorage.setItem(SUB_CACHE_KEY, String(hasPro));
+        rcProActive.value = hasPro;
+        localStorage.setItem(RC_PRO_CACHE_KEY, String(hasPro));
 
         console.log("⭐ [Sub] Pro entitlement =", hasPro);
 
@@ -44,8 +87,8 @@ export async function refreshSubscriptionStatus(options?: {
                 throw error
             }
 
-            console.log("✅ [Sub] sync-subscription success", data)
-            return data   // ✅ ADD THIS
+            console.log("✅ [Sub] sync-subscription success")
+            return data
 
         } else {
             console.log("⏭️ [Sub] syncToServer disabled, skipping backend sync");
@@ -53,6 +96,7 @@ export async function refreshSubscriptionStatus(options?: {
 
     } catch (err) {
         console.error("❌ [Sub] refreshSubscriptionStatus failed:", err);
-        isDonor.value = false;
+        // 🛡️ IMPORTANT: Don't set isDonor to false on network error.
+        // Keep the last known status (cachedStatus) to allow offline/poor-internet access.
     }
 }

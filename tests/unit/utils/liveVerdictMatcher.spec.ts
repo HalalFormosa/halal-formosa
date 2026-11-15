@@ -1,0 +1,225 @@
+import { describe, it, expect } from 'vitest'
+import type { LiveTextFrame } from '@/plugins/liveText'
+import type { IngredientHighlight } from '@/types/Ingredient'
+import {
+    countRecognizedChars,
+    createLiveMatcher,
+    liveDisplayName,
+    liveEnglishName,
+    mapImageBoxToView,
+    normalizeLiveText,
+} from '@/utils/liveVerdictMatcher'
+
+const hl = (keyword: string, keyword_zh: string, color: string): IngredientHighlight => ({
+    keyword,
+    keyword_zh,
+    color,
+})
+
+function frameOf(...lines: string[][]): LiveTextFrame {
+    // Each inner array is one line; every string in it is one element laid out left to right.
+    return {
+        width: 1000,
+        height: 2000,
+        blocks: [
+            {
+                lines: lines.map((words, row) => ({
+                    text: words.join(' '),
+                    box: { x: 0, y: row * 50, width: words.length * 100, height: 40 },
+                    elements: words.map((w, col) => ({
+                        text: w,
+                        box: { x: col * 100, y: row * 50, width: 90, height: 40 },
+                    })),
+                })),
+            },
+        ],
+    }
+}
+
+describe('normalizeLiveText', () => {
+    it('lowercases and strips punctuation but keeps CJK', () => {
+        expect(normalizeLiveText('Gelatin, (Pork)')).toBe('gelatinpork')
+        expect(normalizeLiveText('豬 油，')).toBe('豬油')
+    })
+})
+
+describe('createLiveMatcher', () => {
+    const dictionary = [
+        hl('gelatin|gelatine', '明膠', '--ion-color-danger'),
+        hl('carmine', '胭脂紅', '--ion-color-warning'),
+        hl('wine', '酒', '--ion-color-danger'),
+        hl('e47[1-5]', '', '--ion-color-warning'),
+    ]
+    const match = createLiveMatcher(dictionary)
+
+    it('finds a keyword and boxes the words that make it up', () => {
+        const [m] = match(frameOf(['sugar', 'gelatin', 'salt']))
+        expect(m.keyword).toBe('gelatin|gelatine')
+        expect(m.matchedVariant).toBe('gelatin')
+        expect(m.boxes).toEqual([{ x: 100, y: 0, width: 90, height: 40 }])
+    })
+
+    it('matches Chinese through keyword_zh', () => {
+        const hits = match(frameOf(['成分：', '明膠、', '糖']))
+        expect(hits.map(h => h.matchedVariant)).toEqual(['明膠'])
+    })
+
+    it('merges the boxes of a keyword split over several words and lines', () => {
+        const hits = match(frameOf(['contains', 'car-'], ['mine', 'dye']))
+        const carmine = hits.find(h => h.matchedVariant === 'carmine')
+        expect(carmine?.boxes).toEqual([{ x: 0, y: 0, width: 190, height: 90 }])
+    })
+
+    it('treats [ ] and \\ variants as regex', () => {
+        const hits = match(frameOf(['emulsifier', 'E472']))
+        expect(hits.map(h => h.matchedVariant)).toEqual(['e47[1-5]'])
+    })
+
+    it('returns nothing when no keyword is present', () => {
+        expect(match(frameOf(['sugar', 'water', 'salt']))).toEqual([])
+    })
+
+    it('does not report a shorter keyword already covered by a longer one', () => {
+        const nested = createLiveMatcher([
+            hl('red wine vinegar', '', '--ion-color-warning'),
+            hl('wine', '', '--ion-color-danger'),
+        ])
+        const hits = nested(frameOf(['red', 'wine', 'vinegar']))
+        expect(hits.map(h => h.matchedVariant)).toEqual(['red wine vinegar'])
+    })
+
+    describe('Chinese words that contain a flagged character', () => {
+        // Same shape as the real dictionary rows, with the short flagged words listed FIRST on purpose
+        // so the result cannot depend on the order the dictionary is walked in.
+        const dict = [
+            hl('Alcohol', '酒', '--ion-color-danger'),
+            hl('Vinegar', '醋', '--ion-color-warning'),
+            hl('Tartaric acid', '酒石酸', '--ion-color-primary'),
+            hl('Acetic Acid', '醋酸', '--ion-color-primary'),
+        ]
+        const run = createLiveMatcher(dict)
+
+        it('does not flag 酒 inside 酒石酸 (tartaric acid)', () => {
+            expect(run(frameOf(['成分：', '酒石酸、', '糖'])).map(h => h.matchedVariant)).toEqual(['酒石酸'])
+        })
+
+        it('does not flag 醋 inside 醋酸 (acetic acid)', () => {
+            expect(run(frameOf(['醋酸'])).map(h => h.matchedVariant)).toEqual(['醋酸'])
+        })
+
+        it('still flags a separate 酒 elsewhere on the label', () => {
+            const hits = run(frameOf(['酒石酸、', '糖、', '酒']))
+            expect(hits.map(h => h.matchedVariant).sort()).toEqual(['酒', '酒石酸'].sort())
+        })
+
+        it('still flags a plain 酒 and 醋', () => {
+            expect(run(frameOf(['米酒'])).map(h => h.matchedVariant)).toEqual(['酒'])
+            expect(run(frameOf(['白醋'])).map(h => h.matchedVariant)).toEqual(['醋'])
+        })
+
+        it('boxes only the lone 酒, not the one inside 酒石酸', () => {
+            const hits = run(frameOf(['酒石酸', '酒']))
+            const alcohol = hits.find(h => h.matchedVariant === '酒')
+            expect(alcohol?.boxes).toEqual([{ x: 100, y: 0, width: 90, height: 40 }])
+        })
+    })
+
+    it('ignores invalid regex entries instead of throwing', () => {
+        const broken = createLiveMatcher([hl('[unclosed', '', '--ion-color-danger')])
+        expect(broken(frameOf(['anything']))).toEqual([])
+    })
+})
+
+describe('boxes for a whole-line element', () => {
+    const lineFrame = (text: string, box: { x: number; y: number; width: number; height: number }): LiveTextFrame => ({
+        width: 1000,
+        height: 2000,
+        blocks: [{ lines: [{ text, box, elements: [{ text, box }] }] }],
+    })
+    const match = createLiveMatcher([hl('', '明膠', '--ion-color-danger')])
+
+    it('cuts the box to the matched characters', () => {
+        const [m] = match(lineFrame('成分明膠糖', { x: 100, y: 50, width: 500, height: 40 }))
+        expect(m.boxes).toEqual([{ x: 300, y: 50, width: 200, height: 40 }])
+    })
+
+    it('counts punctuation when locating the match', () => {
+        const [m] = match(lineFrame('成分：明膠、糖', { x: 0, y: 0, width: 700, height: 40 }))
+        expect(m.boxes).toEqual([{ x: 300, y: 0, width: 200, height: 40 }])
+    })
+
+    it('cuts top to bottom for vertical text', () => {
+        const [m] = match(lineFrame('成分明膠糖', { x: 10, y: 0, width: 40, height: 500 }))
+        expect(m.boxes).toEqual([{ x: 10, y: 200, width: 40, height: 200 }])
+    })
+
+    it('keeps the whole box when the match is the whole element', () => {
+        const [m] = match(lineFrame('明膠', { x: 5, y: 6, width: 80, height: 30 }))
+        expect(m.boxes).toEqual([{ x: 5, y: 6, width: 80, height: 30 }])
+    })
+})
+
+describe('liveDisplayName', () => {
+    it('adds the English name next to a matched Chinese term', () => {
+        expect(liveDisplayName({ ...hl('glycerin|glycerol', '甘油', '--ion-color-warning'), matchedVariant: '甘油' })).toBe(
+            '甘油 (glycerin)',
+        )
+    })
+
+    it('adds the Chinese name next to a matched English term', () => {
+        expect(liveDisplayName({ ...hl('gelatin', '明膠|吉利丁', '--ion-color-danger'), matchedVariant: 'gelatin' })).toBe(
+            'gelatin (明膠)',
+        )
+    })
+
+    it('shows only the matched text when the dictionary has no readable counterpart', () => {
+        expect(liveDisplayName({ ...hl('e47[1-5]', '', '--ion-color-warning'), matchedVariant: 'e47[1-5]' })).toBe('e47[1-5]')
+        expect(liveDisplayName({ ...hl('', '酒', '--ion-color-danger'), matchedVariant: '酒' })).toBe('酒')
+    })
+
+    it('skips regex-style English variants when picking the counterpart', () => {
+        expect(liveDisplayName({ ...hl('e47[1-5]|emulsifier', '乳化劑', '--ion-color-warning'), matchedVariant: '乳化劑' })).toBe(
+            '乳化劑 (emulsifier)',
+        )
+    })
+
+    it('does not repeat a name that is the same in both languages', () => {
+        expect(liveDisplayName({ ...hl('Glycerin', 'glycerin', '--ion-color-warning'), matchedVariant: 'glycerin' })).toBe('glycerin')
+    })
+})
+
+describe('liveEnglishName', () => {
+    it('shows the English name for a term read in Chinese', () => {
+        expect(liveEnglishName({ ...hl('glycerin|glycerol', '甘油', '--ion-color-warning'), matchedVariant: '甘油' })).toBe('glycerin')
+    })
+
+    it('shows an English match as it is, without the Chinese name', () => {
+        expect(liveEnglishName({ ...hl('gelatin', '明膠', '--ion-color-danger'), matchedVariant: 'gelatin' })).toBe('gelatin')
+    })
+
+    it('skips regex-style English variants', () => {
+        expect(liveEnglishName({ ...hl('e47[1-5]|emulsifier', '乳化劑', '--ion-color-warning'), matchedVariant: '乳化劑' })).toBe('emulsifier')
+    })
+
+    it('falls back to the matched text when there is no readable English name', () => {
+        expect(liveEnglishName({ ...hl('', '酒', '--ion-color-danger'), matchedVariant: '酒' })).toBe('酒')
+    })
+})
+
+describe('countRecognizedChars', () => {
+    it('counts letters and digits only', () => {
+        expect(countRecognizedChars(frameOf(['ab,', 'c 1']))).toBe(4)
+    })
+})
+
+describe('mapImageBoxToView', () => {
+    it('scales to cover the view and centres the overflow', () => {
+        // 1000x2000 image shown in a 500x500 view: scale 0.5, 250px cropped top and bottom.
+        const box = mapImageBoxToView(
+            { x: 100, y: 1000, width: 200, height: 100 },
+            { width: 1000, height: 2000 },
+            { width: 500, height: 500 },
+        )
+        expect(box).toEqual({ x: 50, y: 250, width: 100, height: 50 })
+    })
+})

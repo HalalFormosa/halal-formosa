@@ -9,353 +9,874 @@
           :useRouterBack="false"
           @back="handleBack"
       />
+
+      <!-- 🟢 Step Indicator -->
+      <div id="step-indicator">
+        <div class="step-item" :class="{ active: currentStep >= 0 }">
+          <div class="step-dot">
+            <ion-icon :icon="barcodeOutline" v-if="currentStep <= 0" />
+            <ion-icon :icon="checkmarkCircle" v-else />
+          </div>
+          <span class="step-label">Barcode</span>
+        </div>
+        <div class="step-line" :class="{ active: currentStep >= 1 }"></div>
+        <div class="step-item" :class="{ active: currentStep >= 1 }">
+          <div class="step-dot">
+            <ion-icon :icon="sparklesOutline" v-if="currentStep <= 1" />
+            <ion-icon :icon="checkmarkCircle" v-else />
+          </div>
+          <span class="step-label">Ingredients</span>
+        </div>
+        <div class="step-line" :class="{ active: currentStep >= 2 }"></div>
+        <div class="step-item" :class="{ active: currentStep >= 2 }">
+          <div class="step-dot">
+            <ion-icon :icon="checkmarkCircleOutline" />
+          </div>
+          <span class="step-label">Details</span>
+        </div>
+      </div>
     </ion-header>
 
-    <ion-content class="ion-padding" >
+    <ion-content ref="contentRef" class="ion-padding" >
+      <!-- Rejection Reason Banner -->
+      <div v-if="props.editProduct?.is_rejected" class="rejection-banner">
+        <ion-icon :icon="closeCircleOutline" class="rejection-banner-icon" />
+        <div class="rejection-banner-text">
+          <strong>This submission was rejected</strong>
+          <p>{{ props.editProduct.rejection_reason }}</p>
+        </div>
+      </div>
+
+      <!-- Limit Reached Block Card -->
+      <div v-if="limitReached && !props.editProduct" class="limit-reached-container animate__animated animate__fadeIn" style="display: flex; align-items: center; justify-content: center; height: 100%; min-height: 350px;">
+        <ion-card style="margin: 0; box-shadow: none; border: 1px solid var(--ion-color-light); border-radius: 12px; text-align: center; max-width: 400px; width: 100%;" class="ion-padding">
+          <div class="lock-icon-wrapper" style="margin: 16px auto;">
+            <ion-icon :icon="lockClosedOutline" style="font-size: 56px; color: var(--ion-color-carrot);" />
+          </div>
+          <h2 style="font-weight: 700; font-size: 1.35rem; margin-top: 0; margin-bottom: 12px;">Daily Limit Reached</h2>
+          <p style="color: var(--ion-color-medium); line-height: 1.5; font-size: 0.95rem; margin-bottom: 24px; padding: 0 8px;">
+            You have reached your daily limit of 3 contributed products.
+          </p>
+
+          <div v-if="pendingApplicationExists">
+            <div style="background: var(--ion-color-light); border-radius: 8px; padding: 12px; margin-bottom: 24px; text-align: left;">
+              <span style="font-size: 13px; color: var(--ion-color-dark); font-weight: 600; display: flex; align-items: center; gap: 6px;">
+                ⏳ Application Pending Review
+              </span>
+              <p style="font-size: 12px; color: var(--ion-color-medium); margin-top: 4px; margin-bottom: 0; line-height: 1.4;">
+                We are currently reviewing your application to become a Dedicated Contributor. We will notify you once approved!
+              </p>
+            </div>
+            <ion-button expand="block" color="carrot" @click="router.back()">
+              Go Back
+            </ion-button>
+          </div>
+
+          <div v-else-if="!applicationSubmitted">
+            <div v-if="!applying">
+              <p style="color: var(--ion-color-medium); line-height: 1.4; font-size: 0.85rem; margin-bottom: 20px; padding: 0 8px; font-style: italic;">
+                Want to contribute more products to help the community? Apply to become a Dedicated Contributor!
+              </p>
+              
+              <div style="display: flex; flex-direction: column; gap: 8px;">
+                <ion-button expand="block" color="carrot" @click="applying = true">
+                  Apply to be a Dedicated Contributor
+                </ion-button>
+                <ion-button expand="block" fill="clear" color="medium" @click="router.back()">
+                  Go Back
+                </ion-button>
+              </div>
+            </div>
+            
+            <div v-else class="ion-text-start ion-padding-top">
+              <ion-item lines="none" style="--background: transparent; margin-bottom: 12px;">
+                <ion-textarea
+                  v-model="applicationReason"
+                  label="Why do you want to contribute more products?"
+                  label-placement="stacked"
+                  placeholder="Tell us why you want to help the community (e.g. 'I want to add missing items from my local supermarket' or 'I scan many new items daily')."
+                  :rows="4"
+                  required
+                  style="border: 1px solid var(--ion-color-light); border-radius: 8px; padding: 8px; font-size: 14px;"
+                />
+              </ion-item>
+              
+              <div style="display: flex; gap: 8px; padding: 0 8px;">
+                <ion-button style="flex: 1;" color="carrot" :disabled="applicationLoading || !applicationReason.trim()" @click="submitApplication">
+                  <ion-spinner v-if="applicationLoading" name="crescent" style="zoom: 0.6; margin-right: 8px;" />
+                  Submit
+                </ion-button>
+                <ion-button style="flex: 1;" fill="outline" color="medium" @click="applying = false">
+                  Cancel
+                </ion-button>
+              </div>
+            </div>
+          </div>
+          
+          <div v-else>
+            <p style="color: var(--ion-color-success); font-weight: 600; font-size: 1rem; margin-bottom: 12px;">
+              ✅ Application Submitted!
+            </p>
+            <p style="color: var(--ion-color-medium); line-height: 1.5; font-size: 0.90rem; margin-bottom: 24px; padding: 0 8px;">
+              Thank you! We will review your application to become a Dedicated Contributor and update your status soon.
+            </p>
+            <ion-button expand="block" color="carrot" @click="router.back()">
+              Go Back
+            </ion-button>
+          </div>
+        </ion-card>
+      </div>
+
+      <div v-else>
+        <!-- 🔹 OCR Loading Overlay (WOW Factor) -->
+        <!-- Stable host: ion-modal below moves itself out of this parent when it opens, so a bare v-if
+             right before it made Vue insertBefore a node that was no longer a child (NotFoundError). -->
+        <div class="ocr-overlay-host">
+        <div v-if="ocrLoading && !showCropper" class="ocr-overlay" style="position: fixed; z-index: 3000;">
+        <ion-progress-bar
+            :value="progress"
+            color="carrot"
+            class="ocr-progress"
+        />
+
+        <p class="ocr-progress-text">
+          {{ progressLabel }}
+        </p>
+
+        <div v-if="loadingReflection" class="reflection-box">
+          <p v-if="loadingReflection.text_ar" class="reflection-ar">
+            {{ loadingReflection.text_ar }}
+          </p>
+
+          <p class="reflection-en">
+            "{{ loadingReflection.text_en }}"
+          </p>
+
+          <small class="reflection-ref">
+            — {{ loadingReflection.reference }}
+          </small>
+        </div>
+      </div>
+        </div>
+
       <ion-modal :is-open="showCropper" @didDismiss="closeCropper">
         <ion-header>
-          <ion-toolbar>
-            <ion-title>{{ $t('addProduct.cropIngredients') }}</ion-title>
-            <ion-buttons slot="end">
-              <ion-button @click="confirmCrop">{{ $t('addProduct.done') }}</ion-button>
-            </ion-buttons>
-          </ion-toolbar>
+          <app-header
+              :title="$t('addProduct.cropIngredients')"
+              show-back
+              :useRouterBack="false"
+              @back="closeCropper"
+          />
         </ion-header>
 
-        <ion-content>
+        <ion-content :scroll-y="false" class="modal-no-scroll">
           <cropper
               ref="cropperRef"
               class="cropper"
               :src="cropperSrc"
-              :stencil-props="{ aspectRatio: null }"
+              :transitions="true"
+              :stencil-props="{
+                aspectRatio: stencilProps.aspectRatio,
+                resizable: true,
+                movable: true
+              }"
+              @ready="onCropperReady"
           />
-          <div v-if="ocrLoading" class="ion-text-center ion-padding">
-            <ion-spinner name="crescent" color="primary"></ion-spinner>
-            <p>{{ $t('addProduct.processingOcr') }}</p>
+          
+          <!-- Full-screen loading overlay inside the cropper modal -->
+          <div v-if="ocrLoading" class="ocr-overlay">
+            <ion-progress-bar
+                :value="progress"
+                color="carrot"
+                class="ocr-progress"
+            />
+
+            <p class="ocr-progress-text">
+              {{ progressLabel }}
+            </p>
+
+            <div v-if="loadingReflection" class="reflection-box">
+              <p v-if="loadingReflection.text_ar" class="reflection-ar">
+                {{ loadingReflection.text_ar }}
+              </p>
+
+              <p class="reflection-en">
+                "{{ loadingReflection.text_en }}"
+              </p>
+
+              <small class="reflection-ref">
+                — {{ loadingReflection.reference }}
+              </small>
+            </div>
           </div>
         </ion-content>
+
+        <ion-footer>
+          <!-- 🛠️ Ratio Toolbar (Moved to bottom for reachability) -->
+          <div class="ratio-toolbar ion-padding-horizontal" style="background: transparent; border: none;">
+            <ion-button 
+                v-for="r in [
+                    { label: 'Free', value: null, icon: expandOutline },
+                    { label: '1:1', value: 1, icon: squareOutline },
+                    { label: '3:4', value: 3/4, icon: phonePortraitOutline },
+                    { label: '2:1', value: 2, icon: tabletLandscapeOutline },
+                ]"
+                :key="r.label"
+                size="small"
+                :fill="stencilProps.aspectRatio === r.value ? 'solid' : 'clear'"
+                color="dark"
+                @click="setAspectRatio(r.value)"
+                class="ratio-btn"
+            >
+              <ion-icon slot="start" :icon="r.icon" style="font-size: 14px;" />
+              {{ r.label }}
+            </ion-button>
+          </div>
+
+          <ion-toolbar class="ion-padding">
+            <ion-button expand="block" color="carrot" @click="handleConfirmCrop" style="font-weight: 700; height: 48px;">
+               {{ $t('addProduct.done') }}
+            </ion-button>
+          </ion-toolbar>
+        </ion-footer>
       </ion-modal>
       <form @submit.prevent="handleSubmit">
         <div class="form-container">
-          <ion-item-group>
-            <ion-item :class="{ 'barcode-valid': barcodeValid === true, 'barcode-invalid': barcodeValid === false }">
-              <ion-input
-                  ref="barcodeInput"
-                  v-model="form.barcode"
-                  required
-                  type="tel"
-                  inputmode="numeric"
-                  pattern="[0-9]*"
-                  :maxlength="14"
-                  :minlength="8"
-                  clear-input
-                  label-placement="floating"
-                  :placeholder="$t('addProduct.barcodePlaceholder')"
-              >
-                <div slot="label">
-                  {{ $t('addProduct.barcode') }} <ion-text color="danger">*</ion-text>
+            <!-- 🔍 STEP 1: Barcode -->
+            <div v-show="currentStep === STEP_BARCODE">
+              <!-- Hero Header -->
+              <div class="ion-padding-vertical ion-text-center">
+                <div style="font-size: 48px; margin-bottom: 12px;">🔍</div>
+                <h2 style="font-weight: 700; margin-bottom: 8px;">{{ $t('addProduct.scanBarcodeTitle') || 'Find Product' }}</h2>
+                <p style="color: var(--ion-color-medium); font-size: 14px; margin-bottom: 24px;">
+                  {{ $t('addProduct.scanBarcodeDesc') || 'Scan the barcode on the product packaging to get started.' }}
+                </p>
+
+                <div style="display: flex; gap: 10px;">
+                  <ion-button
+                    expand="block"
+                    fill="solid"
+                    :color="scanning ? 'medium' : 'carrot'"
+                    style="flex: 1; height: 56px; font-weight: 700; margin: 0;"
+                    @click="startBarcodeScan"
+                    :disabled="scanningFromGallery"
+                  >
+                    <ion-icon slot="start" :icon="scanning ? stopCircle : barcodeOutline" />
+                    {{ scanning ? (($t('addProduct.tapToStop')) || 'Tap to Stop Camera') : $t('addProduct.camera') }}
+                  </ion-button>
+
+                  <ion-button
+                    expand="block"
+                    fill="outline"
+                    color="carrot"
+                    style="flex: 1; height: 56px; margin: 0;"
+                    @click="scanBarcodeFromGallery"
+                    :disabled="scanning || scanningFromGallery"
+                  >
+                    <ion-spinner v-if="scanningFromGallery" name="crescent" slot="start" style="zoom: 0.7;" />
+                    <ion-icon v-else slot="start" :icon="cloudUploadOutline" />
+                    {{ scanningFromGallery ? 'Reading...' : ($t('addProduct.galleryShort') || 'Gallery') }}
+                  </ion-button>
                 </div>
-              </ion-input>
+              </div>
 
-              <ion-icon
-                  v-if="barcodeValid !== null"
-                  :icon="barcodeValid ? checkmarkCircle : closeCircle"
-                  :color="barcodeValid ? 'success' : 'danger'"
-                  slot="end"
-                  style="font-size: 20px;"
-              />
-              <ion-button
-                  color="carrot"
-                  slot="end"
-                  size="default"
-                  @click="startBarcodeScan"
-              >
-                <ion-icon :icon="scanning ? stopCircle : barcodeOutline" />
-              </ion-button>
-            </ion-item>
+              <!-- Manual Entry Card -->
+              <div class="form-section ion-margin-top">
+                <ion-list-header>
+                  <ion-label>Manual Entry</ion-label>
+                </ion-list-header>
 
-            <!-- 🟢 message shown here -->
-            <ion-note v-if="barcodeMessage" :color="barcodeValid ? 'success' : 'danger'" class="ion-padding-start">
-              {{ barcodeMessage }}
-            </ion-note>
+                <ion-card class="input-card">
+                  <ion-card-content class="ion-no-padding">
+                    <ion-item lines="none" :class="{ 'barcode-valid': barcodeValid === true, 'barcode-invalid': barcodeValid === false }">
+                      <ion-input
+                          ref="barcodeInput"
+                          v-model="form.barcode"
+                          required
+                          type="tel"
+                          inputmode="numeric"
+                          pattern="[0-9]*"
+                          :maxlength="14"
+                          :minlength="8"
+                          clear-input
+                          label-placement="floating"
+                          :placeholder="$t('addProduct.barcodePlaceholder')"
+                          class="ion-margin-vertical"
+                      >
+                        <div slot="label">
+                          {{ $t('addProduct.barcode') }} <ion-text color="danger">*</ion-text>
+                        </div>
+                      </ion-input>
 
-            <!-- 🟣 Detected Product Preview -->
-            <ion-item
-                v-if="detectedProduct"
-                lines="none"
-                class="detected-product"
-            >
-              <ion-thumbnail slot="start">
-                <ion-img
-                    :src="detectedProduct.photo_front_url || '/placeholder-product.png'"
-                />
-              </ion-thumbnail>
+                      <ion-icon
+                          v-if="barcodeValid !== null"
+                          :icon="barcodeValid ? checkmarkCircle : closeCircle"
+                          :color="barcodeValid ? 'success' : 'danger'"
+                          slot="end"
+                          style="font-size: 20px;"
+                      />
+                    </ion-item>
+                  </ion-card-content>
+                </ion-card>
 
-              <ion-label>
-                <h3>{{ detectedProduct.name }}</h3>
-                <ion-chip
-                    size="small"
-                    :class="`chip-${statusChipColor(detectedProduct.status)}`"
+                <!-- Status Message -->
+                <ion-note 
+                  v-if="barcodeMessage" 
+                  :color="barcodeValid ? 'success' : 'danger'" 
+                  class="ion-padding-horizontal"
+                  style="font-size: 14px; font-weight: 500;"
                 >
-                  {{ detectedProduct.status }}
-                </ion-chip>
+                  {{ barcodeMessage }}
+                </ion-note>
+              </div>
+
+              <!-- 🟣 Detected Product Preview (If exists) -->
+              <div v-if="detectedProduct" class="form-section ion-margin-top">
+                <ion-list-header>
+                   <ion-label>Existing Product Found</ion-label>
+                </ion-list-header>
+                <ion-card class="input-card">
+                   <ion-item lines="none" class="detected-product">
+                    <ion-thumbnail slot="start" style="--border-radius: 8px;">
+                      <ion-img :src="detectedProduct.photo_front_url || '/placeholder-product.png'" />
+                    </ion-thumbnail>
+
+                    <ion-label>
+                      <h3 style="font-weight: 600;">{{ detectedProduct.name }}</h3>
+                      <ion-chip
+                          size="small"
+                          :class="`chip-${statusChipColor(detectedProduct.status)}`"
+                          style="margin: 4px 0 0 0;"
+                      >
+                        {{ detectedProduct.status }}
+                      </ion-chip>
+                    </ion-label>
+
+                    <ion-button slot="end" fill="clear" color="primary" @click="router.push(`/item/${form.barcode}`)">
+                      View
+                    </ion-button>
+                  </ion-item>
+                </ion-card>
+              </div>
+
+              <!-- 🔄 Barcode Verification Loading -->
+              <div v-if="barcodeLoading" class="ion-text-center ion-padding">
+                <ion-spinner name="crescent" color="carrot" />
+                <p style="font-size: 13px; color: var(--ion-color-medium); margin-top: 8px;">
+                  {{ $t('addProduct.verifyingBarcode') || 'Verifying barcode...' }}
+                </p>
+              </div>
 
 
-
-              </ion-label>
-            </ion-item>
-
-
-            <div v-if="scanning && cameras.length > 1" class="ion-padding">
-              <ion-item>
-                <ion-label>Camera</ion-label>
-                <ion-select v-model="selectedCameraId" @ionChange="switchCamera($event.detail.value)">
-                  <ion-select-option v-for="cam in cameras" :key="cam.id" :value="cam.id">
-                    {{ cam.label }}
-                  </ion-select-option>
-                </ion-select>
-              </ion-item>
+              <!-- Manual Next Button (If needed) -->
+              <div class="ion-padding-top">
+                <ion-button expand="block" @click="nextStep" :disabled="!barcodeValid || !!detectedProduct || autoAdvancePending" fill="outline" color="carrot">
+                  {{ $t('addProduct.next') || 'Next' }}
+                  <ion-icon slot="end" :icon="arrowForwardOutline" />
+                </ion-button>
+              </div>
             </div>
 
+            <!-- 🟢 STEP 1: Ingredients OCR -->
+            <div v-show="currentStep === STEP_OCR">
+              <div class="ion-padding-vertical ion-text-center">
+                <div style="font-size: 48px; margin-bottom: 12px;">🥬</div>
+                <h2 style="font-weight: 700; margin-bottom: 8px;">{{ $t('addProduct.scanIngredientsTitle') || 'Scan Ingredients' }}</h2>
+                <p style="color: var(--ion-color-medium); font-size: 14px; margin-bottom: 24px;">
+                  {{ $t('addProduct.scanIngredientsDesc') || 'Scan the ingredients list to automatically fill the form and capture the back photo.' }}
+                </p>
 
-            <div v-if="scanning && !Capacitor.isNativePlatform()" id="reader"></div>
-
-            <ion-item>
-              <ion-input
-                  v-model="form.name"
-                  required
-                  clear-input
-                  label-placement="floating"
-                  :placeholder="$t('addProduct.productNamePlaceholder')"
-                  @input="onProductNameInput"
-              >
-                <div slot="label">
-                  {{ $t('addProduct.productName') }} <ion-text color="danger">*</ion-text>
+                <div style="display: flex; gap: 10px; margin-bottom: 16px;">
+                  <ion-button fill="solid" color="carrot" style="flex: 1; height: 56px; font-weight: 700; margin: 0;" @click="scanIngredientsWithCamera">
+                    <ion-icon slot="start" :icon="cameraOutline" />
+                    {{ $t('addProduct.camera') || 'Camera' }}
+                  </ion-button>
+                  <ion-button fill="outline" color="carrot" style="flex: 1; height: 56px; margin: 0;" @click="scanIngredientsFromGallery">
+                    <ion-icon slot="start" :icon="cloudUploadOutline" />
+                    {{ $t('addProduct.gallery') || 'Gallery' }}
+                  </ion-button>
                 </div>
-              </ion-input>
-            </ion-item>
 
-            <ion-item>
-              <ion-select v-model="form.status" interface="popover" required>
-                <div slot="label">{{ $t('addProduct.status') }} <ion-text color="danger">*</ion-text></div>
-                <ion-select-option value="Halal">{{ $t('addProduct.halal') }}</ion-select-option>
-                <ion-select-option value="Muslim-friendly">{{ $t('addProduct.muslimFriendly') }}</ion-select-option>
-                <ion-select-option value="Syubhah">{{ $t('addProduct.syubhah') }}</ion-select-option>
-                <ion-select-option value="Haram">{{ $t('addProduct.haram') }}</ion-select-option>
-              </ion-select>
-            </ion-item>
-
-            <ion-item>
-              <ion-select v-model.number="form.product_category_id" interface="alert" required>
-                <div slot="label">{{ $t('addProduct.category') }} <ion-text color="danger">*</ion-text></div>
-                <ion-select-option v-for="cat in categories" :key="cat.id" :value="cat.id">
-                  {{ cat.name }}
-                </ion-select-option>
-              </ion-select>
-            </ion-item>
-
-            <ion-item>
-              <ion-textarea
-                  v-model="form.ingredients"
-                  label-placement="floating"
-                  :placeholder="$t('addProduct.ingredientsPlaceholder')"
-                  :auto-grow="true"
-                  @input="handleIngredientsInput"
-                  @blur="recheckHighlights"
-                  required
-              >
-                <div slot="label">
-                  {{ $t('addProduct.ingredients') }} <ion-text color="danger">*</ion-text>
-                </div>
-              </ion-textarea>
-              <ion-buttons slot="end">
-                <ion-button @click="scanIngredientsWithCamera" :disabled="ocrLoading">
-                  <ion-icon :icon="cameraOutline" />
-                </ion-button>
-                <ion-button @click="scanIngredientsFromGallery" :disabled="ocrLoading">
-                  <ion-icon :icon="cloudUploadOutline" />
-                </ion-button>
-              </ion-buttons>
-            </ion-item>
-
-            <ion-accordion-group v-if="rawChineseOcr" class="ion-margin-top ion-margin-horizontal">
-              <ion-accordion value="rawOcr">
-                <ion-item slot="header" style="background-color: transparent">
-                  <ion-label>{{ $t('addProduct.detectedText') }}</ion-label>
-                </ion-item>
-                <div slot="content">
-                  <ion-textarea
-                      v-model="rawChineseOcr"
-                      readonly
-                      style="width: 100%; background: var(--ion-background-color-step-50); border-bottom-left-radius: 8px; border-bottom-right-radius: 8px; padding: 8px; --padding: 8px; min-height: 100px;"
-                  ></ion-textarea>
-                </div>
-              </ion-accordion>
-            </ion-accordion-group>
-
-            <ion-progress-bar
-                v-if="ocrLoading"
-                type="indeterminate"
-                color="primary"
-                style="margin-top: 10px;"
-            ></ion-progress-bar>
-
-            <ion-progress-bar
-                v-if="checkingIngredients"
-                type="indeterminate"
-                color="primary"
-            />
-
-            <!-- ⭐ Highlighted Ingredients (excluding Muslim-friendly by default) -->
-            <div v-if="ingredientHighlights.length" class="ion-padding-horizontal ion-margin-top">
-
-              <!-- 🔥 Show Halal-sensitive highlights (warning/danger) -->
-              <ion-chip
-                  v-for="(h, idx) in ingredientHighlights.filter(h => extractIonColor(h.color) !== 'primary')"
-                  :key="idx"
-                  class="ion-margin-end ion-margin-bottom"
-                  :class="['chip-' + extractIonColor(h.color)]"
-              >
-                {{ h.keyword }}
-                <template v-if="h.matchedVariant">({{ h.matchedVariant }})</template>
-                — {{ colorMeaning(extractIonColor(h.color)) }}
-              </ion-chip>
-
-              <!-- 🌿 Toggle Muslim-friendly -->
-              <div v-if="ingredientHighlights.some(h => extractIonColor(h.color) === 'primary')" class="ion-margin-top">
-
+                <!-- 🆘 Manual fallback — only offered once a scan has actually failed -->
                 <ion-button
-                    fill="outline"
-                    expand="block"
+                    v-if="ocrFailedOnce && !manualIngredientsMode && !backPreview"
+                    fill="clear"
+                    color="medium"
                     size="small"
-                    color="primary"
-                    @click="showMuslimFriendly = !showMuslimFriendly"
+                    @click="enableManualIngredients"
                 >
-                  {{ showMuslimFriendly ? 'Hide Muslim-Friendly Ingredients' : 'Show Muslim-Friendly Ingredients' }}
+                  <ion-icon slot="start" :icon="createOutline" />
+                  {{ $t('addProduct.enterIngredientsManually') || "Can't scan it? Enter ingredients manually" }}
                 </ion-button>
-
-                <!-- 🌿 Muslim-friendly ingredients appear only when toggled -->
-                <div v-if="showMuslimFriendly" class="ion-padding-top">
-                  <ion-chip
-                      v-for="(h, idx) in ingredientHighlights.filter(h => extractIonColor(h.color) === 'primary')"
-                      :key="idx"
-                      class="ion-margin-end ion-margin-bottom"
-                      :class="['chip-' + extractIonColor(h.color)]"
-                  >
-                    {{ h.keyword }}
-                    <template v-if="h.matchedVariant">({{ h.matchedVariant }})</template>
-                    — {{ colorMeaning(extractIonColor(h.color)) }}
-                  </ion-chip>
-                </div>
 
               </div>
 
-            </div>
-
-            <ion-item lines="none">
-              <ion-label position="stacked">{{ $t('addProduct.stores') }} <ion-text color="danger">*</ion-text></ion-label>
-              <StoreLogoBar
-                  :stores="stores"
-                  mode="select"
-                  v-model:modelValue="form.store_ids"
-              />
-            </ion-item>
-
-            <!-- 📝 Description with Quick Insert -->
-            <ion-item>
-              <ion-textarea
-                  v-model="form.description"
-                  label-placement="floating"
-                  :placeholder="$t('addProduct.descriptionPlaceholder')"
-                  :auto-grow="true"
-                  required
-              >
-                <div slot="label">
-                  {{ $t('addProduct.description') }} <ion-text color="danger">*</ion-text>
+              <div v-if="backPreview" class="ion-padding-top ion-text-center">
+                <ion-label class="preview-label">{{ $t('addProduct.capturedBackPhoto') || 'Captured Back Photo' }}</ion-label>
+                <div class="preview-container">
+                   <img :src="backPreview" class="large-preview-img" @load="scrollToBottom" @click="openFullscreenImage(1)" style="cursor: pointer;" />
+                   <div class="preview-actions-overlay">
+                     <ion-button v-if="isBackCleaned" type="button" size="small" color="warning" fill="solid" @click="restoreOriginalImage('back')" class="preview-action-btn" :title="$t('addProduct.photoActions.restoreOriginal') || 'Original Photo'">
+                       <ion-icon :icon="refreshOutline" />
+                     </ion-button>
+                     <ion-button type="button" size="small" color="primary" fill="solid" @click="rotateImage('back')" :disabled="rotatingBack" class="preview-action-btn" :title="$t('addProduct.photoActions.rotate') || 'Rotate'">
+                       <ion-spinner v-if="rotatingBack" name="crescent"></ion-spinner>
+                       <ion-icon v-else :icon="syncOutline" />
+                     </ion-button>
+                     <ion-button type="button" size="small" color="primary" fill="solid" @click="cleanBackgroundImage('back')" :disabled="cleaningBack" class="preview-action-btn" :title="$t('addProduct.photoActions.cleanBg') || 'AI Clean BG'">
+                       <ion-spinner v-if="cleaningBack" name="crescent"></ion-spinner>
+                       <ion-icon v-else :icon="colorWandOutline" />
+                     </ion-button>
+                     <ion-button type="button" size="small" color="danger" fill="solid" @click="backPreview = null; backFile = null; originalBackPreview = null; originalBackFile = null" class="preview-action-btn" :title="$t('addProduct.photoActions.remove') || 'Remove'">
+                       <ion-icon :icon="closeCircle" />
+                     </ion-button>
+                   </div>
                 </div>
-              </ion-textarea>
-            </ion-item>
 
-            <!-- ⚡ Quick Description Buttons (Horizontal Scroll) -->
-            <div class="quick-scroll-container ion-margin-horizontal">
-              <ion-button
-                  size="small"
-                  fill="outline"
-                  color="success"
-                  @click="applyQuickDescription(quickDescriptions.halal)"
-              >
-                Halal by
-              </ion-button>
+                <!-- 🔦 Scanned ingredients with highlight boxes (same overlay as Scan Ingredients).
+                     Boxes live in the cropped OCR image's pixel space, so they sit on that crop,
+                     not the full back photo. Hidden while analysis is locked. -->
+                <div v-if="showHighlightImage" class="ion-padding-top">
+                  <ion-label class="preview-label">{{ $t('addProduct.highlightedIngredients') || 'Scanned Ingredients' }}</ion-label>
+                  <IngredientHighlightImage
+                      :src="croppedPreviewUrl!"
+                      :ocr-image-width="ocrImageWidth"
+                      :ocr-image-height="ocrImageHeight"
+                      :highlights="dangerousHighlights"
+                      img-class="preview-img-cropped"
+                      zoomable
+                  />
+                  <p class="highlight-image-hint">🔍 {{ $t('scanIngredients.scan.tapToEnlarge') }}</p>
+                </div>
+              </div>
 
-              <ion-button
-                  size="small"
-                  fill="outline"
-                  color="primary"
-                  @click="applyQuickDescription(quickDescriptions.muslimFriendly)"
-              >
-                Muslim-friendly OK
-              </ion-button>
+              <!-- 🕌 Section 2: Halal Status (Segmented) -->
+              <div v-if="(backPreview || form.ingredients || manualIngredientsMode) && canScan" class="form-section ion-margin-top">
+                <ion-list-header>
+                  <ion-label>{{ $t('addProduct.status') }} <ion-text color="danger">*</ion-text></ion-label>
+                </ion-list-header>
 
-              <ion-button
-                  size="small"
-                  fill="outline"
-                  color="warning"
-                  @click="applyQuickDescription(quickDescriptions.syubhah)"
-              >
-                Syubhah found
-              </ion-button>
+                <ion-card class="input-card">
+                  <ion-card-content class="ion-no-padding">
+                    <ion-item lines="none">
+                      <ion-select 
+                        v-model="form.status" 
+                        interface="popover" 
+                        label-placement="floating"
+                        class="full-width-select"
+                        required
+                      >
+                        <div slot="label">{{ $t('addProduct.status') }} <ion-text color="danger">*</ion-text></div>
+                        <ion-select-option value="Halal">{{ $t('addProduct.halal') }}</ion-select-option>
+                        <ion-select-option value="Muslim-friendly">{{ $t('addProduct.muslimFriendly') }}</ion-select-option>
+                        <ion-select-option value="Syubhah">{{ $t('addProduct.syubhah') }}</ion-select-option>
+                        <ion-select-option value="Haram">{{ $t('addProduct.haram') }}</ion-select-option>
+                      </ion-select>
+                    </ion-item>
+                  </ion-card-content>
+                </ion-card>
+              </div>
 
-              <ion-button
-                  size="small"
-                  fill="outline"
-                  color="danger"
-                  @click="applyQuickDescription(quickDescriptions.haram)"
-              >
-                Haram found
-              </ion-button>
+              <!-- Locked status indicator when scan limit is reached -->
+              <div v-if="(backPreview || form.ingredients || manualIngredientsMode) && !canScan" class="form-section ion-margin-top">
+                <ion-list-header>
+                  <ion-label>{{ $t('addProduct.status') }} <ion-text color="danger">*</ion-text></ion-label>
+                </ion-list-header>
+                <ion-card class="input-card">
+                  <ion-card-content class="ion-padding ion-text-center">
+                    <span style="font-size: 13px; color: var(--ion-color-medium); display: flex; align-items: center; justify-content: center; gap: 6px; font-weight: 500;">
+                      🔒 Halal Status Locked (Submit to reveal)
+                    </span>
+                  </ion-card-content>
+                </ion-card>
+              </div>
+
+              <!-- 🥬 Section 3: Ingredients & Analysis -->
+              <div v-if="backPreview || form.ingredients || manualIngredientsMode" class="form-section">
+                <ion-list-header>
+                  <ion-label>{{ $t('addProduct.sections.ingredients') || 'Ingredients & Analysis' }}</ion-label>
+                </ion-list-header>
+
+                <ion-card class="input-card">
+                  <ion-card-content class="ion-no-padding">
+                    <ion-item lines="none">
+                      <ion-textarea
+                          v-model="form.ingredients"
+                          label-placement="floating"
+                          :placeholder="$t('addProduct.ingredientsPlaceholder')"
+                          :auto-grow="true"
+                          @input="handleIngredientsInput"
+                          @blur="recheckHighlights"
+                          required
+                      >
+                        <div slot="label">
+                          {{ $t('addProduct.ingredients') }} <ion-text color="danger">*</ion-text>
+                        </div>
+                      </ion-textarea>
+                    </ion-item>
+                    <button type="button" class="fix-case-under" title="Title-case each ingredient" @click="fixIngredientsCasing">
+                      <ion-icon :icon="sparklesOutline" />
+                      Fix capitalization
+                    </button>
+
+                    <!-- Analysis Progress -->
+                    <div class="analysis-indicators ion-padding-horizontal">
+                       <ion-progress-bar v-if="ocrLoading" type="indeterminate" color="primary" class="mini-progress" />
+                       <template v-if="checkingIngredients">
+                         <ion-progress-bar type="indeterminate" color="primary" class="mini-progress" />
+                         <p class="analyzing-label">
+                           <ion-spinner name="dots" color="primary" style="zoom: 0.6;"></ion-spinner>
+                           {{ $t('addProduct.analyzingIngredients') || 'Analyzing ingredients…' }}
+                         </p>
+                       </template>
+                    </div>
+
+                    <!-- Highlight Clips -->
+                    <div v-if="ingredientHighlights.length && canScan" class="highlights-preview ion-padding">
+                       <ion-chip
+                          v-for="(h, idx) in dangerousHighlights"
+                          :key="idx"
+                          class="compact-chip"
+                          :class="['chip-' + extractIonColor(h.color)]"
+                       >
+                         {{ h.keyword }}
+                       </ion-chip>
+                       
+                       <div v-if="hasFriendlyHighlights" class="ion-margin-top">
+                         <ion-button fill="clear" size="small" @click="showMuslimFriendly = !showMuslimFriendly" class="toggle-friendly-btn">
+                           {{ showMuslimFriendly ? 'Hide Friendly' : 'Show Friendly' }}
+                         </ion-button>
+                         <div v-if="showMuslimFriendly" class="friendly-chips">
+                            <ion-chip
+                              v-for="(h, idx) in friendlyHighlights"
+                              :key="idx"
+                              class="compact-chip chip-primary"
+                            >
+                              {{ h.keyword }}
+                            </ion-chip>
+                         </div>
+                       </div>
+                    </div>
+
+                    <!-- Locked Analysis when scan limit is reached -->
+                    <div v-if="ingredientHighlights.length && !canScan" class="highlights-preview ion-padding ion-text-center" style="border-top: 1px solid var(--ion-color-light);">
+                      <span style="font-size: 12px; color: var(--ion-color-carrot); display: flex; align-items: center; justify-content: center; gap: 6px; font-weight: 500;">
+                        🔒 Ingredient Analysis Locked (Submit to reveal)
+                      </span>
+                    </div>
+
+                    <!-- Detected Text (Raw) -->
+                    <ion-accordion-group v-if="rawChineseOcr">
+                      <ion-accordion value="rawOcr">
+                        <ion-item slot="header" lines="none" class="accordion-header">
+                          <ion-label color="medium">{{ $t('addProduct.detectedText') }}</ion-label>
+                        </ion-item>
+                        <div slot="content" class="ion-padding-horizontal ion-padding-bottom">
+                          <code class="raw-ocr-text">{{ rawChineseOcr }}</code>
+                        </div>
+                      </ion-accordion>
+                    </ion-accordion-group>
+                  </ion-card-content>
+                </ion-card>
+              </div>
             </div>
 
+            <!-- 🟢 STEP 2: Remaining Details -->
+            <div v-show="currentStep === STEP_DETAILS" class="details-wizard-step">
 
+              <!-- 🏷️ Section 1: Basic Information -->
+              <div class="form-section">
+                <ion-list-header>
+                  <ion-label>{{ $t('addProduct.sections.identity') || 'Basic Information' }}</ion-label>
+                </ion-list-header>
+                
+                <ion-card class="input-card">
+                  <ion-card-content class="ion-no-padding">
+                    <ion-item lines="full">
+                      <ion-input
+                          v-model="form.name"
+                          required
+                          clear-input
+                          label-placement="floating"
+                          :placeholder="$t('addProduct.productNamePlaceholder')"
+                      >
+                        <div slot="label" style="display: flex; align-items: center; gap: 8px; width: 100%;">
+                          <span>{{ $t('addProduct.productName') }} <ion-text color="danger">*</ion-text></span>
+                          <ion-chip :class="`chip-${statusChipColor(form.status)}`" style="margin: 0; font-size: 10px; height: 18px; padding: 0 8px; font-weight: 600;">
+                            {{ form.status }}
+                          </ion-chip>
+                        </div>
+                      </ion-input>
+                    </ion-item>
+                    <button type="button" class="fix-case-under" title="Title-case the product name" @click="fixNameCasing">
+                      <ion-icon :icon="sparklesOutline" />
+                      Fix capitalization
+                    </button>
 
-            <ion-item>
-              <ion-label>{{ $t('addProduct.frontImage') }} <ion-text color="danger">*</ion-text></ion-label>
-              <ion-buttons slot="end">
-                <ion-button @click="takeFrontPicture" fill="clear">
-                  <ion-icon :icon="cameraOutline" />
-                </ion-button>
-                <ion-button @click="uploadFrontFromGallery" fill="clear">
-                  <ion-icon :icon="cloudUploadOutline" />
-                </ion-button>
-              </ion-buttons>
-            </ion-item>
+                    <ion-item lines="none" button @click="categoryModalOpen = true">
+                      <ion-label>
+                        <div style="font-size: 13px; color: var(--ion-color-medium); margin-bottom: 2px;">
+                          {{ $t('addProduct.category') }} <ion-text color="danger">*</ion-text>
+                        </div>
+                        <div style="font-size: 16px; color: var(--ion-color-dark); font-weight: 500;">
+                          {{ selectedCategoryName || 'Select a Category...' }}
+                        </div>
+                      </ion-label>
+                      <ion-icon :icon="chevronForwardOutline" slot="end" style="color: var(--ion-color-medium); font-size: 18px;" />
+                    </ion-item>
+                  </ion-card-content>
+                </ion-card>
+              </div>
 
-            <div v-if="frontPreview" style="padding: 0 16px 16px;">
-              <img :src="frontPreview" alt="Front Preview" style="max-width: 100%; border-radius: 8px;" />
+              <!-- 🕌 Section 2: Halal Status (Segmented) moved to STEP_OCR -->
+
+              <!-- 🥬 Section 3: Ingredients & Analysis moved to STEP_OCR -->
+
+              <!-- 🏪 Section 4: Retail & Details -->
+              <div class="form-section">
+                <ion-list-header>
+                  <ion-label>{{ $t('addProduct.sections.market') || 'Market & Description' }}</ion-label>
+                </ion-list-header>
+
+                <ion-card class="input-card">
+                  <ion-card-content class="ion-no-padding">
+                    <ion-item lines="full">
+                      <ion-label position="stacked">{{ $t('addProduct.stores') }} <ion-text color="danger">*</ion-text></ion-label>
+                      <StoreLogoBar
+                          :stores="stores"
+                          mode="select"
+                          v-model:modelValue="form.store_ids"
+                          class="ion-margin-vertical"
+                      />
+                    </ion-item>
+
+                    <ion-item v-if="isOtherStoreSelected" lines="full">
+                      <ion-input
+                          v-model="form.other_store_name"
+                          label-placement="stacked"
+                          :label="$t('addProduct.otherStoreName')"
+                          :placeholder="$t('addProduct.otherStoreNamePlaceholder')"
+                          :maxlength="100"
+                      />
+                    </ion-item>
+
+                    <ion-item lines="none">
+                      <ion-textarea
+                          v-model="form.description"
+                          label-placement="floating"
+                          :placeholder="$t('addProduct.descriptionPlaceholder')"
+                          :auto-grow="true"
+                          required
+                      >
+                        <div slot="label">
+                          {{ $t('addProduct.description') }} <ion-text color="danger">*</ion-text>
+                        </div>
+                      </ion-textarea>
+                    </ion-item>
+                    
+                    <!-- Quick Insert Buttons -->
+                    <div class="quick-scroll-container ion-padding-horizontal ion-padding-bottom">
+                      <ion-button size="small" fill="outline" color="success" @click="applyQuickDescription(quickDescriptions.halal)" class="quick-btn">Halal by</ion-button>
+                      <ion-button size="small" fill="outline" color="primary" @click="applyQuickDescription(quickDescriptions.muslimFriendly)" class="quick-btn">Friendly OK</ion-button>
+                      <ion-button size="small" fill="outline" color="warning" @click="applyQuickDescription(quickDescriptions.syubhah)" class="quick-btn">Syubhah found</ion-button>
+                      <ion-button size="small" fill="outline" color="danger" @click="applyQuickDescription(quickDescriptions.haram)" class="quick-btn">Haram found</ion-button>
+                    </div>
+
+                    <!-- Status/description consistency: flags a contradiction
+                         (e.g. status "Muslim-friendly" but description still
+                         says "Syubhah ingredients found") as a hard mismatch,
+                         not an advisory score. -->
+                    <div v-if="descriptionStatusConflicts.length" class="ocr-check-banner ocr-check-banner--mismatch ion-margin-horizontal">
+                      <div class="ocr-check-banner-header">
+                        <ion-icon :icon="alertCircleOutline" />
+                        <span>Description mentions "{{ descriptionStatusConflicts.join('", "') }}" but status is set to "{{ form.status }}"</span>
+                      </div>
+                      <ion-button size="small" fill="outline" @click="fixDescriptionToMatchStatus">
+                        Fix description to match status
+                      </ion-button>
+                    </div>
+                  </ion-card-content>
+                </ion-card>
+              </div>
+
+              <!-- 💰 Section: Tags -->
+              <div class="form-section">
+                <ion-list-header><ion-label>{{ $t('addPlace.tagsAndCategories', 'Tags') }}</ion-label></ion-list-header>
+                <ion-card class="input-card">
+                  <ion-item lines="none">
+                    <ion-input
+                        v-model="tagInput"
+                        :label="$t('addPlace.addTagLabel', 'Add a tag')"
+                        label-placement="stacked"
+                        :placeholder="$t('addPlace.tagPlaceholder', 'e.g. Snack, Spicy')"
+                        @ionInput="handleTagInput"
+                        @keyup.enter="addTag"
+                    />
+                    <ion-button slot="end" fill="clear" @click="addTag" style="margin-top: 14px;">
+                      {{ $t('common.add', 'Add') }}
+                    </ion-button>
+                  </ion-item>
+                  <div v-if="form.tags.length > 0" class="tag-chips ion-padding-horizontal ion-padding-bottom" style="display: flex; flex-wrap: wrap; gap: 8px;">
+                    <ion-chip v-for="tag in form.tags" :key="tag" color="primary" outline class="tag-chip" style="margin: 0;">
+                      <ion-label>{{ tag }}</ion-label>
+                      <ion-icon :icon="closeCircle" @click="removeTag(tag)" />
+                    </ion-chip>
+                  </div>
+                </ion-card>
+              </div>
+
+              <!-- 📸 Section 5: Photos -->
+              <div class="form-section">
+                <ion-list-header>
+                  <ion-label>{{ $t('addProduct.sections.photos') || 'Product Photos' }}</ion-label>
+                </ion-list-header>
+
+                <div class="photo-grid">
+                  <!-- Front Photo -->
+                  <ion-card class="photo-card" :class="{ 'has-photo': frontPreview }">
+                    <div class="photo-card-header">
+                       <ion-label class="photo-title">{{ $t('addProduct.frontImage') }}</ion-label>
+                    </div>
+                    <div v-if="frontPreview" class="photo-preview-wrap">
+                      <img :src="frontPreview" class="thumbnail-img" @click="openFullscreenImage(0)" style="cursor: pointer;" />
+                    </div>
+                    <div v-if="frontPreview" class="photo-controls">
+                      <button type="button" class="control-btn ai-btn" @click.stop="cleanBackgroundImage('front')" :disabled="cleaningFront">
+                        <div v-if="cleaningFront" class="ai-progress-container">
+                          <span class="ai-progress-text">{{ progressStatus || 'Processing AI...' }}</span>
+                          <ion-progress-bar :value="progressPercent / 100" class="ai-bar"></ion-progress-bar>
+                        </div>
+                        <template v-else>
+                          <ion-icon :icon="colorWandOutline" />
+                          <span>{{ $t('addProduct.photoActions.cleanBg') || 'AI Clean BG' }}</span>
+                        </template>
+                      </button>
+                      <div class="control-row">
+                        <button v-if="isFrontCleaned" type="button" class="control-sub-btn warning" @click.stop="restoreOriginalImage('front')" :title="$t('addProduct.photoActions.restoreOriginal') || 'Original Photo'">
+                          <ion-icon :icon="refreshOutline" />
+                        </button>
+                        <button type="button" class="control-sub-btn" @click.stop="takeFrontPicture" :title="$t('addProduct.photoActions.takePhoto') || 'Retake'">
+                          <ion-icon :icon="cameraOutline" />
+                        </button>
+                        <button type="button" class="control-sub-btn" @click.stop="rotateImage('front')" :disabled="rotatingFront" :title="$t('addProduct.photoActions.rotate') || 'Rotate'">
+                          <ion-spinner v-if="rotatingFront" name="crescent" class="btn-spinner"></ion-spinner>
+                          <ion-icon v-else :icon="syncOutline" />
+                        </button>
+                        <button type="button" class="control-sub-btn danger" @click.stop="frontPreview = null; frontFile = null; originalFrontPreview = null; originalFrontFile = null" :title="$t('addProduct.photoActions.remove') || 'Remove'">
+                          <ion-icon :icon="trashOutline" />
+                        </button>
+                      </div>
+                    </div>
+                    <div v-else class="photo-placeholder">
+                      <div class="placeholder-actions">
+                        <button type="button" class="placeholder-btn" @click="takeFrontPicture">
+                          <ion-icon :icon="cameraOutline" />
+                          <span>{{ $t('addProduct.photoActions.takePhoto') || 'Camera' }}</span>
+                        </button>
+                        <button type="button" class="placeholder-btn" @click="uploadFrontFromGallery">
+                          <ion-icon :icon="cloudUploadOutline" />
+                          <span>{{ $t('addProduct.photoActions.uploadPhoto') || 'Upload' }}</span>
+                        </button>
+                      </div>
+                    </div>
+                  </ion-card>
+
+                  <!-- Back Photo -->
+                  <ion-card class="photo-card" :class="{ 'has-photo': backPreview }">
+                    <div class="photo-card-header">
+                       <ion-label class="photo-title">{{ $t('addProduct.backImage') }}</ion-label>
+                    </div>
+                    <div v-if="backPreview" class="photo-preview-wrap">
+                      <img :src="backPreview" class="thumbnail-img" @click="openFullscreenImage(1)" style="cursor: pointer;" />
+                    </div>
+                    <div v-if="backPreview" class="photo-controls">
+                      <button type="button" class="control-btn ai-btn" @click.stop="cleanBackgroundImage('back')" :disabled="cleaningBack">
+                        <div v-if="cleaningBack" class="ai-progress-container">
+                          <span class="ai-progress-text">{{ progressStatus || 'Processing AI...' }}</span>
+                          <ion-progress-bar :value="progressPercent / 100" class="ai-bar"></ion-progress-bar>
+                        </div>
+                        <template v-else>
+                          <ion-icon :icon="colorWandOutline" />
+                          <span>{{ $t('addProduct.photoActions.cleanBg') || 'AI Clean BG' }}</span>
+                        </template>
+                      </button>
+                      <div class="control-row">
+                        <button v-if="isBackCleaned" type="button" class="control-sub-btn warning" @click.stop="restoreOriginalImage('back')" :title="$t('addProduct.photoActions.restoreOriginal') || 'Original Photo'">
+                          <ion-icon :icon="refreshOutline" />
+                        </button>
+                        <button type="button" class="control-sub-btn" @click.stop="takeBackPicture" :title="$t('addProduct.photoActions.takePhoto') || 'Retake'">
+                          <ion-icon :icon="cameraOutline" />
+                        </button>
+                        <button type="button" class="control-sub-btn" @click.stop="rotateImage('back')" :disabled="rotatingBack" :title="$t('addProduct.photoActions.rotate') || 'Rotate'">
+                          <ion-spinner v-if="rotatingBack" name="crescent" class="btn-spinner"></ion-spinner>
+                          <ion-icon v-else :icon="syncOutline" />
+                        </button>
+                        <button type="button" class="control-sub-btn danger" @click.stop="backPreview = null; backFile = null; originalBackPreview = null; originalBackFile = null" :title="$t('addProduct.photoActions.remove') || 'Remove'">
+                          <ion-icon :icon="trashOutline" />
+                        </button>
+                      </div>
+                    </div>
+                    <div v-else class="photo-placeholder">
+                      <div class="placeholder-actions">
+                        <button type="button" class="placeholder-btn" @click="takeBackPicture">
+                          <ion-icon :icon="cameraOutline" />
+                          <span>{{ $t('addProduct.photoActions.takePhoto') || 'Camera' }}</span>
+                        </button>
+                        <button type="button" class="placeholder-btn" @click="uploadBackFromGallery">
+                          <ion-icon :icon="cloudUploadOutline" />
+                          <span>{{ $t('addProduct.photoActions.uploadPhoto') || 'Upload' }}</span>
+                        </button>
+                      </div>
+                    </div>
+                  </ion-card>
+                </div>
+              </div>
+
+              <!-- 🛠️ Section: Admin Controls -->
+              <div v-if="isAdmin && props.editProduct" class="form-section">
+                <ion-list-header><ion-label>{{ $t('admin.controls') }}</ion-label></ion-list-header>
+                <ion-card class="input-card">
+                  <ion-item lines="none">
+                    <ion-icon :icon="checkmarkCircleOutline" slot="start" color="success" />
+                    <ion-label>{{ $t('admin.master.published') }}</ion-label>
+                    <ion-toggle
+                        slot="end"
+                        :checked="form.approved"
+                        @ionChange="form.approved = $event.detail.checked"
+                    />
+                  </ion-item>
+                </ion-card>
+              </div>
+
             </div>
-
-            <ion-item style="--inner-border-width: 0">
-              <ion-label>{{ $t('addProduct.backImage') }} <ion-text color="danger">*</ion-text></ion-label>
-              <ion-buttons slot="end">
-                <ion-button @click="takeBackPicture" fill="clear">
-                  <ion-icon :icon="cameraOutline" />
-                </ion-button>
-                <ion-button @click="uploadBackFromGallery" fill="clear">
-                  <ion-icon :icon="cloudUploadOutline" />
-                </ion-button>
-              </ion-buttons>
-            </ion-item>
-
-            <div v-if="backPreview" style="padding: 0 16px 16px;">
-              <img :src="backPreview" alt="Back Preview" style="max-width: 100%; border-radius: 8px;" />
-            </div>
-          </ion-item-group>
         </div>
 
-        <ion-button expand="block" type="submit" class="ion-margin-top" color="carrot" :disabled="loading">
-          {{ loading
-            ? $t('addProduct.submitting')
-            : (props.editProduct ? $t('addProduct.update') : $t('addProduct.submit')) }}
-        </ion-button>
+        <div v-if="currentStep === STEP_DETAILS">
+          <ion-button expand="block" type="submit" class="ion-margin-top" color="carrot" :disabled="loading">
+            {{ loading
+              ? $t('addProduct.submitting')
+              : (props.editProduct ? $t('addProduct.update') : $t('addProduct.submit')) }}
+          </ion-button>
+        </div>
+        
+        <!-- Navigation Buttons at the bottom for steps -->
+        <div v-if="currentStep > 0 && !loading" style="display: flex; gap: 8px; margin-top: 16px;">
+           <ion-button fill="outline" color="medium" style="flex: 1;" @click="prevStep">
+             <ion-icon slot="start" :icon="arrowBackOutline" />
+             {{ $t('addProduct.back') || 'Back' }}
+           </ion-button>
+           <ion-button 
+             v-if="currentStep < STEP_DETAILS" 
+             fill="solid" 
+             color="carrot" 
+             style="flex: 1;" 
+             @click="nextStep"
+             :disabled="currentStep === STEP_OCR && !backPreview && !(manualIngredientsMode && form.ingredients.trim())"
+            >
+             {{ $t('addProduct.next') || 'Next' }}
+             <ion-icon slot="end" :icon="arrowForwardOutline" />
+           </ion-button>
+        </div>
 
         <ion-spinner id="spinner" name="dots" v-if="loading" class="ion-text-center ion-margin-top"></ion-spinner>
 
@@ -390,7 +911,99 @@
             @did-dismiss="errorMsg = ''"
         />
       </form>
+
+      <!-- ✅ Fullscreen Image Modal -->
+      <ion-modal :is-open="showImageModal" @didDismiss="showImageModal = false">
+        <ion-content fullscreen style="--background: black">
+          <!-- Floating Close Button -->
+          <ion-button
+              fill="solid"
+              color="carrot"
+              style="position: absolute; top: 16px; right: 16px; z-index: 9999;"
+              @click="showImageModal = false"
+          >
+            ✕
+          </ion-button>
+
+          <!-- Swiper Gallery -->
+          <Swiper
+              :modules="swiperModules"
+              :zoom="true"
+              :slides-per-view="1"
+              :pagination="{ clickable: true }"
+              :initial-slide="activeImageIndex"
+              class="fullscreen-swiper"
+          >
+            <SwiperSlide v-if="frontPreview">
+              <div class="swiper-zoom-container">
+                <img :src="frontPreview" :alt="$t('review.frontImageAlt') || 'Front Image'" />
+              </div>
+            </SwiperSlide>
+            <SwiperSlide v-if="backPreview">
+              <div class="swiper-zoom-container">
+                <img :src="backPreview" :alt="$t('review.backImageAlt') || 'Back Image'" />
+              </div>
+            </SwiperSlide>
+          </Swiper>
+        </ion-content>
+      </ion-modal>
+
+      <!-- 📂 Category Search & Select Modal -->
+      <ion-modal :is-open="categoryModalOpen" @didDismiss="categoryModalOpen = false">
+        <ion-header>
+          <ion-toolbar color="light">
+            <ion-title>{{ $t('addProduct.selectCategory') || 'Select Category' }}</ion-title>
+            <ion-buttons slot="end">
+              <ion-button @click="categoryModalOpen = false">{{ $t('common.cancel') || 'Cancel' }}</ion-button>
+            </ion-buttons>
+          </ion-toolbar>
+          <ion-toolbar color="light">
+            <ion-searchbar
+              v-model="categoryQuery"
+              :placeholder="$t('addProduct.searchCategoryPlaceholder') || 'Search categories...'"
+              animated
+            />
+          </ion-toolbar>
+        </ion-header>
+        <ion-content>
+          <ion-list lines="full">
+            <ion-item 
+              v-for="cat in filteredCategories" 
+              :key="cat.id" 
+              button 
+              :detail="false"
+              @click="selectCategory(cat)"
+              :class="{ 'selected-category-item': form.product_category_id === cat.id }"
+            >
+              <ion-label style="font-weight: 600;">
+                {{ cat.name }}
+              </ion-label>
+              <ion-icon 
+                v-if="form.product_category_id === cat.id" 
+                slot="end" 
+                :icon="checkmarkCircle" 
+                color="success" 
+              />
+            </ion-item>
+            <ion-item v-if="filteredCategories.length === 0" lines="none" class="ion-text-center">
+              <ion-label color="medium">No categories found</ion-label>
+            </ion-item>
+          </ion-list>
+        </ion-content>
+      </ion-modal>
+      </div>
     </ion-content>
+
+    <barcode-scan-overlay
+      v-if="scanning"
+      :title="$t('addProduct.title') || 'Add Product'"
+      show-fallback-actions
+      @detected="onBarcodeOverlayDetected"
+      @close="onBarcodeOverlayClose"
+      @error="onBarcodeOverlayError"
+      @manual-entry="onBarcodeOverlayManualEntry"
+      @gallery="onBarcodeOverlayGallery"
+    />
   </ion-page>
 </template>
 
@@ -416,9 +1029,12 @@ import {
   IonTextarea,
   IonTitle,
   IonToast,
+  IonToggle,
   IonToolbar,
   IonAccordion,
-  IonAccordionGroup, IonNote, IonImg, IonThumbnail
+  IonAccordionGroup, IonNote, IonImg, IonThumbnail,
+  IonSegment, IonSegmentButton, IonCard, IonCardHeader, IonCardContent, IonListHeader, IonFooter,
+  IonSearchbar, IonList, onIonViewWillEnter
 } from '@ionic/vue';
 import {
   addOutline,
@@ -428,42 +1044,466 @@ import {
   checkmarkCircle,
   closeCircle,
   stopCircle,
+  arrowForwardOutline,
+  arrowBackOutline,
+  sparklesOutline,
+  checkmarkCircleOutline,
+  expandOutline,
+  squareOutline,
+  phonePortraitOutline,
+  tabletLandscapeOutline,
+  syncOutline,
+  colorWandOutline,
+  trashOutline,
+  refreshOutline,
+  chevronForwardOutline,
+  lockClosedOutline,
+  closeCircleOutline,
+  alertCircleOutline,
+  createOutline
 } from 'ionicons/icons';
-import { nextTick, onMounted, onUnmounted, ref, watch} from 'vue'
-import {supabase} from '@/plugins/supabaseClient'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch} from 'vue'
+import { useI18n } from 'vue-i18n'
+import {supabase, invokeFunction} from '@/plugins/supabaseClient'
+import { awardScanBonus, isContributionLimitReached } from '@/composables/useScanQuotaReward';
+import { isDonor } from '@/composables/useSubscriptionStatus';
 
-import { Capacitor } from '@capacitor/core'
-import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
-import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import { extractIonColor, colorMeaning } from '@/utils/ingredientHelpers'
+import { isValidBarcodeFormat } from '@/utils/barcodeValidator'
+import { pickAndDecodeBarcodeFromGallery } from '@/composables/useBarcodeImageScan'
+import BarcodeScanOverlay from '@/components/scan/BarcodeScanOverlay.vue'
 
 // Import Camera plugin and types
 import {Camera, CameraDirection, CameraResultType, CameraSource} from '@capacitor/camera'
 import {Cropper} from 'vue-advanced-cropper';
 import 'vue-advanced-cropper/dist/style.css';
+import { Swiper, SwiperSlide } from 'swiper/vue';
+import { Pagination, Zoom } from 'swiper/modules';
+import 'swiper/css';
+import 'swiper/css/pagination';
+import 'swiper/css/zoom';
 import AppHeader from "@/components/AppHeader.vue";
 
 import useHighlightCache from '@/composables/useHighlightCache'
 import useError from '@/composables/useError'
-import { userRole, setUserRole } from '@/composables/userProfile'
+import { userRole, setUserRole, isAdmin } from '@/composables/userProfile'
 import { usePoints } from "@/composables/usePoints";
-import { useNotifier } from "@/composables/useNotifier"
+import { useNotifier } from "@/composables/useNotifier";
 import { useImageResizer } from "@/composables/useImageResizer";
+import { uploadProductFrontThumb } from "@/utils/productThumbnail";
+import { useBackgroundRemoval } from "@/composables/useBackgroundRemoval";
+import { computeImageHash } from "@/utils/useImageHash";
 import { useCropperOcr } from "@/composables/useCropperOcr"
 import type { Product } from '@/types/Product'
-import router from "@/router";
+import { useRouter, useRoute } from 'vue-router';
+import type { IngredientHighlight } from '@/types/Ingredient'
 import StoreLogoBar from "@/components/StoreLogoBar.vue";
-import { BarcodeValidator } from "@/utils/barcodeValidator";
+import IngredientHighlightImage from '@/components/scan/IngredientHighlightImage.vue'
 import { ActivityLogService } from "@/services/ActivityLogService";
 
 const { notifyEvent } = useNotifier();
 const { awardAndCelebrate } = usePoints();
 const { errorMsg, setError } = useError()
+const { t } = useI18n()
+const router = useRouter()
+const route = useRoute()
+
+const props = defineProps<{
+  editProduct?: Product
+}>()
+
+/** ---------- Wizard Steps ---------- */
+const STEP_BARCODE = 0
+const STEP_OCR = 1
+const STEP_DETAILS = 2
+const currentStep = ref(STEP_BARCODE)
+const wizardStartTime = ref<number>(Date.now())
+
+// 🥬 Manual ingredients fallback — only offered after a first OCR attempt
+// fails, so users aren't shown "give up and type it" before even trying.
+const ocrFailedOnce = ref(false)
+const manualIngredientsMode = ref(false)
+
+function enableManualIngredients() {
+  manualIngredientsMode.value = true
+}
+
+const limitReached = ref(false)
+const todayScanCount = ref(0)
+const bonusScans = ref(0)
+const canScan = computed(() => {
+  if (import.meta.env.DEV || isDonor.value) return true;
+  return todayScanCount.value < (5 + bonusScans.value);
+})
+
+async function loadTodayScanCount() {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+  const today = new Date().toISOString().split('T')[0];
+  const { data, error } = await supabase
+      .from('ingredient_scan_logs')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('success', true)
+      .gte('created_at', today);
+  if (!error && data) {
+    todayScanCount.value = data.length;
+  }
+}
+
+async function restoreBonusFromSupabase() {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+  const today = new Date().toISOString().split('T')[0];
+  const { data, error } = await supabase
+      .from("user_scan_bonus")
+      .select("*")
+      .eq("user_id", user.id)
+      .single();
+  if (!error && data && data.last_updated === today) {
+    bonusScans.value = data.bonus_scans;
+  }
+}
+
+const applying = ref(false)
+const applicationReason = ref('')
+const applicationSubmitted = ref(false)
+const applicationLoading = ref(false)
+const pendingApplicationExists = ref(false)
+
+async function checkPendingApplication() {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return
+  const { data, error } = await supabase
+    .from('contributor_applications')
+    .select('id')
+    .eq('user_id', user.id)
+    .eq('status', 'pending')
+    .limit(1)
+  if (!error && data && data.length > 0) {
+    pendingApplicationExists.value = true
+  }
+}
+
+async function submitApplication() {
+  if (!applicationReason.value.trim()) return
+  applicationLoading.value = true
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    
+    const { error } = await supabase
+      .from('contributor_applications')
+      .insert({
+        user_id: user.id,
+        reason: applicationReason.value,
+        status: 'pending'
+      })
+      
+    if (error) throw error
+    
+    applicationSubmitted.value = true
+
+    // Fetch profile for user metadata
+    const { data: profile } = await supabase
+      .from('user_profiles')
+      .select('display_name')
+      .eq('id', user.id)
+      .maybeSingle()
+
+    const userName = profile?.display_name || user.email || 'Anonymous'
+    const userEmail = user.email || 'N/A'
+
+    await notifyEvent(
+      'contributor_application_needs_review',
+      '🔍 Contributor Application Needs Review',
+      `User ${userName} (${userEmail}) has applied to become a Dedicated Contributor.\nReason: ${applicationReason.value}`,
+      undefined,
+      {
+        user_id: user.id,
+        target_role: 'admin',
+        isNative: true
+      },
+      ['discord', 'onesignal']
+    )
+  } catch (err) {
+    console.error('Failed to submit contributor application:', err)
+  } finally {
+    applicationLoading.value = false
+  }
+}
+
+onIonViewWillEnter(async () => {
+  limitReached.value = await isContributionLimitReached()
+  await loadTodayScanCount()
+  await restoreBonusFromSupabase()
+  if (limitReached.value) {
+    await checkPendingApplication()
+  }
+})
+
+/** ---------- State Variables Consistently Defined at Top ---------- */
+const barcodeValid = ref<null | boolean>(null)
+const barcodeMessage = ref<string>('') // feedback below input
+// True while a validated barcode is about to auto-advance the wizard (see the
+// watcher below) — keeps the manual "Next" button disabled during that
+// window so a tap doesn't fire nextStep() a second time and skip a step.
+const autoAdvancePending = ref(false)
+// New product, no barcode already known → open straight into the live camera
+// on first render, so the "Find Product" chooser screen never flashes on
+// screen behind it (it's still there as the fallback once the overlay closes).
+const scanning = ref(!props.editProduct && !route.query.barcode)
+// True while the *current* scan session is the instant auto-opened one (see
+// `scanning`'s initial value above) rather than one the user reopened later
+// via the "Camera" button — closing the auto-opened one with X should leave
+// Add Product entirely (back to Search) instead of dropping the user onto
+// the manual-entry step they never asked for.
+const autoOpenedScan = ref(scanning.value)
+// Once the user deliberately stops the live scanner, don't auto-restart it
+// for them again this session (e.g. if they switch tabs and come back).
+const userStoppedScanner = ref(false)
+const scannedOnce = ref(false);
+const loading = ref(false)
+const showToast = ref(false)
+const showOcrToast = ref(false);
+const showErrorToast = ref(false)
+const toastMessage = ref('')
+const rawChineseOcr = ref('')
+const originalFile = ref<File | null>(null)
+const loadingReflection = ref<any>(null)
+const isResettingForm = ref(false)
+const autoStatusApplied = ref(false)
+const userTouchedDescription = ref(false)
+const programmaticDescUpdate = ref(false)
+const frontFile = ref < File | null > (null)
+const backFile = ref < File | null > (null)
+const frontPreview = ref < string | null > (null)
+const backPreview = ref < string | null > (null)
+const originalFrontFile = ref<File | null>(null)
+const originalBackFile = ref<File | null>(null)
+const originalFrontPreview = ref<string | null>(null)
+const originalBackPreview = ref<string | null>(null)
+const rotatingFront = ref(false)
+const rotatingBack = ref(false)
+const cleaningFront = ref(false)
+const cleaningBack = ref(false)
+
+const isFrontCleaned = computed(() => !!frontPreview.value && !!originalFrontPreview.value && frontPreview.value !== originalFrontPreview.value)
+const isBackCleaned = computed(() => !!backPreview.value && !!originalBackPreview.value && backPreview.value !== originalBackPreview.value)
+
+function restoreOriginalImage(type: 'front' | 'back') {
+  if (type === 'front') {
+    if (originalFrontPreview.value) frontPreview.value = originalFrontPreview.value
+    if (originalFrontFile.value) frontFile.value = originalFrontFile.value
+  } else {
+    if (originalBackPreview.value) backPreview.value = originalBackPreview.value
+    if (originalBackFile.value) backFile.value = originalBackFile.value
+  }
+}
+const { removeAndAddWhiteBg, preloadAIModel, progressPercent, progressStatus } = useBackgroundRemoval()
+
+async function cleanBackgroundImage(type: 'front' | 'back') {
+  const previewRef = type === 'front' ? frontPreview : backPreview;
+  const fileRef = type === 'front' ? frontFile : backFile;
+  const cleaningProp = type === 'front' ? cleaningFront : cleaningBack;
+
+  const currentSrc = fileRef.value || previewRef.value;
+  if (!currentSrc || (typeof currentSrc === 'string' && currentSrc.includes('placehold.co'))) return;
+
+  cleaningProp.value = true;
+
+  try {
+    const { file, previewUrl } = await removeAndAddWhiteBg(currentSrc, `${type}_clean.jpg`);
+    fileRef.value = file;
+    previewRef.value = previewUrl;
+  } catch (err) {
+    console.error(`❌ Failed to remove background for ${type}:`, err);
+    alert(t('common.error') || 'Failed to remove background. Please try again.');
+  } finally {
+    cleaningProp.value = false;
+  }
+}
+
+const swiperModules = [Pagination, Zoom]
+const showImageModal = ref(false)
+const activeImageIndex = ref(0)
+
+function openFullscreenImage(index: number) {
+  activeImageIndex.value = index
+  showImageModal.value = true
+}
+
+async function rotateImage(type: 'front' | 'back') {
+  const previewRef = type === 'front' ? frontPreview : backPreview;
+  const fileRef = type === 'front' ? frontFile : backFile;
+  const rotatingProp = type === 'front' ? rotatingFront : rotatingBack;
+
+  const src = previewRef.value;
+  if (!src || src.includes('placehold.co')) return;
+
+  rotatingProp.value = true;
+
+  try {
+    const img = new Image();
+    img.crossOrigin = 'Anonymous';
+    const cleanSrc = src.startsWith('data:') ? src : `${src}${src.includes('?') ? '&' : '?'}t=${Date.now()}`;
+    img.src = cleanSrc;
+
+    await new Promise((resolve, reject) => {
+      img.onload = resolve;
+      img.onerror = () => {
+        const fallbackImg = new Image();
+        fallbackImg.src = src;
+        fallbackImg.onload = () => {
+          Object.assign(img, fallbackImg);
+          resolve(null);
+        };
+        fallbackImg.onerror = reject;
+      };
+    });
+
+    const canvas = document.createElement('canvas');
+    canvas.width = img.height;
+    canvas.height = img.width;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    ctx.translate(canvas.width / 2, canvas.height / 2);
+    ctx.rotate(90 * Math.PI / 180);
+    ctx.drawImage(img, -img.width / 2, -img.height / 2);
+
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+    previewRef.value = dataUrl;
+
+    const res = await fetch(dataUrl);
+    const blob = await res.blob();
+    const file = new File([blob], `${type}.jpg`, { type: 'image/jpeg' });
+    fileRef.value = file;
+  } catch (err) {
+    console.error(`❌ Error rotating ${type} image:`, err);
+  } finally {
+    rotatingProp.value = false;
+  }
+}
+const tagInput = ref('')
+const categories = ref<{ id: number; name: string }[]>([])
+const categoryModalOpen = ref(false)
+const categoryQuery = ref('')
+
+const filteredCategories = computed(() => {
+  const q = categoryQuery.value.trim().toLowerCase()
+  if (!q) return categories.value
+  return categories.value.filter(cat => cat.name.toLowerCase().includes(q))
+})
+
+const selectedCategoryName = computed(() => {
+  const matched = categories.value.find(cat => cat.id === form.value.product_category_id)
+  return matched ? matched.name : ''
+})
+
+function selectCategory(cat: { id: number; name: string }) {
+  form.value.product_category_id = cat.id
+  categoryModalOpen.value = false
+  categoryQuery.value = ''
+}
 const stores = ref<{ id: string; name: string; logo_url?: string }[]>([])
 const checkingIngredients = ref(false)
-const { resizeImage } = useImageResizer();
+const categoryRules = ref<Record<string, number>>({})
+const barcodeLoading = ref(false)
+const derivedNameTags = ref<string[]>([]) // 🏷️ Track tags derived from name to update them dynamically
+const derivedCategoryTag = ref<string | null>(null) // 🏷️ Track tag derived from category to update dynamically
+
+interface ProductForm {
+  barcode: string
+  name: string
+  status: string
+  product_category_id: number | null
+  ingredients: string
+  description: string
+  store_ids: string[]
+  other_store_name: string
+  tags: string[]
+  approved: boolean
+}
+
+const form = ref<ProductForm>({
+  barcode: '',
+  name: '',
+  status: 'Muslim-friendly',
+  product_category_id: null,
+  ingredients: '',
+  description: '',
+  store_ids: [],
+  other_store_name: '',
+  tags: [],
+  approved: false
+})
+
+// Contributor picked "Other Stores" (or left the default) -> offer an optional store-name input
+const OTHER_STORES_ID_UI = '2a013308-190c-4684-a607-3bc3d7817115'
+const isOtherStoreSelected = computed(() => form.value.store_ids.includes(OTHER_STORES_ID_UI))
+
 const barcodeInput = ref<any>(null)
+const contentRef = ref<any>(null)
+
+const scrollToTop = () => {
+  nextTick(() => {
+    contentRef.value?.$el.scrollToTop(300);
+  });
+}
+
+const scrollToBottom = () => {
+  nextTick(() => {
+    contentRef.value?.$el.scrollToBottom(300);
+  });
+}
+
+const nextStep = () => {
+  if (currentStep.value < STEP_DETAILS) {
+    if (currentStep.value === STEP_BARCODE) {
+      scanning.value = false
+    }
+    currentStep.value++
+    scrollToTop()
+    
+    // Default to fallback store if none selected
+    if (currentStep.value === STEP_OCR || currentStep.value === STEP_DETAILS) {
+      applyOtherStoreFallback()
+    }
+
+    // Auto-sync description based on status when entering Step 3
+    if (currentStep.value === STEP_DETAILS) {
+      if (!userTouchedDescription.value || !form.value.description?.trim()) {
+        programmaticDescUpdate.value = true
+        form.value.description = statusDescriptions[form.value.status] ?? ""
+        nextTick(() => { programmaticDescUpdate.value = false })
+      }
+      prefillTags() // 🏷️ Pre-fill tags based on name, category, etc.
+    }
+  }
+}
+const prevStep = () => {
+  if (currentStep.value > STEP_BARCODE) {
+    currentStep.value--
+    scrollToTop()
+  }
+}
+
+/** 🏪 Fallback to "Other Stores" if none detected */
+function applyOtherStoreFallback() {
+  if (form.value.store_ids.length === 0) {
+    const OTHER_STORES_ID = '2a013308-190c-4684-a607-3bc3d7817115'
+    const found = stores.value.find(s => s.id === OTHER_STORES_ID)
+    if (found) {
+      form.value.store_ids = [OTHER_STORES_ID]
+      console.log("🏪 No nearby store found. Defaulted to Other Stores.")
+    }
+  }
+}
+
+// refs moved to top
+const { resizeImage } = useImageResizer();
 const showMuslimFriendly = ref(false)
 const quickDescriptions = {
   halal: "Halal certified by ",
@@ -497,11 +1537,6 @@ function statusChipColor(status?: string | null) {
   return STATUS_CHIP_CLASS[status ?? ''] ?? 'medium'
 }
 
-// props
-const props = defineProps<{
-  editProduct?: Product
-}>()
-
 // highlight + OCR pipeline
 const { allHighlights, blacklistPatterns, fetchHighlightsWithCache, incrementUsageCount } =
     useHighlightCache()
@@ -512,26 +1547,41 @@ const {
   showCropper,
   croppedPreviewUrl,
   ocrLoading,
+  stencilProps,
   openCropper,
+  onCropperReady,
   confirmCrop,
   closeCropper,
-  ingredientHighlights,
+  ingredientsTextZh,
   ingredientsText,
+  ingredientHighlights,
   autoStatus,
   productName,
-  recheckHighlightsSmart,
+  progress,
+  progressLabel,
+  setAspectRatio,
+  ocrImageWidth,
+  ocrImageHeight
 } = useCropperOcr({
   allHighlights,
   blacklistPatterns,
   fetchHighlightsWithCache,
   incrementUsageCount,
   setError,
+  t,
   setBackFile: (file: File) => {
     backFile.value = file
     if (backPreview.value) {
       URL.revokeObjectURL(backPreview.value)
     }
     backPreview.value = URL.createObjectURL(file) // ✅ show preview
+    originalBackFile.value = file
+    originalBackPreview.value = backPreview.value
+    scrollToBottom() // 📜 Scroll immediately when preview starts appearing
+  },
+  onSuccess: () => {
+    // Stay on Step 2 but scroll down to show the extracted ingredients & results
+    scrollToBottom()
   }
 })
 
@@ -545,6 +1595,25 @@ type DetectedProduct = {
 
 const detectedProduct = ref<DetectedProduct | null>(null)
 
+const dangerousHighlights = computed(() => 
+  ingredientHighlights.value.filter((h: IngredientHighlight) => extractIonColor(h.color) !== 'primary')
+)
+const friendlyHighlights = computed(() => 
+  ingredientHighlights.value.filter((h: IngredientHighlight) => extractIonColor(h.color) === 'primary')
+)
+const hasFriendlyHighlights = computed(() =>
+  ingredientHighlights.value.some((h: IngredientHighlight) => extractIonColor(h.color) === 'primary')
+)
+
+// Show the boxed crop only when there is something to draw and the analysis isn't locked.
+const showHighlightImage = computed(() =>
+  !!backPreview.value &&
+  !!croppedPreviewUrl.value &&
+  canScan.value &&
+  ocrImageWidth.value > 0 &&
+  dangerousHighlights.value.some((h: IngredientHighlight) => h.boxes?.length)
+)
+
 
 // 🟢 Keep product-specific syncing into form
 watch([autoStatus, productName, ingredientsText], ([newStatus, newName, newIngredients]) => {
@@ -555,6 +1624,17 @@ watch([autoStatus, productName, ingredientsText], ([newStatus, newName, newIngre
 
 // ✅ Fetch highlights & blacklist once when component mounts
 onMounted(async () => {
+  // Ensure userRole/isAdmin is populated so admin-only controls render on load
+  const { data: { user: currentAuthUser } } = await supabase.auth.getUser()
+  if (currentAuthUser) {
+    const { data: roleRow } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', currentAuthUser.id)
+        .single()
+    setUserRole(currentAuthUser.id, roleRow?.role || 'user')
+  }
+
   const [highlightsResult, blacklistResult] = await Promise.all([
     supabase.from('ingredient_highlights').select('keyword, keyword_zh, color'),
     supabase.from('ingredient_blacklist').select('pattern').eq('is_active', true)
@@ -563,7 +1643,9 @@ onMounted(async () => {
   if (!highlightsResult.error && highlightsResult.data) {
     allHighlights.value = highlightsResult.data;
   }
-  if (!blacklistResult.error && blacklistResult.data) {
+  if (blacklistResult.error || !blacklistResult.data) {
+    console.warn('Blacklist fetch failed or empty');
+  } else {
     blacklistPatterns.value = blacklistResult.data.map((row) => new RegExp(row.pattern, 'i'));
   }
 
@@ -575,11 +1657,16 @@ onMounted(async () => {
       product_category_id: props.editProduct.product_category_id ?? null,
       ingredients: props.editProduct.ingredients ?? '',
       description: props.editProduct.description ?? '',
-      store_ids: []
+      store_ids: [],
+      other_store_name: props.editProduct.other_store_name ?? '',
+      tags: props.editProduct.tags ?? [],
+      approved: props.editProduct.approved ?? false
     }
 
     frontPreview.value = props.editProduct.photo_front_url ?? null
     backPreview.value = props.editProduct.photo_back_url ?? null
+    originalFrontPreview.value = frontPreview.value
+    originalBackPreview.value = backPreview.value
 
     const { data: linkedStores } = await supabase
         .from('product_stores')
@@ -589,37 +1676,98 @@ onMounted(async () => {
     if (linkedStores) {
       form.value.store_ids = linkedStores.map(s => s.store_id)
     }
+  } else {
+    // ⚡ Handle pre-filled barcode from query params (e.g. from ItemDetails lookup fail)
+    if (route.query.barcode) {
+      form.value.barcode = String(route.query.barcode)
+      console.log("📥 Pre-filled barcode detected:", form.value.barcode)
+    }
+
+    // ⚡ Auto-start barcode scanner for new products with no barcode yet is
+    // now handled synchronously by `scanning`'s initial value above, so the
+    // "Find Product" chooser screen never renders behind the camera first.
   }
 
-  // 🟢 Add this
   await fetchStores()
   await fetchHighlightsWithCache(true)
   await fetchCategoryRules()
   await fetchCategories()
+
+  // 📥 Move pre-population AFTER rules are loaded so auto-category works!
+  if (route.query.fromScan === 'true') {
+    console.log("📥 Pre-populating from scan data:", route.query)
+    if (route.query.name) form.value.name = String(route.query.name)
+    if (route.query.ingredients) form.value.ingredients = String(route.query.ingredients)
+    if (route.query.status) form.value.status = String(route.query.status)
+    
+    // 🖼️ Retrieve image if passed as Blob URL
+    if (route.query.image) {
+      try {
+        const blobUrl = String(route.query.image)
+        fetch(blobUrl).then(res => res.blob()).then(blob => {
+          const file = new File([blob], "scanned-back.jpg", { type: blob.type })
+          backFile.value = file
+          backPreview.value = blobUrl
+          originalBackFile.value = file
+          originalBackPreview.value = blobUrl
+          console.log("✅ Scanned image recovered as Back Photo")
+        })
+      } catch (err) {
+        console.warn("❌ Failed to recover scanned image:", err)
+      }
+    }
+
+    // 🔬 Pre-populate Ingredient Analysis (Chips)
+    if (route.query.analysis) {
+       try {
+         ingredientHighlights.value = JSON.parse(String(route.query.analysis))
+         console.log("🔬 Analysis chips recovered:", ingredientHighlights.value.length)
+       } catch (e) {
+         console.warn("❌ Failed to parse analysis data:", e)
+       }
+    }
+
+    // 📄 Pre-populate Raw OCR text
+    if (route.query.rawOcr) {
+      rawChineseOcr.value = String(route.query.rawOcr)
+    }
+
+    scannedOnce.value = true // Enable post-scan logic
+    applyAutoCategory()      // Match category based on name (now rules are loaded!)
+    applyOtherStoreFallback() // Default to fallback store
+  }
+
+  ActivityLogService.log('add_product_start')
+  wizardStartTime.value = Date.now() // Start the timer!
 })
 
-interface ProductForm {
-  barcode: string
-  name: string
-  status: string
-  product_category_id: number | null
-  ingredients: string
-  description: string
-  store_ids: string[]   // ✅ string IDs
+// refs moved to top
+
+const handleTagInput = (e: any) => {
+  const val = e.target.value
+  if (val.endsWith(',')) {
+    const tag = val.slice(0, -1).trim()
+    if (tag && !form.value.tags.includes(tag)) {
+      form.value.tags.push(tag)
+    }
+    tagInput.value = ''
+  }
 }
 
-const form = ref<ProductForm>({
-  barcode: '',
-  name: '',
-  status: 'Muslim-friendly',
-  product_category_id: null,
-  ingredients: '',
-  description: '',
-  store_ids: []        // ✅ start empty
-})
+const addTag = (e?: any) => {
+  if (e) e.preventDefault()
+  const val = tagInput.value.trim().replace(/,/g, '')
+  if (val && !form.value.tags.includes(val)) {
+    form.value.tags.push(val)
+  }
+  tagInput.value = ''
+}
 
-// ✅ rules fetched from DB
-const categoryRules = ref<Record<string, number>>({})
+const removeTag = (t: string) => {
+  form.value.tags = form.value.tags.filter(tag => tag !== t)
+}
+
+// categoryRules moved to top
 
 // central mapping
 const statusDescriptions: Record<string, string> = {
@@ -657,18 +1805,131 @@ watch([autoStatus, productName, ingredientsText],
         console.log("🏷 AutoProductName applied:", newName)
       }
 
-      if (form.value.name && !form.value.product_category_id) {
-        const lower = form.value.name.toLowerCase()
-        for (const keyword in categoryRules.value) {
-          if (lower.includes(keyword)) {
-            form.value.product_category_id = categoryRules.value[keyword]
-            console.log(`📂 AutoCategory applied: "${form.value.product_category_id}" (matched "${keyword}")`)
-            break
-          }
-        }
-      }
+      applyAutoCategory()
     }
 )
+
+function applyAutoCategory() {
+  if (form.value.name && !form.value.product_category_id) {
+    const lower = form.value.name.toLowerCase()
+    for (const keyword in categoryRules.value) {
+      if (lower.includes(keyword)) {
+        form.value.product_category_id = categoryRules.value[keyword]
+        console.log(`📂 AutoCategory applied: "${form.value.product_category_id}" (matched "${keyword}")`)
+        break
+      }
+    }
+  }
+}
+
+/** 🏷️ Pre-fill tags based on Name (2 words), Category (1 word), and Smart Choice */
+function prefillTags() {
+  // Only prefill if tags are empty (avoid overwriting user input or during edit)
+  if (form.value.tags.length > 0 || props.editProduct) return;
+
+  const newTags: string[] = [];
+
+  // 1. 2 words from name
+  if (form.value.name) {
+    // Split by non-alphanumeric/spaces, filter out very short words
+    const words = form.value.name.split(/[^\w\u4e00-\u9fa5]+/).filter(w => w.length >= 1);
+    if (words.length > 0) newTags.push(words[0]);
+    if (words.length > 1) newTags.push(words[1]);
+  }
+
+  // 2. 1 word from category
+  if (form.value.product_category_id) {
+    const cat = categories.value.find(c => c.id === form.value.product_category_id);
+    if (cat && cat.name) {
+      const catWord = cat.name.split(/\s+/)[0];
+      if (!newTags.includes(catWord)) {
+        newTags.push(catWord);
+        derivedCategoryTag.value = catWord; // 🏷️ Store for dynamic syncing
+      }
+    }
+  }
+
+  // 3. Smart choice
+  let smartTag = '';
+  if (ingredientHighlights.value.length > 0) {
+    // Pick the first interesting highlight keyword
+    smartTag = ingredientHighlights.value[0].keyword;
+  } else if (form.value.name) {
+    const words = form.value.name.split(/[^\w\u4e00-\u9fa5]+/).filter(w => w.length >= 1);
+    if (words.length > 2) smartTag = words[2];
+  }
+
+  if (smartTag && !newTags.includes(smartTag)) {
+    newTags.push(smartTag);
+  }
+
+  form.value.tags = [...new Set(newTags)].filter(t => !!t);
+  derivedNameTags.value = newTags.slice(0, 2); // 🏷️ Store the name-based ones
+  console.log("🏷️ Tags pre-filled:", form.value.tags);
+}
+
+/** 🏷️ Update only the tags derived from the name when the name changes */
+function syncNameTags(newName: string) {
+  if (props.editProduct || !newName) return;
+
+  // 1. Extract new candidate tags from name
+  const words = newName.split(/[^\w\u4e00-\u9fa5]+/).filter(w => w.length >= 1);
+  const newNameTags = words.slice(0, 2);
+
+  // 2. Remove tags that were previously derived from name (if they are still in form.tags)
+  const filteredTags = form.value.tags.filter(t => !derivedNameTags.value.includes(t));
+
+  // 3. Add new name-derived tags
+  const updatedTags = [...filteredTags];
+  newNameTags.forEach(nt => {
+    if (!updatedTags.includes(nt)) {
+      updatedTags.push(nt);
+    }
+  });
+
+  // 4. Update state
+  form.value.tags = updatedTags;
+  derivedNameTags.value = newNameTags;
+}
+
+/** 🏷️ Update the tag derived from the category when it changes */
+function syncCategoryTag(newCatId: number | null) {
+  if (props.editProduct) return;
+
+  // 1. Get new candidate tag from category
+  const cat = categories.value.find(c => c.id === newCatId);
+  const newCatWord = cat?.name ? cat.name.split(/\s+/)[0] : null;
+
+  // 2. Remove old category-derived tag
+  let updatedTags = [...form.value.tags];
+  if (derivedCategoryTag.value) {
+    updatedTags = updatedTags.filter(t => t !== derivedCategoryTag.value);
+  }
+
+  // 3. Add new category tag
+  if (newCatWord && !updatedTags.includes(newCatWord)) {
+    updatedTags.push(newCatWord);
+  }
+
+  // 4. Update state
+  form.value.tags = updatedTags;
+  derivedCategoryTag.value = newCatWord;
+  console.log("🏷️ Tags synced with new category:", form.value.tags);
+}
+
+// Watch for manual name changes to update tags
+watch(() => form.value.name, (newName) => {
+  if (currentStep.value === STEP_DETAILS) {
+    syncNameTags(newName);
+  }
+});
+
+// Watch for category changes to update tags
+watch(() => form.value.product_category_id, (newCatId) => {
+  if (currentStep.value === STEP_DETAILS) {
+    syncCategoryTag(newCatId);
+  }
+});
 
 // Manual status change
 watch(() => form.value.status, (newStatus) => {
@@ -684,6 +1945,30 @@ watch(() => form.value.status, (newStatus) => {
   }
 })
 
+// Sync and restrict other stores option when regular stores are selected
+watch(() => [...form.value.store_ids], (newVal, oldVal) => {
+  const OTHER_STORES_ID = '2a013308-190c-4684-a607-3bc3d7817115'
+  
+  // Case 1: All stores deselected -> default back to Other Stores
+  if (newVal.length === 0) {
+    form.value.store_ids = [OTHER_STORES_ID]
+    return
+  }
+
+  // Case 2: Other Stores is selected along with specific stores
+  if (newVal.includes(OTHER_STORES_ID) && newVal.length > 1) {
+    const added = newVal.filter(id => !oldVal.includes(id))
+    
+    if (added.includes(OTHER_STORES_ID)) {
+      // User explicitly clicked Other Stores -> clear all specific stores
+      form.value.store_ids = [OTHER_STORES_ID]
+    } else {
+      // User selected a specific store -> remove Other Stores
+      form.value.store_ids = newVal.filter(id => id !== OTHER_STORES_ID)
+    }
+  }
+})
+
 
 async function checkBarcodeExists(barcode: string) {
   const { data } = await supabase
@@ -692,94 +1977,207 @@ async function checkBarcodeExists(barcode: string) {
       .eq("barcode", barcode)
       .maybeSingle()
 
-  return data || null
+  if (data) return data
+
+  // This barcode may already have been merged into another product —
+  // treat that the same as "already exists" so it isn't re-created.
+  const { data: aliasData } = await supabase
+      .from('product_barcodes')
+      .select('products (id, name, status, photo_front_url)')
+      .eq('barcode', barcode)
+      .maybeSingle() as { data: any }
+  const aliased = Array.isArray(aliasData?.products) ? aliasData?.products[0] : aliasData?.products
+
+  return aliased || null
 }
 
 watch(() => form.value.barcode, async (newBarcode) => {
+  console.log("🔍 Barcode watcher triggered with:", newBarcode);
   if (!newBarcode) {
     barcodeValid.value = null;
     barcodeMessage.value = "";
-    detectedProduct.value = null
+    detectedProduct.value = null;
+    autoAdvancePending.value = false;
     return;
   }
 
-  const validation = validateBarcode(newBarcode);
-  if (!validation.isValid) {
-    barcodeValid.value = false;
-    barcodeMessage.value = validation.message;
-    return;
-  }
+  try {
+    // 🕊️ Safety: Wait a bit for the app to fully resume and auth state to settle
+    // especially when coming back from the native camera.
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    barcodeLoading.value = true;
 
-  // 🚫 Only check duplicates when creating, not editing
-  if (!props.editProduct) {
-    const existingProduct = await checkBarcodeExists(newBarcode)
-
-    if (existingProduct) {
-      barcodeValid.value = false
-      barcodeMessage.value = "⚠️ Product already exists"
-
-      detectedProduct.value = {
-        id: existingProduct.id,
-        name: existingProduct.name,
-        status: existingProduct.status,
-        photo_front_url: existingProduct.photo_front_url,
-      }
-
-      return
+    // 1️⃣ Validate the barcode format/checksum offline first
+    if (!isValidBarcodeFormat(newBarcode)) {
+      barcodeValid.value = false;
+      barcodeMessage.value = "❌ Invalid barcode format";
+      detectedProduct.value = null;
+      barcodeLoading.value = false;
+      autoAdvancePending.value = false;
+      return;
     }
 
-    // clear preview if not exists
-    detectedProduct.value = null
+    // 2️⃣ Check duplicates in our own DB next (only when creating)
+    if (!props.editProduct) {
+      console.log("📡 Checking for existing product in DB...");
+      const existingProduct = await checkBarcodeExists(newBarcode);
 
+      if (existingProduct) {
+        console.log("⚠️ Product already exists:", existingProduct.name);
+        barcodeValid.value = false;
+        barcodeMessage.value = "⚠️ Product already exists";
+        detectedProduct.value = {
+          id: existingProduct.id,
+          name: existingProduct.name,
+          status: existingProduct.status,
+          photo_front_url: existingProduct.photo_front_url,
+        };
+        barcodeLoading.value = false;
+        autoAdvancePending.value = false;
+        return;
+      }
+      detectedProduct.value = null;
+    }
+
+    // 3️⃣ If format is valid and it doesn't exist in our DB, mark it as valid!
+    barcodeValid.value = true;
+    barcodeMessage.value = "✅ Valid barcode";
+
+    // Auto-advance to next step
+    if (currentStep.value === STEP_BARCODE) {
+      console.log("🚀 Auto-advancing to next step...");
+      autoAdvancePending.value = true
+      setTimeout(() => {
+        autoAdvancePending.value = false
+        nextStep();
+      }, 500);
+    }
+  } catch (err) {
+    console.error("❌ Barcode validation error:", err);
+    // Fallback: check format offline
+    if (isValidBarcodeFormat(newBarcode)) {
+      barcodeValid.value = true;
+      barcodeMessage.value = "✅ Barcode accepted";
+    } else {
+      barcodeValid.value = false;
+      barcodeMessage.value = "❌ Validation failed";
+    }
+  } finally {
+    barcodeLoading.value = false;
   }
-
-  barcodeValid.value = true;
-  barcodeMessage.value = validation.message;
 });
 
 
 
-const autoStatusApplied = ref(false)
-const userTouchedDescription = ref(false)
-const programmaticDescUpdate = ref(false)
+// refs moved to top
 
-const frontFile = ref < File | null > (null)
-const backFile = ref < File | null > (null)
-const frontPreview = ref < string | null > (null) // For showing preview
-const backPreview = ref < string | null > (null)
+function calculateReadingTime(text: string) {
+  const wordsPerMinute = 200;
+  const words = (text || '').trim().split(/\s+/).length;
+  const minutes = words / wordsPerMinute;
+  const seconds = minutes * 60;
+  // Return minimum 3 seconds, or more based on reading speed
+  return Math.max(3000, Math.ceil(seconds * 1000));
+}
 
-const loading = ref(false)
-const showToast = ref(false)
-const showOcrToast = ref(false);
-const showErrorToast = ref(false)
-const toastMessage = ref('')
-const scanning = ref(false)
+async function fetchRandomReflection() {
+  try {
+    const { data, error } = await supabase
+        .from('loading_reflections')
+        .select('*')
+        .eq('is_active', true);
 
-const rawChineseOcr = ref('')  // keep original OCR before cleaning
-const scannedOnce = ref(false);
-const isResettingForm = ref(false)
-const originalFile = ref<File | null>(null)
+    if (error) throw error;
+    if (data && data.length > 0) {
+      loadingReflection.value = data[Math.floor(Math.random() * data.length)];
+    }
+  } catch (err) {
+    console.error('Error fetching reflections:', err);
+  }
+}
 
-const barcodeValid = ref<null | boolean>(null)
-const barcodeMessage = ref<string>('') // feedback below input
-const html5QrCodeInstance = ref<Html5Qrcode | null>(null)
-const categories = ref<{ id: number; name: string }[]>([])
+// refs moved to top
 const emit = defineEmits(['updated', 'close'])
 
-function onProductNameInput(ev: Event) {
-  const target = ev.target as HTMLInputElement
-  console.log("✏️ Product name typed:", target.value)
+let ingredientsInputDebounce: ReturnType<typeof setTimeout> | null = null
+
+function handleIngredientsInput() {
+  // ⏳ Flip the "analyzing" indicator on immediately so typing gets instant
+  // feedback, even though the actual match is debounced below.
+  checkingIngredients.value = true
+
+  // 🔴 Live-analyze as the user types, instead of waiting for blur — debounced
+  // so we're not re-matching against the highlight list on every keystroke.
+  if (ingredientsInputDebounce) clearTimeout(ingredientsInputDebounce)
+  ingredientsInputDebounce = setTimeout(() => {
+    recheckHighlights()
+  }, 400)
 }
 
-function handleIngredientsInput(ev: Event) {
-  const target = ev.target as HTMLTextAreaElement
-  console.log("🥬 Ingredients input:", target.value)
-}
-
-async function recheckHighlights() {
+// This field only ever holds English text (typed manually, or the translated
+// OCR result) — unlike ScanIngredientsView.vue it has no separate Chinese
+// field. The shared useOcrPipeline recheck helpers key their matching mode
+// off a single `detectedLanguage` ref though, which can still be left as
+// 'chinese'/'mixed' from an earlier scan; re-running them here to reflect a
+// manual edit could silently switch matching into the wrong mode. So this
+// view does its own lightweight, always-English match against the cached
+// highlight list instead of calling back into the OCR pipeline.
+function recheckHighlights() {
   checkingIngredients.value = true
   try {
-    await recheckHighlightsSmart()
+    const raw = form.value.ingredients.trim()
+    if (!raw || !allHighlights.value.length) {
+      ingredientHighlights.value = []
+      return
+    }
+
+    const parts = raw.split(/\s*,\s*/).map(x => x.trim()).filter(Boolean)
+    const highlights = [...allHighlights.value].sort((a, b) => b.keyword.length - a.keyword.length)
+    const found: IngredientHighlight[] = []
+
+    for (const part of parts) {
+      const normalized = part.replace(/[^a-z0-9]/gi, '').toLowerCase()
+      if (!normalized) continue
+
+      for (const h of highlights) {
+        const variants = h.keyword?.split('|').map(v => v.trim()) ?? []
+        for (const variant of variants) {
+          const normVariant = variant.replace(/[^a-z0-9]/gi, '').toLowerCase()
+          if (!normVariant) continue
+
+          let isMatch = false
+          try {
+            if (/[[\]|\\]/.test(variant)) {
+              isMatch = new RegExp(variant, 'i').test(normalized)
+            } else {
+              isMatch = normalized.includes(normVariant)
+            }
+          } catch (e) {
+            console.warn('⚠️ Invalid regex in keyword:', variant, e)
+          }
+
+          if (isMatch && !found.some(f => f.matchedVariant?.includes(normVariant))) {
+            found.push({ ...h, matchedVariant: variant })
+          }
+        }
+      }
+    }
+
+    // Keep the OCR bounding boxes for keywords that are still matched, so the
+    // highlight overlay survives blur/typing rechecks (this match works on text only).
+    const boxesByKeyword = new Map(
+      ingredientHighlights.value
+        .filter((h: IngredientHighlight) => h.boxes?.length)
+        .map((h: IngredientHighlight) => [h.keyword, h.boxes] as const)
+    )
+    ingredientHighlights.value = found.map((h: IngredientHighlight) =>
+      boxesByKeyword.has(h.keyword) ? { ...h, boxes: boxesByKeyword.get(h.keyword) } : h
+    )
+
+    const hasHaram = found.some(h => extractIonColor(h.color) === 'danger')
+    const hasSyubhah = found.some(h => extractIonColor(h.color) === 'warning')
+    autoStatus.value = hasHaram ? 'Haram' : hasSyubhah ? 'Syubhah' : 'Muslim-friendly'
   } finally {
     checkingIngredients.value = false
   }
@@ -821,22 +2219,29 @@ const fetchCategoryRules = async () => {
   }
 }
 
-function applyQuickDescription(text: string) {
-  form.value.description = text
-}
 
 async function scanIngredientsWithCamera() {
-  const image = await Camera.getPhoto({
-    quality: 90,
-    allowEditing: false,
-    resultType: CameraResultType.Uri,
-    source: CameraSource.Camera,
-    direction: CameraDirection.Rear,
-  })
-  const blob = await fetch(image.webPath!).then(r => r.blob())
-  const file = new File([blob], `ingredients-${Date.now()}.jpg`, { type: 'image/jpeg' })
-  originalFile.value = file
-  openCropper(file)
+  try {
+    const image = await Camera.getPhoto({
+      quality: 90,
+      allowEditing: false,
+      resultType: CameraResultType.Uri,
+      source: CameraSource.Camera,
+      direction: CameraDirection.Rear,
+    })
+    const blob = await fetch(image.webPath!).then(r => r.blob())
+    const file = new File([blob], `ingredients-${Date.now()}.jpg`, { type: 'image/jpeg' })
+    originalFile.value = file
+    ActivityLogService.log('add_product_ocr_start', { method: 'camera' })
+    openCropper(file)
+  } catch (err: any) {
+    if (err?.message?.includes('cancel') || String(err).includes('cancel') || String(err).includes('cancelled')) {
+      console.log('📷 Camera capture was cancelled by the user.');
+      return;
+    }
+    console.error('❌ Camera capture failed:', err);
+    setError(t('addProduct.cameraError') || 'Failed to capture image.');
+  }
 }
 
 function scanIngredientsFromGallery() {
@@ -847,188 +2252,119 @@ function scanIngredientsFromGallery() {
     const target = e.target as HTMLInputElement
     if (target.files && target.files[0]) {
       originalFile.value = target.files[0]
+      ActivityLogService.log('add_product_ocr_start', { method: 'gallery' })
       openCropper(target.files[0])
     }
   }
   input.click()
 }
 
-const cameras = ref<{ id: string; label: string }[]>([])
-const selectedCameraId = ref<string | null>(null)
+// refs moved to top
 
-async function loadCameras() {
-  try {
-    const devices = await Html5Qrcode.getCameras()
-    cameras.value = devices.map(d => ({ id: d.id, label: d.label || `Camera ${d.id}` }))
-
-    // default: pick back camera if possible
-    const backCam = devices.find(d => /back|rear|environment/i.test(d.label))
-    selectedCameraId.value = backCam ? backCam.id : devices[0]?.id || null
-  } catch (err) {
-    console.error('❌ Failed to get cameras:', err)
-  }
-}
-
-async function switchCamera(camId: string) {
-  if (!html5QrCodeInstance.value) return
-
-  try {
-    await html5QrCodeInstance.value.stop()
-    document.getElementById('reader')!.innerHTML = ''
-
-    const config = {
-      fps: 15,
-      qrbox: { width: 300, height: 150 },
-      formatsToSupport: [
-        Html5QrcodeSupportedFormats.EAN_13,
-        Html5QrcodeSupportedFormats.EAN_8,
-        Html5QrcodeSupportedFormats.UPC_A,
-        Html5QrcodeSupportedFormats.UPC_E,
-      ],
-    }
-
-    await html5QrCodeInstance.value.start(
-        camId,
-        config,
-        async (decodedText) => {
-          console.log('✅ Web barcode detected:', decodedText)
-          form.value.barcode = decodedText
-          scannedOnce.value = true   // ✅ mark as scanned
-          await Haptics.impact({ style: ImpactStyle.Medium })
-
-          await html5QrCodeInstance.value?.stop()
-          document.getElementById('reader')!.innerHTML = ''
-          html5QrCodeInstance.value = null
-          scanning.value = false
-        },
-        (errorMessage) => {
-          console.log('📡 Scan error:', errorMessage)
-        }
-    )
-
-    selectedCameraId.value = camId
-  } catch (err) {
-    console.error('❌ Failed to switch camera:', err)
-  }
-}
-
-
-async function startBarcodeScan() {
+// Live scanning itself (native transparent-camera trick + web html5-qrcode)
+// lives in BarcodeScanOverlay.vue / useLiveBarcodeScanner — this view just
+// opens/closes it and reacts to what it reports.
+function startBarcodeScan() {
   if (scanning.value) {
-    // 🛑 If already scanning → stop
-    if (html5QrCodeInstance.value) {
-      await html5QrCodeInstance.value.stop()
-      document.getElementById('reader')!.innerHTML = ''
-      html5QrCodeInstance.value = null
-    }
+    // 🛑 Already open → close it. Remember this was a deliberate stop so
+    // re-entering the view (e.g. switching tabs and back) doesn't silently
+    // reopen the camera on the user again.
+    userStoppedScanner.value = true
     scanning.value = false
     return
   }
-
+  // A manual (re)open via the "Camera" button, not the instant auto-open —
+  // closing this one with X should just return to this step, not leave the page.
+  autoOpenedScan.value = false
   scanning.value = true
+}
+
+async function onBarcodeOverlayDetected(scannedBarcode: string) {
+  autoOpenedScan.value = false
+  scanning.value = false
+  // Force Vue reactivity: clear first, then set after nextTick (the watcher
+  // that validates the barcode only fires on an actual value change).
+  form.value.barcode = ''
+  await nextTick()
+  form.value.barcode = scannedBarcode
+  scannedOnce.value = true
+}
+
+// X pressed on the overlay. If this was the instant auto-opened scan (see
+// `scanning`'s initial value), the user never asked to be on Add Product's
+// manual-entry step at all — leave the page entirely, back to Search.
+// Otherwise (they reopened the camera themselves), just fall back to the
+// Barcode step they were already on.
+function onBarcodeOverlayClose() {
+  if (autoOpenedScan.value) {
+    scanning.value = false
+    router.back()
+    return
+  }
+  userStoppedScanner.value = true
+  scanning.value = false
+}
+
+function onBarcodeOverlayError(msg: string) {
+  autoOpenedScan.value = false
+  scanning.value = false
+  setError(msg)
+}
+
+// "Manual Entry" tapped on the live scan overlay itself — close the camera
+// and drop the user onto the barcode input already on the Barcode step.
+async function onBarcodeOverlayManualEntry() {
+  autoOpenedScan.value = false
+  userStoppedScanner.value = true
+  scanning.value = false
+  await nextTick()
+  barcodeInput.value?.$el?.setFocus?.()
+}
+
+// "Upload from Gallery" tapped on the live scan overlay — close the camera
+// first (scanBarcodeFromGallery bails out early while scanning is still true)
+// then hand off to the same gallery picker the Barcode step button uses.
+async function onBarcodeOverlayGallery() {
+  autoOpenedScan.value = false
+  userStoppedScanner.value = true
+  scanning.value = false
+  await nextTick()
+  await scanBarcodeFromGallery()
+}
+
+const scanningFromGallery = ref(false)
+
+async function scanBarcodeFromGallery() {
+  if (scanningFromGallery.value || scanning.value) return
+  scanningFromGallery.value = true
 
   try {
-    if (Capacitor.isNativePlatform()) {
-      // 🟢 Native → MLKit
-      const { camera } = await BarcodeScanner.checkPermissions();
-      if (camera !== 'granted') {
-        const { camera: newStatus } = await BarcodeScanner.requestPermissions();
-        if (newStatus !== 'granted') {
-           scanning.value = false;
-           return;
-        }
-      }
+    const scannedBarcode = await pickAndDecodeBarcodeFromGallery()
 
-      const { barcodes } = await BarcodeScanner.scan();
-
-      if (barcodes.length > 0) {
-        const barcode = barcodes[0].rawValue;
-        if (barcode) {
-          await Haptics.impact({ style: ImpactStyle.Medium })
-          form.value.barcode = barcode
-        }
-      }
-      scanning.value = false
-    } else {
-      // 🌐 Web → html5-qrcode
+    if (scannedBarcode) {
+      await Haptics.impact({ style: ImpactStyle.Medium })
+      form.value.barcode = ''
       await nextTick()
-
-      const readerEl = document.getElementById('reader')
-
-      if (!readerEl) {
-        console.error("❌ #reader container not found")
-        scanning.value = false
-        return
-      }
-
-      const html5QrCode = new Html5Qrcode('reader', { verbose: false }) // ✅ always inline, never fullscreen
-      html5QrCodeInstance.value = html5QrCode
-
-      const config = {
-        fps: 15,
-        qrbox: { width: 300, height: 150 },
-        formatsToSupport: [
-          Html5QrcodeSupportedFormats.EAN_13,
-          Html5QrcodeSupportedFormats.EAN_8,
-          Html5QrcodeSupportedFormats.UPC_A,
-          Html5QrcodeSupportedFormats.UPC_E,
-        ],
-      }
-
-      // 🔍 Get available cameras
-      const devices = await Html5Qrcode.getCameras()
-      if (!devices || !devices.length) {
-        console.error('❌ No cameras found')
-        scanning.value = false
-        return
-      }
-
-      // Pick rear/back/environment camera if available, else fallback to first
-      const backCam = devices.find(d => /back|rear|environment/i.test(d.label))
-      const camId = backCam ? backCam.id : devices[0].id
-
-      await loadCameras()
-      if (!selectedCameraId.value) {
-        console.error('❌ No camera available')
-        scanning.value = false
-        return
-      }
-
-      await html5QrCode.start(
-          camId, // 👈 use specific camera ID
-          config,
-          async (decodedText) => {
-            console.log('✅ Web barcode detected:', decodedText)
-            await Haptics.impact({ style: ImpactStyle.Medium })
-            form.value.barcode = decodedText
-            scannedOnce.value = true   // ✅ mark as scanned
-            // also push into IonInput DOM
-            await nextTick()
-            if (barcodeInput.value) {
-              barcodeInput.value.$el.value = decodedText
-            }
-
-            // auto stop after detection
-            await html5QrCode.stop()
-            document.getElementById('reader')!.innerHTML = ''
-            html5QrCodeInstance.value = null
-            scanning.value = false
-          },
-          (errorMessage) => {
-            console.log(errorMessage) // gets called often
-          }
-      )
+      form.value.barcode = scannedBarcode
+      scannedOnce.value = true
+    } else {
+      setError(t('addProduct.noBarcodeInImage') || 'No barcode found in that image.')
     }
   } catch (err: any) {
-    console.error('❌ Barcode scan failed:', err)
-    scanning.value = false
+    console.error('❌ Gallery barcode scan failed:', err)
+    setError(err.message || t('addProduct.cameraError') || 'Failed to read the selected image.')
+  } finally {
+    scanningFromGallery.value = false
   }
 }
 
 const isUnmounted = false
 onUnmounted(() => {
+  // BarcodeScanOverlay (v-if="scanning") stops its own camera in its own
+  // onUnmounted when this view tears down — nothing to do here for it.
   if (cropperSrc.value) URL.revokeObjectURL(cropperSrc.value)
   if (croppedPreviewUrl.value) URL.revokeObjectURL(croppedPreviewUrl.value)
+  if (ingredientsInputDebounce) clearTimeout(ingredientsInputDebounce)
 })
 
 async function takeFrontPicture() {
@@ -1045,8 +2381,14 @@ async function takeFrontPicture() {
     if (isUnmounted) return;
     frontPreview.value = image.webPath || null;
     frontFile.value = await resizeImage(image.webPath || '');
+    originalFrontPreview.value = frontPreview.value;
+    originalFrontFile.value = frontFile.value;
 
-  } catch (error) {
+  } catch (error: any) {
+    if (error?.message?.includes('cancel') || String(error).includes('cancel') || String(error).includes('cancelled')) {
+      console.log('📷 Front photo capture was cancelled by the user.');
+      return;
+    }
     console.error('Error taking front photo:', error);
     setError('❌ Failed to capture front image.');
   }
@@ -1066,8 +2408,14 @@ async function takeBackPicture() {
     if (isUnmounted) return;
     backPreview.value = image.webPath || null;
     backFile.value = await resizeImage(image.webPath || '');
+    originalBackPreview.value = backPreview.value;
+    originalBackFile.value = backFile.value;
 
-  } catch (error) {
+  } catch (error: any) {
+    if (error?.message?.includes('cancel') || String(error).includes('cancel') || String(error).includes('cancelled')) {
+      console.log('📷 Back photo capture was cancelled by the user.');
+      return;
+    }
     console.error('Error taking back photo:', error);
     setError('❌ Failed to capture back image.');
   }
@@ -1086,6 +2434,8 @@ function uploadFrontFromGallery() {
       reader.onload = async () => {
         frontPreview.value = reader.result as string;
         frontFile.value = await resizeImage(reader.result as string);
+        originalFrontPreview.value = frontPreview.value;
+        originalFrontFile.value = frontFile.value;
       };
       reader.readAsDataURL(file);
     }
@@ -1106,6 +2456,8 @@ function uploadBackFromGallery() {
       reader.onload = async () => {
         backPreview.value = reader.result as string;
         backFile.value = await resizeImage(reader.result as string);
+        originalBackPreview.value = backPreview.value;
+        originalBackFile.value = backFile.value;
       };
       reader.readAsDataURL(file);
     }
@@ -1113,27 +2465,78 @@ function uploadBackFromGallery() {
   input.click();
 }
 
-function validateBarcode(barcode: string) {
-  const clean = barcode.replace(/-/g, "");
-
-  if (
-      BarcodeValidator.isValidEAN8(clean) ||
-      BarcodeValidator.isValidEAN13(clean) ||
-      BarcodeValidator.isValidEAN14(clean) ||
-      BarcodeValidator.isValidUPCA(clean) ||
-      BarcodeValidator.isValidUPCE(clean) ||
-      BarcodeValidator.isValidISBN(clean) ||
-      BarcodeValidator.isValidIMEI(clean) ||
-      BarcodeValidator.isValidGSIN(clean) ||
-      BarcodeValidator.isValidSSCC(clean) ||
-      BarcodeValidator.isValidGLN(clean) ||
-      BarcodeValidator.isValidASIN(clean)
-  ) {
-    return { isValid: true, message: "✅ Valid barcode" };
-  }
-
-  return { isValid: false, message: "❌ Invalid barcode" };
+function applyQuickDescription(text: string) {
+  form.value.description = text;
 }
+
+// Contributor submissions often arrive as ALL CAPS (scanned off packaging) or
+// all lowercase. Title-cases each word while leaving acronyms like "MSG" or
+// "E621" alone, so users don't have to retype them by hand.
+function toTitleCase(text: string): string {
+  // If the whole string is shouted in caps (e.g. "UNKOWN PRODUCT"), there's no
+  // acronym to protect — title-case every word. Only preserve individual
+  // all-caps words (like "MSG" or "E621") when they sit inside otherwise
+  // mixed-case text, where they're more likely deliberate acronyms.
+  const letters = text.replace(/[^A-Za-zÀ-ÖØ-öø-ÿ]/g, '')
+  const isAllCaps = letters.length > 1 && letters === letters.toUpperCase()
+
+  return text.replace(/[A-Za-zÀ-ÖØ-öø-ÿ0-9]+(?:['’][A-Za-z]+)?/g, (word) => {
+    if (!isAllCaps && word.length > 1 && word === word.toUpperCase() && /[A-Z]/.test(word)) {
+      return word
+    }
+    return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+  })
+}
+
+function fixNameCasing() {
+  if (!form.value.name) return
+  form.value.name = toTitleCase(form.value.name)
+}
+
+function fixIngredientsCasing() {
+  if (!form.value.ingredients) return
+  form.value.ingredients = toTitleCase(form.value.ingredients)
+}
+
+/* ---------------- Status / description consistency check ----------------
+   Cheap, synchronous, no API call — the description often gets set via the
+   quick-insert chips above, but if the status is changed later without
+   re-applying a chip (or a custom description is typed), the two can
+   silently drift apart, e.g. status "Muslim-friendly" with a leftover
+   "Syubhah ingredients found." description. Flags only an explicit
+   contradiction (a DIFFERENT status's keyword appearing in the text), never
+   a bare absence of confirmation, to avoid nagging on legitimate custom text. */
+type StatusKey = 'Halal' | 'Muslim-friendly' | 'Syubhah' | 'Haram'
+
+const STATUS_KEYWORD_PATTERNS: Record<StatusKey, RegExp> = {
+  'Halal': /\bhalal\b/i,
+  'Muslim-friendly': /muslim[\s-]?friendly/i,
+  'Syubhah': /\bsyubhah\b/i,
+  'Haram': /\bharam\b/i,
+}
+
+const STATUS_TO_QUICK_KEY: Record<StatusKey, keyof typeof quickDescriptions> = {
+  'Halal': 'halal',
+  'Muslim-friendly': 'muslimFriendly',
+  'Syubhah': 'syubhah',
+  'Haram': 'haram',
+}
+
+const descriptionStatusConflicts = computed<StatusKey[]>(() => {
+  const status = form.value.status as StatusKey | undefined
+  const description = form.value.description as string | undefined
+  if (!status || !description?.trim() || !(status in STATUS_KEYWORD_PATTERNS)) return []
+  return (Object.keys(STATUS_KEYWORD_PATTERNS) as StatusKey[])
+    .filter(key => key !== status && STATUS_KEYWORD_PATTERNS[key].test(description))
+})
+
+function fixDescriptionToMatchStatus() {
+  const status = form.value.status as StatusKey | undefined
+  if (!status || !(status in STATUS_TO_QUICK_KEY)) return
+  applyQuickDescription(quickDescriptions[STATUS_TO_QUICK_KEY[status]])
+}
+
+/** Offline check for barcode format and checksum (used at validation & submit time) */
 
 async function saveProductStores(
     productId: string,
@@ -1177,9 +2580,43 @@ async function saveProductStores(
 
 
 
+async function handleConfirmCrop() {
+  try {
+    await fetchRandomReflection()
+    const reflectionStart = Date.now()
+
+    await confirmCrop()
+
+    // 🕊 Ensure reflection shown minimum time
+    const reflectionElapsed = Date.now() - reflectionStart
+    const minReflectionTime = calculateReadingTime(loadingReflection.value?.text_en || '')
+
+    if (reflectionElapsed < minReflectionTime) {
+      await new Promise(r => setTimeout(r, minReflectionTime - reflectionElapsed))
+    }
+
+    // 🛡️ A real back photo may have been captured even when no ingredients
+    // list could actually be read from it (e.g. a screenshot, or the wrong
+    // side of the package) — the pipeline leaves both text fields empty in
+    // that case. Don't let that silently pass as a successful scan.
+    if (!ingredientsText.value?.trim() && !ingredientsTextZh.value?.trim()) {
+      ocrFailedOnce.value = true
+      ActivityLogService.log('add_product_ocr_failed', { barcode: form.value.barcode, reason: 'no_ingredients_detected' })
+      setError(t('addProduct.noIngredientsDetected') || "Couldn't detect an ingredients list in that photo. Try again or enter the ingredients manually below.")
+      return
+    }
+
+    showOcrToast.value = true
+  } catch (err: any) {
+    ocrFailedOnce.value = true
+    ActivityLogService.log('add_product_ocr_failed', { barcode: form.value.barcode, reason: 'error', error_message: err?.message })
+    setError(err.message || 'OCR failed')
+  }
+}
+
 async function handleSubmit() {
 
-  const autoApprove = ['admin', 'contributor'].includes(userRole.value || 'user')
+  const autoApprove = ['admin'].includes(userRole.value || 'user')
   loading.value = true
   errorMsg.value = ''
   showErrorToast.value = false
@@ -1205,9 +2642,8 @@ async function handleSubmit() {
       barcode
     } = form.value
 
-    const barcodeValidation = validateBarcode(form.value.barcode);
-    if (!barcodeValidation.isValid) {
-      setError(barcodeValidation.message);
+    if (!isValidBarcodeFormat(form.value.barcode)) {
+      setError('❌ Invalid barcode format');
       loading.value = false;
       return;
     }
@@ -1219,12 +2655,31 @@ async function handleSubmit() {
     if (!form.value.description.trim()) return setError('Description is required.')
 
     if (!props.editProduct && !frontFile.value) return setError('Front image is required.')
-    if (!props.editProduct && !backFile.value) return setError('Back image is required.')
+    if (!props.editProduct && !manualIngredientsMode.value && !backFile.value) return setError('Back image is required.')
 
     const { store_ids, ...productData } = form.value
+    // Only keep the free-text store name when "Other Stores" is the selection
+    const otherStoreName = store_ids.includes(OTHER_STORES_ID_UI)
+      ? form.value.other_store_name.trim().slice(0, 100)
+      : ''
+    productData.other_store_name = otherStoreName || (null as unknown as string)
 
     let frontUrl = props.editProduct?.photo_front_url || ''
     let backUrl  = props.editProduct?.photo_back_url || ''
+
+    // Perceptual hash of the front photo, for the admin review queue's
+    // duplicate detector (find_similar_products). Only computed when a new
+    // front photo is actually being uploaded — an edit that doesn't touch
+    // the photo leaves the existing stored hash untouched. Best-effort: a
+    // hashing failure shouldn't block the submission.
+    let imageHash: string | undefined
+    if (frontFile.value) {
+      try {
+        imageHash = await computeImageHash(frontFile.value)
+      } catch (err) {
+        console.warn('⚠️ Failed to compute image hash:', err)
+      }
+    }
 
     if (frontFile.value) {
       const {
@@ -1236,7 +2691,6 @@ async function handleSubmit() {
           })
 
       if (error) {
-        console.log(error);
         setError('❌ Failed to upload front image.');
         return;
       }
@@ -1247,8 +2701,9 @@ async function handleSubmit() {
           .from('product-images')
           .getPublicUrl(`${barcode}/front.jpg`)
 
-      frontUrl = publicUrl.publicUrl
+      frontUrl = `${publicUrl.publicUrl.split('?')[0]}?v=${Date.now()}`
       console.log('Front image uploaded:', frontUrl)
+      await uploadProductFrontThumb(barcode, frontFile.value)
     }
 
     if (backFile.value) {
@@ -1261,7 +2716,6 @@ async function handleSubmit() {
           })
 
       if (error) {
-        console.log(error);
         setError('❌ Failed to upload back image.');
         return;
       }
@@ -1272,22 +2726,35 @@ async function handleSubmit() {
           .from('product-images')
           .getPublicUrl(`${barcode}/back.jpg`)
 
-      backUrl = publicUrl.publicUrl
+      backUrl = `${publicUrl.publicUrl.split('?')[0]}?v=${Date.now()}`
       console.log('Back image uploaded:', backUrl)
     }
 
     // --- 🔹 Update vs. Create ---
     if (props.editProduct) {
+      // Admins control the published state via the toggle; non-admin edits
+      // always go back to unapproved and require a fresh review.
+      const finalApproved = autoApprove ? form.value.approved : false
+      // Only stamp approved_at when this edit newly publishes the product —
+      // keep the original timestamp if it was already approved, so editing a
+      // live product doesn't make it reappear as "new" in notifications.
+      const finalApprovedAt = finalApproved
+        ? (props.editProduct.approved ? props.editProduct.approved_at : new Date().toISOString())
+        : null
+
       // UPDATE product
       await supabase.from("products").update({
         ...productData,
         photo_front_url: frontUrl,
         photo_back_url: backUrl,
+        ...(imageHash !== undefined ? { image_hash: imageHash } : {}),
         updated_at: new Date().toISOString(),
         updated_by: user.id,
-        approved: autoApprove ? true : props.editProduct.approved,
-        approved_by: autoApprove ? user.id : props.editProduct.approved_by,
-        approved_at: autoApprove ? new Date().toISOString() : props.editProduct.approved_at,
+        approved: finalApproved,
+        approved_by: finalApproved ? user.id : null,
+        approved_at: finalApprovedAt,
+        is_rejected: false,
+        rejection_reason: null
       }).eq("id", props.editProduct.id)
 
       // 🟢 Always replace stores
@@ -1321,6 +2788,7 @@ async function handleSubmit() {
             barcode,
             photo_front_url: frontUrl,
             photo_back_url: backUrl,
+            image_hash: imageHash ?? null,
             added_by: user.id,
             approved: autoApprove,
             approved_by: autoApprove ? user.id : null,
@@ -1337,139 +2805,816 @@ async function handleSubmit() {
       // 🟢 Insert stores fresh
       await saveProductStores(newProduct.id, store_ids, user.id)
 
+      // 🎁 Award scan bonus quota for contributing a product
+      await awardScanBonus(1);
+
       // ✅ Toast logic (already correct)
       toastMessage.value = autoApprove
           ? "✅ Product published successfully!"
           : "✅ Product submitted and awaiting approval."
 
       // 🔔 Notify differently depending on role
+      const userEmail = user?.email || 'Unknown'
+      const userName = user?.user_metadata?.name || user?.user_metadata?.full_name || 'Unknown'
+
       if (autoApprove) {
+        const elapsedSeconds = Math.floor((Date.now() - wizardStartTime.value) / 1000)
+
         // 🟢 Admin/Contributor → public notification
         await notifyEvent(
             "new_product",
             "🆕 New Product Published!",
-            `${form.value.name} (${form.value.status})\nBarcode: ${form.value.barcode}`,
+            `${form.value.name} (${form.value.status})\nBarcode: ${form.value.barcode}\nProcessed in: ${elapsedSeconds} seconds\nAdded by: ${userName} (${userEmail})`,
             frontUrl || backUrl,
             {
               barcode: form.value.barcode,
               status: form.value.status,
               isNative: true,
+              processing_time: elapsedSeconds,
+              added_by: userEmail,
+              user_id: user?.id
             }
+        );
+      } else {
+        // 🔴 Non-admin → notify Discord and push to Admin accounts
+        await notifyEvent(
+            "product_needs_review",
+            "🔍 Product Needs Review",
+            `${form.value.name} (${form.value.status})\nBarcode: ${form.value.barcode}\nSubmitted by: ${userName} (${userEmail})\nAwaiting approval.`,
+            frontUrl || backUrl,
+            {
+              barcode: form.value.barcode,
+              status: form.value.status,
+              isNative: true,
+              added_by: userEmail,
+              user_id: user?.id,
+              target_role: 'admin'
+            },
+            ['discord', 'onesignal']
         );
       }
 
-      // reset form
-      form.value = { barcode: '', name: '', status: 'Muslim-friendly',
-        product_category_id: null, ingredients: '', description: '', store_ids: [] }
-      frontFile.value = null; backFile.value = null
-      frontPreview.value = null; backPreview.value = null
-      ingredientHighlights.value = []; barcodeValid.value = null; barcodeMessage.value = ''
-      await awardAndCelebrate("add_product", 10000)
-      
+      // ✅ Log first, reset after
       await ActivityLogService.log("add_product_success", {
         barcode: barcode,
-        name: form.value.name,
-        status: form.value.status
+        name: productData.name,
+        status: productData.status
       })
+
+      // reset form
+      form.value = { barcode: '', name: '', status: 'Muslim-friendly',
+        product_category_id: null, ingredients: '', description: '', store_ids: [], other_store_name: '', tags: [], approved: false }
+      frontFile.value = null; backFile.value = null
+      frontPreview.value = null; backPreview.value = null
+      originalFrontFile.value = null; originalBackFile.value = null
+      originalFrontPreview.value = null; originalBackPreview.value = null
+      ingredientHighlights.value = []; barcodeValid.value = null; barcodeMessage.value = ''
+      
+      // Reset wizard state
+      detectedProduct.value = null
+      scannedOnce.value = false
+      rawChineseOcr.value = ''
+      autoStatusApplied.value = false
+      userTouchedDescription.value = false
+      ocrFailedOnce.value = false
+      manualIngredientsMode.value = false
+      currentStep.value = STEP_BARCODE
+      scrollToTop()
+
+      wizardStartTime.value = Date.now() // Reset timer for next product
+      await awardAndCelebrate("add_product", 10000)
     }
 
     showToast.value = true
 
   } catch (err: any) {
     console.error('Submission error:', err)
+    ActivityLogService.log('add_product_failed', { barcode: form.value.barcode, error_message: err?.message })
     setError(err.message || 'An unexpected error occurred.')
   } finally {
     loading.value = false
   }
 }
+
+onMounted(() => {
+  preloadAIModel();
+})
 </script>
 
 <style scoped>
+.rejection-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: rgba(var(--ion-color-danger-rgb), 0.1);
+  border: 1px solid rgba(var(--ion-color-danger-rgb), 0.3);
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-bottom: 16px;
+}
+
+.rejection-banner-icon {
+  font-size: 20px;
+  color: var(--ion-color-danger);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.rejection-banner-text strong {
+  display: block;
+  font-size: 0.9rem;
+  color: var(--ion-color-danger);
+  margin-bottom: 2px;
+}
+
+.rejection-banner-text p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--ion-text-color);
+  line-height: 1.4;
+}
+
 ion-toast {
   transform: translateY(-55px);
-}
-
-#reader {
-  width: 100%;
-  height: 260px;       /* 🔹 fixed height so library doesn't auto-popup */
-  border-radius: 8px;
-  overflow: hidden;
-  margin: 12px auto;
-  background: #000;    /* black background behind video */
-  position: relative;  /* ensures inline placement */
-}
-
-/* kill any unwanted modal overlay injected by html5-qrcode */
-#reader__scan_region,
-#reader__dashboard_section_csr {
-  position: relative !important;
-  inset: auto !important;
-  max-width: 100% !important;
-}
-
-/* For larger screens */
-@media (min-width: 768px) {
-  #reader {
-    width: 400px;       /* fixed width for better control */
-    height: 300px;      /* fixed height */
-    border-radius: 8px; /* maybe larger radius for desktop */
-  }
 }
 
 ion-item {
   --background: transparent;
 }
 
+</style>
+
+<style scoped>
 .form-container {
-  border-radius: 10px;
-  background-color: var(--ion-color-light); /* optional background */
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); /* optional elevation */
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background-color: var(--ion-background-color); /* Base background for form content */
+  padding-bottom: 32px;
 }
 
-ion-content::part(scroll) {
-  padding-bottom: 100px; /* leave space for keyboard */
+.details-wizard-step {
+  padding-top: 8px;
 }
 
-.keyboard-open ion-footer {
-  margin-bottom: 300px; /* adjust to keyboard height */
+.form-section {
+  margin-bottom: 8px;
 }
 
-.barcode-valid {
-  --highlight-color-focused: var(--ion-color-success);
-  --border-color: var(--ion-color-success);
+.form-section ion-list-header {
+  padding-inline-start: 16px;
+  min-height: 32px;
+  margin-bottom: 4px;
 }
 
-.barcode-invalid {
-  --highlight-color-focused: var(--ion-color-danger);
-  --border-color: var(--ion-color-danger);
+.form-section ion-list-header ion-label {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--ion-color-medium);
+}
+
+.input-card {
+  margin: 0 12px;
+  border-radius: 16px;
+  box-shadow: var(--card-shadow);
+  background: var(--ion-card-background, white);
+  border: 1px solid var(--ion-color-light-shade);
+}
+
+.input-card ion-item {
+  --background-active: transparent;
+  --ripple-color: transparent;
+}
+
+.preview-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: var(--ion-color-medium);
+}
+
+.highlight-image-hint {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: var(--ion-color-medium);
+}
+
+.preview-container {
+  margin-top: 10px;
+  position: relative;
+  display: inline-block;
+}
+
+.large-preview-img {
+  max-height: 320px;
+  width: auto;
+  border-radius: 12px;
+  border: 1px solid var(--ion-color-light-shade);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.preview-actions-overlay {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  gap: 8px;
+}
+
+.preview-action-btn {
+  --padding-start: 8px;
+  --padding-end: 8px;
+  --border-radius: 20px;
+  height: 32px;
+  margin: 0;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+
+
+.full-width-select {
+  width: 100%;
+}
+
+.analysis-indicators {
+  margin-top: -8px;
+  margin-bottom: 8px;
+}
+
+.mini-progress {
+  height: 4px;
+  border-radius: 2px;
+  margin-top: 4px;
+}
+
+.analyzing-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: var(--ion-color-primary);
+}
+
+.highlights-preview {
+  background: var(--ion-color-light-tint);
+  border-top: 1px solid var(--ion-color-light-shade);
+}
+
+.compact-chip {
+  height: 24px;
+  font-size: 11px;
+  font-weight: 600;
+  margin: 2px;
+}
+
+.toggle-friendly-btn {
+  --padding-start: 0;
+  font-size: 12px;
+  height: 24px;
+}
+
+.friendly-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.accordion-header {
+  --background: transparent;
+  font-size: 14px;
+}
+
+.raw-ocr-text {
+  display: block;
+  font-family: monospace;
+  font-size: 12px;
+  background: var(--ion-color-light);
+  padding: 12px;
+  border-radius: 8px;
+  word-break: break-all;
+  max-height: 120px;
+  overflow-y: auto;
+  color: var(--ion-color-medium);
 }
 
 .quick-scroll-container {
   display: flex;
-  gap: 8px;
   overflow-x: auto;
-  padding: 4px 0;
-  scrollbar-width: none;       /* Firefox */
+  gap: 8px;
+  padding-bottom: 8px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none; /* Firefox */
 }
 
 .quick-scroll-container::-webkit-scrollbar {
-  display: none;               /* Chrome/Safari */
+  display: none; /* Chrome/Safari */
 }
 
-.quick-scroll-container ion-button {
-  flex-shrink: 0;              /* prevent buttons from shrinking */
+.quick-btn {
+  flex-shrink: 0;
+  --border-radius: 8px;
+  font-size: 11px;
+  margin: 0;
+}
+
+.fix-case-under {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: fit-content;
+  margin: 4px 16px 8px auto;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ion-color-carrot, var(--ion-color-primary));
+  cursor: pointer;
+}
+
+.fix-case-under ion-icon {
+  font-size: 14px;
+}
+
+/* Status/description mismatch banner — advisory-styled but reflects a hard
+   contradiction, not a tiered match/close/mismatch score. */
+.ocr-check-banner {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  margin-top: 8px;
+  margin-bottom: 12px;
+  border: 1px solid var(--ion-color-medium);
+  background: rgba(var(--ion-color-medium-rgb), 0.08);
+  color: var(--ion-color-medium-shade);
+}
+
+.ocr-check-banner--mismatch {
+  border-color: var(--ion-color-danger);
+  background: rgba(var(--ion-color-danger-rgb), 0.08);
+  color: var(--ion-color-danger-shade);
+}
+
+.ocr-check-banner-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ocr-check-banner-header span {
+  flex-grow: 1;
+}
+
+.photo-grid {
+  display: flex;
+  gap: 12px;
+  padding: 0 12px;
+}
+
+.photo-card {
+  flex: 1;
+  margin: 0;
+  border-radius: 16px;
+  border: 1px dashed var(--ion-color-medium-shade);
+  background: var(--ion-item-background, var(--card-bg, #fff));
+  color: var(--ion-text-color, #000);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+
+.photo-card.has-photo {
+  border-style: solid;
+  border-color: var(--ion-color-carrot-tint);
+}
+
+.photo-card-header {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 10px 12px;
+  background: var(--ion-background-color, rgba(244, 245, 248, 0.7));
+  border-bottom: 1px solid var(--ion-item-border-color, rgba(0, 0, 0, 0.05));
+}
+
+.photo-title {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--ion-text-color, var(--ion-color-dark));
+  margin: 0;
+}
+
+.placeholder-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  padding: 0 16px;
+}
+
+.placeholder-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  height: 38px;
+  border-radius: 12px;
+  border: 1px solid var(--ion-item-border-color, rgba(0, 0, 0, 0.12));
+  background: var(--ion-item-background, var(--card-inner-bg, #fff));
+  color: var(--ion-text-color, #222);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+}
+
+.placeholder-btn:hover {
+  background: var(--ion-background-color, #eee);
+  border-color: var(--ion-color-carrot);
+  color: var(--ion-color-carrot);
+  transform: translateY(-1px);
+}
+
+.photo-preview-wrap {
+  position: relative;
+  height: 180px;
+  width: 100%;
+  overflow: hidden;
+}
+
+.photo-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 10px;
+  background: var(--ion-background-color, #f8f9fa);
+  border-top: 1px solid var(--ion-item-border-color, rgba(0, 0, 0, 0.05));
+}
+
+.control-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  height: 34px;
+  border-radius: 10px;
+  border: none;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.ai-progress-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 0 8px;
+  gap: 3px;
+}
+
+.ai-progress-text {
+  font-size: 11px;
+  font-weight: 700;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
+
+.ai-bar {
+  --background: rgba(255, 255, 255, 0.3);
+  --progress-background: white;
+  height: 4px;
+  border-radius: 4px;
+  width: 100%;
+}
+
+.control-btn.ai-btn {
+  background: var(--ion-color-carrot, #ff6b00);
+  color: white;
+  box-shadow: 0 2px 8px rgba(255, 107, 0, 0.3);
+}
+
+.control-btn.ai-btn:hover {
+  filter: brightness(1.1);
+}
+
+.control-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+
+.control-sub-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid var(--ion-item-border-color, rgba(0, 0, 0, 0.12));
+  background: var(--ion-item-background, var(--card-inner-bg, #fff));
+  color: var(--ion-text-color, #222);
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.control-sub-btn:hover {
+  background: var(--ion-background-color, #eee);
+}
+
+.control-sub-btn.danger {
+  color: var(--ion-color-danger, #ef4444);
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.control-sub-btn.danger:hover {
+  background: var(--ion-color-danger, #ef4444);
+  color: white;
+}
+
+.control-sub-btn.warning {
+  color: var(--ion-color-warning, #f59e0b);
+  background: rgba(245, 158, 11, 0.15);
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+.control-sub-btn.warning:hover {
+  background: var(--ion-color-warning, #f59e0b);
+  color: white;
+}
+
+.btn-spinner {
+  width: 18px;
+  height: 18px;
+  color: inherit;
+}
+
+.thumbnail-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.photo-placeholder {
+  height: 160px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .detected-product {
-  border-radius: 8px;
-  background: var(--ion-color-light);
-  padding: 6px;
+  --background: var(--ion-color-light);
+  margin: 12px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--ion-color-carrot-tint);
 }
 
-.detected-product h3 {
-  margin: 0;
-  font-size: 14px;
+/* 🟢 Step Indicator */
+ion-header {
+  overflow: visible;
+}
+
+#step-indicator {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 12px 16px 16px;
+  background: var(--ion-background-color);
+  border-bottom: 1px solid var(--ion-color-light);
+}
+
+.step-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.step-item.active .step-label {
+  color: var(--ion-color-carrot);
   font-weight: 600;
+}
+
+.step-dot {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--ion-color-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  color: var(--ion-color-medium);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.step-item.active .step-dot {
+  background: var(--ion-color-carrot);
+  color: white;
+  box-shadow: 0 4px 12px rgba(216, 98, 13, 0.3);
+  transform: scale(1.1);
+}
+
+.step-label {
+  font-size: 11px;
+  color: var(--ion-color-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.step-line {
+  height: 2px;
+  width: 32px;
+  background: var(--ion-color-light);
+  margin: 16px 2px 0;
+  transition: background 0.3s ease;
+}
+
+.step-line.active {
+  background: var(--ion-color-carrot);
+}
+
+/* 🔹 OCR Loading Overlay */
+.ocr-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(6px);
+  z-index: 9999;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+
+  padding: 24px;
+  color: white;
+}
+
+.reflection-box {
+  margin-top: 24px;
+  max-width: 340px;
+  animation: fadeInUp 0.5s ease-out;
+}
+
+.reflection-ar {
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.6;
+  margin-bottom: 12px;
+}
+
+.reflection-en {
+  font-style: italic;
+  font-size: 16px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.reflection-ref {
+  display: block;
+  margin-top: 12px;
+  font-size: 13px;
+  opacity: 0.7;
+}
+
+.ocr-progress {
+  width: 260px;
+  height: 8px;
+  border-radius: 10px;
+  margin-bottom: 12px;
+}
+
+.ocr-progress-text {
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeInOverlay {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.ocr-overlay {
+  animation: fadeInOverlay 0.3s ease;
+}
+
+.barcode-valid {
+  --border-color: var(--ion-color-success) !important;
+}
+
+.barcode-invalid {
+  --border-color: var(--ion-color-danger) !important;
+}
+
+.quick-scroll-container {
+  display: flex;
+  overflow-x: auto;
+  gap: 8px;
+  padding-bottom: 8px;
+}
+
+.quick-scroll-container::-webkit-scrollbar {
+  display: none;
+}
+
+ion-toast {
+  transform: translateY(-55px);
+}
+
+ion-item {
+  --background: transparent;
+}
+
+ion-content::part(scroll) {
+  padding-bottom: 100px;
+}
+
+.keyboard-open ion-footer {
+  margin-bottom: 300px;
+}
+
+/* 🛠️ Smart Cropping Ratios */
+.ratio-toolbar {
+  display: flex;
+  justify-content: center; /* 🎯 Center buttons */
+  gap: 8px;
+  overflow-x: auto;
+  padding-top: 12px;
+  padding-bottom: 8px;
+  scrollbar-width: none;
+  background: var(--ion-background-color);
+}
+.ratio-toolbar::-webkit-scrollbar {
+  display: none;
+}
+.ratio-btn {
+  --padding-start: 12px;
+  --padding-end: 12px;
+  --border-radius: 20px;
+  height: 32px;
+  font-size: 13px;
+  margin: 0;
+  flex-shrink: 0;
+  text-transform: none;
+}
+
+/* Mandatory height for vue-advanced-cropper to function */
+.cropper {
+  height: 60vh;
+  width: 100%;
+  background: #000;
+  touch-action: none; /* 🚫 Prevent browser scroll interference */
+}
+
+/* 🔒 Lock scrolling when cropper is open */
+.modal-no-scroll {
+  --overflow: hidden;
+}
+
+.fullscreen-swiper {
+  width: 100%;
+  height: 100%;
+  background: black;
+}
+
+.fullscreen-swiper img {
+  width: 100%;
+  height: auto;
+  max-height: 100%;
+  object-fit: contain;
 }
 </style>
 

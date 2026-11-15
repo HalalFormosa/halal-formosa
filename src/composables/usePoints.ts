@@ -2,9 +2,13 @@ import { supabase } from "@/plugins/supabaseClient";
 import { ref } from "vue";
 import { usePointRules } from "@/composables/usePointRules";
 import { openReward, closeReward } from "@/composables/useRewardOverlay";
+import { useAchievements } from "@/composables/useAchievements";
+import { i18n } from "@/i18n";
 import confetti from "canvas-confetti";
 import lottie from "lottie-web";
 import { Capacitor } from "@capacitor/core";
+import { ActivityLogService } from "@/services/ActivityLogService";
+import { getLevelFromPoints } from "@/utils/xp";
 
 const EDGE_BASE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`;
 
@@ -21,6 +25,8 @@ const fallbackRules: Record<string, { points: number; label: string }> = {
     mission_scan_barcode: { points: 5, label: "Scan Barcode" },
     mission_scan_ingredients: { points: 5, label: "Scan Ingredients" },
     mission_view_place_details: { points: 5, label: "Check location details" },
+    location_review: { points: 10, label: "Reviewing Place" },
+    mission_review_place: { points: 10, label: "Review Place Daily Mission" },
 };
 
 // 🎉 Confetti helper
@@ -55,11 +61,48 @@ function fireConfetti() {
     confetti({ particleCount: 60, spread: 100, origin: { x: 0.8, y: 0.6 } });
 }
 
+// 🏆 Checks whether the action that just earned points also crossed an
+// achievement tier, and queues a trophy-flavored reward toast for each one
+// unlocked — staggered to play after the XP toast (and any earlier trophy
+// toasts) finish, since they all share the same overlay state.
+async function celebrateNewAchievements(userId: string, avatar: string) {
+    const { syncAchievements, fetchDefinitions, definitions } = useAchievements();
+    const unlocked = await syncAchievements(userId);
+    if (!unlocked.length) return;
+
+    await fetchDefinitions();
+
+    let delay = 4200; // let the XP toast (4000ms) finish first
+    for (const u of unlocked) {
+        const def = definitions.value.find((d) => d.id === u.unlocked_achievement_id);
+        ActivityLogService.log("achievement_unlocked", {
+            achievement_id: u.unlocked_achievement_id,
+            category: def?.category,
+            tier: def?.tier,
+            points_reward: u.points_reward,
+        });
+        const label = def
+            ? i18n.global.t(`achievements.categories.${def.category}.tiers.${def.tier}`)
+            : i18n.global.t("achievements.title");
+        const icon = def?.icon ?? "🏆";
+
+        setTimeout(() => {
+            const newTotal = (currentPoints.value ?? 0) + u.points_reward;
+            currentPoints.value = newTotal;
+            openReward(u.points_reward, label, avatar, newTotal, 4500, { icon, isAchievement: true });
+            fireConfetti();
+        }, delay);
+
+        delay += 4700;
+    }
+}
+
 export function usePoints() {
     const { rules } = usePointRules();
 
     async function awardAndCelebrate(action: string, autoCloseMs = 5000) {
         console.log("🚀 awardAndCelebrate called with", action);
+        const pointsBefore = currentPoints.value ?? 0;
 
         const rule = rules.value[action] ?? fallbackRules[action];
         const optimisticPoints = rule?.points ?? 0;
@@ -74,10 +117,6 @@ export function usePoints() {
 
         fireConfetti();
 
-        setTimeout(() => {
-            closeReward();
-        }, autoCloseMs);
-
         // Call backend
         const res = await awardPoints(action);
 
@@ -89,11 +128,28 @@ export function usePoints() {
                 res.total
             );
             currentPoints.value = res.total ?? currentPoints.value;
+
+            ActivityLogService.log("points_awarded", {
+                action,
+                points: res.points ?? optimisticPoints,
+                total: res.total,
+            });
+            if (typeof res.total === "number") {
+                const levelBefore = getLevelFromPoints(pointsBefore);
+                const levelAfter = getLevelFromPoints(res.total);
+                if (levelAfter > levelBefore) {
+                    ActivityLogService.log("level_up", { from: levelBefore, to: levelAfter, total: res.total });
+                }
+            }
             console.log(
                 `✅ Confirmed ${res.points} pts for ${res.label}. Total = ${res.total}`
             );
+
+            const userId = session?.user?.id;
+            if (userId) celebrateNewAchievements(userId, avatar);
         } else {
             console.warn("❌ Failed:", res.error);
+            ActivityLogService.log("points_award_failed", { action, error_message: res.error });
             closeReward();
         }
 
@@ -113,7 +169,7 @@ export function usePoints() {
             currentPoints.value = prevPoints + optimisticIncrement;
             fireConfetti();
 
-            const res = await fetch(`${EDGE_BASE_URL}/award-points`, {
+            const res = await fetch(`${EDGE_BASE_URL}/award-points-v2`, {
                 method: "POST",
                 headers: {
                     Authorization: `Bearer ${session.access_token}`,
@@ -143,7 +199,7 @@ export function usePoints() {
     async function fetchCurrentPoints(userId: string) {
         const { data, error } = await supabase
             .from("user_profiles")
-            .select("points")
+            .select("points, spendable_points")
             .eq("id", userId)
             .single();
 

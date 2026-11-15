@@ -1,8 +1,16 @@
 <template>
   <ion-page>
-    <ion-header>
-      <!-- Native (mobile) AdMob banner -->
-      <div v-if="isNative && !isDonor" id="ad-space-search" style="height:65px;"></div>
+    <ion-header :class="{ 'house-ad-top': houseAdAtTop }">
+      <!-- Native (mobile) banner ad — LevelPlay renders with isOverlap:true,
+           so it draws on top of the WebView rather than pushing it down.
+           This reserved space keeps the ad from covering the header, same
+           pattern as Trip/Store. When there's no real ad (web, or the
+           banner failed to fill / LevelPlay is disabled) a house-ad banner
+           takes the slot, like Explore — minus the 'product' kind, since
+           this IS the product list. The feed also gets recurring native
+           cards (see HouseAdNativeCard below). -->
+      <div v-if="isNative && !isDonor" id="ad-space-search" :style="adSpaceStyle(houseAdAtTop)"></div>
+      <HouseAdCard v-if="!isDonor && (!isNative || failedAdSpaceId === 'ad-space-search')" variant="banner" exclude-kind="product" />
 
       <app-header
           :title="
@@ -16,195 +24,83 @@
           :showProfile="true"
       />
 
-      <ion-toolbar class="actions-toolbar">
-        <div class="header-main-actions">
-          <!-- 🎚️ Sort Button (Left Side) -->
-          <ion-button fill="clear" class="classic-action-btn sort-btn-wrapper" id="sort-trigger">
-            <ion-icon :icon="sortIcon" />
-            <span class="btn-label">{{ sortLabel }}</span>
-          </ion-button>
-
-          <ion-popover trigger="sort-trigger" trigger-action="click" :dismiss-on-select="true" class="width-190">
-            <ion-list lines="none">
-              <ion-item button @click="sortBy = 'recent'">
-                <ion-icon :icon="timeOutline" slot="start" />
-                <ion-label>{{ $t('search.sortRecent') }}</ion-label>
-                <ion-icon v-if="sortBy === 'recent'" :icon="checkmarkCircle" slot="end" color="success" style="font-size: 14px;" />
-              </ion-item>
-              
-              <ion-item button @click="sortBy = 'trending'">
-                <ion-icon :icon="trendingUpOutline" slot="start" />
-                <ion-label>{{ $t('search.sortTrending') }}</ion-label>
-                <ion-icon v-if="sortBy === 'trending'" :icon="checkmarkCircle" slot="end" color="success" style="font-size: 14px;" />
-              </ion-item>
-
-              <ion-item button @click="sortBy = 'views'">
-                <ion-icon :icon="flameOutline" slot="start" />
-                <ion-label>{{ $t('search.sortViews') }}</ion-label>
-                <ion-icon v-if="sortBy === 'views'" :icon="checkmarkCircle" slot="end" color="success" style="font-size: 14px;" />
-              </ion-item>
-
-              <ion-item v-if="canShowForYouSort" button @click="sortBy = 'for_you'">
-                <ion-icon :icon="sparklesOutline" slot="start" />
-                <ion-label>{{ $t('search.sortForYou') }}</ion-label>
-                <ion-icon v-if="sortBy === 'for_you'" :icon="checkmarkCircle" slot="end" color="success" style="font-size: 14px;" />
-              </ion-item>
-            </ion-list>
-          </ion-popover>
-
-
-          <div class="right-actions-group">
-            <!-- 🔍 Search Toggle Button -->
-            <ion-button
-                fill="clear"
-                @click="showSearchbar = !showSearchbar"
-                :color="showSearchbar ? 'carrot' : 'dark'"
-                class="classic-action-btn"
-            >
-              <ion-icon :icon="showSearchbar ? closeCircle : searchOutline" />
-            </ion-button>
-
-            <!-- 📷 Scan Button (Classic Style) -->
-            <ion-button
-                @click="startScan"
-                v-if="!scanning"
-                color="carrot"
-                class="classic-scan-btn"
-            >
-              <ion-icon :icon="barcodeOutline" />
-            </ion-button>
-
-            <!-- 🌪️ Filter Toggle -->
-            <ion-button fill="clear" @click="toggleFilters" class="classic-action-btn">
-              <ion-icon :icon="funnelOutline" />
-              <div v-if="hasActiveFilters" class="badge-dot"></div>
-            </ion-button>
-          </div>
-        </div>
-      </ion-toolbar>
-
-      <transition name="fade-down">
-        <ion-toolbar v-if="showSearchbar" class="search-row-toolbar">
-          <div class="search-container">
-            <ion-searchbar
-                :placeholder="$t('search.placeholder')"
-                :debounce="1000"
-                @ionInput="handleSearchInput($event)"
-                :value="searchQuery"
-                class="compact-searchbar"
-                :animated="true"
-            ></ion-searchbar>
-          </div>
-        </ion-toolbar>
-      </transition>
-      <!-- Filter Section (Still inside header, below search if open) -->
+      <!-- Filter Section (Desktop: Toolbar expansion) -->
       <transition name="collapse">
-        <ion-toolbar v-show="showFilters" class="filter-toolbar">
+        <ion-toolbar v-show="showFilters && !isSmallScreen" class="filter-toolbar">
           <div class="filter-section">
-            <!-- Stores -->
-            <div class="filter-group">
-              <div class="filter-title">
-                <ion-icon :icon="storefrontOutline"/>
-                {{ $t('search.filters.stores') }}
-              </div>
-              <div class="store-scroll">
-                <template v-if="loadingStores">
-                  <ion-skeleton-text
-                      v-for="n in 10"
-                      :key="'store-skeleton-' + n"
-                      animated
-                      class="skeleton-store"
-                  />
-                </template>
-                <template v-else>
-                  <StoreLogoBar
-                      :stores="stores"
-                      mode="filter"
-                      v-model:activeStores="activeStores"
-                  />
-                </template>
-              </div>
-            </div>
-
-            <!-- Categories -->
-            <div class="filter-group">
-              <div class="filter-title">
-                <ion-icon :icon="pricetagsOutline"/>
-                {{ $t('search.filters.categories') }}
-              </div>
-              <div class="category-bar">
-                <template v-if="loadingCategories">
-                  <ion-skeleton-text
-                      v-for="n in 4"
-                      :key="'cat-skeleton-' + n"
-                      animated
-                      style="width: 100px; height: 28px; border-radius: 5px; margin-right: 8px;"
-                  />
-                </template>
-                <template v-else>
-                  <ion-chip
-                      v-for="cat in categories"
-                      :key="cat.id"
-                      class="modern-category-chip"
-                      :class="{ active: activeCategories.some(c => c.id === cat.id) }"
-                      :style="{ 
-                        '--cat-color': 'var(--ion-color-carrot)',
-                        '--cat-contrast': 'var(--ion-color-carrot-contrast)',
-                        '--cat-bg': activeCategories.some(c => c.id === cat.id) ? 'var(--ion-color-carrot)' : 'transparent'
-                      }"
-                      @click="toggleCategory(cat)"
-                  >
-                    <span class="category-emoji">{{ categoryIcons[cat.name] || '📦' }}</span>
-                    <ion-label>{{ $te('search.categoriesList.' + cat.name) ? $t('search.categoriesList.' + cat.name) : cat.name }}</ion-label>
-                  </ion-chip>
-                </template>
-              </div>
-            </div>
-
-            <!-- Status Filter -->
-            <div class="filter-group">
-              <div class="filter-title">
-                <ion-icon :icon="shieldCheckmarkOutline"/>
-                {{ $t('search.filters.statuses') }}
-              </div>
-              <div class="category-bar">
-                <ion-chip
-                    v-for="status in statuses"
-                    :key="status.key"
-                    class="modern-category-chip"
-                    :class="{ active: activeStatuses.includes(status.key) }"
-                    :style="{ 
-                      '--cat-color': `var(--ion-color-${STATUS_COLOR_MAP[status.key]})`,
-                      '--cat-contrast': `var(--ion-color-${STATUS_COLOR_MAP[status.key]}-contrast)`,
-                      '--cat-bg': activeStatuses.includes(status.key) ? `var(--ion-color-${STATUS_COLOR_MAP[status.key]})` : 'transparent'
-                    }"
-                    @click="toggleStatus(status.key)"
-                >
-                  <span class="category-emoji">{{ status.emoji }}</span>
-                  <ion-label>
-                    {{ $t(`search.status.${status.key}`) }}
-                  </ion-label>
-                </ion-chip>
-              </div>
-            </div>
-
-            <!-- 🔥 Clear Filters -->
-            <div class="filter-clear-row">
-              <ion-chip
-                  v-if="hasActiveFilters"
-                  class="clear-chip"
-                  @click="clearAllFilters"
-              >
-                {{ $t('search.clear') }}
-              </ion-chip>
-            </div>
+            <FilterContent
+                :loadingStores="loadingStores"
+                :stores="stores"
+                v-model:activeStores="activeStores"
+                :loadingCategories="loadingCategories"
+                :categories="categories"
+                :activeCategories="activeCategories"
+                @toggleCategory="toggleCategory"
+                :statuses="statuses"
+                :activeStatuses="activeStatuses"
+                @toggleStatus="toggleStatus"
+                :hasActiveFilters="hasActiveFilters"
+                @clearAllFilters="clearAllFilters"
+                :categoryIcons="categoryIcons"
+                :STATUS_COLOR_MAP="STATUS_COLOR_MAP"
+                :sortBy="sortBy"
+                @update:sortBy="sortBy = $event"
+                :canShowForYouSort="canShowForYouSort"
+                :isDonor="isDonor"
+            />
           </div>
         </ion-toolbar>
       </transition>
+
+      <!-- Mobile Filters (Modal Bottom Sheet) -->
+      <ion-modal
+          :is-open="isFilterModalOpen"
+          @didDismiss="isFilterModalOpen = false"
+          :initial-breakpoint="0.5"
+          :breakpoints="[0, 0.5, 0.8]"
+          handle-behavior="cycle"
+          class="filter-modal"
+      >
+        <ion-header class="ion-no-border">
+          <ion-toolbar>
+            <ion-title>{{ $t('common.filter') || 'Filter' }}</ion-title>
+            <ion-buttons slot="end">
+              <ion-button v-if="hasActiveFilters" @click="clearAllFilters" color="carrot" class="modal-reset-btn">
+                {{ $t('common.reset') || 'RESET' }}
+              </ion-button>
+              <ion-button @click="isFilterModalOpen = false">
+                <ion-icon :icon="closeOutline" />
+              </ion-button>
+            </ion-buttons>
+          </ion-toolbar>
+        </ion-header>
+        <ion-content class="ion-padding filter-modal-content">
+          <FilterContent
+              :loadingStores="loadingStores"
+              :stores="stores"
+              v-model:activeStores="activeStores"
+              :loadingCategories="loadingCategories"
+              :categories="categories"
+              :activeCategories="activeCategories"
+              @toggleCategory="toggleCategory"
+              :statuses="statuses"
+              :activeStatuses="activeStatuses"
+              @toggleStatus="toggleStatus"
+              :hasActiveFilters="hasActiveFilters"
+              @clearAllFilters="clearAllFilters"
+              :categoryIcons="categoryIcons"
+              :STATUS_COLOR_MAP="STATUS_COLOR_MAP"
+              :sortBy="sortBy"
+              @update:sortBy="sortBy = $event"
+              :canShowForYouSort="canShowForYouSort"
+              :isDonor="isDonor"
+          />
+        </ion-content>
+      </ion-modal>
 
     </ion-header>
     <ion-content ref="contentRef">
-      <ion-refresher style="margin-top: 15px;" slot="fixed" @ionRefresh="refreshList">
+      <ion-refresher style="margin-top: 78px;" slot="fixed" @ionRefresh="refreshList">
         <ion-refresher-content
             :pulling-icon="chevronDownCircleOutline"
             :pullingText="$t('search.pullToRefresh')"
@@ -213,57 +109,105 @@
         </ion-refresher-content>
       </ion-refresher>
 
-      <!-- ✅ Scanner Modal (WEB ONLY) -->
-      <ion-modal
-          v-if="!isNative"
-          ref="scannerModal"
-          :is-open="scanning"
-          @didPresent="onScannerModalPresented"
-          @didDismiss="handleDismiss"
-      >
-        <ion-content>
-          <div id="reader">
-            <div class="scan-line"></div>
-          </div>
-        </ion-content>
-      </ion-modal>
+      <!-- Search bar + grid/filter buttons float over the content instead of
+           sitting in their own ion-toolbar — transparent surroundings, each
+           pill keeps its own background, so the product grid is visible
+           (and later scrolls) behind them rather than a solid bar. -->
+      <div class="header-main-actions" slot="fixed">
+        <ion-button
+            v-if="!searchExpanded"
+            fill="clear"
+            @click="expandSearch"
+            class="classic-action-btn search-toggle-btn"
+        >
+          <ion-icon :icon="searchOutline" />
+        </ion-button>
+
+        <div v-else class="searchbar-wrap inline-searchbar">
+          <ion-searchbar
+              ref="searchbarEl"
+              :placeholder="$t('search.placeholder')"
+              :debounce="1000"
+              @ionInput="handleSearchInput($event)"
+              @ionBlur="handleSearchBlur"
+              :value="searchQuery"
+              class="compact-searchbar searchbar-expanded"
+              :animated="true"
+          ></ion-searchbar>
+          <!-- Invisible hit-target over the searchbar's own leading icon so
+               tapping it again collapses the search, same spot the user
+               tapped to open it. -->
+          <button
+              class="searchbar-icon-hit"
+              type="button"
+              :aria-label="$t('common.close') || 'Close'"
+              @click="collapseSearch"
+          ></button>
+        </div>
+
+        <div class="right-actions-group">
+          <!-- 📱 Grid/List Toggle -->
+          <ion-button
+              fill="clear"
+              @click="toggleViewMode"
+              class="classic-action-btn"
+          >
+            <ion-icon :icon="viewMode === 'grid' ? listOutline : gridOutline" />
+          </ion-button>
+
+          <!-- 🎚️ Filter Toggle (sort now lives inside here too) -->
+          <ion-button fill="clear" @click="toggleFilters" class="classic-action-btn">
+            <ion-icon :icon="optionsOutline" />
+            <div v-if="activeFiltersCount > 0" class="badge-dot">
+              <span class="badge-count">{{ activeFiltersCount }}</span>
+            </div>
+          </ion-button>
+        </div>
+      </div>
 
       <div>
-        <div v-if="!scanning" class="ion-padding" style="padding-top: 5px;">
+        <div class="ion-padding search-results-wrap">
 
           <!-- Skeleton loader -->
           <template v-if="loadingProducts && results.length === 0 && !showForYouGate">
-            <div class="product-grid">
-              <ion-card v-for="n in 12" :key="'skeleton-' + n" class="product-card" style="margin: 0;">
-                <div style="display: flex; align-items: center; padding: 12px;">
-                  <!-- Skeleton Image -->
-                  <ion-skeleton-text
-                      animated
-                      style="width: 115px; height: 110px; border-radius: 10px; flex-shrink: 0;"
-                  ></ion-skeleton-text>
-  
-                  <!-- Skeleton Text & Chip -->
-                  <div
-                      style="flex: 1; margin-left: 12px; display: flex; flex-direction: column; justify-content: space-between;">
-                    <div>
-                      <ion-skeleton-text
-                          animated
-                          style="width: 70%; height: 20px; margin-bottom: 8px;"
-                      ></ion-skeleton-text>
-                      <ion-skeleton-text
-                          animated
-                          style="width: 50%; height: 14px;"
-                      ></ion-skeleton-text>
-                    </div>
-  
-                    <!-- Skeleton Chip -->
+            <div :class="['product-grid', viewMode + '-mode']">
+              <template v-if="viewMode === 'list'">
+                <ion-card v-for="n in 12" :key="'skeleton-' + n" class="product-card" style="margin: 0;">
+                  <div style="display: flex; align-items: center; padding: 12px;">
+                    <!-- Skeleton Image -->
                     <ion-skeleton-text
                         animated
-                        style="width: 80px; height: 24px; border-radius: 12px; margin-top: 12px;"
+                        style="width: 115px; height: 110px; border-radius: 10px; flex-shrink: 0;"
                     ></ion-skeleton-text>
+    
+                    <!-- Skeleton Text & Chip -->
+                    <div
+                        style="flex: 1; margin-left: 12px; display: flex; flex-direction: column; justify-content: space-between;">
+                      <div>
+                        <ion-skeleton-text
+                            animated
+                            style="width: 70%; height: 20px; margin-bottom: 8px;"
+                        ></ion-skeleton-text>
+                        <ion-skeleton-text
+                            animated
+                            style="width: 50%; height: 14px;"
+                        ></ion-skeleton-text>
+                      </div>
+    
+                      <!-- Skeleton Chip -->
+                      <ion-skeleton-text
+                          animated
+                          style="width: 80px; height: 24px; border-radius: 100px; margin-top: 12px;"
+                      ></ion-skeleton-text>
+                    </div>
                   </div>
+                </ion-card>
+              </template>
+              <template v-else>
+                <div v-for="n in 12" :key="'skeleton-grid-' + n" class="grid-product-card">
+                  <ion-skeleton-text animated style="width: 100%; height: 100%; margin: 0;"></ion-skeleton-text>
                 </div>
-              </ion-card>
+              </template>
             </div>
           </template>
 
@@ -272,7 +216,7 @@
             <ion-card class="for-you-info">
               <ion-card-content>
                 <div class="for-you-row">
-                  <ion-icon name="sparkles-outline" class="for-you-icon"/>
+                  <Sparkles :size="24" class="for-you-icon" />
                   <div>
                     <strong>{{ $t('search.forYou.title') }}</strong>
                     <p>
@@ -285,7 +229,7 @@
                     color="carrot"
                     size="small"
                     expand="block"
-                    @click="presentPaywall"
+                    @click="onForYouUpgradeClick"
                 >
                   {{ $t('search.forYou.upgrade') }}
                 </ion-button>
@@ -295,7 +239,7 @@
 
 
           <!-- 🧾 Empty state (ONLY for normal modes) -->
-          <template v-else-if="!loadingProducts && results.length === 0">
+          <template v-else-if="!loadingProducts && !isNavigatingToItem && results.length === 0">
             <ion-card>
               <ion-card-content>
                 <p>😔 {{ $t('search.noProductFound') }}</p>
@@ -312,7 +256,7 @@
             >
               <ion-card-content>
                 <div class="for-you-row">
-                  <ion-icon name="sparkles-outline" class="for-you-icon"/>
+                  <Sparkles :size="24" class="for-you-icon" />
                   <div>
                     <strong>{{ $t('search.forYou.title') }}</strong>
                     <p>
@@ -341,72 +285,282 @@
               </ion-card-content>
             </ion-card>
 
-            <div class="product-grid">
-              <div
-                  v-for="product in results"
-                  :key="product.barcode"
-                  :class="[
-                    'modern-product-card', 
-                    getStatusClass(product.status),
-                    product.partner_tier ? 'tier-card-' + product.partner_tier.toLowerCase() : ''
-                  ]"
+            <!-- 🏆 FEATURED GOLD PARTNERS (Horizontal Scroll) -->
+            <div v-if="goldProducts.length > 0 && !searchQuery" class="featured-partners-container">
+            
+              <div class="horizontal-scroller no-scrollbar" ref="goldScroller">
+                <div 
+                  v-for="product in goldProducts" 
+                  :key="'featured-' + product.barcode"
+                  class="featured-gold-wrapper"
                   @click="openDetails(product)"
-              >
-                <div class="card-inner">
-                  <!-- Left: Full Height Image -->
-                  <div class="card-image-section">
-                    <img
-                        loading="lazy"
-                        :src="product.photo_front_url || 'https://via.placeholder.com/150x150.webp?text=No+Photo'"
-                        :alt="product.name"
-                    />
-                    <!-- Floating Status Pill on Image (Bottom Left) -->
-                    <div :class="['floating-status-pill bottom-left', product.status.toLowerCase().replace(' ', '-')]">
-                      <ion-icon :icon="getStatusIcon(product.status)" />
-                      <span>{{ $t('search.status.' + product.status) }}</span>
-                    </div>
-                    <!-- Vertical Separator Strip -->
-                    <div :class="['status-strip', product.status.toLowerCase().replace(' ', '-')]"></div>
-                  </div>
-  
-                  <!-- Right: Information -->
-                  <div class="card-info-section">
-                    <!-- TOP: Tier badge + Name -->
-                    <div class="info-top">
-                      <!-- Tier Badge (Gold, Silver, Bronze) -->
-                      <div v-if="product.partner_tier" class="tier-header">
-                        <div :class="['tier-badge', product.partner_tier.toLowerCase()]">
-                          <ion-icon :icon="sparkles" />
-                          <span>{{ $t('home.partnerTier', { tier: (product.partner_tier || '').toUpperCase() }) }}</span>
+                >
+                  <!-- LIST MODE BANNER -->
+                  <div v-if="viewMode === 'list'" class="modern-product-card status-halal tier-card-gold featured-inner-card">
+                    <div class="card-inner">
+                      <!-- Left: Image -->
+                      <div class="card-image-section">
+                        <img
+                          loading="lazy"
+                          decoding="async"
+                          :src="getOptimizedImageUrl(product.photo_front_url, 290, 320, 'cover')"
+                          @error="onProductImageError"
+                        />
+                        <div class="floating-status-pill bottom-left" :class="product.status.toLowerCase().replace(' ', '-')">
+                          <component :is="getStatusIcon(product.status)" :size="14" />
+                          <span>{{ $t('search.status.' + product.status) }}</span>
+                        </div>
+                        <div class="status-strip" :class="product.status.toLowerCase().replace(' ', '-')"></div>
+                      </div>
+
+                      <!-- Right: Info -->
+                      <div class="card-info-section">
+                        <div class="info-top">
+                          <div class="tier-header">
+                            <div class="tier-badge gold">
+                              <Sparkles :size="14" />
+                              <span>GOLD</span>
+                            </div>
+                          </div>
+                          <h3 class="name">{{ product.name }}</h3>
+                          <div class="metas metas-indent">
+                             <span v-if="product.product_categories?.name" class="meta">
+                                {{ $te('search.categoriesList.' + product.product_categories.name) ? $t('search.categoriesList.' + product.product_categories.name) : product.product_categories.name }}
+                             </span>
+                             
+                             <span class="meta">
+                               <Eye :size="14" class="lucide-meta-icon" />
+                               {{ product.view_count || 0 }}
+                             </span>
+                             
+                              <span class="meta">
+                               <Clock :size="14" class="lucide-meta-icon" />
+                               {{ fromNowToTaipei(product.created_at) }}
+                             </span>
+                           </div>
+                        </div>
+                        <div class="info-bottom">
+                          <div class="premium-verified-tag">
+                            <ShieldCheck :size="14" />
+                            <span class="verified-label">{{ $t('search.officialPartner') }}</span>
+                          </div>
                         </div>
                       </div>
-                      <h3 class="name">{{ product.name }}</h3>
                     </div>
-  
-                    <!-- BOTTOM: Official partner (if any) + metas, always at the bottom -->
-                    <div class="info-bottom">
-                      <div v-if="product.partner_tier" class="premium-verified-tag">
-                        <ion-icon :icon="shieldCheckmarkOutline" />
-                        <span class="verified-label">{{ $t('search.officialPartner') }}</span>
+                    <!-- Premium Flare for Gold -->
+                    <div class="premium-flare"></div>
+                  </div>
+
+                  <!-- GRID MODE 2-COLUMN CAROUSEL CARD -->
+                  <div v-else :class="['grid-product-card grid-col-span-2 featured-grid-card', getStatusClass(product.status)]">
+                    <div class="featured-grid-inner">
+                      <!-- Left: Image Section -->
+                      <div class="featured-image-section">
+                        <!-- Blurred background -->
+                        <img
+                            loading="lazy"
+                            decoding="async"
+                            :src="getOptimizedImageUrl(product.photo_front_url, 100, 100, 'cover', 40)"
+                            @error="onProductImageError"
+                            :alt="product.name"
+                            class="featured-bg-blur"
+                        />
+                        <!-- Product photo -->
+                        <img
+                            loading="lazy"
+                            decoding="async"
+                            :src="getOptimizedImageUrl(product.photo_front_url, 500, 500, 'cover', 65)"
+                            @error="onProductImageError"
+                            :alt="product.name"
+                            class="featured-fg-image"
+                        />
+                        <!-- Mobile-only status/tier badges -->
+                        <div class="grid-tier-badge gold mobile-only">
+                          <Sparkles :size="14" />
+                          <span>GOLD</span>
+                        </div>
+                        <div :class="['grid-status-label mobile-only', product.status.toLowerCase().replace(' ', '-')]">
+                          <component :is="getStatusIcon(product.status)" :size="14" />
+                          <span>{{ $t('search.status.' + product.status) }}</span>
+                        </div>
                       </div>
-                      <div class="metas" :class="{ 'metas-indent': product.partner_tier }">
-                        <span class="meta">
-                          <ion-icon :icon="eyeOutline" class="meta-icon" />
-                          {{ product.view_count || 0 }}
-                        </span>
-                        <span class="meta-dot">•</span>
-                        <span class="meta">
-                          <ion-icon :icon="timeOutline" class="meta-icon" />
-                          {{ fromNowToTaipei(product.created_at) }}
-                        </span>
+
+                      <!-- Right: Details Section (Desktop/Tablet only) -->
+                      <div class="featured-details-section">
+                        <div class="details-header">
+                          <div class="grid-tier-badge gold">
+                            <Sparkles :size="14" />
+                            <span>GOLD</span>
+                          </div>
+                          <div :class="['status-badge-pill', product.status.toLowerCase().replace(' ', '-')]">
+                            <component :is="getStatusIcon(product.status)" :size="12" />
+                            <span>{{ $t('search.status.' + product.status) }}</span>
+                          </div>
+                        </div>
+
+                        <h3 class="product-title">{{ product.name }}</h3>
+
+                        <div class="product-category" v-if="product.product_categories?.name">
+                          {{ $te('search.categoriesList.' + product.product_categories.name) ? $t('search.categoriesList.' + product.product_categories.name) : product.product_categories.name }}
+                        </div>
+
+                        <div class="product-meta">
+                          <span class="meta-item">
+                            <Eye :size="14" /> {{ product.view_count || 0 }} views
+                          </span>
+                          <span class="meta-item">
+                            <Clock :size="14" /> {{ fromNowToTaipei(product.created_at) }}
+                          </span>
+                        </div>
+
+                        <div class="details-footer">
+                          <div class="official-partner-label">
+                            <ShieldCheck :size="14" />
+                            <span class="verified-label">{{ $t('search.officialPartner') }}</span>
+                          </div>
+                          <span class="action-link-btn">
+                            {{ $t('common.details') }} →
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="premium-flare"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div :class="['product-grid', viewMode + '-mode']">
+              <!-- Hidden Honeypot Cards for Crawlers -->
+              <div v-if="viewMode === 'list'" class="modern-product-card honeypot-card" @click="triggerHoneypot">
+                <a href="/product/honeypot-trap" class="honeypot-link" @click.prevent="triggerHoneypot">
+                  <h3 class="name">Special Verified Catalog Product</h3>
+                </a>
+              </div>
+              <div v-else class="grid-product-card honeypot-card" @click="triggerHoneypot">
+                <a href="/product/honeypot-trap" class="honeypot-link" @click.prevent="triggerHoneypot">
+                  Special Verified Catalog Product
+                </a>
+              </div>
+
+              <template v-for="(product, productIndex) in displayedProducts" :key="product.barcode">
+                <!-- LIST MODE -->
+                <div
+                    v-if="viewMode === 'list'"
+                    :class="[
+                      'modern-product-card', 
+                      getStatusClass(product.status),
+                      product.partner_tier ? 'tier-card-' + product.partner_tier.toLowerCase() : ''
+                    ]"
+                    @click="openDetails(product)"
+                >
+                  <div class="card-inner">
+                    <!-- Left: Full Height Image -->
+                    <div class="card-image-section">
+                      <img
+                          loading="lazy"
+                          decoding="async"
+                          :src="getOptimizedImageUrl(product.photo_front_url, 290, 320, 'cover')"
+                          @error="onProductImageError"
+                          :alt="product.name"
+                      />
+                      <!-- Floating Status Pill on Image (Bottom Left) -->
+                      <div :class="['floating-status-pill bottom-left', product.status.toLowerCase().replace(' ', '-')]">
+                        <component :is="getStatusIcon(product.status)" :size="14" />
+                        <span>{{ $t('search.status.' + product.status) }}</span>
+                      </div>
+                      <!-- Vertical Separator Strip -->
+                      <div :class="['status-strip', product.status.toLowerCase().replace(' ', '-')]"></div>
+                    </div>
+    
+                    <!-- Right: Information -->
+                    <div class="card-info-section">
+                      <!-- TOP: Tier badge + Name -->
+                      <div class="info-top">
+                        <!-- Tier Badge (Gold, Silver, Bronze) -->
+                        <div v-if="product.partner_tier" class="tier-header">
+                          <div :class="['tier-badge', product.partner_tier.toLowerCase()]">
+                            <Sparkles :size="14" />
+                            <span>{{ (product.partner_tier || '').toUpperCase() }}</span>
+                          </div>
+                        </div>
+                        <h3 class="name">{{ product.name }}</h3>
+                        <div class="metas" :class="{ 'metas-indent': product.partner_tier }">
+                          <span v-if="product.product_categories?.name" class="meta">
+                            {{ $te('search.categoriesList.' + product.product_categories.name) ? $t('search.categoriesList.' + product.product_categories.name) : product.product_categories.name }}
+                          </span>
+                          
+                          <span class="meta">
+                            <Eye :size="14" class="lucide-meta-icon" />
+                            {{ product.view_count || 0 }}
+                          </span>
+                          
+                          <span class="meta">
+                            <Clock :size="14" class="lucide-meta-icon" />
+                            {{ fromNowToTaipei(product.created_at) }}
+                          </span>
+                        </div>
+                      </div>
+    
+                      <!-- BOTTOM: Official partner (if any) + metas, always at the bottom -->
+                      <div class="info-bottom">
+                        <div v-if="product.partner_tier" class="premium-verified-tag">
+                          <ShieldCheck :size="14" />
+                          <span class="verified-label">{{ $t('search.officialPartner') }}</span>
+                        </div>
                       </div>
                     </div>
                   </div>
+                  
+                  <!-- Premium Flare for Gold/Silver -->
+                  <div v-if="['gold', 'silver'].includes(String(product.partner_tier || '').toLowerCase())" class="premium-flare"></div>
                 </div>
-                
-                <!-- Premium Flare for Gold/Silver -->
-                <div v-if="['gold', 'silver'].includes(String(product.partner_tier || '').toLowerCase())" class="premium-flare"></div>
-              </div>
+
+                <!-- GRID MODE -->
+                <div
+                    v-else
+                    :class="[
+                      'grid-product-card', 
+                      getStatusClass(product.status),
+                      product.partner_tier ? 'tier-card-' + product.partner_tier.toLowerCase() : '',
+                      (product.partner_tier || '').toLowerCase() === 'gold' ? 'grid-col-span-2' : ''
+                    ]"
+                    @click="openDetails(product)"
+                >
+                  <div class="grid-card-image">
+                    <img
+                        loading="lazy"
+                        decoding="async"
+                        :src="getOptimizedImageUrl(product.photo_front_url, 400, 400, 'cover')"
+                        @error="onProductImageError"
+                        :alt="product.name"
+                    />
+                    <!-- Floating Tier Badge (Top Left) -->
+                    <div v-if="product.partner_tier" :class="['grid-tier-badge', product.partner_tier.toLowerCase()]">
+                      <Sparkles :size="14" />
+                      <span>{{ (product.partner_tier || '').toUpperCase() }}</span>
+                    </div>
+
+                    <!-- Small Status Label -->
+                    <div :class="['grid-status-label', product.status.toLowerCase().replace(' ', '-')]">
+                      <component :is="getStatusIcon(product.status)" :size="14" />
+                      <span>{{ $t('search.status.' + product.status) }}</span>
+                    </div>
+                  </div>
+
+                  <!-- Premium Flare for Gold/Silver -->
+                  <div v-if="['gold', 'silver'].includes(String(product.partner_tier || '').toLowerCase())" class="premium-flare"></div>
+                </div>
+
+                <!-- Recurring native sponsored card, woven into the feed
+                     every HOUSE_AD_NATIVE_INTERVAL products instead of a
+                     separate banner slot. -->
+                <HouseAdNativeCard
+                    v-if="!isDonor && (productIndex + 1) % HOUSE_AD_NATIVE_INTERVAL === 0"
+                    :mode="viewMode"
+                    :slot="Math.floor(productIndex / HOUSE_AD_NATIVE_INTERVAL)"
+                />
+              </template>
             </div>
           </template>
         </div>
@@ -431,26 +585,29 @@
         />
       </ion-infinite-scroll>
 
-      <ion-text color="danger" v-if="errorMsg" class="ion-padding">
-        ❌ {{ errorMsg }}
-      </ion-text>
-
-      <!-- 🟠 FAB Add Product (only for admins) -->
-      <ion-fab v-if="isAuthenticated" vertical="bottom" horizontal="end" slot="fixed">
-        <ion-fab-button color="carrot" @click="goToAddProduct">
+      <!-- 🟠 Stacked FABs: Add Product on top, Scan Barcode just below it.
+           Built as our own fixed column rather than nested <ion-fab>s, since
+           ion-fab only auto-positions a single direct button per anchor. -->
+      <div class="stacked-fabs" slot="fixed">
+        <ion-fab-button v-if="isAuthenticated" color="carrot" @click="goToAddProduct">
           <ion-icon :icon="addOutline"/>
         </ion-fab-button>
-      </ion-fab>
-    </ion-content>
+        <ion-fab-button color="carrot" @click="goToBarcodeScan">
+          <ion-icon :icon="barcodeOutline"/>
+        </ion-fab-button>
+      </div>
 
-    <ion-footer>
-      <div class="footer-count">
+      <!-- Results-count pill: lives inside ion-content (slot="fixed") rather
+           than a separate <ion-footer>, so it floats OVER the product grid
+           instead of ion-content stopping short before a footer's reserved
+           row — the frosted-glass blur now actually has real scrolling
+           content behind it to blur, not blank page background. -->
+      <div class="footer-count" slot="fixed">
         <small>
           {{ $t('search.showingResults', {count: results.length, total: totalProductsCount}) }}
         </small>
       </div>
-    </ion-footer>
-
+    </ion-content>
   </ion-page>
 </template>
 
@@ -462,12 +619,13 @@ import {
   IonInfiniteScroll, IonInfiniteScrollContent, IonRefresher, IonRefresherContent,
   IonSkeletonText, IonThumbnail, IonCard, IonCardContent,
   onIonViewDidEnter, IonLabel, IonFab, IonFabButton, onIonViewWillEnter, IonList, IonItem,
-  toastController
+  toastController, IonTitle, IonButtons
 } from '@ionic/vue'
-import { ref, onMounted, nextTick, watch, computed } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick, watch, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter, useRoute } from 'vue-router'
 import {supabase} from '@/plugins/supabaseClient'
+import {notifyFetchError} from '@/utils/offlineFeedback'
 import {
   barcodeOutline,
   chevronDownCircleOutline,
@@ -475,32 +633,49 @@ import {
   addOutline,
   chevronUpOutline,
   chevronDownOutline,
-  funnelOutline,
+  optionsOutline,
   pricetagsOutline, storefrontOutline, shieldCheckmarkOutline,
-  checkmarkCircle, warning, closeCircle, alertCircle, sparkles,
-  swapVerticalOutline,
-  searchOutline,
+  warning, alertCircle, sparkles,
   eyeOutline,
-  timeOutline,
-  flameOutline,
-  sparklesOutline,
-  trendingUpOutline
+  listOutline,
+  closeOutline,
+  searchOutline
 } from 'ionicons/icons'
+import {
+  CheckCircle2,
+  ShieldCheck,
+  AlertCircle,
+  XCircle,
+  AlertTriangle,
+  Eye,
+  Clock,
+  Sparkles
+} from 'lucide-vue-next'
 import {Capacitor} from '@capacitor/core'
-import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
 import {Haptics, ImpactStyle} from '@capacitor/haptics'
 import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
 import timezone from 'dayjs/plugin/timezone'
 import relativeTime from 'dayjs/plugin/relativeTime'
-import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
+import { flagBot } from '@/utils/botShield';
+import { delayForHuman } from '@/utils/interactionShield';
+import { useRecaptcha } from '@/composables/useRecaptcha';
+
+
 import AppHeader from '@/components/AppHeader.vue'
+import FilterContent from '@/components/FilterContent.vue'
+
 
 import StoreLogoBar from "@/components/StoreLogoBar.vue";
 import {ActivityLogService} from "@/services/ActivityLogService";
+import { presentProPaywall } from '@/utils/proPaywall'
+import { scheduleBannerUpdate } from '@/plugins/admob'
+import HouseAdCard from '@/components/ads/HouseAdCard.vue'
+import HouseAdNativeCard from '@/components/ads/HouseAdNativeCard.vue'
+import { failedAdSpaceId, useHouseAdAtTop, adSpaceStyle } from '@/composables/useAdFallback'
 import {isDonor, refreshSubscriptionStatus} from "@/composables/useSubscriptionStatus";
 import {Purchases} from "@revenuecat/purchases-capacitor";
-import {PAYWALL_RESULT, RevenueCatUI} from "@revenuecat/purchases-capacitor-ui";
+import {getOptimizedImageUrl, onProductImageError} from "@/utils/imageHelpers";
 
 
 /* ---------------- Day.js ---------------- */
@@ -522,6 +697,7 @@ interface Product {
   created_at?: string
   view_count?: number
   partner_tier?: 'Gold' | 'Silver' | 'Bronze'
+  tags?: string[]
 }
 
 const STATUS_COLOR_MAP: Record<string, string> = {
@@ -538,13 +714,26 @@ const route = useRoute()
 const infiniteDisabled = ref(false)
 const isAuthenticated = ref(false)
 
+const { execute: executeRecaptcha, isCaptchaEnabled } = useRecaptcha()
+
+
 const totalProductsCount = ref(0)
 const allProducts = ref<Product[]>([])
 const results = ref<Product[]>([])
 const errorMsg = ref('')
-const scanning = ref(false)
+
+function setFetchError(err: { message?: string } | null | undefined) {
+  errorMsg.value = err?.message || t('common.error')
+  notifyFetchError(err)
+}
 const isScanning = ref(false)
+// Suppresses the "no product found" empty state during the brief window
+// between router.push(/item/...) and the page transition actually completing —
+// fetchProducts' finally block resets loadingProducts before that transition finishes.
+const isNavigatingToItem = ref(false)
 const searchQuery = ref('')
+const searchExpanded = ref(false)
+const searchbarEl = ref<any>(null)
 const categories = ref<{ id: number; name: string }[]>([])
 const activeCategories = ref<{ id: number; name: string }[]>([])
 
@@ -555,14 +744,15 @@ const loadingCount = ref(true)
 const allLoaded = ref(false)
 const isFetching = ref(false)
 const shouldResetSearch = ref(false)
+const rotationSeed = ref(parseInt(localStorage.getItem('product_rotation_seed') || '0'))
 
-const pageSize = 15
+const pageSize = 20
 const currentPage = ref(0)
 const ingredientDictionary = ref<Record<string, string>>({})
 const infiniteScroll = ref<HTMLIonInfiniteScrollElement | null>(null)
 const suppressSortWatcher = ref(false)
-const html5QrCodeInstance = ref<Html5Qrcode | null>(null)
 const isNative = ref(Capacitor.isNativePlatform())
+const houseAdAtTop = useHouseAdAtTop('ad-space-search', isDonor)
 
 const categoryIcons: Record<string, string> = {
   "Snacks": "🍿",
@@ -594,7 +784,25 @@ const stores = ref<{ id: string; name: string; logo_url?: string }[]>([])
 const activeStores = ref<{ id: string; name: string }[]>([])
 const loadingStores = ref(true)
 const showFilters = ref(false)
-const showSearchbar = ref(false)
+const isFilterModalOpen = ref(false)
+const isSmallScreen = ref(window.innerWidth < 768)
+
+function updateScreenSize() {
+  isSmallScreen.value = window.innerWidth < 768
+  if (!isSmallScreen.value) {
+    isFilterModalOpen.value = false
+  } else {
+    showFilters.value = false
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('resize', updateScreenSize)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', updateScreenSize)
+})
 
 
 const statuses = [
@@ -610,8 +818,24 @@ const forYouReason = ref<string | null>(null)
 
 const activeStatuses = ref<string[]>([])
 
+const viewMode = ref<'grid' | 'list'>((localStorage.getItem('searchViewMode') as 'grid' | 'list') || 'list')
+
+function toggleViewMode() {
+  viewMode.value = viewMode.value === 'grid' ? 'list' : 'grid'
+  localStorage.setItem('searchViewMode', viewMode.value)
+  Haptics.impact({ style: ImpactStyle.Light })
+}
+
+const activeFiltersCount = computed(() => {
+  return activeStores.value.length + activeCategories.value.length + activeStatuses.value.length
+})
+
 function toggleFilters() {
-  showFilters.value = !showFilters.value
+  if (isSmallScreen.value) {
+    isFilterModalOpen.value = !isFilterModalOpen.value
+  } else {
+    showFilters.value = !showFilters.value
+  }
 }
 
 type HTMLIonContentElement = HTMLElement & {
@@ -642,46 +866,8 @@ async function ensureRevenueCatLoggedIn() {
   console.log("🔐 RevenueCat logged in as:", data.user.id)
 }
 
-async function presentPaywall(): Promise<boolean> {
-  if (!Capacitor.isNativePlatform()) {
-    console.warn("[RC] Paywall can only run on native (Android/iOS).");
-    return false;
-  }
-
-  try {
-    console.log("[RC] Presenting Paywall...");
-
-    const {result} = await RevenueCatUI.presentPaywall();
-
-    console.log("[RC] Paywall Result:", result);
-
-    switch (result) {
-      case PAYWALL_RESULT.PURCHASED:
-        console.log("[RC] 🎉 User purchased subscription!");
-        return true;
-
-      case PAYWALL_RESULT.RESTORED:
-        console.log("[RC] 🔄 Subscription restored!");
-        return true;
-
-      case PAYWALL_RESULT.CANCELLED:
-        console.log("[RC] User cancelled paywall.");
-        return false;
-
-      case PAYWALL_RESULT.ERROR:
-        console.log("[RC] Paywall error.");
-        return false;
-
-      case PAYWALL_RESULT.NOT_PRESENTED:
-      default:
-        console.log("[RC] Paywall not presented.");
-        return false;
-    }
-
-  } catch (e) {
-    console.error("[RC] Paywall failed:", e);
-    return false;
-  }
+function onForYouUpgradeClick() {
+  return presentProPaywall("search_for_you_upgrade_button");
 }
 
 async function loadForYouReason() {
@@ -712,28 +898,29 @@ async function loadForYouReason() {
 
 /* ---------------- Filters ---------------- */
 
-watch([activeStores, activeCategories, activeStatuses, searchQuery, sortBy], () => {
-  savedScrollTop.value = null; // reset scroll restore
-
-  if (activeStores.value.length > 0) {
-    ActivityLogService.log("search_filter_store", {
-      store_ids: activeStores.value.map(s => s.id),
-      store_names: activeStores.value.map(s => s.name),
-    });
-  }
-
-  if (activeCategories.value.length > 0) {
-    ActivityLogService.log("search_filter_category", {
-      category_ids: activeCategories.value.map(c => c.id),
-      category_names: activeCategories.value.map(c => c.name),
-    });
-  }
-
+watch([activeStatuses], () => {
   if (activeStatuses.value.length > 0) {
     ActivityLogService.log("search_filter_status", {
       statuses: activeStatuses.value,
     });
   }
+})
+
+watch(activeStores, (newStores, oldStores) => {
+  if (newStores.length > oldStores.length) {
+    const added = newStores.find(s => !oldStores.some(os => os.id === s.id))
+    if (added) {
+      ActivityLogService.log("search_filter_store", {
+        store_id: added.id,
+        store_ids: newStores.map(s => s.id),
+        store_names: newStores.map(s => s.name),
+      })
+    }
+  }
+})
+
+watch([activeStores, activeCategories, activeStatuses, searchQuery, sortBy], () => {
+  savedScrollTop.value = null; // reset scroll restore
 
 
   allLoaded.value = false
@@ -786,16 +973,8 @@ watch(sortBy, async (val) => {
       sort: val
     })
 
-    ActivityLogService.log("pro_paywall_trigger", {
-      source: "search_sort_for_you"
-    })
-
     await ensureRevenueCatLoggedIn()
-    const purchased = await presentPaywall()
-
-    if (purchased) {
-      await refreshSubscriptionStatus({syncToServer: true})
-    }
+    await presentProPaywall("search_sort_for_you")
 
     // 🔑 IMPORTANT:
     // Do NOT revert sortBy
@@ -845,19 +1024,81 @@ function dismissForYouInfo() {
 
 const { t } = useI18n()
 
-const sortLabel = computed(() => {
-  if (sortBy.value === 'for_you') return 'For You'
-  if (sortBy.value === 'views') return 'Hot'
-  if (sortBy.value === 'trending') return 'Trending'
-  return 'New'
+// How often a native sponsored card appears in the product feed (every Nth
+// product), replacing the old fixed top-banner house-ad slot on this view.
+const HOUSE_AD_NATIVE_INTERVAL = 6
+
+/* ---------------- Product Groups ---------------- */
+const goldProducts = computed(() => {
+  return results.value.filter(p => (p.partner_tier || '').toLowerCase() === 'gold')
 })
 
-const sortIcon = computed(() => {
-  if (sortBy.value === 'for_you') return sparklesOutline
-  if (sortBy.value === 'views') return flameOutline
-  if (sortBy.value === 'trending') return trendingUpOutline
-  return timeOutline
+const regularProducts = computed(() => {
+  return results.value.filter(p => (p.partner_tier || '').toLowerCase() !== 'gold')
 })
+
+const displayedProducts = computed(() => {
+  if (!searchQuery.value) {
+    return regularProducts.value
+  }
+  return results.value
+})
+
+/* ---------------- Gold Rotation Logic ---------------- */
+const goldRotationOffset = ref(0) // Now acts as activeIndex
+let goldRotationTimer: any = null
+const goldScroller = ref<HTMLElement | null>(null)
+
+function startGoldRotation() {
+  if (goldRotationTimer) clearInterval(goldRotationTimer)
+  goldRotationTimer = setInterval(() => {
+    if (!goldScroller.value || goldProducts.value.length <= 1) return
+
+    goldRotationOffset.value = (goldRotationOffset.value + 1) % goldProducts.value.length
+    
+    const children = goldScroller.value.querySelectorAll('.featured-gold-wrapper')
+    const targetElement = children[goldRotationOffset.value] as HTMLElement
+    if (targetElement) {
+      goldScroller.value.scrollTo({
+        left: targetElement.offsetLeft,
+        behavior: 'smooth'
+      })
+    }
+  }, 10000) // 10s rotation
+}
+
+function stopGoldRotation() {
+  if (goldRotationTimer) {
+    clearInterval(goldRotationTimer)
+    goldRotationTimer = null
+  }
+}
+
+async function applyGoldRotationOffset() {
+  if (goldProducts.value.length === 0) return
+
+  // The search_products RPC already orders gold items starting from the
+  // correct position for the current rotationSeed (see its
+  // `(gold_rank + p_seed) % total` ORDER BY clause). Re-applying the seed
+  // here as an array index would double-rotate: since gold_rank is
+  // 1-indexed on the server but this offset is 0-indexed, the two
+  // rotations cancel out and always land on the same (highest-ranked)
+  // item instead of cycling. Just start the carousel at the top of the
+  // order the server already gave us.
+  goldRotationOffset.value = 0
+
+  await nextTick()
+  if (goldScroller.value) {
+    const children = goldScroller.value.querySelectorAll('.featured-gold-wrapper')
+    if (children[goldRotationOffset.value]) {
+      children[goldRotationOffset.value].scrollIntoView({
+        behavior: 'auto',
+        block: 'nearest',
+        inline: 'center'
+      })
+    }
+  }
+}
 
 function toggleCategory(cat: { id: number; name: string }) {
   const index = activeCategories.value.findIndex(c => c.id === cat.id)
@@ -866,7 +1107,11 @@ function toggleCategory(cat: { id: number; name: string }) {
     activeCategories.value = activeCategories.value.filter(c => c.id !== cat.id)
   } else {
     activeCategories.value = [...activeCategories.value, cat]
-
+    ActivityLogService.log("search_filter_category", {
+      category_id: cat.id,
+      category_ids: activeCategories.value.map(c => c.id),
+      category_names: activeCategories.value.map(c => c.name),
+    })
   }
 }
 
@@ -881,132 +1126,10 @@ function toggleStatus(status: string) {
 
 
 /* ---------------- Scanner ---------------- */
-function handleDismiss() {
-  scanning.value = false
-  stopScan()
-}
-
-async function stopScan() {
-  if (html5QrCodeInstance.value) {
-    try {
-      if (html5QrCodeInstance.value.isScanning) {
-        await html5QrCodeInstance.value.stop()
-      }
-      const reader = document.getElementById('reader')
-      if (reader) reader.innerHTML = ''
-    } catch (err) {
-      console.warn('Error stopping scanner:', err)
-    } finally {
-      html5QrCodeInstance.value = null
-    }
-  }
-}
-
-
-async function startScan() {
-  await ActivityLogService.log("barcode_scan_start");
-
-  if (scanning.value) return
-  scanning.value = true
-
-  if (isNative.value) {
-    try {
-      // 📱 Native → ML Kit
-      const { camera } = await BarcodeScanner.checkPermissions();
-      if (camera !== 'granted') {
-        const { camera: newStatus } = await BarcodeScanner.requestPermissions();
-        if (newStatus !== 'granted') {
-           scanning.value = false;
-           return;
-        }
-      }
-
-      const { barcodes } = await BarcodeScanner.scan();
-
-      if (barcodes.length > 0) {
-        const barcode = barcodes[0].rawValue;
-        if (barcode) {
-          await Haptics.impact({ style: ImpactStyle.Medium });
-          activeStores.value = [];
-          activeCategories.value = [];
-          activeStatuses.value = [];
-          isScanning.value = true;
-          searchQuery.value = barcode;
-
-          await ActivityLogService.log("barcode_scan_success", {
-            barcode: barcode
-          });
-        }
-      }
-    } catch (err) {
-      console.error('❌ Native scan failed:', err)
-      await ActivityLogService.log("barcode_scan_error", { error: err || "unknown" });
-    } finally {
-      scanning.value = false
-      if (route.query.scan === 'true') {
-        router.replace({path: '/search'})
-      }
-    }
-  }
-}
-
-async function onScannerModalPresented() {
-  // 🌐 Web init logic here
-  try {
-    let readerEl = null
-    // Retry finding element for up to 2 seconds
-    for (let i = 0; i < 20; i++) {
-      readerEl = document.getElementById('reader')
-      if (readerEl) break
-      await new Promise(r => setTimeout(r, 100))
-    }
-
-    if (!readerEl) {
-      console.error("❌ #reader container not found after modal present")
-      scanning.value = false
-      return
-    }
-
-    const html5QrCode = new Html5Qrcode('reader')
-    html5QrCodeInstance.value = html5QrCode
-
-    const config = {
-      fps: 15,
-      qrbox: { width: 250, height: 250 },
-      formatsToSupport: [
-        Html5QrcodeSupportedFormats.EAN_13,
-        Html5QrcodeSupportedFormats.EAN_8,
-        Html5QrcodeSupportedFormats.UPC_A,
-        Html5QrcodeSupportedFormats.UPC_E,
-        Html5QrcodeSupportedFormats.CODE_128,
-        Html5QrcodeSupportedFormats.QR_CODE
-      ]
-    }
-
-    await html5QrCode.start(
-        { facingMode: 'environment' },
-        config,
-        async (decodedText) => {
-          console.log('✅ Web barcode detected:', decodedText)
-          await Haptics.impact({style: ImpactStyle.Medium})
-          
-          activeStores.value = []
-          activeCategories.value = []
-          activeStatuses.value = []
-          isScanning.value = true
-          searchQuery.value = decodedText
-          
-          await ActivityLogService.log("barcode_scan_success", { barcode: decodedText });
-
-          await stopScan()
-          scanning.value = false
-        },
-        () => { /* Silent failure for each frame */ }
-    )
-  } catch (err) {
-    console.error('❌ Web scanner start failed:', err)
-    scanning.value = false
-  }
+// Live camera + result-preview scanning now lives in its own full-screen
+// route (see BarcodeScanCamera.vue) rather than an in-page modal.
+function goToBarcodeScan() {
+  router.push('/scan/barcode')
 }
 
 /* ---------------- Data Fetch ---------------- */
@@ -1045,6 +1168,7 @@ const fetchProducts = async (reset = false) => {
 
   if (isFetching.value || (allLoaded.value && !reset)) return
   isFetching.value = true
+  errorMsg.value = ''
 
   if (reset) {
     currentPage.value = 0
@@ -1068,21 +1192,53 @@ const fetchProducts = async (reset = false) => {
        🔎 SEARCH MODE
     ========================================================= */
     if (searchQuery.value && searchQuery.value.length > 1) {
+      // Execute reCAPTCHA invisibly. A failed token is never proof of a bot,
+      // so fall through and let the server decide.
+      let captchaToken = 'disabled';
+      if (isCaptchaEnabled) {
+        try {
+          captchaToken = await executeRecaptcha('search');
+        } catch (e) {
+          console.warn('reCAPTCHA token unavailable in search:', e);
+          captchaToken = 'none';
+        }
+      }
+      (window as any)._recaptchaToken = captchaToken;
+
+      // Organic randomized human delay
+      await delayForHuman();
+
       const q = searchQuery.value.trim()
+
       const isNumeric = /^\d+$/.test(q);
 
       // 1️⃣ PRIORITIZE EXACT BARCODE MATCH (FAST)
       if (isNumeric && q.length >= 8) {
-        const { data: barcodeMatch } = await supabase
+        const { data: barcodeMatchRaw } = await supabase
           .from("products")
           .select(baseSelect)
           .eq("barcode", q) // exact match
           .single() as { data: Product | null }
 
+        let barcodeMatch = barcodeMatchRaw
+
+        if (!barcodeMatch) {
+          // This barcode might have been merged into another product —
+          // check product_barcodes before treating it as genuinely unknown.
+          const { data: aliasData } = await supabase
+            .from('product_barcodes')
+            .select(`products (${baseSelect})`)
+            .eq('barcode', q)
+            .maybeSingle() as { data: any }
+          const aliased: Product | null = Array.isArray(aliasData?.products) ? aliasData?.products[0] : aliasData?.products
+          if (aliased) barcodeMatch = aliased
+        }
+
         if (barcodeMatch) {
           if (isScanning.value) {
             isScanning.value = false;
             shouldResetSearch.value = true;
+            isNavigatingToItem.value = true;
             router.push({path: `/item/${barcodeMatch.barcode}`});
             return;
           }
@@ -1091,6 +1247,16 @@ const fetchProducts = async (reset = false) => {
           isFetching.value = false
           loadingProducts.value = false
           return
+        } else {
+          // 🆕 If product not found but we were scanning, navigate anyway 
+          // to trigger the contribution prompt in ItemDetailsView
+          if (isScanning.value) {
+             isScanning.value = false;
+             shouldResetSearch.value = true;
+             isNavigatingToItem.value = true;
+             router.push({path: `/item/${q}`});
+             return;
+          }
         }
       }
 
@@ -1102,11 +1268,12 @@ const fetchProducts = async (reset = false) => {
         p_sort: sortBy.value,
         p_store_ids: activeStores.value.length > 0 ? activeStores.value.map(s => s.id) : null,
         p_category_ids: activeCategories.value.length > 0 ? activeCategories.value.map(c => c.id) : null,
-        p_statuses: activeStatuses.value.length > 0 ? activeStatuses.value : null
+        p_statuses: activeStatuses.value.length > 0 ? activeStatuses.value : null,
+        p_seed: rotationSeed.value
       })
 
       if (error) {
-        errorMsg.value = error.message
+        setFetchError(error)
       } else {
         if (!data || data.length < pageSize) {
           allLoaded.value = true
@@ -1114,12 +1281,33 @@ const fetchProducts = async (reset = false) => {
 
         const processedData = (data || []).map((p: any) => ({
           ...p,
-          partner_tier: Array.isArray(p.partner) ? p.partner[0]?.partner_tier : p.partner?.partner_tier
+          partner_tier: p.partner_tier || (Array.isArray(p.partner) ? p.partner[0]?.partner_tier : p.partner?.partner_tier)
         }))
 
         results.value = reset
             ? processedData
             : [...results.value, ...processedData]
+
+        if (reset && q && results.value.length > 0) {
+          ActivityLogService.log("search_results", {
+            query: q,
+            result_count: results.value.length,
+            has_more: !allLoaded.value,
+            filter_count: activeStores.value.length + activeCategories.value.length + activeStatuses.value.length,
+            sort: sortBy.value
+          })
+        }
+
+        if (reset && results.value.length === 0) {
+          ActivityLogService.log("search_no_results", {
+            query: q,
+            filters: {
+              stores: activeStores.value.map(s => s.id),
+              categories: activeCategories.value.map(c => c.id),
+              statuses: activeStatuses.value
+            }
+          })
+        }
 
         currentPage.value++
       }
@@ -1208,7 +1396,7 @@ const fetchProducts = async (reset = false) => {
       )
 
       if (error) {
-        errorMsg.value = error.message
+        setFetchError(error)
       } else {
         if (!data || data.length < pageSize) {
           allLoaded.value = true
@@ -1216,7 +1404,7 @@ const fetchProducts = async (reset = false) => {
 
         const processedData = (data || []).map((p: any) => ({
           ...p,
-          partner_tier: Array.isArray(p.partner) ? p.partner[0]?.partner_tier : p.partner?.partner_tier
+          partner_tier: p.partner_tier || (Array.isArray(p.partner) ? p.partner[0]?.partner_tier : p.partner?.partner_tier)
         }))
 
         results.value = reset
@@ -1234,89 +1422,35 @@ const fetchProducts = async (reset = false) => {
        📦 NORMAL BROWSING MODE
     ========================================================= */
 
-    let query = supabase
-        .from("products")
-        .select(baseSelect)
-        .eq("approved", true)
-
-    // 🏬 Store filter
-    if (activeStores.value.length > 0) {
-      const storeIds = activeStores.value.map(s => s.id)
-      query = query.in("product_stores.store_id", storeIds)
-    }
-
-    // 🏷 Category filter
-    if (activeCategories.value.length > 0) {
-      const categoryIds = activeCategories.value.map(c => c.id)
-      query = query.in("product_category_id", categoryIds)
-    }
-
-    // 🛡 Status filter
-    if (activeStatuses.value.length > 0) {
-      query = query.in("status", activeStatuses.value)
-    }
-
-    // Sorting
-    if (sortBy.value === 'views') {
-      query = query.order('view_count', { ascending: false })
-    } else {
-      query = query.order('created_at', { ascending: false })
-    }
-
-    query = query.range(from, from + pageSize - 1)
-
-    const { data, error } = await query.returns<Product[]>()
+    const { data, error } = await supabase.rpc('search_products', {
+      p_query: '',
+      p_limit: pageSize,
+      p_offset: from,
+      p_sort: sortBy.value,
+      p_store_ids: activeStores.value.length > 0 ? activeStores.value.map(s => s.id) : null,
+      p_category_ids: activeCategories.value.length > 0 ? activeCategories.value.map(c => c.id) : null,
+      p_statuses: activeStatuses.value.length > 0 ? activeStatuses.value : null,
+      p_seed: rotationSeed.value
+    })
 
     if (error) {
-      errorMsg.value = error.message
+      setFetchError(error)
     } else {
       if (!data || data.length < pageSize) {
         allLoaded.value = true
       }
 
-      let processedData = data || []
-      
-      // 🏎️ Special Sort for "Recent" mode: Gold/Silver < 7 days old go to the top
-      if (sortBy.value === 'recent' && processedData.length > 0) {
-        const sevenDaysAgo = dayjs().subtract(7, 'day');
-        // Sort the ENTIRE current results plus new data to ensure pinning works
-        const allResults = reset ? processedData : [...results.value, ...processedData];
-        
-        allResults.sort((a: any, b: any) => {
-          const getWeight = (p: any) => {
-            const t = Array.isArray(p.partner) ? p.partner[0]?.partner_tier : p.partner?.partner_tier;
-            const tier = String(t || '').toLowerCase();
-            const isNew = dayjs(p.created_at).isAfter(sevenDaysAgo) || (p.updated_at && dayjs(p.updated_at).isAfter(sevenDaysAgo));
-            
-            if (tier === 'gold' && isNew) return 3; // Absolute priority
-            if (tier === 'gold') return 2;          // Regular Gold
-            if (tier === 'silver' && isNew) return 1;
-            return 0;
-          };
-          
-          const weightA = getWeight(a);
-          const weightB = getWeight(b);
+      const processedData = (data || []).map((p: any) => ({
+        ...p,
+        partner_tier: p.partner_tier || (Array.isArray(p.partner) ? p.partner[0]?.partner_tier : p.partner?.partner_tier)
+      }))
 
-          if (weightA !== weightB) return weightB - weightA;
-          return dayjs(b.created_at).valueOf() - dayjs(a.created_at).valueOf();
-        });
-
-        results.value = allResults.map((p: any) => ({
-          ...p,
-          partner_tier: Array.isArray(p.partner) ? p.partner[0]?.partner_tier : p.partner?.partner_tier
-        }));
-      } else {
-        const mapped = processedData.map((p: any) => ({
-          ...p,
-          partner_tier: Array.isArray(p.partner) ? p.partner[0]?.partner_tier : p.partner?.partner_tier
-        }));
-        results.value = reset
-            ? mapped
-            : [...results.value, ...mapped]
-      }
-
+      results.value = reset ? processedData : [...results.value, ...processedData]
       currentPage.value++
     }
+
+
+
 
   } finally {
     isFetching.value = false
@@ -1330,8 +1464,9 @@ const fetchTotalCount = async () => {
   const {count, error} = await supabase
       .from('products')
       .select('barcode', {count: 'exact', head: true})
+      .eq('is_archived', false)
   if (error) {
-    errorMsg.value = error.message
+    setFetchError(error)
   } else {
     totalProductsCount.value = count || 0
   }
@@ -1346,6 +1481,22 @@ const handleSearchInput = (event: Event) => {
 
   if (q.length > 1) {   // only log if at least 2 chars
     ActivityLogService.log("search_query", {query: q});
+  }
+};
+
+const expandSearch = () => {
+  searchExpanded.value = true;
+  nextTick(() => searchbarEl.value?.$el?.setFocus());
+};
+
+const collapseSearch = () => {
+  searchQuery.value = '';
+  searchExpanded.value = false;
+};
+
+const handleSearchBlur = () => {
+  if (!searchQuery.value) {
+    searchExpanded.value = false;
   }
 };
 
@@ -1371,7 +1522,9 @@ const openDetails = async (product: Product) => {
     store: activeStores.value.map(s => s.name),
     category: activeCategories.value.map(c => c.name),
     status_filters: activeStatuses.value,
-    query_used: searchQuery.value || null
+    query_used: searchQuery.value || null,
+    position: results.value.findIndex(p => p.barcode === product.barcode) + 1,
+    result_count: results.value.length
   });
 
   router.push({path: `/item/${product.barcode}`})
@@ -1380,6 +1533,11 @@ const openDetails = async (product: Product) => {
 function goToAddProduct() {
   router.push('/add')
 }
+
+function triggerHoneypot() {
+  flagBot('honeypot_trap_triggered');
+}
+
 
 function getStatusClass(status: string) {
   switch (status) {
@@ -1399,8 +1557,15 @@ function getStatusClass(status: string) {
 
 /* ---------------- Infinite Scroll ---------------- */
 const loadMore = async (event: Event) => {
-  await fetchProducts()
-  ;(event.target as HTMLIonInfiniteScrollElement).complete()
+  try {
+    await fetchProducts()
+    // A failed page (e.g. offline) leaves allLoaded=false — without this it would
+    // just keep re-triggering ionInfinite in a tight retry loop while still near
+    // the bottom of the list. Pull-to-refresh re-enables it once back online.
+    if (errorMsg.value) infiniteDisabled.value = true
+  } finally {
+    ;(event.target as HTMLIonInfiniteScrollElement).complete()
+  }
 }
 
 
@@ -1409,10 +1574,16 @@ async function refreshList(event: CustomEvent) {
     await nextTick()
     infiniteDisabled.value = false   // ✅ reactive instead of mutating prop
 
+    // Advance rotation seed on manual refresh too, so gold partner rotates
+    rotationSeed.value = (rotationSeed.value + 1) % 1000
+    localStorage.setItem('product_rotation_seed', rotationSeed.value.toString())
+
     await Promise.all([
       fetchProducts(true),
       fetchTotalCount(),
     ])
+
+    await applyGoldRotationOffset()
   } finally {
     event.detail.complete()
   }
@@ -1421,8 +1592,10 @@ async function refreshList(event: CustomEvent) {
 
 /* ---------------- Lifecycle ---------------- */
 onMounted(async () => {
+
   // 🔹 Auth/session setup
   const {data: {session}} = await supabase.auth.getSession()
+
   isAuthenticated.value = !!session
   supabase.auth.onAuthStateChange((_event, session) => {
     isAuthenticated.value = !!session
@@ -1440,10 +1613,8 @@ onMounted(async () => {
     }, {} as Record<string, string>)
   }
 
-  // 🔹 Initial data load
+  // 🔹 Load static data only once
   await Promise.all([
-    fetchProducts(true),
-    fetchTotalCount(),
     fetchCategories(),
     fetchStores(),
   ])
@@ -1452,10 +1623,50 @@ onMounted(async () => {
 onIonViewWillEnter(async () => {
   if (Capacitor.isNativePlatform()) refreshSubscriptionStatus();
 
+  isNavigatingToItem.value = false
+
   if (shouldResetSearch.value) {
     clearAllFilters();
     shouldResetSearch.value = false;
   }
+
+  // Handle status filter from Analytics
+  if (route.query.status) {
+    const status = route.query.status as string;
+    activeStatuses.value = [status];
+
+    // Clean up URL
+    const query = { ...route.query };
+    delete query.status;
+    router.replace({ query });
+  }
+
+  // Handle prefilled search query (e.g. from Partner "View More" links)
+  if (route.query.q) {
+    searchQuery.value = route.query.q as string;
+
+    // Clean up URL
+    const query = { ...route.query };
+    delete query.q;
+    router.replace({ query });
+  }
+
+  // Increment rotation seed for "Round Robin" feel
+  rotationSeed.value = (rotationSeed.value + 1) % 1000
+  localStorage.setItem('product_rotation_seed', rotationSeed.value.toString())
+
+  // Refresh products and count on entry if we don't have results yet
+  if (results.value.length === 0) {
+    await Promise.all([
+      fetchProducts(true),
+      fetchTotalCount(),
+    ])
+  }
+
+  // Set initial scroll position based on Round Robin seed (after products are loaded)
+  await applyGoldRotationOffset()
+
+  startGoldRotation()
 })
 
 
@@ -1491,26 +1702,19 @@ onIonViewDidEnter(async () => {
     }
   }
 
-  // Refresh AdMob if needed
-  (window as any).scheduleBannerUpdate?.();
-
-  // Auto trigger scanner if route has scan=true
-  if (route.query.scan === "true") {
-    setTimeout(async () => {
-      await startScan();
-      router.replace({path: "/search"});
-    }, 300);
-  }
+  // Banner now goes through the shared LevelPlay scheduler (same one every
+  // other ad-bearing view uses) instead of a bespoke show/destroy pair here.
+  scheduleBannerUpdate()
 });
 
 
 const getStatusIcon = (status: string) => {
   switch (status.toLowerCase()) {
-    case 'halal': return checkmarkCircle
-    case 'muslim-friendly': return shieldCheckmarkOutline
-    case 'syubhah': return alertCircle
-    case 'haram': return closeCircle
-    default: return warning
+    case 'halal': return CheckCircle2
+    case 'muslim-friendly': return ShieldCheck
+    case 'syubhah': return AlertCircle
+    case 'haram': return XCircle
+    default: return AlertTriangle
   }
 }
 
@@ -1518,37 +1722,46 @@ const getStatusIcon = (status: string) => {
 
 
 <style>
+/* Floats over the product grid (see slot="fixed" note in the template)
+   instead of reserving its own row below ion-content, so the frosted
+   pill actually has scrolling content behind it to blur. */
 .footer-count {
-  text-align: center;
-  padding: 3px 0;
-  font-size: 14px;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: var(--floating-tab-bar-offset);
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.footer-count small {
+  display: inline-block;
+  padding: 6px 16px;
+  border-radius: var(--radius-pill);
+  /* --ion-background-color-rgb isn't kept in sync with our custom
+     --ion-background-color override, so build the tint from an explicit
+     light/dark pair instead of trusting it (it silently fell back to
+     black in light mode, producing an unreadable dark-on-dark pill). */
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--card-border);
+  box-shadow: var(--card-shadow);
+  font-size: 12px;
+  font-weight: 600;
   color: var(--ion-color-medium);
-  background: transparent;
 }
 
-
-#reader {
-  width: 100%;
-  max-height: 100%;
-  border-radius: 8px;
-  overflow: hidden;
-  margin: 0 auto; /* center horizontally */
+.ion-palette-dark .footer-count small {
+  background: rgba(20, 20, 22, 0.65);
 }
 
-/* For larger screens */
-@media (min-width: 768px) {
-  #reader {
-    width: 400px; /* fixed width for better control */
-    height: 300px; /* fixed height */
-    border-radius: 8px; /* maybe larger radius for desktop */
-  }
-}
 
 ion-chip {
-  display: block;
-  border-radius: 5px;
-  width: 95%;
-  text-align: center;
+  border-radius: 999px !important;
+  --border-radius: 999px !important;
 }
 
 @keyframes shimmer {
@@ -1573,7 +1786,20 @@ ion-searchbar.rounded {
   display: grid;
   grid-template-columns: 1fr;
   gap: 16px;
-  padding: 4px 0;
+  /* Extra bottom padding so the last row always clears the fixed
+     Add/Scan FABs instead of sitting flush underneath them. */
+  padding: 4px 0 130px;
+}
+
+/* Top clearance for the floating search/filter bar (now inside
+   ion-content, slot="fixed") lives on the outer wrapper — the actual
+   first thing rendered (featured-gold section, "for you" card, or the
+   product grid, depending on state) — not on .product-grid itself,
+   since content before the grid needs to clear the bar too. */
+.search-results-wrap {
+  /* Ionic's .ion-padding utility sets padding-top via !important, so a
+     plain override here never wins without matching it. */
+  padding-top: 78px !important;
 }
 
 /* Laptop & Computer Only: Multiple columns */
@@ -1598,15 +1824,19 @@ ion-searchbar.rounded {
 
 .modern-product-card {
   margin: 0; /* Reset margin for grid layout */
-  background: var(--ion-card-background, #ffffff);
-  border-radius: 20px;
+  background: var(--card-bg);
+  border-radius: var(--radius-lg);
   overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-  border: 1px solid rgba(var(--ion-color-dark-rgb), 0.05);
-  transition: transform 0.2s ease, box-shadow 0.3s ease;
+  box-shadow: var(--card-shadow);
+  border: 1px solid var(--card-border);
+  transition: transform 0.15s ease, box-shadow 0.25s ease;
   cursor: pointer;
   position: relative;
-  height: 140px; /* Fixed height for clean grid rows */
+  height: 160px; /* Fixed height for clean grid rows */
+}
+
+.modern-product-card:hover {
+  box-shadow: var(--card-shadow-hover);
 }
 
 /* Mobile: restore bottom margin if grid is 1 column */
@@ -1622,12 +1852,12 @@ ion-searchbar.rounded {
 
 .card-inner {
   display: flex;
-  height: 140px; /* Slightly taller for better product display */
+  height: 160px; /* Slightly taller for better product display */
 }
 
 /* Image Section */
 .card-image-section {
-  width: 140px;
+  width: 145px;
   height: 100%;
   flex-shrink: 0;
   position: relative;
@@ -1671,7 +1901,7 @@ ion-searchbar.rounded {
 .floating-status-pill {
   position: absolute;
   padding: 4px 10px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   display: flex;
   align-items: center;
   gap: 5px;
@@ -1687,7 +1917,7 @@ ion-searchbar.rounded {
 }
 
 .floating-status-pill.bottom-left {
-  bottom: 42px;
+  bottom: 8px;
   left: 8px;
 }
 
@@ -1726,8 +1956,9 @@ ion-searchbar.rounded {
 
 .info-top .name {
   margin: 0;
-  font-size: 1.15rem; /* Larger */
-  font-weight: 850; /* Heavier */
+  font-size: 1.1rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
   color: var(--ion-color-dark);
   line-height: 1.25;
   display: -webkit-box;
@@ -1737,25 +1968,29 @@ ion-searchbar.rounded {
   overflow: hidden;
 }
 
-/* metas is now inside info-bottom */
-.info-bottom .metas {
+/* metas is now inside info-top */
+.info-top .metas {
   display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 0.73rem;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 3px !important;
+  font-size: 0.78rem;
   color: var(--ion-color-medium);
+  margin-top: 4px;
 }
 
 .meta-dot { opacity: 0.5; margin: 0 4px; }
 
 .meta {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: 3px;
+  white-space: nowrap;
 }
 
 .meta-icon {
-  font-size: 11px;
+  font-size: 0.85rem;
+  margin-right: 2px;
   flex-shrink: 0;
 }
 
@@ -1766,6 +2001,7 @@ ion-searchbar.rounded {
   align-items: flex-start;
   gap: 4px;
   width: 100%;
+  padding-bottom: 2px;
 }
 
 .vibrant-status-tag {
@@ -1829,7 +2065,7 @@ ion-searchbar.rounded {
 }
 
 .filter-group {
-  margin: 16px 0;
+  margin: 8px 0;
 }
 
 .filter-title {
@@ -1849,107 +2085,162 @@ ion-searchbar.rounded {
 }
 
 /* Consolidated Search Header Styles (3-Row Layout) */
+/* Three separate pills (search bar + two buttons), floating over the
+   product grid instead of sitting in a solid ion-toolbar — each pill
+   keeps its own background, the space around them is transparent. */
 .header-main-actions {
+  position: absolute;
+  top: 10px;
+  left: 16px;
+  right: 16px;
+  z-index: 5;
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 8px;
-  padding: 8px 16px;
-  width: 100%;
 }
 
-.classic-scan-btn {
-  width: 50px;
-  height: 50px;
-  min-width: 50px;
-  --padding-start: 0;
-  --padding-end: 0;
-  --border-radius: 12px;
+.inline-searchbar {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Fade-in only — no animating width/flex-grow on the ion-searchbar itself.
+   Resizing that custom element mid-animation can leave its shadow-DOM icon
+   mispositioned on iOS WebKit (the icon doesn't reliably re-center while the
+   host's box is still changing size), so the bar is laid out at its final
+   width from the first frame and only opacity transitions. */
+.searchbar-expanded {
+  animation: searchbar-fade-in 0.2s ease-out;
+}
+
+@keyframes searchbar-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.search-toggle-btn {
+  flex-shrink: 0;
+}
+
+.searchbar-wrap {
+  position: relative;
+}
+
+/* Sits over the searchbar's own leading search icon so tapping it again
+   collapses the search — same spot the user tapped to open it. Placed
+   after the input in DOM order but pinned over the icon, so it never
+   covers the text/typing area. */
+.searchbar-icon-hit {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 44px;
+  background: transparent;
+  border: none;
+  padding: 0;
   margin: 0;
+  cursor: pointer;
+  z-index: 1;
+  -webkit-appearance: none;
+  appearance: none;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.classic-scan-btn ion-icon {
-  font-size: 24px;
+.searchbar-icon-hit:focus,
+.searchbar-icon-hit:active {
+  background: transparent;
+  outline: none;
+}
+
+/* Stacked FABs: Add Product (top) + Scan Barcode (just below it) */
+.stacked-fabs {
+  position: absolute;
+  right: 16px;
+  /* Cleared above the results-count pill, not floating far above it. */
+  bottom: calc(var(--floating-tab-bar-offset) + 42px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  z-index: 10;
 }
 
 .classic-action-btn {
-  height: 50px;
+  /* !important + min/max on all four needed: iOS mode's own ion-button
+     internal padding/min-height (different from md/Android) otherwise
+     wins over a plain height/width here, making the button render a
+     different size on iPhone than on Android. */
+  height: 44px !important;
+  width: 44px !important;
+  min-width: 44px !important;
+  max-width: 44px !important;
+  min-height: 44px !important;
+  max-height: 44px !important;
   margin: 0;
   --color: var(--ion-color-dark);
+  /* !important needed: ion-button's fill="clear" sets --background:
+     transparent via its own .button-clear class at higher specificity
+     than a plain class selector here. Frosted-glass tint (not the
+     opaque --card-bg) to match the see-through searchbar next to it. */
+  --background: rgba(255, 255, 255, 0.65) !important;
+  --border-radius: var(--radius-md);
+  --background-hover: rgba(var(--ion-color-carrot-rgb), 0.1);
+  --background-activated: rgba(var(--ion-color-carrot-rgb), 0.14);
+  --transition: background-color 0.2s ease;
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--card-shadow);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   position: relative;
   font-weight: 700;
   text-transform: none;
 }
 
 .classic-action-btn ion-icon {
-  font-size: 22px;
+  font-size: 38px;
+  color: var(--ion-color-dark);
 }
 
-.sort-btn-wrapper {
-  display: flex;
-  align-items: center;
-  gap: 4px;
+.ion-palette-dark .classic-action-btn {
+  --background: rgba(20, 20, 22, 0.65) !important;
 }
 
 .right-actions-group {
   display: flex;
   align-items: center;
-  gap: 4px;
-}
-
-.btn-label {
-  margin-left: 4px;
-  font-size: 13px;
+  gap: 8px;
+  flex-shrink: 0;
+  margin-left: auto;
 }
 
 .badge-dot {
   position: absolute;
-  top: 10px;
-  right: 8px;
-  width: 8px;
-  height: 8px;
+  top: 6px;
+  right: 4px;
+  min-width: 18px;
+  height: 18px;
   background: var(--ion-color-carrot);
-  border-radius: 50%;
+  border-radius: 10px;
   border: 2px solid var(--ion-background-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
 }
 
-.search-container {
-  padding: 0 16px 12px;
+.badge-count {
+  color: #000;
+  font-size: 10px;
+  font-weight: 800;
 }
 
-.compact-searchbar {
-  --border-radius: 12px;
-  --background: var(--ion-background-color);
-  --color: var(--ion-color-dark);
-  --placeholder-color: var(--ion-color-step-600);
-  --icon-color: var(--ion-color-carrot);
-  --clear-button-color: var(--ion-color-step-600);
-  border: 1px solid rgba(var(--ion-color-dark-rgb), 0.1);
-  border-radius: 12px;
-  padding: 0;
-  width: 100%;
-}
-
-.search-row-toolbar {
-  --min-height: auto;
-}
-
-/* Animation for searchbar row */
-.fade-down-enter-active,
-.fade-down-leave-active {
-  transition: all 0.25s ease-out;
-  transform-origin: top;
-}
-
-.fade-down-enter-from,
-.fade-down-leave-to {
-  opacity: 0;
-  transform: translateY(-10px);
-}
-
-
-.actions-toolbar,
-.search-row-toolbar,
 .filter-toolbar {
   --background: var(--ion-background-color);
   backdrop-filter: none;
@@ -1973,13 +2264,13 @@ ion-header {
 
 
 /* Force neutral text color in toolbar controls */
-.actions-toolbar ion-button,
-.actions-toolbar ion-icon {
+.header-main-actions ion-button,
+.header-main-actions ion-icon {
   color: var(--ion-color-dark);
 }
 
 .filter-section {
-  padding-bottom: 16px;
+  padding-bottom: 0;
 }
 
 .for-you-info {
@@ -2004,31 +2295,12 @@ ion-header {
   margin: 4px 0 0;
 }
 
-/* =========================
-   MODERN CATEGORY CHIPS
-========================= */
-.category-bar {
-  display: flex;
-  gap: 12px;
-  overflow-x: auto;
-  padding: 0 16px 8px;
+.filter-modal-content {
+  --background: var(--ion-background-color);
 }
 
-.modern-category-chip {
-  --cat-color: var(--ion-color-dark);
-  --cat-bg: var(--ion-background-color);
-  background: var(--cat-bg);
-  color: var(--cat-color);
-  height: 38px;
-  border-radius: 12px;
-  padding: 0 16px;
-  border: 1.5px solid var(--cat-color);
-  font-weight: 700;
-  font-size: 0.82rem;
-  transition: all 0.2s ease;
-  margin: 0;
-  flex-shrink: 0;
-  width: auto;
+.modal-footer-gap {
+  height: 40px;
 }
 
 .ion-palette-dark .modern-category-chip {
@@ -2038,7 +2310,9 @@ ion-header {
 .modern-category-chip.active {
   background: var(--cat-color) !important;
   color: var(--cat-contrast, #ffffff);
-  border-color: var(--cat-color);
+  border-color: var(--cat-color) !important;
+  border-radius: 100px !important;
+  --border-radius: 100px !important;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
   transform: translateY(-1px);
 }
@@ -2049,15 +2323,409 @@ ion-header {
 .filter-clear-row {
   display: flex;
   justify-content: flex-start;
-  padding: 4px 12px 8px;
+  padding: 4px 12px 4px;
+}
+
+/* =========================
+   Grid View Styles
+   ========================= */
+
+.product-grid.grid-mode {
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  padding: 8px 8px 130px;
+}
+
+@media (min-width: 768px) {
+  .product-grid.grid-mode {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .product-grid.grid-mode {
+    grid-template-columns: repeat(6, 1fr);
+  }
+}
+
+.grid-product-card {
+  aspect-ratio: 1 / 1;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--card-bg);
+  box-shadow: var(--card-shadow);
+  border: 1px solid var(--card-border);
+  position: relative;
+  transition: transform 0.2s ease, box-shadow 0.25s ease;
+  z-index: 1;
+}
+
+.grid-product-card.grid-col-span-2 {
+  grid-column: span 2;
+  aspect-ratio: 2 / 1;
+}
+
+.grid-product-card[class*="tier-card-"] {
+  border: 2px solid transparent !important; /* Base for tiered items */
+}
+
+.grid-product-card:hover {
+  box-shadow: var(--card-shadow-hover);
+}
+
+.grid-product-card:active {
+  transform: scale(0.95);
+}
+
+.grid-card-image {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  background: var(--ion-background-color-step-100, #f8fafc);
+}
+
+.grid-card-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.grid-tier-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255,255,255,0.3);
+  z-index: 2;
+  font-size: 0.65rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.grid-tier-badge.gold {
+  background: linear-gradient(135deg, #facc15 0%, #ca8a04 100%);
+  color: #422006;
+}
+
+.grid-tier-badge.silver {
+  background: linear-gradient(135deg, #cbd5e1 0%, #64748b 100%);
+  color: #0f172a;
+}
+
+.grid-tier-badge.bronze {
+  background: linear-gradient(135deg, #d97706 0%, #78350f 100%);
+  color: #fff;
+}
+
+.grid-status-label {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255,255,255,0.3);
+  z-index: 2;
+  font-size: 0.65rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.grid-status-label ion-icon {
+  font-size: 16px;
+}
+
+.grid-status-label.halal { background: rgba(var(--ion-color-success-rgb), 0.9); }
+.grid-status-label.muslim-friendly { background: rgba(var(--ion-color-primary-rgb), 0.95); }
+.grid-status-label.syubhah { background: rgba(var(--ion-color-warning-rgb), 0.95); color: var(--ion-color-warning-contrast); }
+.grid-status-label.haram { background: rgba(var(--ion-color-danger-rgb), 0.9); }
+
+/* =========================================================
+   Featured Gold Carousel Styles
+   ========================================================= */
+
+.featured-partners-container {
+  padding: 4px 0 0 0;
+  background: var(--ion-background-color);
+  overflow: hidden;
+}
+
+@media (min-width: 768px) {
+  .featured-partners-container {
+    max-width: 100%;
+    margin: 0;
+  }
+}
+
+.featured-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 16px 8px;
+}
+
+.featured-header h2 {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ion-color-carrot);
+}
+
+.horizontal-scroller {
+  display: flex;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x mandatory;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.featured-gold-wrapper {
+  flex: 0 0 100%; /* Matches exactly the list card width (Container - 32px) */
+  scroll-snap-align: center;
+  padding: 0;
+}
+
+.featured-inner-card {  
+  border: 1px solid rgba(202, 138, 4, 0.2) !important;
+  background: var(--ion-card-background) !important;
+  height: 160px !important; /* MATCH standard list card height */
+}
+
+.featured-grid-card {
+  margin: 8px;
+  width: calc(100% - 16px);
+  aspect-ratio: 2 / 1;
+}
+
+/* Featured split inner grid layout */
+.featured-grid-inner {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.featured-image-section {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: #000;
+}
+
+.featured-bg-blur {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: blur(12px) brightness(0.4);
+  transform: scale(1.15); /* Prevents transparent blur margins */
+  z-index: 1;
+}
+
+.featured-fg-image {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 2;
+}
+
+.featured-details-section {
+  display: none; /* Hidden on mobile */
+}
+
+/* Badges for mobile view, placed over image */
+.featured-image-section .grid-tier-badge,
+.featured-image-section .grid-status-label {
+  z-index: 3;
+}
+
+@media (min-width: 768px) {
+  .featured-grid-card {
+    width: calc(100% - 16px) !important;
+    margin: 12px 8px !important;
+    aspect-ratio: auto !important;
+    height: 280px !important;
+  }
+
+  .featured-image-section {
+    width: 42%;
+    height: 100%;
+  }
+
+  .featured-fg-image {
+    object-fit: contain; /* Contained on desktop to prevent packaging crop */
+    padding: 12px;
+  }
+
+  .featured-details-section {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    width: 58%;
+    height: 100%;
+    padding: 24px;
+    background: var(--ion-card-background, #1e1e1e);
+    color: var(--ion-text-color, #ffffff);
+    text-align: left;
+    box-sizing: border-box;
+    border-left: 1px solid rgba(var(--ion-color-dark-rgb), 0.08);
+  }
+
+  .mobile-only {
+    display: none !important;
+  }
+}
+
+/* Details Section Styling */
+.details-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.status-badge-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #fff;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.status-badge-pill.halal { background: rgba(var(--ion-color-success-rgb), 0.9); }
+.status-badge-pill.muslim-friendly { background: rgba(var(--ion-color-primary-rgb), 0.95); }
+.status-badge-pill.syubhah { background: rgba(var(--ion-color-warning-rgb), 0.95); color: var(--ion-color-warning-contrast); }
+.status-badge-pill.haram { background: rgba(var(--ion-color-danger-rgb), 0.9); }
+
+.product-title {
+  margin: 12px 0 6px 0;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--ion-text-color, #ffffff);
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.product-category {
+  font-size: 0.85rem;
+  color: var(--ion-color-carrot);
+  font-weight: 600;
+}
+
+.product-meta {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid rgba(var(--ion-color-dark-rgb), 0.08);
+}
+
+.meta-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  color: var(--ion-color-medium, #8e8e93);
+}
+
+.details-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 16px;
+}
+
+.official-partner-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #ca8a04;
+}
+
+.action-link-btn {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--ion-color-carrot);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: transform 0.2s ease;
+}
+
+.featured-grid-card:hover .action-link-btn {
+  transform: translateX(4px);
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.honeypot-card {
+  position: absolute !important;
+  width: 0px !important;
+  height: 0px !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  z-index: -999 !important;
+  overflow: hidden !important;
+}
+
+.honeypot-link {
+  display: block;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
 }
 </style>
 
 <style>
 /* Force readable text colors for tiered cards in dark mode */
-
-/* Force readable text colors for tiered cards in dark mode */
 .ion-palette-dark .modern-product-card[class*="tier-card-"] .name {
   color: #ffffff !important;
+}
+
+.ion-palette-dark .meta,
+.ion-palette-dark .meta-dot {
+  color: #d1d5db !important;
 }
 </style>

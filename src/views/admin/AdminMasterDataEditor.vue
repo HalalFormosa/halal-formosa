@@ -101,6 +101,7 @@
               :disabled="saving"
               @click="save"
           >
+            <ion-spinner v-if="saving" name="crescent" style="zoom: 0.6; margin-right: 8px;" />
             {{ editingId ? $t('common.update') : $t('common.add') }}
           </ion-button>
         </ion-card-content>

@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_prayer_strip"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal">
+
+    <LinearLayout
+        android:id="@+id/widget_prayer_fajr"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:gravity="center">
+
+        <TextView
+            android:id="@+id/widget_prayer_fajr_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/widget_prayer_fajr"
+            android:textSize="9sp"
+            android:textColor="@color/widget_light_muted" />
+
+        <TextView
+            android:id="@+id/widget_prayer_fajr_time"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/widget_prayer_sample_fajr"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:textColor="@color/widget_light_text" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/widget_prayer_dhuhr"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:gravity="center">
+
+        <TextView
+            android:id="@+id/widget_prayer_dhuhr_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/widget_prayer_dhuhr"
+            android:textSize="9sp"
+            android:textColor="@color/widget_light_muted" />
+
+        <TextView
+            android:id="@+id/widget_prayer_dhuhr_time"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/widget_prayer_sample_dhuhr"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:textColor="@color/widget_light_text" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/widget_prayer_asr"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:gravity="center">
+
+        <TextView
+            android:id="@+id/widget_prayer_asr_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/widget_prayer_asr"
+            android:textSize="9sp"
+            android:textColor="@color/widget_light_accent" />
+
+        <TextView
+            android:id="@+id/widget_prayer_asr_time"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/widget_prayer_sample_asr"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:textColor="@color/widget_light_accent" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/widget_prayer_maghrib"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:gravity="center">
+
+        <TextView
+            android:id="@+id/widget_prayer_maghrib_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/widget_prayer_maghrib"
+            android:textSize="9sp"
+            android:textColor="@color/widget_light_muted" />
+
+        <TextView
+            android:id="@+id/widget_prayer_maghrib_time"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/widget_prayer_sample_maghrib"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:textColor="@color/widget_light_text" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/widget_prayer_isha"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:gravity="center">
+
+        <TextView
+            android:id="@+id/widget_prayer_isha_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/widget_prayer_isha"
+            android:textSize="9sp"
+            android:textColor="@color/widget_light_muted" />
+
+        <TextView
+            android:id="@+id/widget_prayer_isha_time"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/widget_prayer_sample_isha"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:textColor="@color/widget_light_text" />
+    </LinearLayout>
+
+</LinearLayout>

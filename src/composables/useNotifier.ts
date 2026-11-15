@@ -67,6 +67,7 @@ export function useNotifier() {
                 image: image || null,
                 data: data || {},
                 channels, // ✅ NEW
+                discord_webhook: data.discord_webhook || null, // 🎯 Pass specific webhook if provided
             };
 
             // 🧩 6️⃣ Send to Supabase Edge Function

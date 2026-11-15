@@ -1,0 +1,15 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <color name="widget_light_bg">#FFFFFF</color>
+    <color name="widget_light_button_bg">#F0F0F0</color>
+    <color name="widget_light_text">#1A1A1A</color>
+
+    <color name="widget_light_muted">#6B6B6B</color>
+    <color name="widget_light_accent">#F97316</color>
+
+    <color name="widget_dark_bg">#1E1E1E</color>
+    <color name="widget_dark_button_bg">#2C2C2C</color>
+    <color name="widget_dark_text">#F5F5F5</color>
+    <color name="widget_dark_muted">#B8B8B8</color>
+    <color name="widget_dark_accent">#FDBA74</color>
+</resources>

@@ -33,11 +33,13 @@
 </template>
 
 <script setup lang="ts">
+import { watch } from 'vue';
 import { IonModal, IonButton, IonBadge, IonIcon } from '@ionic/vue';
 import { arrowForward } from 'ionicons/icons';
 import { Browser } from '@capacitor/browser';
 import { AppLauncher } from '@capacitor/app-launcher';
 import { Capacitor } from '@capacitor/core';
+import { ActivityLogService } from '@/services/ActivityLogService';
 
 const props = defineProps<{
   isOpen: boolean;
@@ -46,7 +48,27 @@ const props = defineProps<{
   minVersion?: string;
 }>();
 
+// How many users hit the update wall, on which version, and whether they go on to the store.
+watch(
+  () => props.isOpen,
+  (open) => {
+    if (open) {
+      ActivityLogService.log('app_update_required_shown', {
+        current_version: props.currentVersion,
+        min_version: props.minVersion,
+        platform: Capacitor.getPlatform(),
+      });
+    }
+  },
+  { immediate: true }
+);
+
 const handleUpdate = async () => {
+  ActivityLogService.log('app_update_store_click', {
+    current_version: props.currentVersion,
+    min_version: props.minVersion,
+    platform: Capacitor.getPlatform(),
+  });
   if (!props.storeUrl) {
     console.error('No store URL provided for update');
     return;
@@ -80,7 +102,7 @@ const handleUpdate = async () => {
 .force-update-modal {
   --height: auto;
   --max-height: 80%;
-  --border-radius: 24px;
+  --border-radius: var(--radius-xl);
   --background: var(--ion-background-color, #ffffff);
 }
 
@@ -93,7 +115,7 @@ const handleUpdate = async () => {
 }
 
 .illustration-container {
-  background: rgba(var(--ion-color-primary-rgb), 0.1);
+  background: rgba(var(--ion-color-carrot-rgb), 0.1);
   padding: 24px;
   border-radius: 50%;
   margin-bottom: 24px;
@@ -102,7 +124,7 @@ const handleUpdate = async () => {
 .update-icon {
   width: 64px;
   height: 64px;
-  color: var(--ion-color-primary);
+  color: var(--ion-color-carrot);
   animation: rotate 10s linear infinite;
 }
 
@@ -133,7 +155,7 @@ const handleUpdate = async () => {
 
 .update-button {
   width: 100%;
-  --border-radius: 12px;
+  --border-radius: var(--radius-md);
   --padding-top: 16px;
   --padding-bottom: 16px;
   font-weight: 600;

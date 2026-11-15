@@ -11,22 +11,49 @@
 
         <CompassDial
             :rotation="hasCompass ? compassRotation : 0"
-            :qibla="hasCompass ? qiblaBearing : null"
+            :qibla="qiblaBearing"
             :aligned="aligned && hasCompass"
         />
 
         <div class="info">
           <h2>{{ $t('qibla.direction') }}</h2>
 
-          <p v-if="hasCompass && !loading" class="bearing">
-            {{ qiblaBearing.toFixed(0) }}° • {{ bearingLabel }} {{ $t('qibla.fromNorth') }}
-          </p>
-
-          <div v-else class="loading-row">
+          <div v-if="loading" class="loading-row">
             <ion-spinner name="crescent" />
             <span>{{ $t('qibla.preparing') }}</span>
           </div>
 
+          <template v-else>
+            <!-- If compass has successfully initialized -->
+            <div v-if="hasCompass">
+              <p class="bearing">
+                {{ qiblaBearing.toFixed(0) }}° • {{ bearingLabel }} {{ $t('qibla.fromNorth') }}
+              </p>
+            </div>
+
+            <!-- If iOS permission is required but not yet granted -->
+            <div v-else-if="permissionPromptRequired" class="permission-prompt">
+              <p class="prompt-text">{{ $t('qibla.needsPermission') || 'Compass access is required to show direction.' }}</p>
+              <ion-button expand="block" color="carrot" class="ion-margin-top" @click="enableCompass">
+                {{ $t('qibla.enableButton') || 'Enable Compass' }}
+              </ion-button>
+            </div>
+
+            <!-- If device lacks compass hardware or sensor is unsupported -->
+            <div v-else-if="!sensorSupported && qiblaBearing" class="static-bearing-info">
+              <p class="bearing">
+                {{ qiblaBearing.toFixed(0) }}° • {{ bearingLabel }} {{ $t('qibla.fromNorth') }}
+              </p>
+              <p class="sub-text">
+                {{ $t('qibla.noSensor') || 'Compass hardware is not active on this device. Use the degree heading above.' }}
+              </p>
+            </div>
+
+            <!-- Generic placeholder/error state if location or compass failed -->
+            <div v-else class="loading-row">
+              <span>{{ $t('qibla.error') || 'Unable to initialize compass.' }}</span>
+            </div>
+          </template>
 
           <p v-if="aligned && hasCompass" class="aligned-text">
             {{ $t('qibla.facing') }}
@@ -39,29 +66,39 @@
 </template>
 
 <script setup lang="ts">
-import {computed} from 'vue'
+import { computed, ref } from 'vue'
 import {
   IonHeader,
   IonPage,
   IonContent,
   IonSpinner,
+  IonButton,
   onIonViewWillEnter
 } from '@ionic/vue'
 
 import AppHeader from '@/components/AppHeader.vue'
 import CompassDial from '@/components/CompassDial.vue'
-import { useQiblaCompass } from '@/composables/useQiblaCompass'
+import { useQiblaCompass, calculateQiblaBearing } from '@/composables/useQiblaCompass'
+import { useLocation } from '@/composables/useLocation'
+import { ActivityLogService } from '@/services/ActivityLogService'
 
 /* ---------------- Qibla Logic ---------------- */
 const {
   loading,
   hasCompass,
+  sensorSupported,
   qiblaBearing,
   compassRotation,
   aligned,
   start
 } = useQiblaCompass()
 
+const { userLocation, startWatching } = useLocation()
+const userCoords = ref<{ lat: number; lng: number } | null>(null)
+
+const permissionPromptRequired = computed(() => {
+  return typeof (window as any).DeviceOrientationEvent?.requestPermission === 'function' && !hasCompass.value
+})
 
 const bearingLabel = computed(() => {
   const deg = qiblaBearing.value
@@ -79,23 +116,54 @@ const bearingLabel = computed(() => {
   if (d === 270) return '270° W'
   return `${360 - d}° NW`
 })
+
+async function enableCompass() {
+  if (userCoords.value) {
+    loading.value = true
+    await start(userCoords.value.lat, userCoords.value.lng)
+  }
+}
+
+function initCompassWithCoords(lat: number, lng: number) {
+  userCoords.value = { lat, lng }
+  qiblaBearing.value = calculateQiblaBearing(lat, lng)
+
+  if (typeof (window as any).DeviceOrientationEvent?.requestPermission !== 'function') {
+    start(lat, lng)
+  } else {
+    loading.value = false
+  }
+}
+
 /* ---------------- Lifecycle ---------------- */
 onIonViewWillEnter(() => {
-  // Set loading to true IMMEDIATELY so the user sees the spinner
-  loading.value = true;
+  ActivityLogService.log('utility_qibla_open')
+  loading.value = true
+
+  // 1. Instant cached location fallback
+  if (userLocation.value?.lat && userLocation.value?.lng) {
+    initCompassWithCoords(userLocation.value.lat, userLocation.value.lng)
+  }
+
+  // 2. Fetch/update current GPS position
+  startWatching()
 
   navigator.geolocation.getCurrentPosition(
       pos => {
-        start(pos.coords.latitude, pos.coords.longitude)
+        const lat = pos.coords.latitude
+        const lng = pos.coords.longitude
+        initCompassWithCoords(lat, lng)
       },
       (err) => {
-        console.error("GPS Error:", err);
-        loading.value = false; // Stop loading if GPS fails
+        console.warn("[GPS] Qibla location fallback error:", err)
+        if (!userCoords.value) {
+          loading.value = false
+        }
       },
       {
-        enableHighAccuracy: false, // Tip 1: Faster fix
-        timeout: 5000,
-        maximumAge: 60000          // Use cache if available
+        enableHighAccuracy: false,
+        timeout: 8000,
+        maximumAge: 60000
       }
   )
 })
@@ -105,12 +173,6 @@ onIonViewWillEnter(() => {
 .qibla-page {
   display: flex;
   justify-content: center;
-}
-
-.center {
-  text-align: center;
-  margin-top: 30%;
-  color: var(--ion-color-medium);
 }
 
 .compass-container {
@@ -131,6 +193,7 @@ onIonViewWillEnter(() => {
   font-weight: 600;
   letter-spacing: 0.4px;
 }
+
 .loading-row {
   display: flex;
   align-items: center;
@@ -141,5 +204,18 @@ onIonViewWillEnter(() => {
   margin-top: 8px;
 }
 
+.permission-prompt {
+  margin-top: 12px;
+}
 
+.prompt-text, .sub-text {
+  font-size: 13px;
+  color: var(--ion-color-medium);
+  max-width: 260px;
+  margin: 8px auto 0 auto;
+}
+
+.static-bearing-info {
+  margin-top: 8px;
+}
 </style>

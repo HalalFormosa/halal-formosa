@@ -6,13 +6,13 @@ import router from './router'
 import { App as CapacitorApp } from '@capacitor/app'
 import { Capacitor } from '@capacitor/core'
 import { Keyboard, KeyboardResize } from '@capacitor/keyboard'
+import { Browser } from '@capacitor/browser'
 import { supabase } from '@/plugins/supabaseClient'
-import { initAdMob } from '@/lib/admob'
-import { createI18n } from 'vue-i18n'
-import en from './locales/en.json'
-import id from './locales/id.json'
-import zh from './locales/zh.json'
-import ms from '@/locales/ms.json'
+import { getMyPrivateProfile } from '@/services/PrivateProfileService'
+import { isDeviceOnline } from '@/utils/connectivity'
+import { completeLineLogin } from '@/composables/useLineLogin'
+import { initLevelPlay } from '@/lib/levelplay'
+import { i18n } from '@/i18n'
 import '@ionic/vue/css/core.css'
 import '@ionic/vue/css/normalize.css'
 import '@ionic/vue/css/structure.css'
@@ -32,19 +32,25 @@ import { scheduleBannerUpdate } from '@/plugins/admob'
 import { initSafeArea } from "@/plugins/safeArea";
 import { initRevenueCat } from '@/plugins/RevenueCat';
 import { Purchases } from '@revenuecat/purchases-capacitor';
+import { syncScanWidget } from '@/composables/useWidgetSync';
 
 // ✅ unified user profile composable
 import {
     loadDonorFromCache,
     loadUserRoleFromCache,
     loadPublicLeaderboardFromCache,
+    loadNearbyPromptsFromCache,
     loadUserProfile,
     currentUser, resetUserProfileState
 } from "@/composables/userProfile"
 
 import { loadCountriesFromCache } from "@/composables/useCountries"
 import OneSignal from 'onesignal-cordova-plugin';
-import { refreshSubscriptionStatus } from "@/composables/useSubscriptionStatus";
+import { installClientErrorReporting } from '@/plugins/clientErrorReporting';
+import { buildScreenView, screenPattern } from '@/utils/screenView';
+import { ActivityLogService } from '@/services/ActivityLogService'
+import { refreshSubscriptionStatus, isDonor } from "@/composables/useSubscriptionStatus";
+import { deepLinkToPath } from '@/utils/urlHost';
 
 defineCustomElements(window)
 
@@ -63,26 +69,36 @@ if (Capacitor.isNativePlatform()) {
     Keyboard.setScroll({ isDisabled: false })
     Keyboard.addListener('keyboardWillShow', () => document.body.classList.add('keyboard-visible'))
     Keyboard.addListener('keyboardWillHide', () => document.body.classList.remove('keyboard-visible'))
-    initAdMob().catch((e) => console.warn('AdMob init skipped/failed:', e))
+    // Defensive reset for a launch-timing edge case: if the OS still has the
+    // previous app's IME (e.g. the launcher's search box) open when this
+    // Activity's window first attaches, the very first WindowInsets callback
+    // can report a keyboard height even though nothing in THIS app ever
+    // requested one — leaving the resized 'body' stuck reserving space for a
+    // keyboard that visually never appears. No-ops harmlessly if no keyboard
+    // is actually showing.
+    Keyboard.hide().catch(() => { /* no keyboard open — nothing to do */ })
+    initLevelPlay().catch((e) => console.warn('LevelPlay init skipped/failed:', e))
 }
 
-const i18n = createI18n({
-    legacy: false,
-    locale: localStorage.getItem('lang') || 'en',
-    fallbackLocale: 'en',
-    messages: {
-        en,
-        id,
-        ms,
-        zh
-    }
-})
+// Set initial RTL direction
+const initialLang = localStorage.getItem('lang') || 'en'
+document.documentElement.dir = ['ar', 'ur'].includes(initialLang) ? 'rtl' : 'ltr'
 
 /* Create app */
 const app = createApp(App).use(IonicVue).use(router).use(i18n)
 
+// Report uncaught errors (Vue, window, unhandled rejections) as client_error events
+installClientErrorReporting(app, () => screenPattern(router.currentRoute.value))
+
 // AdMob refresh after route changes
 router.afterEach(() => scheduleBannerUpdate())
+
+// One screen_view per page change, from the route pattern (never the concrete URL)
+router.afterEach((to, from, failure) => {
+    if (failure) return
+    const detail = buildScreenView(to, from)
+    if (detail) ActivityLogService.log('screen_view', detail)
+})
 
 // 1. Load from cache first → no flicker
 loadCountriesFromCache()
@@ -118,15 +134,32 @@ if (Capacitor.isNativePlatform()) {
 
 
 
-/* Native: refresh on resume (LOG-ONLY VERSION) */
+/* Native: refresh on resume */
 if (Capacitor.isNativePlatform()) {
     CapacitorApp.addListener('appStateChange', ({ isActive }) => {
         if (!isActive) return;
 
         const startedAt = Date.now();
 
-        console.info('[Resume] appStateChange fired');
-        console.info('[Resume] navigator.onLine =', navigator.onLine);
+        // Defensive reset, same reasoning as the startup call above — but this
+        // is the one that actually matters for launchMode="singleTask": tapping
+        // the app icon from the launcher's own search (which has its own IME
+        // open) resumes the EXISTING backgrounded Activity rather than cold-
+        // launching a new one, so the startup-only call never re-fires here.
+        // If that leftover IME state left the WebView's 'body' resize stuck
+        // reserving keyboard-height space, this clears it on every resume.
+        //
+        // One call isn't enough: the OS's own stale "keyboard visible" insets
+        // signal from the previous app can settle a beat AFTER we resume and
+        // re-fire the native resize shrink right after our reset undoes it —
+        // a straight timing race a single fire-and-forget call can lose.
+        // Retrying over ~1s "wins" that race regardless of exactly when the
+        // stale signal finishes clearing.
+        for (const delay of [0, 150, 400, 800]) {
+            setTimeout(() => {
+                Keyboard.hide().catch(() => { /* no keyboard open — nothing to do */ })
+            }, delay)
+        }
 
         scheduleBannerUpdate();
 
@@ -140,42 +173,15 @@ if (Capacitor.isNativePlatform()) {
                     return;
                 }
 
-                console.info(
-                    '[Resume] getSession resolved after',
-                    elapsed,
-                    'ms'
-                );
-
-                console.info('[Resume] raw session =', data?.session);
-
                 const session = data?.session;
+                if (!session?.user) return;
 
-                if (!session) {
-                    console.info('[Resume] No session (user logged out)');
-                    return;
-                }
-
-                if (!session.user) {
-                    console.info('[Resume] Session exists but no user');
-                    return;
-                }
-
-                console.info(
-                    '[Resume] User restored:',
-                    session.user.id
-                );
+                console.info('[Resume] Session restored for', session.user.id, 'after', elapsed, 'ms');
 
                 currentUser.value = session.user;
 
-                // ⛔ do NOT await — just log when it finishes
+                // ⛔ do NOT await — just react if it fails
                 loadUserProfile(session.user.id)
-                    .then(() => {
-                        console.info(
-                            '[Resume] loadUserProfile finished after',
-                            Date.now() - startedAt,
-                            'ms'
-                        );
-                    })
                     .catch((e) => {
                         console.warn('[Resume] loadUserProfile failed:', e);
                     });
@@ -194,20 +200,262 @@ supabase.auth.getSession().then(({ data }) => {
         loadDonorFromCache(session.user.id);
         loadUserRoleFromCache(session.user.id);
         loadPublicLeaderboardFromCache(session.user.id);
+        loadNearbyPromptsFromCache(session.user.id);
         // loadUserProfile and refreshSubscriptionStatus are moved to bootstrap
-    } else {
+    } else if (isDeviceOnline()) {
+        // Only trust an empty session as a real "logged out" when we're online —
+        // offline, this can just mean an expired-token refresh failed over a
+        // dead connection, not that the user actually logged out.
         currentUser.value = null;
+        resetUserProfileState();
     }
 });
 
+let isOneSignalInitialized = false;
+
+async function syncOneSignalUser(user: any) {
+    if (!Capacitor.isNativePlatform() || !isOneSignalInitialized) return;
+    if (user) {
+        try {
+            console.log('🔑 Logging in to OneSignal with External ID:', user.id);
+            OneSignal.login(user.id);
+
+            // 1. Fetch profile and role data in parallel
+            let profile: any = null;
+            let roleData: any = null;
+            try {
+                const [profileResult, roleResult, privateProfile] = await Promise.all([
+                    supabase
+                        .from('user_profiles')
+                        .select('display_name, donor_type')
+                        .eq('id', user.id)
+                        .maybeSingle(),
+                    supabase
+                        .from('user_roles')
+                        .select('role')
+                        .eq('user_id', user.id)
+                        .maybeSingle(),
+                    getMyPrivateProfile()
+                ]);
+                profile = { ...(profileResult.data ?? {}), phone: privateProfile?.phone ?? null };
+                roleData = roleResult.data;
+            } catch (err) {
+                console.warn('⚠️ Failed to fetch profile/role info from database:', err);
+            }
+
+            // 2. Fetch Pro subscriber status from RevenueCat if not already Pro in database
+            let isPro = profile?.donor_type === 'Pro' || profile?.donor_type === 'Developer';
+            if (!isPro) {
+                try {
+                    const { customerInfo } = await Purchases.getCustomerInfo();
+                    isPro = Boolean(customerInfo.entitlements.active["Halal Formosa Pro"]);
+                } catch (err) {
+                    console.warn('Failed to fetch RevenueCat customerInfo for OneSignal:', err);
+                    isPro = isDonor.value; // Fallback to cached state
+                }
+            }
+
+            // 3. Gather all tags into a single unified object
+            const tags: Record<string, string> = {
+                user_id: user.id,
+                role: roleData?.role || 'user',
+                pro_subscriber: isPro ? 'true' : 'false'
+            };
+
+            // Format user phone if available
+            const rawPhone = user.phone || profile?.phone || '';
+            let formattedPhone = '';
+            if (rawPhone && rawPhone.trim()) {
+                let cleanPhone = rawPhone.trim();
+                if (!cleanPhone.startsWith('+')) {
+                    if (cleanPhone.startsWith('09') && cleanPhone.length === 10) {
+                        cleanPhone = '+886' + cleanPhone.slice(1);
+                    } else if (cleanPhone.startsWith('9') && cleanPhone.length === 9) {
+                        cleanPhone = '+886' + cleanPhone;
+                    }
+                }
+                if (cleanPhone.startsWith('+')) {
+                    formattedPhone = cleanPhone;
+                    tags.phone = cleanPhone; // Fallback data tag for phone
+                }
+            }
+
+            // 4. Send all tags in ONE batch call to prevent native SDK race conditions
+            try {
+                console.log('🏷️ Sending unified tags to OneSignal:', tags);
+                OneSignal.User.addTags(tags);
+            } catch (err) {
+                console.error('❌ Failed to send tags to OneSignal:', err);
+            }
+
+            // 5. Sync user email (if valid)
+            try {
+                if (user.email && user.email.trim()) {
+                    console.log('📧 Adding email to OneSignal:', user.email);
+                    OneSignal.User.addEmail(user.email.trim());
+                }
+            } catch (err) {
+                console.error('❌ Failed to add email in OneSignal:', err);
+            }
+
+            // 6. Sync SMS channel subscription
+            if (formattedPhone) {
+                try {
+                    console.log('📱 Adding SMS phone to OneSignal:', formattedPhone);
+                    if (typeof (OneSignal.User as any).addSms === 'function') {
+                        OneSignal.User.addSms(formattedPhone);
+                    } else if (typeof (OneSignal.User as any).addSMS === 'function') {
+                        (OneSignal.User as any).addSMS(formattedPhone);
+                    }
+                } catch (err) {
+                    console.error('❌ Failed to add phone in OneSignal:', err);
+                }
+            }
+
+            // 8. Sync display name alias
+            try {
+                const displayName = profile?.display_name || user.user_metadata?.display_name || user.user_metadata?.full_name || '';
+                if (displayName && displayName.trim()) {
+                    const cleanDisplayName = displayName.trim().slice(0, 128);
+                    console.log('🏷️ Adding alias display_name:', cleanDisplayName);
+                    OneSignal.User.addAlias('display_name', cleanDisplayName);
+                }
+            } catch (err) {
+                console.error('❌ Failed to add display_name alias in OneSignal:', err);
+            }
+
+        } catch (err) {
+            console.error('❌ Failed to sync user details to OneSignal:', err);
+        }
+    } else {
+        try {
+            console.log('🔑 Logging out of OneSignal');
+            OneSignal.logout();
+        } catch (err) {
+            console.warn('⚠️ OneSignal logout failed:', err);
+        }
+    }
+}
+
+async function syncRevenueCatUser(user: any) {
+    if (!Capacitor.isNativePlatform()) return;
+    if (user) {
+        try {
+            console.log('💎 Syncing subscriber attributes to RevenueCat for user:', user.id);
+
+            // 1. Fetch profile and role data in parallel
+            let profile: any = null;
+            let roleData: any = null;
+            try {
+                const [profileResult, roleResult, privateProfile] = await Promise.all([
+                    supabase
+                        .from('user_profiles')
+                        .select('display_name')
+                        .eq('id', user.id)
+                        .maybeSingle(),
+                    supabase
+                        .from('user_roles')
+                        .select('role')
+                        .eq('user_id', user.id)
+                        .maybeSingle(),
+                    getMyPrivateProfile()
+                ]);
+                profile = { ...(profileResult.data ?? {}), phone: privateProfile?.phone ?? null };
+                roleData = roleResult.data;
+            } catch (err) {
+                console.warn('⚠️ Failed to fetch profile/role info for RevenueCat:', err);
+            }
+
+            // 2. Set Email
+            if (user.email && user.email.trim()) {
+                await Purchases.setEmail({ email: user.email.trim() });
+            }
+
+            // 3. Set Display Name
+            const displayName = profile?.display_name || user.user_metadata?.display_name || user.user_metadata?.full_name || '';
+            if (displayName && displayName.trim()) {
+                await Purchases.setDisplayName({ displayName: displayName.trim().slice(0, 128) });
+            }
+
+            // 4. Set Phone Number
+            const rawPhone = user.phone || profile?.phone || '';
+            if (rawPhone && rawPhone.trim()) {
+                let cleanPhone = rawPhone.trim();
+                if (!cleanPhone.startsWith('+')) {
+                    if (cleanPhone.startsWith('09') && cleanPhone.length === 10) {
+                        cleanPhone = '+886' + cleanPhone.slice(1);
+                    } else if (cleanPhone.startsWith('9') && cleanPhone.length === 9) {
+                        cleanPhone = '+886' + cleanPhone;
+                    }
+                }
+                if (cleanPhone.startsWith('+')) {
+                    await Purchases.setPhoneNumber({ phoneNumber: cleanPhone });
+                }
+            }
+
+            // 5. Set Custom Attributes
+            const role = roleData?.role || 'user';
+            await Purchases.setAttributes({ role: role });
+
+            // 6. Set OneSignal IDs if OneSignal is initialized
+            if (isOneSignalInitialized) {
+                try {
+                    const onesignalUserID = await OneSignal.User.getOnesignalId();
+                    if (onesignalUserID) {
+                        await Purchases.setOnesignalUserID({ onesignalUserID });
+                        console.log('💎 Linked OneSignal User ID to RevenueCat:', onesignalUserID);
+                    }
+                    const pushSubscriptionId = await OneSignal.User.pushSubscription.getIdAsync();
+                    if (pushSubscriptionId) {
+                        await Purchases.setOnesignalID({ onesignalID: pushSubscriptionId });
+                        console.log('💎 Linked OneSignal Push ID to RevenueCat:', pushSubscriptionId);
+                    }
+                } catch (err) {
+                    console.warn('⚠️ Failed to link OneSignal IDs to RevenueCat:', err);
+                }
+            }
+
+            // 7. Force attributes synchronization to the backend
+            try {
+                await Purchases.syncAttributesAndOfferingsIfNeeded();
+                console.log('💎 Forced synchronization of RevenueCat attributes');
+            } catch (err) {
+                console.warn('⚠️ Failed to force sync RevenueCat attributes:', err);
+            }
+
+            console.log('✅ RevenueCat subscriber attributes synced successfully');
+        } catch (err) {
+            console.error('❌ Failed to sync subscriber attributes to RevenueCat:', err);
+        }
+    }
+}
+
 // ✅ Auth events (still needed for sign-in/out within app)
 supabase.auth.onAuthStateChange(async (event, session) => {
+    console.log(`🔔 [Auth] Event: ${event}`, session?.user?.id);
     if (event === 'SIGNED_OUT') {
+        // supabase-js fires SIGNED_OUT not just on an explicit logout, but also
+        // when a background token-refresh attempt fails outright — which is
+        // exactly what happens on a cold launch offline with an expired access
+        // token. That's a connectivity problem, not a real logout, so don't
+        // wipe the session or bounce to /login for it; just wait for a real
+        // connection to retry the refresh.
+        if (!isDeviceOnline()) {
+            console.warn('📴 [Auth] SIGNED_OUT while offline — likely a failed token refresh, ignoring');
+            return;
+        }
         try { await Purchases.logOut() } catch { /* empty */ }
+        syncOneSignalUser(null).catch(console.warn)
         resetUserProfileState()
         currentUser.value = null
+        syncScanWidget({ loggedIn: false }).catch(() => {})
         router.replace('/login')
         return
+    }
+
+    if (session?.user) {
+        currentUser.value = session.user
+        syncScanWidget({ loggedIn: true }).catch(() => {})
     }
 
     if (event === 'SIGNED_IN' && session?.user) {
@@ -230,6 +478,7 @@ supabase.auth.onAuthStateChange(async (event, session) => {
                 loadDonorFromCache(session.user.id)
                 loadUserRoleFromCache(session.user.id)
                 loadPublicLeaderboardFromCache(session.user.id)
+                loadNearbyPromptsFromCache(session.user.id)
             } catch (e) {
                 console.warn('[Post-login cache] failed', e)
             }
@@ -237,9 +486,15 @@ supabase.auth.onAuthStateChange(async (event, session) => {
 
         // Native plugins: never block
         if (Capacitor.isNativePlatform()) {
-            Purchases.logIn({ appUserID: session.user.id }).catch(console.warn)
+            Purchases.logIn({ appUserID: session.user.id })
+                .then(() => syncRevenueCatUser(session.user))
+                .catch(console.warn);
             refreshSubscriptionStatus({ syncToServer: true }).catch(console.warn)
+            syncOneSignalUser(session.user).catch(console.warn)
         }
+
+        // 🎟️ Idempotent — returns the existing code if one was already generated.
+        supabase.rpc('generate_referral_code_for_user').then(undefined, (e: any) => console.warn('⚠️ Referral code generation failed:', e));
     }
 })
 
@@ -255,6 +510,9 @@ document.addEventListener('deviceready', async () => {
         // Initialize your OneSignal App ID
         await OneSignal.initialize(import.meta.env.VITE_ONESIGNAL_APP_ID);
 
+        isOneSignalInitialized = true;
+        console.log('✅ OneSignal v5 initialized');
+
         // Wait for OneSignal to finish setting up the push service
         const deviceState = await OneSignal.User.pushSubscription.getIdAsync();
         console.log('📱 OneSignal Player ID:', deviceState);
@@ -264,6 +522,7 @@ document.addEventListener('deviceready', async () => {
         if (!hasPermission) {
             const accepted = await OneSignal.Notifications.requestPermission(false);
             console.log('🔔 User accepted notifications:', accepted);
+            ActivityLogService.log('permission_result', { permission: 'push', status: accepted ? 'granted' : 'denied', source: 'app_launch' });
         }
 
         // 🧭 Handle incoming push when tapped/opened
@@ -283,15 +542,29 @@ document.addEventListener('deviceready', async () => {
         // 🏷️ Tag the logged-in user for targeting
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-            await OneSignal.User.addTag('user_id', user.id);
-            console.log('🏷️ Tagged user_id:', user.id);
+            await syncOneSignalUser(user);
+            await syncRevenueCatUser(user);
         }
-
-        console.log('✅ OneSignal v5 initialized');
     } catch (err) {
         console.warn('⚠️ OneSignal init failed:', err);
     }
 });
+
+// 🎟️ Referral deep link (e.g. halalformosa.com/signup?ref=HF7K2M or
+// myapp://signup?ref=HF7K2M) — stashed so the onboarding wizard can pre-fill
+// the referral-code step even though the account may not exist yet at the
+// moment the link is opened.
+const REFERRAL_STORAGE_KEY = 'hf_pending_referral_code';
+function captureReferralCodeFromUrl(url: string) {
+    const match = url.match(/[?&]ref=([^&#]+)/i);
+    if (match) {
+        try {
+            localStorage.setItem(REFERRAL_STORAGE_KEY, decodeURIComponent(match[1]).toUpperCase());
+        } catch (err) {
+            console.warn('⚠️ Failed to store pending referral code:', err);
+        }
+    }
+}
 
 // 🔗 Unified Deep Link Handler
 const handleDeepLink = async (url: string, isColdBoot = false) => {
@@ -299,15 +572,10 @@ const handleDeepLink = async (url: string, isColdBoot = false) => {
     console.log(`🌐 [DeepLink] ${isColdBoot ? 'Cold Boot' : 'Open'}:`, url);
 
     lastHandledUrl = url;
+    captureReferralCodeFromUrl(url);
 
     try {
-        let path = '';
-        if (url.startsWith('myapp://')) {
-            path = url.replace('myapp://', '/');
-        } else if (url.includes('app.halalformosa.com') || url.includes('halalformosa.com')) {
-            const urlObj = new URL(url);
-            path = urlObj.pathname + urlObj.search;
-        }
+        const path = deepLinkToPath(url);
 
         if (path && path !== '/') {
             await router.isReady();
@@ -321,13 +589,38 @@ const handleDeepLink = async (url: string, isColdBoot = false) => {
 
         // Handle OAuth callback
         if (url.startsWith('myapp://callback') || url.includes('/callback')) {
-            const hash = new URL(url).hash.substring(1);
+            const urlObj = new URL(url);
+            const hash = urlObj.hash.substring(1);
             const params = new URLSearchParams(hash);
             const access_token = params.get('access_token');
             const refresh_token = params.get('refresh_token');
             if (access_token && refresh_token) {
                 supabase.auth.setSession({ access_token, refresh_token });
                 console.log('🔐 [DeepLink] OAuth session restored.');
+            }
+
+            // LINE login bounces back here as myapp://callback?code=...&state=...
+            // (see LineNativeCallbackView.vue) since LINE can't redirect to a
+            // custom scheme directly.
+            const lineCode = urlObj.searchParams.get('code');
+            const lineState = urlObj.searchParams.get('state');
+            const lineError = urlObj.searchParams.get('error');
+            if (lineCode && lineState) {
+                completeLineLogin(lineCode, lineState, { native: true })
+                    .then(async (redirectPath) => {
+                        console.log('🔐 [DeepLink] LINE session restored.');
+                        await router.isReady();
+                        router.push(redirectPath);
+                    })
+                    .catch((err) => {
+                        console.warn('⚠️ [DeepLink] LINE login failed:', err);
+                    });
+            } else if (lineError) {
+                console.warn('⚠️ [DeepLink] LINE login cancelled/error:', lineError);
+            }
+
+            if (Capacitor.isNativePlatform()) {
+                Browser.close().catch(e => console.warn('Failed to close browser:', e));
             }
         }
     } catch (err) {
@@ -358,32 +651,55 @@ async function bootstrap() {
     // 2️⃣ Background initialization (Native Plugins & Heavy Data)
     try {
         // We use a slight timeout on getSession to prevent complete freeze if auth lock hangs
+        // (e.g. it tries to refresh an expired access token over a dead connection).
+        const TIMED_OUT = Symbol('timed-out');
         const sessionPromise = supabase.auth.getSession();
-        const timeoutPromise = new Promise<{ data: { session: null } }>((resolve) => setTimeout(() => resolve({ data: { session: null } }), 2000));
+        const timeoutPromise = new Promise<typeof TIMED_OUT>((resolve) => setTimeout(() => resolve(TIMED_OUT), 2000));
 
-        const { data: { session } } = await Promise.race([sessionPromise, timeoutPromise]);
+        const raced = await Promise.race([sessionPromise, timeoutPromise]);
 
-        if (session?.user) {
+        const applySession = (session: any) => {
             currentUser.value = session.user;
-
-            // Logged in: Load profile data in background
             loadDonorFromCache(session.user.id);
             loadUserRoleFromCache(session.user.id);
             loadPublicLeaderboardFromCache(session.user.id);
-
+            loadNearbyPromptsFromCache(session.user.id);
             loadUserProfile(session.user.id).catch(e => console.error("Profile load failed", e));
 
             if (Capacitor.isNativePlatform()) {
-                // Initialize RevenueCat & Subscriptions without blocking the mount
                 initRevenueCat(session.user.id)
                     .then(() => refreshSubscriptionStatus({ syncToServer: true }))
                     .catch(e => console.warn('RevenueCat/Sub init failed:', e));
             }
+
+            // 🎟️ Idempotent — returns the existing code if one was already generated.
+            supabase.rpc('generate_referral_code_for_user').then(undefined, (e: any) => console.warn('⚠️ Referral code generation failed:', e));
+        };
+
+        if (raced === TIMED_OUT) {
+            // The timeout fired first — this is most likely a hung token refresh
+            // on a dead connection, not a real "logged out" state. Don't wipe
+            // currentUser (that would force a real logout UI); just let the
+            // original call resolve whenever it can and apply it then.
+            console.warn('[Bootstrap] getSession timed out (likely offline) — deferring identity resolution');
+            sessionPromise.then(({ data }) => {
+                if (data.session?.user) applySession(data.session);
+            }).catch(e => console.warn('[Bootstrap] Deferred getSession failed:', e));
+            return;
+        }
+
+        const { data: { session } } = raced;
+
+        if (session?.user) {
+            applySession(session);
         } else {
             currentUser.value = null;
+            resetUserProfileState();
             if (Capacitor.isNativePlatform()) {
-                // Anonymous initialization
-                initRevenueCat().catch(e => console.warn('Anon RevenueCat init failed:', e));
+                // Anonymous initialization & subscription status verification
+                initRevenueCat()
+                    .then(() => refreshSubscriptionStatus())
+                    .catch(e => console.warn('Anon RevenueCat init failed:', e));
             }
         }
     } catch (err) {

@@ -3,143 +3,136 @@
     <ion-header>
       <app-header
           :title="$t('admin.userDetail')"
-          :icon="listOutline"
+          :icon="personOutline"
           :showBack="true"
+          :contrast="true"
       />
     </ion-header>
 
-    <ion-content class="ion-padding">
+    <ion-content class="ion-padding content-background">
 
-      <!-- ================= USER HEADER ================= -->
-      <ion-card v-if="user">
-        <ion-item lines="none">
-          <ion-avatar slot="start">
-            <img v-if="user.avatar_url" :src="user.avatar_url" />
-            <div v-else class="avatar-placeholder">👤</div>
-          </ion-avatar>
-
-          <ion-label>
-            <h2>{{ user.display_name || $t('admin.unknownUser') }}</h2>
-            <p>{{ user.email }}</p>
-          </ion-label>
-        </ion-item>
-      </ion-card>
-
-      <!-- ================= USER STATS ================= -->
-      <ion-card v-if="summary">
-        <ion-card-content class="stats-card">
-
-          <div class="stats-row">
-            <div class="stat-item">
-              <strong>{{ summary.total_activities }}</strong>
-              <span>{{ $t('admin.activities') }}</span>
-            </div>
-
-            <div class="stat-item">
-              <strong>{{ fromNow(summary.last_active) }}</strong>
-              <span>{{ $t('admin.lastActiveLabel') }}</span>
-            </div>
+      <!-- ================= USER HEADER HERO ================= -->
+      <div v-if="user" class="profile-hero">
+        <ion-avatar class="hero-avatar">
+          <img v-if="user.avatar_url" :src="user.avatar_url" />
+          <div v-else class="avatar-placeholder-hero">
+            {{ (user.display_name || '?').charAt(0).toUpperCase() }}
           </div>
+        </ion-avatar>
 
-          <div class="stats-row">
-            <div class="stat-item">
-              <strong>{{ summary.points }}</strong>
-              <span>{{ $t('admin.points') }}</span>
-            </div>
+        <div class="hero-text">
+          <h1 class="hero-name">{{ user.display_name || $t('admin.unknownUser') }}</h1>
+          <p class="hero-email">{{ user.email }}</p>
+        </div>
+      </div>
 
-            <div class="stat-item">
-              <strong>{{ summary.donor_type }}</strong>
-              <span>{{ $t('admin.accountType') }}</span>
-            </div>
-          </div>
+      <!-- ================= USER STATS GRID ================= -->
+      <div v-if="summary" class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-value">{{ summary.total_activities }}</div>
+          <div class="stat-label">{{ $t('admin.activities') }}</div>
+        </div>
 
-        </ion-card-content>
-      </ion-card>
+        <div class="stat-card">
+          <div class="stat-value-small">{{ fromNow(summary.last_active) }}</div>
+          <div class="stat-label">{{ $t('admin.lastActiveLabel') }}</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-value">{{ summary.points }}</div>
+          <div class="stat-label">{{ $t('admin.points') }}</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-value-small badge-text">{{ summary.donor_type || 'User' }}</div>
+          <div class="stat-label">{{ $t('admin.accountType') }}</div>
+        </div>
+      </div>
 
       <!-- ================= USER PROFILE DETAILS ================= -->
-      <ion-card v-if="user">
+      <ion-card v-if="user" class="details-card">
         <ion-card-header>
-          <ion-card-title>{{ $t('admin.profileDetails') }}</ion-card-title>
+          <div class="card-title-row">
+            <ion-icon :icon="personCircleOutline" class="card-icon" />
+            <ion-card-title>{{ $t('admin.profileDetails') }}</ion-card-title>
+          </div>
         </ion-card-header>
 
-        <ion-list lines="none">
-
-          <ion-item>
-            <ion-label>{{ $t('profile.editProfile.dob') }}</ion-label>
-            <ion-note slot="end">
-              {{ user.date_of_birth || '—' }}
-            </ion-note>
+        <ion-list lines="none" class="details-list">
+          <ion-item class="detail-item">
+            <ion-label class="item-label">{{ $t('profile.editProfile.dob') }}</ion-label>
+            <ion-note slot="end" class="item-value">{{ user.date_of_birth || '—' }}</ion-note>
           </ion-item>
 
-          <ion-item>
-            <ion-label>{{ $t('profile.editProfile.nationality') }}</ion-label>
-            <ion-note slot="end" v-if="getNationality(user.nationality)">
+          <ion-item class="detail-item">
+            <ion-label class="item-label">{{ $t('profile.editProfile.nationality') }}</ion-label>
+            <ion-note slot="end" v-if="getNationality(user.nationality)" class="item-value nationality-value">
               <img
                   :src="getNationality(user.nationality)?.flag"
                   :alt="$t('admin.flag')"
-                  style="width: 24px; height: 16px; margin-right: 8px; border-radius: 2px;"
+                  class="flag-img"
               />
-              {{ getNationality(user.nationality)?.name }}
+              <span>{{ getNationality(user.nationality)?.name }}</span>
             </ion-note>
-            <ion-note slot="end" v-else>—</ion-note>
+            <ion-note slot="end" v-else class="item-value">—</ion-note>
           </ion-item>
 
-
-          <ion-item>
-            <ion-label>{{ $t('profile.editProfile.gender') }}</ion-label>
-            <ion-note slot="end">
-              {{ user.gender || '—' }}
-            </ion-note>
+          <ion-item class="detail-item">
+            <ion-label class="item-label">{{ $t('profile.editProfile.gender') }}</ion-label>
+            <ion-note slot="end" class="item-value">{{ user.gender || '—' }}</ion-note>
           </ion-item>
 
-          <ion-item>
-            <ion-label>{{ $t('profile.editProfile.bio') }}</ion-label>
-            <ion-note slot="end" class="bio-text">
-              {{ user.bio || $t('profile.noBio') }}
-            </ion-note>
+          <ion-item class="detail-item">
+            <div class="bio-section">
+              <div class="item-label">{{ $t('profile.editProfile.bio') }}</div>
+              <div class="bio-content">{{ user.bio || $t('profile.noBio') }}</div>
+            </div>
           </ion-item>
 
-          <ion-item>
-            <ion-label>{{ $t('admin.publicProfile') }}</ion-label>
-            <ion-note slot="end">
+          <div class="details-divider"></div>
+
+          <ion-item class="detail-item">
+            <ion-label class="item-label">{{ $t('admin.publicProfile') }}</ion-label>
+            <ion-note slot="end" class="item-value" :class="{ 'text-success': user.public_profile }">
               {{ user.public_profile ? $t('common.yes') : $t('common.no') }}
             </ion-note>
           </ion-item>
 
-          <ion-item>
-            <ion-label>{{ $t('admin.profileCompleted') }}</ion-label>
-            <ion-note slot="end">
+          <ion-item class="detail-item">
+            <ion-label class="item-label">{{ $t('admin.profileCompleted') }}</ion-label>
+            <ion-note slot="end" class="item-value" :class="{ 'text-success': user.profile_completed_notified }">
               {{ user.profile_completed_notified ? $t('common.yes') : $t('common.no') }}
             </ion-note>
           </ion-item>
-
         </ion-list>
       </ion-card>
 
 
       <!-- ================= ADMIN METADATA ================= -->
-      <ion-card>
+      <ion-card class="details-card">
         <ion-card-header>
-          <ion-card-title>{{ $t('admin.technicalDetails') }}</ion-card-title>
+          <div class="card-title-row">
+            <ion-icon :icon="settingsOutline" class="card-icon" />
+            <ion-card-title>{{ $t('admin.technicalDetails') }}</ion-card-title>
+          </div>
         </ion-card-header>
 
-        <ion-list lines="none">
-
-          <ion-item>
-            <ion-label>{{ $t('admin.userId') }}</ion-label>
-            <ion-note slot="end" class="mono">{{ userId }}</ion-note>
+        <ion-list lines="none" class="details-list">
+          <ion-item class="detail-item">
+            <ion-label class="item-label">{{ $t('admin.userId') }}</ion-label>
+            <ion-note slot="end" class="item-value mono">{{ userId }}</ion-note>
           </ion-item>
 
-          <ion-item v-if="user?.created_at">
-            <ion-label>{{ $t('admin.accountCreated') }}</ion-label>
-            <ion-note slot="end">
+          <ion-item v-if="user?.created_at" class="detail-item">
+            <ion-label class="item-label">{{ $t('admin.accountCreated') }}</ion-label>
+            <ion-note slot="end" class="item-value">
               {{ new Date(user.created_at).toLocaleDateString() }}
             </ion-note>
           </ion-item>
 
-          <ion-item v-if="user?.created_at">
-            <ion-label>{{ $t('admin.memberSince') }}</ion-label>
-            <ion-note slot="end">
+          <ion-item v-if="user?.created_at" class="detail-item">
+            <ion-label class="item-label">{{ $t('admin.memberSince') }}</ion-label>
+            <ion-note slot="end" class="item-value">
               {{ sinceUser(user.created_at) }}
             </ion-note>
           </ion-item>
@@ -183,60 +176,90 @@
         </ion-list>
       </ion-card>
 
-      <ion-card v-if="recentSearches.length">
+      <!-- 🔎 RECENT SEARCHES -->
+      <ion-card class="modern-card">
         <ion-card-header>
-          <ion-card-title>{{ $t('admin.recentSearches') }}</ion-card-title>
+          <div class="card-header-flex">
+            <div class="title-with-icon">
+              <ion-icon :icon="searchOutline" color="carrot" />
+              <ion-card-title>{{ $t('admin.recentSearches') || 'Recent Searches' }}</ion-card-title>
+            </div>
+            <ion-button v-if="recentSearches.length >= 20" fill="clear" size="small" color="carrot" @click="openFullSearchHistory">
+               {{ $t('common.viewMore') }}
+               <ion-icon slot="end" :icon="chevronForwardOutline" />
+            </ion-button>
+          </div>
         </ion-card-header>
 
-        <ion-list lines="none">
+        <ion-list lines="none" v-if="recentSearches.length">
           <ion-item v-for="(s, i) in recentSearches" :key="i">
+            <ion-icon :icon="searchOutline" slot="start" class="small-icon" />
             <ion-label>
               <strong>{{ s.search_text }}</strong>
               <p class="activity-time">{{ fromNow(s.searched_at) }}</p>
             </ion-label>
           </ion-item>
         </ion-list>
+
+        <div v-else class="empty-state-small">
+          <p>{{ $t('common.noData') === 'common.noData' ? 'No data found' : $t('common.noData') }}</p>
+        </div>
       </ion-card>
 
-
-      <ion-card v-if="recentProducts.length">
+      <!-- 📦 RECENT PRODUCTS -->
+      <ion-card class="modern-card">
         <ion-card-header>
-          <ion-card-title>{{ $t('admin.recentProducts') }}</ion-card-title>
+          <div class="title-with-icon">
+            <ion-icon :icon="cubeOutline" color="carrot" />
+            <ion-card-title>{{ $t('admin.recentProducts') || 'Recent Products' }}</ion-card-title>
+          </div>
         </ion-card-header>
 
-        <ion-list lines="none">
+        <ion-list lines="none" v-if="recentProducts.length">
           <ion-item v-for="(p, i) in recentProducts" :key="i">
             <ion-thumbnail slot="start" v-if="p.product_image">
               <img :src="p.product_image" />
             </ion-thumbnail>
+            <ion-icon v-else :icon="cubeOutline" slot="start" class="small-icon" />
 
             <ion-label>
               <strong>{{ p.product_name ?? `Barcode: ${p.product_id}` }}</strong>
               <p class="activity-time">{{ fromNow(p.viewed_at) }}</p>
             </ion-label>
           </ion-item>
-
         </ion-list>
+
+        <div v-else class="empty-state-small">
+          <p>{{ $t('common.noData') === 'common.noData' ? 'No data viewed' : $t('common.noData') }}</p>
+        </div>
       </ion-card>
 
-      <ion-card v-if="recentPlaces.length">
+      <!-- 📍 RECENT PLACES -->
+      <ion-card class="modern-card">
         <ion-card-header>
-          <ion-card-title>{{ $t('admin.recentPlaces') }}</ion-card-title>
+          <div class="title-with-icon">
+            <ion-icon :icon="locationOutline" color="carrot" />
+            <ion-card-title>{{ $t('admin.recentPlaces') || 'Recent Places' }}</ion-card-title>
+          </div>
         </ion-card-header>
 
-        <ion-list lines="none">
+        <ion-list lines="none" v-if="recentPlaces.length">
           <ion-item v-for="(p, i) in recentPlaces" :key="i">
             <ion-thumbnail slot="start" v-if="p.place_image">
               <img :src="p.place_image" />
             </ion-thumbnail>
+            <ion-icon v-else :icon="locationOutline" slot="start" class="small-icon" />
 
             <ion-label>
               <strong>{{ p.place_name ?? `Place #${p.place_id}` }}</strong>
               <p class="activity-time">{{ fromNow(p.interacted_at) }}</p>
             </ion-label>
           </ion-item>
-
         </ion-list>
+
+        <div v-else class="empty-state-small">
+          <p>{{ $t('common.noData') === 'common.noData' ? 'No places visited' : $t('common.noData') }}</p>
+        </div>
       </ion-card>
 
 
@@ -246,12 +269,17 @@
           <ion-card-title>{{ $t('admin.activityTimeline') }}</ion-card-title>
         </ion-card-header>
 
-        <ion-list>
+        <ion-list lines="none" class="details-list">
           <ion-item
               v-for="log in logs"
               :key="log.id"
-              lines="full"
+              class="activity-item"
           >
+            <ion-icon 
+              slot="start" 
+              :icon="getActivityIcon(log.activity_type)" 
+              class="card-icon" 
+            />
             <ion-label>
               <h3 class="activity-title">
                 {{ describeActivity(log) }}
@@ -271,6 +299,48 @@
           </ion-item>
         </ion-list>
       </ion-card>
+
+      <!-- ================= SEARCH HISTORY MODAL ================= -->
+      <ion-modal :is-open="showSearchModal" @didDismiss="closeSearchModal">
+        <ion-header>
+          <app-header
+            :title="$t('admin.searchHistory')"
+            :icon="searchOutline"
+            :showBack="true"
+            :useRouterBack="false"
+            @back="closeSearchModal"
+            :contrast="true"
+          />
+        </ion-header>
+        
+        <ion-content class="ion-padding modal-content">
+          <ion-list lines="none" v-if="fullSearchHistory.length">
+            <ion-item v-for="(s, i) in fullSearchHistory" :key="i" class="history-modal-item">
+              <ion-icon :icon="searchOutline" slot="start" class="history-icon" />
+              <ion-label>
+                <h3 class="history-text">{{ s.search_text }}</h3>
+                <p class="activity-time">{{ fromNow(s.searched_at) }}</p>
+              </ion-label>
+            </ion-item>
+          </ion-list>
+          
+          <div v-else-if="!loadingFullHistory" class="empty-state-modal">
+            <ion-icon :icon="searchOutline" />
+            <p>{{ $t('common.noData') }}</p>
+          </div>
+
+          <ion-infinite-scroll
+            @ionInfinite="loadMoreFullHistory"
+            :disabled="noMoreFullHistory"
+            threshold="100px"
+          >
+            <ion-infinite-scroll-content
+              loading-spinner="bubbles"
+              :loading-text="$t('common.loading')"
+            />
+          </ion-infinite-scroll>
+        </ion-content>
+      </ion-modal>
 
       <!-- ================= INFINITE SCROLL ================= -->
       <ion-infinite-scroll
@@ -292,6 +362,7 @@
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { supabase } from '@/plugins/supabaseClient'
+import { adminGetUserContacts } from '@/services/PrivateProfileService'
 import { countries, loadCountries } from '@/composables/useCountries'
 
 import {
@@ -306,14 +377,17 @@ import {
   IonAvatar,
   IonList,
   IonNote,
-    IonThumbnail,
-    IonCardContent,
+  IonThumbnail,
+  IonCardContent,
+  IonModal,
   IonInfiniteScroll,
-  IonInfiniteScrollContent
+  IonInfiniteScrollContent,
+  IonButton,
+  IonIcon
 } from '@ionic/vue'
 
 import AppHeader from '@/components/AppHeader.vue'
-import { listOutline } from 'ionicons/icons'
+import { personOutline, personCircleOutline, settingsOutline, timeOutline, personAddOutline, phonePortraitOutline, cubeOutline, locationOutline, barcodeOutline, searchOutline, chevronForwardOutline, homeOutline, pulseOutline } from 'ionicons/icons'
 import { useI18n } from 'vue-i18n'
 
 import dayjs from 'dayjs'
@@ -335,11 +409,19 @@ const recentSearches = ref<any[]>([])
 const recentProducts = ref<any[]>([])
 const recentPlaces = ref<any[]>([])
 
+// Full search history modal state
+const showSearchModal = ref(false)
+const fullSearchHistory = ref<any[]>([])
+const fullSearchHistoryLimit = 20
+const noMoreFullHistory = ref(false)
+const loadingFullHistory = ref(false)
+
 async function fetchRecents() {
   const [searchRes, productRes, placeRes] = await Promise.all([
     supabase.rpc('get_user_recent_searches', {
       p_user_id: userId,
-      p_limit: 20
+      p_limit: 20,
+      p_offset: 0
     }),
     supabase.rpc('get_user_recent_products', {
       p_user_id: userId,
@@ -352,10 +434,64 @@ async function fetchRecents() {
   ])
 
 
+  if (searchRes.error) console.error('❌ Search History RPC Error:', searchRes.error)
+  if (productRes.error) console.error('❌ Product History RPC Error:', productRes.error)
+  if (placeRes.error) console.error('❌ Place History RPC Error:', placeRes.error)
+
   if (!searchRes.error) recentSearches.value = searchRes.data ?? []
   if (!productRes.error) recentProducts.value = productRes.data ?? []
   if (!placeRes.error) recentPlaces.value = placeRes.data ?? []
 
+}
+
+async function openFullSearchHistory() {
+  showSearchModal.value = true
+  await fetchFullSearchHistory(true)
+}
+
+function closeSearchModal() {
+  showSearchModal.value = false
+}
+
+async function fetchFullSearchHistory(reset = false) {
+  if (reset) {
+    fullSearchHistory.value = []
+    noMoreFullHistory.value = false
+  }
+
+  const offset = fullSearchHistory.value.length
+  loadingFullHistory.value = true
+
+  const { data, error } = await supabase.rpc('get_user_recent_searches', {
+    p_user_id: userId,
+    p_limit: fullSearchHistoryLimit,
+    p_offset: offset
+  })
+
+  loadingFullHistory.value = false
+
+  if (error) {
+    console.error('❌ Failed to load full search history', error)
+    return
+  }
+
+  if (!data || data.length < fullSearchHistoryLimit) {
+    noMoreFullHistory.value = true
+  }
+
+  if (data) {
+    fullSearchHistory.value.push(...data)
+  }
+}
+
+async function loadMoreFullHistory(event: any) {
+  if (loadingFullHistory.value || noMoreFullHistory.value) {
+    event.target.complete()
+    return
+  }
+
+  await fetchFullSearchHistory()
+  event.target.complete()
 }
 
 /* Helpers */
@@ -404,96 +540,89 @@ function parseDetail(detail: any) {
   return detail
 }
 
+function getActivityIcon(type: string) {
+  if (type.includes('home')) return homeOutline
+  if (type.includes('explore') || type.includes('marker') || type.includes('place')) return locationOutline
+  if (type.includes('search')) return searchOutline
+  if (type.includes('product')) return cubeOutline
+  if (type.includes('scan')) return barcodeOutline
+  if (type.includes('profile') || type.includes('social')) return personOutline
+  return pulseOutline
+}
+
 function describeActivity(log: any) {
   const d = parseDetail(log.activity_detail)
 
   switch (log.activity_type) {
-
-      /* ---------- HOME ---------- */
+    /* ---------- HOME ---------- */
     case 'home_page_open':
-      return 'Opened Home page'
-
+      return t('admin.activities_desc.home_page_open')
     case 'home_scan_ingredient':
-      return 'Opened ingredient scanner from Home'
-
+      return t('admin.activities_desc.home_scan_ingredient')
     case 'home_viewmore_products':
-      return 'Viewed more products on Home'
-
+      return t('admin.activities_desc.home_viewmore_products')
     case 'home_open_locations':
-      return 'Opened locations from Home'
-
+      return t('admin.activities_desc.home_open_locations')
     case 'home_leaderboard_profile':
-      return `Viewed leaderboard profile: ${d.display_name ?? 'Unknown user'}`
+      return t('admin.activities_desc.home_leaderboard_profile', { user: d.display_name || '?' })
 
-
-      /* ---------- EXPLORE ---------- */
+    /* ---------- EXPLORE ---------- */
     case 'explore_page_open':
-      return 'Opened Explore page'
-
+      return t('admin.activities_desc.explore_page_open')
     case 'explore_center_user':
-      return 'Centered map to current location'
-
+      return t('admin.activities_desc.explore_center_user')
     case 'explore_filter_category':
-      return `Filtered category: ${d.category_name ?? 'Unknown category'}`
-
+      return t('admin.activities_desc.explore_filter_category', { category: d.category_name || '?' })
     case 'explore_marker_click':
-      return `Clicked map marker: ${d.name ?? 'Unknown place'} (${d.type ?? 'Unknown'})`
-
+      return t('admin.activities_desc.explore_marker_click', { name: d.name || '?' })
     case 'explore_place_card_click':
-      return `Opened place card: ${d.name ?? 'Unknown place'} (${d.type ?? 'Unknown'})`
-
+      return t('admin.activities_desc.explore_place_card_click', { name: d.name || '?' })
     case 'explore_place_detail_open':
-      return `Opened place details: ${d.name ?? 'Unknown place'}`
-
+      return t('admin.activities_desc.explore_place_detail_open', { name: d.name || '?' })
     case 'explore_place_detail_view':
-      return `Viewed place details: ${d.name ?? 'Unknown place'}`
-
+      return t('admin.activities_desc.explore_place_detail_view', { name: d.name || '?' })
     case 'explore_detail_open_image':
-      return `Viewed place image: ${d.name ?? 'Unknown place'}`
+      return t('admin.activities_desc.explore_detail_open_image', { name: d.name || '?' })
 
-
-      /* ---------- SEARCH ---------- */
+    /* ---------- SEARCH ---------- */
     case 'search_page_open':
-      return 'Opened Search page'
-
+      return t('admin.activities_desc.search_page_open')
+    case 'search_query':
+    case 'explore_search_query':
+    case 'store_search':
+    case 'explore_address_search':
+    case 'trip_search':
+      return t('admin.activities_desc.search_performed', { query: d.query || '?' })
     case 'search_product_click':
-      return `Opened product: ${d.product_name ?? 'Unknown product'} (${d.status ?? 'Unknown'})`
-
+      return t('admin.activities_desc.search_product_click', { name: d.product_name || '?' })
     case 'search_sort_change':
-      return `Sort product by ${d.sort ?? 'Unknown product'}`
-
+      return t('admin.activities_desc.search_sort_change', { sort: d.sort || '?' })
     case 'search_filter_status':
-      return `Filter product by ${d.status ?? 'Unknown product'}`
-
+      return t('admin.activities_desc.search_filter_status', { status: (d.statuses && d.statuses.join(', ')) || '?' })
     case 'search_filter_category':
-      return `Filter product by ${d.category_name ?? 'Unknown product'}`
+      return t('admin.activities_desc.search_filter_category', { category: d.category_name || '?' })
 
-
-      /* ---------- PRODUCT ---------- */
+    /* ---------- PRODUCT ---------- */
     case 'product_details_open':
-      return `Viewed product: ${d.product_name ?? 'Unknown product'} (${d.status ?? 'Unknown'})`
+      return t('admin.activities_desc.product_details_open', { name: d.product_name || '?' })
 
-
-      /* ---------- SCAN ---------- */
+    /* ---------- SCAN ---------- */
     case 'scan_ingredients_start':
-      return `Started ingredient scan (${d.source ?? 'unknown source'})`
-
+      return t('admin.activities_desc.scan_ingredients_start', { source: d.source || '?' })
     case 'scan_ingredients_success':
-      return `Scan result: ${d.product_name ?? 'Unknown product'} • ${d.auto_status} • ${d.ingredient_count ?? 0} ingredients`
-
+      const prod = d.product_name || '?'
+      const status = d.auto_status || '?'
+      return t('admin.activities_desc.scan_ingredients_success', { product: prod, status: status })
     case 'scan_ingredients_error':
-      return `Scan failed: ${d.error ?? 'Unknown error'}`
+      return t('admin.activities_desc.scan_ingredients_error', { error: d.error || '?' })
 
-
-      /* ---------- PROFILE ---------- */
+    /* ---------- PROFILE ---------- */
     case 'profile_page_open':
-      return 'Opened Profile page'
-
+      return t('admin.activities_desc.profile_page_open')
     case 'social_link_click':
-      return `Clicked social link (${d.platform ?? 'unknown'})`
+      return t('admin.activities_desc.social_link_click', { platform: d.platform || '?' })
 
-
-      /* ---------- FALLBACK ---------- */
+    /* ---------- FALLBACK ---------- */
     default:
       return log.activity_type.replace(/_/g, ' ')
   }
@@ -503,13 +632,17 @@ function describeActivity(log: any) {
 
 /* Fetch user profile */
 async function fetchUser() {
-  const { data } = await supabase
-      .from('user_profiles')
-      .select('*')
-      .eq('id', userId)
-      .single()
+  // Sensitive fields (email, birth date, gender, nationality, last sign-in) come from an admin-only server function.
+  const [{ data }, contacts] = await Promise.all([
+    supabase
+        .from('user_profiles')
+        .select('id, display_name, avatar_url, bio, public_profile, profile_completed_notified, created_at')
+        .eq('id', userId)
+        .single(),
+    adminGetUserContacts([userId as string]),
+  ])
 
-  user.value = data
+  user.value = data ? { ...data, ...(contacts.get(userId as string) ?? {}) } : data
 }
 
 /* Fetch summary (reuse admin list logic via RPC) */
@@ -582,68 +715,291 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.avatar-placeholder {
-  width: 40px;
-  height: 40px;
+.content-background {
+  --background: var(--ion-background-color);
+}
+
+/* Hero Section */
+.profile-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 32px 16px;
+  text-align: center;
+  background: var(--ion-background-color);
+  margin-bottom: 8px;
+}
+
+.hero-avatar {
+  width: 90px;
+  height: 90px;
+  margin-bottom: 16px;
+  border: 3px solid var(--ion-color-carrot);
+  padding: 3px;
+  background: var(--ion-background-color);
+}
+
+.avatar-placeholder-hero {
+  width: 100%;
+  height: 100%;
   border-radius: 50%;
-  background: var(--ion-color-light);
+  background: var(--ion-color-step-150);
   display: flex;
   align-items: center;
   justify-content: center;
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: var(--ion-color-carrot);
 }
 
-.stats-card {
-  padding: 8px 4px;
-}
-
-.stats-row {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 12px;
-}
-
-.stats-row:last-child {
-  margin-bottom: 0;
-}
-
-.stat-item {
-  flex: 1;
-  background: var(--ion-background-color-step-50);
-  border-radius: 12px;
-  padding: 12px;
-  text-align: center;
-}
-
-.stat-item strong {
-  display: block;
-  font-size: 1.3rem;
-  font-weight: 700;
+.hero-name {
+  margin: 0 0 4px 0;
+  font-size: 1.6rem;
+  font-weight: 800;
   color: var(--ion-text-color);
 }
 
-.stat-item span {
-  font-size: 0.8rem;
+.hero-email {
+  margin: 0;
+  font-size: 0.95rem;
   color: var(--ion-color-medium);
+  font-weight: 500;
 }
 
+/* Stats Grid */
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.stat-card {
+  background: var(--ion-color-step-50);
+  padding: 16px 12px;
+  border-radius: 16px;
+  text-align: center;
+  border: 1px solid var(--ion-color-step-100);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 90px;
+}
+
+.stat-value {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--ion-color-carrot);
+  margin-bottom: 2px;
+}
+
+.stat-value-small {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--ion-color-carrot);
+  margin-bottom: 4px;
+}
+
+.stat-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--ion-color-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.badge-text {
+  background: rgba(var(--ion-color-carrot-rgb), 0.15);
+  padding: 4px 12px;
+  border-radius: 99px;
+  display: inline-block;
+  align-self: center;
+}
+
+/* Information Cards */
+.details-card {
+  margin: 0 0 24px 0;
+  background: var(--ion-background-color);
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+  border: 1px solid var(--ion-color-step-100);
+}
+
+.card-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.card-icon {
+  font-size: 20px;
+  color: var(--ion-color-carrot);
+}
+
+.details-list {
+  background: transparent;
+  padding-bottom: 8px;
+}
+
+.detail-item {
+  --padding-start: 16px;
+  --padding-end: 16px;
+  --min-height: 54px;
+}
+
+.item-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--ion-color-step-600);
+}
+
+.item-value {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--ion-text-color);
+}
+
+.nationality-value {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.flag-img {
+  width: 20px;
+  height: 14px;
+  border-radius: 2px;
+  object-fit: cover;
+}
+
+.bio-section {
+  padding: 8px 0;
+  width: 100%;
+}
+
+.bio-content {
+  margin-top: 6px;
+  font-size: 0.95rem;
+  color: var(--ion-text-color);
+  line-height: 1.5;
+  font-weight: 500;
+}
+
+.details-divider {
+  height: 1px;
+  background: var(--ion-color-step-100);
+  margin: 8px 16px;
+}
+
+.text-success {
+  color: var(--ion-color-success);
+}
+
+.mono {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 0.8rem;
+  letter-spacing: -0.5px;
+}
+
+/* Activity Feed */
+.activity-item {
+  --padding-start: 16px;
+  --padding-bottom: 12px;
+  --padding-top: 12px;
+}
 
 .activity-title {
-  font-weight: 600;
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--ion-text-color);
+  margin-bottom: 4px;
 }
 
 .activity-meta {
   font-size: 0.85rem;
   color: var(--ion-color-medium);
+  margin-bottom: 4px;
 }
 
 .activity-time {
   font-size: 0.75rem;
-  color: var(--ion-color-medium);
+  color: var(--ion-color-step-400);
+  font-weight: 600;
 }
 
-.mono {
-  font-family: monospace;
-  font-size: 0.75rem;
+/* Dark Mode Adjustments */
+.ion-palette-dark .stat-card,
+.ion-palette-dark .details-card {
+  background: var(--ion-color-step-50);
+  border-color: var(--ion-color-step-150);
+}
+
+.ion-palette-dark .avatar-placeholder-hero {
+  background: var(--ion-color-step-150);
+}
+
+.card-footer-action {
+  padding: 0 16px 12px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.history-modal-item {
+  --padding-top: 12px;
+  --padding-bottom: 12px;
+}
+
+.history-icon {
+  color: var(--ion-color-medium);
+  font-size: 1.2rem;
+  margin-right: 12px;
+}
+
+.history-text {
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.empty-state-modal {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  color: var(--ion-color-medium);
+  text-align: center;
+}
+
+.empty-state-modal ion-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  opacity: 0.3;
+}
+
+.empty-state-small {
+  padding: 16px;
+  text-align: center;
+  color: var(--ion-color-medium);
+  font-size: 0.9rem;
+}
+
+.card-header-flex {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.title-with-icon {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.small-icon {
+  font-size: 16px;
+  color: var(--ion-color-medium);
+  min-width: 24px;
 }
 </style>
 

@@ -1,6 +1,7 @@
 import { Ref, ref, nextTick } from 'vue'
-import type { IngredientHighlight } from '@/types/Ingredient'
+import type { IngredientHighlight, OcrWord, HighlightBox } from '@/types/Ingredient'
 import { extractIonColor } from '@/utils/ingredientHelpers'
+import { supabase, invokeFunction } from '@/plugins/supabaseClient'
 
 export interface BlacklistPattern {
     pattern: string
@@ -16,16 +17,32 @@ export interface OcrPipelineOptions {
         blacklist: { pattern: string }[]
     } | null>
     setError: (msg: string) => void
+    t: (key: string) => string
 }
 
-export default function useOcrPipeline({
-    allHighlights,
-    blacklistPatterns,
-    incrementDisclaimerCount,
-    incrementUsageCount,
-    fetchHighlightsWithCache,
-    setError,
-}: OcrPipelineOptions) {
+export default function useOcrPipeline(options: OcrPipelineOptions) {
+    // 🛡️ Safety Guard: Ensure options object exists
+    if (!options) {
+        console.error("❌ [OcrPipeline] Options object is missing!");
+        return {} as any;
+    }
+
+    const {
+        allHighlights,
+        blacklistPatterns,
+        incrementDisclaimerCount,
+        incrementUsageCount = () => 0,
+        fetchHighlightsWithCache = async () => null,
+        setError = (msg: string) => console.error(msg),
+    } = options;
+
+    // ✅ Defensive check for translation function
+    const t = typeof options.t === 'function' ? options.t : (key: string) => {
+        console.warn(`⚠️ [OcrPipeline] Translation function 't' is missing. Returning key: ${key}`);
+        return key;
+    };
+
+
     const ingredientHighlights = ref<IngredientHighlight[]>([])
     const ingredientsTextZh = ref('')
     const autoStatus = ref('')
@@ -34,8 +51,13 @@ export default function useOcrPipeline({
     const showOk = ref(false)
     const detectedLanguage = ref<'chinese' | 'english' | 'mixed' | 'unknown'>('unknown')
     const ocrRawText = ref('')
+    // 📍 raw OCR words (with pixel-space bounding boxes) for the exact image sent to Vision,
+    // plus that image's pixel dimensions so callers can scale boxes onto whatever size it's displayed at
+    const ocrWords = ref<OcrWord[]>([])
+    const ocrImageWidth = ref(0)
+    const ocrImageHeight = ref(0)
     const progress = ref(0)
-    const progressLabel = ref('Initializing...')
+    const progressLabel = ref(t('scanIngredients.progress.initializing'))
 
     function normalizeIngredients(text: string): string {
         return text
@@ -68,7 +90,7 @@ export default function useOcrPipeline({
             if (incrementDisclaimerCount) incrementDisclaimerCount();
 
             progress.value = 0.05
-            progressLabel.value = "Loading ingredient database..."
+            progressLabel.value = t('scanIngredients.progress.loadingDb')
 
             // ✅ Load highlights + blacklist
             const data = await fetchHighlightsWithCache();
@@ -81,57 +103,54 @@ export default function useOcrPipeline({
 
             // ✅ OCR
             progress.value = 0.15
-            progressLabel.value = "Running OCR..."
+            progressLabel.value = t('scanIngredients.progress.runningOcr')
 
-            let raw = await extractTextFromImage(file);
-            if (!raw || !raw.trim()) {
+            const { text: rawText, translatedText: translatedFull, words, imageWidth, imageHeight } = await extractTextFromImage(file);
+            if (!rawText || !rawText.trim()) {
                 return setError('OCR failed to detect any text.');
             }
-            console.log('📄 Raw OCR text detected:', raw);
+            let raw = rawText;
             ocrRawText.value = raw || ''
+            ocrWords.value = words || []
+            ocrImageWidth.value = imageWidth || 0
+            ocrImageHeight.value = imageHeight || 0
 
             progress.value = 0.30
-            progressLabel.value = "Detecting language..."
+            progressLabel.value = t('scanIngredients.progress.detectingLang')
 
             detectedLanguage.value = detectLanguage(raw);
-            console.log('🌐 OCR detected language:', detectedLanguage.value);
 
             let translated = '';
             let cleanedZh = raw;
-            let ingredientsOnlyZh = '';  // ✅ <--- Declare here so it's visible everywhere
+            let ingredientsOnlyZh = '';
 
             progress.value = 0.40
-            progressLabel.value = "Cleaning text..."
+            progressLabel.value = t('scanIngredients.progress.cleaningText')
 
             if (detectedLanguage.value === 'english') {
                 // ✅ Already English → no need to clean Chinese
                 translated = raw;
+                // 🟢 Extract product name directly from the raw English text
+                // (previously only ran in the Chinese/mixed branch below, so
+                // English labels never got a name suggestion at all)
+                productName.value = extractProductName(raw) || '';
             } else {
                 // ✅ Normalize and clean
                 raw = normalizeIngredients(raw);
                 cleanedZh = normalizeIngredients(cleanChineseOcrText(raw));
 
                 if (!cleanedZh.trim()) {
-                    return setError('OCR detected text but nothing meaningful remained after cleanup.');
+                    return setError(t('scanIngredients.errors.noIngredients'));
                 }
-
-                console.log('🀄 Cleaned Chinese OCR:', cleanedZh);
 
                 // 🧹 Extract ingredients-only before translation
                 ingredientsOnlyZh = stripToIngredientsOnly(cleanedZh);
-                console.log('🀄 Cleaned Chinese OCR (ingredients-only):', ingredientsOnlyZh);
 
                 progress.value = 0.55
-                progressLabel.value = "Translating..."
+                progressLabel.value = t('scanIngredients.progress.translating')
 
-                console.log('🌐 [OcrPipeline] Translating full text (chars):', raw.length);
-                const resFull = await translateToEnglish(raw);
-                if (!resFull) {
-                    return setError('Translation of product information failed.');
-                }
-                const translatedFull = normalizeEnglishIngredients(resFull);
+                const translatedFullNormalized = normalizeEnglishIngredients(translatedFull);
 
-                console.log('🌐 [OcrPipeline] Translating stripped ingredients (chars):', ingredientsOnlyZh.length);
                 const resClean = await translateToEnglish(ingredientsOnlyZh);
                 const translatedClean = resClean ? normalizeEnglishIngredients(resClean) : '';
 
@@ -145,47 +164,48 @@ export default function useOcrPipeline({
                 }
 
                 // 🟢 Extract product name from full translation
-                productName.value = extractProductName(translatedFull) || '';
+                productName.value = extractProductName(translatedFullNormalized) || '';
             }
 
             progress.value = 0.70
-            progressLabel.value = "Extracting ingredients..."
+            progressLabel.value = t('scanIngredients.progress.extractingIng')
 
-            // ✅ Guard: ensure we actually got a reasonable ingredient list
+            // ℹ️ No literal "ingredients"/"成分" header found anywhere in the OCR
+            // text — the photo almost certainly isn't an ingredients label (e.g. a
+            // screenshot or an unrelated part of the packaging). Treat this as a
+            // failed detection instead of silently handing back whatever text was
+            // captured, so callers can fall back to manual entry.
             const ingKeywords = /(ingredient|成分|成份|配料|原料|內容物|内容物|材料)/i;
             if (!ingKeywords.test(raw) && !ingKeywords.test(translated)) {
-                throw new Error('No ingredient keywords detected. Please crop the ingredients section only.');
+                console.warn('⚠️ [OcrPipeline] No ingredient keyword found in OCR text — treating as a failed detection.');
+                ingredientsText.value = '';
+                ingredientsTextZh.value = '';
+                return setError(t('scanIngredients.errors.noIngredients'));
             }
 
             // ✅ Save Chinese ingredients ONLY if OCR is Chinese / Mixed
             if (detectedLanguage.value === 'chinese' || detectedLanguage.value === 'mixed') {
                 ingredientsTextZh.value =
                     ingredientsOnlyZh || stripToIngredientsOnly(cleanedZh);
-                console.log('🀄 Final ingredients-only Chinese:', ingredientsTextZh.value);
             } else {
                 // 🔒 English-only OCR → never populate Chinese field
                 ingredientsTextZh.value = '';
             }
-
-            console.log('📝 [OcrPipeline] Pre-cleaning translated string:', translated);
 
             // ✅ Clean translated English
             ingredientsText.value = cleanTranslatedIngredients(translated)
                 .replace(/^(ingredients)[:：]?\s*/i, '')
                 .trim();
 
-            console.log("🏷 Product Name (EN):", productName.value);
-            console.log("🌍 Translated Ingredients:", ingredientsText.value);
-
             await nextTick();
 
             progress.value = 0.85
-            progressLabel.value = "Matching ingredients..."
+            progressLabel.value = t('scanIngredients.progress.matchingIng')
 
             await recheckHighlightsSmart();
 
             progress.value = 0.95
-            progressLabel.value = "Finalizing..."
+            progressLabel.value = t('scanIngredients.progress.finalizing')
 
             const count = incrementUsageCount();
             if (count >= 1) {
@@ -205,10 +225,10 @@ export default function useOcrPipeline({
             console.error("❌ OCR pipeline error:", e);
 
             progress.value = 0
-            progressLabel.value = "Failed"
+            progressLabel.value = t('scanIngredients.progress.failed')
 
             // if the error already has a message, keep it
-            const message = e?.message || 'OCR failed.';
+            const message = e?.message || t('scanIngredients.errors.ocrFailed');
             setError(message);
 
             // rethrow so outer layers (useOcrService / confirmCrop) can react properly
@@ -240,11 +260,9 @@ export default function useOcrPipeline({
             const isHeader = /(營養標示|營養成分|營養信息|nutrition\s*(information|facts|label)|amount\s*per\s*serving)/i.test(context);
 
             if (match.index < 40 && isHeader) {
-                console.log(`⏩ [OcrPipeline] Ignoring header stop-word: "${hit}" found in context: "${context}"`);
                 continue;
             }
             cutIndex = match.index;
-            console.log(`🧩 [OcrPipeline] stripToIngredientsOnly found valid stop candidate at ${cutIndex}: ${hit}`);
             break;
         }
 
@@ -271,34 +289,65 @@ export default function useOcrPipeline({
         })
     }
 
+    function getImageDimensions(file: File): Promise<{ width: number; height: number }> {
+        return new Promise((resolve, reject) => {
+            const img = new Image()
+            const url = URL.createObjectURL(file)
+            img.onload = () => {
+                URL.revokeObjectURL(url)
+                resolve({ width: img.naturalWidth, height: img.naturalHeight })
+            }
+            img.onerror = (err) => {
+                URL.revokeObjectURL(url)
+                reject(err)
+            }
+            img.src = url
+        })
+    }
+
     async function extractTextFromImage(file: File) {
         try {
             const base64 = await fileToBase64(file)
-            const res = await withTimeout(
-                fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/google-ocr`, {
-                    method: 'POST',
-                    headers: {
-                        Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ imageBase64: base64 })
-                }),
-                15000
-            )
-            const json = await res.json()
-            if (!res.ok || json.error) {
-                setError(`OCR failed: ${json.error || 'Google OCR server error'}`)
-                return ''
+            const [res, dims] = await Promise.all([
+                withTimeout(
+                    invokeFunction('google-ocr', {
+                        body: { imageBase64: base64, translate: true }
+                    }),
+                    20000
+                ),
+                getImageDimensions(file).catch(() => ({ width: 0, height: 0 }))
+            ])
+            const { data, error } = res
+            if (error || !data) {
+                setError(`OCR failed: ${error?.message || 'Google OCR server error'}`)
+                return { text: '', translatedText: '', words: [] as OcrWord[], imageWidth: 0, imageHeight: 0 }
             }
-            return json.text || ''
+
+            const text = data.text || ''
+            let translatedText = data.translatedText || ''
+            const words: OcrWord[] = Array.isArray(data.words) ? data.words : []
+
+            // Fallback for translation if google-ocr returned text but no translation
+            if (text.trim() && !translatedText.trim()) {
+                console.warn("⚠️ [OcrPipeline] Falling back to manual translation for full text");
+                translatedText = await translateToEnglish(text) || '';
+            }
+
+            return {
+                text,
+                translatedText,
+                words,
+                imageWidth: dims.width,
+                imageHeight: dims.height
+            }
         } catch (e: any) {
             if (e.message === 'timeout') {
                 setError('OCR server is busy, please try again later.')
             } else {
                 setError('Failed to connect to OCR server. Please try again later.')
             }
-            console.error(e)
-            return ''
+            console.error('❌ [OcrPipeline] OCR request failed:', e)
+            return { text: '', translatedText: '', words: [] as OcrWord[], imageWidth: 0, imageHeight: 0 }
         }
     }
 
@@ -316,31 +365,25 @@ export default function useOcrPipeline({
 
     async function translateToEnglish(text: string, attempt = 1): Promise<string | null> {
         try {
-            const apiKey = import.meta.env.VITE_GOOGLE_TRANSLATION_API_KEY as string;
-            const res = await withTimeout(
-                fetch(`https://translation.googleapis.com/language/translate/v2?key=${apiKey}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        q: text,
-                        source: 'zh',
-                        target: 'en',
-                        format: 'text'
-                    }),
+            // 1. Try secure Edge Function first
+            const { data, error } = await withTimeout(
+                invokeFunction('google-translate', {
+                    body: { text, target: 'en' }
                 }),
-                10000
+                12000
             );
-            const json = await res.json();
-            if (!json?.data?.translations?.[0]?.translatedText) {
-                throw new Error(json?.error?.message || 'Empty translation');
+
+            if (error || !data) {
+                throw new Error(error?.message || 'Empty translation');
             }
-            return json.data.translations[0].translatedText;
-        } catch {
-            if (attempt < 2) {
+            return data.translatedText;
+        } catch (e: any) {
+            if (attempt < 2 && e.message !== 'timeout') {
                 console.warn(`Retrying translation (attempt ${attempt + 1})...`);
                 return translateToEnglish(text, attempt + 1);
             }
-            setError('Translation server failed after retry.');
+            console.error("❌ [OcrPipeline] Translation failed:", e);
+            setError('Translation server failed.');
             return null;
         }
     }
@@ -358,7 +401,6 @@ export default function useOcrPipeline({
         cleaned = cleaned.replace(/品名[:：]/gi, 'Product name: ')
         cleaned = cleaned.replace(/,\s*,+/g, ', ').replace(/^,|,$/g, '')
 
-        console.log("🧹 Cleaned before blacklist:", cleaned)
 
         // ✅ Apply blacklist *only* outside ingredients
         const [beforeIng, afterIng] = cleaned.split(/Ingredients:/i)
@@ -383,8 +425,6 @@ export default function useOcrPipeline({
         }
 
         cleaned = safeBefore + (afterIng ? 'Ingredients: ' + safeAfter : '')
-
-        console.log("🧹 [OcrPipeline] Cleaned after safe blacklist (chars):", cleaned.length)
         return cleaned.trim()
     }
 
@@ -394,11 +434,9 @@ export default function useOcrPipeline({
     }
 
     function cleanTranslatedIngredients(text: string): string {
-        console.log('🧹 [OcrPipeline] cleanTranslatedIngredients INPUT:', text);
         // 1️⃣ Cut everything before "ingredients:"
         const idx = text.toLowerCase().indexOf('ingredients:');
         let extracted = idx !== -1 ? text.substring(idx + 'ingredients:'.length).trim() : text;
-        console.log('🧹 [OcrPipeline] After "ingredients:" split:', extracted);
 
         // 2️⃣ Normalize whitespace & newlines
         extracted = extracted.replace(/\n+/g, ', ').replace(/\s{2,}/g, ' ');
@@ -410,7 +448,6 @@ export default function useOcrPipeline({
                 extracted = newExtracted;
             }
         });
-        console.log('🧹 [OcrPipeline] After blacklist patterns:', extracted);
 
         // 4️⃣ Split and normalize
         let parts = extracted
@@ -418,24 +455,18 @@ export default function useOcrPipeline({
             .map((p) => p.trim())
             .filter(Boolean);
 
-        console.log('🧹 [OcrPipeline] After comma split:', JSON.stringify(parts));
-
         // 5️⃣ Expand compound ingredients inside ()
         const expanded: string[] = [];
         for (const p of parts) {
             expanded.push(...expandCompoundIngredients(p));
         }
         parts = expanded;
-        console.log('🧹 [OcrPipeline] After grouping expansion:', JSON.stringify(parts));
 
         // 6️⃣ Remove weight-only items like "250ml", "1kg"
         parts = parts.filter((p) => !/^\d+\s*(g|kg|ml|毫升|公克)$/i.test(p));
 
-        console.log('🧹 [OcrPipeline] Parts before guard 7:', JSON.stringify(parts));
-
         // 7️⃣ Guard: if first item looks like product name (title-case + digits), drop it
         if (parts.length && /^[A-Z][a-z]+.*\d+.*$/i.test(parts[0])) {
-            console.log('🧹 [OcrPipeline] Dropping first item (assumed product name):', parts[0]);
             parts.shift();
         }
 
@@ -528,10 +559,15 @@ export default function useOcrPipeline({
             found.push(...ingredientHighlights.value)
         }
 
-        // Deduplicate by matchedVariant or keyword
-        const unique = new Map(
-            found.map(f => [f.keyword, f]) // dedupe by ingredient identity
-        )
+        // Deduplicate by keyword, preferring whichever occurrence has a located
+        // image box (a later pass with no box shouldn't clobber an earlier one that has one)
+        const unique = new Map<string, IngredientHighlight>()
+        for (const f of found) {
+            const existing = unique.get(f.keyword)
+            if (!existing || (!existing.boxes?.length && f.boxes?.length)) {
+                unique.set(f.keyword, f)
+            }
+        }
 
         ingredientHighlights.value = Array.from(unique.values())
 
@@ -571,6 +607,72 @@ export default function useOcrPipeline({
         }
 
         return results.length > 0 ? results : [text];
+    }
+
+    // 📍 Locate the OCR word(s) a matched keyword variant came from, so we can
+    // draw a highlight box on the source image. Works purely off the raw
+    // OCR words (untouched by cleaning/translation) — matches found only via
+    // translated text with no counterpart among the original words simply
+    // return no boxes, which callers treat as "can't highlight this one".
+    function normalizeForBoxMatch(s: string, isLatin: boolean): string {
+        return isLatin
+            ? s.replace(/[^a-z0-9]/gi, '').toLowerCase()
+            : s.replace(/[,\s]/g, '')
+    }
+
+    function mergeWordBoxes(words: OcrWord[]): HighlightBox | null {
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
+        for (const w of words) {
+            for (const v of w.vertices || []) {
+                minX = Math.min(minX, v.x)
+                minY = Math.min(minY, v.y)
+                maxX = Math.max(maxX, v.x)
+                maxY = Math.max(maxY, v.y)
+            }
+        }
+        if (!isFinite(minX) || !isFinite(minY) || !isFinite(maxX) || !isFinite(maxY)) return null
+        return { x: minX, y: minY, width: maxX - minX, height: maxY - minY }
+    }
+
+    function findWordBoxes(variant: string, words: OcrWord[]): HighlightBox[] {
+        if (!variant.trim() || !words.length) return []
+
+        const isLatin = /^[a-z0-9\s\-'".,()]+$/i.test(variant.trim())
+        const target = normalizeForBoxMatch(variant, isLatin)
+        if (!target) return []
+
+        // Concatenate all normalized word text into one string, remembering each
+        // word's [start, end) character range within it. Then locate the target via
+        // indexOf — an exact substring search, immune to the "growing window happens
+        // to contain the target via an unrelated prefix" failure mode a greedy
+        // window-growth approach would have.
+        let fullText = ''
+        const spans: { start: number; end: number; wordIndex: number }[] = []
+        words.forEach((w, i) => {
+            const norm = normalizeForBoxMatch(w.description || '', isLatin)
+            if (!norm) return
+            spans.push({ start: fullText.length, end: fullText.length + norm.length, wordIndex: i })
+            fullText += norm
+        })
+
+        const boxes: HighlightBox[] = []
+        let searchFrom = 0
+        while (boxes.length < 5) {
+            const matchStart = fullText.indexOf(target, searchFrom)
+            if (matchStart === -1) break
+            const matchEnd = matchStart + target.length
+
+            const matchedIndexes = spans
+                .filter(s => s.start < matchEnd && s.end > matchStart)
+                .map(s => s.wordIndex)
+
+            if (matchedIndexes.length) {
+                const box = mergeWordBoxes(matchedIndexes.map(i => words[i]))
+                if (box) boxes.push(box)
+            }
+            searchFrom = matchEnd
+        }
+        return boxes
     }
 
     const checkingIngredients = ref(false)
@@ -643,12 +745,15 @@ export default function useOcrPipeline({
 
                         if (isMatch) {
                             if ([...found].some(f => f.matchedVariant && f.matchedVariant.includes(normVariant))) {
-                                console.log(`⏩ Skipping smaller match: ${variant} (already covered)`);
                                 continue;
                             }
-
-                            console.log("✅ Match detected:", variant, "→", h);
-                            found.push({ ...h, matchedVariant: variant });
+                            let boxes: HighlightBox[] = [];
+                            try {
+                                boxes = findWordBoxes(variant, ocrWords.value);
+                            } catch (e) {
+                                console.warn('⚠️ [OcrPipeline] Box lookup failed for variant:', variant, e);
+                            }
+                            found.push({ ...h, matchedVariant: variant, boxes });
                         }
                     }
                 }
@@ -678,7 +783,17 @@ export default function useOcrPipeline({
         checkingIngredients,
         detectedLanguage,
         cleanChineseOcrText,
+        // Exposed for the admin OCR re-check composable, which needs the raw
+        // low-level primitives (not the full contributor-facing runOcr flow)
+        // to run an opt-in front-photo name check.
+        extractTextFromImage,
+        translateToEnglish,
+        extractProductName,
+        detectLanguage,
         ocrRawText,
+        ocrWords,
+        ocrImageWidth,
+        ocrImageHeight,
         progress,
         progressLabel
     }

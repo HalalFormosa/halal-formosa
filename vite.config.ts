@@ -6,14 +6,30 @@ import path from 'path'
 import { defineConfig } from 'vitest/config'
 
 
-import pkg from './package.json' assert { type: 'json' }
+import pkg from './package.json' with { type: 'json' }
 
 // https://vitejs.dev/config/
 export default defineConfig({
     plugins: [
-        vue(),
+        vue({
+            template: {
+                compilerOptions: {
+                    // Strip HTML comments from the compiled output so internal dev notes
+                    // don't leak into the shipped DOM (visible via browser devtools).
+                    comments: false,
+                },
+            },
+        }),
         legacy()
     ],
+    css: {
+        modules: {
+            generateScopedName: process.env.NODE_ENV === 'production'
+                ? '[hash:base64:8]'
+                : '[name]__[local]___[hash:base64:5]'
+        }
+    },
+
     optimizeDeps: {
         include: ['vue-advanced-cropper'],
     },
@@ -29,12 +45,12 @@ export default defineConfig({
         minify: 'terser',
         terserOptions: {
             compress: {
-                keep_fnames: true,
-                keep_classnames: true,
+                keep_fnames: false,
+                keep_classnames: false,
             },
             mangle: {
-                keep_fnames: true,
-                keep_classnames: true,
+                keep_fnames: false,
+                keep_classnames: false,
                 reserved: [
                     // html5-qrcode related names
                     'Html5Qrcode',
@@ -87,5 +103,6 @@ export default defineConfig({
     test: {
         globals: true,
         environment: 'jsdom',
+        setupFiles: ['./tests/setup.ts'],
     },
 })

@@ -1,197 +1,417 @@
 <template>
-  <div class="ion-margin-top">
-    <!-- Section Header -->
-    <div
-        v-if="mode !== 'home'"
-        class="ion-padding-horizontal"
-    >
-      <h3 class="font-bold text-lg">Media Partner Content</h3>
-      <p class="text-sm text-gray-500">
-        Real halal experiences from our verified media partner
-      </p>
-    </div>
+  <!-- Reels Grid Section -->
+  <ion-card-content class="reels-content-wrapper">
+      <!-- Loading Skeletons -->
+      <div v-if="loading" class="discover-grid">
+        <ion-card v-for="n in 4" :key="n" class="discover-item reel-skeleton">
+          <ion-skeleton-text animated style="width: 100%; height: 260px;" />
+        </ion-card>
+      </div>
 
+      <!-- Reels Grid -->
+      <div v-else class="discover-grid">
+        <ion-card
+          v-for="reel in reels"
+          :key="reel.id"
+          class="discover-item reel-item"
+          button
+          @click="openReel(reel)"
+          :id="'reel-' + reel.id"
+        >
+          <!-- Video Thumbnail / Player -->
+          <div class="reel-thumbnail-container" :data-id="reel.id">
+            <!-- Actual Video (Plays when visible) -->
+            <video
+              v-if="reel.video_url && activeReelId === reel.id"
+              :src="reel.video_url"
+              class="reel-video"
+              autoplay
+              muted
+              loop
+              playsinline
+              referrerpolicy="no-referrer"
+            ></video>
+            
+            <!-- Static Thumbnail (Placeholder) -->
+            <img 
+              v-show="activeReelId !== reel.id || !reel.video_url"
+              :src="reel.thumbnail_url || reel.media_url" 
+              class="discover-img reel-img" 
+              loading="lazy"
+              alt="Reel thumbnail"
+              @error="handleImageError"
+            />
 
-    <!-- Horizontal Reel Placeholder -->
-    <div class="reel-scroll ion-padding-horizontal">
-      <div
-          v-for="n in 5"
-          :key="n"
-          class="reel-card"
-          @click="openPlaceholder"
-      >
-        <!-- Thumbnail -->
-        <div class="reel-thumb">
-          <img
-              src="/placeholder/reel-cover.png"
-              alt="Community reel placeholder"
-          />
-
-          <!-- Play Overlay -->
-          <div class="play-overlay">▶</div>
-
-          <!-- Platform Badge -->
-          <div class="platform-badge">
-            <ion-icon :icon="logoInstagram" />
+            <div class="reel-overlay">
+              <ion-icon 
+                v-if="activeReelId !== reel.id" 
+                :icon="playCircleOutline" 
+                class="play-icon" 
+              />
+              <div class="platform-badge" :class="{ 'multi': reel.isMultiPlatform }">
+                <template v-if="reel.isMultiPlatform">
+                  <ion-icon :icon="logoInstagram" class="multi-icon" />
+                  <ion-icon :icon="logoTiktok" class="multi-icon" />
+                </template>
+                <ion-icon v-else :icon="reel.platform === 'tiktok' ? logoTiktok : logoInstagram" />
+              </div>
+            </div>
           </div>
-        </div>
 
-        <!-- Meta -->
-        <div class="reel-meta">
-          <p class="creator">@nihaoindo</p>
-          <p class="partner">
-            Media partner · <strong>Nihao Indo</strong> · Instagram
-          </p>
-          <p class="caption" style="white-space: pre-line;">
-            Kebab Halal terenak sih menurut mimin 😍
-            📍Imtiaz Bhai, Pakistan Food 巴基斯坦甩餅
-            🚆MRT Yongan Market
-            🚶‍♂️Jalan kaki 10 menit
+          <!-- Reel Meta -->
+          <div class="discover-label reel-label">
+            <div class="creator-info">
+              <ion-avatar class="creator-avatar">
+                <img src="/logo-raw/logo.png" alt="Halal Formosa" />
+              </ion-avatar>
+              <div class="creator-meta">
+                <span class="creator-name">@{{ reel.username }}</span>
+                <span v-if="reel.timestamp" class="post-time">{{ fromNow(reel.timestamp) }}</span>
+              </div>
+            </div>
+            <p class="reel-caption">{{ reel.caption }}</p>
+          </div>
+        </ion-card>
 
-            #nihaoindo #nihaoindonesia #taiwan #taiwanfood
-          </p>
-
+        <!-- No Content State -->
+        <div v-if="reels && reels.length === 0" class="no-reels">
+          <ion-icon :icon="videocamOutline" />
+          <p>{{ $t('home.noReels') || 'No recent content found.' }}</p>
         </div>
       </div>
-    </div>
-  </div>
+    </ion-card-content>
 </template>
 
 <script setup lang="ts">
-import { IonIcon } from '@ionic/vue'
-import { logoInstagram } from 'ionicons/icons'
+import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { useRouter } from 'vue-router'
+import { IonCard, IonCardHeader, IonCardTitle, IonCardContent, IonIcon, IonSkeletonText, IonAvatar, actionSheetController } from '@ionic/vue'
+import { logoInstagram, logoTiktok, playCircleOutline, videocamOutline, chevronForward } from 'ionicons/icons'
 import { ActivityLogService } from '@/services/ActivityLogService'
+import dayjs from 'dayjs'
+import relativeTime from 'dayjs/plugin/relativeTime'
+import utc from 'dayjs/plugin/utc'
+import timezone from 'dayjs/plugin/timezone'
+
+// Configure dayjs
+dayjs.extend(utc)
+dayjs.extend(timezone)
+dayjs.extend(relativeTime)
+
+interface Reel {
+  id: string
+  caption: string
+  media_url: string
+  video_url?: string
+  thumbnail_url?: string
+  permalink: string
+  username: string
+  media_type: string
+  timestamp: string
+  platform?: 'instagram' | 'tiktok'
+  creator_avatar?: string
+  isMultiPlatform?: boolean
+  permalink_ig?: string
+  permalink_tt?: string
+}
 
 const props = defineProps<{
-  placeId?: number        // optional now
+  reels?: Reel[]
+  loading?: boolean
   mode?: 'place' | 'home'
 }>()
 
+const router = useRouter()
+const emit = defineEmits(['refresh-needed'])
 
-const CONTENT_LINK = {
-  instagram: 'https://www.instagram.com/reel/DMr2W7dy5Gr/',
-  // tiktok: 'https://www.tiktok.com/@nihaoindo/video/XXXXXXXX',
-  // facebook: 'https://www.facebook.com/watch/?v=XXXXXXXX'
+// 👁️ Viewport Tracking Logic
+const activeReelId = ref<string | null>(null)
+let observer: IntersectionObserver | null = null
+
+const setupObserver = () => {
+  if (observer) observer.disconnect()
+
+  observer = new IntersectionObserver((entries) => {
+    // Find the item with the highest intersection ratio
+    let maxRatio = 0
+    let mostVisibleId = null
+
+    entries.forEach((entry) => {
+      if (entry.isIntersecting && entry.intersectionRatio > maxRatio) {
+        maxRatio = entry.intersectionRatio
+        mostVisibleId = (entry.target as HTMLElement).getAttribute('data-id')
+      }
+    })
+
+    if (mostVisibleId) {
+      activeReelId.value = mostVisibleId
+    }
+  }, {
+    threshold: 0.6 // Card must be 60% visible to trigger autoplay
+  })
+
+  // Observe all thumbnails
+  const containers = document.querySelectorAll('.reel-thumbnail-container')
+  containers.forEach(container => observer?.observe(container))
 }
 
-const reel = {
-  platform: 'instagram',
-  media_partner: 'nihaoindo',
-  place_id: 123
+// Watch for reels data changes to re-observe
+watch(() => props.reels, () => {
+  setTimeout(setupObserver, 500)
+}, { deep: true })
+
+onMounted(() => {
+  setTimeout(setupObserver, 1000)
+})
+
+onUnmounted(() => {
+  if (observer) observer.disconnect()
+})
+
+const handleImageError = (event: Event) => {
+  const target = event.target as HTMLImageElement
+  if (target) {
+    target.src = '/logo-raw/logo.png'
+    target.style.objectFit = 'contain'
+    target.style.padding = '20px'
+    target.style.background = 'var(--ion-color-step-50)'
+    emit('refresh-needed')
+  }
 }
 
+const openReel = async (reel: Reel) => {
+  if (reel.isMultiPlatform) {
+    const actionSheet = await actionSheetController.create({
+      header: 'Watch on Original Platform',
+      cssClass: 'reels-action-sheet',
+      buttons: [
+        {
+          text: 'Instagram',
+          icon: logoInstagram,
+          handler: () => {
+            ActivityLogService.log('explore_reel_open_choice', { reel_id: reel.id, platform: 'instagram' })
+            window.open(reel.permalink_ig, '_blank')
+          }
+        },
+        {
+          text: 'TikTok',
+          icon: logoTiktok,
+          handler: () => {
+            ActivityLogService.log('explore_reel_open_choice', { reel_id: reel.id, platform: 'tiktok' })
+            window.open(reel.permalink_tt, '_blank')
+          }
+        },
+        {
+          text: 'Cancel',
+          role: 'cancel'
+        }
+      ]
+    });
+    await actionSheet.present();
+    return;
+  }
 
-
-const openPlaceholder = () => {
   ActivityLogService.log(
       props.mode === 'home'
           ? 'home_media_partner_open'
           : 'explore_reel_open',
-      {
-        place_id: reel.place_id ?? null,
-        platform: reel.platform,
-        media_partner: reel.media_partner
+       {
+        reel_id: reel.id,
+        platform: reel.platform || 'instagram',
+        username: reel.username
       }
   )
 
-  window.open(CONTENT_LINK.instagram, '_blank')
+  window.open(reel.permalink, '_blank')
 }
 
+const handleViewMore = () => {
+  ActivityLogService.log('reels_section_view_more')
+  router.push('/reels')
+}
+
+const fromNow = (timestamp: string) => {
+  if (!timestamp) return ''
+  return dayjs(timestamp).fromNow()
+}
+
+const logSocialFollow = (platform: string) => {
+  ActivityLogService.log('home_social_follow_click', {
+    platform: platform,
+    handle: '@halalformosa'
+  })
+}
 </script>
 
 <style scoped>
-.reel-scroll {
+.reels-section {
+  margin: 10px; /* Standard margin for Home sections */
+}
+
+.card-header-row {
   display: flex;
-  gap: 16px;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.section-title {
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.section-subtitle {
+  margin: -4px 0 0;
+  font-size: 0.75rem;
+  color: var(--ion-color-medium);
+  font-weight: 500;
+}
+
+.discover-grid {
+  display: flex;
+  gap: 12px;
   overflow-x: auto;
-  padding-top: 12px;
-  padding-bottom: 16px;
+  padding-bottom: 8px;
 }
 
-/* Card feels embedded, not owned */
-.reel-card {
-  min-width: 220px;
-  max-width: 220px;
-  border-radius: 18px;
-  background: #fafafa;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
-  cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+.discover-grid::-webkit-scrollbar {
+  display: none;
 }
 
-.reel-card:active {
-  transform: scale(0.98);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+.reel-item {
+  flex: 0 0 180px;
+  height: auto;
+  margin: 0;
 }
 
-/* Thumbnail */
-.reel-thumb {
+.reel-skeleton {
+  flex: 0 0 180px;
+  height: 260px;
+  margin: 0;
+}
+
+.reel-thumbnail-container {
   position: relative;
   width: 100%;
-  height: 300px;
+  height: 260px;
   overflow: hidden;
-  border-radius: 18px 18px 0 0;
-  background: #000;
+  background: #000; /* Black background for video transition */
 }
 
-.reel-thumb img {
+.reel-img, .reel-video {
+  height: 100% !important;
   width: 100%;
-  height: 100%;
   object-fit: cover;
+  border-radius: 0 !important;
 }
 
-/* Play overlay – subtle */
-.play-overlay {
+.reel-video {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+}
+
+.reel-overlay {
   position: absolute;
   inset: 0;
+  background: linear-gradient(to bottom, transparent 60%, rgba(0,0,0,0.6));
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 44px;
-  color: white;
-  background: linear-gradient(
-      to bottom,
-      rgba(0,0,0,0.1),
-      rgba(0,0,0,0.35)
-  );
+  z-index: 2; /* Ensure overlay stays on top of video */
 }
 
-/* Platform badge */
+.play-icon {
+  font-size: 40px;
+  color: white;
+  opacity: 0.8;
+}
+
 .platform-badge {
   position: absolute;
   top: 10px;
-  right: 10px;
-  background: rgba(0,0,0,0.6);
-  border-radius: 999px;
-  padding: 6px;
+  left: 10px;
+  background: rgba(0,0,0,0.5);
+  backdrop-filter: blur(4px);
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   color: white;
+  font-size: 14px;
 }
 
-/* Meta section */
-.reel-meta {
-  padding: 10px 12px 14px;
+.platform-badge.multi {
+  width: auto;
+  border-radius: 14px;
+  padding: 0 6px;
+  gap: 4px;
 }
 
-/* Creator handle */
-.creator {
-  font-weight: 600;
-  font-size: 13px;
-  color: #222;
-}
-
-/* Partner attribution – visually distinct */
-.partner {
-  font-size: 11px;
-  color: #888;
-  margin-top: 2px;
-}
-
-/* Caption – social style */
-.caption {
+.multi-icon {
   font-size: 12px;
-  color: #444;
-  margin-top: 6px;
-  line-height: 1.4;
 }
 
+.reel-label {
+  padding: 10px 8px !important;
+  text-align: left !important;
+}
+
+.creator-info {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.creator-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
+}
+
+.creator-avatar {
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--ion-color-step-150);
+}
+
+.creator-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ion-text-color);
+}
+
+.post-time {
+  font-size: 10px;
+  color: var(--ion-color-medium);
+  font-weight: 500;
+}
+
+.reel-caption {
+  font-size: 11px !important;
+  line-height: 1.3;
+  color: var(--ion-color-medium);
+  margin: 0;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.no-reels {
+  padding: 40px 20px;
+  text-align: center;
+  width: 100%;
+  color: var(--ion-color-medium);
+}
+
+.no-reels ion-icon {
+  font-size: 48px;
+  margin-bottom: 12px;
+}
 </style>

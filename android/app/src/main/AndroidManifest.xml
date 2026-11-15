@@ -3,12 +3,27 @@
     <!-- ⭐ REQUIRED for Google Play Billing -->
     <uses-permission android:name="com.android.vending.BILLING" />
 
+    <!-- Package visibility queries for opening web links in browser and using TTS -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <category android:name="android.intent.category.BROWSABLE" />
+            <data android:scheme="https" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.TTS_SERVICE" />
+        </intent>
+    </queries>
+
     <!-- Permissions -->
     <uses-feature android:name="android.hardware.camera" android:required="false" />
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <!-- No ACCESS_BACKGROUND_LOCATION: proximity prompts run foreground-only
+         (see useProximityPrompt.ts), and the delayed push is produced by the
+         send-visit-review-prompt cron, not by the device. -->
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
@@ -18,16 +33,14 @@
 
     <application
         android:allowBackup="true"
+        android:extractNativeLibs="false"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <!-- Only for testing purpose-->
-        <meta-data
-            android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-9588373061537955~6845513245"
-        />
+
+        <meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="ca-app-pub-9588373061537955~6845513245"/>
 
         <activity
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode|navigation|density"
@@ -35,6 +48,7 @@
             android:label="@string/title_activity_main"
             android:theme="@style/AppTheme.NoActionBarLaunch"
             android:launchMode="singleTask"
+            android:windowSoftInputMode="adjustResize"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -55,10 +69,81 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="https" android:host="halalformosa.com" />
-                <data android:scheme="https" android:host="www.halalformosa.com" />
                 <data android:scheme="https" android:host="app.halalformosa.com" />
             </intent-filter>
         </activity>
+
+        <receiver
+            android:name=".QuickActionsWidgetProviderLight"
+            android:exported="false"
+            android:label="@string/widget_quick_actions_light_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_quick_actions_light_info" />
+        </receiver>
+
+        <receiver
+            android:name=".QuickActionsWidgetProviderDark"
+            android:exported="false"
+            android:label="@string/widget_quick_actions_dark_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_quick_actions_dark_info" />
+        </receiver>
+
+        <receiver
+            android:name=".QuickActionsWidgetProviderLight2x"
+            android:exported="false"
+            android:label="@string/widget_quick_actions_light_2x_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_quick_actions_light_2x_info" />
+        </receiver>
+
+        <receiver
+            android:name=".QuickActionsWidgetProviderDark2x"
+            android:exported="false"
+            android:label="@string/widget_quick_actions_dark_2x_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_quick_actions_dark_2x_info" />
+        </receiver>
+
+        <receiver
+            android:name=".QuickActionsWidgetProviderLight3x"
+            android:exported="false"
+            android:label="@string/widget_quick_actions_light_3x_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_quick_actions_light_3x_info" />
+        </receiver>
+
+        <receiver
+            android:name=".QuickActionsWidgetProviderDark3x"
+            android:exported="false"
+            android:label="@string/widget_quick_actions_dark_3x_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_quick_actions_dark_3x_info" />
+        </receiver>
 
         <provider
             android:name="androidx.core.content.FileProvider"
@@ -69,3 +154,4 @@
         </provider>
     </application>
 </manifest>
+

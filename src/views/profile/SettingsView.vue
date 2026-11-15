@@ -16,10 +16,35 @@
         <ion-item lines="full" style="--border-radius: 12px;">
           <ion-toggle
               :checked="paletteToggle"
-              @ionChange="(e) => {paletteToggle = e.detail.checked; toggleDarkPalette(e.detail.checked);}"
+              @ionChange="(e) => {paletteToggle = e.detail.checked; toggleDarkPalette(e.detail.checked); ActivityLogService.log('settings_theme_toggle', { theme: e.detail.checked ? 'dark' : 'light' });}"
           >
             {{ $t('settings.darkMode') }}
           </ion-toggle>
+        </ion-item>
+      </ion-list>
+
+      <!-- 📷 Scanning -->
+      <ion-list style="border-radius: 12px; margin-top: 20px;">
+        <ion-list-header>{{ $t('settings.scanning') }}</ion-list-header>
+        <ion-item lines="full" style="--border-radius: 12px;">
+          <div style="width: 100%; padding: 8px 0;">
+            <ion-select
+                :label="$t('settings.scanMethod')"
+                label-placement="stacked"
+                interface="popover"
+                :value="defaultScanMethod"
+                @ionChange="(e) => onScanMethodChange(e.detail.value)"
+            >
+              <ion-select-option value="ask">{{ $t('settings.scanMethodAsk') }}</ion-select-option>
+              <ion-select-option value="camera">{{ $t('scanIngredients.scan.camera') }}</ion-select-option>
+              <ion-select-option value="gallery">{{ $t('scanIngredients.scan.gallery') }}</ion-select-option>
+              <ion-select-option value="auto">{{ $t('scanIngredients.autoScan.label') }}</ion-select-option>
+              <ion-select-option v-if="liveSupported" value="live">{{ $t('scanIngredients.liveVerdict.label') }}</ion-select-option>
+            </ion-select>
+            <ion-note style="display: block; margin-top: 8px; font-size: 0.85rem;">
+              {{ $t('settings.scanMethodNote') }}
+            </ion-note>
+          </div>
         </ion-item>
       </ion-list>
 
@@ -42,20 +67,86 @@
             </ion-note>
           </div>
         </ion-item>
+        <ion-item lines="full" style="--border-radius: 12px;">
+          <div style="width: 100%; padding: 8px 0;">
+            <ion-toggle
+                :checked="showLastSeen"
+                @ionChange="(e) => setShowLastSeen(e.detail.checked)"
+            >
+              {{ $t('settings.showLastSeen') }}
+            </ion-toggle>
+            <ion-note style="display: block; margin-top: 8px; font-size: 0.85rem;">
+              {{ $t('settings.showLastSeenNote') }}
+            </ion-note>
+          </div>
+        </ion-item>
+        <ion-item lines="full" style="--border-radius: 12px;">
+          <div style="width: 100%; padding: 8px 0;">
+            <ion-toggle
+                :checked="nearbyPromptsEnabled"
+                @ionChange="(e) => setNearbyPromptsEnabled(e.detail.checked)"
+            >
+              {{ $t('settings.nearbyPrompts') }}
+            </ion-toggle>
+            <ion-note style="display: block; margin-top: 8px; font-size: 0.85rem;">
+              {{ $t('settings.nearbyPromptsNote') }}
+            </ion-note>
+          </div>
+        </ion-item>
+        <ion-item lines="full" style="--border-radius: 12px;">
+          <div style="width: 100%; padding: 8px 0;">
+            <ion-toggle
+                :checked="!researchOptOut"
+                @ionChange="(e) => onResearchToggle(e.detail.checked)"
+            >
+              {{ $t('settings.researchParticipation') }}
+            </ion-toggle>
+            <ion-note style="display: block; margin-top: 8px; font-size: 0.85rem;">
+              {{ $t('settings.researchParticipationNote') }}
+            </ion-note>
+          </div>
+        </ion-item>
+      </ion-list>
+
+      <!-- 🛠️ Developer Options -->
+      <ion-list v-if="isDev" style="border-radius: 12px; margin-top: 20px;">
+        <ion-list-header style="color: var(--ion-color-tertiary)">🛠️ Developer Tools</ion-list-header>
+        <ion-item button lines="full" @click="triggerTestPrompt" style="--border-radius: 12px;">
+          <ion-icon :icon="sparkles" slot="start" style="margin-right: 12px; color: var(--ion-color-tertiary)" />
+          <ion-label style="font-weight: 500;">Trigger Test Review Prompt Modal</ion-label>
+        </ion-item>
+        <ion-item button lines="full" @click="triggerTestPush" style="--border-radius: 12px;">
+          <ion-icon :icon="chatboxEllipsesOutline" slot="start" style="margin-right: 12px; color: var(--ion-color-tertiary)" />
+          <ion-label style="font-weight: 500;">Send Test Push Notification</ion-label>
+        </ion-item>
+      </ion-list>
+      
+      <!-- 👤 Account -->
+      <ion-list v-if="currentUser" style="border-radius: 12px; margin-top: 20px;">
+        <ion-list-header>{{ $t('profile.sections.account') }}</ion-list-header>
+        <ion-item button lines="full" @click="router.push('/update-password?mode=change')" style="--border-radius: 12px;">
+          <ion-icon :icon="keyOutline" slot="start" style="margin-right: 12px; color: var(--ion-color-carrot)" />
+          <ion-label>{{ isSocialLogin ? $t('updatePassword.title') : $t('updatePassword.change') }}</ion-label>
+        </ion-item>
+        <ion-item button lines="full" @click="confirmDeleteAccount" style="--border-radius: 12px; --color: var(--ion-color-danger)">
+          <ion-icon :icon="trashOutline" slot="start" style="margin-right: 12px; color: var(--ion-color-danger)" />
+          <ion-label style="color: var(--ion-color-danger); font-weight: 500;">{{ $t('settings.deleteAccount') }}</ion-label>
+        </ion-item>
       </ion-list>
 
       <!-- 🌐 Language -->
       <ion-list style="border-radius: 12px; margin-top: 20px;">
         <ion-list-header>{{ $t('settings.language')}}</ion-list-header>
-        <ion-radio-group :value="lang" @ionChange="(e) => changeLanguage(e.detail.value)">
-          <ion-item v-for="l in languages" :key="l.code" lines="full">
-            <div slot="start" style="width: 32px; height: 22px; border-radius: 4px; overflow: hidden; border: 1px solid rgba(0,0,0,0.1); margin-right: 12px;">
-              <img :src="l.flag" :alt="l.name" style="width: 100%; height: 100%; object-fit: cover;" />
-            </div>
-            <ion-label style="font-weight: 500;">{{ l.name }}</ion-label>
-            <ion-radio slot="end" :value="l.code"></ion-radio>
-          </ion-item>
-        </ion-radio-group>
+        <LanguagePicker @update="changeLanguage">
+          <template #trigger="{ openModal, currentLang }">
+            <ion-item button lines="full" @click="openModal" style="--border-radius: 12px;">
+              <div slot="start" style="width: 32px; height: 22px; border-radius: 4px; overflow: hidden; border: 1px solid rgba(0,0,0,0.1); margin-right: 12px;">
+                <img v-if="currentLang?.flag" :src="currentLang.flag" :alt="currentLang.name" style="width: 100%; height: 100%; object-fit: cover;" />
+              </div>
+              <ion-label style="font-weight: 500;">{{ currentLang?.name }}</ion-label>
+            </ion-item>
+          </template>
+        </LanguagePicker>
       </ion-list>
     </ion-content>
   </ion-page>
@@ -71,38 +162,66 @@ import {
   IonList,
   IonListHeader,
   IonToggle,
+  IonSelect,
+  IonSelectOption,
   IonToolbar,
   IonTitle,
   IonPage,
-  IonRadio,
-  IonRadioGroup,
   IonNote,
-  IonLabel
+  IonLabel,
+  IonIcon,
+  alertController,
+  toastController
 } from '@ionic/vue'
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import LanguagePicker from '@/components/LanguagePicker.vue'
 import {
   currentUser,
   isPublicProfile,
   setPublicProfile,
+  showLastSeen,
+  setShowLastSeen,
+  resetUserProfileState,
+  nearbyPromptsEnabled,
+  setNearbyPromptsEnabled,
+  researchOptOut,
+  setResearchParticipation,
+  donorType,
+  userRole
 } from '@/composables/userProfile'
 import { useTheme } from '@/composables/useTheme'
+import { defaultScanMethod, setDefaultScanMethod, type DefaultScanMethod } from '@/composables/useDefaultScanMethod'
+import { isLiveVerdictSupported } from '@/utils/liveScanPlatform'
+import { useProximityPrompt } from '@/composables/useProximityPrompt'
+import { useNotifier } from '@/composables/useNotifier'
+import { keyOutline, trashOutline, sparkles, chatboxEllipsesOutline } from 'ionicons/icons'
+import { useRouter } from 'vue-router'
+import { supabase } from '@/plugins/supabaseClient'
+import { ActivityLogService } from '@/services/ActivityLogService'
 
-const { locale } = useI18n()
+const { locale, t } = useI18n()
 const lang = ref(locale.value)
 
-const languages = [
-  { code: 'en', name: 'English', flag: 'https://flagcdn.com/w80/us.png' },
-  { code: 'zh', name: '繁體中文', flag: 'https://flagcdn.com/w80/tw.png' },
-  { code: 'id', name: 'Bahasa Indonesia', flag: 'https://flagcdn.com/w80/id.png' },
-  { code: 'ms', name: 'Bahasa Melayu', flag: 'https://flagcdn.com/w80/my.png' }
-]
+// Default scan method (remembered choice for Scan Ingredients)
+const liveSupported = isLiveVerdictSupported()
+const onScanMethodChange = (value: DefaultScanMethod) => {
+  if (!value || value === defaultScanMethod.value) return
+  setDefaultScanMethod(value)
+  ActivityLogService.log('settings_scan_method_change', { method: value })
+}
+const router = useRouter()
+
+const isSocialLogin = computed(() => {
+  return currentUser.value?.app_metadata?.provider !== 'email'
+})
 
 const changeLanguage = (newLang: string) => {
   if (!newLang) return
   lang.value = newLang
   locale.value = newLang
   localStorage.setItem('lang', newLang)
+  ActivityLogService.log('settings_language_change', { language: newLang })
 }
 
 // Dark Mode logic
@@ -111,4 +230,121 @@ const { isDark: paletteToggle, toggleDarkPalette, initTheme } = useTheme()
 onMounted(() => {
   initTheme()
 })
+
+const onResearchToggle = async (include: boolean) => {
+  // ionChange also fires when the :checked binding updates; ignore no-ops.
+  if (include === !researchOptOut.value) return
+  const error = await setResearchParticipation(include)
+  if (error) {
+    const toast = await toastController.create({
+      message: t('settings.researchParticipationError'),
+      duration: 2500,
+      color: 'danger'
+    })
+    await toast.present()
+  }
+}
+
+const confirmDeleteAccount = async () => {
+  const alert = await alertController.create({
+    header: t('settings.deleteAccountConfirmTitle'),
+    message: t('settings.deleteAccountConfirmMessage'),
+    buttons: [
+      {
+        text: t('common.cancel'),
+        role: 'cancel',
+      },
+      {
+        text: t('settings.deleteAccountConfirmBtn'),
+        role: 'destructive',
+        handler: async () => {
+          await executeDeleteAccount()
+        }
+      }
+    ]
+  })
+  await alert.present()
+}
+
+const executeDeleteAccount = async () => {
+  try {
+    // Logged before the RPC: once the account is gone there is no user to attribute it to.
+    await ActivityLogService.log('account_delete_confirm')
+    const { error } = await supabase.rpc('delete_user_account')
+    if (error) throw error
+
+    await supabase.auth.signOut()
+    resetUserProfileState()
+
+    const alert = await alertController.create({
+      header: t('settings.deleteAccount'),
+      message: t('settings.deleteAccountSuccess') || 'Your account has been successfully deleted.',
+      buttons: ['OK']
+    })
+    await alert.present()
+
+    router.push('/')
+  } catch (err: any) {
+    ActivityLogService.log('account_delete_failed', { error_message: err?.message })
+    const alert = await alertController.create({
+      header: 'Error',
+      message: err.message || 'Failed to delete account. Please try again.',
+      buttons: ['OK']
+    })
+    await alert.present()
+  }
+}
+
+const { currentPrompt } = useProximityPrompt()
+const { notifyEvent } = useNotifier()
+
+const isDev = computed(() => {
+  return import.meta.env.DEV || donorType.value === 'Developer' || userRole.value === 'admin'
+})
+
+const triggerTestPrompt = () => {
+  currentPrompt.value = {
+    id: 1,
+    name: 'Siraya Tourist Center (Dev Test)',
+    lat: 23.136,
+    lng: 120.365,
+    type_id: 1,
+    distance_m: 12,
+    category_name: 'Visitor Center',
+    address: '720, Taiwan, Tainan City, Guantian District, 福田路99號',
+    image: null
+  }
+}
+
+const triggerTestPush = async () => {
+  try {
+    const { success } = await notifyEvent(
+      'test_visit_prompt',
+      'Did you visit Siraya Tourist Center?',
+      'Mind sharing its Muslim facilities? It really helps other travelers.',
+      undefined,
+      {
+        link: 'myapp://place/1?review=1'
+      },
+      ['onesignal']
+    )
+    if (success) {
+      const toast = await toastController.create({
+        message: '✅ Test push notification triggered!',
+        duration: 2000,
+        color: 'success'
+      })
+      toast.present()
+    } else {
+      throw new Error('Push notification service returned failure status')
+    }
+  } catch (err: any) {
+    const toast = await toastController.create({
+      message: `❌ Failed to trigger push: ${err.message || 'Error'}`,
+      duration: 3000,
+      color: 'danger'
+    })
+    toast.present()
+  }
+}
 </script>

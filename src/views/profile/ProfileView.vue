@@ -1,355 +1,980 @@
 <template>
   <ion-page>
-    <ion-header>
-      <ion-toolbar>
-        <ion-title class="title-large">
-          <ion-icon :icon="personCircleOutline" style="vertical-align: middle;"/>
-          {{ $t('profile.title') }}
-        </ion-title>
-      </ion-toolbar>
+    <ion-header class="ion-no-border">
+      <app-header :title="$t('profile.title')" :icon="icons.personCircleOutline" />
     </ion-header>
 
     <ion-content class="ion-padding">
-      <ion-header collapse="condense">
+
+      <ion-header collapse="condense" class="ion-no-border">
         <ion-toolbar>
           <ion-title size="large">{{ $t('profile.title') }}</ion-title>
         </ion-toolbar>
       </ion-header>
 
-      <!-- ================= PROFILE / PRO / ABOUT / XP ================= -->
+      <!-- ================= LOADING STATE ================= -->
       <template v-if="loadingProfile">
+        <!-- Hero card skeleton -->
+        <div class="profile-hero-card">
+          <div class="profile-header-premium">
+            <div class="avatar-container">
+              <ion-skeleton-text animated class="skeleton-avatar-premium" style="--background: rgba(255,255,255,0.25); width: 100%; height: 100%; margin: 0;" />
+            </div>
 
-        <!-- Profile Skeleton -->
-        <ion-card class="profile-card ion-text-center">
-          <ion-skeleton-text animated style="width:120px;height:120px;border-radius:50%;margin:0 auto"/>
-          <ion-skeleton-text animated style="width:60%;height:20px;margin:1rem auto"/>
-          <ion-skeleton-text animated style="width:80px;height:20px;margin:0 auto"/>
-          <ion-skeleton-text animated style="width:70%;height:16px;margin:.5rem auto"/>
-          <ion-skeleton-text animated style="width:100%;height:36px;margin:1.5rem auto"/>
+            <div class="profile-info text-center">
+              <ion-skeleton-text animated style="--background: rgba(255,255,255,0.25); width: 55%; height: 22px;" class="skeleton-text-center" />
+              <ion-skeleton-text animated style="--background: rgba(255,255,255,0.2); width: 38%; height: 14px;" class="skeleton-text-center" />
+
+              <div class="badge-row">
+                <ion-skeleton-text animated style="--background: rgba(255,255,255,0.2); width: 76px; height: 22px; border-radius: 12px;" />
+                <ion-skeleton-text animated style="--background: rgba(255,255,255,0.2); width: 96px; height: 22px; border-radius: 12px;" />
+              </div>
+
+              <div class="hero-stats-row">
+                <div class="hero-stat" v-for="n in 3" :key="'stat-'+n">
+                  <ion-skeleton-text animated style="--background: rgba(255,255,255,0.3); width: 28px; height: 16px;" />
+                  <ion-skeleton-text animated style="--background: rgba(255,255,255,0.2); width: 46px; height: 9px; margin-top: 4px;" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- XP card skeleton -->
+        <ion-card>
+          <div class="xp-section">
+            <div class="xp-header">
+              <ion-skeleton-text animated style="width: 84px; height: 32px; border-radius: var(--radius-md);" />
+              <ion-skeleton-text animated style="width: 64px; height: 18px;" />
+            </div>
+            <ion-skeleton-text animated style="width: 100%; height: 12px; border-radius: 6px;" />
+          </div>
         </ion-card>
 
-        <!-- Pro Skeleton -->
-        <ion-card v-if="userEmail && isNative" class="profile-card ion-text-center">
-          <ion-card-header>
-            <ion-skeleton-text animated style="width:60%;height:20px;margin:0 auto"/>
-          </ion-card-header>
-          <ion-card-content>
-            <ion-skeleton-text animated style="width:100%;height:40px"/>
-          </ion-card-content>
-        </ion-card>
-
-        <!-- About Skeleton -->
-        <ion-card class="profile-card">
-          <ion-card-header>
-            <ion-toolbar class="profile-toolbar">
-              <ion-skeleton-text animated style="width:40%;height:18px"/>
-              <ion-skeleton-text slot="end" animated style="width:60px;height:28px"/>
-            </ion-toolbar>
-          </ion-card-header>
-          <ion-card-content>
-            <ion-skeleton-text animated style="width:80%;height:14px;margin-bottom:8px"/>
-            <ion-skeleton-text animated style="width:60%;height:14px"/>
-          </ion-card-content>
-        </ion-card>
-
-        <!-- XP Skeleton -->
-        <ion-card class="profile-card ion-text-center">
-          <ion-card-header>
-            <ion-skeleton-text animated style="width:50%;height:20px;margin:0 auto"/>
-          </ion-card-header>
-          <ion-card-content>
-            <ion-skeleton-text animated style="width:40%;height:32px;margin:0 auto 8px"/>
-            <ion-skeleton-text animated style="width:30%;height:14px;margin:0 auto 12px"/>
-            <ion-skeleton-text animated style="width:100%;height:10px"/>
-            <ion-skeleton-text animated style="width:50%;height:12px;margin:8px auto 0"/>
-          </ion-card-content>
-        </ion-card>
-
+        <!-- Menu sections skeleton -->
+        <template v-for="section in 2" :key="'section-'+section">
+          <h3 class="menu-section-label">
+            <ion-skeleton-text animated style="width: 120px; height: 12px; display: inline-block;" />
+          </h3>
+          <ion-card class="menu-card">
+            <ion-list lines="none">
+              <ion-item v-for="row in 3" :key="'row-'+section+'-'+row">
+                <div class="icon-box" slot="start">
+                  <ion-skeleton-text animated style="width: 20px; height: 20px; border-radius: 5px;" />
+                </div>
+                <ion-label>
+                  <ion-skeleton-text animated :style="{ width: (row === 2 ? '45%' : '65%'), height: '14px' }" />
+                </ion-label>
+              </ion-item>
+            </ion-list>
+          </ion-card>
+        </template>
       </template>
 
+      <!-- ================= ACTUAL CONTENT ================= -->
       <template v-else>
-
-        <!-- Profile -->
-        <ion-card class="profile-card ion-text-center">
-          <div v-if="userAvatar" class="avatar-wrapper">
-            <img :src="userAvatar" class="avatar"/>
-          </div>
-
-          <ion-text v-if="userDisplayName" class="profile-name">
-            <h2>{{ userDisplayName }}</h2>
-            <ion-badge v-if="isSubscribed" color="warning">{{ $t('profile.proMember') }}</ion-badge>
-            <ion-badge v-else :color="donorBadge.color">
-              {{ donorBadge.emoji }} {{ $t('profile.donors.' + donorBadge.label) }}
-            </ion-badge>
-          </ion-text>
-
-          <ion-text v-if="userEmail" class="profile-email">
-            <p>{{ userEmail }}</p>
-          </ion-text>
-
-          <ion-button v-if="userEmail" color="danger" expand="block" @click="handleLogout">
-            {{ $t('profile.logout') }}
+        <!-- Profile Header Card -->
+        <div class="profile-hero-card" :class="{ 'no-user': !userEmail }">
+          <ion-button
+              v-if="userEmail"
+              fill="clear"
+              class="hero-edit-btn"
+              @click="goToEditProfile"
+          >
+            <ion-icon :icon="icons.createOutline" slot="icon-only" />
           </ion-button>
 
-          <div v-else class="login-prompt">
-            <p>{{ $t('profile.noUserLogged') }}</p>
-            <ion-button color="carrot" expand="block" @click="goToLogin">
-              {{ $t('profile.login') }}
-            </ion-button>
+          <div class="profile-header-premium">
+            <div class="avatar-container" :class="{ 'default-avatar-border': !hasFrameOrOutline }">
+              <CosmeticBadge
+                :cosmetics="equippedCosmetics"
+                :avatar-url="userAvatar"
+                :show-avatar="true"
+                size="xl"
+              />
+            </div>
+
+            <div class="profile-info text-center" v-if="userEmail">
+              <h2 class="profile-name-main">
+                {{ userDisplayName || $t('profile.defaultName') }}
+              </h2>
+              <p class="profile-email-sub">{{ userEmail }}</p>
+
+              <div class="badge-row" :class="{ 'badge-row--wrap': showAllBadges }">
+                <ion-badge v-if="isAdmin && isBadgeVisible('admin')" color="danger" style="border-radius: 12px; padding: 6px 12px;">
+                  <ion-icon :icon="icons.shieldCheckmarkOutline" style="margin-right: 4px" />
+                  {{ $t('profile.admin.badge') }}
+                </ion-badge>
+                <ion-badge v-if="isSubscribed && isBadgeVisible('pro')" class="badge-pro">
+                  {{ $t('profile.proMember') }}
+                </ion-badge>
+                <ion-badge v-if="!isSubscribed && isBadgeVisible('donor')" :color="donorBadge.color" style="border-radius: 12px; padding: 6px 12px;">
+                  {{ donorBadge.emoji }} {{ $t('profile.donors.' + donorBadge.label) }}
+                </ion-badge>
+                <ion-badge v-if="isSubscribed && isContributor && isBadgeVisible('contributor')" color="primary" style="border-radius: 12px; padding: 6px 12px;">
+                  ⭐️ {{ $t('profile.donors.Contributor') }}
+                </ion-badge>
+                <ion-badge v-if="businessTier !== 'free' && isBadgeVisible('merchant')" class="badge-merchant" :class="'merchant-' + businessTier" style="cursor: pointer;" @click="openBusinessSubModal">
+                  <ion-icon :icon="icons.storefrontOutline" style="margin-right: 4px" />
+                  {{ $t('profile.merchantTier.' + businessTier) }}
+                </ion-badge>
+                <ion-badge
+                  v-if="showcaseAchievement && isBadgeVisible('achievement')"
+                  color="warning"
+                  style="border-radius: 12px; padding: 6px 12px; cursor: pointer;"
+                  @click="$router.push('/profile/achievements')"
+                >
+                  {{ showcaseAchievement.icon }} {{ $t('achievements.categories.' + showcaseAchievement.category + '.tiers.' + showcaseAchievement.tier) }}
+                </ion-badge>
+                <ion-badge
+                  v-else-if="unlockedAchievementsCount > 0 && isBadgeVisible('achievementCta')"
+                  color="medium"
+                  style="border-radius: 12px; padding: 6px 12px; cursor: pointer; opacity: 0.85;"
+                  @click="$router.push('/profile/achievements')"
+                >
+                  🏆 {{ $t('achievements.chooseTrophyCta') }}
+                </ion-badge>
+                <ion-badge
+                  v-if="hiddenBadgeCount > 0"
+                  class="badge-more"
+                  style="cursor: pointer;"
+                  @click="showAllBadges = true"
+                >
+                  +{{ hiddenBadgeCount }}
+                </ion-badge>
+              </div>
+
+              <!-- Stat row: contributions + XP -->
+              <div class="hero-stats-row">
+                <div class="hero-stat">
+                  <span class="hero-stat-value">{{ myProductsCount ?? 0 }}</span>
+                  <span class="hero-stat-label">{{ $t('profile.stats.products') }}</span>
+                </div>
+                <div class="hero-stat-divider"></div>
+                <div class="hero-stat">
+                  <span class="hero-stat-value">{{ myLocationsCount ?? 0 }}</span>
+                  <span class="hero-stat-label">{{ $t('profile.stats.places') }}</span>
+                </div>
+                <div class="hero-stat-divider"></div>
+                <div class="hero-stat">
+                  <span class="hero-stat-value">{{ formatXp(currentPoints || 0) }}</span>
+                  <span class="hero-stat-label">{{ $t('profile.stats.xp') }}</span>
+                </div>
+              </div>
+            </div>
+
+            <div v-else class="login-prompt">
+              <p>{{ $t('profile.noUserLogged') }}</p>
+              <ion-button color="carrot" expand="block" shape="round" @click="goToLogin">
+                {{ $t('profile.login') }}
+              </ion-button>
+            </div>
           </div>
-        </ion-card>
+        </div>
 
-        <!-- Pro -->
-        <ion-card v-if="userEmail && isNative" class="profile-card ion-text-center">
-          <ion-card-header>
-            <ion-card-title>{{ $t('profile.pro.title') }}</ion-card-title>
-          </ion-card-header>
-          <ion-card-content>
-            <ion-button v-if="!isSubscribed" color="carrot" expand="block" @click="openProPaywall">
-              {{ $t('profile.pro.upgrade') }}
-            </ion-button>
-
-            <div v-else>
-              <p style="font-weight:600;color:var(--ion-color-success)">{{ $t('profile.pro.active') }}</p>
-              <p style="font-size:14px">{{ renewalMessage }}</p>
-              <p style="font-size:14px;color:var(--ion-color-medium)">
-                {{ $t('profile.pro.accessUntil') }}
-                <strong>{{ formattedExpirationDate }}</strong>
-              </p>
-              <ion-button fill="outline" size="small" @click="openManageSubscription">
-                {{ $t('profile.pro.manage') }}
+        <!-- 💡 Optional profile completion notice banner -->
+        <ion-card
+            v-if="userEmail && isAboutMeIncomplete"
+            color="light"
+            class="ion-margin-bottom fade-in"
+            style="border-left: 4px solid var(--ion-color-carrot); border-radius: 12px; margin: 16px;"
+        >
+          <ion-card-content style="padding: 16px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+              <div>
+                <strong style="font-size: 0.95rem; color: var(--ion-color-dark);">
+                  {{ $t('profile.incompleteNoticeTitle') }}
+                </strong>
+                <p style="margin: 4px 0 0; font-size: 0.82rem; color: var(--ion-color-step-600); line-height: 1.3;">
+                  {{ $t('profile.incompleteNoticeDesc') }}
+                </p>
+              </div>
+              <ion-button
+                  size="small"
+                  color="carrot"
+                  fill="outline"
+                  shape="round"
+                  @click="goToEditProfile"
+                  style="flex-shrink: 0;"
+              >
+                {{ $t('profile.incompleteNoticeBtn') }}
               </ion-button>
             </div>
           </ion-card-content>
         </ion-card>
 
-        <!-- About -->
-        <ion-card v-if="userEmail" class="profile-card">
-          <ion-card-header>
-            <ion-toolbar class="profile-toolbar">
-              <ion-title class="profile-title">{{ $t('profile.aboutMe') }}</ion-title>
-              <ion-buttons slot="end">
-                <ion-button color="carrot" size="small" @click="goToEditProfile">
-                  <ion-icon :icon="createOutline" slot="start"/>
-                  {{ $t('profile.edit') }}
-                </ion-button>
-              </ion-buttons>
-            </ion-toolbar>
-          </ion-card-header>
-          <ion-card-content>
-            <ion-list lines="none">
-              <ion-item>
-                <ion-label>{{ $t('profile.bio') }}</ion-label>
-                <ion-note slot="end">{{ userBio || $t('profile.noBio') }}</ion-note>
-              </ion-item>
-            </ion-list>
-          </ion-card-content>
-        </ion-card>
+        <!-- Pro Status / Support Card -->
+        <ion-card v-if="userEmail && isNative" :class="{ 'tier-card-gold': !isSubscribed }">
+          <div v-if="!isSubscribed" class="gold-glow"></div>
+          
+          <!-- Subscribed State -->
+          <template v-if="isSubscribed">
+            <div class="pro-active-banner">
+              <div class="pro-active-sheen"></div>
 
-        <!-- XP -->
-        <ion-card v-if="userEmail" class="profile-card ion-text-center">
-          <ion-card-header>
-            <ion-card-title>{{ $t('profile.experiencePoints') }}</ion-card-title>
-          </ion-card-header>
-          <ion-card-content>
-            <h2 style="font-size: 2rem; margin: 0; color: var(--ion-color-primary);">
-              {{ currentPoints }}
-            </h2>
-            <p>{{ $t('profile.level', { level: level }) }}</p>
-            <ion-progress-bar
-                :value="progressPercent / 100"
-                color="success"
-                style="margin-top: 10px; border-radius: 8px;"
-            ></ion-progress-bar>
-            <small>{{ currentPoints }} / {{ nextLevelXp }} XP</small>
-          </ion-card-content>
-        </ion-card>
+              <div class="pro-active-header">
+                <div class="pro-active-crest">
+                  <ion-icon :icon="icons.diamondOutline" />
+                </div>
 
-      </template>
+                <div class="pro-active-title-info">
+                  <div class="pro-active-title-row">
+                    <h3 class="pro-active-title">{{ $t('profile.pro.title') }}</h3>
+                    <span class="pro-status-chip">
+                      <ion-icon :icon="icons.checkmarkCircle" />
+                      {{ $t('profile.pro.active') }}
+                    </span>
+                  </div>
+                </div>
+              </div>
 
-      <!-- ================= ADMIN ================= -->
-      <template v-if="isAdmin">
-        <ion-list v-if="loadingAdmin" class="profile-menu">
-          <ion-item v-for="i in 5" :key="i">
-            <ion-skeleton-text animated style="width:70%;height:16px"/>
-          </ion-item>
-        </ion-list>
+              <div class="pro-active-divider"></div>
 
-        <ion-list v-else class="profile-menu" style="border-radius: 10px; margin-top: 20px">
-          <ion-item button @click="goToReviewSubmissions">
-            <ion-icon :icon="listOutline"/>&nbsp;
-            <ion-label>{{ $t('profile.review') }}</ion-label>
+              <div class="pro-active-footer">
+                <div class="pro-detail-item" :class="{ 'is-warning': !willRenew }">
+                  <div class="pro-detail-icon">
+                    <ion-icon :icon="willRenew ? icons.refreshOutline : icons.alertCircleOutline" />
+                  </div>
+                  <span>{{ renewalMessage }}</span>
+                </div>
+                <div class="pro-detail-item">
+                  <div class="pro-detail-icon">
+                    <ion-icon :icon="icons.timeOutline" />
+                  </div>
+                  <span>{{ $t('profile.pro.accessUntil') }} {{ formattedExpirationDate }}</span>
+                </div>
+              </div>
 
-            <!-- ✅ Put badge at end slot -->
-            <ion-badge
-                v-if="pendingCount > 0"
-                color="danger"
-                slot="end"
-            >
-              {{ pendingCount }}
-            </ion-badge>
-          </ion-item>
+              <ion-button fill="clear" expand="block" class="pro-manage-btn" @click="openManageSubscription">
+                {{ $t('profile.pro.manage') }}
+              </ion-button>
+            </div>
+          </template>
 
-          <ion-item button @click="goToReviewLocations">
-            <ion-icon :icon="listOutline" />&nbsp;
-            <ion-label>{{ $t('profile.admin.locationsReview') }}</ion-label>
+          <!-- Unsubscribed (Engaging) State -->
+          <div v-else class="pro-upgrade-engaging">
+            <div class="pro-header-engaging">
+              <div class="pro-icon-hero">
+                <ion-icon :icon="icons.bookmarkOutline" />
+              </div>
+              <h2 class="pro-title-engaging">{{ $t('profile.pro.title') }}</h2>
+              <p class="pro-subtitle-engaging">{{ $t('profile.pro.upgrade') }}</p>
+            </div>
 
-            <ion-badge
-                v-if="pendingLocationsCount > 0"
-                color="danger"
-                slot="end"
-            >
-              {{ pendingLocationsCount }}
-            </ion-badge>
-          </ion-item>
+            <div class="pro-benefits-grid">
+              <div class="benefit-chip">
+                <ion-icon :icon="icons.checkmarkCircle" />
+                <span>{{ $t('profile.pro.benefits.aiExplanation') }}</span>
+              </div>
+              <div class="benefit-chip">
+                <ion-icon :icon="icons.checkmarkCircle" />
+                <span>{{ $t('profile.pro.benefits.smartFeed') }}</span>
+              </div>
+              <div class="benefit-chip">
+                <ion-icon :icon="icons.checkmarkCircle" />
+                <span>{{ $t('profile.pro.benefits.noAds') }}</span>
+              </div>
+              
+              <template v-if="showBenefits">
+                <div class="benefit-chip fade-in">
+                  <ion-icon :icon="icons.checkmarkCircle" />
+                  <span>{{ $t('profile.pro.benefits.unlimitedCollections') }}</span>
+                </div>
+                <div class="benefit-chip fade-in">
+                  <ion-icon :icon="icons.checkmarkCircle" />
+                  <span>{{ $t('profile.pro.benefits.unlimitedScans') }}</span>
+                </div>
+                <div class="benefit-chip fade-in">
+                  <ion-icon :icon="icons.checkmarkCircle" />
+                  <span>{{ $t('profile.pro.benefits.prioritySupport') }}</span>
+                </div>
+              </template>
+            </div>
 
-          <ion-item button @click="goToPointsLogs">
-            <ion-icon :icon="listOutline"/>&nbsp;
-            <ion-label>{{ $t('profile.admin.pointsLogs') }}</ion-label>
-          </ion-item>
-
-          <ion-item button @click="goToScanLogs">
-            <ion-icon :icon="listOutline"/>&nbsp;
-            <ion-label>{{ $t('profile.admin.scanLogs') }}</ion-label>
-          </ion-item>
-
-          <ion-item button @click="goToUsersList">
-            <ion-icon :icon="peopleOutline" />&nbsp;
-            <ion-label>{{ $t('profile.admin.users') }}</ion-label>
-          </ion-item>
-
-          <ion-item button @click="goToAnalyticsDashboard">
-            <ion-icon :icon="listOutline"/>&nbsp;
-            <ion-label>{{ $t('profile.admin.analytics') }}</ion-label>
-          </ion-item>
-
-          <ion-item button @click="goToMasterData" lines="none">
-            <ion-icon :icon="constructOutline"/>&nbsp;
-            <ion-label>{{ $t('profile.admin.masterData') }}</ion-label>
-          </ion-item>
-
-
-        </ion-list>
-      </template>
-
-
-      <!-- Menu -->
-      <ion-list class="profile-menu" style="border-radius: 10px; margin-top: 20px">
-        <ion-item button @click="goToSavedItems">
-          <ion-icon :icon="bookmarkOutline" />&nbsp;
-          <ion-label>{{ $t('profile.savedItems') }}</ion-label>
-        </ion-item>
-        <ion-item button @click="goToSettings">
-          <ion-icon :icon="settingsOutline"/>&nbsp;
-          <ion-label>{{ $t('profile.settings') }}</ion-label>
-        </ion-item>
-        <ion-item button @click="goToLegal">
-          <ion-icon :icon="documentTextOutline"/>&nbsp;
-          <ion-label>{{ $t('profile.legal') }}</ion-label>
-        </ion-item>
-        <ion-item button @click="goToCredits" style="--inner-border-width: 0">
-          <ion-icon :icon="peopleOutline"/>&nbsp;
-          <ion-label>{{ $t('profile.credits') }}</ion-label>
-        </ion-item>
-      </ion-list>
-
-      <!-- Support -->
-      <ion-card v-if="donationProduct" class="profile-card ion-text-center">
-        <ion-card-header>
-          <ion-card-title>{{ $t('profile.support') }}</ion-card-title>
-        </ion-card-header>
-
-        <ion-card-content>
-          <ion-item button @click="donate">
-            <ion-label>
-              <strong>{{ donationProduct.title }}</strong>
-              <br/>
-              {{ donationProduct.description }}
-            </ion-label>
-            <ion-note slot="end">{{ donationProduct.priceString }}</ion-note>
-          </ion-item>
-        </ion-card-content>
-      </ion-card>
-
-
-      <ion-card v-else class="profile-card ion-text-center">
-        <ion-card-header>
-          <ion-card-title>{{ $t('profile.support') }}</ion-card-title>
-        </ion-card-header>
-        <ion-card-content>
-          <p>{{ $t('profile.supportDescription') }}</p>
-          <a href="https://halalformosa.bobaboba.me" target="_blank" class="boba-button">
-            <img
-                src="https://s3.ap-southeast-1.amazonaws.com/media.anyonelab.com/images/boba/boba-embed-icon.png"
-                alt="boba-icon"
-                style="height: 100%; margin-right: 8px;"
-            />
-            {{ $t('profile.bobaMe') }}
-          </a>
-          <p class="support-thank">{{ $t('profile.supportThank') }}</p>
-          <p><small>{{ $t('profile.voluntary') }}</small></p>
-        </ion-card-content>
-      </ion-card>
-
-      <!-- ✅ Social Media / Follow Us -->
-      <ion-card class="profile-card ion-text-center">
-        <ion-card-header>
-          <ion-card-title>{{ $t('profile.followUs') }}</ion-card-title>
-        </ion-card-header>
-        <ion-card-content>
-          <div class="social-links">
-
-            <!-- Instagram -->
-            <a
-                class="social-button instagram"
-                @click.prevent="logAndOpen('instagram', 'https://www.instagram.com/halalformosa/')"
-            >
-              <ion-icon :icon="logoInstagram" class="social-icon"></ion-icon>
-              <span>Instagram</span>
-            </a>
-
-            <!-- LINE -->
-            <a
-                class="social-button line"
-                @click.prevent="logAndOpen('line', 'https://line.me/R/ti/p/@975schpu')"
-            >
-              <img src="/social-logo/line-logo.png" alt="LINE" class="social-icon"/>
-              <span>LINE</span>
-            </a>
-
-            <!-- Official Website -->
-            <a
-                class="social-button website"
-                @click.prevent="logAndOpen('web', 'https://halalformosa.com')"
-            >
-              <ion-icon :icon="globeOutline" class="social-icon"></ion-icon>
-              <span>Website</span>
-            </a>
-
-
+            <div class="pro-action-footer">
+              <ion-button expand="block" class="pro-big-buy-button" @click="openProPaywall">
+                {{ $t('profile.pro.upgrade') }}
+              </ion-button>
+              <button class="benefit-toggle-text" @click="showBenefits = !showBenefits">
+                {{ showBenefits ? $t('profile.pro.benefits.showLess') : $t('profile.pro.benefits.showMore') }}
+              </button>
+            </div>
           </div>
+        </ion-card>
 
-        </ion-card-content>
-      </ion-card>
+        <!-- XP Card -->
+        <ion-card v-if="userEmail">
+          <div class="xp-section">
+            <div class="xp-header">
+              <div class="level-badge">
+                <span class="level-label">{{ $t('profile.xp.levelLabel') }}</span>
+                <span class="level-num">{{ level }}</span>
+              </div>
+              <div class="xp-total">
+                <div style="display: flex; align-items: center; justify-content: flex-end; gap: 4px;">
+                  <span class="xp-val">{{ formatXp(currentPoints || 0) }} XP</span>
+                  <ion-icon :icon="icons.helpCircleOutline" style="font-size: 1.1rem; color: var(--ion-color-carrot); cursor: pointer;" @click="showXpInfo" />
+                </div>
+                <span class="xp-next">{{ formatXp(nextLevelXp) }} {{ $t('profile.xp.toNextLevel') }}</span>
+              </div>
+            </div>
 
-      <!-- App Info -->
-      <ion-card class="profile-card ion-text-center">
-        <ion-card-header>
-          <ion-card-title>{{ $t('profile.appInfo') }}</ion-card-title>
-        </ion-card-header>
-        <ion-card-content>
-          <ion-list lines="inset" class="info-list">
-            <ion-item>
-              <ion-label>{{ $t('profile.appNameTitle') }}</ion-label>
-              <ion-note slot="end" class="info-note">{{ $t('profile.appName') }}</ion-note>
+            <div class="progress-container">
+              <div class="progress-bar-fill" :style="{ width: progressPercent + '%' }"></div>
+            </div>
+
+            <div class="xp-details-row">
+              <div class="xp-details-item">
+                <span>{{ $t('profile.xp.spendable') }}: </span>
+                <span class="xp-details-value" style="color: var(--ion-color-carrot);">{{ formatXp(spendablePoints || 0) }} XP</span>
+              </div>
+              <div class="xp-details-item">
+                <span>{{ $t('profile.xp.spent') }}: </span>
+                <span class="xp-details-value" style="color: var(--ion-color-medium);">{{ formatXp(spentPoints) }} XP</span>
+              </div>
+            </div>
+          </div>
+        </ion-card>
+
+        <!-- Account & Preferences Section -->
+        <h3 class="menu-section-label">{{ $t('profile.sections.account') }}</h3>
+        <ion-card class="menu-card">
+          <ion-list lines="none">
+            <ion-item v-if="userEmail" button @click="goToEditProfile">
+              <div class="icon-box" slot="start">
+                <ion-icon :icon="icons.createOutline" />
+              </div>
+              <ion-label>
+                <h3>{{ $t('profile.editProfile.title') }}</h3>
+                <p>{{ userBio || $t('profile.noBio') }}</p>
+              </ion-label>
+              <ion-icon :icon="icons.settingsOutline" slot="end" size="small" style="opacity: 0.3" />
             </ion-item>
-            <ion-item lines="none">
-              <ion-label>{{ $t('profile.appVersion') }}</ion-label>
-              <ion-note slot="end" class="info-note">{{ appVersion || '1.0.0' }}</ion-note>
+
+            <ion-item button @click="goToSettings">
+              <div class="icon-box" slot="start">
+                <ion-icon :icon="icons.settingsOutline" />
+              </div>
+              <ion-label>{{ $t('profile.settings') }}</ion-label>
+            </ion-item>
+
+            <ion-item v-if="userEmail" button @click="$router.push('/profile/linked-accounts')">
+              <div class="icon-box" slot="start">
+                <ion-icon :icon="icons.linkOutline" />
+              </div>
+              <ion-label>{{ $t('profile.linkedAccounts.title') }}</ion-label>
+            </ion-item>
+
+            <ion-item v-if="userEmail" button @click="$router.push('/profile/badge-customize')">
+              <div class="icon-box icon-box-cosmetic" slot="start">
+                <ion-icon :icon="icons.colorPaletteOutline" />
+              </div>
+              <ion-label>
+                <h3>{{ $t('profile.badgeCustomize.title') }}</h3>
+                <p>{{ $t('profile.badgeCustomize.subtitle') }}</p>
+              </ion-label>
+            </ion-item>
+
+            <ion-item v-if="userEmail" button @click="$router.push('/profile/badge-shop')">
+              <div class="icon-box icon-box-shop" slot="start">
+                <ion-icon :icon="icons.storefrontOutline" />
+              </div>
+              <ion-label>
+                <h3>{{ $t('profile.badgeShop.title') }}</h3>
+                <p>{{ $t('profile.badgeShop.menuSubtitle') }}</p>
+              </ion-label>
+            </ion-item>
+
+            <ion-item v-if="userEmail && hasOwnedBusinesses" button @click="$router.push('/business')">
+              <div class="icon-box icon-box-shop" slot="start">
+                <ion-icon :icon="icons.briefcaseOutline" />
+              </div>
+              <ion-label>
+                <h3>{{ $t('business.dashboard.title') }}</h3>
+                <p>{{ $t('business.dashboard.manageCta') }}</p>
+              </ion-label>
             </ion-item>
           </ion-list>
-        </ion-card-content>
-      </ion-card>
+        </ion-card>
+
+        <!-- General Activity Section -->
+        <h3 class="menu-section-label" v-if="userEmail">{{ $t('profile.sections.activity') }}</h3>
+        <ion-card class="menu-card" v-if="userEmail">
+          <ion-list lines="none">
+            <ion-item v-if="userEmail" button @click="goToSavedItems">
+              <div class="icon-box" slot="start">
+                <ion-icon :icon="icons.bookmarkOutline" />
+              </div>
+              <ion-label>{{ $t('profile.savedItems') }}</ion-label>
+            </ion-item>
+
+            <ion-item v-if="userEmail" button @click="goToSavedLocations">
+              <div class="icon-box" slot="start">
+                <ion-icon :icon="icons.locationOutline" />
+              </div>
+              <ion-label>{{ $t('savedLocations.title') }}</ion-label>
+            </ion-item>
+
+            <ion-item v-if="userEmail" button @click="$router.push('/profile/scan-history')">
+              <div class="icon-box" slot="start">
+                <ion-icon :icon="icons.timeOutline" />
+              </div>
+              <ion-label style="display: flex; align-items: center; gap: 8px;">
+                <span>{{ $t('profile.scanHistory') }}</span>
+                <span class="activity-pro-badge">PRO</span>
+              </ion-label>
+            </ion-item>
+
+            <ion-item v-if="userEmail" button @click="$router.push('/profile/ingredient-encyclopedia')">
+              <div class="icon-box" slot="start">
+                <ion-icon :icon="icons.libraryOutline" />
+              </div>
+              <ion-label style="display: flex; align-items: center; gap: 8px;">
+                <span>{{ $t('profile.ingredientEncyclopedia') }}</span>
+                <span class="activity-pro-badge">PRO</span>
+              </ion-label>
+            </ion-item>
+
+            <ion-item v-if="userEmail" button @click="$router.push('/profile/achievements')">
+              <div class="icon-box" slot="start">
+                <ion-icon :icon="icons.trophyOutline" />
+              </div>
+              <ion-label>{{ $t('achievements.title') }}</ion-label>
+            </ion-item>
+
+            <ion-item v-if="userEmail" button @click="$router.push('/profile/invite-earn')">
+              <div class="icon-box" slot="start">
+                <ion-icon :icon="icons.giftOutline" />
+              </div>
+              <ion-label>{{ inviteMenuLabel }}</ion-label>
+            </ion-item>
+
+            <ion-item v-if="userEmail" button @click="$router.push('/store/my-orders')" :disabled="isStoreUnderConstruction">
+              <div class="icon-box" slot="start">
+                <ion-icon :icon="icons.bagHandleOutline" />
+              </div>
+              <ion-label>
+                <h3>{{ $t('store.myOrders') }}</h3>
+                <p v-if="isStoreUnderConstruction" class="construction-text-small">{{ $t('common.underConstruction') }}</p>
+              </ion-label>
+            </ion-item>
+          </ion-list>
+        </ion-card>
+
+        <!-- Contributions Section -->
+        <h3 class="menu-section-label" v-if="userEmail">{{ $t('profile.sections.contributions') }}</h3>
+        <ion-card class="menu-card" v-if="userEmail">
+          <ion-list lines="none">
+            <ion-item button @click="$router.push('/submissions/products')">
+              <div class="icon-box" slot="start">
+                <ion-icon :icon="icons.bagHandleOutline" />
+              </div>
+              <ion-label>
+                <h3>{{ $t('profile.submittedProducts') }}</h3>
+                <p v-if="myProductsCount !== null">{{ myProductsCount }} Items</p>
+              </ion-label>
+            </ion-item>
+
+            <ion-item button @click="$router.push('/submissions/locations')">
+              <div class="icon-box" slot="start">
+                <ion-icon :icon="icons.locationOutline" />
+              </div>
+              <ion-label>
+                <h3>{{ $t('profile.submittedLocations') }}</h3>
+                <p v-if="myLocationsCount !== null">{{ myLocationsCount }} Places</p>
+              </ion-label>
+            </ion-item>
+
+            <ion-item button @click="$router.push('/submissions/product-reports')">
+              <div class="icon-box" slot="start">
+                <ion-icon :icon="icons.flagOutline" />
+              </div>
+              <ion-label>
+                <h3>{{ $t('profile.myProductReports.title') }}</h3>
+                <p v-if="myProductReportsCount !== null">{{ myProductReportsCount }} {{ $t('profile.reportsCount') }}</p>
+              </ion-label>
+            </ion-item>
+
+            <ion-item button @click="$router.push('/submissions/location-reports')">
+              <div class="icon-box" slot="start">
+                <ion-icon :icon="icons.flagOutline" />
+              </div>
+              <ion-label>
+                <h3>{{ $t('profile.myLocationReports.title') }}</h3>
+                <p v-if="myLocationReportsCount !== null">{{ myLocationReportsCount }} {{ $t('profile.reportsCount') }}</p>
+              </ion-label>
+            </ion-item>
+
+            <!-- Dedicated Contributor Application (For regular users only) -->
+            <ion-item v-if="!isAdmin && !isContributor" button @click="showContributorAppModal = true">
+              <div class="icon-box" slot="start">
+                <ion-icon :icon="icons.documentTextOutline" />
+              </div>
+              <ion-label>
+                <h3 style="font-weight: 700; color: var(--ion-color-dark);">Become a Dedicated Contributor</h3>
+                <p style="font-size: 0.8rem; color: var(--ion-color-medium);">
+                  {{ contributorAppStatus === 'pending' ? '⏳ Application pending review' : 'Help the community & get unlimited contributions' }}
+                </p>
+              </ion-label>
+            </ion-item>
+          </ion-list>
+        </ion-card>
+
+        <!-- Become a Merchant Section -->
+        <h3 class="menu-section-label" v-if="userEmail && !merchantStore">{{ $t('merchant.register.sectionTitle') }}</h3>
+        <ion-card class="menu-card" v-if="userEmail && !merchantStore">
+          <div v-if="isStoreUnderConstruction" class="xp-section vendor-onboarding construction">
+            <div class="pending-status-box">
+              <div class="icon-pulse">
+                <ion-icon :icon="icons.constructOutline" color="carrot" />
+              </div>
+              <div class="status-text">
+                <h3>{{ $t('common.underConstruction') }}</h3>
+                <p>{{ $t('store.underConstructionDesc') }}</p>
+              </div>
+            </div>
+          </div>
+
+          <template v-else>
+            <div v-if="merchantApplication?.status === 'pending'" class="xp-section vendor-onboarding pending">
+              <div class="pending-status-box">
+                <div class="icon-pulse">
+                  <ion-icon :icon="icons.timeOutline" color="carrot" />
+                </div>
+                <div class="status-text">
+                  <h3>{{ $t('profile.merchant.pendingStatus') }}</h3>
+                  <p>{{ $t('profile.merchant.pendingDesc') }}</p>
+                </div>
+              </div>
+            </div>
+            
+            <div v-else-if="merchantApplication?.status === 'rejected'" class="xp-section vendor-onboarding rejected">
+              <div class="pending-status-box">
+                <div class="icon-pulse-red">
+                  <ion-icon :icon="icons.closeCircleOutline" color="danger" />
+                </div>
+                <div class="status-text">
+                  <h3 style="color: var(--ion-color-danger)">{{ $t('merchant.register.rejectedStatus') }}</h3>
+                  <p>{{ $t('merchant.register.rejectedProfileDesc') }}</p>
+                  
+                  <ion-button 
+                    fill="clear" 
+                    size="small" 
+                    color="carrot" 
+                    @click="goToMerchantRegistration"
+                    style="--padding-start: 0; font-weight: 700; margin-top: 8px;"
+                  >
+                    {{ $t('common.reapply') }}
+                  </ion-button>
+                </div>
+              </div>
+            </div>
+            
+            <ion-list v-else lines="none" class="vendor-list">
+              <ion-item button @click="$router.push('/merchant/register')" class="vendor-onboarding-item">
+                <div class="icon-box-vendor" slot="start">
+                  <ion-icon :icon="icons.storefrontOutline" color="carrot" />
+                </div>
+                <ion-label>
+                  <h3 class="vendor-title-label">{{ $t('profile.merchant.startSelling') }}</h3>
+                  <p class="vendor-subtitle-label">{{ $t('profile.merchant.storeSubtitle') }}</p>
+                </ion-label>
+              </ion-item>
+            </ion-list>
+          </template>
+        </ion-card>
+
+        <h3 class="menu-section-label" v-if="merchantStore && !isStoreUnderConstruction">{{ $t('store.sellerCenter.title') }}</h3>
+        <ion-card class="menu-card" v-if="merchantStore">
+          <div v-if="isStoreUnderConstruction" class="xp-section vendor-onboarding construction">
+            <div class="pending-status-box">
+              <div class="icon-pulse">
+                <ion-icon :icon="icons.constructOutline" color="primary" />
+              </div>
+              <div class="status-text">
+                <h3 style="color: var(--ion-color-primary)">{{ $t('common.underConstruction') }}</h3>
+                <p>{{ $t('store.underConstructionDesc') }}</p>
+              </div>
+            </div>
+          </div>
+
+          <ion-list v-else lines="none">
+            <ion-item button @click="$router.push('/merchant/store/settings')">
+              <div class="icon-box" slot="start" style="background: rgba(var(--ion-color-primary-rgb), 0.1);">
+                <ion-icon :icon="icons.settingsOutline" color="primary" />
+              </div>
+              <ion-label>
+                <h3>{{ $t('store.sellerCenter.manageStore') }}</h3>
+                <p>{{ merchantStore.name_en || merchantStore.name_zh }}</p>
+              </ion-label>
+            </ion-item>
+
+            <ion-item button @click="$router.push('/merchant/store/products')">
+              <div class="icon-box" slot="start" style="background: rgba(var(--ion-color-primary-rgb), 0.1);">
+                <ion-icon :icon="icons.bagHandleOutline" color="primary" />
+              </div>
+              <ion-label>{{ $t('store.sellerCenter.manageProducts') }}</ion-label>
+            </ion-item>
+
+            <ion-item button @click="$router.push('/merchant/store/orders')">
+              <div class="icon-box" slot="start" style="background: rgba(var(--ion-color-primary-rgb), 0.1);">
+                <ion-icon :icon="icons.listOutline" color="primary" />
+              </div>
+              <ion-label>{{ $t('store.sellerCenter.manageOrders') }}</ion-label>
+              <ion-badge v-if="pendingOrdersCount > 0" color="warning" slot="end" style="border-radius: 8px;">{{ pendingOrdersCount }}</ion-badge>
+            </ion-item>
+
+            <ion-item button @click="$router.push('/merchant/store/chat-inbox')">
+              <div class="icon-box" slot="start" style="background: rgba(var(--ion-color-secondary-rgb), 0.1);">
+                <ion-icon :icon="icons.chatbubblesOutline" color="secondary" />
+              </div>
+              <ion-label>{{ $t('store.sellerCenter.manageMessages') }}</ion-label>
+              <ion-badge v-if="unreadChatsCount > 0" color="danger" slot="end" style="border-radius: 8px;">{{ unreadChatsCount }}</ion-badge>
+            </ion-item>
+          </ion-list>
+        </ion-card>
+
+        <!-- Admin Section -->
+        <template v-if="isAdmin">
+        <h3 class="menu-section-label admin-label">{{ $t('profile.admin.sections.content') }}</h3>
+        <ion-card class="menu-card">
+          <ion-list lines="none">
+            <ion-item button @click="goToReviewSubmissions">
+              <div class="icon-box" slot="start">
+                <ion-icon :icon="icons.listOutline" />
+              </div>
+              <ion-label>{{ $t('profile.review') }}</ion-label>
+              <ion-badge v-if="pendingCount > 0" color="danger" slot="end" style="border-radius: 8px;">{{ pendingCount }}</ion-badge>
+            </ion-item>
+
+            <ion-item button @click="goToReviewLocations">
+              <div class="icon-box" slot="start">
+                <ion-icon :icon="icons.listOutline" />
+              </div>
+              <ion-label>{{ $t('profile.admin.locationsReview') }}</ion-label>
+              <ion-badge v-if="pendingLocationsCount > 0" color="danger" slot="end" style="border-radius: 8px;">{{ pendingLocationsCount }}</ion-badge>
+            </ion-item>
+
+            <ion-item button @click="goToProductReports">
+              <div class="icon-box" slot="start">
+                <ion-icon :icon="icons.listOutline" />
+              </div>
+              <ion-label>{{ $t('profile.admin.productReports') }}</ion-label>
+              <ion-badge v-if="pendingProductReportsCount > 0" color="danger" slot="end" style="border-radius: 8px;">{{ pendingProductReportsCount }}</ion-badge>
+            </ion-item>
+
+            <ion-item button @click="goToLocationReports">
+              <div class="icon-box" slot="start">
+                <ion-icon :icon="icons.listOutline" />
+              </div>
+              <ion-label>{{ $t('profile.admin.locationReports') }}</ion-label>
+              <ion-badge v-if="pendingLocationReportsCount > 0" color="danger" slot="end" style="border-radius: 8px;">{{ pendingLocationReportsCount }}</ion-badge>
+            </ion-item>
+          </ion-list>
+        </ion-card>
+
+        <h3 class="menu-section-label admin-label">{{ $t('profile.admin.sections.store') }}</h3>
+        <ion-card class="menu-card">
+          <ion-list lines="none">
+            <ion-item button @click="goToStoreOrders">
+              <div class="icon-box" slot="start">
+                <ion-icon :icon="icons.bagHandleOutline" />
+              </div>
+              <ion-label>{{ $t('store.adminOrders') }}</ion-label>
+              <ion-badge v-if="pendingOrdersCount > 0" color="warning" slot="end" style="border-radius: 8px;">{{ pendingOrdersCount }}</ion-badge>
+            </ion-item>
+
+            <ion-item button @click="$router.push('/admin/store/chat-inbox')">
+              <div class="icon-box" slot="start">
+                <ion-icon :icon="icons.chatbubblesOutline" />
+              </div>
+              <ion-label>{{ $t('store.chat.storeMessages') }}</ion-label>
+              <ion-badge v-if="unreadChatsCount > 0" color="danger" slot="end" style="border-radius: 8px;">{{ unreadChatsCount }}</ion-badge>
+            </ion-item>
+          </ion-list>
+        </ion-card>
+
+        <h3 class="menu-section-label admin-label">{{ $t('profile.admin.sections.management') }}</h3>
+        <ion-card class="menu-card">
+          <ion-list lines="none">
+            <ion-item button @click="goToUsersList">
+              <div class="icon-box" slot="start">
+                <ion-icon :icon="icons.peopleOutline" />
+              </div>
+              <ion-label>{{ $t('profile.admin.users') }}</ion-label>
+            </ion-item>
+
+            <ion-item button @click="$router.push('/admin/contributor-applications')">
+              <div class="icon-box" slot="start">
+                <ion-icon :icon="icons.documentTextOutline" />
+              </div>
+              <ion-label>Contributor Applications</ion-label>
+              <ion-badge v-if="pendingContributorAppsCount > 0" color="danger" slot="end" style="border-radius: 8px;">{{ pendingContributorAppsCount }}</ion-badge>
+            </ion-item>
+
+            <ion-item button @click="goToMerchantApplications">
+              <div class="icon-box" slot="start">
+                <ion-icon :icon="icons.storefrontOutline" />
+              </div>
+              <ion-label>{{ $t('admin.merchant.title') }}</ion-label>
+              <ion-badge v-if="pendingMerchantAppsCount > 0" color="danger" slot="end" style="border-radius: 8px;">{{ pendingMerchantAppsCount }}</ion-badge>
+            </ion-item>
+
+            <ion-item button @click="$router.push('/admin/location-claims')">
+              <div class="icon-box" slot="start">
+                <ion-icon :icon="icons.ribbonOutline" />
+              </div>
+              <ion-label>{{ $t('admin.claims.title') }}</ion-label>
+              <ion-badge v-if="pendingClaimsCount > 0" color="danger" slot="end" style="border-radius: 8px;">{{ pendingClaimsCount }}</ion-badge>
+            </ion-item>
+
+            <ion-item button @click="$router.push('/admin/location-edit-requests')">
+              <div class="icon-box" slot="start">
+                <ion-icon :icon="icons.createOutline" />
+              </div>
+              <ion-label>{{ $t('admin.editRequests.title') }}</ion-label>
+              <ion-badge v-if="pendingEditRequestsCount > 0" color="danger" slot="end" style="border-radius: 8px;">{{ pendingEditRequestsCount }}</ion-badge>
+            </ion-item>
+
+            <ion-item button @click="goToMasterData">
+              <div class="icon-box" slot="start">
+                <ion-icon :icon="icons.constructOutline" />
+              </div>
+              <ion-label>{{ $t('profile.admin.masterData') }}</ion-label>
+            </ion-item>
+
+            <ion-item button @click="$router.push('/admin/duplicate-products')">
+              <div class="icon-box" slot="start">
+                <ion-icon :icon="icons.copyOutline" />
+              </div>
+              <ion-label>Merge Duplicate Products</ion-label>
+            </ion-item>
+
+            <ion-item button @click="$router.push('/admin/referrals')">
+              <div class="icon-box" slot="start">
+                <ion-icon :icon="icons.giftOutline" />
+              </div>
+              <ion-label>Referrals</ion-label>
+            </ion-item>
+          </ion-list>
+        </ion-card>
+
+        <h3 class="menu-section-label admin-label">{{ $t('profile.admin.sections.system') }}</h3>
+        <ion-card class="menu-card">
+          <ion-list lines="none">
+            <ion-item button @click="goToPointsLogs">
+              <div class="icon-box" slot="start">
+                <ion-icon :icon="icons.listOutline" />
+              </div>
+              <ion-label>{{ $t('profile.admin.pointsLogs') }}</ion-label>
+            </ion-item>
+
+            <ion-item button @click="goToScanLogs">
+              <div class="icon-box" slot="start">
+                <ion-icon :icon="icons.listOutline" />
+              </div>
+              <ion-label>{{ $t('profile.admin.scanLogs') }}</ion-label>
+            </ion-item>
+
+            <ion-item button @click="goToAuditLog">
+              <div class="icon-box" slot="start">
+                <ion-icon :icon="icons.shieldCheckmarkOutline" />
+              </div>
+              <ion-label>{{ $t('profile.admin.auditLog') }}</ion-label>
+            </ion-item>
+
+            <ion-item button @click="goToAdminTools">
+              <div class="icon-box" slot="start">
+                <ion-icon :icon="icons.constructOutline" />
+              </div>
+              <ion-label>{{ $t('profile.admin.tools') }}</ion-label>
+            </ion-item>
+
+            <ion-item button @click="goToSurveyResults">
+              <div class="icon-box" slot="start">
+                <ion-icon :icon="icons.clipboardOutline" />
+              </div>
+              <ion-label>{{ $t('profile.admin.survey') }}</ion-label>
+            </ion-item>
+
+            <ion-item button @click="goToAnalyticsDashboard">
+              <div class="icon-box" slot="start">
+                <ion-icon :icon="icons.listOutline" />
+              </div>
+              <ion-label>{{ $t('profile.admin.analytics') }}</ion-label>
+            </ion-item>
+          </ion-list>
+        </ion-card>
+        </template>
+
+
+        <!-- Dedicated Contributor Application Modal -->
+        <ion-modal :is-open="showContributorAppModal" @didDismiss="showContributorAppModal = false">
+          <ion-header>
+            <ModalHeader title="Become a Contributor" @close="showContributorAppModal = false" />
+          </ion-header>
+          
+          <ion-content class="ion-padding">
+            <div class="ion-text-center ion-padding-bottom">
+              <div style="font-size: 48px; margin-bottom: 12px;">🌟</div>
+              <h2 style="font-weight: 700; margin-bottom: 8px;">Dedicated Contributor</h2>
+              <p style="color: var(--ion-color-medium); font-size: 14px;">
+                Apply to become a verified contributor. You'll get unlimited daily product & location contributions, and auto-approved submissions!
+              </p>
+            </div>
+
+            <div v-if="contributorAppStatus === 'pending'" style="background: var(--ion-color-light); border-radius: 12px; padding: 16px; margin-top: 16px; text-align: center;">
+              <span style="font-size: 14px; color: var(--ion-color-dark); font-weight: 600; display: block; margin-bottom: 4px;">
+                ⏳ Application Pending
+              </span>
+              <p style="font-size: 13px; color: var(--ion-color-medium); margin: 0; line-height: 1.4;">
+                We are currently reviewing your application. Thank you for your patience!
+              </p>
+            </div>
+
+            <div v-else-if="contributorAppStatus === 'rejected'" style="background: rgba(var(--ion-color-danger-rgb), 0.1); border-radius: 12px; padding: 16px; margin-top: 16px; text-align: center;">
+              <span style="font-size: 14px; color: var(--ion-color-danger); font-weight: 600; display: block; margin-bottom: 4px;">
+                ❌ Previous Application Declined
+              </span>
+              <p style="font-size: 13px; color: var(--ion-color-medium); margin: 0; line-height: 1.4; margin-bottom: 12px;">
+                Your previous application was not approved. You can submit a new request below if your circumstances have changed.
+              </p>
+            </div>
+
+            <div v-if="contributorAppStatus !== 'pending'">
+              <ion-item lines="none" style="--background: transparent; margin-bottom: 16px; margin-top: 16px;">
+                <ion-textarea
+                  v-model="appReason"
+                  label="Why do you want to contribute more to Halal Formosa?"
+                  label-placement="stacked"
+                  placeholder="Let us know how you plan to help (e.g. 'I want to translate ingredients for local stores' or 'I buy many foreign items and scan daily')."
+                  :rows="5"
+                  required
+                  style="border: 1px solid var(--ion-color-light); border-radius: 8px; padding: 8px;"
+                />
+              </ion-item>
+
+              <ion-button expand="block" color="carrot" :disabled="appSubmitting || !appReason.trim()" @click="submitProfileContributorApp">
+                <ion-spinner v-if="appSubmitting" name="crescent" style="zoom: 0.6; margin-right: 8px;" />
+                Submit Application
+              </ion-button>
+            </div>
+          </ion-content>
+        </ion-modal>
+
+        <!-- Information & About Section -->
+        <h3 class="menu-section-label">{{ $t('profile.sections.about') }}</h3>
+        <ion-card class="menu-card">
+          <ion-list lines="none">
+            <ion-item button @click="goToLegal">
+              <div class="icon-box" slot="start">
+                <ion-icon :icon="icons.documentTextOutline" />
+              </div>
+              <ion-label>{{ $t('profile.legal') }}</ion-label>
+            </ion-item>
+
+            <ion-item button @click="goToCredits">
+              <div class="icon-box" slot="start">
+                <ion-icon :icon="icons.peopleOutline" />
+              </div>
+              <ion-label>{{ $t('profile.credits') }}</ion-label>
+            </ion-item>
+          </ion-list>
+        </ion-card>
+
+        <!-- Social Media Card -->
+        <ion-card>
+          <div class="social-grid-premium">
+            <a class="social-item-premium" @click.prevent="logAndOpen('instagram', 'https://www.instagram.com/halalformosa/')">
+              <ion-icon :icon="icons.logoInstagram" class="social-icon-btn" style="color: #E1306C" />
+              <span class="social-label-premium">{{ $t('profile.social.instagram') }}</span>
+            </a>
+            
+            <a class="social-item-premium" @click.prevent="logAndOpen('line', 'https://line.me/R/ti/p/@975schpu')">
+              <img src="/social-logo/line-logo.png" alt="LINE" class="social-img-premium" />
+              <span class="social-label-premium">{{ $t('profile.social.line') }}</span>
+            </a>
+            
+            <a class="social-item-premium" @click.prevent="logAndOpen('tiktok', 'https://www.tiktok.com/@halalformosa')">
+              <ion-icon :icon="icons.logoTiktok" class="social-icon-btn" style="color: #000000" />
+              <span class="social-label-premium">{{ te('profile.social.tiktok') ? $t('profile.social.tiktok') : 'TikTok' }}</span>
+            </a>
+
+            <a class="social-item-premium" @click.prevent="logAndOpen('facebook', 'https://www.facebook.com/halalformosa/')">
+              <ion-icon :icon="icons.logoFacebook" class="social-icon-btn" style="color: #1877F2" />
+              <span class="social-label-premium">{{ te('profile.social.facebook') ? $t('profile.social.facebook') : 'Facebook' }}</span>
+            </a>
+
+            <a class="social-item-premium" style="grid-column: span 2;" @click.prevent="logAndOpen('web', 'https://halalformosa.com')">
+              <ion-icon :icon="icons.globeOutline" class="social-icon-btn" style="color: var(--ion-color-carrot)" />
+              <span class="social-label-premium">{{ $t('profile.social.website') }}</span>
+            </a>
+          </div>
+        </ion-card>
+
+        <!-- App Info (Subtle) -->
+        <div class="system-section fade-in">
+          <p class="app-info-text">
+            {{ $t('profile.appName') }} • v{{ appVersion || '1.0.0' }}
+          </p>
+          
+          <button v-if="userEmail" class="logout-button" @click.prevent="handleLogout">
+            <ion-icon :icon="icons.logOutOutline" />
+            <span>{{ $t('profile.logout') }}</span>
+          </button>
+        </div>
+      </template>
+
+      <!-- Business (merchant) subscription details -->
+      <ion-modal :is-open="showBusinessSubModal" @didDismiss="showBusinessSubModal = false" :initial-breakpoint="0.55" :breakpoints="[0, 0.55, 1]">
+        <ion-content class="ion-padding">
+          <div class="bsub-head">
+            <div class="bsub-icon" :class="'merchant-' + businessTier">
+              <ion-icon :icon="icons.storefrontOutline" />
+            </div>
+            <div>
+              <h2 class="bsub-title">{{ $t('profile.merchantTier.' + businessTier) }}</h2>
+              <div class="bsub-status" :class="{ warn: businessFromStore && !businessWillRenew }">
+                <ion-icon :icon="businessFromStore && !businessWillRenew ? icons.alertCircleOutline : icons.checkmarkCircle" />
+                <span>{{ businessFromStore && !businessWillRenew ? $t('profile.businessSub.cancelsSoon') : $t('profile.businessSub.active') }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="bsub-rows">
+            <div class="bsub-row">
+              <span>{{ $t('profile.businessSub.plan') }}</span>
+              <strong>{{ $t('profile.merchantTier.' + businessTier) }}</strong>
+            </div>
+            <template v-if="businessFromStore">
+              <div class="bsub-row">
+                <span>{{ $t('profile.businessSub.autoRenew') }}</span>
+                <strong :class="businessWillRenew ? 'ok' : 'warn'">{{ businessWillRenew ? $t('profile.businessSub.on') : $t('profile.businessSub.off') }}</strong>
+              </div>
+              <div class="bsub-row">
+                <span>{{ businessWillRenew ? $t('profile.businessSub.renewsOn') : $t('profile.businessSub.accessUntil') }}</span>
+                <strong>{{ businessExpirationLabel }}</strong>
+              </div>
+            </template>
+            <div v-else class="bsub-row">
+              <span>{{ $t('profile.businessSub.source') }}</span>
+              <strong>{{ $t('profile.businessSub.complimentary') }}</strong>
+            </div>
+          </div>
+
+          <template v-if="businessFromStore">
+            <ion-button v-if="isNative" expand="block" color="carrot" class="bsub-manage" @click="openManageSubscription">
+              {{ $t('profile.businessSub.manage') }}
+            </ion-button>
+            <p class="bsub-note">{{ isNative ? $t('profile.businessSub.cancelNote') : $t('profile.businessSub.webNote') }}</p>
+          </template>
+          <p v-else class="bsub-note">{{ $t('profile.businessSub.complimentaryNote') }}</p>
+
+          <ion-button expand="block" fill="clear" color="medium" @click="showBusinessSubModal = false">
+            {{ $t('common.close') }}
+          </ion-button>
+        </ion-content>
+      </ion-modal>
     </ion-content>
   </ion-page>
 </template>
@@ -358,12 +983,14 @@
 import {computed, onBeforeUnmount, onMounted, ref, watch} from "vue";
 import {useRouter} from "vue-router";
 import {supabase} from "@/plugins/supabaseClient";
+import {MERCHANT_STORE_PUBLIC_COLUMNS} from "@/utils/merchantStore";
 
 // ✅ Ionic components
 import {
   IonBadge,
   IonButton,
   IonButtons,
+  IonModal,
   IonCard,
   IonCardContent,
   IonCardHeader,
@@ -374,6 +1001,7 @@ import {
   IonItem,
   IonLabel,
   IonList,
+  IonListHeader,
   IonNote,
   IonPage,
   IonProgressBar,
@@ -381,37 +1009,82 @@ import {
   IonText,
   IonTitle,
   IonToolbar,
+  IonSpinner,
+  IonTextarea,
   onIonViewWillEnter,
-  onIonViewDidEnter
+  onIonViewDidEnter,
+  alertController
 } from "@ionic/vue";
+import AppHeader from "@/components/AppHeader.vue";
+import ModalHeader from "@/components/ModalHeader.vue";
+import CosmeticBadge from "@/components/CosmeticBadge.vue";
+import { useBadgeCosmetics } from "@/composables/useBadgeCosmetics";
+import { useReferrals } from "@/composables/useReferrals";
 
 import {
   constructOutline,
+  copyOutline,
   createOutline,
-  documentTextOutline, globeOutline,
+  documentTextOutline,
+  globeOutline,
+  briefcaseOutline,
+  ribbonOutline,
   listOutline,
   logoInstagram,
+  logoTiktok,
+  logoFacebook,
   peopleOutline,
   personCircleOutline,
-  settingsOutline, bookmarkOutline
+  settingsOutline,
+  bookmarkOutline,
+  locationOutline,
+  logOutOutline,
+  checkmarkCircle,
+  chevronDown,
+  chevronUp,
+  bagHandleOutline,
+  chatbubblesOutline,
+  storefrontOutline,
+  timeOutline,
+  closeCircleOutline,
+  flagOutline,
+  refreshOutline,
+  alertCircleOutline,
+  keyOutline,
+  helpCircleOutline,
+  colorPaletteOutline,
+  trophyOutline,
+  shieldCheckmarkOutline,
+  clipboardOutline,
+  linkOutline,
+  diamondOutline,
+  libraryOutline,
+  giftOutline
 } from "ionicons/icons";
 
 // ✅ Composables
 import {
   donorBadge, 
+  donorType,
   isAdmin, 
+  isContributor,
+  userRole,
   loadUserProfile, 
   resetUserProfileState, 
   loadDonorFromCache, 
   editBio, 
   editDOB, 
   editGender, 
-  editNationality
+  editNationality,
+  editAvatarUrl,
+  editDisplayName,
+  isProfileComplete
 } from "@/composables/userProfile";
 import {Subscription} from "@supabase/supabase-js";
 import {usePoints} from "@/composables/usePoints";
 import {xpForLevel} from "@/utils/xp"
 import {Capacitor} from "@capacitor/core";
+import fallbackCountries from "@/composables/countries.json";
 
 // Services
 import {CustomerInfo, Purchases} from "@revenuecat/purchases-capacitor";
@@ -419,30 +1092,86 @@ import {RevenueCatUI, PAYWALL_RESULT} from '@revenuecat/purchases-capacitor-ui';
 import {refreshSubscriptionStatus} from "@/composables/useSubscriptionStatus";
 import {toastController} from "@ionic/vue";
 import { ActivityLogService } from '@/services/ActivityLogService'
+import { logPaywallCancelled, logPaywallFailed, logPaywallRestored } from '@/utils/paywallLogging'
+import { MerchantService, MerchantApplication } from '@/services/MerchantService'
+import { ClaimService } from '@/services/ClaimService'
 import { useI18n } from 'vue-i18n'
 import { useNotifier } from "@/composables/useNotifier";
 
-const { t } = useI18n()
+const { t, te } = useI18n()
 const { notifyEvent } = useNotifier();
-const pendingLocationsCount = ref(0)
+// const pendingLocationsCount = ref(0)
 
-interface RcProduct {
-  identifier: string;
-  price: number;
-  priceString: string;
-  title: string;
-  description: string;
-  currencyCode?: string;
+// Icons for use in template
+const icons = {
+  clipboardOutline,
+  closeCircleOutline, 
+  timeOutline, 
+  storefrontOutline,
+  settingsOutline,
+  bagHandleOutline,
+  listOutline,
+  chatbubblesOutline,
+  peopleOutline,
+  constructOutline,
+  copyOutline,
+  documentTextOutline,
+  personCircleOutline,
+  bookmarkOutline,
+  locationOutline,
+  globeOutline,
+  briefcaseOutline,
+  ribbonOutline,
+  logOutOutline,
+  checkmarkCircle,
+  logoInstagram,
+  logoTiktok,
+  logoFacebook,
+  createOutline,
+  refreshOutline,
+  alertCircleOutline,
+  keyOutline,
+  flagOutline,
+  helpCircleOutline,
+  colorPaletteOutline,
+  trophyOutline,
+  shieldCheckmarkOutline,
+  linkOutline,
+  diamondOutline,
+  libraryOutline,
+  giftOutline
 }
-
 
 // @ts-expect-error – injected global
 const appVersion = __APP_VERSION__;
 const isNative = Capacitor.isNativePlatform();
+const isStoreUnderConstruction = computed(() => import.meta.env.VITE_STORE_UNDER_CONSTRUCTION === 'true')
 const userEmail = ref("");
 const userDisplayName = ref("");
 const userAvatar = ref("");
 const pendingCount = ref(0);
+const pendingLocationsCount = ref(0);
+const pendingLocationReportsCount = ref(0);
+const pendingProductReportsCount = ref(0);
+const pendingMerchantAppsCount = ref(0);
+const pendingClaimsCount = ref(0);
+const pendingEditRequestsCount = ref(0);
+const pendingContributorAppsCount = ref(0);
+const hasOwnedBusinesses = ref(false);
+const businessSub = ref<{ tier: 'free' | 'bronze' | 'silver' | 'gold'; source: string; status: string; expires_at: string | null } | null>(null);
+const businessTier = computed<'free' | 'bronze' | 'silver' | 'gold'>(() =>
+  businessSub.value && businessSub.value.status === 'active' ? businessSub.value.tier : 'free'
+);
+const showBusinessSubModal = ref(false);
+function openBusinessSubModal() { showBusinessSubModal.value = true; }
+const merchantStore = ref<any | null>(null);
+const merchantApplication = ref<MerchantApplication | null>(null);
+const myProductsCount = ref<number | null>(null);
+const myLocationsCount = ref<number | null>(null);
+const myProductReportsCount = ref<number | null>(null);
+const myLocationReportsCount = ref<number | null>(null);
+const showcaseAchievement = ref<{ category: string; tier: number; icon: string } | null>(null);
+const unlockedAchievementsCount = ref(0);
 
 const loadingProfile = ref(true)     // avatar, name, email
 const loadingAdmin = ref(false)      // admin-only data
@@ -452,11 +1181,27 @@ const router = useRouter();
 
 const userBio = editBio;
 const userNationality = editNationality;
-const donationProduct = ref<RcProduct | null>(null);
 const paywallOpening = ref(false);
+const showBenefits = ref(false);
 
 // ✅ Points composable
 const {currentPoints, fetchCurrentPoints} = usePoints();
+
+// 🎨 Cosmetics composable
+const { equippedCosmetics, fetchOwnedCosmetics, spendablePoints, fetchSpendablePoints } = useBadgeCosmetics();
+const { inviteMenuLabel, loadReferralConfig } = useReferrals();
+const spentPoints = computed(() => {
+  const total = currentPoints.value || 0;
+  const spendable = spendablePoints.value || 0;
+  return Math.max(0, total - spendable);
+});
+const hasFrameOrOutline = computed(() =>
+  equippedCosmetics.value.some(c => c?.category === 'frame' || c?.category === 'outline')
+);
+
+const isAboutMeIncomplete = computed(() => {
+  return !editDOB.value || !editNationality.value || !editGender.value || !editBio.value;
+});
 
 const customerInfo = ref<CustomerInfo | null>(null)
 
@@ -464,7 +1209,13 @@ const entitlement = computed(() =>
     customerInfo.value?.entitlements?.active?.['Halal Formosa Pro'] ?? null
 )
 
-const isSubscribed = computed(() => Boolean(entitlement.value))
+const isSubscribed = computed(() => {
+  if (Boolean(entitlement.value)) return true;
+  if (!Capacitor.isNativePlatform()) {
+    return donorType.value === "Pro" || donorType.value?.toLowerCase().includes("pro");
+  }
+  return false;
+})
 
 const willRenew = computed(() => entitlement.value?.willRenew ?? false)
 
@@ -476,13 +1227,7 @@ const expirationDate = computed(() => {
   )
 })
 
-const needsProfileCompletion = ref(false)
 
-watch(needsProfileCompletion, (v) => {
-  if (!v) return
-
-  router.replace({ name: 'EditProfile' })
-})
 
 
 let authSubscription: Subscription | null = null;
@@ -501,10 +1246,56 @@ const level = computed(() => {
 const nextLevelXp = computed(() => xpForLevel(level.value + 1))
 const prevLevelXp = computed(() => xpForLevel(level.value))
 
+// 🏅 Badge row: only show the first 2 badges, collapse the rest into a "+N" pill
+const MAX_VISIBLE_BADGES = 2
+const showAllBadges = ref(false)
+
+const badgeOrder = computed(() => {
+  const keys: string[] = []
+  if (isAdmin.value) keys.push('admin')
+  if (isSubscribed.value) keys.push('pro')
+  if (!isSubscribed.value) keys.push('donor')
+  if (isSubscribed.value && isContributor.value) keys.push('contributor')
+  if (businessTier.value !== 'free') keys.push('merchant')
+  if (showcaseAchievement.value) keys.push('achievement')
+  else if (unlockedAchievementsCount.value > 0) keys.push('achievementCta')
+  return keys
+})
+
+const visibleBadgeKeys = computed(() => {
+  const keys = showAllBadges.value ? badgeOrder.value : badgeOrder.value.slice(0, MAX_VISIBLE_BADGES)
+  return new Set(keys)
+})
+
+const hiddenBadgeCount = computed(() =>
+  showAllBadges.value ? 0 : Math.max(0, badgeOrder.value.length - MAX_VISIBLE_BADGES)
+)
+
+function isBadgeVisible(key: string) {
+  return visibleBadgeKeys.value.has(key)
+}
+
+function formatXp(value: number): string {
+  const n = value || 0
+  if (n >= 10000) {
+    return new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 }).format(n)
+  }
+  return n.toLocaleString()
+}
+
 const progressPercent = computed(() => {
   const points = currentPoints.value || 0
   return ((points - prevLevelXp.value) / (nextLevelXp.value - prevLevelXp.value)) * 100
 })
+
+async function showXpInfo() {
+  const alert = await alertController.create({
+    header: t('profile.xp.infoTitle', 'About Experience (XP)'),
+    message: t('profile.xp.infoMessage', 'XP points represent credits given to you by Halal Formosa for your actions and contributions (like scanning products, submitting items, and reporting), which will also grade you on the leaderboard. In the future, these points can be traded for various conveniences, such as partner discounts, exclusive promos, and other customization options!'),
+    buttons: [t('common.ok', 'OK')]
+  });
+  await alert.present();
+}
 
 const countriesList = ref<any[]>([]);
 const resolvedNationality = ref<string | null>(null);
@@ -516,14 +1307,7 @@ const refreshCustomerInfo = async () => {
 }
 
 async function fetchCountries() {
-  if (countriesList.value.length > 0) return; // ✅ Cache check
-  try {
-    const response = await fetch("https://restcountries.com/v3.1/all?fields=name,cca2,flags");
-    if (!response.ok) throw new Error("Failed to fetch countries");
-    countriesList.value = await response.json();
-  } catch (err) {
-    console.error("fetchCountries failed:", err);
-  }
+  countriesList.value = fallbackCountries;
 }
 
 // ✅ Resolve flag when countries list arrives
@@ -537,6 +1321,14 @@ watch(countriesList, () => {
   }
 }, { immediate: true });
 
+watch([editAvatarUrl, () => user.value], ([newAvatar, newUser]) => {
+  userAvatar.value = newAvatar || newUser?.user_metadata?.avatar_url || "";
+}, { immediate: true });
+
+watch([editDisplayName, () => user.value], ([newName, newUser]) => {
+  userDisplayName.value = newName || newUser?.user_metadata?.full_name || newUser?.user_metadata?.display_name || "";
+}, { immediate: true });
+
 
 async function fetchPendingCount() {
   if (!isAdmin.value) {
@@ -547,10 +1339,25 @@ async function fetchPendingCount() {
   const {count, error} = await supabase
       .from("products")
       .select("*", {count: "exact", head: true})
-      .eq("approved", false);
+      .eq("approved", false)
+      .eq("is_archived", false);
 
   if (!error && count !== null) {
     pendingCount.value = count;
+  }
+}
+
+async function fetchMerchantStore(ownerId: string) {
+  const { data, error } = await supabase
+    .from("merchant_stores")
+    .select(MERCHANT_STORE_PUBLIC_COLUMNS)
+    .eq("user_id", ownerId)
+    .maybeSingle();
+
+  if (!error && data) {
+    merchantStore.value = data;
+  } else {
+    merchantStore.value = null;
   }
 }
 
@@ -558,11 +1365,176 @@ async function fetchPendingLocationsCount() {
   if (!isAdmin.value) return
 
   const { count } = await supabase
-      .from('locations')
-      .select('*', { count: 'exact', head: true })
-      .eq('approved', false)
+    .from('locations')
+    .select('*', { count: 'exact', head: true })
+    .eq('approved', false)
+    .eq('is_archived', false)
 
   pendingLocationsCount.value = count || 0
+}
+
+async function fetchPendingMerchantAppsCount() {
+  if (!isAdmin.value) return
+  pendingMerchantAppsCount.value = await MerchantService.getPendingApplicationsCount()
+}
+
+async function fetchPendingClaimsCount() {
+  if (!isAdmin.value) return
+  pendingClaimsCount.value = await ClaimService.getPendingClaimsCount()
+}
+
+async function fetchPendingEditRequestsCount() {
+  if (!isAdmin.value) return
+  pendingEditRequestsCount.value = await ClaimService.getPendingEditRequestsCount()
+}
+
+async function fetchPendingContributorAppsCount() {
+  if (!isAdmin.value) return
+  const { count } = await supabase
+    .from('contributor_applications')
+    .select('*', { count: 'exact', head: true })
+    .eq('status', 'pending')
+  pendingContributorAppsCount.value = count || 0
+}
+
+const contributorAppStatus = ref<string | null>(null)
+const showContributorAppModal = ref(false)
+const appReason = ref('')
+const appSubmitting = ref(false)
+
+async function fetchContributorAppStatus() {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return
+  const { data, error } = await supabase
+    .from('contributor_applications')
+    .select('status')
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: false })
+    .limit(1)
+  if (!error && data && data.length > 0) {
+    contributorAppStatus.value = data[0].status
+  }
+}
+
+async function submitProfileContributorApp() {
+  if (!appReason.value.trim()) return
+  appSubmitting.value = true
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    const { error } = await supabase
+      .from('contributor_applications')
+      .insert({
+        user_id: user.id,
+        reason: appReason.value,
+        status: 'pending'
+      })
+    if (error) throw error
+    contributorAppStatus.value = 'pending'
+    showContributorAppModal.value = false
+
+    // Fetch profile for user metadata
+    const { data: profile } = await supabase
+      .from('user_profiles')
+      .select('display_name')
+      .eq('id', user.id)
+      .maybeSingle()
+
+    const userName = profile?.display_name || user.email || 'Anonymous'
+    const userEmail = user.email || 'N/A'
+
+    await notifyEvent(
+      'contributor_application_needs_review',
+      '🔍 Contributor Application Needs Review',
+      `User ${userName} (${userEmail}) has applied to become a Dedicated Contributor.\nReason: ${appReason.value}`,
+      undefined,
+      {
+        user_id: user.id,
+        target_role: 'admin',
+        isNative: true
+      },
+      ['discord', 'onesignal']
+    )
+    
+    const toast = await toastController.create({
+      message: '✅ Application submitted successfully!',
+      duration: 2000,
+      color: 'success'
+    });
+    await toast.present();
+  } catch (err) {
+    console.error('Failed to submit contributor app:', err)
+  } finally {
+    appSubmitting.value = false
+  }
+}
+
+async function fetchHasOwnedBusinesses(userId: string) {
+  const { count } = await supabase
+    .from('location_owners')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', userId)
+  hasOwnedBusinesses.value = (count ?? 0) > 0
+}
+
+// Account-level business (merchant) tier — separate from consumer Pro; a user can hold both.
+async function fetchBusinessTier(userId: string) {
+  const { data } = await supabase
+    .from('business_subscriptions')
+    .select('tier, source, status, expires_at')
+    .eq('user_id', userId)
+    .maybeSingle()
+  businessSub.value = (data as typeof businessSub.value) ?? null
+}
+
+async function fetchPendingLocationReportsCount() {
+  if (!isAdmin.value) return
+  const { count } = await supabase
+    .from('location_reports')
+    .select('*', { count: 'exact', head: true })
+    .eq('status', 'pending')
+  pendingLocationReportsCount.value = count || 0
+}
+
+async function fetchPendingProductReportsCount() {
+  if (!isAdmin.value) return
+  const { count } = await supabase
+    .from('product_reports')
+    .select('*', { count: 'exact', head: true })
+    .eq('status', 'pending')
+  pendingProductReportsCount.value = count || 0
+}
+
+async function fetchMyContributionsCount(userId: string) {
+  const [productsRes, locationsRes, productReportsRes, locationReportsRes] = await Promise.all([
+    supabase.from('products').select('*', { count: 'exact', head: true }).eq('added_by', userId),
+    supabase.from('locations').select('*', { count: 'exact', head: true }).eq('created_by', userId),
+    supabase.from('product_reports').select('*', { count: 'exact', head: true }).eq('reported_by', userId),
+    supabase.from('location_reports').select('*', { count: 'exact', head: true }).eq('reported_by', userId)
+  ]);
+
+  myProductsCount.value = productsRes.count;
+  myLocationsCount.value = locationsRes.count;
+  myProductReportsCount.value = productReportsRes.count;
+  myLocationReportsCount.value = locationReportsRes.count;
+}
+
+async function fetchShowcaseAchievement(userId: string) {
+  const [{ data }, { count }] = await Promise.all([
+    supabase
+      .from('user_profiles')
+      .select('achievement_definitions(category, tier, icon)')
+      .eq('id', userId)
+      .single(),
+    supabase
+      .from('user_achievements')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', userId),
+  ]);
+
+  const def = (data as any)?.achievement_definitions;
+  showcaseAchievement.value = def ? { category: def.category, tier: def.tier, icon: def.icon } : null;
+  unlockedAchievementsCount.value = count ?? 0;
 }
 
 const renewalMessage = computed(() => {
@@ -590,6 +1562,20 @@ const openManageSubscription = () => {
   }
 }
 
+// Business subscription details (RevenueCat entitlement backing the merchant tier).
+const businessEntitlement = computed(() => {
+  const active = customerInfo.value?.entitlements?.active
+  if (!active) return null
+  return active['business_gold'] ?? active['business_silver'] ?? active['business_bronze'] ?? null
+})
+const businessWillRenew = computed(() => businessEntitlement.value?.willRenew ?? false)
+const businessFromStore = computed(() => businessSub.value?.source === 'revenuecat')
+const businessExpirationLabel = computed(() => {
+  const iso = businessEntitlement.value?.expirationDate ?? businessSub.value?.expires_at ?? null
+  if (!iso) return '—'
+  return new Date(iso).toLocaleDateString(useI18n().locale.value, { year: 'numeric', month: 'long', day: 'numeric' })
+})
+
 const isSyncing = ref(false);
 
 async function refreshAllData(userId: string) {
@@ -599,13 +1585,39 @@ async function refreshAllData(userId: string) {
     // Authorized profile and points fetch in parallel
     await Promise.all([
       loadUserProfile(userId),
-      fetchCurrentPoints(userId)
+      fetchCurrentPoints(userId),
+      fetchSpendablePoints(userId),
+      fetchOwnedCosmetics(userId),
+      fetchMerchantStore(userId),
+      (async () => {
+        merchantApplication.value = await MerchantService.getUserApplication()
+      })(),
+      (async () => {
+        if (isAdmin.value) {
+          await Promise.all([
+            fetchPendingCount(),
+            fetchPendingLocationsCount(),
+            fetchPendingMerchantAppsCount(),
+            fetchPendingClaimsCount(),
+            fetchPendingEditRequestsCount(),
+            fetchPendingLocationReportsCount(),
+            fetchPendingProductReportsCount(),
+            fetchPendingContributorAppsCount()
+          ])
+        }
+      })(),
+      fetchHasOwnedBusinesses(userId),
+      fetchBusinessTier(userId),
+      fetchMyContributionsCount(userId),
+      fetchShowcaseAchievement(userId),
+      (async () => {
+        if (!isAdmin.value && !isContributor.value) {
+          await fetchContributorAppStatus()
+        }
+      })()
     ]);
 
-    // Check for profile completion
-    if (!editDOB.value || !editNationality.value || !editGender.value) {
-      needsProfileCompletion.value = true;
-    }
+
   } finally {
     isSyncing.value = false;
     loadingProfile.value = false;
@@ -657,6 +1669,7 @@ async function logRevenueCatStatus() {
 onMounted(async () => {
   try {
     fetchCountries();
+    loadReferralConfig();
 
     const {data} = await supabase.auth.getUser();
     if (data?.user) {
@@ -677,6 +1690,7 @@ onMounted(async () => {
         userDisplayName.value = "";
         userAvatar.value = "";
         currentPoints.value = null;
+        merchantStore.value = null;
         return;
       }
 
@@ -692,7 +1706,15 @@ onMounted(async () => {
         if (isAdmin.value) {
           fetchPendingCount();
           fetchPendingLocationsCount();
+          fetchPendingLocationReportsCount();
+          fetchPendingProductReportsCount();
+          fetchPendingContributorAppsCount();
+        } else {
+          fetchContributorAppStatus();
         }
+        
+        fetchPendingOrdersCount();
+        fetchUnreadChatsCount();
       }
     });
 
@@ -706,38 +1728,10 @@ onMounted(async () => {
   }
 });
 
-async function donate() {
-  ActivityLogService.log('donation_click', {
-    product: donationProduct.value?.identifier ?? null
-  })
-
-  const offerings = await Purchases.getOfferings();
-
-  if (!offerings.current) return;
-
-  const pkg = offerings.current.availablePackages.find(
-      (p) => p.identifier === "small_support"
-  );
-
-  if (!pkg) return;
-
-  try {
-    await Purchases.purchasePackage({aPackage: pkg});
-    alert(t('profile.supportSuccess'));
-
-    ActivityLogService.log('donation_success', {
-      product: donationProduct.value?.identifier ?? null
-    })
-
-  } catch (err) {
-    console.error("Donation failed:", err);
-  }
-}
-
-async function presentPaywall(): Promise<boolean> {
+async function presentPaywall(): Promise<PAYWALL_RESULT> {
   if (!Capacitor.isNativePlatform()) {
     console.warn("[RC] Paywall can only run on native (Android/iOS).");
-    return false;
+    return PAYWALL_RESULT.ERROR;
   }
 
   try {
@@ -747,32 +1741,11 @@ async function presentPaywall(): Promise<boolean> {
 
     console.log("[RC] Paywall Result:", result);
 
-    switch (result) {
-      case PAYWALL_RESULT.PURCHASED:
-        console.log("[RC] 🎉 User purchased subscription!");
-        return true;
-
-      case PAYWALL_RESULT.RESTORED:
-        console.log("[RC] 🔄 Subscription restored!");
-        return true;
-
-      case PAYWALL_RESULT.CANCELLED:
-        console.log("[RC] User cancelled paywall.");
-        return false;
-
-      case PAYWALL_RESULT.ERROR:
-        console.log("[RC] Paywall error.");
-        return false;
-
-      case PAYWALL_RESULT.NOT_PRESENTED:
-      default:
-        console.log("[RC] Paywall not presented.");
-        return false;
-    }
+    return result;
 
   } catch (e) {
     console.error("[RC] Paywall failed:", e);
-    return false;
+    return PAYWALL_RESULT.ERROR;
   }
 }
 
@@ -805,8 +1778,12 @@ function goToSavedItems() {
   router.push('/profile/saved-items')
 }
 
+function goToSavedLocations() {
+  router.push('/profile/saved-locations')
+}
+
 async function openProPaywall() {
-  ActivityLogService.log('pro_paywall_open')
+  ActivityLogService.log('pro_paywall_open', { source: 'profile_view' })
 
   // ⛔ Web / PWA guard
   if (!Capacitor.isNativePlatform()) {
@@ -827,8 +1804,12 @@ async function openProPaywall() {
     // 🔐 Safe to continue (native only)
     await ensureRevenueCatLoggedIn();
 
-    const purchased = await presentPaywall();
-    if (!purchased) return; // ✅ safe now
+    const paywallResult = await presentPaywall();
+    if (paywallResult !== PAYWALL_RESULT.PURCHASED && paywallResult !== PAYWALL_RESULT.RESTORED) {
+      if (paywallResult === PAYWALL_RESULT.CANCELLED) logPaywallCancelled('profile_view');
+      else logPaywallFailed('profile_view', paywallResult);
+      return; // ✅ safe now
+    }
 
     // 🔄 Refresh subscription state
     await refreshCustomerInfo();
@@ -840,32 +1821,55 @@ async function openProPaywall() {
     // 🔁 Soft app "restart"
     await router.replace('/profile'); // 👈 see note below
 
-    // ✅ Success feedback
+    if (paywallResult === PAYWALL_RESULT.PURCHASED) {
+      // ✅ Success feedback
+      const toast = await toastController.create({
+        message: t('profile.pro.purchaseSuccess'),
+        duration: 2500,
+        color: "success",
+        position: "bottom",
+      });
+      await toast.present();
+
+      ActivityLogService.log('pro_purchase_success', {
+        entitlement: 'Halal Formosa Pro',
+        source: 'profile_view'
+      })
+
+      await notifyEvent(
+        'pro_purchase_success',
+        '💎 New Pro Member!',
+        `User ${userEmail.value} has just subscribed to Halal Formosa Pro!`,
+        undefined,
+        {
+          source: 'profile_view',
+          email: userEmail.value,
+          user_id: user.value?.id
+        },
+        ['discord']
+      ).catch(console.error);
+    } else if (paywallResult === PAYWALL_RESULT.RESTORED) {
+      const toast = await toastController.create({
+        message: t('profile.pro.restoreSuccess', 'Subscription successfully restored'),
+        duration: 2500,
+        color: "success",
+        position: "bottom",
+      });
+      await toast.present();
+
+      logPaywallRestored('profile_view', { entitlement: 'Halal Formosa Pro' })
+    }
+
+  } catch (err: any) {
+    console.error("[RC] Error opening paywall:", err);
+    logPaywallFailed('profile_view', err);
     const toast = await toastController.create({
-      message: t('profile.pro.purchaseSuccess'),
-      duration: 2500,
-      color: "success",
+      message: t('profile.pro.errorOpening', 'Failed to load subscription options. Please try again.'),
+      duration: 3000,
+      color: "danger",
       position: "bottom",
     });
     await toast.present();
-
-    ActivityLogService.log('pro_purchase_success', {
-      entitlement: 'Halal Formosa Pro'
-    })
-
-    await notifyEvent(
-      'pro_purchase_success',
-      '💎 New Pro Member!',
-      `User ${userEmail.value} has just subscribed to Halal Formosa Pro!`,
-      undefined,
-      {
-        source: 'profile_view',
-        email: userEmail.value,
-        user_id: user.value?.id
-      },
-      ['discord']
-    ).catch(console.error);
-
   } finally {
     // 🔓 ALWAYS release the lock
     paywallOpening.value = false;
@@ -883,7 +1887,7 @@ onBeforeUnmount(() => {
 const handleLogout = async () => {
   ActivityLogService.log('profile_logout')
 
-  const {error} = await supabase.auth.signOut();
+  const {error} = await supabase.auth.signOut({ scope: 'local' });
   if (!error) {
     userEmail.value = "";
     currentPoints.value = null; // reset points
@@ -898,9 +1902,15 @@ const goToLegal = () => router.push("/legal");
 const goToCredits = () => router.push("/credits");
 const goToPointsLogs = () => router.push("/admin/points-logs");
 const goToUsersList = () => router.push("/admin/users");
+const goToMerchantApplications = () => router.push("/admin/merchant/applications");
+const goToLocationReports = () => router.push('/admin/location-reports')
+const goToProductReports = () => router.push('/admin/product-reports')
 
 const goToAnalyticsDashboard = () => router.push("/admin/analytics");
 const goToScanLogs = () => router.push("/admin/scan-logs");
+const goToAuditLog = () => router.push("/admin/audit-log");
+const goToSurveyResults = () => router.push("/admin/survey");
+const goToAdminTools = () => router.push("/admin/tools");
 
 const goToEditProfile = () => {
   ActivityLogService.log('profile_edit_open')
@@ -908,152 +1918,1013 @@ const goToEditProfile = () => {
 }
 
 const goToMasterData = () => router.push('/admin/master-data')
+const goToStoreOrders = () => router.push('/admin/store/orders')
+const goToMerchantRegistration = () => router.push('/merchant/register')
+const pendingOrdersCount = ref(0)
+const unreadChatsCount = ref(0)
+
+async function fetchPendingOrdersCount() {
+  const isGlobalAdmin = isAdmin.value
+  let query = supabase
+    .from('store_orders')
+    .select('*', { count: 'exact', head: true })
+    .eq('status', 'pending')
+  
+  if (!isGlobalAdmin && merchantStore.value) {
+    query = query.eq('store_id', merchantStore.value.id)
+  } else if (!isGlobalAdmin && !merchantStore.value) {
+    pendingOrdersCount.value = 0
+    return
+  }
+
+  const { count } = await query
+  pendingOrdersCount.value = count || 0
+}
+
+async function fetchUnreadChatsCount() {
+  const isGlobalAdmin = isAdmin.value
+  let query = supabase
+    .from('store_chat_conversations')
+    .select('store_unread')
+    .gt('store_unread', 0)
+  
+  if (!isGlobalAdmin && merchantStore.value) {
+    query = query.eq('store_id', merchantStore.value.id)
+  } else if (!isGlobalAdmin && !merchantStore.value) {
+    unreadChatsCount.value = 0
+    return
+  }
+
+  const { data } = await query
+  unreadChatsCount.value = data?.length || 0
+}
 
 </script>
 
 
 <style scoped>
-ion-toast {
-  transform: translateY(-55px);
+/* Gradients used across component */
+.profile-header-premium, .xp-section {
+  --primary-gradient: linear-gradient(135deg, var(--ion-color-carrot-tint), var(--ion-color-carrot));
+  --accent-gradient: linear-gradient(135deg, #ff9f43, var(--ion-color-carrot));
 }
 
-.profile-card {
-  margin: 1rem auto;
-  padding: 1rem 1rem;
-  border-radius: 10px;
+/* =========================
+   PROFILE HERO (gradient card wrapping avatar + name + stats)
+========================= */
+.profile-hero-card {
+  position: relative;
+  margin: 10px 12px 16px;
+  border-radius: var(--radius-xl);
+  background: linear-gradient(155deg, var(--ion-color-carrot) 0%, #a8500f 55%, #241206 100%);
+  box-shadow: var(--card-shadow-hover);
+  overflow: hidden;
 }
 
-.avatar-wrapper {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 1rem;
+.profile-hero-card.no-user {
+  background: var(--card-bg);
+  box-shadow: var(--card-shadow);
 }
 
-.avatar {
+.hero-edit-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+  --padding-start: 8px;
+  --padding-end: 8px;
+  --color: #ffffff;
+  --background: rgba(255, 255, 255, 0.16);
+  --border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  margin: 0;
+}
+
+/* Profile Header Section */
+.profile-header-premium {
+  padding: 32px 16px 24px;
+  text-align: center;
+  position: relative;
+}
+
+.avatar-container {
+  position: relative;
   width: 120px;
   height: 120px;
+  margin: 0 auto 16px;
+}
+
+.avatar-premium {
+  width: 100%;
+  height: 100%;
   border-radius: 50%;
+  border: 3px solid var(--ion-color-carrot);
   object-fit: cover;
-  border: 2px solid var(--ion-color-tertiary);
+  position: relative;
+  z-index: 1;
+  box-shadow: var(--card-shadow-hover);
 }
 
-.profile-name h2 {
-  margin: 0 0 0.25rem;
+.profile-info {
+  margin-top: 12px;
+}
+
+.profile-name-main {
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin: 0;
+  color: var(--ion-text-color);
+}
+
+.profile-hero-card:not(.no-user) .profile-name-main {
+  color: #ffffff;
+}
+
+.profile-email-sub {
+  font-size: 0.88rem;
+  color: var(--ion-color-medium);
+  margin: 4px 0 16px;
+}
+
+.profile-hero-card:not(.no-user) .profile-email-sub {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.badge-row {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.badge-row--wrap {
+  flex-wrap: wrap;
+}
+
+.badge-more {
+  --background: rgba(255, 255, 255, 0.16);
+  --color: #ffffff;
+  padding: 5px 12px;
+  border-radius: var(--radius-md);
   font-weight: 700;
-  color: var(--ion-color-tertiary);
+  font-size: 0.72rem;
+  letter-spacing: 0.3px;
+  box-shadow: none;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  flex-shrink: 0;
 }
 
-.profile-email p {
-  margin: 0 0 1.5rem;
-  font-size: 1rem;
+/* Stat row: products / places / XP */
+.hero-stats-row {
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  gap: 4px;
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.hero-stat {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+}
+
+.hero-stat-value {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.02em;
+}
+
+.hero-stat-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.75);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.hero-stat-divider {
+  width: 1px;
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.badge-pro {
+  --background: rgba(var(--ion-color-carrot-rgb), 0.12);
+  --color: var(--ion-color-carrot-shade);
+  padding: 5px 12px;
+  border-radius: var(--radius-md);
+  font-weight: 700;
+  font-size: 0.72rem;
+  letter-spacing: 0.3px;
+  box-shadow: none;
+  border: 1px solid rgba(var(--ion-color-carrot-rgb), 0.25);
+}
+
+/* On the orange hero gradient, the tinted-orange badge styles lose all
+   contrast — switch them to a translucent white chip instead. */
+.profile-hero-card:not(.no-user) .badge-pro {
+  --background: rgba(255, 255, 255, 0.16);
+  --color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.35);
+}
+
+.badge-merchant {
+  --color: #fff;
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 12px;
+  border-radius: var(--radius-md);
+  font-weight: 700;
+  font-size: 0.72rem;
+  letter-spacing: 0.3px;
+  box-shadow: none;
+}
+.badge-merchant.merchant-bronze { --background: #cd7f32; }
+.badge-merchant.merchant-silver { --background: #8a94a6; }
+.badge-merchant.merchant-gold   { --background: #c99700; }
+
+/* Business subscription detail modal */
+.bsub-head { display: flex; align-items: center; gap: 14px; margin: 4px 0 20px; }
+.bsub-icon { width: 52px; height: 52px; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 26px; flex-shrink: 0; }
+.bsub-icon.merchant-bronze { background: #cd7f32; }
+.bsub-icon.merchant-silver { background: #8a94a6; }
+.bsub-icon.merchant-gold   { background: #c99700; }
+.bsub-title { font-size: 1.3rem; font-weight: 800; margin: 0; color: var(--ion-color-dark); }
+.bsub-status { display: flex; align-items: center; gap: 5px; font-size: .82rem; font-weight: 700; color: var(--ion-color-success); margin-top: 4px; }
+.bsub-status.warn { color: var(--ion-color-warning-shade); }
+.bsub-rows { display: flex; flex-direction: column; gap: 2px; margin-bottom: 20px; }
+.bsub-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 4px; border-bottom: 1px solid var(--ion-color-light); font-size: .92rem; }
+.bsub-row span { color: var(--ion-color-medium); }
+.bsub-row strong { color: var(--ion-color-dark); font-weight: 700; }
+.bsub-row strong.ok { color: var(--ion-color-success); }
+.bsub-row strong.warn { color: var(--ion-color-warning-shade); }
+.bsub-manage { --border-radius: 12px; font-weight: 800; margin-top: 4px; }
+.bsub-note { font-size: .78rem; color: var(--ion-color-medium); text-align: center; line-height: 1.4; margin: 12px 8px 4px; }
+
+/* XP Visualization */
+.xp-section {
+  padding: 20px;
+}
+
+.xp-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 12px;
+}
+
+.level-badge {
+  background: rgba(var(--ion-color-carrot-rgb), 0.12);
+  border: 1px solid rgba(var(--ion-color-carrot-rgb), 0.22);
+  padding: 8px 16px;
+  border-radius: var(--radius-md);
+  color: var(--ion-color-carrot-shade);
+}
+
+.level-num {
+  font-size: 1.4rem;
+  font-weight: 900;
+}
+
+.level-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  opacity: 0.8;
+  display: block;
+}
+
+.xp-total {
+  text-align: right;
+}
+
+.xp-val {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--ion-color-carrot);
+  white-space: nowrap;
+}
+
+.xp-next {
+  font-size: 0.7rem;
+  color: var(--ion-color-step-500);
+  display: block;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+.xp-details-row {
+  display: flex;
+  justify-content: flex-end;
+  gap: 16px;
+  margin-top: 12px;
+  font-size: 0.85rem;
   color: var(--ion-color-medium);
 }
 
-.logout-button,
-.login-prompt ion-button {
-  margin-top: 1rem;
+.xp-details-item {
+  white-space: nowrap;
 }
 
-.login-prompt p {
-  margin-bottom: 1rem;
-  font-size: 1rem;
+.xp-details-value {
+  font-weight: 600;
+}
+
+.progress-container {
+  height: 12px;
+  background: rgba(0, 0, 0, 0.06);
+  border-radius: 6px;
+  overflow: hidden;
+  position: relative;
+  border: 1px solid rgba(0, 0, 0, 0.04);
+}
+
+.ion-palette-dark .progress-container {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--ion-color-carrot-tint), var(--ion-color-carrot));
+  border-radius: 6px;
+  transition: width 1s ease-out;
+  position: relative;
+  overflow: hidden;
+}
+
+.progress-bar-fill::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.25), transparent);
+}
+
+/* Menu List Styling */
+ion-item {
+  --padding-start: 16px;
+  --padding-end: 16px;
+  --inner-padding-top: 12px;
+  --inner-padding-bottom: 12px;
+}
+
+/* =========================
+   FLAT GROUPED-LIST SECTIONS
+   Section label sits as plain text directly on the page; only the row
+   group below it (.menu-card) is boxed — matching the reference where
+   the heading is outside the card and just the list is.
+========================= */
+.menu-section-label {
+  margin: 22px 16px 8px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
   color: var(--ion-color-medium);
 }
 
+.menu-section-label.admin-label {
+  color: var(--ion-color-carrot);
+}
+
+/* Admin's 4 label+card pairs sit right after each other — tighten the
+   gap between one card and the next section's label. */
+.menu-card + .admin-label {
+  margin-top: 18px;
+}
+
+ion-card.menu-card {
+  margin: 0 12px 4px;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--card-shadow);
+}
+
+ion-card.menu-card ion-list {
+  padding: 4px 0;
+}
+
+ion-card.menu-card ion-item {
+  --border-color: var(--card-border);
+  --inner-border-width: 0 0 1px 0;
+}
+
+ion-card.menu-card ion-item:last-of-type {
+  --inner-border-width: 0;
+}
+
+.icon-box {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 12px;
+  background: rgba(var(--ion-color-carrot-rgb), 0.1);
+  border: 1px solid rgba(var(--ion-color-carrot-rgb), 0.1);
+}
+
+.icon-box ion-icon {
+  font-size: 20px;
+  color: var(--ion-color-carrot);
+}
+
+/* Social Media */
+.social-grid-premium {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  padding: 16px;
+}
+
+.social-item-premium {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  background: var(--card-inner-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-lg);
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.social-item-premium:active {
+  background: rgba(var(--ion-color-dark-rgb), 0.1);
+  transform: translateY(2px);
+}
+
+.social-img-premium {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+
+.social-icon-btn {
+  font-size: 24px;
+}
+
+/* Boba Button Styling */
 .boba-button {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 200px;
-  height: 44px;
-  margin: 1rem auto;
-  padding: 8px 16px;
-  background-color: #ad5138;
-  color: #f8e0be;
-  border-radius: 12px;
+  background: #5d4037;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 16px;
   text-decoration: none;
-  font-weight: bold;
+  box-shadow: var(--card-shadow);
+  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  max-width: fit-content;
 }
 
-.support-thank {
-  font-size: 0.9rem;
-  color: var(--ion-color-medium);
+.boba-button:active {
+  transform: scale(0.95);
+  box-shadow: var(--card-shadow-hover);
 }
 
-.profile-toolbar {
-  --padding-start: 0;
-  --padding-end: 0;
-  --min-height: 40px;
+.boba-img-premium {
+  height: 24px;
+  width: auto;
+  margin-right: 10px;
+}
+/* Engaging Pro Upgrade UI */
+.pro-upgrade-engaging {
+  padding: 24px 16px;
+  text-align: center;
+  position: relative;
+  z-index: 1;
 }
 
-.profile-title {
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: var(--ion-color-dark);
+.pro-header-engaging {
+  margin-bottom: 20px;
 }
 
-.social-links {
+.pro-icon-hero {
+  background: rgba(255, 215, 0, 0.15);
+  width: 64px;
+  height: 64px;
+  border-radius: var(--radius-lg);
   display: flex;
+  align-items: center;
   justify-content: center;
-  gap: 16px;
-  flex-wrap: wrap;
-  margin-top: 0.5rem;
+  margin: 0 auto 12px;
+  box-shadow: var(--card-shadow);
 }
 
-.social-button {
+.pro-icon-hero ion-icon {
+  font-size: 32px;
+  color: #ca8a04;
+}
+
+.pro-title-engaging {
+  font-size: 1.5rem;
+  font-weight: 800;
+  margin: 0;
+  color: #ca8a04;
+}
+
+.pro-subtitle-engaging {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #92400e;
+  margin: 4px 0 0;
+}
+
+.pro-benefits-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.benefit-chip {
+  background: rgba(255, 215, 0, 0.1);
+  border: 1px solid rgba(250, 204, 21, 0.2);
+  padding: 6px 12px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 8px 14px;
-  border-radius: 10px;
+  font-size: 0.85rem;
   font-weight: 600;
-  text-decoration: none;
-  transition: transform 0.2s ease;
-  color: #fff;
+  color: #78350f;
 }
 
-.social-icon {
+.benefit-chip ion-icon {
+  color: #ca8a04;
+  font-size: 14px;
+}
+
+.pro-action-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Subscribed Pro Banner — fixed dark/gold "membership card" look, independent of app theme */
+.pro-active-banner {
+  padding: 24px;
+  background: linear-gradient(155deg, #26190a 0%, #1a1006 55%, #120b05 100%);
+  border: 1px solid rgba(250, 204, 21, 0.22);
+  border-radius: var(--radius-lg);
+  position: relative;
+  overflow: hidden;
+}
+
+.pro-active-sheen {
+  position: absolute;
+  inset: 0;
+  background:
+      radial-gradient(circle at 100% 0%, rgba(250, 204, 21, 0.16), transparent 55%),
+      radial-gradient(circle at 0% 100%, rgba(217, 119, 6, 0.12), transparent 50%);
+  pointer-events: none;
+}
+
+.pro-active-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  position: relative;
+  z-index: 1;
+}
+
+.pro-active-crest {
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(145deg, #fde68a, #ca8a04);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 14px rgba(202, 138, 4, 0.35);
+}
+
+.pro-active-crest ion-icon {
   font-size: 24px;
-  width: 24px;
-  height: 24px;
+  color: #2a1a02;
 }
 
-
-.social-button:hover {
-  transform: translateY(-2px);
+.pro-active-title-info {
+  flex: 1;
+  min-width: 0;
 }
 
-.social-button.instagram {
-  background: linear-gradient(45deg, #f58529, #dd2a7b, #8134af, #515bd4);
+.pro-active-title-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 10px;
 }
 
-.social-button.line {
-  background-color: #06c755;
+.pro-active-title {
+  font-size: 1.15rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  margin: 0;
+  color: #fdf3d9;
 }
 
-.social-button.website {
-  background: linear-gradient(135deg, #334155 0%, #1e293b 100%);
-  color: #ffffff;
-  border: none;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+.pro-status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  background: rgba(74, 222, 128, 0.15);
+  color: #86efac;
+  border: 1px solid rgba(74, 222, 128, 0.25);
+  border-radius: 8px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
-.social-button.website:hover {
-  transform: translateY(-2px);
-  background: linear-gradient(135deg, #475569 0%, #334155 100%);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+.pro-status-chip ion-icon {
+  font-size: 13px;
 }
 
-.info-list {
-  background: transparent;
-  padding: 0;
+.pro-active-divider {
+  height: 1px;
+  margin: 18px 0 14px;
+  background: linear-gradient(90deg, rgba(250, 204, 21, 0.28), rgba(250, 204, 21, 0.02));
+  position: relative;
+  z-index: 1;
 }
 
-.info-note {
+.pro-active-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  position: relative;
+  z-index: 1;
+}
+
+.pro-detail-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.82rem;
+  color: rgba(253, 243, 217, 0.75);
   font-weight: 600;
-  color: var(--ion-color-dark);
+}
+
+.pro-detail-icon {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.pro-detail-icon ion-icon {
+  font-size: 15px;
+  color: #fde68a;
+}
+
+.pro-detail-item.is-warning .pro-detail-icon {
+  background: rgba(251, 191, 36, 0.12);
+}
+
+.pro-detail-item.is-warning .pro-detail-icon ion-icon {
+  color: var(--ion-color-warning);
+}
+
+.pro-manage-btn {
+  --border-radius: 10px;
+  --color: #fde68a;
+  --background: rgba(255, 255, 255, 0.05);
+  --background-activated: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(250, 204, 21, 0.3);
+  border-radius: 10px;
+  margin: 16px 0 0;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  font-size: 0.72rem;
+  height: 40px;
+  position: relative;
+  z-index: 1;
 }
 
 
+.pro-big-buy-button {
+  --background: linear-gradient(135deg, #f59e0b, #d97706);
+  --background-activated: linear-gradient(135deg, #d97706, #b45309);
+  --color: white;
+  --box-shadow: 0 8px 20px rgba(217, 119, 6, 0.4);
+  --border-radius: 16px;
+  height: 54px;
+  font-size: 1.1rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  margin: 0;
+}
 
+.benefit-toggle-text {
+  background: transparent;
+  border: none;
+  color: #92400e;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: underline;
+  opacity: 0.8;
+}
+
+.benefit-toggle-text:active {
+  opacity: 1;
+}
+
+/* Dark Mode Overrides */
+.ion-palette-dark .pro-title-engaging {
+  color: #fde68a;
+}
+
+.ion-palette-dark .pro-subtitle-engaging {
+  color: #fde68a;
+  opacity: 0.9;
+}
+
+.ion-palette-dark .benefit-chip {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: #fef3c7;
+}
+
+.ion-palette-dark .benefit-toggle-text {
+  color: #fde68a;
+}
+
+.gold-glow {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at top right, rgba(255, 215, 0, 0.3), transparent 70%),
+              radial-gradient(circle at bottom left, rgba(255, 100, 0, 0.1), transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+}
+.boba-text-premium {
+  color: white;
+  font-weight: 800;
+  font-size: 1rem;
+}
+
+.social-label-premium {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--ion-color-medium);
+}
+
+
+/* System Section & Logout */
+.system-section {
+  margin: 40px 16px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+}
+
+.app-info-text {
+  font-size: 0.75rem;
+  color: var(--ion-color-medium);
+  margin: 0;
+  opacity: 0.7;
+}
+
+.logout-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(var(--ion-color-danger-rgb), 0.08);
+  color: var(--ion-color-danger);
+  border: 1px solid rgba(var(--ion-color-danger-rgb), 0.15);
+  padding: 12px 24px;
+  border-radius: var(--radius-md);
+  font-size: 0.95rem;
+  font-weight: 700;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.logout-button ion-icon {
+  font-size: 1.2rem;
+}
+
+.logout-button:active {
+  background: rgba(var(--ion-color-danger-rgb), 0.15);
+  transform: scale(0.97);
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); opacity: 0.3; }
+  50% { transform: scale(1.05); opacity: 0.5; }
+  100% { transform: scale(1); opacity: 0.3; }
+}
+
+/* Animations */
+.fade-in {
+  animation: fadeIn 0.8s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Skeletons */
+.skeleton-avatar-premium {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  margin: 0 auto 16px;
+}
+
+.skeleton-text-center {
+  margin: 0 auto 8px;
+  border-radius: 4px;
+}
+
+/* Overrides */
+ion-toolbar {
+  --background: transparent;
+  --border-width: 0;
+}
+
+ion-header {
+  background: transparent;
+}
+
+/* Vendor Onboarding & Consistency Improvements */
+.vendor-onboarding.pending {
+  padding: 16px;
+  background: linear-gradient(135deg, rgba(var(--ion-color-carrot-rgb), 0.05) 0%, rgba(var(--ion-color-secondary-rgb), 0.05) 100%);
+}
+
+.vendor-onboarding-item {
+  --padding-start: 16px;
+  --padding-end: 16px;
+  --padding-top: 12px;
+  --padding-bottom: 12px;
+  --background: transparent;
+  margin: 0;
+}
+
+.icon-box-vendor {
+  background: rgba(var(--ion-color-carrot-rgb), 0.1);
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 16px;
+  transition: all 0.2s ease;
+}
+
+.icon-box-vendor ion-icon {
+  font-size: 24px;
+}
+
+.vendor-title-label {
+  font-weight: 800;
+  font-size: 1.1rem;
+  margin-bottom: 2px;
+  color: var(--ion-color-carrot);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.vendor-subtitle-label {
+  font-size: 0.8rem;
+  color: var(--ion-color-medium);
+  margin: 0;
+}
+
+.pending-status-box {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.icon-pulse {
+  background: rgba(var(--ion-color-carrot-rgb), 0.1);
+  padding: 12px;
+  border-radius: var(--radius-md);
+  animation: pulse 2s infinite ease-in-out;
+}
+
+.icon-pulse ion-icon {
+  font-size: 24px;
+}
+
+.icon-pulse-red {
+  background: rgba(var(--ion-color-danger-rgb), 0.1);
+  padding: 12px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rejection-reason-box {
+  margin-top: 12px;
+  padding: 12px;
+  background: rgba(var(--ion-color-danger-rgb), 0.05);
+  border-left: 3px solid var(--ion-color-danger);
+  border-radius: 12px;
+  text-align: left;
+}
+
+.rejection-reason-box strong {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--ion-color-danger);
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.rejection-reason-box p {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--ion-color-dark);
+  line-height: 1.4;
+}
+
+.status-text h3 {
+  font-weight: 700;
+  margin: 0 0 2px;
+  font-size: 1rem;
+}
+
+.status-text p {
+  font-size: 0.8rem;
+  color: var(--ion-color-medium);
+  margin: 0;
+  line-height: 1.2;
+}
+
+.construction-text-small {
+  color: var(--ion-color-warning-shade);
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+.icon-box-cosmetic {
+  background: rgba(156, 39, 176, 0.1) !important;
+}
+.icon-box-cosmetic ion-icon {
+  color: #9C27B0 !important;
+}
+
+.icon-box-shop {
+  background: rgba(255, 152, 0, 0.1) !important;
+}
+.icon-box-shop ion-icon {
+  color: #FF9800 !important;
+}
+
+.default-avatar-border :deep(.cosmetic-avatar-wrapper) {
+  border: 3px solid var(--ion-color-carrot);
+  box-shadow: var(--card-shadow-hover);
+}
+
+.activity-pro-badge {
+  display: inline-flex;
+  align-items: center;
+  background: #ffd700;
+  color: #111;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 0.65rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  flex-shrink: 0;
+  box-shadow: 0 0 5px rgba(250, 204, 21, 0.4);
+}
 </style>

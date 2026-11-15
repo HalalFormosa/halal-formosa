@@ -3,14 +3,31 @@
  * Any overrides to theme variables should be placed in this file.
  * For more information, please see:
  * http://ionicframework.com/docs/theming/
+ *
+ * Halal Formosa 2.0 — "Modern Minimal" design system.
+ * Brand accent stays the logo orange (--ion-color-carrot). Status colors
+ * (success/warning/danger/primary) are a separate semantic palette used
+ * for halal/syubhah/haram/muslim-friendly labels and must not be
+ * conflated with the brand accent.
  */
 
-/* Import Roboto instead of Nunito */
-@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
+/* Inter — modern minimal grotesque */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+/* Hard guard against horizontal scroll/rubber-band: some mobile browsers
+   compute the pannable area from any element's layout box, even ones
+   clipped by an ancestor's overflow:hidden (e.g. Google Maps' internal
+   `left:50%; width:100%` panes on the Explore map). Force the app shell
+   itself to never scroll sideways. */
+html, body {
+    overflow-x: hidden;
+    overscroll-behavior-x: none;
+    max-width: 100vw;
+}
 
 /* This sets a different item border color for the default theme on ios and md */
 :root {
-    --ion-font-family: 'Roboto', sans-serif;
+    --ion-font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 
     /* Success (Halal green) */
     --ion-color-success: #2ecc71;
@@ -44,16 +61,23 @@
     --ion-color-primary-shade: #2c80b4;
     --ion-color-primary-tint: #5dade2;
 
-    /* ✅ Carrot */
+    /* ✅ Carrot — brand accent (logo orange) */
     --ion-color-carrot: #e67e22;
     --ion-color-carrot-rgb: 230, 126, 34;
     --ion-color-carrot-contrast: #000000;
     --ion-color-carrot-contrast-rgb: 0, 0, 0;
-    --ion-color-carrot-shade: #ca6f1e;
-    --ion-color-carrot-tint: #e98b38;
+    --ion-color-carrot-shade: #c96718;
+    --ion-color-carrot-tint: #ea9550;
 
     /* existing variables */
     --ion-item-border-color: var(--ion-background-color-step-200);
+
+    /* Minimal radius scale */
+    --radius-sm: 10px;
+    --radius-md: 16px;
+    --radius-lg: 22px;
+    --radius-xl: 30px;
+    --radius-pill: 999px;
 
     /* ✅ Safe area fallbacks */
     --safe-area-inset-top: env(safe-area-inset-top, 0px);
@@ -61,44 +85,87 @@
     --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
     --safe-area-inset-left: env(safe-area-inset-left, 0px);
 
-    /* Tier Colors */
-    --tier-gold-bg: linear-gradient(135deg, #fffbeb 0%, #fef3c7 60%, #fde68a 100%);
-    --tier-silver-bg: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 60%, #e2e8f0 100%);
-    --tier-bronze-bg: linear-gradient(135deg, #fffafb 0%, #fff7ed 60%, #ffedd5 100%);
+    /* Map to Ionic internal variables for consistent fallback on old devices */
+    --ion-safe-area-top: var(--safe-area-inset-top);
+    --ion-safe-area-right: var(--safe-area-inset-right);
+    --ion-safe-area-bottom: var(--safe-area-inset-bottom);
+    --ion-safe-area-left: var(--safe-area-inset-left);
+
+
+    /* Tier Colors — kept subtle, mostly flat with a faint tint */
+    --tier-gold-bg: linear-gradient(135deg, #fffdf7 0%, #fef6e0 100%);
+    --tier-silver-bg: linear-gradient(135deg, #fbfcfd 0%, #f1f4f7 100%);
+    --tier-bronze-bg: linear-gradient(135deg, #fffcfa 0%, #fdf1e6 100%);
 
 }
 
-/* This sets a different background and item background for the default theme on ios */
-:root.ios {
-    --ion-background-color: var(--ion-background-color-step-50, #f2f2f6);
-    --ion-toolbar-background: var(--ion-background-color);
-    --ion-item-background: #fff;
-}
-
-/* This sets a different background and item background for the default theme on md */
+/* Unified, quieter neutral background on ios and md — one grey, not two.
+   Falls through to Ionic's own dark-palette step-50 in dark mode, so this
+   stays a light-mode-only override rather than fighting dark.class.css. */
+:root.ios,
 :root.md {
-    --ion-background-color: var(--ion-background-color-step-100, #f9f9f9);
-    --ion-item-background: #fff;
+    --ion-background-color: var(--ion-background-color-step-50, #f7f7f8);
+    --ion-toolbar-background: var(--ion-background-color);
+    --ion-item-background: #ffffff;
 }
 
 /* Match the actual <ion-app> element */
 .safe-area {
-    padding: var(--safe-area-inset-top) var(--safe-area-inset-right) var(--safe-area-inset-bottom) var(--safe-area-inset-left);
+    padding-right: var(--safe-area-inset-right);
+    padding-bottom: var(--safe-area-inset-bottom);
+    padding-left: var(--safe-area-inset-left);
     box-sizing: border-box;
+}
+
+/* Apply top padding only if no header is present to handle it */
+.safe-area:not(:has(ion-header)) {
+    padding-top: var(--safe-area-inset-top);
 }
 
 .safe-area ion-header {
     padding-top: var(--safe-area-inset-top);
 }
 
-.safe-area ion-tab-bar {
+/* The floating tab bar (see MainView.vue) handles the safe-area inset itself
+   via its own margin, so it's excluded here to avoid double-padding it. */
+.safe-area ion-tab-bar:not(.floating-tab-bar) {
     padding-bottom: calc(var(--safe-area-inset-bottom) - (var(--safe-area-inset-bottom) / 1.75));
+}
+
+/* Floating tab bar clearance: since the router-outlet now fills the full
+   screen behind the floating bar (see MainView.vue), give every tabbed
+   page's content enough bottom padding to clear it instead of hiding
+   underneath. Pages outside ion-tabs (noTabs routes) are untouched. */
+:root {
+    /* The bar's declared height is 64px, but ion-tab-bar renders it as
+       content-box (a light-DOM `box-sizing: border-box` override doesn't
+       reach it), so its real painted height is 64px + 6px+6px padding +
+       1px+1px border = 78px. Measured directly via getBoundingClientRect —
+       don't change this back to 64px without re-measuring live. */
+    --floating-tab-bar-clearance: calc(78px + 12px + 24px + var(--safe-area-inset-bottom));
+
+    /* For elements that use `position: fixed` (viewport-relative, e.g. the
+       Explore view-mode/locate FABs) and were already tuned to clear the
+       old flush ion-tab-bar on their own: the floating bar only adds its
+       own outer margin on top of that, not the full clearance above. */
+    --floating-tab-bar-extra-offset: 12px;
+
+    /* Snug fit: exactly the floating bar's own top edge (its bottom margin
+       + real painted height + safe area), no extra breathing room on top.
+       Use this for small pills/footers that should sit immediately above
+       the bar rather than scroll-stop padding, which wants the more
+       generous clearance. */
+    --floating-tab-bar-offset: calc(78px + 12px + var(--safe-area-inset-bottom));
+}
+
+ion-tabs > ion-router-outlet .ion-page > ion-content {
+    --padding-bottom: var(--floating-tab-bar-clearance);
 }
 
 /* This sets a different item background when dark mode is enabled on ios and md */
 .ion-palette-dark.ios,
 .ion-palette-dark.md {
-    --ion-item-background: #1c1c1d;
+    --ion-item-background: #161618;
 }
 
 ion-title.title-brand {
@@ -167,6 +234,20 @@ ion-title.title-large ion-icon {
     --ion-color-tint: var(--ion-color-carrot-tint);
 }
 
+/* Soft default button shape app-wide — Ionic's stock buttons read as sharp
+   little rectangles otherwise. Any button that sets its own --border-radius
+   (pills, circular icon buttons, etc.) still wins since that's set with equal
+   or higher specificity closer to the element. */
+ion-button {
+    --border-radius: var(--radius-md);
+}
+
+ion-input,
+ion-searchbar,
+ion-textarea {
+    --border-radius: var(--radius-md);
+}
+
 ion-tab-button {
     --color: var(--ion-color-medium);
     --color-focused: var(--ion-color-carrot-shade);
@@ -212,7 +293,7 @@ ion-chip.chip-medium {
 ion-chip.status-chip {
     font-size: 13px;
     font-weight: 600;
-    border-radius: 6px;
+    border-radius: var(--radius-pill);
     padding: 2px 10px;
     height: 26px;
     line-height: 1;
@@ -260,29 +341,51 @@ ion-chip.status-chip.chip-medium {
 
 
 :root {
-    --card-bg: var(--ion-color-step-50, #ffffff);
-    --card-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-    --card-border: rgba(0, 0, 0, 0.06);
+    /* Flat, hairline-bordered cards with a barely-there shadow — minimal, not skeuomorphic */
+    --card-bg: #ffffff;
+    --card-bg-rgb: 255, 255, 255;
+    --card-inner-bg: #ffffff;
+    --card-shadow: 0 1px 2px rgba(0, 0, 0, 0.03), 0 1px 0 rgba(0, 0, 0, 0.02);
+    --card-shadow-hover: 0 4px 16px rgba(0, 0, 0, 0.06);
+    --card-border: rgba(0, 0, 0, 0.07);
+
+    /* UI Utilities */
+    --soft-warning-bg: linear-gradient(135deg, #fef9e7 0%, #fdf2d0 100%);
+    --soft-warning-text: #7d6608;
+    --soft-warning-border: #f9e79f;
 }
 
 .ion-palette-dark {
     /* Tier Colors Dark */
-    --tier-gold-bg: linear-gradient(135deg, #1c1c1e 0%, #422006 100%);
-    --tier-silver-bg: linear-gradient(135deg, #1c1c1e 0%, #1e293b 100%);
-    --tier-bronze-bg: linear-gradient(135deg, #1c1c1e 0%, #431407 100%);
-    --card-bg: linear-gradient(145deg, #242426 0%, #18181a 100%);
-    --card-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-    --card-border: rgba(255, 255, 255, 0.06);
+    --tier-gold-bg: linear-gradient(135deg, #1a1a1c 0%, #2e2110 100%);
+    --tier-silver-bg: linear-gradient(135deg, #1a1a1c 0%, #1a222c 100%);
+    --tier-bronze-bg: linear-gradient(135deg, #1a1a1c 0%, #2c1a0d 100%);
+    --card-bg: #18181a;
+    --card-bg-rgb: 24, 24, 26;
+    --card-inner-bg: #18181a;
+    --card-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --card-shadow-hover: 0 4px 20px rgba(0, 0, 0, 0.5);
+    --card-border: rgba(255, 255, 255, 0.07);
+
+    /* UI Utilities Dark */
+    --soft-warning-bg: linear-gradient(135deg, #1c1c1e 0%, #422006 100%);
+    --soft-warning-text: #fef3c7;
+    --soft-warning-border: rgba(230, 126, 34, 0.3);
 }
 
 ion-card {
     --background: var(--card-bg);
     --color: var(--ion-color-dark);
     box-shadow: var(--card-shadow);
-    border-radius: 16px;
-    margin: 10px 8px 10px 8px;
+    border-radius: var(--radius-lg);
+    margin: 10px 12px;
     cursor: pointer;
-    border: 1px solid var(--card-border);
+    overflow: hidden;
+    transition: box-shadow 0.2s ease, transform 0.15s ease;
+}
+
+ion-card:active {
+    box-shadow: var(--card-shadow-hover);
 }
 
 ion-card ion-list,
@@ -291,12 +394,68 @@ ion-card ion-item {
     --ion-item-background: transparent;
 }
 
+/* Section header row used inside ion-card-header across the app (Home,
+   DailyMissions, and any other section that pairs a title with a "View
+   more"-style button). Kept global — not per-view scoped CSS — so every
+   component that reuses this class gets identical typography instead of
+   silently falling back to plain ion-card-title styling. */
 .card-header-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
     width: 100%;
     margin-bottom: 4px;
+    padding: 2px 2px 6px;
+    gap: 8px;
+}
+
+.card-header-row ion-card-title {
+    position: relative;
+    min-width: 0;
+    flex-shrink: 1;
+    padding-left: 13px;
+    font-size: 1.08rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--ion-color-dark);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.card-header-row ion-card-title::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 4px;
+    height: 17px;
+    border-radius: 3px;
+    background: linear-gradient(180deg, var(--ion-color-carrot), var(--ion-color-carrot-tint));
+}
+
+.card-header-row ion-button {
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+
+/* Section-wrapper cards (a card-header-row header + a horizontal scroll of
+   already-carded items) shouldn't look like a card themselves — otherwise
+   you get a "card full of cards" boxed-in-a-box effect. Strip the card
+   surface, keep only the spacing. */
+ion-card:has(> ion-card-header .card-header-row) {
+    --background: transparent;
+    background: transparent;
+    box-shadow: none;
+    margin-block: 4px 4px;
+    margin-inline: 12px;
+}
+
+ion-card:has(> ion-card-header .card-header-row) > ion-card-header,
+ion-card:has(> ion-card-header .card-header-row) > ion-card-content {
+    padding-inline: 0;
+    padding-block: 4px;
 }
 
 .discover-grid {
@@ -324,10 +483,11 @@ ion-card ion-item {
 
 .discover-item {
     flex: 0 0 210px;
-    border-radius: 16px;
+    border-radius: var(--radius-md);
     overflow: hidden;
     text-align: center;
-    box-shadow: none;
+    box-shadow: var(--card-shadow);
+    border: 1px solid var(--card-border);
     --background: var(--card-inner-bg);
     display: flex;
     flex-direction: column;
@@ -352,8 +512,8 @@ ion-card ion-item {
     width: 100%;
     height: 140px;
     object-fit: cover;
-    border-top-left-radius: 16px;
-    border-top-right-radius: 16px;
+    border-top-left-radius: var(--radius-md);
+    border-top-right-radius: var(--radius-md);
     display: block;
 }
 
@@ -424,7 +584,7 @@ ion-card ion-item {
     object-fit: contain;
     background: var(--ion-color-step-50, #fff);
     padding: 6px;
-    border-radius: 10px;
+    border-radius: var(--radius-md);
 }
 
 .discover-label--compact {
@@ -447,36 +607,209 @@ ion-card ion-item {
 }
 
 
+/* ===============================
+   Subtle Reward Toast Popup
+   =============================== */
 .reward-overlay {
     position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.4);
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
+    top: calc(env(safe-area-inset-top, 20px) + 16px);
+    left: 16px;
+    right: 16px;
+    pointer-events: none; /* Let all clicks pass through to the app underneath! */
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    z-index: 9999;
+}
+
+.reward-toast {
+    pointer-events: auto; /* Toast itself is interactive */
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(220, 225, 230, 0.8);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.06);
+    border-radius: 100px;
+    padding: 8px 16px 8px 8px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    max-width: 420px;
+    width: 100%;
+    overflow: hidden;
+    /* Google Play Games-style reveal: the avatar/icon circle appears
+       first, then the pill grows out to its full width, then the body
+       text fades in once there's room for it. Only plays once per mount
+       (openReward() re-using an already-open toast just patches its
+       content, it doesn't remount this element, so this never replays
+       for consecutive grants in the same visible session). */
+    animation: rewardToastSlideDown 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards,
+               rewardToastExpand 0.45s 0.05s cubic-bezier(0.16, 1, 0.3, 1) both;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.reward-toast:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 14px 36px rgba(0, 0, 0, 0.16), 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.ion-palette-dark .reward-toast {
+    background: rgba(28, 28, 30, 0.92);
+    border-color: rgba(255, 255, 255, 0.12);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+@keyframes rewardToastSlideDown {
+    from {
+        transform: translateY(-40px) scale(0.95);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes rewardToastExpand {
+    /* ~58px shows just the avatar/icon circle + its left padding; the
+       body is clipped by overflow:hidden until the pill grows past it. */
+    from { width: 58px; }
+    to { width: 100%; }
+}
+
+/* Closing animation: the exact reverse of the opening reveal above —
+   the pill first collapses back down to just the avatar/icon circle,
+   then that circle slides up and fades out. Driven by Vue's <Transition
+   name="reward-toast">, which holds the DOM in place until this
+   animation finishes. */
+.reward-toast-leave-active {
+    pointer-events: none;
+}
+
+.reward-toast-leave-active .reward-toast {
+    animation: rewardToastCollapse 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes rewardToastCollapse {
+    0% {
+        width: 100%;
+        transform: translateY(0) scale(1);
+        opacity: 1;
+    }
+    55% {
+        width: 58px;
+        transform: translateY(0) scale(1);
+        opacity: 1;
+    }
+    100% {
+        width: 58px;
+        transform: translateY(-40px) scale(0.95);
+        opacity: 0;
+    }
+}
+
+.reward-toast-left {
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 2000;
+    flex-shrink: 0;
 }
 
-.reward-float {
-    background: var(--ion-background-color, #ffffff);
-    color: var(--ion-text-color, #000000);
-    padding: 1.5rem;
+.reward-toast-avatar {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    border: 2px solid var(--ion-color-success);
+}
+
+.reward-toast-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: rgba(var(--ion-color-success-rgb), 0.15);
+    color: var(--ion-color-success);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+}
+
+.reward-toast-body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    opacity: 0;
+    animation: rewardToastBodyReveal 0.3s ease-out 0.3s both;
+}
+
+@keyframes rewardToastBodyReveal {
+    from {
+        opacity: 0;
+        transform: translateX(-6px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.reward-toast-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.reward-points-badge {
+    background: var(--ion-color-success);
+    color: var(--ion-color-success-contrast, white);
+    font-weight: 800;
+    font-size: 0.8rem;
+    padding: 2px 8px;
     border-radius: 20px;
-    width: 90%;
-    max-width: 380px;
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.1);
-    border: 1px solid rgba(var(--ion-color-dark-rgb), 0.08);
+    display: inline-block;
 }
 
-.ion-palette-dark .reward-float {
-    background: #1c1c1e;
-    border-color: rgba(255, 255, 255, 0.08);
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+.reward-points-badge--achievement {
+    background: var(--ion-color-carrot, #ff9f43);
+    color: #fff;
+}
+
+.reward-action-text {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--ion-color-dark);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ion-palette-dark .reward-action-text {
+    color: #ffffff;
+}
+
+.reward-toast-progress-container {
+    padding-top: 2px;
+}
+
+.reward-progress-bar {
+    height: 6px;
+    border-radius: 6px;
+}
+
+.reward-toast-level-info {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--ion-color-medium);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
 }
 
 /* === Skeleton Helpers === */
@@ -490,14 +823,14 @@ ion-card ion-item {
 .skeleton-category {
     width: 100px;
     height: 28px;
-    border-radius: 6px;
+    border-radius: var(--radius-pill);
     flex-shrink: 0;
 }
 
 .skeleton-product-img {
     width: 115px;
     height: 115px;
-    border-radius: 10px;
+    border-radius: var(--radius-lg);
     flex-shrink: 0;
 }
 
@@ -615,7 +948,7 @@ ion-card ion-item {
 
 .gold-cert-card {
     position: relative;
-    border-radius: 14px;
+    border-radius: var(--radius-md);
     padding: 12px;
     margin-top: 6px;
     cursor: pointer;
@@ -626,8 +959,8 @@ ion-card ion-item {
 .gold-cert-card.tier-card-gold,
 .gold-cert-card {
     /* Legacy override to ensure it matches unified tier card */
-    border: 2px solid #facc15 !important;
-    background: linear-gradient(135deg, rgba(250, 204, 21, 0.05), transparent) !important;
+    border: 1.5px solid #eab308 !important;
+    background: linear-gradient(135deg, rgba(234, 179, 8, 0.06), transparent) !important;
 }
 
 .ion-palette-dark .gold-cert-card {
@@ -647,7 +980,7 @@ ion-card ion-item {
 .gold-glow {
     position: absolute;
     inset: -2px;
-    border-radius: 16px;
+    border-radius: var(--radius-lg);
     background: radial-gradient(circle at top left,
             rgba(255, 215, 0, 0.35),
             transparent 60%);
@@ -671,7 +1004,7 @@ ion-card ion-item {
     height: 42px;
     object-fit: contain;
     background: white;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     padding: 6px;
 
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
@@ -737,7 +1070,7 @@ ion-card ion-item {
 /* 1. Tier Badges (Floating or inline) */
 .tier-badge {
     padding: 4px 10px;
-    border-radius: 8px;
+    border-radius: var(--radius-pill);
     font-size: 0.65rem;
     font-weight: 900;
     letter-spacing: 0.05em;
@@ -767,7 +1100,7 @@ ion-card ion-item {
 
 /* 2. Tier Card Backgrounds & Borders */
 .tier-card-gold {
-    border: 2px solid #facc15 !important;
+    border: 1.5px solid #eab308 !important;
     background: var(--tier-gold-bg) !important;
     --background: var(--tier-gold-bg) !important;
 }
@@ -902,7 +1235,7 @@ ion-card ion-item {
     font-weight: 800;
     letter-spacing: 0.03em;
     padding: 3px 8px;
-    border-radius: 6px;
+    border-radius: var(--radius-pill);
     background: rgba(var(--ion-color-dark-rgb), 0.05);
     color: var(--ion-color-medium);
 }
@@ -933,22 +1266,20 @@ ion-card ion-item {
 
 /* Base container variables */
 ion-popover {
-    --border-radius: 16px;
-    --box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+    --border-radius: var(--radius-lg);
+    --box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
 }
 
-/* Glassmorphism content shell */
+/* Opaque content shell for readability */
 ion-popover::part(content) {
-    backdrop-filter: blur(20px) saturate(180%);
-    -webkit-backdrop-filter: blur(20px) saturate(180%);
-    background: rgba(255, 255, 255, 0.75) !important;
-    border: 0.5px solid rgba(0, 0, 0, 0.1);
-    border-radius: 16px;
+    background: var(--ion-background-color, #ffffff) !important;
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius-lg);
     overflow: hidden;
 }
 
 .ion-palette-dark ion-popover::part(content) {
-    background: rgba(28, 28, 30, 0.75) !important;
+    background: #1c1c1e !important;
     border-color: rgba(255, 255, 255, 0.1);
 }
 
@@ -956,14 +1287,19 @@ ion-popover::part(content) {
 .leaderboard-popover::part(content) {
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
-    background: var(--ion-item-background, #ffffff) !important;
-    border: 1px solid var(--ion-color-step-200, #e0e0e0);
+    background: var(--leaderboard-popover-bg, var(--ion-item-background, #ffffff)) !important;
+    border: var(--leaderboard-popover-border, 1px solid var(--ion-color-step-200, #e0e0e0)) !important;
+    border-image: var(--leaderboard-popover-border-image) !important;
+    animation: var(--leaderboard-popover-animation) !important;
+    border-radius: var(--radius-lg) !important;
     box-shadow: 0 12px 48px rgba(0, 0, 0, 0.25);
+    min-width: 280px !important;
+    width: 280px !important;
 }
 
 .ion-palette-dark .leaderboard-popover::part(content) {
-    background: #1c1c1d !important;
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: var(--leaderboard-popover-bg, #181818) !important;
+    border: var(--leaderboard-popover-border, 1px solid rgba(255, 255, 255, 0.08)) !important;
 }
 
 /* List container inside popover */
@@ -986,7 +1322,7 @@ ion-popover ion-item {
     --background: transparent !important;
     --background-hover: rgba(var(--ion-color-carrot-rgb), 0.1) !important;
     --background-focused: rgba(var(--ion-color-carrot-rgb), 0.12) !important;
-    --border-radius: 12px;
+    --border-radius: var(--radius-md);
     --border-style: none;
     margin: 4px;
     font-weight: 500;
@@ -1007,7 +1343,7 @@ ion-popover ion-item ion-label {
 
 /* Specialized width class if needed */
 .width-190 {
-    --width: 190px;
+    --width: 220px;
 }
 
 .ion-palette-dark ion-popover ion-item ion-label {
@@ -1047,8 +1383,8 @@ ion-popover ion-item ion-label {
     color: var(--ion-text-color) !important;
 }
 
-.ion-palette-dark .premium-header .header-action-button,
-.ion-palette-dark .premium-header .custom-back-button {
+.ion-palette-dark .premium-header .header-action-button:not(.contrast),
+.ion-palette-dark .premium-header .custom-back-button:not(.contrast) {
     --color: var(--ion-text-color) !important;
 }
 
@@ -1062,6 +1398,13 @@ ion-header ion-toolbar {
     box-shadow: none !important;
 }
 
+/* A house ad is showing at the very top (real banner failed to fill): the
+   reserved ad slot above already clears the status bar, so the first toolbar
+   must not add that clearance again. */
+ion-header.house-ad-top ion-toolbar {
+    --ion-safe-area-top: 0px;
+}
+
 /* ion-header itself has no bottom shadow/border */
 ion-header {
     --box-shadow: none !important;
@@ -1069,6 +1412,23 @@ ion-header {
     border-bottom: none !important;
     contain: none !important;
     background: var(--ion-background-color);
+}
+
+/* ion-footer: same deal as ion-header above — Ionic's .footer-md class sets a
+   real Material elevation box-shadow directly (not through --box-shadow), so
+   it has to be beaten with !important rather than the custom property alone. */
+ion-footer {
+    --box-shadow: none !important;
+    box-shadow: none !important;
+    border-top: none !important;
+}
+
+ion-footer ion-toolbar {
+    --background: var(--ion-background-color);
+    --border-width: 0;
+    --box-shadow: none;
+    border-top: none !important;
+    box-shadow: none !important;
 }
 
 /* Transparent Variant */
@@ -1086,21 +1446,16 @@ ion-header {
     top: 0;
     left: 0;
     right: 0;
-    background: transparent;
-    z-index: 100;
-    transition: background-color 0.3s ease, backdrop-filter 0.3s ease;
+    z-index: 1000;
+    background: transparent !important;
+    transition: background-color 0.3s ease, backdrop-filter 0.3s ease, box-shadow 0.3s ease;
 }
 
 .immersive-header.is-scrolled {
-    background: transparent !important;
-}
-
-/* Apply background filter to the actual header when scrolled */
-ion-header.is-scrolled {
     background: var(--ion-background-color) !important;
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
-    transition: background-color 0.3s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
 
@@ -1117,6 +1472,20 @@ ion-header.is-scrolled {
     color: var(--ion-text-color);
 }
 
+/* Native barcode scanning (@capacitor-mlkit/barcode-scanning) renders the camera
+   as a native layer BELOW the WebView, so the WebView has to become fully
+   transparent for it to show through. Everything is hidden except the scanner's
+   own overlay UI, which opts back in with .barcode-scanner-ui. */
+body.barcode-scanner-active {
+    visibility: hidden;
+    --background: transparent;
+    background: transparent !important;
+}
+
+body.barcode-scanner-active .barcode-scanner-ui {
+    visibility: visible;
+}
+
 .premium-header .contrast {
     --color: white !important;
     color: white !important;
@@ -1125,25 +1494,191 @@ ion-header.is-scrolled {
 
 .premium-header .header-action-button,
 .premium-header .custom-back-button {
-    --color: white !important;
-    --icon-color: white !important;
-    color: white !important;
+    --color: var(--ion-text-color, inherit) !important;
+    --icon-color: var(--ion-text-color, inherit) !important;
+    color: var(--ion-text-color, inherit) !important;
     font-size: 22px;
     z-index: 101;
-    background: rgba(0, 0, 0, 0.25);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    border-radius: 50%;
     margin: 4px;
     width: 36px;
     height: 36px;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: transform 0.2s ease;
+    transition: transform 0.2s ease, background-color 0.3s ease;
+}
+
+.premium-header .header-action-button.contrast,
+.premium-header .custom-back-button.contrast {
+    --color: white !important;
+    --icon-color: white !important;
+    --background: rgba(0, 0, 0, 0.25) !important;
+    color: white !important;
+    background: rgba(0, 0, 0, 0.25);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-radius: 50%;
 }
 
 .premium-header .header-action-button:active,
 .premium-header .custom-back-button:active {
     transform: scale(0.95);
+}
+
+/* ===============================
+   Under Construction Styling
+   =============================== */
+.under-construction-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-bottom: 32px;
+}
+
+.construction-card {
+    margin: 16px;
+    padding: 32px 24px;
+    background: var(--ion-card-background, var(--ion-item-background, #fff));
+    border-radius: var(--radius-xl);
+    text-align: center;
+    border: 1px dashed var(--ion-color-carrot);
+    color: var(--ion-text-color);
+}
+
+.construction-icon {
+    font-size: 48px;
+    color: var(--ion-color-carrot);
+    margin-bottom: 16px;
+}
+
+.construction-card h2 {
+    margin: 0 0 12px;
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--ion-text-color);
+}
+
+.construction-card p {
+    margin: 0;
+    font-size: 0.95rem;
+    color: var(--ion-color-medium);
+    line-height: 1.5;
+}
+
+/* Test Phase Disclaimer Banner */
+.test-phase-banner {
+    background: linear-gradient(135deg, #fff3cd, #ffeeba);
+    color: #856404;
+    border: 1px solid #ffeeba;
+    padding: 12px 16px;
+    border-radius: var(--radius-md);
+    margin: 16px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    font-size: 0.88rem;
+    font-weight: 500;
+    line-height: 1.4;
+    box-shadow: 0 4px 12px rgba(133, 100, 4, 0.08);
+}
+
+.ion-palette-dark .test-phase-banner {
+    background: linear-gradient(135deg, #2c2514, #3d3216);
+    color: #ffe8a1;
+    border: 1px solid #4d3f1a;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.test-phase-icon {
+    font-size: 20px;
+    flex-shrink: 0;
+    color: #e0a800;
+}
+
+/* ===============================
+   Global Search Bar Components
+   =============================== */
+
+/* ===============================
+   Global Search Bar Component
+   =============================== */
+
+.compact-searchbar {
+    /* Shared Base Properties */
+    --box-shadow: none;
+    --padding-start: 0;
+    --padding-end: 0;
+    --color: var(--ion-text-color, var(--ion-color-dark));
+    --placeholder-color: var(--ion-color-step-500);
+    --icon-color: var(--ion-color-carrot);
+    --clear-button-color: var(--ion-color-step-600);
+    --border-radius: 100px;
+    /* Frosted glass, same idea as the results-count pill — see-through
+       when floating over scrolling content (Search/Trip's toolbar,
+       Explore's map), harmless where it sits on an opaque toolbar. */
+    --background: rgba(255, 255, 255, 0.65);
+    width: 100%;
+    padding: 0;
+    transition: all 0.25s ease;
+    border-radius: 100px;
+    border: 1px solid var(--card-border);
+    box-shadow: var(--card-shadow);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    font-size: 0.92rem;
+}
+
+.ion-palette-dark .compact-searchbar {
+    --background: rgba(20, 20, 22, 0.65);
+}
+
+/* ===============================
+   Safe Area Utilities
+   =============================== */
+.safe-area {
+    padding-top: var(--safe-area-inset-top, 0px);
+}
+
+.safe-area ion-header {
+    background: var(--ion-background-color);
+}
+
+.safe-area ion-content {
+    --padding-bottom: var(--safe-area-inset-bottom, 0px);
+}
+
+/* Bottom sheets (ion-modal with breakpoints) sit flush with the screen bottom,
+   so on Android phones with a transparent / overlaid navigation bar the system
+   buttons cover the lowest content (e.g. the status chips). Add the bottom
+   inset as extra scroll padding so everything can be scrolled clear of it.
+   The inset is 0 on iOS-without-home-bar and on opaque non-overlay navbars,
+   so those render unchanged. */
+ion-modal.modal-sheet ion-content {
+    --padding-bottom: calc(var(--ion-padding, 16px) + var(--safe-area-inset-bottom, 0px));
+}
+
+/* Removed duplicate and moved to consolidated block above */
+
+.details-container {
+  background: var(--ion-background-color);
+  margin-top: -24px;
+  position: relative;
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  min-height: 100vh;
+  z-index: 10;
+  overflow: hidden;
+}
+
+/* Hide Google reCAPTCHA invisible badge to prevent overlapping tab bar navigation and FAB elements */
+.grecaptcha-badge {
+  visibility: hidden !important;
 }
