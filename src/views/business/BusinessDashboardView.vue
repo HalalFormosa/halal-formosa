@@ -80,6 +80,10 @@
                   </div>
                   <p v-if="loc.address" class="biz-address">{{ loc.address }}</p>
                   <p class="biz-role">{{ loc.role }}</p>
+                  <ion-button size="small" fill="outline" color="carrot" mode="md" @click.stop="router.push(`/business/${loc.id}/redeem`)">
+                    <ion-icon :icon="qrCodeOutline" slot="start" />
+                    {{ $t('offers.redeem.action') }}
+                  </ion-button>
                 </div>
                 <ion-icon :icon="chevronForward" class="biz-chevron" />
               </div>
@@ -102,7 +106,7 @@ import {
   IonPage, IonHeader, IonContent, IonSpinner, IonCard, IonButton, IonIcon,
   IonBadge, onIonViewWillEnter
 } from '@ionic/vue'
-import { storefrontOutline, chevronForward, checkmarkCircle } from 'ionicons/icons'
+import { storefrontOutline, chevronForward, checkmarkCircle, qrCodeOutline } from 'ionicons/icons'
 import AppHeader from '@/components/AppHeader.vue'
 import BusinessUpgradeModal from '@/components/BusinessUpgradeModal.vue'
 import router from '@/router'

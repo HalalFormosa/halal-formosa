@@ -315,6 +315,9 @@
               </div>
             </div>
 
+            <!-- Partner-store discount codes (Pro perk) -->
+            <OfferCodeCard v-if="place?.id" :location-id="Number(place.id)" />
+
             <!-- Certified By (Gold Partner) -->
             <div
                 v-if="!loadingCertifications && certifications.length"
@@ -911,6 +914,7 @@ import {
 } from '@ionic/vue'
 import { Capacitor } from '@capacitor/core'
 import HouseAdNativeCard from '@/components/ads/HouseAdNativeCard.vue'
+import OfferCodeCard from '@/components/offers/OfferCodeCard.vue'
 import { isDonor } from "@/composables/useSubscriptionStatus"
 import { useAdSlotCollapsed, adSpaceStyle } from '@/composables/useAdFallback'
 import { scheduleBannerUpdate } from '@/plugins/admob'
