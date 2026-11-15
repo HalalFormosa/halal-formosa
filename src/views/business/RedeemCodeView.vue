@@ -66,6 +66,7 @@ import { qrCodeOutline, closeOutline, checkmarkCircle, alertCircle } from 'ionic
 import { Html5Qrcode } from 'html5-qrcode'
 import AppHeader from '@/components/AppHeader.vue'
 import { supabase } from '@/plugins/supabaseClient'
+import { canManageLocation } from '@/composables/useStoreAccess'
 import { OfferService, OfferError, type RedemptionRow } from '@/services/OfferService'
 
 const route = useRoute()
@@ -104,7 +105,7 @@ async function redeem(raw: string) {
   busy.value = true
   result.value = null
   try {
-    const res = await OfferService.redeem(code)
+    const res = await OfferService.redeem(code, locationId.value)
     result.value = {
       ok: true,
       title: t('offers.redeem.success'),
@@ -157,21 +158,9 @@ async function toggleScan() {
   }
 }
 
-// Only this store's owners/managers and admins belong here. The server enforces it
-// on every action anyway; this just keeps everyone else off the page.
-async function hasAccess(): Promise<boolean> {
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return false
-  const [roleRes, ownerRes] = await Promise.all([
-    supabase.from('user_roles').select('role').eq('user_id', user.id).maybeSingle(),
-    supabase.from('location_owners').select('role').eq('location_id', locationId.value).eq('user_id', user.id).maybeSingle(),
-  ])
-  return roleRes.data?.role === 'admin' || !!ownerRes.data
-}
-
 onIonViewWillEnter(async () => {
   result.value = null
-  if (!(await hasAccess())) {
+  if (!(await canManageLocation(locationId.value))) {
     router.replace(`/place/${locationId.value}`)
     const toast = await toastController.create({ message: t('offers.redeem.noAccess'), duration: 3000, position: 'bottom' })
     await toast.present()

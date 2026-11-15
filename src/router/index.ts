@@ -4,6 +4,9 @@ import { supabase } from '@/plugins/supabaseClient';
 import { performBotChecks } from '@/utils/botShield';
 import { Capacitor } from '@capacitor/core';
 import { isDeviceOnline } from '@/utils/connectivity';
+import { canManageLocation } from '@/composables/useStoreAccess';
+import { toastController } from '@ionic/vue';
+import { i18n } from '@/i18n';
 
 const isIos = Capacitor.getPlatform() === 'ios';
 // LevelPlay mediation (ironSource, with AdMob wired in as one of its mediated
@@ -197,8 +200,8 @@ const routes: Array<RouteRecordRaw> = [
     // Business claim & dashboard
     { path: '/place/:id/claim', name: 'ClaimBusiness', component: () => import('@/views/business/ClaimBusinessView.vue'), meta: { requiresAuth: true, noTabs: true, noAds: true } },
     { path: '/business', name: 'BusinessDashboard', component: () => import('@/views/business/BusinessDashboardView.vue'), meta: { requiresAuth: true, noAds: true } },
-    { path: '/business/:locationId/redeem', name: 'BusinessRedeem', component: () => import('@/views/business/RedeemCodeView.vue'), meta: { requiresAuth: true, noTabs: true, noAds: true } },
-    { path: '/business/:locationId', name: 'BusinessManage', component: () => import('@/views/business/BusinessManageView.vue'), props: true, meta: { requiresAuth: true, noTabs: true, noAds: true } },
+    { path: '/business/:locationId/redeem', name: 'BusinessRedeem', component: () => import('@/views/business/RedeemCodeView.vue'), meta: { requiresAuth: true, requiresStoreAccess: true, noTabs: true, noAds: true } },
+    { path: '/business/:locationId', name: 'BusinessManage', component: () => import('@/views/business/BusinessManageView.vue'), props: true, meta: { requiresAuth: true, requiresStoreAccess: true, noTabs: true, noAds: true } },
 
     { path: '/item/:barcode', name: 'item-details', component: () => import('@/views/search/ItemDetailsView.vue'), meta: { adSpaceId: 'ad-space-item-details', levelPlayAdId: getLevelPlayAdId(import.meta.env.VITE_LEVELPLAY_IOS_ITEM_DETAILS_BANNER_ID, import.meta.env.VITE_LEVELPLAY_ANDROID_ITEM_DETAILS_BANNER_ID) } },
 
@@ -593,6 +596,21 @@ router.beforeEach(async (to, from, next) => {
             path: '/login',
             query: { redirect: to.fullPath }
         })
+    }
+
+    // 🏪 Per-store management routes (/business/:locationId/...): admins (can check)
+    // and the store's owners/managers (can manage) only. Writes are also enforced
+    // server-side; this keeps everyone else from even seeing the screens.
+    if (to.meta.requiresStoreAccess) {
+        const locId = Number(to.params.locationId)
+        if (!Number.isInteger(locId) || !(await canManageLocation(locId))) {
+            toastController.create({
+                message: String(i18n.global.t('business.noAccess')),
+                duration: 3000,
+                position: 'bottom'
+            }).then(t => t.present()).catch(() => { /* toast is best-effort */ })
+            return next({ path: Number.isInteger(locId) ? `/place/${locId}` : '/business', replace: true })
+        }
     }
 
     // 🔐 Admin / Contributor guard
