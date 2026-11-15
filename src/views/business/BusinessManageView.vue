@@ -341,6 +341,7 @@
           <section v-else-if="tab === 'codes'" class="fade-in">
             <OwnerOfferEditor v-if="ownerOffers.length" :offers="ownerOffers" @saved="loadOwnerOffers" />
             <p v-else class="section-hint">{{ $t('offers.owner.none') }}</p>
+            <OfferReport :location-id="locationId" :refresh-key="ownerOffers.length" />
             <AdminOfferCreate v-if="isAdmin" :location-id="locationId" @created="loadOwnerOffers" />
           </section>
 
@@ -710,6 +711,7 @@ import { ActivityLogService } from '@/services/ActivityLogService'
 import BusinessUpgradeModal from '@/components/BusinessUpgradeModal.vue'
 import OwnerOfferEditor from '@/components/offers/OwnerOfferEditor.vue'
 import AdminOfferCreate from '@/components/offers/AdminOfferCreate.vue'
+import OfferReport from '@/components/offers/OfferReport.vue'
 import { OfferService, type OwnerOffer } from '@/services/OfferService'
 import type { PlanFeatures, PlanTier, LocationPhoto, LocationMenuItem, LocationPromotion } from '@/types/Business'
 import { MUSLIM_FACILITIES } from '@/constants/muslimFacilities'

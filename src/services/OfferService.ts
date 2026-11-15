@@ -60,6 +60,35 @@ export interface OfferWording {
   is_active: boolean
 }
 
+/** Per-offer results for a store (no customer identity). */
+export interface OfferReportRow {
+  offer_id: string
+  title: string
+  code_prefix: string
+  is_active: boolean
+  days: number
+  issued: number
+  people: number
+  redeemed: number
+  open: number
+  expired: number
+  voided: number
+  followed: { instagram: number; tiktok: number; facebook: number }
+  last_redeemed_at: string | null
+  series: { date: string; issued: number; redeemed: number }[]
+}
+
+/** Admin-only: who claimed / redeemed a code. */
+export interface AdminOfferCode {
+  code: string
+  user_id: string
+  display_name: string | null
+  issued_at: string
+  redeemed_at: string | null
+  expires_at: string
+  followed: string[]
+}
+
 export interface NewOffer {
   locationId: number
   codePrefix: string
@@ -250,5 +279,19 @@ export class OfferService {
     })
     if (error) throw toOfferError(error)
     ActivityLogService.log('offer_create', { location_id: o.locationId, code_prefix: o.codePrefix.toUpperCase() })
+  }
+
+  /** Owner/admin: how the store's offers are performing. */
+  static async getOfferReport(locationId: number, days = 30): Promise<OfferReportRow[]> {
+    const { data, error } = await supabase.rpc('get_offer_report', { p_location_id: locationId, p_days: days })
+    if (error) throw toOfferError(error)
+    return (data ?? []) as OfferReportRow[]
+  }
+
+  /** Admin only: customer-level list for one offer. */
+  static async adminOfferCodes(offerId: string, limit = 100): Promise<AdminOfferCode[]> {
+    const { data, error } = await supabase.rpc('admin_offer_codes', { p_offer_id: offerId, p_limit: limit })
+    if (error) throw toOfferError(error)
+    return (data ?? []) as AdminOfferCode[]
   }
 }
