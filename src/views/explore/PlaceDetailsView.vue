@@ -371,6 +371,21 @@
               </div>
             </div>
 
+            <!-- 🏪 "Are you the owner?" — only after repeat visits to an unclaimed place -->
+            <div v-if="showClaimHint" class="claim-hint-card">
+              <ion-icon :icon="storefrontOutline" class="claim-hint-icon" />
+              <div class="claim-hint-text">
+                <strong>{{ $t('business.claim.hintTitle') }}</strong>
+                <p>{{ $t('business.claim.hintBody') }}</p>
+                <ion-button size="small" fill="outline" color="carrot" @click="claimBusiness">
+                  {{ $t('business.claim.action') }}
+                </ion-button>
+              </div>
+              <button type="button" class="claim-hint-close" :aria-label="$t('common.close')" @click="dismissClaimHint">
+                <ion-icon :icon="closeOutline" />
+              </button>
+            </div>
+
             <!-- ⭐ Additional Details -->
             <div class="ion-margin-vertical">
               <!-- 🕒 Opening Hours -->
@@ -980,6 +995,8 @@ import {
   bookmark,
   briefcaseOutline,
   ribbonOutline,
+  storefrontOutline,
+  closeOutline,
   checkmarkCircle,
   logoFacebook,
   logoTiktok,
@@ -1109,6 +1126,28 @@ const showAllTags = ref(false)
 const showAllBadges = ref(false)
 const canEdit = ref(false)
 const isOwner = ref(false)
+const isAdminUser = ref(false)
+
+// "Are you the owner?" card: shown from the 3rd open of the same unclaimed place on this device.
+const CLAIM_HINT_VISITS = 3
+const claimHintVisits = ref(0)
+const claimHintDismissed = ref(false)
+const showClaimHint = computed(() =>
+  !!place.value && !place.value.is_claimed && !isOwner.value && !isAdminUser.value &&
+  claimStatus.value !== 'pending' && !claimHintDismissed.value && claimHintVisits.value >= CLAIM_HINT_VISITS
+)
+function trackClaimHintVisit(id: number | string) {
+  try {
+    claimHintDismissed.value = localStorage.getItem(`claim_hint_dismissed:${id}`) === '1'
+    const n = Number(localStorage.getItem(`claim_hint_visits:${id}`) || 0) + 1
+    localStorage.setItem(`claim_hint_visits:${id}`, String(n))
+    claimHintVisits.value = n
+  } catch { claimHintVisits.value = 0 }
+}
+function dismissClaimHint() {
+  claimHintDismissed.value = true
+  try { if (place.value) localStorage.setItem(`claim_hint_dismissed:${place.value.id}`, '1') } catch { /* ignore */ }
+}
 const ownerName = ref<string | null>(null)
 const claimStatus = ref<'pending' | 'approved' | 'rejected' | null>(null)
 const modules = [Pagination, Zoom]
@@ -1552,6 +1591,8 @@ const loadPlace = async () => {
     promises.push(authorPromise)
   }
 
+  trackClaimHintVisit(data.id)
+
   // Certifications
   promises.push((async () => {
     await fetchLocationCertifications(data.id)
@@ -1589,6 +1630,7 @@ const loadPlace = async () => {
 
       const roleData = roleRes.data
       isOwner.value = !!ownerRes.data
+      isAdminUser.value = roleData?.role === 'admin'
 
       if (
         user.id === data.created_by ||
@@ -2381,6 +2423,11 @@ const scrollToReviews = () => {
 
 .open-status-line { margin: 0 0 8px; }
 .hours-toggle { display: flex; align-items: center; justify-content: center; gap: 4px; padding: 8px; font-size: 13px; font-weight: 600; color: var(--ion-color-carrot); cursor: pointer; }
+
+.claim-hint-card { position: relative; display: flex; gap: 12px; align-items: flex-start; padding: 14px 40px 14px 14px; margin: 0 0 16px; border: 1px dashed var(--ion-color-carrot, #ff7a00); border-radius: 16px; }
+.claim-hint-icon { font-size: 26px; color: var(--ion-color-carrot, #ff7a00); flex-shrink: 0; margin-top: 2px; }
+.claim-hint-text p { margin: 4px 0 8px; font-size: 13px; opacity: 0.8; }
+.claim-hint-close { position: absolute; top: 6px; right: 6px; background: none; border: 0; padding: 6px; color: inherit; opacity: 0.6; cursor: pointer; font-size: 18px; }
 
 /* GROUPED INFO CARDS */
 .info-card {

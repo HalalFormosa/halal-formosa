@@ -1834,6 +1834,8 @@
     },
     "claim": {
       "action": "Claim this business",
+      "hintTitle": "Are you the owner of this business?",
+      "hintBody": "Claim your store to manage your listing, reply to reviews and add offers.",
       "title": "Claim business",
       "claiming": "You are claiming",
       "backToListing": "Back to listing",
