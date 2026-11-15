@@ -513,7 +513,10 @@
       "openNow": "Open Now",
       "closedNow": "Closed Now",
       "additionalDetails": "Additional Details",
-      "estimatedPrice": "Estimated Price"
+      "estimatedPrice": "Estimated Price",
+      "affiliatedWith": "Bersekutu dengan",
+      "allHours": "Seminggu penuh",
+      "hideHours": "Sembunyikan"
     },
     "filters": {
       "priceRange": "Julat Harga"
@@ -561,7 +564,11 @@
       "searchTerms": "Recent searches",
       "tags": "Places you view"
     },
-    "noResults": "No results found"
+    "noResults": "No results found",
+    "discount": "Kod diskaun",
+    "discountFilter": "Ada kod diskaun",
+    "discountChip": "Diskaun",
+    "discountTag": "Kod diskaun"
   },
   "trip": {
     "title": "Trip Mesra Muslim",
@@ -764,7 +771,7 @@
       "noLocations": "You haven't submitted any locations yet."
     }
   },
-"achievements": {
+  "achievements": {
     "title": "Pencapaian Saya",
     "summaryLabel": "Trofi Dibuka",
     "nextTierHint": "{count} lagi untuk membuka \"{tier}\"",
@@ -1759,5 +1766,160 @@
     "locationDesc": "Comprehensive breakdown of verified locations categorized by the Halal Formosa ecosystem.",
     "seeAllProducts": "See All Products",
     "seeAllLocations": "See All Locations"
+  },
+  "offers": {
+    "proPerk": "Faedah Halal Formosa Pro",
+    "freeThenPro": "Ahli percuma boleh menggunakannya sekali · Ahli Pro tanpa had",
+    "unlockMore": "Naik taraf untuk guna lagi",
+    "limitReached": "Anda telah menggunakan satu penebusan percuma. Naik taraf ke Halal Formosa Pro dalam aplikasi mudah alih untuk menuntut kod diskaun lain.",
+    "showCode": "Tunjukkan kod saya",
+    "create": {
+      "open": "Cipta kod diskaun",
+      "title": "Kod diskaun baharu",
+      "adminOnly": "Hanya admin boleh mencipta kod diskaun. Pemilik kedai boleh mengubah teksnya selepas itu.",
+      "prefix": "Awalan kod",
+      "prefixHint": "cth. SAKI (2-12 huruf atau nombor, unik)",
+      "kind": "Jenis",
+      "kindMenu": "Diskaun menu",
+      "kindMeat": "Harga daging / produk",
+      "kindOther": "Lain-lain",
+      "active": "Kelihatan kepada pelanggan",
+      "followSettings": "Tetapan ikuti",
+      "requireFollow": "Minta pelanggan mengikuti dahulu",
+      "followHint": "Menggunakan Instagram, TikTok dan Facebook milik kedai. Gantikan di bawah hanya jika diskaun ini perlu mengarahkan orang ke akaun lain.",
+      "followInstagram": "Nama pengguna Instagram (pilihan, menggantikan)",
+      "followTiktok": "Nama pengguna TikTok (pilihan, menggantikan)",
+      "followFacebook": "Pautan halaman Facebook (pilihan, menggantikan)",
+      "submit": "Cipta kod diskaun",
+      "created": "Kod diskaun dicipta",
+      "ruleTitle": "Cara setiap kod diskaun berfungsi",
+      "ruleBody": "Ahli percuma boleh menggunakan kod sekali. Ahli Pro boleh menggunakannya seberapa banyak yang mereka mahu. Peraturan ini ditetapkan oleh Halal Formosa dan terpakai untuk semua kod diskaun, jadi ia tidak boleh diubah bagi setiap kod.",
+      "previewAfter": "Selepas pelanggan mengetik Tunjukkan kod saya",
+      "sampleNote": "Contoh sahaja. Setiap pelanggan mendapat kod uniknya sendiri.",
+      "limits": "Tarikh dan had",
+      "validFrom": "Bermula (pilihan)",
+      "validUntil": "Berakhir (pilihan)",
+      "ttl": "Kod sah selama (hari)",
+      "maxCodes": "Bilangan kod maksimum (pilihan)",
+      "maxCodesHint": "Biarkan kosong jika tiada had",
+      "errDates": "Tarikh tamat mesti selepas tarikh mula.",
+      "errNumbers": "Tempoh sah mesti 1-365 hari dan bilangan maksimum sekurang-kurangnya 1.",
+      "previewTitle": "Tajuk anda",
+      "previewFollow": "Pelanggan akan diminta mengikuti akaun media sosial kedai terlebih dahulu.",
+      "errPrefixTaken": "Awalan kod itu sudah digunakan. Pilih yang lain.",
+      "errPrefix": "Awalan mesti 2-12 huruf atau nombor.",
+      "errFollow": "Salah satu akaun untuk diikuti tidak sah."
+    },
+    "owner": {
+      "none": "Belum ada kod diskaun untuk kedai ini.",
+      "settings": "Tetapan",
+      "validDays": "Kod sah {n} hari",
+      "stock": "Maks. {n} kod",
+      "noStockLimit": "Tiada had kod",
+      "saveSettings": "Simpan tetapan",
+      "settingsSaved": "Tetapan disimpan",
+      "settingsReadonly": "Tarikh dan had ditetapkan oleh Halal Formosa. Hubungi kami untuk mengubahnya.",
+      "tab": "Kod diskaun",
+      "note": "Atur rupa kod diskaun anda kepada pelanggan. Perubahan dipaparkan serta-merta. Kod yang telah dikeluarkan kekal sah.",
+      "title": "Tajuk",
+      "badge": "Teks lencana",
+      "badgeHint": "cth. DISKAUN 10%",
+      "description": "Penerangan",
+      "fixed": "ditetapkan oleh Halal Formosa",
+      "preview": "Pratonton",
+      "paused": "Dijeda: pelanggan tidak dapat melihat atau menuntut diskaun ini.",
+      "stats": "{issued} dikeluarkan · {redeemed} ditebus",
+      "saved": "Kod diskaun dikemas kini",
+      "errTitle": "Sila isi tajuk.",
+      "errNotAllowed": "Anda tidak boleh mengubah kod diskaun ini.",
+      "errGeneric": "Tidak dapat menyimpan. Sila cuba lagi."
+    },
+    "loginToClaim": "Log masuk untuk menuntut kod anda",
+    "endsOn": "Tamat {date}",
+    "startsOn": "Bermula {date}",
+    "soldOut": "Semua kod telah dituntut.",
+    "report": {
+      "title": "Keputusan",
+      "lastDays": "{n} hari lepas",
+      "paused": "Dijeda",
+      "claimed": "Dituntut",
+      "redeemed": "Ditebus",
+      "rate": "Kadar tebusan",
+      "open": "Kod aktif",
+      "expired": "Tamat tempoh tidak digunakan",
+      "people": "Orang",
+      "followed": "Mengikuti: {list}",
+      "voided": "{n} tebusan dibatalkan",
+      "showCustomers": "Tunjukkan pelanggan",
+      "hideCustomers": "Sembunyikan pelanggan",
+      "noCustomers": "Belum ada kod.",
+      "statusRedeemed": "Ditebus",
+      "statusExpired": "Tamat tempoh",
+      "statusOpen": "Aktif"
+    },
+    "followFirst": "Ikuti dahulu untuk membuka kod anda",
+    "followOn": "Ikuti di {platform}",
+    "followed": "Telah mengikuti di {platform}",
+    "followRequired": "Sila ikuti dahulu, kemudian cuba lagi.",
+    "followStaffNote": "Kedai mungkin meminta bukti bahawa anda mengikuti mereka.",
+    "unlock": "Buka dengan Pro",
+    "showAtCounter": "Tunjukkan kod ini di kaunter. Hanya sah sekali.",
+    "validUntil": "Sah sehingga {date}",
+    "proRequired": "Faedah ini untuk ahli Halal Formosa Pro. Naik taraf dalam aplikasi mudah alih untuk membukanya.",
+    "ended": "Diskaun ini tidak lagi tersedia.",
+    "error": "Tidak dapat mendapatkan kod anda. Sila cuba lagi.",
+    "redeem": {
+      "title": "Tebus kod",
+      "action": "Tebus kod",
+      "hint": "Taip atau imbas kod pelanggan untuk menandakannya telah digunakan.",
+      "placeholder": "cth. MRMO-7K4Q-X9MP",
+      "button": "Tebus",
+      "scan": "Imbas QR",
+      "stopScan": "Berhenti mengimbas",
+      "success": "Kod diterima",
+      "successDetail": "{offer} — berikan diskaunnya sekarang.",
+      "invalid_code": "Kod ini tidak sah untuk kedai anda.",
+      "already_used": "Sudah digunakan pada {when}.",
+      "expired": "Kod ini telah tamat tempoh.",
+      "offer_not_active": "Diskaun ini tidak aktif.",
+      "not_allowed": "Anda tidak boleh menebus kod untuk kedai ini.",
+      "noAccess": "Hanya pemilik kedai boleh menebus kod.",
+      "generic": "Tidak dapat menebus kod. Sila cuba lagi.",
+      "cameraDenied": "Kamera tidak tersedia. Taip kod itu sahaja.",
+      "undo": "Batalkan",
+      "undoTitle": "Batalkan tebusan ini?",
+      "undoBody": "{code} akan boleh digunakan semula. Lakukan hanya jika kod ini ditebus secara tidak sengaja.",
+      "undone": "Tebusan dibatalkan",
+      "undoneDetail": "{code} boleh digunakan semula.",
+      "errWindow": "Tempoh pembatalan (10 minit) telah berlalu. Hubungi Halal Formosa untuk membetulkannya.",
+      "errOpenCode": "Pelanggan ini sudah mempunyai kod baharu untuk diskaun ini, jadi kod ini tidak boleh dipulihkan.",
+      "recent": "Baru ditebus",
+      "none": "Belum ada kod yang ditebus.",
+      "store": "Kedai"
+    }
+  },
+  "business": {
+    "plan": {
+      "branches": "Cawangan: {used} daripada {limit} digunakan",
+      "branchesUnlimited": "Cawangan: {used} (tiada had)"
+    },
+    "noAccess": "Hanya pemilik kedai boleh mengurus perniagaan ini.",
+    "claim": {
+      "limit": {
+        "title": "Anda telah mencapai had cawangan",
+        "branchCount": "{n} cawangan | {n} cawangan",
+        "body": "Pelan {tier} anda merangkumi {limit} dan anda sudah mempunyai {count}. Naik taraf pelan anda untuk menambah cawangan.",
+        "bodyTop": "Pelan Gold anda merangkumi sehingga {limit}. Perlukan lebih banyak? Hubungi kami untuk mengatur kuota yang lebih besar dan harga untuk perniagaan anda.",
+        "contact": "Hubungi Halal Formosa"
+      },
+      "hintTitle": "Adakah anda pemilik perniagaan ini?",
+      "hintBody": "Tuntut kedai anda untuk mengurus penyenaraian, membalas ulasan dan menyiarkan promosi."
+    },
+    "tabs": {
+      "promos": "Promosi"
+    },
+    "promos": {
+      "titleField": "Tajuk promosi"
+    }
   }
 }
