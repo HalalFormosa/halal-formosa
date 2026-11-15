@@ -112,5 +112,6 @@ export interface PlanFeatures {
   menu: boolean
   maxMenuItems: number // 0 when menu is off, -1 = unlimited
   maxPromotions: number // -1 = unlimited
+  maxBranches: number // stores one owner can hold, -1 = unlimited
   analytics: 'basic' | 'standard' | 'advanced' | 'pro'
 }

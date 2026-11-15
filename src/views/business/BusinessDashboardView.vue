@@ -52,6 +52,7 @@
                 <span class="ap-label">{{ $t('business.plan.yourPlanLabel') }}</span>
                 <span class="ap-tier">{{ accountTier }}</span>
                 <span class="ap-note">{{ $t('business.plan.accountWide') }}</span>
+                <span v-if="quota" class="ap-note">{{ quota.limit < 0 ? $t('business.plan.branchesUnlimited', { used: quota.used }) : $t('business.plan.branches', { used: quota.used, limit: quota.limit }) }}</span>
               </div>
               <ion-button v-if="accountTier !== 'gold'" size="small" color="carrot" class="ap-btn" @click="showUpgrade = true">
                 {{ $t('business.plan.upgrade') }}
@@ -111,7 +112,7 @@ import AppHeader from '@/components/AppHeader.vue'
 import BusinessUpgradeModal from '@/components/BusinessUpgradeModal.vue'
 import router from '@/router'
 import { useBusinessListings, type OwnedLocation } from '@/composables/useBusinessListings'
-import { ClaimService } from '@/services/ClaimService'
+import { ClaimService, type BranchQuota } from '@/services/ClaimService'
 import { ActivityLogService } from '@/services/ActivityLogService'
 import type { LocationClaim, PlanTier } from '@/types/Business'
 
@@ -120,14 +121,16 @@ const loading = ref(true)
 const locations = ref<OwnedLocation[]>([])
 const pendingClaims = ref<LocationClaim[]>([])
 const showUpgrade = ref(false)
+const quota = ref<BranchQuota | null>(null)
 
 // The tier is account-level, so every owned business shares it — read it once.
 const accountTier = computed<PlanTier>(() => (locations.value[0]?.tier as PlanTier) ?? 'free')
 
 async function load() {
   loading.value = true
-  const [owned, pending] = await Promise.all([getMyLocations(), ClaimService.getMyPendingClaims()])
+  const [owned, pending, q] = await Promise.all([getMyLocations(), ClaimService.getMyPendingClaims(), ClaimService.getMyBranchQuota()])
   locations.value = owned
+  quota.value = q
   pendingClaims.value = pending
   loading.value = false
   ActivityLogService.log('business_dashboard_open', { count: locations.value.length, pending: pending.length })

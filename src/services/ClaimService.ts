@@ -7,7 +7,27 @@ import type { LocationClaim, LocationEditRequest } from '@/types/Business'
  * proof, an admin approves/rejects. Approval is done through the `approve_claim`
  * RPC (SECURITY DEFINER) which grants ownership + flags the location claimed.
  */
+/** How many stores one owner can hold on their plan, and how many they use. */
+export interface BranchQuota {
+  tier: 'free' | 'bronze' | 'silver' | 'gold'
+  /** -1 = unlimited */
+  limit: number
+  used: number
+  pending: number
+  can_claim: boolean
+}
+
 export class ClaimService {
+  /** The signed-in owner's branch quota (limit comes from their plan, or an admin-set override). */
+  static async getMyBranchQuota(): Promise<BranchQuota | null> {
+    const { data, error } = await supabase.rpc('get_my_branch_quota')
+    if (error) {
+      console.warn('[ClaimService] getMyBranchQuota', error)
+      return null
+    }
+    return data as BranchQuota
+  }
+
   /** Submit a claim for a location. One open (pending) claim per user+location. */
   static async submitClaim(
     claim: Omit<LocationClaim, 'id' | 'user_id' | 'status' | 'created_at' | 'updated_at' | 'reviewed_by' | 'reviewed_at'>
