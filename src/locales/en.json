@@ -1934,6 +1934,21 @@
       "manageCta": "Manage"
     },
     "noAccess": "Only the store's owner can manage this business.",
+    "owners": {
+      "title": "Owners",
+      "count": "{n} listed",
+      "none": "No owner yet",
+      "note": "Add the email the owner uses to log in. They can use the web app or the mobile app: the store is linked the moment they log in with that email (it must be a confirmed email).",
+      "invited": "Waiting for login",
+      "emailPlaceholder": "Owner email",
+      "roleOwner": "Owner",
+      "roleManager": "Manager",
+      "add": "Add",
+      "added": "Owner added",
+      "invitedToast": "Invite saved. It applies when they log in with that email.",
+      "errEmail": "Enter a valid email.",
+      "errGeneric": "Could not save. Please try again."
+    },
     "claim": {
       "limit": {
         "title": "You've reached your branch limit",

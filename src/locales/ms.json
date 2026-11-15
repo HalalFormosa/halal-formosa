@@ -1920,6 +1920,21 @@
     },
     "promos": {
       "titleField": "Tajuk promosi"
+    },
+    "owners": {
+      "title": "Pemilik",
+      "count": "{n} disenaraikan",
+      "none": "Belum ada pemilik",
+      "note": "Tambahkan e-mel yang digunakan pemilik untuk log masuk. Mereka boleh menggunakan aplikasi web atau aplikasi mudah alih: kedai dipautkan sebaik sahaja mereka log masuk dengan e-mel itu (mesti e-mel yang telah disahkan).",
+      "invited": "Menunggu log masuk",
+      "emailPlaceholder": "E-mel pemilik",
+      "roleOwner": "Pemilik",
+      "roleManager": "Pengurus",
+      "add": "Tambah",
+      "added": "Pemilik ditambah",
+      "invitedToast": "Jemputan disimpan. Ia terpakai apabila mereka log masuk dengan e-mel itu.",
+      "errEmail": "Masukkan e-mel yang sah.",
+      "errGeneric": "Tidak dapat menyimpan. Sila cuba lagi."
     }
   }
 }

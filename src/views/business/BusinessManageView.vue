@@ -37,6 +37,9 @@
           </div>
         </div>
 
+        <!-- Admin: who owns this store (add by email, works for web-only owners too) -->
+        <AdminOwnerManager v-if="isAdmin" :location-id="locationId" />
+
         <!-- Segment tabs -->
         <div class="seg-scroll">
           <ion-segment v-model="tab" scrollable mode="md" color="carrot">
@@ -712,6 +715,7 @@ import BusinessUpgradeModal from '@/components/BusinessUpgradeModal.vue'
 import OwnerOfferEditor from '@/components/offers/OwnerOfferEditor.vue'
 import AdminOfferCreate from '@/components/offers/AdminOfferCreate.vue'
 import OfferReport from '@/components/offers/OfferReport.vue'
+import AdminOwnerManager from '@/components/offers/AdminOwnerManager.vue'
 import { OfferService, type OwnerOffer } from '@/services/OfferService'
 import type { PlanFeatures, PlanTier, LocationPhoto, LocationMenuItem, LocationPromotion } from '@/types/Business'
 import { MUSLIM_FACILITIES } from '@/constants/muslimFacilities'

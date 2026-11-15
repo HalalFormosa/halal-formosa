@@ -177,7 +177,7 @@ async function reveal(offer: LocationOffer) {
   messages.value[offer.id] = undefined
   const { data: { session } } = await supabase.auth.getSession()
   if (!session) {
-    router.push('/login')
+    router.push({ path: '/login', query: { redirect: router.currentRoute.value.fullPath } })
     return
   }
 

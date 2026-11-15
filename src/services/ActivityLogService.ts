@@ -614,6 +614,7 @@ function resolveEntity(activity: string, rawDetail: any): EntityResult {
         case 'business_claim_submit_error':
         case 'business_claim_approve':
         case 'business_claim_reject':
+        case 'business_owner_add':
             return {
                 entity_type: 'place',
                 entity_id: detail.location_id ? String(detail.location_id) : null
@@ -922,6 +923,7 @@ function resolveActivityGroup(activity: string): string | null {
         case 'business_claim_submit_error':
         case 'business_claim_approve':
         case 'business_claim_reject':
+        case 'business_owner_add':
         case 'business_edit_request_approve':
         case 'business_edit_request_reject':
         case 'business_dashboard_open':

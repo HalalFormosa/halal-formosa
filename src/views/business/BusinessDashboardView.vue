@@ -114,6 +114,7 @@ import router from '@/router'
 import { useBusinessListings, type OwnedLocation } from '@/composables/useBusinessListings'
 import { ClaimService, type BranchQuota } from '@/services/ClaimService'
 import { ActivityLogService } from '@/services/ActivityLogService'
+import { acceptPendingOwnerInvites } from '@/composables/useStoreAccess'
 import type { LocationClaim, PlanTier } from '@/types/Business'
 
 const { getMyLocations } = useBusinessListings()
@@ -128,6 +129,7 @@ const accountTier = computed<PlanTier>(() => (locations.value[0]?.tier as PlanTi
 
 async function load() {
   loading.value = true
+  await acceptPendingOwnerInvites()
   const [owned, pending, q] = await Promise.all([getMyLocations(), ClaimService.getMyPendingClaims(), ClaimService.getMyBranchQuota()])
   locations.value = owned
   quota.value = q

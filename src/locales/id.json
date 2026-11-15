@@ -228,7 +228,22 @@
       "sat": "Sab",
       "sun": "Min"
     },
-    "noAccess": "Hanya pemilik toko yang dapat mengelola bisnis ini."
+    "noAccess": "Hanya pemilik toko yang dapat mengelola bisnis ini.",
+    "owners": {
+      "title": "Pemilik",
+      "count": "{n} terdaftar",
+      "none": "Belum ada pemilik",
+      "note": "Tambahkan email yang dipakai pemilik untuk masuk. Mereka bisa memakai aplikasi web atau aplikasi seluler: toko terhubung begitu mereka masuk dengan email itu (harus email yang sudah dikonfirmasi).",
+      "invited": "Menunggu login",
+      "emailPlaceholder": "Email pemilik",
+      "roleOwner": "Pemilik",
+      "roleManager": "Manajer",
+      "add": "Tambah",
+      "added": "Pemilik ditambahkan",
+      "invitedToast": "Undangan disimpan. Berlaku saat mereka masuk dengan email itu.",
+      "errEmail": "Masukkan email yang valid.",
+      "errGeneric": "Tidak dapat menyimpan. Silakan coba lagi."
+    }
   },
   "common": {
     "seeOlderChanges": "Lihat perubahan lama",

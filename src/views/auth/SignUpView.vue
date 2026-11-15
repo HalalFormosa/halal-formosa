@@ -500,7 +500,8 @@ async function signUpWithApple() {
 
 function goToLogin() {
   showSuccessModal.value = false;
-  router.push('/login');
+  const r = route.query.redirect;
+  router.push(typeof r === 'string' ? { path: '/login', query: { redirect: r } } : '/login');
 }
 
 function goHome() {
