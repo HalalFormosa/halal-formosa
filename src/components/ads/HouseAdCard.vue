@@ -143,7 +143,11 @@ const providerLabel = computed(() => {
   if (!ad) return ''
   if (ad.kind === 'partner') return t('home.houseAdKind.partner')
   if (!ad.providerName) return t('home.houseAdKind.' + ad.kind)
-  return t('home.houseAdProvider.' + PROVIDER_KEY_BY_KIND[ad.kind], { name: ad.providerName })
+  // Only a halal body certifies; any other partner is just affiliated.
+  const key = ad.kind === 'location' && ad.providerType !== 'halal_body'
+    ? 'affiliatedWith'
+    : PROVIDER_KEY_BY_KIND[ad.kind]
+  return t('home.houseAdProvider.' + key, { name: ad.providerName })
 })
 
 function adLogDetail(ad: NonNullable<typeof item.value>) {

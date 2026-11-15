@@ -468,6 +468,7 @@
     "houseAdProvider": {
       "soldBy": "Dijual oleh {name}",
       "certifiedBy": "Disertifikasi oleh {name}",
+      "affiliatedWith": "Berafiliasi dengan {name}",
       "providedBy": "Oleh {name}"
     },
     "statuses": {
@@ -913,6 +914,7 @@
       "orderNow": "Order Now",
       "certifiedBy": "Certified by",
       "broughtBy": "Dibawa oleh",
+      "affiliatedWith": "Berafiliasi dengan",
       "verifiedGoldPartner": "Verified Gold Partner",
       "address": "Address",
       "noAddress": "No address available",
