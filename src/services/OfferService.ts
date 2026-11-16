@@ -144,6 +144,15 @@ export interface RedeemResult {
   location_name?: string | null
 }
 
+export interface CodeCheck {
+  code: string
+  offer_title: string
+  discount_label: string | null
+  location_name: string | null
+  state: 'ok' | 'already_used' | 'expired' | 'offer_not_active'
+  redeemed_at: string | null
+}
+
 export interface RedemptionRow {
   code: string
   offer_title: string
@@ -265,6 +274,13 @@ export class OfferService {
     if (error) throw toOfferError(error)
     ActivityLogService.log('offer_code_redeem', { location_id: locationId, code_prefix: code.split('-')[0]?.toUpperCase() })
     return data as RedeemResult
+  }
+
+  /** Store side: look at a scanned code without redeeming it. Throws invalid_code for non-owners / unknown codes. */
+  static async checkCode(code: string): Promise<CodeCheck> {
+    const { data, error } = await supabase.rpc('check_offer_code', { p_code: code })
+    if (error) throw toOfferError(error)
+    return data as CodeCheck
   }
 
   /** Store side: undo a mistaken redemption (10 minutes for owners, any time for admins). */

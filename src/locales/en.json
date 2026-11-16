@@ -1756,6 +1756,11 @@
     "proRequired": "This perk is for Halal Formosa Pro members. Upgrade in the mobile app to unlock it.",
     "ended": "This discount is no longer available.",
     "error": "Could not get your code. Please try again.",
+    "scan": {
+      "badge": "Discount code",
+      "redeem": "Redeem",
+      "failed": "Not redeemed"
+    },
     "redeem": {
       "title": "Redeem a code",
       "action": "Redeem codes",
