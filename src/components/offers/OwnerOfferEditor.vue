@@ -18,6 +18,22 @@
       <label class="oo-label">{{ $t('offers.owner.description') }}</label>
       <ion-textarea v-model="d.description" :maxlength="300" :rows="3" class="oo-input" />
 
+      <label class="oo-label">{{ $t('offers.owner.image') }}</label>
+      <div class="oo-image">
+        <img v-if="d.image_url" :src="d.image_url" :alt="d.title" class="oo-image-thumb" />
+        <div class="oo-image-actions">
+          <ion-button size="small" fill="outline" color="carrot" :disabled="uploading === d.id" @click="pickImage(d)">
+            <ion-spinner v-if="uploading === d.id" name="crescent" slot="start" />
+            <ion-icon v-else :icon="imageOutline" slot="start" />
+            {{ d.image_url ? $t('offers.owner.imageChange') : $t('offers.owner.imageAdd') }}
+          </ion-button>
+          <ion-button v-if="d.image_url" size="small" fill="clear" color="danger" :disabled="uploading === d.id" @click="d.image_url = null">
+            {{ $t('offers.owner.imageRemove') }}
+          </ion-button>
+        </div>
+        <p class="oo-image-hint">{{ $t('offers.owner.imageHint') }}</p>
+      </div>
+
       <p class="oo-fixed">
         <ion-icon :icon="lockClosedOutline" />
         {{ d.free_uses > 0 ? $t('offers.freeThenPro', { n: d.free_uses }) : $t('offers.proPerk') }}
@@ -62,6 +78,7 @@
       <!-- Live preview, same card customers see -->
       <p class="oo-label">{{ $t('offers.owner.preview') }}</p>
       <div class="oo-preview" :class="{ paused: !d.is_active }">
+        <img v-if="d.image_url" :src="d.image_url" :alt="d.title" class="pv-image" />
         <div class="pv-row">
           <ion-icon :icon="pricetagOutline" class="pv-icon" />
           <div>
@@ -80,6 +97,8 @@
         <template v-else>{{ $t('common.save') }}</template>
       </ion-button>
     </div>
+
+    <input ref="fileInput" type="file" accept="image/*" class="oo-file" @change="onImageSelected" />
   </div>
 </template>
 
@@ -87,8 +106,10 @@
 import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { IonButton, IonIcon, IonInput, IonSpinner, IonTextarea, IonToggle, toastController } from '@ionic/vue'
-import { lockClosedOutline, pricetagOutline, chevronDown, chevronUp } from 'ionicons/icons'
+import { lockClosedOutline, pricetagOutline, chevronDown, chevronUp, imageOutline } from 'ionicons/icons'
 import { isAdmin } from '@/composables/userProfile'
+import { supabase } from '@/plugins/supabaseClient'
+import { useImageResizer } from '@/composables/useImageResizer'
 import { OfferService, OfferError, type OwnerOffer } from '@/services/OfferService'
 
 type Draft = OwnerOffer & { description: string; discount_label: string }
@@ -98,6 +119,38 @@ const emit = defineEmits<{ (e: 'saved'): void }>()
 const { t } = useI18n()
 
 const drafts = ref<Draft[]>([])
+const { resizeImage } = useImageResizer()
+
+// Picture upload: pick a file, shrink it, store it, and keep the public URL on
+// the draft. It only goes live when the owner taps Save.
+const fileInput = ref<HTMLInputElement | null>(null)
+const uploading = ref<string | null>(null)
+let pickingFor: Draft | null = null
+function pickImage(d: Draft) {
+  pickingFor = d
+  fileInput.value?.click()
+}
+async function onImageSelected(e: Event) {
+  const input = e.target as HTMLInputElement
+  const file = input.files?.[0]
+  input.value = ''
+  const d = pickingFor
+  pickingFor = null
+  if (!file || !d) return
+  uploading.value = d.id
+  try {
+    const resized = await resizeImage(file, 1200, 0.8)
+    const path = `offers/${d.location_id}/${Date.now()}-${Math.random().toString(36).slice(2)}.jpg`
+    const { error } = await supabase.storage.from('location-image').upload(path, resized, { upsert: false, contentType: 'image/jpeg' })
+    if (error) throw error
+    d.image_url = supabase.storage.from('location-image').getPublicUrl(path).data.publicUrl
+  } catch (err) {
+    console.error('[offer image]', err)
+    await toast(t('offers.owner.imageError'))
+  } finally {
+    uploading.value = null
+  }
+}
 
 // Admin-editable settings per offer (dates, code validity, stock, follow).
 type SettingsDraft = { validFrom: string; validUntil: string; ttl: string | number; maxCodes: string | number; requireFollow: boolean; ig: string; tt: string; fb: string }
@@ -135,6 +188,7 @@ function isDirty(d: Draft) {
     || (o.description ?? '') !== d.description.trim()
     || (o.discount_label ?? '') !== d.discount_label.trim()
     || o.is_active !== d.is_active
+    || (o.image_url ?? null) !== (d.image_url ?? null)
 }
 
 async function toast(message: string) {
@@ -175,6 +229,7 @@ async function save(d: Draft) {
   try {
     await OfferService.updateMyOffer(d.id, {
       title: d.title, description: d.description, discount_label: d.discount_label, is_active: d.is_active,
+      image_url: d.image_url ?? null,
     }, d.location_id)
     await toast(t('offers.owner.saved'))
     emit('saved')
@@ -209,6 +264,12 @@ async function save(d: Draft) {
 .oo-fixed { display: flex; align-items: center; gap: 6px; font-size: 12px; opacity: 0.7; margin: 8px 0 0; }
 .oo-preview { border: 1px solid var(--ion-color-carrot, #ff7a00); border-radius: 14px; padding: 12px; background: color-mix(in srgb, var(--ion-color-carrot, #ff7a00) 8%, transparent); }
 .oo-preview.paused { opacity: 0.55; }
+.oo-file { display: none; }
+.oo-image { display: flex; flex-direction: column; gap: 6px; }
+.oo-image-thumb { width: 100%; max-height: 180px; object-fit: cover; border-radius: 12px; border: 1px solid rgba(128,128,128,0.3); }
+.oo-image-actions { display: flex; align-items: center; gap: 4px; }
+.oo-image-hint { margin: 0; font-size: 11px; opacity: 0.65; }
+.pv-image { display: block; width: calc(100% + 24px); margin: -12px -12px 10px; max-height: 160px; object-fit: cover; border-radius: 13px 13px 0 0; }
 .pv-row { display: flex; gap: 10px; align-items: flex-start; }
 .pv-icon { font-size: 22px; color: var(--ion-color-carrot, #ff7a00); flex-shrink: 0; margin-top: 2px; }
 .pv-title { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }

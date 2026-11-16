@@ -11,6 +11,7 @@ export interface LocationOffer {
   free_uses: number
   valid_from: string | null
   valid_until: string | null
+  image_url: string | null
 }
 
 export interface OfferCode {
@@ -62,6 +63,7 @@ export interface OwnerOffer {
   follow_instagram: string | null
   follow_tiktok: string | null
   follow_facebook: string | null
+  image_url: string | null
 }
 
 /** Admin-only settings of an offer. */
@@ -81,6 +83,8 @@ export interface OfferWording {
   description: string
   discount_label: string
   is_active: boolean
+  /** Set to change the picture: a public URL to replace it, or null to remove it. Leave out to keep it. */
+  image_url?: string | null
 }
 
 /** Per-offer results for a store (no customer identity). */
@@ -177,6 +181,7 @@ export type OfferErrorCode =
   | 'invalid_title'
   | 'invalid_description'
   | 'invalid_label'
+  | 'invalid_image'
   | 'unknown'
 
 export class OfferError extends Error {
@@ -192,7 +197,7 @@ function toOfferError(error: { message?: string } | null): OfferError {
   const known: OfferErrorCode[] = [
     'not_authenticated', 'pro_required', 'free_limit_reached', 'offer_not_found', 'offer_not_started', 'offer_ended',
     'invalid_code', 'already_used', 'expired', 'offer_not_active', 'not_allowed',
-    'invalid_title', 'invalid_description', 'invalid_label', 'follow_required',
+    'invalid_title', 'invalid_description', 'invalid_label', 'invalid_image', 'follow_required',
     'offer_sold_out', 'invalid_ttl', 'invalid_max_codes', 'invalid_dates',
     'not_redeemed', 'void_window_passed', 'customer_has_open_code',
     'invalid_prefix', 'prefix_taken', 'invalid_kind', 'invalid_free_uses', 'invalid_follow', 'location_not_found',
@@ -211,7 +216,7 @@ export class OfferService {
   static async getOffersForLocation(locationId: number): Promise<LocationOffer[]> {
     const { data, error } = await supabase
       .from('location_offers')
-      .select('id, location_id, kind, title, description, discount_label, free_uses, valid_from, valid_until')
+      .select('id, location_id, kind, title, description, discount_label, free_uses, valid_from, valid_until, image_url')
       .eq('location_id', locationId)
       .eq('is_active', true)
       .order('created_at', { ascending: true })
@@ -290,6 +295,8 @@ export class OfferService {
       p_description: w.description,
       p_discount_label: w.discount_label,
       p_is_active: w.is_active,
+      // Only touch the picture when the caller says so (the server keeps it otherwise).
+      ...(w.image_url !== undefined ? { p_image_url: w.image_url, p_set_image: true } : {}),
     })
     if (error) throw toOfferError(error)
     ActivityLogService.log('offer_edit', { offer_id: offerId, location_id: locationId })
