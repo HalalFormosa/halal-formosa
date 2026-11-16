@@ -48,6 +48,7 @@ Deno.serve(async () => {
     const { data: articles } = await supabase
       .from("news")
       .select("slug, updated_at, created_at")
+      .eq("is_published", true) // service key skips RLS, so drafts must be filtered here
       .not("slug", "is", null)
       .order("created_at", { ascending: false });
 
