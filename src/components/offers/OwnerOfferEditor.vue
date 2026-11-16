@@ -71,7 +71,20 @@
               {{ $t('offers.owner.saveSettings') }}
             </ion-button>
           </template>
-          <p v-else class="oo-ro">{{ $t('offers.owner.settingsReadonly') }}</p>
+          <template v-else-if="sd[d.id]">
+            <p class="oo-ro">{{ $t('offers.owner.scheduleHint') }}</p>
+            <label class="oo-label">{{ $t('offers.create.ttl') }}</label>
+            <ion-input v-model="sd[d.id].ttl" type="number" inputmode="numeric" class="oo-input" />
+            <label class="oo-label">{{ $t('offers.create.validUntil') }}</label>
+            <input v-model="sd[d.id].validUntil" type="datetime-local" class="oo-native" />
+            <label class="oo-label">{{ $t('offers.owner.maxCodes') }}</label>
+            <ion-input v-model="sd[d.id].maxCodes" type="number" inputmode="numeric" class="oo-input" :placeholder="$t('offers.create.maxCodesHint')" />
+            <p class="oo-ro">{{ $t('offers.owner.maxCodesHelp', { issued: d.issued_count, redeemed: d.redeemed_count }) }}</p>
+            <ion-button size="small" fill="outline" color="carrot" :disabled="busy === d.id" @click="saveSchedule(d)">
+              {{ $t('offers.owner.saveSettings') }}
+            </ion-button>
+            <p class="oo-ro">{{ $t('offers.owner.settingsReadonly') }}</p>
+          </template>
         </template>
       </div>
 
@@ -217,6 +230,37 @@ async function saveSettings(d: Draft) {
       code === 'invalid_dates' ? t('offers.create.errDates')
       : code === 'invalid_ttl' || code === 'invalid_max_codes' ? t('offers.create.errNumbers')
       : code === 'invalid_follow' ? t('offers.create.errFollow')
+      : t('offers.owner.errGeneric')
+    )
+  } finally {
+    busy.value = null
+  }
+}
+
+async function saveSchedule(d: Draft) {
+  const v = sd.value[d.id]
+  if (!v) return
+  const ttl = Number(v.ttl)
+  const max = Number(v.maxCodes)
+  if (!(ttl >= 1 && ttl <= 365) || (v.maxCodes !== '' && !(max >= 1))) {
+    await toast(t('offers.owner.errSchedule'))
+    return
+  }
+  busy.value = d.id
+  try {
+    await OfferService.updateMySchedule(d.id, {
+      validUntil: v.validUntil ? new Date(v.validUntil).toISOString() : null,
+      codeTtlDays: Math.round(ttl),
+      maxCodes: v.maxCodes !== '' ? Math.round(max) : null,
+    }, d.location_id)
+    await toast(t('offers.owner.settingsSaved'))
+    emit('saved')
+  } catch (e) {
+    const code = e instanceof OfferError ? e.code : 'unknown'
+    await toast(
+      code === 'invalid_dates' ? t('offers.owner.errPastEnd')
+      : code === 'invalid_ttl' || code === 'invalid_max_codes' ? t('offers.owner.errSchedule')
+      : code === 'not_allowed' ? t('offers.owner.errNotAllowed')
       : t('offers.owner.errGeneric')
     )
   } finally {
