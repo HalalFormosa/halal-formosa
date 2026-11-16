@@ -248,7 +248,7 @@ async function reveal(offer: LocationOffer) {
   padding: 2px 8px; border-radius: 999px;
 }
 .offer-desc { margin: 4px 0 0; font-size: 13px; opacity: 0.8; }
-.offer-pro { display: flex; align-items: center; justify-content: center; gap: 4px; margin: 8px 0 0; font-size: 11px; line-height: 1.3; text-align: center; opacity: 0.7; }
+.offer-pro { display: flex; align-items: center; justify-content: center; gap: 4px; margin: 8px 0 0; font-size: 11px; line-height: 1.3; text-align: center; opacity: 0.7; white-space: nowrap; overflow: hidden; }
 .offer-follow { margin: 0 0 10px; }
 .of-title { margin: 0 0 8px; font-size: 13px; font-weight: 600; }
 .of-row { display: flex; flex-wrap: wrap; gap: 8px; }
