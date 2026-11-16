@@ -269,7 +269,7 @@ async function save(d: Draft) {
 .oo-image-thumb { width: 100%; max-height: 180px; object-fit: cover; border-radius: 12px; border: 1px solid rgba(128,128,128,0.3); }
 .oo-image-actions { display: flex; align-items: center; gap: 4px; }
 .oo-image-hint { margin: 0; font-size: 11px; opacity: 0.65; }
-.pv-image { display: block; width: calc(100% + 24px); margin: -12px -12px 10px; max-height: 160px; object-fit: cover; border-radius: 13px 13px 0 0; }
+.pv-image { display: block; width: calc(100% + 24px); max-width: none; margin: -12px -12px 10px; max-height: 160px; object-fit: cover; border-radius: 13px 13px 0 0; }
 .pv-row { display: flex; gap: 10px; align-items: flex-start; }
 .pv-icon { font-size: 22px; color: var(--ion-color-carrot, #ff7a00); flex-shrink: 0; margin-top: 2px; }
 .pv-title { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
