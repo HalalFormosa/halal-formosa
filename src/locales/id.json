@@ -2932,7 +2932,10 @@
   },
   "offers": {
     "proPerk": "Keuntungan Halal Formosa Pro",
-    "freeThenPro": "Anggota gratis bisa memakainya sekali · Anggota Pro tanpa batas",
+    "noteFree": "Anggota gratis bisa memakainya sekali",
+    "noteFreeN": "Anggota gratis bisa memakainya {n} kali",
+    "notePro": "Anggota Pro: tanpa batas selama promo berlangsung",
+    "freeThenPro": "Gratis: sekali · Pro: tanpa batas selama promo",
     "unlockMore": "Upgrade untuk memakai lagi",
     "limitReached": "Anda sudah memakai satu kali penukaran gratis. Upgrade ke Halal Formosa Pro di aplikasi seluler untuk mengklaim kode diskon lainnya.",
     "showCode": "Tampilkan kode saya",

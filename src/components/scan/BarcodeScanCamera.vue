@@ -61,6 +61,36 @@
         </div>
       </div>
 
+      <!-- 🎟️ Store owners: a customer's discount code. Always ask before redeeming. -->
+      <div v-if="phase === 'redeem' && codeInfo" class="live-result-card">
+        <div class="live-result-badge" :class="codeInfo.state === 'ok' ? 'badge-success' : 'badge-warning'">
+          {{ $t('offers.scan.badge') }}
+        </div>
+        <div class="live-result-name">{{ codeInfo.offer_title }}</div>
+        <div class="live-result-highlights">
+          <template v-if="codeInfo.location_name">{{ codeInfo.location_name }} · </template>{{ codeInfo.code }}
+          <br />
+          <strong v-if="codeInfo.state !== 'ok'">{{ $t(`offers.redeem.${codeInfo.state === 'already_used' ? 'already_used' : codeInfo.state}`, { when: codeInfo.redeemed_at ? new Date(codeInfo.redeemed_at).toLocaleString() : '' }) }}</strong>
+        </div>
+        <div class="live-result-actions">
+          <button class="live-btn secondary" @click="resetScan">{{ $t('search.barcodeScan.scanAgain') }}</button>
+          <button v-if="codeInfo.state === 'ok'" class="live-btn primary" :disabled="redeeming" @click="confirmRedeem">
+            {{ $t('offers.scan.redeem') }}
+          </button>
+        </div>
+      </div>
+
+      <!-- 🎟️ Result card: after redeeming -->
+      <div v-if="phase === 'redeemed'" class="live-result-card">
+        <div class="live-result-badge" :class="redeemResult?.ok ? 'badge-success' : 'badge-danger'">
+          {{ redeemResult?.ok ? $t('offers.redeem.success') : $t('offers.scan.failed') }}
+        </div>
+        <div class="live-result-name">{{ redeemResult?.text }}</div>
+        <div class="live-result-actions">
+          <button class="live-btn primary" @click="resetScan">{{ $t('search.barcodeScan.scanAgain') }}</button>
+        </div>
+      </div>
+
       <!-- 🟠 Result card: barcode scanned, no matching product -->
       <div v-if="phase === 'not-found'" class="live-result-card">
         <div class="live-result-badge badge-medium">{{ $t('search.status.Unknown') }}</div>
@@ -92,6 +122,7 @@ import { ActivityLogService } from '@/services/ActivityLogService'
 import { isNetworkError } from '@/utils/offlineFeedback'
 import { useLiveBarcodeScanner, getBarcodeScanErrorCode } from '@/composables/useLiveBarcodeScanner'
 import type { Product } from '@/types/Product'
+import { OfferService, OfferError, type CodeCheck } from '@/services/OfferService'
 
 const emit = defineEmits<{
   (e: 'view-details', barcode: string): void
@@ -104,10 +135,58 @@ const { t } = useI18n()
 
 const { isNative, torchAvailable, torchOn, start: startScanner, stop: stopScanner, toggleTorch } = useLiveBarcodeScanner()
 
-const phase = ref<'scanning' | 'found' | 'not-found'>('scanning')
+const phase = ref<'scanning' | 'found' | 'not-found' | 'redeem' | 'redeemed'>('scanning')
 const statusMessage = ref(t('search.barcodeScan.status.init'))
 const scannedBarcode = ref('')
 const product = ref<Product | null>(null)
+const codeInfo = ref<CodeCheck | null>(null)
+const redeeming = ref(false)
+const redeemResult = ref<{ ok: boolean; text: string } | null>(null)
+
+// Customer discount codes look like MRMO-7K4Q-X9MP (their QR holds just that text).
+// Product barcodes never do, so a match is worth one check against the server.
+const OFFER_CODE_RE = /^[A-Za-z0-9]{2,12}-[A-Za-z0-9]{4}-[A-Za-z0-9]{4}$/
+
+/** Only store owners/admins get a result here; everyone else (and unknown codes) falls through to products. */
+async function tryOfferCode(raw: string): Promise<boolean> {
+  if (!OFFER_CODE_RE.test(raw.trim())) return false
+  try {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) return false
+    codeInfo.value = await OfferService.checkCode(raw.trim())
+    phase.value = 'redeem'
+    return true
+  } catch (e) {
+    if (!(e instanceof OfferError)) console.warn('[BarcodeScan] offer code check failed', e)
+    return false
+  }
+}
+
+async function confirmRedeem() {
+  if (!codeInfo.value || redeeming.value) return
+  redeeming.value = true
+  try {
+    const res = await OfferService.redeem(codeInfo.value.code)
+    redeemResult.value = {
+      ok: true,
+      text: res.location_name
+        ? t('offers.redeem.successDetailStore', { offer: res.offer_title, store: res.location_name })
+        : t('offers.redeem.successDetail', { offer: res.offer_title }),
+    }
+  } catch (e) {
+    const code = e instanceof OfferError ? e.code : 'unknown'
+    redeemResult.value = {
+      ok: false,
+      text: code === 'already_used' ? t('offers.redeem.already_used', { when: (e as OfferError).detail ?? '' })
+        : code === 'expired' ? t('offers.redeem.expired')
+        : code === 'offer_not_active' ? t('offers.redeem.offer_not_active')
+        : t('offers.redeem.generic'),
+    }
+  } finally {
+    redeeming.value = false
+    phase.value = 'redeemed'
+  }
+}
 
 // Guards against the same barcode re-firing (native fires continuously while
 // the frame is in view; the web BarcodeDetector polling loop does too) while
@@ -160,6 +239,7 @@ async function handleDetected(rawValue: string) {
   statusMessage.value = t('search.barcodeScan.status.checking')
 
   try {
+    if (await tryOfferCode(rawValue)) return
     const match = await lookupProduct(rawValue)
     if (match) {
       product.value = match
@@ -181,6 +261,8 @@ async function handleDetected(rawValue: string) {
 function resetScan() {
   phase.value = 'scanning'
   product.value = null
+  codeInfo.value = null
+  redeemResult.value = null
   scannedBarcode.value = ''
   statusMessage.value = t('search.barcodeScan.status.searching')
   locked = false

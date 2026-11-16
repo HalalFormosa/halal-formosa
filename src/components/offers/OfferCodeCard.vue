@@ -1,19 +1,16 @@
 <template>
   <div v-if="offers.length" class="offer-list">
     <div v-for="offer in offers" :key="offer.id" class="offer-card" :class="{ revealed: codes[offer.id], 'has-image': offer.image_url }">
-      <img v-if="offer.image_url" :src="offer.image_url" :alt="offer.title" class="offer-image" loading="lazy" />
       <div class="offer-head">
-        <ion-icon :icon="pricetagOutline" class="offer-icon" />
+        <!-- The picture takes the place of the little tag icon, as a bigger block on the left -->
+        <img v-if="offer.image_url" :src="offer.image_url" :alt="offer.title" class="offer-image" loading="lazy" />
+        <ion-icon v-else :icon="pricetagOutline" class="offer-icon" />
         <div class="offer-text">
           <div class="offer-title-row">
             <strong class="offer-title">{{ offer.title }}</strong>
             <span v-if="offer.discount_label" class="offer-badge">{{ offer.discount_label }}</span>
           </div>
           <p v-if="offer.description" class="offer-desc">{{ offer.description }}</p>
-          <span class="offer-pro">
-            <ion-icon :icon="sparkles" />
-            {{ offer.free_uses > 0 ? $t('offers.freeThenPro', { n: offer.free_uses }) : $t('offers.proPerk') }}
-          </span>
           <span v-if="offer.valid_until" class="offer-ends">{{ $t('offers.endsOn', { date: formatDate(offer.valid_until) }) }}</span>
         </div>
       </div>
@@ -66,6 +63,12 @@
         <ion-icon v-else :icon="!signedIn ? logInOutline : needsPro(offer) ? lockClosedOutline : ticketOutline" slot="start" />
         {{ !signedIn ? $t('offers.loginToClaim') : needsPro(offer) ? (offer.free_uses > 0 ? $t('offers.unlockMore') : $t('offers.unlock')) : $t('offers.showCode') }}
       </ion-button>
+
+      <!-- Small print under the button -->
+      <p v-if="!codes[offer.id]" class="offer-pro">
+        <ion-icon :icon="sparkles" />
+        {{ proNote(offer) }}
+      </p>
 
       <p v-if="messages[offer.id]" class="offer-msg">{{ messages[offer.id] }}</p>
     </div>
@@ -138,7 +141,17 @@ function soldOut(offer: LocationOffer): boolean {
   return !!status.value[offer.id]?.sold_out
 }
 function showFollow(offer: LocationOffer): boolean {
-  return signedIn.value && !notStarted(offer) && !soldOut(offer) && !needsPro(offer) && !status.value[offer.id]?.has_open_code && followSteps(offer).length > 0
+  return signedIn.value && !notStarted(offer) && !soldOut(offer) && !needsPro(offer) && !status.value[offer.id]?.has_open_code && followSteps(offer).some(s => !s.done)   // nothing left to follow: hide the whole block
+}
+// Say only what applies to this person: Pro members hear "unlimited", free members hear
+// their allowance. Signed out (we don't know yet) gets the short version of both.
+function proNote(offer: LocationOffer): string {
+  if (signedIn.value && (isDonor.value || status.value[offer.id]?.is_pro)) return t('offers.notePro')
+  if (signedIn.value) {
+    if (offer.free_uses <= 0) return t('offers.proPerk')
+    return offer.free_uses === 1 ? t('offers.noteFree') : t('offers.noteFreeN', { n: offer.free_uses })
+  }
+  return offer.free_uses > 0 ? t('offers.freeThenPro', { n: offer.free_uses }) : t('offers.proPerk')
 }
 function platformName(p: FollowStep['platform']) {
   return p === 'instagram' ? 'Instagram' : p === 'tiktok' ? 'TikTok' : 'Facebook'
@@ -156,8 +169,16 @@ async function onFollow(offer: LocationOffer, step: FollowStep) {
   if (step.done) return
   try {
     await OfferService.recordFollow(offer, step.platform)
+    // One follow covers the whole store, so tick it on every offer shown here.
+    for (const st of Object.values(status.value)) {
+      st?.follow.forEach(f => { if (f.platform === step.platform) f.done = true })
+    }
     step.done = true
-  } catch { /* the code step re-checks on the server; they can tap again */ }
+  } catch {
+    // Not saved: leave the button as "Follow" so they can tap again, and say so.
+    const toast = await toastController.create({ message: t('offers.error'), duration: 2500, position: 'bottom' })
+    await toast.present()
+  }
 }
 
 watch(() => props.locationId, load, { immediate: true })
@@ -226,7 +247,8 @@ async function reveal(offer: LocationOffer) {
   background: color-mix(in srgb, var(--ion-color-carrot, #ff7a00) 8%, transparent);
 }
 .offer-card { overflow: hidden; }
-.offer-image { display: block; width: calc(100% + 28px); max-width: none; margin: -14px -14px 12px; max-height: 220px; object-fit: cover; }
+.offer-text { flex: 1; min-width: 0; }
+.offer-image { width: 96px; height: 96px; max-width: none; flex-shrink: 0; border-radius: 10px; object-fit: cover; }
 .offer-head { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 10px; }
 .offer-icon { font-size: 24px; color: var(--ion-color-carrot, #ff7a00); flex-shrink: 0; margin-top: 2px; }
 .offer-title-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
@@ -236,7 +258,7 @@ async function reveal(offer: LocationOffer) {
   padding: 2px 8px; border-radius: 999px;
 }
 .offer-desc { margin: 4px 0 0; font-size: 13px; opacity: 0.8; }
-.offer-pro { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; margin-top: 6px; opacity: 0.85; }
+.offer-pro { display: flex; align-items: center; justify-content: center; gap: 4px; margin: 8px 0 0; font-size: 11px; line-height: 1.3; text-align: center; opacity: 0.7; white-space: nowrap; overflow: hidden; }
 .offer-follow { margin: 0 0 10px; }
 .of-title { margin: 0 0 8px; font-size: 13px; font-weight: 600; }
 .of-row { display: flex; flex-wrap: wrap; gap: 8px; }

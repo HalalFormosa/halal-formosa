@@ -1642,7 +1642,10 @@
   },
   "offers": {
     "proPerk": "Halal Formosa Pro perk",
-    "freeThenPro": "Free members can use this once · Pro members unlimited",
+    "noteFree": "Free members can use this once",
+    "noteFreeN": "Free members can use this {n} times",
+    "notePro": "Pro members: unlimited while the promo lasts",
+    "freeThenPro": "Free: once · Pro: unlimited while promo lasts",
     "unlockMore": "Upgrade to use again",
     "limitReached": "You've used your free redemption. Upgrade to Halal Formosa Pro in the mobile app to claim another discount code.",
     "showCode": "Show my code",
@@ -1686,13 +1689,14 @@
     "owner": {
       "none": "No discount codes for this store yet.",
       "settings": "Settings",
+      "noEndDate": "No end date",
       "validDays": "Code valid {n} days",
       "stock": "Max {n} codes",
       "noStockLimit": "No code limit",
       "saveSettings": "Save settings",
       "settingsSaved": "Settings saved",
       "settingsReadonly": "The start date and follow requirements are set by Halal Formosa. Contact us to change them.",
-      "scheduleHint": "Choose how long a code lasts after a customer claims it, when this discount stops being offered, and how many codes can be claimed.",
+      "scheduleHint": "Set when this discount ends and how many codes can be claimed. A claimed code stays valid until it is used or the discount ends. With no end date, a code expires after a fixed number of days.",
       "maxCodes": "Max codes that can be claimed",
       "maxCodesHelp": "Leave empty for no limit. Every claimed code can be redeemed once, so this also limits redemptions. So far: {issued} claimed, {redeemed} redeemed.",
       "errSchedule": "Code validity must be 1-365 days and the maximum number of codes at least 1.",
@@ -1752,17 +1756,23 @@
     "proRequired": "This perk is for Halal Formosa Pro members. Upgrade in the mobile app to unlock it.",
     "ended": "This discount is no longer available.",
     "error": "Could not get your code. Please try again.",
+    "scan": {
+      "badge": "Discount code",
+      "redeem": "Redeem",
+      "failed": "Not redeemed"
+    },
     "redeem": {
       "title": "Redeem a code",
       "action": "Redeem codes",
-      "hint": "Type or scan the customer's code to mark it as used.",
+      "hint": "Type or scan the customer's code to mark it as used. The store is detected from the code.",
       "placeholder": "e.g. MRMO-7K4Q-X9MP",
       "button": "Redeem",
       "scan": "Scan QR",
       "stopScan": "Stop scanning",
       "success": "Code accepted",
       "successDetail": "{offer} — apply the discount now.",
-      "invalid_code": "This code isn't valid for your store.",
+      "successDetailStore": "{offer} at {store} — apply the discount now.",
+      "invalid_code": "This code isn't valid for any of your stores.",
       "already_used": "Already used on {when}.",
       "expired": "This code has expired.",
       "offer_not_active": "This discount is not active.",
@@ -1783,6 +1793,12 @@
     }
   },
   "business": {
+    "quick": {
+      "title": "Quick buttons",
+      "help": "Choose which buttons appear at the top of your public page. Buttons for details you haven't filled in never show.",
+      "saved": "Saved",
+      "error": "Could not save. Please try again."
+    },
     "manage": "Manage business",
     "claimedBadge": "Verified",
     "ownedBy": "Owned by {name}",

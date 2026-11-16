@@ -81,6 +81,11 @@
 
             <!-- Owned businesses -->
             <div v-if="locations.length" class="section-block">
+              <!-- One redeem screen for all stores: the code tells us which store it is for -->
+              <ion-button expand="block" color="carrot" mode="md" class="redeem-all" @click="router.push('/business/redeem')">
+                <ion-icon :icon="qrCodeOutline" slot="start" />
+                {{ $t('offers.redeem.action') }}
+              </ion-button>
               <p v-if="pendingClaims.length" class="section-label">{{ $t('business.dashboard.yourBusinesses') }}</p>
               <div class="biz-list">
             <ion-card
@@ -100,10 +105,6 @@
                   </div>
                   <p v-if="loc.address" class="biz-address">{{ loc.address }}</p>
                   <p class="biz-role">{{ loc.role }}</p>
-                  <ion-button size="small" fill="outline" color="carrot" mode="md" @click.stop="router.push(`/business/${loc.id}/redeem`)">
-                    <ion-icon :icon="qrCodeOutline" slot="start" />
-                    {{ $t('offers.redeem.action') }}
-                  </ion-button>
                 </div>
                 <ion-icon :icon="chevronForward" class="biz-chevron" />
               </div>
@@ -167,6 +168,7 @@ onIonViewWillEnter(load)
 </script>
 
 <style scoped>
+.redeem-all { margin: 0 0 12px; }
 .dash-container { max-width: 720px; margin: 0 auto; }
 
 .empty-state { text-align: center; padding: 60px 20px; }

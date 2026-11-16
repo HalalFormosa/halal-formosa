@@ -140,11 +140,23 @@ export interface RedeemResult {
   offer_title: string
   discount_label: string | null
   redeemed_at: string
+  /** Which store the code belonged to (the server works it out from the code). */
+  location_name?: string | null
+}
+
+export interface CodeCheck {
+  code: string
+  offer_title: string
+  discount_label: string | null
+  location_name: string | null
+  state: 'ok' | 'already_used' | 'expired' | 'offer_not_active'
+  redeemed_at: string | null
 }
 
 export interface RedemptionRow {
   code: string
   offer_title: string
+  location_name?: string | null
   issued_at: string
   redeemed_at: string
   /** Inside the 10-minute undo window (or the viewer is an admin). */
@@ -264,6 +276,13 @@ export class OfferService {
     return data as RedeemResult
   }
 
+  /** Store side: look at a scanned code without redeeming it. Throws invalid_code for non-owners / unknown codes. */
+  static async checkCode(code: string): Promise<CodeCheck> {
+    const { data, error } = await supabase.rpc('check_offer_code', { p_code: code })
+    if (error) throw toOfferError(error)
+    return data as CodeCheck
+  }
+
   /** Store side: undo a mistaken redemption (10 minutes for owners, any time for admins). */
   static async voidRedemption(code: string, locationId?: number): Promise<void> {
     const { error } = await supabase.rpc('void_offer_redemption', { p_code: code })
@@ -276,6 +295,13 @@ export class OfferService {
     const { data, error } = await supabase.rpc('list_offer_redemptions', {
       p_location_id: locationId, p_limit: limit,
     })
+    if (error) throw toOfferError(error)
+    return (data ?? []) as RedemptionRow[]
+  }
+
+  /** Store side: recent redemptions across every store the user manages (all stores for admins). */
+  static async listMyRedemptions(limit = 20): Promise<RedemptionRow[]> {
+    const { data, error } = await supabase.rpc('list_my_redemptions', { p_limit: limit })
     if (error) throw toOfferError(error)
     return (data ?? []) as RedemptionRow[]
   }

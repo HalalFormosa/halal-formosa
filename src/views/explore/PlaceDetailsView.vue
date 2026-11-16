@@ -157,36 +157,33 @@
 
             <!-- Primary actions: reach / get to the place -->
             <div v-if="place.lat || place.phone || place.instagram || place.facebook || place.tiktok || place.website || place.line_id" class="quick-contact">
-              <a v-if="place.phone" class="qc-btn" :href="`tel:${place.phone}`" :aria-label="$t('common.call')" @click="logCall">
+              <a v-if="place.phone && qc('call')" class="qc-btn" :href="`tel:${place.phone}`" :aria-label="$t('common.call')" @click="logCall">
                 <ion-icon :icon="callOutline" /><span>{{ $t('common.call') }}</span>
               </a>
-              <a class="qc-btn" :href="`https://www.google.com/maps/search/?api=1&query=${mapSearchQuery}&center=${place.lat},${place.lng}&zoom=16`" target="_blank" rel="noopener" :aria-label="$t('business.analytics.directions')" @click="logOpenMaps">
+              <a v-if="qc('directions')" class="qc-btn" :href="`https://www.google.com/maps/search/?api=1&query=${mapSearchQuery}&center=${place.lat},${place.lng}&zoom=16`" target="_blank" rel="noopener" :aria-label="$t('business.analytics.directions')" @click="logOpenMaps">
                 <ion-icon :icon="navigateOutline" /><span>{{ $t('business.analytics.directions') }}</span>
               </a>
-              <a v-if="place.instagram" class="qc-btn" :href="`https://instagram.com/${place.instagram.replace('@','')}`" target="_blank" rel="noopener" aria-label="Instagram" @click="logInstagram">
+              <a v-if="place.instagram && qc('instagram')" class="qc-btn" :href="`https://instagram.com/${place.instagram.replace('@','')}`" target="_blank" rel="noopener" aria-label="Instagram" @click="logInstagram">
                 <ion-icon :icon="logoInstagram" /><span>{{ $t('common.instagram') }}</span>
               </a>
-              <a v-if="place.facebook" class="qc-btn" :href="place.facebook" target="_blank" rel="noopener" aria-label="Facebook" @click="logFacebook">
+              <a v-if="place.facebook && qc('facebook')" class="qc-btn" :href="place.facebook" target="_blank" rel="noopener" aria-label="Facebook" @click="logFacebook">
                 <ion-icon :icon="logoFacebook" /><span>{{ $t('business.info.facebook') }}</span>
               </a>
-              <a v-if="place.tiktok" class="qc-btn" :href="`https://tiktok.com/@${place.tiktok.replace('@','')}`" target="_blank" rel="noopener" aria-label="TikTok" @click="logTiktok">
+              <a v-if="place.tiktok && qc('tiktok')" class="qc-btn" :href="`https://tiktok.com/@${place.tiktok.replace('@','')}`" target="_blank" rel="noopener" aria-label="TikTok" @click="logTiktok">
                 <ion-icon :icon="logoTiktok" /><span>{{ $t('business.info.tiktok') }}</span>
               </a>
-              <a v-if="place.website" class="qc-btn" :href="place.website" target="_blank" rel="noopener" :aria-label="$t('business.info.website')" @click="logWebsite">
+              <a v-if="place.website && qc('website')" class="qc-btn" :href="place.website" target="_blank" rel="noopener" :aria-label="$t('business.info.website')" @click="logWebsite">
                 <ion-icon :icon="globeOutline" /><span>{{ $t('business.info.website') }}</span>
               </a>
-              <a v-if="place.line_id" class="qc-btn" :href="`line://ti/p/~${place.line_id}`" aria-label="LINE" @click="logLine">
+              <a v-if="place.line_id && qc('line')" class="qc-btn" :href="`line://ti/p/~${place.line_id}`" aria-label="LINE" @click="logLine">
                 <ion-icon :icon="chatboxEllipsesOutline" /><span>LINE</span>
               </a>
-              <button v-if="isLoggedIn" type="button" class="qc-btn" :aria-label="$t('savedLocations.save')" @click="openSaveModal">
+              <button v-if="isLoggedIn && qc('save')" type="button" class="qc-btn" :aria-label="$t('savedLocations.save')" @click="openSaveModal">
                 <ion-icon :icon="isLocationSaved(place?.id || 0) ? bookmark : bookmarkOutline" />
                 <span>{{ isLocationSaved(place?.id || 0) ? $t('savedLocations.saved') : $t('savedLocations.save') }}</span>
               </button>
-              <button type="button" class="qc-btn" :aria-label="$t('search.details.share')" @click="share">
+              <button v-if="qc('share')" type="button" class="qc-btn" :aria-label="$t('search.details.share')" @click="share">
                 <ion-icon :icon="shareSocialOutline" /><span>{{ $t('search.details.share') }}</span>
-              </button>
-              <button type="button" class="qc-btn" :aria-label="$t('search.details.report')" @click="reportItem">
-                <ion-icon :icon="alertCircleOutline" /><span>{{ $t('search.details.report') }}</span>
               </button>
             </div>
 
@@ -1065,6 +1062,8 @@ type PlaceDetail = {
   tiktok?: string | null
   website?: string | null
   line_id?: string | null
+  /** Quick buttons the owner switched off (see set_location_quick_actions). */
+  hiddenQuickActions?: string[]
   foodpanda_url?: string | null
   ubereats_url?: string | null
   price_range?: string | null
@@ -1162,6 +1161,8 @@ const ownerName = ref<string | null>(null)
 const claimStatus = ref<'pending' | 'approved' | 'rejected' | null>(null)
 const modules = [Pagination, Zoom]
 const isLoggedIn = ref(false)
+// Is this quick button switched on by the store's owner? (Everything is on by default.)
+const qc = (key: string) => !place.value?.hiddenQuickActions?.includes(key)
 const isNative = ref(Capacitor.isNativePlatform())
 const adSlotCollapsed = useAdSlotCollapsed('ad-space-place-detail', isDonor)
 
@@ -1487,6 +1488,7 @@ const loadPlace = async () => {
         tiktok,
         website,
         line_id,
+        hidden_quick_actions,
         foodpanda_url,
         ubereats_url,
         price_range,
@@ -1548,6 +1550,7 @@ const loadPlace = async () => {
     tiktok: data.tiktok,
     website: data.website,
     line_id: data.line_id,
+    hiddenQuickActions: data.hidden_quick_actions ?? [],
     foodpanda_url: data.foodpanda_url,
     ubereats_url: data.ubereats_url,
     price_range: data.price_range,
