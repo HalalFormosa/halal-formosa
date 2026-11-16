@@ -141,6 +141,20 @@
                 <ion-button size="small" color="carrot" :disabled="!newTag.trim()" @click="addTag">{{ $t('common.add') }}</ion-button>
               </div>
             </div>
+
+            <!-- Quick buttons shown at the top of the public page -->
+            <div class="edit-block">
+              <p class="block-title">{{ $t('business.quick.title') }}</p>
+              <p class="quick-help">{{ $t('business.quick.help') }}</p>
+              <ion-list class="edit-list">
+                <ion-item v-for="o in quickOptions" :key="o.key" lines="full">
+                  <ion-toggle :checked="!quickHidden.includes(o.key)" :disabled="savingQuick" @ionChange="setQuick(o.key, $event.detail.checked)">
+                    {{ o.label }}
+                  </ion-toggle>
+                </ion-item>
+              </ion-list>
+              <p class="quick-help">{{ $t('business.quick.reportNote') }}</p>
+            </div>
           </section>
 
           <!-- PHOTOS -->
@@ -733,6 +747,44 @@ const { getAnalytics } = useLocationAnalytics()
 const loading = ref(true)
 const saving = ref(false)
 const tab = ref('info')
+
+// ---- Quick buttons on the public page (saved straight away, not part of the draft) ----
+const quickHidden = ref<string[]>([])
+const savingQuick = ref(false)
+const quickOptions = computed(() => {
+  const i = info.value
+  const all: { key: string; label: string; show: boolean }[] = [
+    { key: 'call', label: t('common.call'), show: !!i.phone },
+    { key: 'directions', label: t('business.analytics.directions'), show: true },
+    { key: 'instagram', label: t('common.instagram'), show: !!i.instagram },
+    { key: 'facebook', label: t('business.info.facebook'), show: !!i.facebook },
+    { key: 'tiktok', label: t('business.info.tiktok'), show: !!i.tiktok },
+    { key: 'website', label: t('business.info.website'), show: !!i.website },
+    { key: 'line', label: 'LINE', show: !!i.line_id },
+    { key: 'save', label: t('savedLocations.save'), show: true },
+    { key: 'share', label: t('search.details.share'), show: true },
+  ]
+  return all.filter(o => o.show)
+})
+async function setQuick(key: string, visible: boolean) {
+  const before = quickHidden.value
+  const next = visible ? before.filter(k => k !== key) : [...before.filter(k => k !== key), key]
+  if (next.length === before.length && next.every(k => before.includes(k))) return
+  quickHidden.value = next
+  savingQuick.value = true
+  try {
+    const { error } = await supabase.rpc('set_location_quick_actions', { p_location_id: locationId, p_hidden: next })
+    if (error) throw error
+    const toast = await toastController.create({ message: t('business.quick.saved'), duration: 1500, position: 'bottom' })
+    await toast.present()
+  } catch {
+    quickHidden.value = before // not saved: put the switch back
+    const toast = await toastController.create({ message: t('business.quick.error'), duration: 2500, position: 'bottom' })
+    await toast.present()
+  } finally {
+    savingQuick.value = false
+  }
+}
 const tier = ref<PlanTier>('free')
 const features = ref<PlanFeatures>({ maxPhotos: 1, menu: false, maxMenuItems: 0, maxPromotions: 0, maxBranches: 1, analytics: 'basic' })
 const locationName = ref('')
@@ -868,12 +920,13 @@ onIonViewWillEnter(async () => {
   try {
     const { data: loc } = await supabase
       .from('locations')
-      .select('name, address, lat, lng, phone, instagram, facebook, tiktok, website, line_id, foodpanda_url, ubereats_url, price_range, description, image, opening_hours, tags, halal_status, has_prayer_room, has_wudu, is_alcohol_free, has_bidet, has_space_to_pray, is_pork_free, is_cash_only, has_halal_food, has_vegan_option, is_muslim_owned, is_muslim_staff, has_free_wifi, has_qibla_direction, halal_cert_url, halal_material_photos, location_types(name)')
+      .select('name, address, lat, lng, phone, instagram, facebook, tiktok, website, line_id, foodpanda_url, ubereats_url, price_range, description, image, opening_hours, tags, halal_status, has_prayer_room, has_wudu, is_alcohol_free, has_bidet, has_space_to_pray, is_pork_free, is_cash_only, has_halal_food, has_vegan_option, is_muslim_owned, is_muslim_staff, has_free_wifi, has_qibla_direction, halal_cert_url, halal_material_photos, hidden_quick_actions, location_types(name)')
       .eq('id', locationId)
       .maybeSingle()
 
     if (loc) {
       locationName.value = loc.name
+      quickHidden.value = (loc as any).hidden_quick_actions ?? []
       heroImage.value = loc.image ?? null
       const lt: any = Array.isArray(loc.location_types) ? loc.location_types[0] : loc.location_types
       typeName.value = lt?.name ?? ''
@@ -1546,6 +1599,7 @@ const getShortLabel = (code: string): string => {
 .edit-list ion-item { --background: transparent; --padding-start: 0; margin-bottom: 4px; }
 
 .edit-block { margin-top: 22px; }
+.quick-help { margin: 0 0 8px; font-size: .8rem; opacity: .7; }
 .block-title { font-size: .75rem; font-weight: 800; text-transform: uppercase; letter-spacing: .5px; color: var(--ion-color-medium); margin: 0 0 12px; }
 .hours-row { display: flex; align-items: center; gap: 10px; padding: 6px 0; }
 .hours-row .day-label { width: 40px; font-weight: 700; font-size: .85rem; color: var(--ion-color-dark); }
