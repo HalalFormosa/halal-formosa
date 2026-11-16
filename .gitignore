@@ -43,3 +43,6 @@ npm-debug.log*
 /App_Backup/
 # Welcome Party 2026 email/report working files (contain registrant personal data)
 /event-email/
+
+# Generated/customer PDFs in docs/ (guides, reports) are not tracked
+docs/**/*.pdf
