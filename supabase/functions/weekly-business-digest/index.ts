@@ -33,6 +33,7 @@ interface DigestRow {
   views_7d: number; views_prev_7d: number;
   saves_7d: number; directions_7d: number; order_taps_7d: number;
   top_nationality: string | null; top_search_term: string | null;
+  offer_title: string | null; codes_claimed_7d: number; codes_redeemed_7d: number; codes_open: number;
 }
 
 function esc(s: string): string {
@@ -65,6 +66,14 @@ function renderEmail(r: DigestRow, delta: number): string {
       ${row('Top visitor nationality', nat)}
       ${row('Top search term', term)}
     </table>
+    ${r.offer_title ? `<div style="background:#fdf1e6;border-left:3px solid #e67e22;border-radius:10px;padding:14px 16px;margin-top:18px;">
+      <div style="font-weight:700;color:#c96718;font-size:13px;margin-bottom:6px;">Discount code: ${esc(r.offer_title)}</div>
+      <table style="width:100%;border-collapse:collapse;font-size:15px;">
+        ${row('Codes claimed this week', r.codes_claimed_7d)}
+        ${row('Codes redeemed this week', r.codes_redeemed_7d)}
+        ${row('Codes still open', r.codes_open)}
+      </table>
+    </div>` : ''}
     <p style="margin-top:22px;">
       <a href="${APP_BASE}/business/${r.location_id}" style="background:#f08c00;color:#fff;padding:12px 22px;border-radius:10px;text-decoration:none;font-weight:700;">Open dashboard</a>
     </p>
