@@ -1692,7 +1692,7 @@
       "saveSettings": "Save settings",
       "settingsSaved": "Settings saved",
       "settingsReadonly": "The start date and follow requirements are set by Halal Formosa. Contact us to change them.",
-      "scheduleHint": "Choose how long a code lasts after a customer claims it, when this discount stops being offered, and how many codes can be claimed.",
+      "scheduleHint": "Set when this discount ends and how many codes can be claimed. A claimed code stays valid until it is used or the discount ends. With no end date, a code expires after a fixed number of days.",
       "maxCodes": "Max codes that can be claimed",
       "maxCodesHelp": "Leave empty for no limit. Every claimed code can be redeemed once, so this also limits redemptions. So far: {issued} claimed, {redeemed} redeemed.",
       "errSchedule": "Code validity must be 1-365 days and the maximum number of codes at least 1.",

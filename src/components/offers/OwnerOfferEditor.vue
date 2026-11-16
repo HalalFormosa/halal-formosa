@@ -73,8 +73,6 @@
           </template>
           <template v-else-if="sd[d.id]">
             <p class="oo-ro">{{ $t('offers.owner.scheduleHint') }}</p>
-            <label class="oo-label">{{ $t('offers.create.ttl') }}</label>
-            <ion-input v-model="sd[d.id].ttl" type="number" inputmode="numeric" class="oo-input" />
             <label class="oo-label">{{ $t('offers.create.validUntil') }}</label>
             <input v-model="sd[d.id].validUntil" type="datetime-local" class="oo-native" />
             <label class="oo-label">{{ $t('offers.owner.maxCodes') }}</label>
@@ -177,7 +175,8 @@ const toLocalInput = (iso: string | null) => {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 function settingsSummary(d: OwnerOffer) {
-  const bits = [t('offers.owner.validDays', { n: d.code_ttl_days })]
+  const bits: string[] = []
+  if (!d.valid_until) bits.push(t('offers.owner.validDays', { n: d.code_ttl_days }))
   bits.push(d.max_codes ? t('offers.owner.stock', { n: d.max_codes }) : t('offers.owner.noStockLimit'))
   if (d.valid_until) bits.push(t('offers.endsOn', { date: new Date(d.valid_until).toLocaleDateString() }))
   return bits.join(' · ')
@@ -240,9 +239,8 @@ async function saveSettings(d: Draft) {
 async function saveSchedule(d: Draft) {
   const v = sd.value[d.id]
   if (!v) return
-  const ttl = Number(v.ttl)
   const max = Number(v.maxCodes)
-  if (!(ttl >= 1 && ttl <= 365) || (v.maxCodes !== '' && !(max >= 1))) {
+  if (v.maxCodes !== '' && !(max >= 1)) {
     await toast(t('offers.owner.errSchedule'))
     return
   }
@@ -250,7 +248,7 @@ async function saveSchedule(d: Draft) {
   try {
     await OfferService.updateMySchedule(d.id, {
       validUntil: v.validUntil ? new Date(v.validUntil).toISOString() : null,
-      codeTtlDays: Math.round(ttl),
+      codeTtlDays: d.code_ttl_days, // unchanged: owners only set the end date
       maxCodes: v.maxCodes !== '' ? Math.round(max) : null,
     }, d.location_id)
     await toast(t('offers.owner.settingsSaved'))
