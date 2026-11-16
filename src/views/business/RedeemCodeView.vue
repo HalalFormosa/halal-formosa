@@ -6,7 +6,6 @@
 
     <ion-content class="ion-padding">
       <div class="redeem-container">
-        <p v-if="storeName" class="store-name">{{ $t('offers.redeem.store') }}: <strong>{{ storeName }}</strong></p>
         <p class="hint">{{ $t('offers.redeem.hint') }}</p>
 
         <!-- Typed code -->
@@ -48,7 +47,7 @@
         <p v-if="!history.length" class="empty">{{ $t('offers.redeem.none') }}</p>
         <ul v-else class="history">
           <li v-for="row in history" :key="row.code + row.redeemed_at">
-            <span class="h-code">{{ row.code }}</span>
+            <span class="h-code">{{ row.code }}<small v-if="row.location_name" class="h-store">{{ row.location_name }}</small></span>
             <span class="h-time">{{ formatTime(row.redeemed_at) }}</span>
             <button v-if="row.can_void" type="button" class="h-undo" :disabled="voiding === row.code" @click="confirmVoid(row)">
               {{ $t('offers.redeem.undo') }}
@@ -61,23 +60,19 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onBeforeUnmount } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { ref, onBeforeUnmount } from 'vue'
+import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { IonPage, IonHeader, IonContent, IonButton, IonIcon, IonSpinner, toastController, alertController, onIonViewWillEnter, onIonViewWillLeave } from '@ionic/vue'
 import { qrCodeOutline, closeOutline, checkmarkCircle, alertCircle } from 'ionicons/icons'
 import { Html5Qrcode } from 'html5-qrcode'
 import AppHeader from '@/components/AppHeader.vue'
-import { supabase } from '@/plugins/supabaseClient'
-import { canManageLocation } from '@/composables/useStoreAccess'
+import { acceptPendingOwnerInvites } from '@/composables/useStoreAccess'
 import { OfferService, OfferError, type RedemptionRow } from '@/services/OfferService'
 
-const route = useRoute()
 const router = useRouter()
 const { t, locale } = useI18n()
 
-const locationId = computed(() => Number(route.params.locationId))
-const storeName = ref('')
 const codeInput = ref('')
 const busy = ref(false)
 const scanning = ref(false)
@@ -91,7 +86,7 @@ function formatTime(iso: string) {
 
 async function loadHistory() {
   try {
-    history.value = await OfferService.listRedemptions(locationId.value, 20)
+    history.value = await OfferService.listMyRedemptions(20)
   } catch {
     history.value = []
   }
@@ -114,7 +109,7 @@ async function confirmVoid(row: RedemptionRow) {
 async function doVoid(row: RedemptionRow) {
   voiding.value = row.code
   try {
-    await OfferService.voidRedemption(row.code, locationId.value)
+    await OfferService.voidRedemption(row.code)
     result.value = { ok: true, title: t('offers.redeem.undone'), detail: t('offers.redeem.undoneDetail', { code: row.code }) }
     await loadHistory()
   } catch (e) {
@@ -130,22 +125,19 @@ async function doVoid(row: RedemptionRow) {
   }
 }
 
-async function loadStore() {
-  const { data } = await supabase.from('locations').select('name').eq('id', locationId.value).maybeSingle()
-  storeName.value = data?.name ?? ''
-}
-
 async function redeem(raw: string) {
   const code = raw.trim()
   if (!code || busy.value) return
   busy.value = true
   result.value = null
   try {
-    const res = await OfferService.redeem(code, locationId.value)
+    const res = await OfferService.redeem(code)
     result.value = {
       ok: true,
       title: t('offers.redeem.success'),
-      detail: t('offers.redeem.successDetail', { offer: res.offer_title }),
+      detail: res.location_name
+        ? t('offers.redeem.successDetailStore', { offer: res.offer_title, store: res.location_name })
+        : t('offers.redeem.successDetail', { offer: res.offer_title }),
     }
     codeInput.value = ''
     await loadHistory()
@@ -196,14 +188,17 @@ async function toggleScan() {
 
 onIonViewWillEnter(async () => {
   result.value = null
-  if (!(await canManageLocation(locationId.value))) {
-    router.replace(`/place/${locationId.value}`)
-    const toast = await toastController.create({ message: t('offers.redeem.noAccess'), duration: 3000, position: 'bottom' })
-    await toast.present()
-    return
+  await acceptPendingOwnerInvites() // a newly added owner can open this straight away
+  try {
+    history.value = await OfferService.listMyRedemptions(20)
+  } catch (e) {
+    // Not an owner of any store (and not an admin): nothing to redeem here.
+    if (e instanceof OfferError && e.code === 'not_allowed') {
+      router.replace('/business')
+      const toast = await toastController.create({ message: t('offers.redeem.noAccess'), duration: 3000, position: 'bottom' })
+      await toast.present()
+    }
   }
-  loadStore()
-  loadHistory()
 })
 onIonViewWillLeave(stopScan)
 onBeforeUnmount(stopScan)
@@ -211,7 +206,6 @@ onBeforeUnmount(stopScan)
 
 <style scoped>
 .redeem-container { max-width: 520px; margin: 0 auto; }
-.store-name { margin: 0 0 4px; }
 .hint { margin: 0 0 14px; opacity: 0.75; font-size: 14px; }
 .code-form { display: flex; gap: 8px; align-items: stretch; margin-bottom: 10px; }
 .code-input {
@@ -235,4 +229,5 @@ onBeforeUnmount(stopScan)
 .h-code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 14px; }
 .h-undo { margin-left: 8px; background: none; border: 1px solid var(--ion-color-carrot); color: var(--ion-color-carrot); border-radius: 999px; padding: 2px 10px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; }
 .h-time { font-size: 12px; opacity: 0.7; }
+.h-store { display: block; font-family: inherit; font-size: 11px; opacity: 0.65; }
 </style>
