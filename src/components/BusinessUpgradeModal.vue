@@ -113,7 +113,7 @@ const CMP_ROWS: { label: string; values: Record<PlanCardTier, string | boolean> 
 ]
 
 // Placeholder prices for the admin "Preview paywall" (live prices come from the store).
-const PREVIEW_PRICES: Record<PlanCardTier, string> = { bronze: 'NT$330', silver: 'NT$690', gold: 'NT$990' }
+const PREVIEW_PRICES: Record<PlanCardTier, string> = { bronze: 'NT$490', silver: 'NT$990', gold: 'NT$1,490' }
 
 function tierFromProductId(id: string): PlanTier {
   const s = (id || '').toLowerCase()
