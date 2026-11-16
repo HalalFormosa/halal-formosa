@@ -2865,8 +2865,18 @@ const initMarkers = (places: Place[] = sortedLocations.value) => {
     clusterer.addMarkers(markersToCluster)
   }
 
-  // 4. Fit bounds ONLY IF specifically filtered by user (tag/category/search)
-  const isFiltered = activeCategoryIds.value.length > 0 || !!activeTag.value || !!searchQuery.value.trim()
+  // 4. Fit bounds ONLY for a text search
+  // Category/tag pills only filter what is in the current view; they never move the map.
+  // A text search may still re-frame it.
+  const isFiltered = !!searchQuery.value.trim()
+  // Only re-frame when the user changed the filter, and only if nothing that matches
+  // is already on screen. Otherwise every pan/zoom loads more matches, which re-fit
+  // the map wider, which loads more... until the whole island is in view.
+  const viewBounds = mapInstance?.getBounds()
+  const alreadyVisible = !!viewBounds && places.some(p => viewBounds.contains(p.position))
+  if (isFiltered && places.length > 0 && !hasCenteredInitiallyVisible && alreadyVisible) {
+    hasCenteredInitiallyVisible = true
+  }
   if (isFiltered && places.length > 0 && !hasCenteredInitiallyVisible) {
     const fitBounds = new google.maps.LatLngBounds()
     places.forEach(p => fitBounds.extend(p.position))
@@ -3439,8 +3449,11 @@ const filteredIdsHash = computed(() => {
   return ids.join(',');
 });
 
+// Re-framing is allowed only when the user changes the filter itself, not each time
+// the visible set changes because the map moved.
+watch([activeCategoryIds, activeTag, searchQuery], () => { hasCenteredInitiallyVisible = false }, { deep: true })
+
 watch(filteredIdsHash, () => {
-  hasCenteredInitiallyVisible = false; // allow re-fitting if filter changes
   initMarkers(sortedLocations.value)
 })
 
