@@ -139,7 +139,7 @@ function soldOut(offer: LocationOffer): boolean {
   return !!status.value[offer.id]?.sold_out
 }
 function showFollow(offer: LocationOffer): boolean {
-  return signedIn.value && !notStarted(offer) && !soldOut(offer) && !needsPro(offer) && !status.value[offer.id]?.has_open_code && followSteps(offer).length > 0
+  return signedIn.value && !notStarted(offer) && !soldOut(offer) && !needsPro(offer) && !status.value[offer.id]?.has_open_code && followSteps(offer).some(s => !s.done)   // nothing left to follow: hide the whole block
 }
 function platformName(p: FollowStep['platform']) {
   return p === 'instagram' ? 'Instagram' : p === 'tiktok' ? 'TikTok' : 'Facebook'
