@@ -40,20 +40,24 @@ function esc(s: string): string {
   return s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c] as string))
 }
 
-function renderEmail(r: DigestRow, delta: number): string {
+function deltaOf(r: DigestRow): number {
+  return r.views_prev_7d > 0
+    ? Math.round(((r.views_7d - r.views_prev_7d) / r.views_prev_7d) * 100)
+    : (r.views_7d > 0 ? 100 : 0)
+}
+
+const row = (label: string, val: string | number) =>
+  `<tr><td style="padding:8px 0;color:#555;">${label}</td><td style="text-align:right;font-weight:700;color:#222;">${val}</td></tr>`
+
+// One block per store.
+function renderStore(r: DigestRow, multi: boolean): string {
+  const delta = deltaOf(r)
   const arrow = delta >= 0 ? '▲' : '▼'
   const color = delta >= 0 ? '#06c167' : '#e11d48'
   const nat = r.top_nationality ? (COUNTRY[r.top_nationality] ?? r.top_nationality) : '—'
   const term = r.top_search_term ? esc(r.top_search_term) : '—'
-  const row = (label: string, val: string | number) =>
-    `<tr><td style="padding:8px 0;color:#555;">${label}</td><td style="text-align:right;font-weight:700;color:#222;">${val}</td></tr>`
-  return `<div style="font-family:system-ui,Arial,sans-serif;max-width:520px;margin:auto;padding:8px;">
-    <div style="text-align:center;margin:8px 0 20px;">
-      <img src="${APP_BASE}/android-chrome-512x512.png" alt="Halal Formosa" width="56" height="56" style="border-radius:14px;display:inline-block;" />
-      <div style="font-weight:800;color:#f08c00;font-size:15px;margin-top:6px;letter-spacing:.3px;">Halal Formosa</div>
-    </div>
-    <h2 style="color:#f08c00;margin:0 0 4px;">${esc(r.location_name)}</h2>
-    <p style="color:#666;margin:0 0 16px;">Here's how your listing did this week on Halal Formosa.</p>
+  return `<div style="${multi ? 'border-top:1px solid #eee;margin-top:26px;padding-top:22px;' : ''}">
+    <h2 style="color:#f08c00;margin:0 0 12px;">${esc(r.location_name)}</h2>
     <div style="background:#faf6f0;border-radius:14px;padding:22px;">
       <div style="font-size:36px;font-weight:800;color:#222;">${r.views_7d}
         <span style="font-size:14px;color:${color};font-weight:700;">${arrow} ${Math.abs(delta)}%</span></div>
@@ -74,9 +78,22 @@ function renderEmail(r: DigestRow, delta: number): string {
         ${row('Codes still open', r.codes_open)}
       </table>
     </div>` : ''}
-    <p style="margin-top:22px;">
+    <p style="margin:18px 0 0;">
       <a href="${APP_BASE}/business/${r.location_id}" style="background:#f08c00;color:#fff;padding:12px 22px;border-radius:10px;text-decoration:none;font-weight:700;">Open dashboard</a>
     </p>
+  </div>`
+}
+
+// One email per owner, covering every store they manage.
+function renderEmail(stores: DigestRow[]): string {
+  const multi = stores.length > 1
+  return `<div style="font-family:system-ui,Arial,sans-serif;max-width:520px;margin:auto;padding:8px;">
+    <div style="text-align:center;margin:8px 0 20px;">
+      <img src="${APP_BASE}/android-chrome-512x512.png" alt="Halal Formosa" width="56" height="56" style="border-radius:14px;display:inline-block;" />
+      <div style="font-weight:800;color:#f08c00;font-size:15px;margin-top:6px;letter-spacing:.3px;">Halal Formosa</div>
+    </div>
+    <p style="color:#666;margin:0 0 16px;">${multi ? `Here's how your ${stores.length} stores did this week on Halal Formosa.` : "Here's how your listing did this week on Halal Formosa."}</p>
+    ${stores.map((r) => renderStore(r, multi)).join('')}
     <p style="color:#aaa;font-size:11px;margin-top:26px;">You receive this weekly summary because you manage a Gold business on Halal Formosa.</p>
   </div>`
 }
@@ -95,34 +112,37 @@ Deno.serve(async (req: Request) => {
 
   // ?dry_run=1 reports what would be sent without emailing anyone.
   if (new URL(req.url).searchParams.get('dry_run') === '1') {
-    return new Response(JSON.stringify({ dry_run: true, would_send: rows.length, key_source: SECRET_KEY ? 'secret' : 'legacy' }), { headers: { 'Content-Type': 'application/json' } })
+    return new Response(JSON.stringify({ dry_run: true, would_send: new Set(rows.filter((r) => r.email).map((r) => r.user_id)).size, stores: rows.length, key_source: SECRET_KEY ? 'secret' : 'legacy' }), { headers: { 'Content-Type': 'application/json' } })
   }
 
   if (!RESEND_API_KEY) {
     return new Response(JSON.stringify({ skipped: true, reason: 'RESEND_API_KEY not set', would_send: rows.length }), { headers: { 'Content-Type': 'application/json' } })
   }
 
-  let sent = 0, failed = 0
+  // Group stores by owner: one email each.
+  const byOwner = new Map<string, DigestRow[]>()
   for (const r of rows) {
     if (!r.email) continue
-    const delta = r.views_prev_7d > 0
-      ? Math.round(((r.views_7d - r.views_prev_7d) / r.views_prev_7d) * 100)
-      : (r.views_7d > 0 ? 100 : 0)
+    const list = byOwner.get(r.user_id) ?? []
+    list.push(r)
+    byOwner.set(r.user_id, list)
+  }
+
+  let sent = 0, failed = 0
+  for (const stores of byOwner.values()) {
+    const subject = stores.length > 1
+      ? `Your weekly Halal Formosa report — ${stores.length} stores`
+      : `Your weekly Halal Formosa report — ${stores[0].location_name}`
     try {
       const res = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          from: DIGEST_FROM,
-          to: r.email,
-          subject: `Your weekly Halal Formosa report — ${r.location_name}`,
-          html: renderEmail(r, delta),
-        }),
+        body: JSON.stringify({ from: DIGEST_FROM, to: stores[0].email, subject, html: renderEmail(stores) }),
       })
       if (res.ok) sent++
       else { failed++; console.error('resend fail', await res.text()) }
     } catch (e) { failed++; console.error('send error', e) }
   }
 
-  return new Response(JSON.stringify({ sent, failed, total: rows.length }), { headers: { 'Content-Type': 'application/json' } })
+  return new Response(JSON.stringify({ sent, failed, owners: byOwner.size, stores: rows.length }), { headers: { 'Content-Type': 'application/json' } })
 })
