@@ -353,6 +353,25 @@ export class OfferService {
     return new Set((data ?? []).map(r => Number(r.location_id)))
   }
 
+  /**
+   * Owner/admin: how long a claimed code stays valid, when the promo ends and
+   * how many codes can be generated. Everything else stays admin-only.
+   */
+  static async updateMySchedule(
+    offerId: string,
+    v: { validUntil: string | null; codeTtlDays: number; maxCodes: number | null },
+    locationId?: number,
+  ): Promise<void> {
+    const { error } = await supabase.rpc('update_my_offer_schedule', {
+      p_offer_id: offerId,
+      p_valid_until: v.validUntil,
+      p_code_ttl_days: v.codeTtlDays,
+      p_max_codes: v.maxCodes,
+    })
+    if (error) throw toOfferError(error)
+    ActivityLogService.log('offer_edit', { offer_id: offerId, location_id: locationId, schedule: true })
+  }
+
   /** Admin only: change dates, code validity, stock and follow settings of an existing offer. */
   static async adminUpdateSettings(offerId: string, o: OfferSettings, locationId?: number): Promise<void> {
     const { error } = await supabase.rpc('admin_update_offer_settings', {
