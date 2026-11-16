@@ -321,7 +321,7 @@
                 class="ion-margin-top"
             >
               <p class="section-title">
-                <strong><small>{{ $t(certifications[0]?.partner.partner_type === 'halal_body' ? 'explore.details.certifiedBy' : 'explore.details.broughtBy') }}</small></strong>
+                <strong><small>{{ $t(certifications.every(c => c.partner.partner_type === 'halal_body') ? 'explore.details.certifiedBy' : 'explore.details.affiliatedWith') }}</small></strong>
               </p>
 
               <div

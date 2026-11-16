@@ -31,6 +31,10 @@ export interface HouseAdItem {
     // The partner who sells/provides/certifies this item — unset for
     // kind:'partner' (it IS the partner, nothing else to attribute it to).
     providerName?: string | null
+    // The provider's partners.partner_type. Only a halal_body certifies
+    // anything; every other partner is merely affiliated, and the card
+    // wording must say so (never "Certified by" a non-certifier).
+    providerType?: string | null
 }
 
 const TIER_ORDER: HouseAdTier[] = ['gold', 'silver', 'bronze']
@@ -157,7 +161,7 @@ async function loadHouseAdPool(): Promise<void> {
             // locations has no partner_tier column — the tier belongs to the owning partner,
             // so inner-join it and filter on the embedded partners row.
             supabase.from('locations')
-                .select('id, name, image, description, partners!inner(name, partner_tier)')
+                .select('id, name, image, description, partners!inner(name, partner_tier, partner_type)')
                 .in('partners.partner_tier', TIER_ORDER)
                 .limit(60),
             supabase.from('trips')
@@ -196,6 +200,7 @@ async function loadHouseAdPool(): Promise<void> {
                 kind: 'location', id: l.id, tier, title: l.name, image: l.image,
                 to: { name: 'PlaceDetail', params: { id: l.id } },
                 providerName: partner?.name ?? null,
+                providerType: partner?.partner_type ?? null,
                 subtitle: (l as any).description ?? null,
             })
         }

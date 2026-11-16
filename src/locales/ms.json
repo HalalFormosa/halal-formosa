@@ -193,6 +193,7 @@
     "houseAdProvider": {
       "soldBy": "Dijual oleh {name}",
       "certifiedBy": "Disahkan oleh {name}",
+      "affiliatedWith": "Bersekutu dengan {name}",
       "providedBy": "Oleh {name}"
     },
     "altProduct": "produk",

@@ -260,7 +260,7 @@
                 class="info-card"
             >
               <p class="section-title">
-                <strong><small>{{ $t('search.details.certifiedBy') }}</small></strong>
+                <strong><small>{{ $t(certifications.every(c => c.partner.partner_type === 'halal_body') ? 'search.details.certifiedBy' : 'explore.details.affiliatedWith') }}</small></strong>
               </p>
 
               <div
@@ -705,6 +705,7 @@ type ProductCertification = {
     name: string
     logo_url: string | null
     partner_tier: 'gold' | 'silver' | 'bronze' | null
+    partner_type?: string | null
     verified: boolean
   }
 }
@@ -822,6 +823,7 @@ async function fetchProductCertifications(productId: string) {
         name,
         logo_url,
         partner_tier,
+        partner_type,
         verified
       )
     `)
