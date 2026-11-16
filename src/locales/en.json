@@ -1481,6 +1481,23 @@
     }
   },
   "partner": {
+    "edit": {
+      "title": "Edit partner page",
+      "editPage": "Edit page",
+      "note": "These details are shown publicly on your partner page. The name, logo, tier and badges are managed by Halal Formosa.",
+      "about": "About",
+      "address": "Address",
+      "phone": "Phone",
+      "email": "Contact email",
+      "website": "Website",
+      "save": "Save changes",
+      "saved": "Partner page updated",
+      "noAccess": "Only the partner page owner can edit this page.",
+      "errEmail": "Enter a valid email.",
+      "errWebsite": "The website must be a valid link, like https://example.com.",
+      "errTooLong": "One of the fields is too long.",
+      "errGeneric": "Could not save. Please try again."
+    },
     "title": "Our Partner",
     "searchPlaceholder": "Search partners",
     "activeFilters": "Active filters",
@@ -1925,6 +1942,7 @@
     },
     "dashboard": {
       "title": "My Business",
+      "partnerPages": "Your partner page",
       "empty": "You don't manage any businesses yet.",
       "emptyHint": "Find your establishment in Explore and tap \"Claim this business\".",
       "explore": "Go to Explore",

@@ -1071,7 +1071,24 @@
     "goldPartner": "RAKAN KONGSI EMAS",
     "activeFilters": "Penapis semasa",
     "verifiedLabelShort": "Disahkan",
-    "producedProducts": "Produk Dihasilkan"
+    "producedProducts": "Produk Dihasilkan",
+    "edit": {
+      "title": "Sunting halaman rakan kongsi",
+      "editPage": "Sunting halaman",
+      "note": "Butiran ini dipaparkan secara umum pada halaman rakan kongsi anda. Nama, logo, tahap dan lencana diuruskan oleh Halal Formosa.",
+      "about": "Tentang",
+      "address": "Alamat",
+      "phone": "Telefon",
+      "email": "E-mel perhubungan",
+      "website": "Laman web",
+      "save": "Simpan perubahan",
+      "saved": "Halaman rakan kongsi dikemas kini",
+      "noAccess": "Hanya pemilik halaman rakan kongsi boleh menyunting halaman ini.",
+      "errEmail": "Masukkan e-mel yang sah.",
+      "errWebsite": "Laman web mesti pautan yang sah, seperti https://example.com.",
+      "errTooLong": "Salah satu medan terlalu panjang.",
+      "errGeneric": "Tidak dapat menyimpan. Sila cuba lagi."
+    }
   },
   "points": {
     "title": "Semak Log Mata"
@@ -1935,6 +1952,9 @@
       "invitedToast": "Jemputan disimpan. Ia terpakai apabila mereka log masuk dengan e-mel itu.",
       "errEmail": "Masukkan e-mel yang sah.",
       "errGeneric": "Tidak dapat menyimpan. Sila cuba lagi."
+    },
+    "dashboard": {
+      "partnerPages": "Halaman rakan kongsi anda"
     }
   }
 }

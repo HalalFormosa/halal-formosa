@@ -628,6 +628,16 @@
             <ion-card-title>
               {{ $t('partner.contact') }}
             </ion-card-title>
+            <ion-button
+                v-if="isPartnerOwner"
+                size="small"
+                fill="outline"
+                color="carrot"
+                class="pd-edit-btn"
+                @click="router.push(`/partner/${id}/edit`)"
+            >
+              {{ $t('partner.edit.editPage') }}
+            </ion-button>
           </ion-card-header>
 
           <ion-card-content>
@@ -724,6 +734,7 @@ import 'swiper/css'
 import 'swiper/css/zoom'
 import {Browser} from "@capacitor/browser";
 import {ActivityLogService} from "@/services/ActivityLogService";
+import { PartnerService } from '@/services/PartnerService'
 import router from "@/router";
 import { sparkles, shieldCheckmarkOutline, locationOutline } from 'ionicons/icons'
 import dayjs from 'dayjs'
@@ -800,6 +811,9 @@ type Partner = {
 }
 
 
+// Shown only to this partner page's owner (and admins); the server enforces edits.
+const isPartnerOwner = ref(false)
+
 const body = ref<Partner>({
   id: '',
   name: '',
@@ -831,6 +845,7 @@ const verifiedBadgeLabel = (type?: Partner['partner_type']) => {
 }
 
 /* ---------------- Fetch ---------------- */
+
 async function fetchPartner(id: string) {
   const { data, error } = await supabase
       .from('partners')
@@ -1364,6 +1379,7 @@ onMounted(async () => {
   loading.value = true
   await fetchPartner(id)
   loading.value = false
+  void PartnerService.isOwner(id).then(v => { isPartnerOwner.value = v })
 
   // 🔥 Log partner detail open
   ActivityLogService.log('partner_detail_open', {
@@ -1473,6 +1489,7 @@ onMounted(async () => {
   padding-left: 16px;
 }
 
+.pd-edit-btn { margin-top: 8px; }
 .external-link {
   display: inline-block;
   margin-top: 6px;

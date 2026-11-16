@@ -60,6 +60,25 @@
               <ion-icon v-else :icon="checkmarkCircle" color="success" class="ap-max" />
             </div>
 
+            <!-- Partner page(s) this login owns: edit the public page -->
+            <div v-if="partnerPages.length" class="section-block fade-in">
+              <p class="section-label">{{ $t('business.dashboard.partnerPages') }}</p>
+              <ion-card v-for="pp in partnerPages" :key="pp.id" class="biz-card" button @click="router.push(`/partner/${pp.id}`)">
+                <div class="biz-card-inner">
+                  <div class="biz-thumb">
+                    <img :src="pp.logo_url || 'https://placehold.co/120x120?text=%20'" />
+                  </div>
+                  <div class="biz-info">
+                    <div class="biz-title-row"><h2>{{ pp.name }}</h2></div>
+                    <ion-button size="small" fill="outline" color="carrot" mode="md" @click.stop="router.push(`/partner/${pp.id}/edit`)">
+                      {{ $t('partner.edit.editPage') }}
+                    </ion-button>
+                  </div>
+                  <ion-icon :icon="chevronForward" class="biz-chevron" />
+                </div>
+              </ion-card>
+            </div>
+
             <!-- Owned businesses -->
             <div v-if="locations.length" class="section-block">
               <p v-if="pendingClaims.length" class="section-label">{{ $t('business.dashboard.yourBusinesses') }}</p>
@@ -115,6 +134,7 @@ import { useBusinessListings, type OwnedLocation } from '@/composables/useBusine
 import { ClaimService, type BranchQuota } from '@/services/ClaimService'
 import { ActivityLogService } from '@/services/ActivityLogService'
 import { acceptPendingOwnerInvites } from '@/composables/useStoreAccess'
+import { PartnerService, type OwnedPartner } from '@/services/PartnerService'
 import type { LocationClaim, PlanTier } from '@/types/Business'
 
 const { getMyLocations } = useBusinessListings()
@@ -123,6 +143,7 @@ const locations = ref<OwnedLocation[]>([])
 const pendingClaims = ref<LocationClaim[]>([])
 const showUpgrade = ref(false)
 const quota = ref<BranchQuota | null>(null)
+const partnerPages = ref<OwnedPartner[]>([])
 
 // The tier is account-level, so every owned business shares it — read it once.
 const accountTier = computed<PlanTier>(() => (locations.value[0]?.tier as PlanTier) ?? 'free')
@@ -133,6 +154,7 @@ async function load() {
   const [owned, pending, q] = await Promise.all([getMyLocations(), ClaimService.getMyPendingClaims(), ClaimService.getMyBranchQuota()])
   locations.value = owned
   quota.value = q
+  partnerPages.value = await PartnerService.getMyPartners()
   pendingClaims.value = pending
   loading.value = false
   ActivityLogService.log('business_dashboard_open', { count: locations.value.length, pending: pending.length })

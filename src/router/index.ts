@@ -212,6 +212,12 @@ const routes: Array<RouteRecordRaw> = [
         meta: { noAds: true }
     },
     {
+        path: '/partner/:id/edit',
+        name: 'PartnerEdit',
+        component: () => import('@/views/partner/PartnerEditView.vue'),
+        meta: { requiresAuth: true, noTabs: true, noAds: true }
+    },
+    {
         path: '/partner/:id',
         name: 'PartnerDetail',
         component: () => import('@/views/partner/PartnerDetailView.vue'),

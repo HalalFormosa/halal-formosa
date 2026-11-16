@@ -131,7 +131,8 @@
       "pendingClaims": "Klaim menunggu",
       "underReview": "Sedang ditinjau",
       "yourBusinesses": "Bisnismu",
-      "manageCta": "Kelola"
+      "manageCta": "Kelola",
+      "partnerPages": "Halaman partner Anda"
     },
     "draft": {
       "unpublished": "Ada perubahan yang belum dipublikasikan. Perubahan disimpan sebagai draf dan belum terlihat oleh publik.",
@@ -1650,7 +1651,24 @@
     "goldPartner": "MITRA GOLD",
     "activeFilters": "Filter aktif",
     "verifiedLabelShort": "Terverifikasi",
-    "producedProducts": "Produk yang Diproduksi"
+    "producedProducts": "Produk yang Diproduksi",
+    "edit": {
+      "title": "Ubah halaman partner",
+      "editPage": "Ubah halaman",
+      "note": "Detail ini ditampilkan secara publik di halaman partner Anda. Nama, logo, tingkat, dan lencana dikelola oleh Halal Formosa.",
+      "about": "Tentang",
+      "address": "Alamat",
+      "phone": "Telepon",
+      "email": "Email kontak",
+      "website": "Situs web",
+      "save": "Simpan perubahan",
+      "saved": "Halaman partner diperbarui",
+      "noAccess": "Hanya pemilik halaman partner yang dapat mengubah halaman ini.",
+      "errEmail": "Masukkan email yang valid.",
+      "errWebsite": "Situs web harus berupa tautan yang valid, seperti https://example.com.",
+      "errTooLong": "Salah satu kolom terlalu panjang.",
+      "errGeneric": "Tidak dapat menyimpan. Silakan coba lagi."
+    }
   },
   "points": {
     "title": "Tinjau Log Poin"
