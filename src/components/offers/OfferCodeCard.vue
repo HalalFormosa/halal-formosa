@@ -11,10 +11,6 @@
             <span v-if="offer.discount_label" class="offer-badge">{{ offer.discount_label }}</span>
           </div>
           <p v-if="offer.description" class="offer-desc">{{ offer.description }}</p>
-          <span class="offer-pro">
-            <ion-icon :icon="sparkles" />
-            {{ offer.free_uses > 0 ? $t('offers.freeThenPro', { n: offer.free_uses }) : $t('offers.proPerk') }}
-          </span>
           <span v-if="offer.valid_until" class="offer-ends">{{ $t('offers.endsOn', { date: formatDate(offer.valid_until) }) }}</span>
         </div>
       </div>
@@ -67,6 +63,12 @@
         <ion-icon v-else :icon="!signedIn ? logInOutline : needsPro(offer) ? lockClosedOutline : ticketOutline" slot="start" />
         {{ !signedIn ? $t('offers.loginToClaim') : needsPro(offer) ? (offer.free_uses > 0 ? $t('offers.unlockMore') : $t('offers.unlock')) : $t('offers.showCode') }}
       </ion-button>
+
+      <!-- Small print under the button -->
+      <p v-if="!codes[offer.id]" class="offer-pro">
+        <ion-icon :icon="sparkles" />
+        {{ offer.free_uses > 0 ? $t('offers.freeThenPro', { n: offer.free_uses }) : $t('offers.proPerk') }}
+      </p>
 
       <p v-if="messages[offer.id]" class="offer-msg">{{ messages[offer.id] }}</p>
     </div>
@@ -246,7 +248,7 @@ async function reveal(offer: LocationOffer) {
   padding: 2px 8px; border-radius: 999px;
 }
 .offer-desc { margin: 4px 0 0; font-size: 13px; opacity: 0.8; }
-.offer-pro { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; margin-top: 6px; opacity: 0.85; }
+.offer-pro { display: flex; align-items: center; justify-content: center; gap: 4px; margin: 8px 0 0; font-size: 11px; line-height: 1.3; text-align: center; opacity: 0.7; }
 .offer-follow { margin: 0 0 10px; }
 .of-title { margin: 0 0 8px; font-size: 13px; font-weight: 600; }
 .of-row { display: flex; flex-wrap: wrap; gap: 8px; }
