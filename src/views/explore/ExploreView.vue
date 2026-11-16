@@ -463,7 +463,9 @@
                       </div>
                     </div>
                   </div>
-                  <div class="card-info-section">
+                  <div class="card-info-section" :class="{ 'has-offer': hasOffer(listLocations[0].id) }">
+                    <!-- Discount code tab: top-right corner, so it adds no line to the fixed-height card -->
+                    <div v-if="hasOffer(listLocations[0].id)" class="corner-offer-tab"><ion-icon :icon="ticketOutline" /><span>{{ $t('explore.discountTag') }}</span></div>
                     <div class="info-top">
                       <h5 class="title-text">
                         {{ listLocations[0].name }}
@@ -472,7 +474,6 @@
                       </h5>
                       <div class="metas">
                         <span class="meta type-badge">{{ listLocations[0].type }}</span>
-                        <span v-if="hasOffer(listLocations[0].id)" class="meta offer-tag"><ion-icon :icon="ticketOutline" />{{ $t('explore.discountTag') }}</span>
 
                         <span class="meta"><ion-icon :icon="eyeOutline" style="font-size: 14px; vertical-align: middle;" /> {{ listLocations[0].view_count || 0 }}</span>
 
@@ -535,7 +536,9 @@
                     </div>
                   </div>
                 </div>
-                <div class="card-info-section">
+                <div class="card-info-section" :class="{ 'has-offer': hasOffer(place.id) }">
+                  <!-- Discount code tab: top-right corner, so it adds no line to the fixed-height card -->
+                  <div v-if="hasOffer(place.id)" class="corner-offer-tab"><ion-icon :icon="ticketOutline" /><span>{{ $t('explore.discountTag') }}</span></div>
                   <div class="info-top">
                     <h5 class="title-text">
                       {{ place.name }}
@@ -544,7 +547,6 @@
                     </h5>
                     <div class="metas">
                       <span class="meta type-badge">{{ place.type }}</span>
-                      <span v-if="hasOffer(place.id)" class="meta offer-tag"><ion-icon :icon="ticketOutline" />{{ $t('explore.discountTag') }}</span>
 
                       <span class="meta"><ion-icon :icon="eyeOutline" style="font-size: 14px; vertical-align: middle;" /> {{ place.view_count || 0 }}</span>
 
@@ -727,7 +729,9 @@
                     </div>
                   </div>
 
-                  <div class="card-info-section">
+                  <div class="card-info-section" :class="{ 'has-offer': hasOffer(visibleMapLocations[0].id) }">
+                    <!-- Discount code tab: top-right corner, so it adds no line to the fixed-height card -->
+                    <div v-if="hasOffer(visibleMapLocations[0].id)" class="corner-offer-tab"><ion-icon :icon="ticketOutline" /><span>{{ $t('explore.discountTag') }}</span></div>
                     <div class="info-top">
                       <h5 class="title-text">
                         {{ visibleMapLocations[0].name }}
@@ -735,7 +739,6 @@
                         <ion-icon v-else-if="visibleMapLocations[0].is_claimed" :icon="checkmarkCircle" class="claimed-badge" />
                       </h5>
                       <div class="metas">
-                        <span v-if="hasOffer(visibleMapLocations[0].id)" class="meta offer-tag"><ion-icon :icon="ticketOutline" />{{ $t('explore.discountTag') }}</span>
                         <span class="meta"><ion-icon :icon="eyeOutline" style="font-size: 14px; vertical-align: middle;" /> {{ visibleMapLocations[0].view_count || 0 }}</span>
 
                         <span class="meta">
@@ -827,7 +830,9 @@
                   </div>
                 </div>
 
-                <div class="card-info-section">
+                <div class="card-info-section" :class="{ 'has-offer': hasOffer(place.id) }">
+                  <!-- Discount code tab: top-right corner, so it adds no line to the fixed-height card -->
+                  <div v-if="hasOffer(place.id)" class="corner-offer-tab"><ion-icon :icon="ticketOutline" /><span>{{ $t('explore.discountTag') }}</span></div>
                   <div class="info-top">
                     <h5 class="title-text">
                       {{ place.name }}
@@ -835,7 +840,6 @@
                       <ion-icon v-else-if="place.is_claimed" :icon="checkmarkCircle" class="claimed-badge" />
                     </h5>
                     <div class="metas">
-                      <span v-if="hasOffer(place.id)" class="meta offer-tag"><ion-icon :icon="ticketOutline" />{{ $t('explore.discountTag') }}</span>
                       <span class="meta"><ion-icon :icon="eyeOutline" style="font-size: 14px; vertical-align: middle;" /> {{ place.view_count || 0 }}</span>
                       
                       <span class="meta">
@@ -4521,17 +4525,6 @@ button.gm-ui-hover-effect > span {
   opacity: 0.8;
 }
 
-/* Map carousel cards have a fixed height (--explore-card-height). With the
-   "Discount code" tag the meta column grew to four stacked lines, which on
-   a two-line title pushed the action row (Details) out of the card and
-   under the tab bar. Let the meta items share lines instead. */
-.cards-track .info-top .metas {
-  flex-direction: row;
-  flex-wrap: wrap;
-  align-items: center !important;
-  gap: 2px 10px;
-}
-
 .metas {
   display: flex;
   flex-direction: column;
@@ -4843,8 +4836,26 @@ button.gm-ui-hover-effect > span {
   gap: 4px;
 }
 
-.meta.offer-tag { display: inline-flex; align-items: center; gap: 4px; color: var(--ion-color-carrot); font-weight: 700; }
-.meta.offer-tag ion-icon { font-size: 14px; }
+.card-info-section.has-offer { position: relative; }
+.card-info-section.has-offer .info-top { padding-top: 10px; }
+.corner-offer-tab {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 6;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px 9px 3px 10px;
+  border-radius: 0 0 0 10px;
+  background: var(--ion-color-carrot);
+  color: #fff;
+  font-size: 0.6rem;
+  font-weight: 800;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+.corner-offer-tab ion-icon { font-size: 11px; }
 .meta.type-badge {
   color: var(--ion-color-carrot);
   font-weight: 600;
