@@ -654,6 +654,11 @@
             <span class="pv-type">{{ typeName }}</span>
             <span v-if="halal.halal_status" class="pv-halal" :class="halal.halal_status">{{ halalLabel }}</span>
           </div>
+          <!-- Same order as the public page: quick buttons, then the discount code card -->
+          <div class="pv-quick">
+            <span v-for="o in previewButtons" :key="o.key" class="pv-qc"><ion-icon :icon="o.icon" />{{ o.label }}</span>
+          </div>
+          <div class="pv-offers"><OfferCodeCard :location-id="locationId" /></div>
           <div class="pv-attrs" v-if="halal.has_prayer_room || halal.has_wudu || halal.is_alcohol_free || halal.has_bidet || halal.has_space_to_pray || halal.is_pork_free || halal.is_cash_only || halal.has_halal_food || halal.has_vegan_option || halal.is_muslim_owned || halal.is_muslim_staff || halal.has_free_wifi || halal.has_qibla_direction">
             <span v-if="halal.has_prayer_room">🕌 {{ $t('facilityReview.facilities.prayerRoom') }}</span>
             <span v-if="halal.has_wudu">🚰 {{ $t('facilityReview.facilities.wudu') }}</span>
@@ -708,7 +713,8 @@ import {
   trashOutline, cameraOutline, lockClosedOutline, checkmarkCircleOutline,
   createOutline, eyeOutline, navigateOutline, callOutline, logoInstagram, pricetagOutline,
   closeCircle, downloadOutline, shieldCheckmarkOutline, flashOutline,
-  chatbubbleOutline, chatbubbleEllipsesOutline, star, starOutline
+  chatbubbleOutline, chatbubbleEllipsesOutline, star, starOutline,
+  logoFacebook, logoTiktok, globeOutline, chatboxEllipsesOutline, bookmarkOutline, shareSocialOutline
 } from 'ionicons/icons'
 import { Capacitor } from '@capacitor/core'
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem'
@@ -728,6 +734,7 @@ import BusinessUpgradeModal from '@/components/BusinessUpgradeModal.vue'
 import OwnerOfferEditor from '@/components/offers/OwnerOfferEditor.vue'
 import AdminOfferCreate from '@/components/offers/AdminOfferCreate.vue'
 import OfferReport from '@/components/offers/OfferReport.vue'
+import OfferCodeCard from '@/components/offers/OfferCodeCard.vue'
 import AdminOwnerManager from '@/components/offers/AdminOwnerManager.vue'
 import { OfferService, type OwnerOffer } from '@/services/OfferService'
 import type { PlanFeatures, PlanTier, LocationPhoto, LocationMenuItem, LocationPromotion } from '@/types/Business'
@@ -752,19 +759,21 @@ const quickHidden = ref<string[]>([])
 const savingQuick = ref(false)
 const quickOptions = computed(() => {
   const i = info.value
-  const all: { key: string; label: string; show: boolean }[] = [
-    { key: 'call', label: t('common.call'), show: !!i.phone },
-    { key: 'directions', label: t('business.analytics.directions'), show: true },
-    { key: 'instagram', label: t('common.instagram'), show: !!i.instagram },
-    { key: 'facebook', label: t('business.info.facebook'), show: !!i.facebook },
-    { key: 'tiktok', label: t('business.info.tiktok'), show: !!i.tiktok },
-    { key: 'website', label: t('business.info.website'), show: !!i.website },
-    { key: 'line', label: 'LINE', show: !!i.line_id },
-    { key: 'save', label: t('savedLocations.save'), show: true },
-    { key: 'share', label: t('search.details.share'), show: true },
+  const all: { key: string; label: string; icon: string; show: boolean }[] = [
+    { key: 'call', label: t('common.call'), icon: callOutline, show: !!i.phone },
+    { key: 'directions', label: t('business.analytics.directions'), icon: navigateOutline, show: true },
+    { key: 'instagram', label: t('common.instagram'), icon: logoInstagram, show: !!i.instagram },
+    { key: 'facebook', label: t('business.info.facebook'), icon: logoFacebook, show: !!i.facebook },
+    { key: 'tiktok', label: t('business.info.tiktok'), icon: logoTiktok, show: !!i.tiktok },
+    { key: 'website', label: t('business.info.website'), icon: globeOutline, show: !!i.website },
+    { key: 'line', label: 'LINE', icon: chatboxEllipsesOutline, show: !!i.line_id },
+    { key: 'save', label: t('savedLocations.save'), icon: bookmarkOutline, show: true },
+    { key: 'share', label: t('search.details.share'), icon: shareSocialOutline, show: true },
   ]
   return all.filter(o => o.show)
 })
+// What customers actually see at the top of the page: the buttons the owner left on.
+const previewButtons = computed(() => quickOptions.value.filter(o => !quickHidden.value.includes(o.key)))
 async function setQuick(key: string, visible: boolean) {
   const before = quickHidden.value
   const next = visible ? before.filter(k => k !== key) : [...before.filter(k => k !== key), key]
@@ -1772,6 +1781,11 @@ const getShortLabel = (code: string): string => {
 .pv-halal.muslim_friendly { background: var(--ion-color-light); color: var(--ion-color-medium); }
 .pv-attrs { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; font-size: .82rem; color: var(--ion-color-medium); font-weight: 600; }
 .pv-desc { font-size: .95rem; line-height: 1.5; color: var(--ion-color-dark); margin: 0 0 18px; white-space: pre-wrap; }
+.pv-quick { display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 12px; }
+.pv-qc { height: 40px; padding: 0 14px; gap: 6px; border-radius: 999px; display: inline-flex; align-items: center; font-size: 14px; font-weight: 600; color: var(--ion-color-carrot, #ff7a00); border: 1px solid var(--ion-color-carrot, #ff7a00); background: color-mix(in srgb, var(--ion-color-carrot, #ff7a00) 10%, transparent); }
+.pv-qc ion-icon { font-size: 20px; }
+/* A preview only: tapping the card must not claim a real code */
+.pv-offers { pointer-events: none; margin: 0 0 8px; }
 .pv-rows { display: flex; flex-direction: column; gap: 12px; }
 .pv-row { display: flex; align-items: center; gap: 12px; font-size: .92rem; color: var(--ion-color-dark); }
 .pv-row ion-icon { font-size: 20px; color: var(--ion-color-carrot); flex-shrink: 0; }
