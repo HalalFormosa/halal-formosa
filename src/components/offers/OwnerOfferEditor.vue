@@ -89,10 +89,10 @@
       <!-- Live preview, same card customers see -->
       <p class="oo-label">{{ $t('offers.owner.preview') }}</p>
       <div class="oo-preview" :class="{ paused: !d.is_active }">
-        <img v-if="d.image_url" :src="d.image_url" :alt="d.title" class="pv-image" />
         <div class="pv-row">
-          <ion-icon :icon="pricetagOutline" class="pv-icon" />
-          <div>
+          <img v-if="d.image_url" :src="d.image_url" :alt="d.title" class="pv-image" />
+          <ion-icon v-else :icon="pricetagOutline" class="pv-icon" />
+          <div class="pv-text">
             <div class="pv-title">
               <strong>{{ d.title || '…' }}</strong>
               <span v-if="d.discount_label" class="pv-badge">{{ d.discount_label }}</span>
@@ -313,7 +313,8 @@ async function save(d: Draft) {
 .oo-image-thumb { width: 100%; max-height: 180px; object-fit: cover; border-radius: 12px; border: 1px solid rgba(128,128,128,0.3); }
 .oo-image-actions { display: flex; align-items: center; gap: 4px; }
 .oo-image-hint { margin: 0; font-size: 11px; opacity: 0.65; }
-.pv-image { display: block; width: calc(100% + 24px); max-width: none; margin: -12px -12px 10px; max-height: 160px; object-fit: cover; border-radius: 13px 13px 0 0; }
+.pv-image { width: 96px; height: 96px; max-width: none; flex-shrink: 0; border-radius: 10px; object-fit: cover; }
+.pv-text { flex: 1; min-width: 0; }
 .pv-row { display: flex; gap: 10px; align-items: flex-start; }
 .pv-icon { font-size: 22px; color: var(--ion-color-carrot, #ff7a00); flex-shrink: 0; margin-top: 2px; }
 .pv-title { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
