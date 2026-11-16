@@ -1686,6 +1686,7 @@
     "owner": {
       "none": "No discount codes for this store yet.",
       "settings": "Settings",
+      "noEndDate": "No end date",
       "validDays": "Code valid {n} days",
       "stock": "Max {n} codes",
       "noStockLimit": "No code limit",

@@ -176,9 +176,11 @@ const toLocalInput = (iso: string | null) => {
 }
 function settingsSummary(d: OwnerOffer) {
   const bits: string[] = []
-  if (!d.valid_until) bits.push(t('offers.owner.validDays', { n: d.code_ttl_days }))
+  // With an end date, codes last until then. Without one, they fall back to the stored days.
+  bits.push(d.valid_until
+    ? t('offers.endsOn', { date: new Date(d.valid_until).toLocaleDateString() })
+    : `${t('offers.owner.noEndDate')} (${t('offers.owner.validDays', { n: d.code_ttl_days })})`)
   bits.push(d.max_codes ? t('offers.owner.stock', { n: d.max_codes }) : t('offers.owner.noStockLimit'))
-  if (d.valid_until) bits.push(t('offers.endsOn', { date: new Date(d.valid_until).toLocaleDateString() }))
   return bits.join(' · ')
 }
 function toggleSettings(id: string) { openSettings.value = openSettings.value === id ? null : id }
