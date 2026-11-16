@@ -67,7 +67,7 @@
       <!-- Small print under the button -->
       <p v-if="!codes[offer.id]" class="offer-pro">
         <ion-icon :icon="sparkles" />
-        {{ offer.free_uses > 0 ? $t('offers.freeThenPro', { n: offer.free_uses }) : $t('offers.proPerk') }}
+        {{ proNote(offer) }}
       </p>
 
       <p v-if="messages[offer.id]" class="offer-msg">{{ messages[offer.id] }}</p>
@@ -142,6 +142,16 @@ function soldOut(offer: LocationOffer): boolean {
 }
 function showFollow(offer: LocationOffer): boolean {
   return signedIn.value && !notStarted(offer) && !soldOut(offer) && !needsPro(offer) && !status.value[offer.id]?.has_open_code && followSteps(offer).some(s => !s.done)   // nothing left to follow: hide the whole block
+}
+// Say only what applies to this person: Pro members hear "unlimited", free members hear
+// their allowance. Signed out (we don't know yet) gets the short version of both.
+function proNote(offer: LocationOffer): string {
+  if (signedIn.value && (isDonor.value || status.value[offer.id]?.is_pro)) return t('offers.notePro')
+  if (signedIn.value) {
+    if (offer.free_uses <= 0) return t('offers.proPerk')
+    return offer.free_uses === 1 ? t('offers.noteFree') : t('offers.noteFreeN', { n: offer.free_uses })
+  }
+  return offer.free_uses > 0 ? t('offers.freeThenPro', { n: offer.free_uses }) : t('offers.proPerk')
 }
 function platformName(p: FollowStep['platform']) {
   return p === 'instagram' ? 'Instagram' : p === 'tiktok' ? 'TikTok' : 'Facebook'

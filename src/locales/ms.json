@@ -1786,6 +1786,9 @@
   },
   "offers": {
     "proPerk": "Faedah Halal Formosa Pro",
+    "noteFree": "Ahli percuma boleh menggunakannya sekali",
+    "noteFreeN": "Ahli percuma boleh menggunakannya {n} kali",
+    "notePro": "Ahli Pro: tanpa had sepanjang promosi berlangsung",
     "freeThenPro": "Percuma: sekali · Pro: tanpa had sepanjang promosi",
     "unlockMore": "Naik taraf untuk guna lagi",
     "limitReached": "Anda telah menggunakan satu penebusan percuma. Naik taraf ke Halal Formosa Pro dalam aplikasi mudah alih untuk menuntut kod diskaun lain.",

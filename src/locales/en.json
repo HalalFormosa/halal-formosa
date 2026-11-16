@@ -1642,6 +1642,9 @@
   },
   "offers": {
     "proPerk": "Halal Formosa Pro perk",
+    "noteFree": "Free members can use this once",
+    "noteFreeN": "Free members can use this {n} times",
+    "notePro": "Pro members: unlimited while the promo lasts",
     "freeThenPro": "Free: once · Pro: unlimited while promo lasts",
     "unlockMore": "Upgrade to use again",
     "limitReached": "You've used your free redemption. Upgrade to Halal Formosa Pro in the mobile app to claim another discount code.",
