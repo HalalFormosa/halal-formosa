@@ -156,8 +156,16 @@ async function onFollow(offer: LocationOffer, step: FollowStep) {
   if (step.done) return
   try {
     await OfferService.recordFollow(offer, step.platform)
+    // One follow covers the whole store, so tick it on every offer shown here.
+    for (const st of Object.values(status.value)) {
+      st?.follow.forEach(f => { if (f.platform === step.platform) f.done = true })
+    }
     step.done = true
-  } catch { /* the code step re-checks on the server; they can tap again */ }
+  } catch {
+    // Not saved: leave the button as "Follow" so they can tap again, and say so.
+    const toast = await toastController.create({ message: t('offers.error'), duration: 2500, position: 'bottom' })
+    await toast.present()
+  }
 }
 
 watch(() => props.locationId, load, { immediate: true })
