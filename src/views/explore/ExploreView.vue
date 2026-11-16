@@ -153,6 +153,15 @@
               <ion-label>{{ cat.name }}</ion-label>
             </ion-chip>
             <ion-chip
+              class="quick-filter-chip"
+              :class="{ active: hasOfferFilter }"
+              :style="{ '--cat-color': 'var(--ion-color-carrot)', '--cat-bg': hasOfferFilter ? 'var(--ion-color-carrot)' : 'rgba(255, 122, 0, 0.15)' }"
+              @click="hasOfferFilter = !hasOfferFilter"
+            >
+              <ion-icon :icon="ticketOutline" class="category-icon" />
+              <ion-label>{{ $t('explore.discountChip') }}</ion-label>
+            </ion-chip>
+            <ion-chip
               class="quick-filter-chip more-chip"
               @click="isFilterModalOpen = true"
             >
@@ -209,12 +218,25 @@
                 <ion-icon :icon="bicycleOutline" class="category-icon" />
                 <ion-label>{{ $t('explore.deliveryFilter') }}</ion-label>
               </ion-chip>
+
+              <ion-chip
+                  class="modern-category-chip"
+                  :class="{ active: hasOfferFilter }"
+                  :style="{
+                    '--cat-color': 'var(--ion-color-carrot)',
+                    '--cat-bg': hasOfferFilter ? 'var(--ion-color-carrot)' : 'transparent'
+                  }"
+                  @click="hasOfferFilter = !hasOfferFilter"
+              >
+                <ion-icon :icon="ticketOutline" class="category-icon" />
+                <ion-label>{{ $t('explore.discountFilter') }}</ion-label>
+              </ion-chip>
             </div>
 
             <ion-chip
-                v-if="activeCategoryIds.length || activeTag || hasDeliveryFilter"
+                v-if="activeCategoryIds.length || activeTag || hasDeliveryFilter || hasOfferFilter"
                 class="clear-chip floating-clear"
-                @click="activeCategoryIds = []; activeTag = null; hasDeliveryFilter = false; focusedPlaceId = null"
+                @click="activeCategoryIds = []; activeTag = null; hasDeliveryFilter = false; hasOfferFilter = false; focusedPlaceId = null"
             >
               <ion-icon :icon="closeCircleOutline" style="margin-right: 4px; font-size: 16px;" />
               {{ $t('common.clear') }}
@@ -450,6 +472,7 @@
                       </h5>
                       <div class="metas">
                         <span class="meta type-badge">{{ listLocations[0].type }}</span>
+                        <span v-if="hasOffer(listLocations[0].id)" class="meta offer-tag"><ion-icon :icon="ticketOutline" />{{ $t('explore.discountTag') }}</span>
 
                         <span class="meta"><ion-icon :icon="eyeOutline" style="font-size: 14px; vertical-align: middle;" /> {{ listLocations[0].view_count || 0 }}</span>
 
@@ -521,6 +544,7 @@
                     </h5>
                     <div class="metas">
                       <span class="meta type-badge">{{ place.type }}</span>
+                      <span v-if="hasOffer(place.id)" class="meta offer-tag"><ion-icon :icon="ticketOutline" />{{ $t('explore.discountTag') }}</span>
 
                       <span class="meta"><ion-icon :icon="eyeOutline" style="font-size: 14px; vertical-align: middle;" /> {{ place.view_count || 0 }}</span>
 
@@ -711,6 +735,7 @@
                         <ion-icon v-else-if="visibleMapLocations[0].is_claimed" :icon="checkmarkCircle" class="claimed-badge" />
                       </h5>
                       <div class="metas">
+                        <span v-if="hasOffer(visibleMapLocations[0].id)" class="meta offer-tag"><ion-icon :icon="ticketOutline" />{{ $t('explore.discountTag') }}</span>
                         <span class="meta"><ion-icon :icon="eyeOutline" style="font-size: 14px; vertical-align: middle;" /> {{ visibleMapLocations[0].view_count || 0 }}</span>
 
                         <span class="meta">
@@ -810,8 +835,7 @@
                       <ion-icon v-else-if="place.is_claimed" :icon="checkmarkCircle" class="claimed-badge" />
                     </h5>
                     <div class="metas">
-                      
-                      
+                      <span v-if="hasOffer(place.id)" class="meta offer-tag"><ion-icon :icon="ticketOutline" />{{ $t('explore.discountTag') }}</span>
                       <span class="meta"><ion-icon :icon="eyeOutline" style="font-size: 14px; vertical-align: middle;" /> {{ place.view_count || 0 }}</span>
                       
                       <span class="meta">
@@ -904,7 +928,7 @@
         <ion-toolbar>
           <ion-title>{{ $t('common.filter') || 'Filter' }}</ion-title>
           <ion-buttons slot="end">
-            <ion-button v-if="activeFiltersCount > 0" @click="() => { activeCategoryIds = []; activeTag = null; hasDeliveryFilter = false; focusedPlaceId = null; }" color="carrot" class="modal-reset-btn">
+            <ion-button v-if="activeFiltersCount > 0" @click="() => { activeCategoryIds = []; activeTag = null; hasDeliveryFilter = false; hasOfferFilter = false; focusedPlaceId = null; }" color="carrot" class="modal-reset-btn">
               {{ $t('common.reset') || 'Reset' }}
             </ion-button>
           </ion-buttons>
@@ -917,6 +941,7 @@
             :campusPartners="campusPartners"
             :activeTag="activeTag"
             :hasDeliveryFilter="hasDeliveryFilter"
+            :hasOfferFilter="hasOfferFilter"
             :loadingCategories="loadingCategories"
             :categoryIconMap="categoryIconMap"
             :categoryImageMap="categoryImageMap"
@@ -926,7 +951,8 @@
             @toggleCategory="toggleCategory"
             @toggleTag="(slug) => { activeTag = (activeTag === slug ? null : slug); focusedPlaceId = null; }"
             @toggleDelivery="hasDeliveryFilter = !hasDeliveryFilter"
-            @clearFilters="() => { activeCategoryIds = []; activeTag = null; hasDeliveryFilter = false; focusedPlaceId = null; }"
+            @toggleOffer="hasOfferFilter = !hasOfferFilter"
+            @clearFilters="() => { activeCategoryIds = []; activeTag = null; hasDeliveryFilter = false; hasOfferFilter = false; focusedPlaceId = null; }"
             @update:sortBy="sortBy = $event"
         />
       </ion-content>
@@ -980,7 +1006,7 @@ import {
   eyeOutline, shareSocialOutline, navigateOutline, closeCircleOutline,
   calendarOutline, pricetagOutline, school, optionsOutline,
   bookmarkOutline, bookmark,
-  sparklesOutline, bicycleOutline
+  sparklesOutline, bicycleOutline, ticketOutline
 } from 'ionicons/icons'
 import { ref, onMounted, onUnmounted, nextTick, watch, computed } from 'vue'
 import type {ComponentPublicInstance, VNodeRef} from 'vue'
@@ -1010,6 +1036,7 @@ import { Motion } from '@capacitor/motion'
 import useSharePlace from '@/composables/useSharePlace'
 import { useLocation } from '@/composables/useLocation'
 import {ActivityLogService} from "@/services/ActivityLogService";
+import { OfferService } from "@/services/OfferService";
 
 import {isDonor} from "@/composables/useSubscriptionStatus";
 import { isDark } from "@/composables/useTheme";
@@ -1048,6 +1075,11 @@ const HOUSE_AD_NATIVE_INTERVAL = 6
 const activeTag = ref<string | null>(null)
 const activeCategoryIds = ref<number[]>([])
 const hasDeliveryFilter = ref(false)
+// Places that currently have an active discount code (tag on cards + "Has discount code" filter).
+const hasOfferFilter = ref(false)
+const offerLocationIds = ref<Set<number>>(new Set())
+const hasOffer = (id: number | string) => offerLocationIds.value.has(Number(id))
+void OfferService.getLocationIdsWithActiveOffers().then(ids => { offerLocationIds.value = ids })
 const searchQuery = ref('')
 // The query actually filtered on — only updates when the user commits a
 // search (presses "Go" / Enter), so typing alone never re-filters results.
@@ -1309,7 +1341,7 @@ const handleResize = () => {
 }
 
 const activeFiltersCount = computed(() => {
-  return activeCategoryIds.value.length + (activeTag.value ? 1 : 0) + (hasDeliveryFilter.value ? 1 : 0)
+  return activeCategoryIds.value.length + (activeTag.value ? 1 : 0) + (hasDeliveryFilter.value ? 1 : 0) + (hasOfferFilter.value ? 1 : 0)
 })
 
 // For You computed properties
@@ -3260,6 +3292,11 @@ const sortedLocations = computed(() => {
     base = base.filter(l => !!(l.foodpanda_url || l.ubereats_url))
   }
 
+  // filter to places that have an active discount code
+  if (hasOfferFilter.value) {
+    base = base.filter(l => offerLocationIds.value.has(Number(l.id)))
+  }
+
   // search only reflects the committed query — typing alone doesn't filter
   const q = committedSearchQuery.value.toLowerCase().trim()
 
@@ -4768,6 +4805,8 @@ button.gm-ui-hover-effect > span {
   gap: 4px;
 }
 
+.meta.offer-tag { display: inline-flex; align-items: center; gap: 4px; color: var(--ion-color-carrot); font-weight: 700; }
+.meta.offer-tag ion-icon { font-size: 14px; }
 .meta.type-badge {
   color: var(--ion-color-carrot);
   font-weight: 600;

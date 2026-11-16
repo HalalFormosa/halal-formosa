@@ -41,7 +41,16 @@
         "owner": "Pemilik",
         "manager": "Manajer",
         "staff": "Staf"
-      }
+      },
+      "limit": {
+        "title": "Anda telah mencapai batas cabang",
+        "branchCount": "{n} cabang | {n} cabang",
+        "body": "Paket {tier} Anda mencakup {limit} dan Anda sudah memiliki {count}. Upgrade paket Anda untuk menambah cabang.",
+        "bodyTop": "Paket Gold Anda mencakup hingga {limit}. Butuh lebih banyak? Hubungi kami untuk mengatur kuota yang lebih besar dan harga untuk bisnis Anda.",
+        "contact": "Hubungi Halal Formosa"
+      },
+      "hintTitle": "Apakah Anda pemilik bisnis ini?",
+      "hintBody": "Klaim toko Anda untuk mengelola listing, membalas ulasan, dan memasang promosi."
     },
     "claimedBadge": "Terverifikasi",
     "info": {
@@ -83,7 +92,7 @@
     },
     "tabs": {
       "menu": "Menu",
-      "promos": "Penawaran",
+      "promos": "Promosi",
       "info": "Info",
       "photos": "Foto",
       "halal": "Halal",
@@ -110,7 +119,9 @@
       "current": "Paket",
       "previewPaywall": "Pratinjau paywall",
       "tierUpdated": "Paket diatur ke {tier}",
-      "upgradeHint": "Tingkatkan untuk lebih banyak"
+      "upgradeHint": "Tingkatkan untuk lebih banyak",
+      "branches": "Cabang: {used} dari {limit} terpakai",
+      "branchesUnlimited": "Cabang: {used} (tanpa batas)"
     },
     "dashboard": {
       "title": "Bisnis Saya",
@@ -120,7 +131,8 @@
       "pendingClaims": "Klaim menunggu",
       "underReview": "Sedang ditinjau",
       "yourBusinesses": "Bisnismu",
-      "manageCta": "Kelola"
+      "manageCta": "Kelola",
+      "partnerPages": "Halaman partner Anda"
     },
     "draft": {
       "unpublished": "Ada perubahan yang belum dipublikasikan. Perubahan disimpan sebagai draf dan belum terlihat oleh publik.",
@@ -166,7 +178,7 @@
     },
     "promos": {
       "locked": "Promosi tersedia di paket Bronze ke atas.",
-      "titleField": "Judul penawaran",
+      "titleField": "Judul promosi",
       "bodyField": "Detail (opsional)"
     },
     "reports": {
@@ -216,6 +228,22 @@
       "fri": "Jum",
       "sat": "Sab",
       "sun": "Min"
+    },
+    "noAccess": "Hanya pemilik toko yang dapat mengelola bisnis ini.",
+    "owners": {
+      "title": "Pemilik",
+      "count": "{n} terdaftar",
+      "none": "Belum ada pemilik",
+      "note": "Tambahkan email yang dipakai pemilik untuk masuk. Mereka bisa memakai aplikasi web atau aplikasi seluler: toko terhubung begitu mereka masuk dengan email itu (harus email yang sudah dikonfirmasi).",
+      "invited": "Menunggu login",
+      "emailPlaceholder": "Email pemilik",
+      "roleOwner": "Pemilik",
+      "roleManager": "Manajer",
+      "add": "Tambah",
+      "added": "Pemilik ditambahkan",
+      "invitedToast": "Undangan disimpan. Berlaku saat mereka masuk dengan email itu.",
+      "errEmail": "Masukkan email yang valid.",
+      "errGeneric": "Tidak dapat menyimpan. Silakan coba lagi."
     }
   },
   "common": {
@@ -935,7 +963,9 @@
       "closedNow": "Closed Now",
       "additionalDetails": "Additional Details",
       "estimatedPrice": "Estimated Price",
-      "open24Hours": "24 jam"
+      "open24Hours": "24 jam",
+      "allHours": "Seminggu penuh",
+      "hideHours": "Sembunyikan"
     },
     "filters": {
       "priceRange": "Rentang Harga"
@@ -996,7 +1026,11 @@
     "go": "Cari",
     "searching": "Mencari lokasi...",
     "showResults": "Tampilkan {count} hasil",
-    "searchNotFound": "Tidak ada hasil untuk \"{query}\""
+    "searchNotFound": "Tidak ada hasil untuk \"{query}\"",
+    "discount": "Kode diskon",
+    "discountFilter": "Ada kode diskon",
+    "discountChip": "Diskon",
+    "discountTag": "Kode diskon"
   },
   "trip": {
     "title": "Wisata Ramah Muslim",
@@ -1617,7 +1651,24 @@
     "goldPartner": "MITRA GOLD",
     "activeFilters": "Filter aktif",
     "verifiedLabelShort": "Terverifikasi",
-    "producedProducts": "Produk yang Diproduksi"
+    "producedProducts": "Produk yang Diproduksi",
+    "edit": {
+      "title": "Ubah halaman partner",
+      "editPage": "Ubah halaman",
+      "note": "Detail ini ditampilkan secara publik di halaman partner Anda. Nama, logo, tingkat, dan lencana dikelola oleh Halal Formosa.",
+      "about": "Tentang",
+      "address": "Alamat",
+      "phone": "Telepon",
+      "email": "Email kontak",
+      "website": "Situs web",
+      "save": "Simpan perubahan",
+      "saved": "Halaman partner diperbarui",
+      "noAccess": "Hanya pemilik halaman partner yang dapat mengubah halaman ini.",
+      "errEmail": "Masukkan email yang valid.",
+      "errWebsite": "Situs web harus berupa tautan yang valid, seperti https://example.com.",
+      "errTooLong": "Salah satu kolom terlalu panjang.",
+      "errGeneric": "Tidak dapat menyimpan. Silakan coba lagi."
+    }
   },
   "points": {
     "title": "Tinjau Log Poin"
@@ -2877,6 +2928,137 @@
       "tileUsage": "Penggunaan",
       "tileAccounts": "Akun",
       "tileActiveDays": "Hari aktif"
+    }
+  },
+  "offers": {
+    "proPerk": "Keuntungan Halal Formosa Pro",
+    "freeThenPro": "Anggota gratis bisa memakainya sekali · Anggota Pro tanpa batas",
+    "unlockMore": "Upgrade untuk memakai lagi",
+    "limitReached": "Anda sudah memakai satu kali penukaran gratis. Upgrade ke Halal Formosa Pro di aplikasi seluler untuk mengklaim kode diskon lainnya.",
+    "showCode": "Tampilkan kode saya",
+    "create": {
+      "open": "Buat kode diskon",
+      "title": "Kode diskon baru",
+      "adminOnly": "Hanya admin yang dapat membuat kode diskon. Pemilik toko dapat mengubah teksnya setelahnya.",
+      "prefix": "Awalan kode",
+      "prefixHint": "mis. SAKI (2-12 huruf atau angka, unik)",
+      "kind": "Jenis",
+      "kindMenu": "Diskon menu",
+      "kindMeat": "Harga daging / produk",
+      "kindOther": "Lainnya",
+      "active": "Terlihat oleh pelanggan",
+      "followSettings": "Pengaturan ikuti",
+      "requireFollow": "Minta pelanggan mengikuti dulu",
+      "followHint": "Memakai Instagram, TikTok, dan Facebook milik toko. Ganti di bawah hanya jika diskon ini perlu mengarahkan orang ke akun lain.",
+      "followInstagram": "Username Instagram (opsional, menggantikan)",
+      "followTiktok": "Username TikTok (opsional, menggantikan)",
+      "followFacebook": "Tautan halaman Facebook (opsional, menggantikan)",
+      "submit": "Buat kode diskon",
+      "created": "Kode diskon dibuat",
+      "ruleTitle": "Cara kerja setiap kode diskon",
+      "ruleBody": "Anggota gratis dapat memakai kode satu kali. Anggota Pro dapat memakainya sebanyak yang mereka mau. Aturan ini ditetapkan oleh Halal Formosa dan berlaku untuk semua kode diskon, sehingga tidak dapat diubah per kode.",
+      "previewAfter": "Setelah pelanggan mengetuk Tampilkan kode saya",
+      "sampleNote": "Hanya contoh. Setiap pelanggan mendapat kode uniknya sendiri.",
+      "limits": "Tanggal dan batas",
+      "validFrom": "Mulai (opsional)",
+      "validUntil": "Berakhir (opsional)",
+      "ttl": "Kode berlaku selama (hari)",
+      "maxCodes": "Jumlah kode maksimum (opsional)",
+      "maxCodesHint": "Kosongkan jika tanpa batas",
+      "errDates": "Tanggal berakhir harus setelah tanggal mulai.",
+      "errNumbers": "Masa berlaku harus 1-365 hari dan jumlah maksimum minimal 1.",
+      "previewTitle": "Judul Anda",
+      "previewFollow": "Pelanggan akan diminta mengikuti akun media sosial toko terlebih dahulu.",
+      "errPrefixTaken": "Awalan kode itu sudah dipakai. Pilih yang lain.",
+      "errPrefix": "Awalan harus terdiri dari 2-12 huruf atau angka.",
+      "errFollow": "Salah satu akun untuk diikuti tidak valid."
+    },
+    "owner": {
+      "none": "Belum ada kode diskon untuk toko ini.",
+      "settings": "Pengaturan",
+      "validDays": "Kode berlaku {n} hari",
+      "stock": "Maks. {n} kode",
+      "noStockLimit": "Tanpa batas kode",
+      "saveSettings": "Simpan pengaturan",
+      "settingsSaved": "Pengaturan disimpan",
+      "settingsReadonly": "Tanggal dan batas ditetapkan oleh Halal Formosa. Hubungi kami untuk mengubahnya.",
+      "tab": "Kode diskon",
+      "note": "Atur tampilan kode diskon Anda bagi pelanggan. Perubahan langsung terlihat. Kode yang sudah diterbitkan tetap berlaku.",
+      "title": "Judul",
+      "badge": "Teks lencana",
+      "badgeHint": "mis. DISKON 10%",
+      "description": "Deskripsi",
+      "fixed": "ditetapkan oleh Halal Formosa",
+      "preview": "Pratinjau",
+      "paused": "Dijeda: pelanggan tidak dapat melihat atau mengklaim diskon ini.",
+      "stats": "{issued} diterbitkan · {redeemed} ditukar",
+      "saved": "Kode diskon diperbarui",
+      "errTitle": "Silakan isi judul.",
+      "errNotAllowed": "Anda tidak dapat mengubah kode diskon ini.",
+      "errGeneric": "Tidak dapat menyimpan. Silakan coba lagi."
+    },
+    "loginToClaim": "Masuk untuk mengklaim kode Anda",
+    "endsOn": "Berakhir {date}",
+    "startsOn": "Dimulai {date}",
+    "soldOut": "Semua kode sudah diklaim.",
+    "report": {
+      "title": "Hasil",
+      "lastDays": "{n} hari terakhir",
+      "paused": "Dijeda",
+      "claimed": "Diklaim",
+      "redeemed": "Ditukar",
+      "rate": "Tingkat penukaran",
+      "open": "Kode aktif",
+      "expired": "Kedaluwarsa tak terpakai",
+      "people": "Orang",
+      "followed": "Mengikuti: {list}",
+      "voided": "{n} penukaran dibatalkan",
+      "showCustomers": "Tampilkan pelanggan",
+      "hideCustomers": "Sembunyikan pelanggan",
+      "noCustomers": "Belum ada kode.",
+      "statusRedeemed": "Ditukar",
+      "statusExpired": "Kedaluwarsa",
+      "statusOpen": "Aktif"
+    },
+    "followFirst": "Ikuti dulu untuk membuka kode Anda",
+    "followOn": "Ikuti di {platform}",
+    "followed": "Sudah mengikuti di {platform}",
+    "followRequired": "Silakan ikuti dulu, lalu coba lagi.",
+    "followStaffNote": "Toko mungkin meminta bukti bahwa Anda mengikuti mereka.",
+    "unlock": "Buka dengan Pro",
+    "showAtCounter": "Tunjukkan kode ini di kasir. Hanya berlaku sekali.",
+    "validUntil": "Berlaku hingga {date}",
+    "proRequired": "Keuntungan ini untuk anggota Halal Formosa Pro. Upgrade di aplikasi seluler untuk membukanya.",
+    "ended": "Diskon ini sudah tidak tersedia.",
+    "error": "Tidak dapat mengambil kode Anda. Silakan coba lagi.",
+    "redeem": {
+      "title": "Tukarkan kode",
+      "action": "Tukarkan kode",
+      "hint": "Ketik atau pindai kode pelanggan untuk menandainya telah dipakai.",
+      "placeholder": "mis. MRMO-7K4Q-X9MP",
+      "button": "Tukarkan",
+      "scan": "Pindai QR",
+      "stopScan": "Berhenti memindai",
+      "success": "Kode diterima",
+      "successDetail": "{offer} — berikan diskonnya sekarang.",
+      "invalid_code": "Kode ini tidak valid untuk toko Anda.",
+      "already_used": "Sudah dipakai pada {when}.",
+      "expired": "Kode ini sudah kedaluwarsa.",
+      "offer_not_active": "Diskon ini tidak aktif.",
+      "not_allowed": "Anda tidak dapat menukarkan kode untuk toko ini.",
+      "noAccess": "Hanya pemilik toko yang dapat menukarkan kode.",
+      "generic": "Tidak dapat menukarkan kode. Silakan coba lagi.",
+      "cameraDenied": "Kamera tidak tersedia. Ketik kodenya saja.",
+      "undo": "Batalkan",
+      "undoTitle": "Batalkan penukaran ini?",
+      "undoBody": "{code} akan dapat dipakai lagi. Lakukan hanya jika kode ini ditukarkan karena kesalahan.",
+      "undone": "Penukaran dibatalkan",
+      "undoneDetail": "{code} dapat dipakai lagi.",
+      "errWindow": "Batas waktu pembatalan (10 menit) sudah lewat. Hubungi Halal Formosa untuk memperbaikinya.",
+      "errOpenCode": "Pelanggan ini sudah punya kode baru untuk diskon ini, sehingga kode ini tidak dapat dipulihkan.",
+      "recent": "Baru ditukarkan",
+      "none": "Belum ada kode yang ditukarkan.",
+      "store": "Toko"
     }
   }
 }

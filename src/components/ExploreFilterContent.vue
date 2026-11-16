@@ -4,7 +4,7 @@ import {
   IonIcon, IonChip, IonLabel, IonSkeletonText
 } from '@ionic/vue'
 import {
-  pricetagOutline, closeCircleOutline, school, sparkles, businessOutline, bicycleOutline,
+  pricetagOutline, closeCircleOutline, school, sparkles, businessOutline, bicycleOutline, ticketOutline,
   swapVerticalOutline, locationOutline, timeOutline, trendingUpOutline, flameOutline,
   sparklesOutline, lockClosedOutline
 } from 'ionicons/icons'
@@ -32,6 +32,7 @@ const props = withDefaults(defineProps<{
   campusPartners: Campus[]
   activeTag: string | null
   hasDeliveryFilter: boolean
+  hasOfferFilter?: boolean
   loadingCategories: boolean
   categoryIconMap: Record<string, any>
   categoryImageMap: Record<string, string>
@@ -48,6 +49,7 @@ defineEmits<{
   (e: 'toggleCategory', cat: Category): void
   (e: 'toggleTag', slug: string): void
   (e: 'toggleDelivery'): void
+  (e: 'toggleOffer'): void
   (e: 'clearFilters'): void
   (e: 'update:sortBy', value: SortOption): void
 }>()
@@ -168,6 +170,25 @@ const regularCategories = computed(() =>
         >
           <ion-icon :icon="bicycleOutline" class="category-icon" />
           <ion-label>{{ $t('explore.deliveryFilter') }}</ion-label>
+        </ion-chip>
+      </div>
+    </div>
+
+    <!-- Discount codes -->
+    <div class="filter-section">
+      <h3 class="filter-section-title">
+        <ion-icon :icon="ticketOutline" />
+        {{ $t('explore.discount') }}
+      </h3>
+      <div class="category-bar">
+        <ion-chip
+            class="modern-category-chip"
+            :class="{ active: hasOfferFilter }"
+            style="--cat-color: var(--ion-color-carrot); --cat-bg: var(--ion-color-carrot);"
+            @click="$emit('toggleOffer')"
+        >
+          <ion-icon :icon="ticketOutline" class="category-icon" />
+          <ion-label>{{ $t('explore.discountFilter') }}</ion-label>
         </ion-chip>
       </div>
     </div>

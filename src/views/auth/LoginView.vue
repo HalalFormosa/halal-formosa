@@ -508,7 +508,9 @@ function goHome() {
 }
 
 function goToSignUp() {
-  router.push('/signup');
+  // keep the return address so a new customer lands back where they started
+  const r = route.query.redirect;
+  router.push(typeof r === 'string' ? { path: '/signup', query: { redirect: r } } : '/signup');
 }
 </script>
 

@@ -133,6 +133,13 @@
               <span class="rating-count">{{ $t('facilityReview.noReviewsYet') || 'No reviews yet' }}</span>
             </div>
 
+            <!-- Open/closed at a glance -->
+            <div v-if="place.opening_hours" class="open-status-line">
+              <span class="open-status-badge" :class="{ open: isOpenNow, closed: !isOpenNow }">
+                {{ isOpenNow ? $t('explore.details.openNow') : $t('explore.details.closedNow') }}
+              </span>
+            </div>
+
             <!-- Verified owner attribution -->
             <p v-if="place?.is_claimed && ownerName" class="owned-by-line">
               <ion-icon :icon="checkmarkCircle" />
@@ -148,32 +155,93 @@
               </div>
             </div>
 
-            <!-- 🏷️ Location Tags -->
-            <div v-if="place.tags?.length" class="hashtag-row">
-              <template v-if="showAllTags">
-                <span v-for="tag in place.tags" :key="tag" class="location-hashtag">
-                  #{{ tag }}
-                </span>
-                <span class="location-hashtag-more" @click="showAllTags = false">
-                  less
-                </span>
-              </template>
-              <template v-else>
-                <span v-for="tag in place.tags.slice(0, 3)" :key="tag" class="location-hashtag">
-                  #{{ tag }}
-                </span>
-                <span v-if="place.tags.length > 3" class="location-hashtag-more" @click="showAllTags = true">
-                  ... more
-                </span>
-              </template>
+            <!-- Primary actions: reach / get to the place -->
+            <div v-if="place.lat || place.phone || place.instagram || place.facebook || place.tiktok || place.website || place.line_id" class="quick-contact">
+              <a v-if="place.phone" class="qc-btn" :href="`tel:${place.phone}`" :aria-label="$t('common.call')" @click="logCall">
+                <ion-icon :icon="callOutline" /><span>{{ $t('common.call') }}</span>
+              </a>
+              <a class="qc-btn" :href="`https://www.google.com/maps/search/?api=1&query=${mapSearchQuery}&center=${place.lat},${place.lng}&zoom=16`" target="_blank" rel="noopener" :aria-label="$t('business.analytics.directions')" @click="logOpenMaps">
+                <ion-icon :icon="navigateOutline" /><span>{{ $t('business.analytics.directions') }}</span>
+              </a>
+              <a v-if="place.instagram" class="qc-btn" :href="`https://instagram.com/${place.instagram.replace('@','')}`" target="_blank" rel="noopener" aria-label="Instagram" @click="logInstagram">
+                <ion-icon :icon="logoInstagram" /><span>{{ $t('common.instagram') }}</span>
+              </a>
+              <a v-if="place.facebook" class="qc-btn" :href="place.facebook" target="_blank" rel="noopener" aria-label="Facebook" @click="logFacebook">
+                <ion-icon :icon="logoFacebook" /><span>{{ $t('business.info.facebook') }}</span>
+              </a>
+              <a v-if="place.tiktok" class="qc-btn" :href="`https://tiktok.com/@${place.tiktok.replace('@','')}`" target="_blank" rel="noopener" aria-label="TikTok" @click="logTiktok">
+                <ion-icon :icon="logoTiktok" /><span>{{ $t('business.info.tiktok') }}</span>
+              </a>
+              <a v-if="place.website" class="qc-btn" :href="place.website" target="_blank" rel="noopener" :aria-label="$t('business.info.website')" @click="logWebsite">
+                <ion-icon :icon="globeOutline" /><span>{{ $t('business.info.website') }}</span>
+              </a>
+              <a v-if="place.line_id" class="qc-btn" :href="`line://ti/p/~${place.line_id}`" aria-label="LINE" @click="logLine">
+                <ion-icon :icon="chatboxEllipsesOutline" /><span>LINE</span>
+              </a>
+              <button v-if="isLoggedIn" type="button" class="qc-btn" :aria-label="$t('savedLocations.save')" @click="openSaveModal">
+                <ion-icon :icon="isLocationSaved(place?.id || 0) ? bookmark : bookmarkOutline" />
+                <span>{{ isLocationSaved(place?.id || 0) ? $t('savedLocations.saved') : $t('savedLocations.save') }}</span>
+              </button>
+              <button type="button" class="qc-btn" :aria-label="$t('search.details.share')" @click="share">
+                <ion-icon :icon="shareSocialOutline" /><span>{{ $t('search.details.share') }}</span>
+              </button>
+              <button type="button" class="qc-btn" :aria-label="$t('search.details.report')" @click="reportItem">
+                <ion-icon :icon="alertCircleOutline" /><span>{{ $t('search.details.report') }}</span>
+              </button>
             </div>
 
-            <p v-if="place?.author?.public_profile" class="attribution-text">
-              {{ $t('home.addedBy', { author: place.author.display_name }) }} - {{ fromNowToTaipei(place.created_at) }}
-            </p>
-            <p v-else class="attribution-text">
-              {{ $t('home.added') }} {{ fromNowToTaipei(place.created_at) }}
-            </p>
+            <!-- Order Via delivery apps -->
+            <div v-if="place.foodpanda_url || place.ubereats_url" class="ion-margin-top ion-margin-bottom">
+              <p class="section-title">
+                <strong><small>{{ $t('explore.details.orderVia') }}</small></strong>
+              </p>
+              <div class="order-via-row">
+                <div v-if="place.foodpanda_url" class="order-via-card">
+                  <img
+                    src="/social-logo/foodpanda-logo.svg"
+                    alt="Foodpanda"
+                    class="order-via-card-logo"
+                  />
+                  <a
+                      class="order-via-send-btn"
+                      :href="place.foodpanda_url"
+                      target="_blank"
+                      @click="logFoodpanda"
+                  >
+                    <ion-icon :icon="sendOutline" />
+                  </a>
+                </div>
+                <div v-if="place.ubereats_url" class="order-via-card">
+                  <img
+                    src="/social-logo/ubereats-logo.png"
+                    alt="Uber Eats"
+                    class="order-via-card-logo ubereats-card-logo"
+                  />
+                  <a
+                      class="order-via-send-btn"
+                      :href="place.ubereats_url"
+                      target="_blank"
+                      @click="logUberEats"
+                  >
+                    <ion-icon :icon="sendOutline" />
+                  </a>
+                </div>
+              </div>
+            </div>
+            <!-- Partner-store discount codes (Pro perk) -->
+            <OfferCodeCard v-if="place?.id" :location-id="Number(place.id)" />
+
+            <!-- Promotions and Menu Action Buttons -->
+            <div v-if="activePromos.length > 0 || menuItems.length > 0" class="biz-actions-row ion-margin-vertical">
+              <ion-button v-if="activePromos.length > 0" fill="solid" color="carrot" class="action-sheet-btn" @click="showPromosModal = true">
+                <ion-icon :icon="sparkles" slot="start" />
+                {{ $t('business.tabs.promos') || 'Promotions' }}
+              </ion-button>
+              <ion-button v-if="menuItems.length > 0" fill="outline" color="carrot" class="action-sheet-btn" @click="showMenuModal = true">
+                <ion-icon :icon="restaurantOutline" slot="start" />
+                {{ $t('business.tabs.menu') || 'View Menu' }}
+              </ion-button>
+            </div>
 
             <!-- ⚠️ Combined Muslim-friendly Disclaimer Banner -->
             <div
@@ -191,6 +259,282 @@
               <ion-icon v-if="place.description" :icon="chevronDown" class="disclaimer-arrow" />
             </div>
 
+            <!-- 📝 Description (+ hashtags live inside the same block) -->
+            <template v-if="place.description || place.tags?.length">
+              <ion-item lines="none" id="place-description-section">
+                <ion-icon :icon="documentTextOutline" slot="start" color="carrot"/>
+
+                <ion-label>
+                  <template v-if="place.description">
+                    <p class="text-sm text-gray-500">
+                      {{ isMuslimFriendly ? $t('explore.details.handlingDetails') : $t('search.details.description') }}
+                    </p>
+                    <p style="white-space: pre-line;">
+                     {{ place.description }}
+                    </p>
+                  </template>
+
+                  <!-- 🏷️ Location Tags -->
+                  <div v-if="place.tags?.length" class="hashtag-row in-description">
+                    <template v-if="showAllTags">
+                      <span v-for="tag in place.tags" :key="tag" class="location-hashtag">
+                        #{{ tag }}
+                      </span>
+                      <span class="location-hashtag-more" @click="showAllTags = false">
+                        less
+                      </span>
+                    </template>
+                    <template v-else>
+                      <span v-for="tag in place.tags.slice(0, 3)" :key="tag" class="location-hashtag">
+                        #{{ tag }}
+                      </span>
+                      <span v-if="place.tags.length > 3" class="location-hashtag-more" @click="showAllTags = true">
+                        ... more
+                      </span>
+                    </template>
+                  </div>
+                </ion-label>
+              </ion-item>
+            </template>
+
+            <!-- Certified By (Gold Partner) -->
+            <div
+                v-if="!loadingCertifications && certifications.length"
+                class="ion-margin-top"
+            >
+              <p class="section-title">
+                <strong><small>{{ $t(certifications.every(c => c.partner.partner_type === 'halal_body') ? 'explore.details.certifiedBy' : 'explore.details.affiliatedWith') }}</small></strong>
+              </p>
+
+              <div
+                  v-for="c in certifications"
+                  :key="c.partner.id"
+                  class="gold-cert-card"
+                  role="button"
+                  tabindex="0"
+                  @click="goToPartner(c.partner.id)"
+              >
+                <div class="gold-glow"></div>
+
+                <div class="gold-cert-content">
+                  <div class="gold-cert-left">
+                    <img
+                        v-if="c.partner.logo_url"
+                        :src="c.partner.logo_url"
+                        alt="logo"
+                        class="gold-cert-logo"
+                    />
+
+                    <div class="gold-cert-text">
+                      <div class="gold-cert-name">
+                        {{ c.partner.name }}
+                      </div>
+                      <div class="premium-verified-tag">
+                        <ion-icon :icon="sparkles" />
+                        {{ $t('explore.details.verifiedGoldPartner') }}
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- RIGHT SIDE ACTION -->
+                  <ion-button
+                      v-if="c.proof_url"
+                      fill="clear"
+                      size="small"
+                      color="carrot"
+                      @click.stop
+                      :href="c.proof_url"
+                      target="_blank"
+                      aria-label="View certificate"
+                  >
+                    <ion-icon slot="icon-only" :icon="documentTextOutline" />
+                  </ion-button>
+                </div>
+              </div>
+            </div>
+
+            <!-- 📍 Address + Map (grouped info card) -->
+            <div class="info-card address-map-card ion-margin-vertical">
+              <ion-item lines="none" class="info-card-item">
+                <ion-icon :icon="navigateOutline" slot="start" color="carrot"/>
+
+                <ion-label>
+                  <p class="text-sm text-gray-500">{{ $t('explore.details.address') }}</p>
+                  <p>{{ place.address || $t('explore.details.noAddress') }}</p>
+                </ion-label>
+
+                <ion-button
+                    fill="clear"
+                    size="small"
+                    color="carrot"
+                    @click="logOpenMaps"
+                    :href="`https://www.google.com/maps/search/?api=1&query=${mapSearchQuery}&center=${place.lat},${place.lng}&zoom=16`"
+                    target="_blank"
+                >
+                  {{ $t('common.open') }}
+                </ion-button>
+              </ion-item>
+
+              <!-- 🗺️ Interactive Map -->
+              <div class="detail-map-container">
+                <div ref="detailMapRef" class="detail-map"></div>
+              </div>
+            </div>
+
+            <!-- 🏪 "Are you the owner?" — only after repeat visits to an unclaimed place -->
+            <div v-if="showClaimHint" class="claim-hint-card">
+              <ion-icon :icon="storefrontOutline" class="claim-hint-icon" />
+              <div class="claim-hint-text">
+                <strong>{{ $t('business.claim.hintTitle') }}</strong>
+                <p>{{ $t('business.claim.hintBody') }}</p>
+                <ion-button size="small" fill="outline" color="carrot" @click="claimBusiness">
+                  {{ $t('business.claim.action') }}
+                </ion-button>
+              </div>
+              <button type="button" class="claim-hint-close" :aria-label="$t('common.close')" @click="dismissClaimHint">
+                <ion-icon :icon="closeOutline" />
+              </button>
+            </div>
+
+            <!-- ⭐ Additional Details -->
+            <div class="ion-margin-vertical">
+              <!-- 🕒 Opening Hours -->
+              <template v-if="place.opening_hours">
+                <div class="info-card hours-card ion-margin-top ion-margin-bottom">
+                  <div class="info-card-header">
+                    <h3 class="font-bold text-lg ion-no-margin">{{ $t('explore.details.openingHours') }}</h3>
+                    <div class="open-status-badge" :class="{ open: isOpenNow, closed: !isOpenNow }">
+                      {{ isOpenNow ? $t('explore.details.openNow') : $t('explore.details.closedNow') }}
+                    </div>
+                  </div>
+
+                  <ion-list>
+                    <ion-item v-for="(value, day) in visibleOpeningHours" :key="day" :class="{ 'today-highlight': day === todayDayLabel }">
+                      <ion-label class="capitalize">{{ day }}</ion-label>
+                      <ion-label slot="end" class="ion-text-right">
+            <span v-if="value.active">
+              <template v-if="value.shifts && value.shifts.length > 1">
+                <span v-for="(s, i) in value.shifts" :key="i" style="display: block;">{{ s.open }} – {{ s.close }}</span>
+              </template>
+              <template v-else>{{ value.open }} – {{ value.close }}</template>
+            </span>
+                        <span v-else class="text-gray-400">{{ $t('common.closed') }}</span>
+                      </ion-label>
+                    </ion-item>
+                  </ion-list>
+                  <div v-if="Object.keys(formattedOpeningHours).length > 1" class="hours-toggle" @click="showAllHours = !showAllHours">
+                    {{ showAllHours ? $t('explore.details.hideHours') : $t('explore.details.allHours') }}
+                    <ion-icon :icon="showAllHours ? chevronUp : chevronDown" />
+                  </div>
+                </div>
+              </template>
+
+              <!-- 📞 Contact Info & Price Range (Additional Details) -->
+              <template v-if="place.phone || place.instagram || place.facebook || place.tiktok || place.website || place.line_id || place.price_range">
+                <div class="collapsible-header" @click="showAdditionalDetails = !showAdditionalDetails">
+                  <h3 class="font-bold text-lg ion-no-margin">{{ $t('explore.details.additionalDetails') || 'Additional Details' }}</h3>
+                  <ion-icon :icon="showAdditionalDetails ? chevronUp : chevronDown" class="collapsible-chevron" />
+                </div>
+
+                <div v-show="showAdditionalDetails" class="collapsible-content info-card">
+                  <ion-item lines="none" v-if="place.phone">
+                    <ion-icon :icon="callOutline" slot="start" color="carrot"/>
+                    <ion-label>
+                      <p class="text-sm text-gray-500">{{ $t('common.phone') }}</p>
+                      <p>{{ place.phone }}</p>
+                    </ion-label>
+
+                    <ion-button
+                        fill="clear"
+                        color="carrot"
+                        @click="logCall"
+                        :href="`tel:${place.phone}`"
+                    >
+                      {{ $t('common.call') }}
+                    </ion-button>
+                  </ion-item>
+
+                  <ion-item lines="none" v-if="place.instagram">
+                    <ion-icon :icon="logoInstagram" slot="start" color="carrot"/>
+                    <ion-label>
+                      <p class="text-sm text-gray-500">{{ $t('common.instagram') }}</p>
+                      <p>@{{ place.instagram.replace('@', '') }}</p>
+                    </ion-label>
+                    <ion-button
+                        fill="clear"
+                        size="small"
+                        @click="logInstagram"
+                        :href="`https://instagram.com/${place.instagram.replace('@','')}`"
+                        target="_blank">
+                      {{ $t('common.open') }}
+                    </ion-button>
+                  </ion-item>
+
+                  <ion-item lines="none" v-if="place.facebook">
+                    <ion-icon :icon="logoFacebook" slot="start" color="carrot"/>
+                    <ion-label>
+                      <p class="text-sm text-gray-500">{{ $t('business.info.facebook') }}</p>
+                      <p>Facebook</p>
+                    </ion-label>
+                    <ion-button fill="clear" size="small" @click="logFacebook" :href="place.facebook" target="_blank">
+                      {{ $t('common.open') }}
+                    </ion-button>
+                  </ion-item>
+
+                  <ion-item lines="none" v-if="place.tiktok">
+                    <ion-icon :icon="logoTiktok" slot="start" color="carrot"/>
+                    <ion-label>
+                      <p class="text-sm text-gray-500">{{ $t('business.info.tiktok') }}</p>
+                      <p>@{{ place.tiktok.replace('@', '') }}</p>
+                    </ion-label>
+                    <ion-button fill="clear" size="small" @click="logTiktok" :href="`https://tiktok.com/@${place.tiktok.replace('@','')}`" target="_blank">
+                      {{ $t('common.open') }}
+                    </ion-button>
+                  </ion-item>
+
+                  <ion-item lines="none" v-if="place.website">
+                    <ion-icon :icon="globeOutline" slot="start" color="carrot"/>
+                    <ion-label>
+                      <p class="text-sm text-gray-500">{{ $t('business.info.website') }}</p>
+                      <p>{{ place.website.replace(/^https?:\/\//, '') }}</p>
+                    </ion-label>
+                    <ion-button fill="clear" size="small" @click="logWebsite" :href="place.website" target="_blank">
+                      {{ $t('common.open') }}
+                    </ion-button>
+                  </ion-item>
+
+                  <ion-item lines="none" v-if="place.line_id">
+                    <ion-icon :icon="chatboxEllipsesOutline" slot="start" color="carrot"/>
+                    <ion-label>
+                      <p class="text-sm text-gray-500">{{ $t('common.lineId') }}</p>
+                      <p>{{ place.line_id }}</p>
+                    </ion-label>
+
+                    <ion-button
+                        fill="clear"
+                        size="small"
+                        @click="logLine"
+                        :href="`line://ti/p/~${place.line_id}`">
+                      {{ $t('common.open') }}
+                    </ion-button>
+                  </ion-item>
+
+                  <!-- 💰 Price Range -->
+                  <template v-if="place.price_range">
+                    <ion-item lines="none">
+                      <ion-icon :icon="cashOutline" slot="start" color="carrot"/>
+                      <ion-label>
+                        <p class="text-sm text-gray-500">{{ $t('explore.details.estimatedPrice') }}</p>
+                        <p>{{ place.price_range }}</p>
+                      </ion-label>
+                    </ion-item>
+                  </template>
+                </div>
+              </template>
+
+            </div>
+
+            <!-- Community: visitor reports, check in, review -->
             <!-- 🕌 Muslim Facilities / Features -->
             <div v-if="place && isReviewableType" class="facilities-container ion-margin-top ion-margin-bottom">
               <div class="consensus-squares" v-if="combinedFacilities.length > 0">
@@ -274,295 +618,6 @@
                   :only-tiers="['gold', 'silver']"
                   :slot="0"
               />
-            </div>
-
-            <!-- Order Via delivery apps -->
-            <div v-if="place.foodpanda_url || place.ubereats_url" class="ion-margin-top ion-margin-bottom">
-              <p class="section-title">
-                <strong><small>{{ $t('explore.details.orderVia') }}</small></strong>
-              </p>
-              <div class="order-via-row">
-                <div v-if="place.foodpanda_url" class="order-via-card">
-                  <img
-                    src="/social-logo/foodpanda-logo.svg"
-                    alt="Foodpanda"
-                    class="order-via-card-logo"
-                  />
-                  <a
-                      class="order-via-send-btn"
-                      :href="place.foodpanda_url"
-                      target="_blank"
-                      @click="logFoodpanda"
-                  >
-                    <ion-icon :icon="sendOutline" />
-                  </a>
-                </div>
-                <div v-if="place.ubereats_url" class="order-via-card">
-                  <img
-                    src="/social-logo/ubereats-logo.png"
-                    alt="Uber Eats"
-                    class="order-via-card-logo ubereats-card-logo"
-                  />
-                  <a
-                      class="order-via-send-btn"
-                      :href="place.ubereats_url"
-                      target="_blank"
-                      @click="logUberEats"
-                  >
-                    <ion-icon :icon="sendOutline" />
-                  </a>
-                </div>
-              </div>
-            </div>
-
-            <!-- Certified By (Gold Partner) -->
-            <div
-                v-if="!loadingCertifications && certifications.length"
-                class="ion-margin-top"
-            >
-              <p class="section-title">
-                <strong><small>{{ $t(certifications.every(c => c.partner.partner_type === 'halal_body') ? 'explore.details.certifiedBy' : 'explore.details.affiliatedWith') }}</small></strong>
-              </p>
-
-              <div
-                  v-for="c in certifications"
-                  :key="c.partner.id"
-                  class="gold-cert-card"
-                  role="button"
-                  tabindex="0"
-                  @click="goToPartner(c.partner.id)"
-              >
-                <div class="gold-glow"></div>
-
-                <div class="gold-cert-content">
-                  <div class="gold-cert-left">
-                    <img
-                        v-if="c.partner.logo_url"
-                        :src="c.partner.logo_url"
-                        alt="logo"
-                        class="gold-cert-logo"
-                    />
-
-                    <div class="gold-cert-text">
-                      <div class="gold-cert-name">
-                        {{ c.partner.name }}
-                      </div>
-                      <div class="premium-verified-tag">
-                        <ion-icon :icon="sparkles" />
-                        {{ $t('explore.details.verifiedGoldPartner') }}
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- RIGHT SIDE ACTION -->
-                  <ion-button
-                      v-if="c.proof_url"
-                      fill="clear"
-                      size="small"
-                      color="carrot"
-                      @click.stop
-                      :href="c.proof_url"
-                      target="_blank"
-                      aria-label="View certificate"
-                  >
-                    <ion-icon slot="icon-only" :icon="documentTextOutline" />
-                  </ion-button>
-                </div>
-              </div>
-            </div>
-
-
-            <!-- 📝 Description -->
-            <template v-if="place.description">
-              <ion-item lines="none" id="place-description-section">
-                <ion-icon :icon="documentTextOutline" slot="start" color="carrot"/>
-
-                <ion-label>
-                  <p class="text-sm text-gray-500">
-                    {{ isMuslimFriendly ? $t('explore.details.handlingDetails') : $t('search.details.description') }}
-                  </p>
-                  <p style="white-space: pre-line;">
-                   {{ place.description }}
-                  </p>
-                </ion-label>
-              </ion-item>
-            </template>
-
-
-
-
-            <!-- 📍 Address + Map (grouped info card) -->
-            <div class="info-card address-map-card ion-margin-vertical">
-              <ion-item lines="none" class="info-card-item">
-                <ion-icon :icon="navigateOutline" slot="start" color="carrot"/>
-
-                <ion-label>
-                  <p class="text-sm text-gray-500">{{ $t('explore.details.address') }}</p>
-                  <p>{{ place.address || $t('explore.details.noAddress') }}</p>
-                </ion-label>
-
-                <ion-button
-                    fill="clear"
-                    size="small"
-                    color="carrot"
-                    @click="logOpenMaps"
-                    :href="`https://www.google.com/maps/search/?api=1&query=${mapSearchQuery}&center=${place.lat},${place.lng}&zoom=16`"
-                    target="_blank"
-                >
-                  {{ $t('common.open') }}
-                </ion-button>
-              </ion-item>
-
-              <!-- 🗺️ Interactive Map -->
-              <div class="detail-map-container">
-                <div ref="detailMapRef" class="detail-map"></div>
-              </div>
-            </div>
-
-            <!-- Promotions and Menu Action Buttons -->
-            <div v-if="activePromos.length > 0 || menuItems.length > 0" class="biz-actions-row ion-margin-vertical">
-              <ion-button v-if="activePromos.length > 0" fill="solid" color="carrot" class="action-sheet-btn" @click="showPromosModal = true">
-                <ion-icon :icon="sparkles" slot="start" />
-                {{ $t('business.tabs.promos') || 'Promotions & Offers' }}
-              </ion-button>
-              <ion-button v-if="menuItems.length > 0" fill="outline" color="carrot" class="action-sheet-btn" @click="showMenuModal = true">
-                <ion-icon :icon="restaurantOutline" slot="start" />
-                {{ $t('business.tabs.menu') || 'View Menu' }}
-              </ion-button>
-            </div>
-
-            <!-- ⭐ Additional Details -->
-            <div class="ion-margin-vertical">
-              <!-- 🕒 Opening Hours -->
-              <template v-if="place.opening_hours">
-                <div class="info-card hours-card ion-margin-top ion-margin-bottom">
-                  <div class="info-card-header">
-                    <h3 class="font-bold text-lg ion-no-margin">{{ $t('explore.details.openingHours') }}</h3>
-                    <div class="open-status-badge" :class="{ open: isOpenNow, closed: !isOpenNow }">
-                      {{ isOpenNow ? $t('explore.details.openNow') : $t('explore.details.closedNow') }}
-                    </div>
-                  </div>
-
-                  <ion-list>
-                    <ion-item v-for="(value, day) in formattedOpeningHours" :key="day" :class="{ 'today-highlight': day === todayDayLabel }">
-                      <ion-label class="capitalize">{{ day }}</ion-label>
-                      <ion-label slot="end" class="ion-text-right">
-            <span v-if="value.active">
-              <template v-if="value.shifts && value.shifts.length > 1">
-                <span v-for="(s, i) in value.shifts" :key="i" style="display: block;">{{ s.open }} – {{ s.close }}</span>
-              </template>
-              <template v-else>{{ value.open }} – {{ value.close }}</template>
-            </span>
-                        <span v-else class="text-gray-400">{{ $t('common.closed') }}</span>
-                      </ion-label>
-                    </ion-item>
-                  </ion-list>
-                </div>
-              </template>
-
-              <!-- 📞 Contact Info & Price Range (Additional Details) -->
-              <template v-if="place.phone || place.instagram || place.facebook || place.tiktok || place.website || place.line_id || place.price_range">
-                <div class="collapsible-header" @click="showAdditionalDetails = !showAdditionalDetails">
-                  <h3 class="font-bold text-lg ion-no-margin">{{ $t('explore.details.additionalDetails') || 'Additional Details' }}</h3>
-                  <ion-icon :icon="showAdditionalDetails ? chevronUp : chevronDown" class="collapsible-chevron" />
-                </div>
-
-                <div v-show="showAdditionalDetails" class="collapsible-content info-card">
-                  <ion-item lines="none" v-if="place.phone">
-                    <ion-icon :icon="callOutline" slot="start" color="carrot"/>
-                    <ion-label>
-                      <p class="text-sm text-gray-500">{{ $t('common.phone') }}</p>
-                      <p>{{ place.phone }}</p>
-                    </ion-label>
-
-                    <ion-button
-                        fill="clear"
-                        color="carrot"
-                        @click="logCall"
-                        :href="`tel:${place.phone}`"
-                    >
-                      {{ $t('common.call') }}
-                    </ion-button>
-                  </ion-item>
-
-                  <ion-item lines="none" v-if="place.instagram">
-                    <ion-icon :icon="logoInstagram" slot="start" color="carrot"/>
-                    <ion-label>
-                      <p class="text-sm text-gray-500">{{ $t('common.instagram') }}</p>
-                      <p>@{{ place.instagram.replace('@', '') }}</p>
-                    </ion-label>
-                    <ion-button
-                        fill="clear"
-                        size="small"
-                        @click="logInstagram"
-                        :href="`https://instagram.com/${place.instagram.replace('@','')}`"
-                        target="_blank">
-                      {{ $t('common.open') }}
-                    </ion-button>
-                  </ion-item>
-
-                  <ion-item lines="none" v-if="place.facebook">
-                    <ion-icon :icon="logoFacebook" slot="start" color="carrot"/>
-                    <ion-label>
-                      <p class="text-sm text-gray-500">{{ $t('business.info.facebook') }}</p>
-                      <p>Facebook</p>
-                    </ion-label>
-                    <ion-button fill="clear" size="small" :href="place.facebook" target="_blank">
-                      {{ $t('common.open') }}
-                    </ion-button>
-                  </ion-item>
-
-                  <ion-item lines="none" v-if="place.tiktok">
-                    <ion-icon :icon="logoTiktok" slot="start" color="carrot"/>
-                    <ion-label>
-                      <p class="text-sm text-gray-500">{{ $t('business.info.tiktok') }}</p>
-                      <p>@{{ place.tiktok.replace('@', '') }}</p>
-                    </ion-label>
-                    <ion-button fill="clear" size="small" :href="`https://tiktok.com/@${place.tiktok.replace('@','')}`" target="_blank">
-                      {{ $t('common.open') }}
-                    </ion-button>
-                  </ion-item>
-
-                  <ion-item lines="none" v-if="place.website">
-                    <ion-icon :icon="globeOutline" slot="start" color="carrot"/>
-                    <ion-label>
-                      <p class="text-sm text-gray-500">{{ $t('business.info.website') }}</p>
-                      <p>{{ place.website.replace(/^https?:\/\//, '') }}</p>
-                    </ion-label>
-                    <ion-button fill="clear" size="small" :href="place.website" target="_blank">
-                      {{ $t('common.open') }}
-                    </ion-button>
-                  </ion-item>
-
-                  <ion-item lines="none" v-if="place.line_id">
-                    <ion-icon :icon="chatboxEllipsesOutline" slot="start" color="carrot"/>
-                    <ion-label>
-                      <p class="text-sm text-gray-500">{{ $t('common.lineId') }}</p>
-                      <p>{{ place.line_id }}</p>
-                    </ion-label>
-
-                    <ion-button
-                        fill="clear"
-                        size="small"
-                        @click="logLine"
-                        :href="`line://ti/p/~${place.line_id}`">
-                      {{ $t('common.open') }}
-                    </ion-button>
-                  </ion-item>
-
-                  <!-- 💰 Price Range -->
-                  <template v-if="place.price_range">
-                    <ion-item lines="none">
-                      <ion-icon :icon="cashOutline" slot="start" color="carrot"/>
-                      <ion-label>
-                        <p class="text-sm text-gray-500">{{ $t('explore.details.estimatedPrice') }}</p>
-                        <p>{{ place.price_range }}</p>
-                      </ion-label>
-                    </ion-item>
-                  </template>
-                </div>
-              </template>
-
             </div>
 
             <!-- ⭐ Visitor Reviews List -->
@@ -670,6 +725,14 @@
                 </ion-card>
               </div>
             </div>
+
+            <!-- Footer meta -->
+            <p v-if="place?.author?.public_profile" class="attribution-text">
+              {{ $t('home.addedBy', { author: place.author.display_name }) }} - {{ fromNowToTaipei(place.created_at) }}
+            </p>
+            <p v-else class="attribution-text">
+              {{ $t('home.added') }} {{ fromNowToTaipei(place.created_at) }}
+            </p>
 
             <!-- Audit History Log -->
             <AuditHistoryLog ref="auditLogRef" entityType="location" :entityId="place.id" :createdAt="place.created_at" />
@@ -834,7 +897,7 @@
     >
       <ion-header>
         <ion-toolbar>
-          <ion-title>{{ $t('business.tabs.promos') || 'Promotions & Offers' }}</ion-title>
+          <ion-title>{{ $t('business.tabs.promos') || 'Promotions' }}</ion-title>
           <ion-buttons slot="end">
             <ion-button @click="showPromosModal = false">{{ $t('common.close') || 'Close' }}</ion-button>
           </ion-buttons>
@@ -911,6 +974,7 @@ import {
 } from '@ionic/vue'
 import { Capacitor } from '@capacitor/core'
 import HouseAdNativeCard from '@/components/ads/HouseAdNativeCard.vue'
+import OfferCodeCard from '@/components/offers/OfferCodeCard.vue'
 import { isDonor } from "@/composables/useSubscriptionStatus"
 import { useAdSlotCollapsed, adSpaceStyle } from '@/composables/useAdFallback'
 import { scheduleBannerUpdate } from '@/plugins/admob'
@@ -941,6 +1005,8 @@ import {
   bookmark,
   briefcaseOutline,
   ribbonOutline,
+  storefrontOutline,
+  closeOutline,
   checkmarkCircle,
   logoFacebook,
   logoTiktok,
@@ -1070,6 +1136,28 @@ const showAllTags = ref(false)
 const showAllBadges = ref(false)
 const canEdit = ref(false)
 const isOwner = ref(false)
+const isAdminUser = ref(false)
+
+// "Are you the owner?" card: shown from the 3rd open of the same unclaimed place on this device.
+const CLAIM_HINT_VISITS = 3
+const claimHintVisits = ref(0)
+const claimHintDismissed = ref(false)
+const showClaimHint = computed(() =>
+  !!place.value && !place.value.is_claimed && !isOwner.value && !isAdminUser.value &&
+  claimStatus.value !== 'pending' && !claimHintDismissed.value && claimHintVisits.value >= CLAIM_HINT_VISITS
+)
+function trackClaimHintVisit(id: number | string) {
+  try {
+    claimHintDismissed.value = localStorage.getItem(`claim_hint_dismissed:${id}`) === '1'
+    const n = Number(localStorage.getItem(`claim_hint_visits:${id}`) || 0) + 1
+    localStorage.setItem(`claim_hint_visits:${id}`, String(n))
+    claimHintVisits.value = n
+  } catch { claimHintVisits.value = 0 }
+}
+function dismissClaimHint() {
+  claimHintDismissed.value = true
+  try { if (place.value) localStorage.setItem(`claim_hint_dismissed:${place.value.id}`, '1') } catch { /* ignore */ }
+}
 const ownerName = ref<string | null>(null)
 const claimStatus = ref<'pending' | 'approved' | 'rejected' | null>(null)
 const modules = [Pagination, Zoom]
@@ -1099,6 +1187,7 @@ const activePromos = ref<any[]>([])
 const showPromosModal = ref(false)
 const showMenuModal = ref(false)
 const showAdditionalDetails = ref(false)
+const showAllHours = ref(false)
 const showAllReviews = ref(false)
 const displayedReviews = computed(() => {
   if (reviews.value.length <= 1) return reviews.value
@@ -1348,6 +1437,13 @@ const isOpenNow = computed(() => {
   return currentTime >= todayHours.open && currentTime <= todayHours.close
 })
 
+// Collapsed: only today's row; expanded: the whole week.
+const visibleOpeningHours = computed(() => {
+  const all = formattedOpeningHours.value as Record<string, any>
+  if (showAllHours.value || !(todayDayLabel.value in all)) return all
+  return { [todayDayLabel.value]: all[todayDayLabel.value] }
+})
+
 const todayDayLabel = computed(() => {
   const now = dayjs().tz('Asia/Taipei')
   const currentDay = now.day()
@@ -1505,6 +1601,8 @@ const loadPlace = async () => {
     promises.push(authorPromise)
   }
 
+  trackClaimHintVisit(data.id)
+
   // Certifications
   promises.push((async () => {
     await fetchLocationCertifications(data.id)
@@ -1542,6 +1640,7 @@ const loadPlace = async () => {
 
       const roleData = roleRes.data
       isOwner.value = !!ownerRes.data
+      isAdminUser.value = roleData?.role === 'admin'
 
       if (
         user.id === data.created_by ||
@@ -1823,7 +1922,7 @@ const editItem = async () => {
 const claimBusiness = async () => {
   if (!place.value) return;
   try { await popoverController.dismiss(); } catch { /* no popover */ }
-  ActivityLogService.log("business_claim_start", { id: place.value.id });
+  ActivityLogService.log("business_claim_start", { id: place.value.id, location_id: place.value.id });
   router.push(`/place/${place.value.id}/claim`);
 };
 
@@ -1856,6 +1955,21 @@ const logLine = () => {
     id: place.value.id,
     line_id: place.value.line_id
   });
+};
+
+const logWebsite = () => {
+  if (!place.value) return;
+  ActivityLogService.log("explore_detail_website", { id: place.value.id, website: place.value.website });
+};
+
+const logFacebook = () => {
+  if (!place.value) return;
+  ActivityLogService.log("explore_detail_facebook", { id: place.value.id, facebook: place.value.facebook });
+};
+
+const logTiktok = () => {
+  if (!place.value) return;
+  ActivityLogService.log("explore_detail_tiktok", { id: place.value.id, tiktok: place.value.tiktok });
 };
 
 const logFoodpanda = () => {
@@ -2307,6 +2421,39 @@ const scrollToReviews = () => {
   pointer-events: none;
   z-index: 5;
 }
+
+.quick-contact {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 4px 16px 12px;
+}
+.qc-btn {
+  height: 40px;
+  padding: 0 14px;
+  gap: 6px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ion-color-carrot, #ff7a00);
+  border: 1px solid var(--ion-color-carrot, #ff7a00);
+  background: color-mix(in srgb, var(--ion-color-carrot, #ff7a00) 10%, transparent);
+  text-decoration: none;
+}
+button.qc-btn { font-family: inherit; cursor: pointer; }
+.qc-btn ion-icon { font-size: 20px; }
+.qc-btn:active { opacity: 0.7; }
+
+.open-status-line { margin: 0 0 8px; }
+.hours-toggle { display: flex; align-items: center; justify-content: center; gap: 4px; padding: 8px; font-size: 13px; font-weight: 600; color: var(--ion-color-carrot); cursor: pointer; }
+
+.claim-hint-card { position: relative; display: flex; gap: 12px; align-items: flex-start; padding: 14px 40px 14px 14px; margin: 0 0 16px; border: 1px dashed var(--ion-color-carrot, #ff7a00); border-radius: 16px; }
+.claim-hint-icon { font-size: 26px; color: var(--ion-color-carrot, #ff7a00); flex-shrink: 0; margin-top: 2px; }
+.claim-hint-text p { margin: 4px 0 8px; font-size: 13px; opacity: 0.8; }
+.claim-hint-close { position: absolute; top: 6px; right: 6px; background: none; border: 0; padding: 6px; color: inherit; opacity: 0.6; cursor: pointer; font-size: 18px; }
 
 /* GROUPED INFO CARDS */
 .info-card {
@@ -2787,6 +2934,7 @@ const scrollToReviews = () => {
   line-height: 1.35;
 }
 
+.hashtag-row.in-description { padding: 0; margin-top: 10px; }
 .hashtag-row {
   display: flex;
   flex-wrap: wrap;

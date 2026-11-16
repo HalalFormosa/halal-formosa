@@ -7,7 +7,60 @@ import type { LocationClaim, LocationEditRequest } from '@/types/Business'
  * proof, an admin approves/rejects. Approval is done through the `approve_claim`
  * RPC (SECURITY DEFINER) which grants ownership + flags the location claimed.
  */
+/** How many stores one owner can hold on their plan, and how many they use. */
+export interface BranchQuota {
+  tier: 'free' | 'bronze' | 'silver' | 'gold'
+  /** -1 = unlimited */
+  limit: number
+  used: number
+  pending: number
+  can_claim: boolean
+}
+
+/** An owner/manager of a store (admin view, with email) or an open invite for an email that has not logged in yet. */
+export interface LocationOwnerRow {
+  kind: 'owner' | 'invite'
+  user_id: string | null
+  email: string | null
+  display_name: string | null
+  role: 'owner' | 'manager'
+  created_at: string
+}
+
 export class ClaimService {
+  /** Admin: add an owner/manager by email. 'added' if they already have an account, else 'invited'. */
+  static async adminAddLocationOwner(locationId: number, email: string, role: 'owner' | 'manager' = 'owner'): Promise<'added' | 'invited'> {
+    const { data, error } = await supabase.rpc('admin_add_location_owner', {
+      p_location_id: locationId, p_email: email, p_role: role,
+    })
+    if (error) throw error
+    ActivityLogService.log('business_owner_add', { location_id: locationId, result: data })
+    return data as 'added' | 'invited'
+  }
+
+  /** Admin: owners (with email) and open invites for a store. */
+  static async adminListLocationOwners(locationId: number): Promise<LocationOwnerRow[]> {
+    const { data, error } = await supabase.rpc('admin_list_location_owners', { p_location_id: locationId })
+    if (error) throw error
+    return (data ?? []) as LocationOwnerRow[]
+  }
+
+  /** Admin: cancel an open invite. */
+  static async adminCancelOwnerInvite(locationId: number, email: string): Promise<void> {
+    const { error } = await supabase.rpc('admin_cancel_owner_invite', { p_location_id: locationId, p_email: email })
+    if (error) throw error
+  }
+
+  /** The signed-in owner's branch quota (limit comes from their plan, or an admin-set override). */
+  static async getMyBranchQuota(): Promise<BranchQuota | null> {
+    const { data, error } = await supabase.rpc('get_my_branch_quota')
+    if (error) {
+      console.warn('[ClaimService] getMyBranchQuota', error)
+      return null
+    }
+    return data as BranchQuota
+  }
+
   /** Submit a claim for a location. One open (pending) claim per user+location. */
   static async submitClaim(
     claim: Omit<LocationClaim, 'id' | 'user_id' | 'status' | 'created_at' | 'updated_at' | 'reviewed_by' | 'reviewed_at'>

@@ -39,14 +39,31 @@
           </div>
         </div>
 
+        <!-- At the plan's branch limit: block the claim, point to upgrade / contact -->
+        <div v-if="limitReached && !existingPending" class="verification-note ion-margin-top ion-padding limit-note">
+          <ion-icon :icon="lockClosedOutline" size="large" color="carrot" />
+          <h3 class="ion-padding-top">{{ $t('business.claim.limit.title') }}</h3>
+          <p v-if="atTopTier">{{ $t('business.claim.limit.bodyTop', { limit: $t('business.claim.limit.branchCount', quota?.limit ?? 0) }) }}</p>
+          <p v-else>{{ $t('business.claim.limit.body', { tier: quota?.tier, limit: $t('business.claim.limit.branchCount', quota?.limit ?? 0), count: $t('business.claim.limit.branchCount', (quota?.used ?? 0) + (quota?.pending ?? 0)) }) }}</p>
+          <ion-button v-if="!atTopTier" expand="block" color="carrot" mode="md" class="ion-margin-top" @click="router.push('/business')">
+            {{ $t('business.plan.upgrade') }}
+          </ion-button>
+          <p class="limit-contact-label">{{ $t('business.claim.limit.contact') }}</p>
+          <div class="limit-contact">
+            <a v-for="c in contactLinks" :key="c.label" :href="c.href" target="_blank" rel="noopener" class="limit-contact-btn">
+              <ion-icon :icon="c.icon" /><span>{{ c.label }}</span>
+            </a>
+          </div>
+        </div>
+
         <!-- Already pending -->
-        <div v-if="existingPending" class="verification-note ion-margin-top ion-padding">
+        <div v-else-if="existingPending" class="verification-note ion-margin-top ion-padding">
           <ion-icon :icon="hourglassOutline" size="large" color="carrot" />
           <h3 class="ion-padding-top">{{ $t('business.claim.pendingTitle') }}</h3>
           <p>{{ $t('business.claim.pendingText') }}</p>
         </div>
 
-        <template v-else>
+        <template v-else-if="!limitReached">
           <!-- Step 1: Your role -->
           <div v-if="currentStep === 1" class="step-content fade-in">
             <div class="step-header">
@@ -183,7 +200,7 @@
       </div>
     </ion-content>
 
-    <ion-footer v-if="!isSubmitted && !existingPending" class="ion-no-border ion-padding">
+    <ion-footer v-if="!isSubmitted && !existingPending && !limitReached" class="ion-no-border ion-padding">
       <div class="footer-buttons">
         <ion-button v-if="currentStep > 1" fill="clear" color="medium" class="prev-btn" @click="prevStep">
           {{ $t('common.previous') }}
@@ -208,6 +225,7 @@ import {
   toastController, onIonViewWillEnter, useIonRouter
 } from '@ionic/vue'
 import {
+  lockClosedOutline, logoFacebook, logoInstagram, chatbubbleEllipsesOutline,
   checkmarkCircleOutline, storefrontOutline, personOutline, callOutline, mailOutline,
   businessOutline, documentTextOutline, cameraOutline, closeCircle, hourglassOutline
 } from 'ionicons/icons'
@@ -217,7 +235,8 @@ import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { supabase } from '@/plugins/supabaseClient'
 import { getMyPrivateProfile } from '@/services/PrivateProfileService'
-import { ClaimService } from '@/services/ClaimService'
+import { ClaimService, type BranchQuota } from '@/services/ClaimService'
+import { isAdmin } from '@/composables/userProfile'
 import { ActivityLogService } from '@/services/ActivityLogService'
 import { useNotifier } from '@/composables/useNotifier'
 import type { ClaimantRole } from '@/types/Business'
@@ -237,6 +256,18 @@ function goBackToListing() {
 const locationName = ref('')
 const locationAddress = ref('')
 const existingPending = ref(false)
+
+// Branch limit: how many stores one owner can hold on their plan.
+const quota = ref<BranchQuota | null>(null)
+// Admins are never blocked (they assign owners by hand); managers aren't limited either,
+// but that choice is made in the form, so the server is the final check.
+const limitReached = computed(() => !isAdmin.value && quota.value?.can_claim === false)
+const atTopTier = computed(() => quota.value?.tier === 'gold')
+const contactLinks = [
+  { label: 'LINE', href: 'https://line.me/R/ti/p/@975schpu', icon: chatbubbleEllipsesOutline },
+  { label: 'Instagram', href: 'https://www.instagram.com/halalformosa/', icon: logoInstagram },
+  { label: 'Facebook', href: 'https://www.facebook.com/halalformosa/', icon: logoFacebook },
+]
 
 const currentStep = ref(1)
 const totalSteps = 5
@@ -309,6 +340,7 @@ onIonViewWillEnter(async () => {
   // If the current user already has a pending claim, show a waiting note.
   const existing = await ClaimService.getUserClaimForLocation(locationId)
   existingPending.value = existing?.status === 'pending'
+  quota.value = await ClaimService.getMyBranchQuota()
 
   if (!existingPending.value) {
     ActivityLogService.log('business_claim_step_view', { location_id: locationId, step: 1 })
@@ -394,6 +426,12 @@ async function submitClaim() {
     isSubmitted.value = true
   } catch (error: any) {
     ActivityLogService.log('business_claim_submit_error', { location_id: locationId, message: error?.message ?? null })
+    if (String(error?.message || '').includes('branch_limit_reached')) {
+      quota.value = await ClaimService.getMyBranchQuota()
+      if (quota.value) quota.value.can_claim = false
+      submitting.value = false
+      return
+    }
     const toast = await toastController.create({
       message: error?.message || t('common.error'),
       duration: 3000, color: 'danger', position: 'bottom'
@@ -406,6 +444,11 @@ async function submitClaim() {
 </script>
 
 <style scoped>
+.limit-note { text-align: center; }
+.limit-contact-label { margin: 18px 0 8px; font-size: .8rem; opacity: .75; }
+.limit-contact { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.limit-contact-btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--ion-color-carrot); color: var(--ion-color-carrot); font-weight: 600; font-size: .85rem; text-decoration: none; }
+.limit-contact-btn ion-icon { font-size: 18px; }
 .progress-container { height: 6px; background: var(--ion-color-light); width: 100%; }
 .progress-bar { height: 100%; background: var(--ion-color-carrot); transition: width .5s cubic-bezier(.4,0,.2,1); border-radius: 0 3px 3px 0; }
 .registration-container { max-width: 600px; margin: 0 auto; }

@@ -37,6 +37,9 @@
           </div>
         </div>
 
+        <!-- Admin: who owns this store (add by email, works for web-only owners too) -->
+        <AdminOwnerManager v-if="isAdmin" :location-id="locationId" />
+
         <!-- Segment tabs -->
         <div class="seg-scroll">
           <ion-segment v-model="tab" scrollable mode="md" color="carrot">
@@ -45,6 +48,7 @@
             <ion-segment-button value="menu"><ion-label>{{ $t('business.tabs.menu') }}</ion-label></ion-segment-button>
             <ion-segment-button value="halal"><ion-label>{{ $t('business.tabs.halal') }}</ion-label></ion-segment-button>
             <ion-segment-button value="promos"><ion-label>{{ $t('business.tabs.promos') }}</ion-label></ion-segment-button>
+            <ion-segment-button v-if="ownerOffers.length || isAdmin" value="codes"><ion-label>{{ $t('offers.owner.tab') }}</ion-label></ion-segment-button>
             <ion-segment-button value="analytics"><ion-label>{{ $t('business.tabs.analytics') }}</ion-label></ion-segment-button>
             <ion-segment-button value="reports"><ion-label>{{ $t('business.tabs.reports') }}</ion-label></ion-segment-button>
             <ion-segment-button value="reviews"><ion-label>{{ $t('business.tabs.reviews') || 'Reviews' }}</ion-label></ion-segment-button>
@@ -334,6 +338,14 @@
                 <ion-button color="carrot" size="small" :disabled="!newPromo.title" @click="addPromo">{{ $t('common.add') }}</ion-button>
               </div>
             </template>
+          </section>
+
+          <!-- DISCOUNT CODES (owner can edit wording only) -->
+          <section v-else-if="tab === 'codes'" class="fade-in">
+            <OwnerOfferEditor v-if="ownerOffers.length" :offers="ownerOffers" @saved="loadOwnerOffers" />
+            <p v-else class="section-hint">{{ $t('offers.owner.none') }}</p>
+            <OfferReport :location-id="locationId" :refresh-key="ownerOffers.length" />
+            <AdminOfferCreate v-if="isAdmin" :location-id="locationId" @created="loadOwnerOffers" />
           </section>
 
           <!-- ANALYTICS -->
@@ -689,7 +701,7 @@ import { Capacitor } from '@capacitor/core'
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem'
 import { Share } from '@capacitor/share'
 import AppHeader from '@/components/AppHeader.vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { supabase } from '@/plugins/supabaseClient'
 import { useBusinessListings } from '@/composables/useBusinessListings'
@@ -697,12 +709,19 @@ import { useLocationEntitlements } from '@/composables/useLocationEntitlements'
 import { useImageResizer } from '@/composables/useImageResizer'
 import { useLocationAnalytics, type BusinessAnalytics } from '@/composables/useLocationAnalytics'
 import { isAdmin } from '@/composables/userProfile'
+import { canManageLocation } from '@/composables/useStoreAccess'
 import { ActivityLogService } from '@/services/ActivityLogService'
 import BusinessUpgradeModal from '@/components/BusinessUpgradeModal.vue'
+import OwnerOfferEditor from '@/components/offers/OwnerOfferEditor.vue'
+import AdminOfferCreate from '@/components/offers/AdminOfferCreate.vue'
+import OfferReport from '@/components/offers/OfferReport.vue'
+import AdminOwnerManager from '@/components/offers/AdminOwnerManager.vue'
+import { OfferService, type OwnerOffer } from '@/services/OfferService'
 import type { PlanFeatures, PlanTier, LocationPhoto, LocationMenuItem, LocationPromotion } from '@/types/Business'
 import { MUSLIM_FACILITIES } from '@/constants/muslimFacilities'
 
 const route = useRoute()
+const router = useRouter()
 const { t } = useI18n()
 const locationId = Number(route.params.locationId)
 
@@ -715,7 +734,7 @@ const loading = ref(true)
 const saving = ref(false)
 const tab = ref('info')
 const tier = ref<PlanTier>('free')
-const features = ref<PlanFeatures>({ maxPhotos: 1, menu: false, maxMenuItems: 0, maxPromotions: 0, analytics: 'basic' })
+const features = ref<PlanFeatures>({ maxPhotos: 1, menu: false, maxMenuItems: 0, maxPromotions: 0, maxBranches: 1, analytics: 'basic' })
 const locationName = ref('')
 
 // Draft / preview
@@ -838,6 +857,14 @@ const canAddPhoto = computed(() => features.value.maxPhotos === -1 || photos.val
 
 onIonViewWillEnter(async () => {
   loading.value = true
+  // Owners/managers and admins only; the server enforces this on every write too.
+  if (!(await canManageLocation(locationId))) {
+    router.replace(`/place/${locationId}`)
+    const toast = await toastController.create({ message: t('business.noAccess'), duration: 3000, position: 'bottom' })
+    await toast.present()
+    return
+  }
+  void loadOwnerOffers()
   try {
     const { data: loc } = await supabase
       .from('locations')
@@ -1157,6 +1184,10 @@ onBeforeUnmount(teardownMap)
 
 async function loadPhotos() { photos.value = await biz.getPhotos(locationId) }
 async function loadMenu() { menu.value = await biz.getMenu(locationId) }
+const ownerOffers = ref<OwnerOffer[]>([])
+async function loadOwnerOffers() {
+  try { ownerOffers.value = await OfferService.listMyOffers(locationId) } catch { ownerOffers.value = [] }
+}
 async function loadPromotions() { promotions.value = await biz.getPromotions(locationId) }
 async function loadAnalytics() { analytics.value = await getAnalytics(locationId) }
 async function loadReports() {
