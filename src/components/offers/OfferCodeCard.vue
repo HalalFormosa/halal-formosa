@@ -1,9 +1,10 @@
 <template>
   <div v-if="offers.length" class="offer-list">
     <div v-for="offer in offers" :key="offer.id" class="offer-card" :class="{ revealed: codes[offer.id], 'has-image': offer.image_url }">
-      <img v-if="offer.image_url" :src="offer.image_url" :alt="offer.title" class="offer-image" loading="lazy" />
       <div class="offer-head">
-        <ion-icon :icon="pricetagOutline" class="offer-icon" />
+        <!-- The picture takes the place of the little tag icon, as a bigger block on the left -->
+        <img v-if="offer.image_url" :src="offer.image_url" :alt="offer.title" class="offer-image" loading="lazy" />
+        <ion-icon v-else :icon="pricetagOutline" class="offer-icon" />
         <div class="offer-text">
           <div class="offer-title-row">
             <strong class="offer-title">{{ offer.title }}</strong>
@@ -234,7 +235,8 @@ async function reveal(offer: LocationOffer) {
   background: color-mix(in srgb, var(--ion-color-carrot, #ff7a00) 8%, transparent);
 }
 .offer-card { overflow: hidden; }
-.offer-image { display: block; width: calc(100% + 28px); max-width: none; margin: -14px -14px 12px; max-height: 220px; object-fit: cover; }
+.offer-text { flex: 1; min-width: 0; }
+.offer-image { width: 96px; height: 96px; max-width: none; flex-shrink: 0; border-radius: 10px; object-fit: cover; }
 .offer-head { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 10px; }
 .offer-icon { font-size: 24px; color: var(--ion-color-carrot, #ff7a00); flex-shrink: 0; margin-top: 2px; }
 .offer-title-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
