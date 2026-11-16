@@ -4525,6 +4525,19 @@ button.gm-ui-hover-effect > span {
   opacity: 0.8;
 }
 
+/* Map cards: views + distance in the first column, the added date in a second one */
+.modern-location-card:not(.list-mode-card) .info-top .metas {
+  display: grid;
+  grid-template-columns: auto auto;
+  grid-auto-rows: auto;
+  justify-content: start;
+  column-gap: 14px;
+  row-gap: 2px;
+}
+.modern-location-card:not(.list-mode-card) .info-top .metas > :nth-child(1) { grid-column: 1; grid-row: 1; }
+.modern-location-card:not(.list-mode-card) .info-top .metas > :nth-child(2) { grid-column: 2; grid-row: 1; }
+.modern-location-card:not(.list-mode-card) .info-top .metas > :nth-child(3) { grid-column: 1; grid-row: 2; }
+
 .metas {
   display: flex;
   flex-direction: column;
