@@ -153,7 +153,6 @@
                   </ion-toggle>
                 </ion-item>
               </ion-list>
-              <p class="quick-help">{{ $t('business.quick.reportNote') }}</p>
             </div>
           </section>
 

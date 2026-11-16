@@ -185,9 +185,6 @@
               <button v-if="qc('share')" type="button" class="qc-btn" :aria-label="$t('search.details.share')" @click="share">
                 <ion-icon :icon="shareSocialOutline" /><span>{{ $t('search.details.share') }}</span>
               </button>
-              <button type="button" class="qc-btn" :aria-label="$t('search.details.report')" @click="reportItem">
-                <ion-icon :icon="alertCircleOutline" /><span>{{ $t('search.details.report') }}</span>
-              </button>
             </div>
 
             <!-- Order Via delivery apps -->

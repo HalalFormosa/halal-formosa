@@ -1791,7 +1791,6 @@
     "quick": {
       "title": "Quick buttons",
       "help": "Choose which buttons appear at the top of your public page. Buttons for details you haven't filled in never show.",
-      "reportNote": "The Report button always stays, so customers can flag wrong information.",
       "saved": "Saved",
       "error": "Could not save. Please try again."
     },
