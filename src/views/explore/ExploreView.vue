@@ -444,7 +444,7 @@
                 @click="goToDetail(listLocations[0].id)"
               >
                 <div class="card-inner">
-                  <div class="card-image-section">
+                  <div class="card-image-section" :class="{ 'brand-image': listLocations[0].partner_tier && listLocations[0].image }" :style="brandImageStyle(listLocations[0])">
                     <img
                       loading="lazy"
                       :src="listLocations[0].image || PLACEHOLDER"
@@ -516,7 +516,7 @@
               @click="goToDetail(place.id)"
             >
               <div class="card-inner">
-                <div class="card-image-section">
+                <div class="card-image-section" :class="{ 'brand-image': place.partner_tier && place.image }" :style="brandImageStyle(place)">
                   <img
                     loading="lazy"
                     :src="place.image || PLACEHOLDER"
@@ -706,7 +706,7 @@
                   @click="selectPlace(visibleMapLocations[0])"
               >
                 <div class="card-inner">
-                  <div class="card-image-section">
+                  <div class="card-image-section" :class="{ 'brand-image': visibleMapLocations[0].partner_tier && visibleMapLocations[0].image }" :style="brandImageStyle(visibleMapLocations[0])">
                     <img
                         loading="lazy"
                         :src="visibleMapLocations[0].image || PLACEHOLDER"
@@ -806,7 +806,7 @@
                 @click="selectPlace(place)"
             >
               <div class="card-inner">
-                <div class="card-image-section">
+                <div class="card-image-section" :class="{ 'brand-image': place.partner_tier && place.image }" :style="brandImageStyle(place)">
                   <img
                       loading="lazy"
                       :src="place.image || PLACEHOLDER"
@@ -1173,6 +1173,14 @@ const isPageActive = ref(false)
 const MAP_ID = 'a40f1ec0ad0afbbb12694f19'
 const DEFAULT_CENTER: LatLng = {lat: 25.0343, lng: 121.5645}
 const PLACEHOLDER = 'https://placehold.co/200x100'
+
+// Partner cards usually carry a wide banner/logo. Cropping it to the 100px
+// thumbnail cuts the logo off, so those cards show the whole image on a
+// blurred copy of itself instead (see .brand-image in the styles).
+const brandImageStyle = (place: { partner_tier?: string | null; image?: string | null }) =>
+  place.partner_tier && place.image
+    ? { backgroundImage: `url("${String(place.image).replace(/"/g, '%22')}")` }
+    : undefined
 // Only Gold partner locations bypass the map viewport and stay visible
 // city-wide — this is the radius used for that lookup. Silver/Bronze still
 // only surface when they're actually inside the current viewport, though
@@ -4513,6 +4521,17 @@ button.gm-ui-hover-effect > span {
   opacity: 0.8;
 }
 
+/* Map carousel cards have a fixed height (--explore-card-height). With the
+   "Discount code" tag the meta column grew to four stacked lines, which on
+   a two-line title pushed the action row (Details) out of the card and
+   under the tab bar. Let the meta items share lines instead. */
+.cards-track .info-top .metas {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center !important;
+  gap: 2px 10px;
+}
+
 .metas {
   display: flex;
   flex-direction: column;
@@ -4730,6 +4749,25 @@ button.gm-ui-hover-effect > span {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+/* Partner banner/logo images: show the whole picture (not a cropped slice)
+   over a blurred, dimmed copy of itself so the 100px column still looks full. */
+.card-image-section.brand-image {
+  overflow: hidden;
+  background-size: cover;
+  background-position: center;
+}
+.card-image-section.brand-image::before {
+  content: '';
+  position: absolute;
+  inset: -12px;
+  background: inherit;
+  filter: blur(12px) brightness(0.55);
+}
+.card-image-section.brand-image img {
+  position: relative;
+  object-fit: contain;
 }
 
 .floating-tier-badge {
