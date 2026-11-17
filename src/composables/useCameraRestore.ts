@@ -16,7 +16,7 @@ import { Preferences } from '@capacitor/preferences'
  *  4. The form calls consumeCameraRestore() on mount and re-applies its state.
  */
 
-export type CameraDraftKind = 'add-product' | 'add-place'
+export type CameraDraftKind = 'add-product' | 'add-place' | 'merchant-product'
 
 export interface CameraDraft {
   kind: CameraDraftKind

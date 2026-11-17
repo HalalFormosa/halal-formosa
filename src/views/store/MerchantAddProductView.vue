@@ -214,7 +214,7 @@ import { useRoute, useRouter } from 'vue-router'
 import {
   IonPage, IonHeader, IonContent, IonFooter, IonToolbar, IonButton, IonIcon,
   IonItem, IonInput, IonTextarea, IonSelect, IonSelectOption, IonToggle,
-  IonSpinner, IonBadge, toastController, alertController
+  IonSpinner, IonBadge, toastController, alertController, actionSheetController
 } from '@ionic/vue'
 import { 
   addOutline, closeCircleOutline, constructOutline, bagHandleOutline, 
@@ -227,6 +227,9 @@ import { supabase } from '@/plugins/supabaseClient'
 import { useI18n } from 'vue-i18n'
 import { useImageResizer } from '@/composables/useImageResizer'
 import { useBackgroundRemoval } from '@/composables/useBackgroundRemoval'
+import { Capacitor } from '@capacitor/core'
+import { Camera, CameraResultType, CameraSource } from '@capacitor/camera'
+import { saveCameraDraft, clearCameraDraft, consumeCameraRestore } from '@/composables/useCameraRestore'
 
 const { t, locale } = useI18n()
 const { resizeImage } = useImageResizer()
@@ -391,8 +394,61 @@ async function cleanImageIndex(index: number) {
   }
 }
 
-function triggerImageUpload() {
-  imageInput.value?.click()
+async function triggerImageUpload() {
+  // On the phone, offer the native camera. A photo taken through a plain file
+  // input is lost if Android kills the app meanwhile; Camera.getPhoto can be
+  // restored (see useCameraRestore).
+  if (!Capacitor.isNativePlatform()) {
+    imageInput.value?.click()
+    return
+  }
+  const sheet = await actionSheetController.create({
+    buttons: [
+      { text: t('addProduct.camera'), data: 'camera' },
+      { text: t('addProduct.photoActions.uploadPhoto', 'Upload'), data: 'gallery' },
+      { text: t('common.cancel', 'Cancel'), role: 'cancel' }
+    ]
+  })
+  await sheet.present()
+  const { data } = await sheet.onDidDismiss()
+  if (data === 'camera') await takeProductPhoto()
+  else if (data === 'gallery') imageInput.value?.click()
+}
+
+async function addImageFromUri(webPath: string) {
+  if (form.images.length >= 8) return
+  submitting.value = true
+  try {
+    const file = await resizeImage(webPath, 1200, 0.8)
+    const url = await uploadFileToSupabase(file)
+    if (url) form.images.push(url)
+  } catch (e) {
+    console.warn('Could not add camera photo', e)
+    showToast(`❌ ${t('store.saveFailed')}`, 'danger')
+  } finally {
+    submitting.value = false
+  }
+}
+
+async function takeProductPhoto() {
+  // Android can kill the app while the camera is open: keep the form so far.
+  await saveCameraDraft('merchant-product', 'image', route.fullPath, {
+    form: JSON.parse(JSON.stringify(form)),
+    tagsInput: tagsInput.value
+  })
+  try {
+    const photo = await Camera.getPhoto({
+      resultType: CameraResultType.Uri,
+      source: CameraSource.Camera,
+      quality: 85,
+      allowEditing: false
+    })
+    if (photo.webPath) await addImageFromUri(photo.webPath)
+  } catch {
+    /* cancelled */
+  } finally {
+    await clearCameraDraft()
+  }
 }
 
 function triggerHalalUpload() {
@@ -563,6 +619,15 @@ onMounted(async () => {
   await fetchCategories()
   await ensureStoreExists()
   await fetchProduct()
+
+  // Coming back from a camera session that Android killed? Put the form back.
+  const restore = await consumeCameraRestore('merchant-product')
+  if (restore) {
+    const saved = restore.draft.state as any
+    if (saved.form) Object.assign(form, saved.form)
+    if (typeof saved.tagsInput === 'string') tagsInput.value = saved.tagsInput
+    if (restore.photoUri) await addImageFromUri(restore.photoUri)
+  }
 })
 </script>
 
