@@ -565,6 +565,7 @@ import {useRouter} from 'vue-router'
 import {supabase} from '@/plugins/supabaseClient'
 import mapsLoader from '@/plugins/googleMapsLoader'
 import {Camera, CameraResultType, CameraSource} from '@capacitor/camera'
+import {saveCameraDraft, clearCameraDraft, consumeCameraRestore, type CameraRestore} from '@/composables/useCameraRestore'
 import {
     cameraOutline,
     cloudUploadOutline,
@@ -1127,52 +1128,66 @@ const setPreview = (file: File) => {
   pendingFile.value = file
 }
 
-const takePicture = async () => {
+// Turn a photo URI from the camera or gallery into the compressed preview.
+const applyPhoto = async (webPath: string) => {
+  const safeBase = makeSafeBase()
   try {
-    const photo = await Camera.getPhoto({
+    const file = await resizeImageFromWebPath(webPath, `image-${safeBase}.jpg`, 1200, 0.8)
+    if (file.size > MAX_BYTES) {
+      toast.value = {open: true, message: 'Image still too large after compression.', color: 'danger'}
+      return
+    }
+    setPreview(file)
+  } catch (e: any) {
+    toast.value = {open: true, message: e?.message || 'Could not process image.', color: 'danger'}
+  }
+}
+
+// Android can kill the app while the camera or picker is open. Save what the
+// user typed first, so it can be restored if that happens (see useCameraRestore).
+const getPhotoWithDraft = async (source: CameraSource) => {
+  if (!isEditing.value) {
+    await saveCameraDraft('add-place', 'place', route.fullPath, {
+      form: form.value,
+      currentStep: currentStep.value,
+    })
+  }
+  try {
+    return await Camera.getPhoto({
       resultType: CameraResultType.Uri,
-      source: CameraSource.Camera,
+      source,
       quality: 85,
       allowEditing: false
     })
-    if (!photo.webPath) return
-    const safeBase = makeSafeBase()
+  } finally {
+    await clearCameraDraft()
+  }
+}
 
-    try {
-      const file = await resizeImageFromWebPath(photo.webPath, `image-${safeBase}.jpg`, 1200, 0.8)
-      if (file.size > MAX_BYTES) {
-        toast.value = {open: true, message: 'Image still too large after compression.', color: 'danger'}
-        return
-      }
-      setPreview(file)
-    } catch (e: any) {
-      toast.value = {open: true, message: e?.message || 'Could not process image.', color: 'danger'}
-    }
+const takePicture = async () => {
+  try {
+    const photo = await getPhotoWithDraft(CameraSource.Camera)
+    if (!photo.webPath) return
+    await applyPhoto(photo.webPath)
   } catch { /* empty */
   }
 }
 
 const uploadFromGallery = async () => {
   try {
-    const photo = await Camera.getPhoto({
-      resultType: CameraResultType.Uri,
-      source: CameraSource.Photos,
-      quality: 85,
-      allowEditing: false
-    })
+    const photo = await getPhotoWithDraft(CameraSource.Photos)
     if (!photo.webPath) return
-    const safeBase = makeSafeBase()
-
-    // compress to JPEG here
-    const file = await resizeImageFromWebPath(photo.webPath, `image-${safeBase}.jpg`, 1200, 0.8)
-
-    if (file.size > MAX_BYTES) {
-      toast.value = {open: true, message: 'Image still too large after compression.', color: 'danger'}
-      return
-    }
-    setPreview(file)
+    await applyPhoto(photo.webPath)
   } catch { /* empty */
   }
+}
+
+// Re-apply the form after Android killed the app during a camera session.
+const restoreAfterCameraKill = async (restore: CameraRestore) => {
+  const saved = restore.draft.state as { form?: typeof form.value; currentStep?: number }
+  if (saved.form) form.value = {...form.value, ...saved.form}
+  if (typeof saved.currentStep === 'number') currentStep.value = saved.currentStep
+  if (restore.photoUri) await applyPhoto(restore.photoUri)
 }
 
 /* -------------------- Map Picker -------------------- */
@@ -1724,8 +1739,12 @@ onMounted(async () => {
 
   }
 
-  // 3️⃣ Only center on user if adding a NEW place
-  if (!isEditing.value && checkedRole.value && myRole.value) {
+  // Coming back from a camera session that Android killed? Put the form back.
+  const cameraRestore = isEditing.value ? null : await consumeCameraRestore('add-place')
+  if (cameraRestore) await restoreAfterCameraKill(cameraRestore)
+
+  // 3️⃣ Only center on user if adding a NEW place (not when restoring a draft)
+  if (!isEditing.value && !cameraRestore && checkedRole.value && myRole.value) {
     await centerOnUserOnce()
   }
 

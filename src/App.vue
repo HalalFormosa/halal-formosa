@@ -432,6 +432,7 @@ watch(locale, (newLocale) => {
 }, { immediate: true });
 
 import { App as CapApp } from '@capacitor/app';
+import { handleRestoredCameraResult } from '@/composables/useCameraRestore';
 import { useRouter } from 'vue-router';
 import { ActivityLogService } from '@/services/ActivityLogService'
 
@@ -456,6 +457,14 @@ watch(
 );
 
 onMounted(async () => {
+  // Android may kill the app while the camera is open (low memory). Capacitor
+  // then delivers the photo here after the restart. Send the user back to the
+  // form they were filling in instead of leaving them on Home.
+  CapApp.addListener('appRestoredResult', async (event) => {
+    const target = await handleRestoredCameraResult(event);
+    if (target) router.replace(target);
+  });
+
   // Cold start. Complements user_app_versions, which only knows logged-in users.
   ActivityLogService.log('app_open', { platform: Capacitor.getPlatform(), native: Capacitor.isNativePlatform() });
 
