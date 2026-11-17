@@ -394,34 +394,42 @@ async function cleanImageIndex(index: number) {
   }
 }
 
+type PhotoTarget = 'image' | 'halal'
+
 async function triggerImageUpload() {
+  await chooseUpload('image')
+}
+
+async function chooseUpload(target: PhotoTarget) {
+  const input = target === 'halal' ? halalInput.value : imageInput.value
   // On the phone, offer the native camera. A photo taken through a plain file
   // input is lost if Android kills the app meanwhile; Camera.getPhoto can be
   // restored (see useCameraRestore).
   if (!Capacitor.isNativePlatform()) {
-    imageInput.value?.click()
+    input?.click()
     return
   }
   const sheet = await actionSheetController.create({
     buttons: [
       { text: t('addProduct.camera'), data: 'camera' },
-      { text: t('addProduct.photoActions.uploadPhoto', 'Upload'), data: 'gallery' },
+      { text: t('addProduct.photoActions.uploadPhoto', 'Upload'), data: 'file' },
       { text: t('common.cancel', 'Cancel'), role: 'cancel' }
     ]
   })
   await sheet.present()
   const { data } = await sheet.onDidDismiss()
-  if (data === 'camera') await takeProductPhoto()
-  else if (data === 'gallery') imageInput.value?.click()
+  if (data === 'camera') await takeProductPhoto(target)
+  else if (data === 'file') input?.click()
 }
 
-async function addImageFromUri(webPath: string) {
-  if (form.images.length >= 8) return
+async function addImageFromUri(webPath: string, target: PhotoTarget = 'image') {
+  const list = target === 'halal' ? form.halal_proof : form.images
+  if (list.length >= (target === 'halal' ? 5 : 8)) return
   submitting.value = true
   try {
     const file = await resizeImage(webPath, 1200, 0.8)
-    const url = await uploadFileToSupabase(file)
-    if (url) form.images.push(url)
+    const url = await uploadFileToSupabase(file, target === 'halal' ? 'halal' : 'product')
+    if (url) list.push(url)
   } catch (e) {
     console.warn('Could not add camera photo', e)
     showToast(`❌ ${t('store.saveFailed')}`, 'danger')
@@ -430,9 +438,9 @@ async function addImageFromUri(webPath: string) {
   }
 }
 
-async function takeProductPhoto() {
+async function takeProductPhoto(target: PhotoTarget) {
   // Android can kill the app while the camera is open: keep the form so far.
-  await saveCameraDraft('merchant-product', 'image', route.fullPath, {
+  await saveCameraDraft('merchant-product', target, route.fullPath, {
     form: JSON.parse(JSON.stringify(form)),
     tagsInput: tagsInput.value
   })
@@ -443,7 +451,7 @@ async function takeProductPhoto() {
       quality: 85,
       allowEditing: false
     })
-    if (photo.webPath) await addImageFromUri(photo.webPath)
+    if (photo.webPath) await addImageFromUri(photo.webPath, target)
   } catch {
     /* cancelled */
   } finally {
@@ -452,7 +460,7 @@ async function takeProductPhoto() {
 }
 
 function triggerHalalUpload() {
-  halalInput.value?.click()
+  chooseUpload('halal')
 }
 
 async function uploadFileToSupabase(file: File, prefix = 'product') {
@@ -626,7 +634,7 @@ onMounted(async () => {
     const saved = restore.draft.state as any
     if (saved.form) Object.assign(form, saved.form)
     if (typeof saved.tagsInput === 'string') tagsInput.value = saved.tagsInput
-    if (restore.photoUri) await addImageFromUri(restore.photoUri)
+    if (restore.photoUri) await addImageFromUri(restore.photoUri, restore.draft.target === 'halal' ? 'halal' : 'image')
   }
 })
 </script>
