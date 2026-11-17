@@ -1076,6 +1076,8 @@ import BarcodeScanOverlay from '@/components/scan/BarcodeScanOverlay.vue'
 
 // Import Camera plugin and types
 import {Camera, CameraDirection, CameraResultType, CameraSource} from '@capacitor/camera'
+import type {ImageOptions} from '@capacitor/camera'
+import {saveCameraDraft, clearCameraDraft, consumeCameraRestore, hasPendingCameraRestore, type CameraRestore} from '@/composables/useCameraRestore'
 import {Cropper} from 'vue-advanced-cropper';
 import 'vue-advanced-cropper/dist/style.css';
 import { Swiper, SwiperSlide } from 'swiper/vue';
@@ -1253,7 +1255,7 @@ const autoAdvancePending = ref(false)
 // New product, no barcode already known → open straight into the live camera
 // on first render, so the "Find Product" chooser screen never flashes on
 // screen behind it (it's still there as the fallback once the overlay closes).
-const scanning = ref(!props.editProduct && !route.query.barcode)
+const scanning = ref(!props.editProduct && !route.query.barcode && !hasPendingCameraRestore('add-product'))
 // True while the *current* scan session is the instant auto-opened one (see
 // `scanning`'s initial value above) rather than one the user reopened later
 // via the "Camera" button — closing the auto-opened one with X should leave
@@ -1739,6 +1741,10 @@ onMounted(async () => {
 
   ActivityLogService.log('add_product_start')
   wizardStartTime.value = Date.now() // Start the timer!
+
+  // Coming back from a camera session that Android killed? Put the form back.
+  const cameraRestore = props.editProduct ? null : await consumeCameraRestore('add-product')
+  if (cameraRestore) await restoreAfterCameraKill(cameraRestore)
 })
 
 // refs moved to top
@@ -2220,20 +2226,89 @@ const fetchCategoryRules = async () => {
 }
 
 
+// Android can kill the app while the camera is open. Save what the user has
+// entered first so it can be restored (see useCameraRestore).
+async function getPhotoWithDraft(target: 'front' | 'back' | 'ingredients', options: ImageOptions) {
+  if (!props.editProduct) {
+    // Only plain camera URIs survive a restart; blob: URLs and edited images do not.
+    const keepUri = (preview: string | null, original: string | null) =>
+        preview && preview === original && !preview.startsWith('blob:') ? preview : null
+    await saveCameraDraft('add-product', target, route.fullPath, {
+      form: form.value,
+      currentStep: currentStep.value,
+      ocrFailedOnce: ocrFailedOnce.value,
+      manualIngredientsMode: manualIngredientsMode.value,
+      scannedOnce: scannedOnce.value,
+      rawChineseOcr: rawChineseOcr.value,
+      frontUri: keepUri(frontPreview.value, originalFrontPreview.value),
+      backUri: keepUri(backPreview.value, originalBackPreview.value),
+    })
+  }
+  try {
+    return await Camera.getPhoto(options)
+  } finally {
+    await clearCameraDraft()
+  }
+}
+
+async function applyIngredientsPhoto(webPath: string) {
+  const blob = await fetch(webPath).then(r => r.blob())
+  const file = new File([blob], `ingredients-${Date.now()}.jpg`, { type: 'image/jpeg' })
+  originalFile.value = file
+  ActivityLogService.log('add_product_ocr_start', { method: 'camera' })
+  openCropper(file)
+}
+
+async function applyFrontPhoto(webPath: string) {
+  frontPreview.value = webPath || null
+  frontFile.value = await resizeImage(webPath || '')
+  originalFrontPreview.value = frontPreview.value
+  originalFrontFile.value = frontFile.value
+}
+
+async function applyBackPhoto(webPath: string) {
+  backPreview.value = webPath || null
+  backFile.value = await resizeImage(webPath || '')
+  originalBackPreview.value = backPreview.value
+  originalBackFile.value = backFile.value
+}
+
+// Re-apply the form after Android killed the app during a camera session.
+async function restoreAfterCameraKill(restore: CameraRestore) {
+  const saved = restore.draft.state as any
+  // Never reopen the live scanner on top of a restored form.
+  scanning.value = false
+  autoOpenedScan.value = false
+  if (typeof saved.currentStep === 'number') currentStep.value = saved.currentStep
+  if (saved.form) form.value = { ...form.value, ...saved.form }
+  ocrFailedOnce.value = !!saved.ocrFailedOnce
+  manualIngredientsMode.value = !!saved.manualIngredientsMode
+  scannedOnce.value = !!saved.scannedOnce
+  rawChineseOcr.value = saved.rawChineseOcr || ''
+  try {
+    if (saved.frontUri) await applyFrontPhoto(saved.frontUri)
+    if (saved.backUri) await applyBackPhoto(saved.backUri)
+    if (restore.photoUri) {
+      if (restore.draft.target === 'front') await applyFrontPhoto(restore.photoUri)
+      else if (restore.draft.target === 'back') await applyBackPhoto(restore.photoUri)
+      else if (restore.draft.target === 'ingredients') await applyIngredientsPhoto(restore.photoUri)
+    }
+  } catch (err) {
+    console.warn('Could not restore photo after camera session:', err)
+    setError(t('addProduct.cameraError') || 'Failed to capture image.')
+  }
+}
+
 async function scanIngredientsWithCamera() {
   try {
-    const image = await Camera.getPhoto({
+    const image = await getPhotoWithDraft('ingredients', {
       quality: 90,
       allowEditing: false,
       resultType: CameraResultType.Uri,
       source: CameraSource.Camera,
       direction: CameraDirection.Rear,
     })
-    const blob = await fetch(image.webPath!).then(r => r.blob())
-    const file = new File([blob], `ingredients-${Date.now()}.jpg`, { type: 'image/jpeg' })
-    originalFile.value = file
-    ActivityLogService.log('add_product_ocr_start', { method: 'camera' })
-    openCropper(file)
+    await applyIngredientsPhoto(image.webPath!)
   } catch (err: any) {
     if (err?.message?.includes('cancel') || String(err).includes('cancel') || String(err).includes('cancelled')) {
       console.log('📷 Camera capture was cancelled by the user.');
@@ -2370,7 +2445,7 @@ onUnmounted(() => {
 async function takeFrontPicture() {
   if (isUnmounted) return;
   try {
-    const image = await Camera.getPhoto({
+    const image = await getPhotoWithDraft('front', {
       quality: 90,
       allowEditing: false,
       resultType: CameraResultType.Uri,
@@ -2379,10 +2454,7 @@ async function takeFrontPicture() {
     });
 
     if (isUnmounted) return;
-    frontPreview.value = image.webPath || null;
-    frontFile.value = await resizeImage(image.webPath || '');
-    originalFrontPreview.value = frontPreview.value;
-    originalFrontFile.value = frontFile.value;
+    await applyFrontPhoto(image.webPath || '');
 
   } catch (error: any) {
     if (error?.message?.includes('cancel') || String(error).includes('cancel') || String(error).includes('cancelled')) {
@@ -2397,7 +2469,7 @@ async function takeFrontPicture() {
 async function takeBackPicture() {
   if (isUnmounted) return;
   try {
-    const image = await Camera.getPhoto({
+    const image = await getPhotoWithDraft('back', {
       quality: 90,
       allowEditing: false,
       resultType: CameraResultType.Uri,
@@ -2406,10 +2478,7 @@ async function takeBackPicture() {
     });
 
     if (isUnmounted) return;
-    backPreview.value = image.webPath || null;
-    backFile.value = await resizeImage(image.webPath || '');
-    originalBackPreview.value = backPreview.value;
-    originalBackFile.value = backFile.value;
+    await applyBackPhoto(image.webPath || '');
 
   } catch (error: any) {
     if (error?.message?.includes('cancel') || String(error).includes('cancel') || String(error).includes('cancelled')) {

@@ -214,7 +214,7 @@ import { useRoute, useRouter } from 'vue-router'
 import {
   IonPage, IonHeader, IonContent, IonFooter, IonToolbar, IonButton, IonIcon,
   IonItem, IonInput, IonTextarea, IonSelect, IonSelectOption, IonToggle,
-  IonSpinner, IonBadge, toastController, alertController
+  IonSpinner, IonBadge, toastController, alertController, actionSheetController
 } from '@ionic/vue'
 import { 
   addOutline, closeCircleOutline, constructOutline, bagHandleOutline, 
@@ -227,6 +227,9 @@ import { supabase } from '@/plugins/supabaseClient'
 import { useI18n } from 'vue-i18n'
 import { useImageResizer } from '@/composables/useImageResizer'
 import { useBackgroundRemoval } from '@/composables/useBackgroundRemoval'
+import { Capacitor } from '@capacitor/core'
+import { Camera, CameraResultType, CameraSource } from '@capacitor/camera'
+import { saveCameraDraft, clearCameraDraft, consumeCameraRestore } from '@/composables/useCameraRestore'
 
 const { t, locale } = useI18n()
 const { resizeImage } = useImageResizer()
@@ -391,12 +394,73 @@ async function cleanImageIndex(index: number) {
   }
 }
 
-function triggerImageUpload() {
-  imageInput.value?.click()
+type PhotoTarget = 'image' | 'halal'
+
+async function triggerImageUpload() {
+  await chooseUpload('image')
+}
+
+async function chooseUpload(target: PhotoTarget) {
+  const input = target === 'halal' ? halalInput.value : imageInput.value
+  // On the phone, offer the native camera. A photo taken through a plain file
+  // input is lost if Android kills the app meanwhile; Camera.getPhoto can be
+  // restored (see useCameraRestore).
+  if (!Capacitor.isNativePlatform()) {
+    input?.click()
+    return
+  }
+  const sheet = await actionSheetController.create({
+    buttons: [
+      { text: t('addProduct.camera'), data: 'camera' },
+      { text: t('addProduct.photoActions.uploadPhoto', 'Upload'), data: 'file' },
+      { text: t('common.cancel', 'Cancel'), role: 'cancel' }
+    ]
+  })
+  await sheet.present()
+  const { data } = await sheet.onDidDismiss()
+  if (data === 'camera') await takeProductPhoto(target)
+  else if (data === 'file') input?.click()
+}
+
+async function addImageFromUri(webPath: string, target: PhotoTarget = 'image') {
+  const list = target === 'halal' ? form.halal_proof : form.images
+  if (list.length >= (target === 'halal' ? 5 : 8)) return
+  submitting.value = true
+  try {
+    const file = await resizeImage(webPath, 1200, 0.8)
+    const url = await uploadFileToSupabase(file, target === 'halal' ? 'halal' : 'product')
+    if (url) list.push(url)
+  } catch (e) {
+    console.warn('Could not add camera photo', e)
+    showToast(`❌ ${t('store.saveFailed')}`, 'danger')
+  } finally {
+    submitting.value = false
+  }
+}
+
+async function takeProductPhoto(target: PhotoTarget) {
+  // Android can kill the app while the camera is open: keep the form so far.
+  await saveCameraDraft('merchant-product', target, route.fullPath, {
+    form: JSON.parse(JSON.stringify(form)),
+    tagsInput: tagsInput.value
+  })
+  try {
+    const photo = await Camera.getPhoto({
+      resultType: CameraResultType.Uri,
+      source: CameraSource.Camera,
+      quality: 85,
+      allowEditing: false
+    })
+    if (photo.webPath) await addImageFromUri(photo.webPath, target)
+  } catch {
+    /* cancelled */
+  } finally {
+    await clearCameraDraft()
+  }
 }
 
 function triggerHalalUpload() {
-  halalInput.value?.click()
+  chooseUpload('halal')
 }
 
 async function uploadFileToSupabase(file: File, prefix = 'product') {
@@ -563,6 +627,15 @@ onMounted(async () => {
   await fetchCategories()
   await ensureStoreExists()
   await fetchProduct()
+
+  // Coming back from a camera session that Android killed? Put the form back.
+  const restore = await consumeCameraRestore('merchant-product')
+  if (restore) {
+    const saved = restore.draft.state as any
+    if (saved.form) Object.assign(form, saved.form)
+    if (typeof saved.tagsInput === 'string') tagsInput.value = saved.tagsInput
+    if (restore.photoUri) await addImageFromUri(restore.photoUri, restore.draft.target === 'halal' ? 'halal' : 'image')
+  }
 })
 </script>
 
