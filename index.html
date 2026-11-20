@@ -26,9 +26,88 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black" />
   <meta name="apple-itunes-app" content="app-id=YOUR_APP_ID_HERE, app-argument=https://app.halalformosa.com">
 
+
+  <link rel="preload" as="image" href="/logo-raw/logo.png" />
+
+  <!-- Animated launch splash. Brand orange matches the native launch screen
+       (Android theme + iOS LaunchScreen.storyboard) so the hand-off is invisible.
+       Removed by src/utils/splash.ts once the app has mounted. -->
+  <style>
+    #hf-splash {
+      position: fixed;
+      inset: 0;
+      z-index: 2147483000;
+      background: #E67E22;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      opacity: 1;
+      transition: opacity 380ms ease-out;
+      pointer-events: all;
+    }
+    #hf-splash.hf-splash-hide { opacity: 0; pointer-events: none; }
+    #hf-splash .hf-splash-logo {
+      width: min(62vw, 300px);
+      height: auto;
+      opacity: 0;
+      transform: scale(0.92);
+      animation:
+        hf-splash-in 650ms cubic-bezier(0.22, 1, 0.36, 1) 80ms forwards,
+        hf-splash-breathe 2200ms ease-in-out 750ms infinite;
+      user-select: none;
+      -webkit-user-drag: none;
+    }
+    #hf-splash .hf-splash-bar {
+      margin-top: 28px;
+      width: 96px;
+      height: 4px;
+      border-radius: 999px;
+      background: rgba(0, 0, 0, 0.14);
+      overflow: hidden;
+      opacity: 0;
+      animation: hf-splash-fade 400ms ease-out 500ms forwards;
+    }
+    #hf-splash .hf-splash-bar > span {
+      display: block;
+      height: 100%;
+      width: 40%;
+      border-radius: inherit;
+      background: #000;
+      animation: hf-splash-slide 1300ms ease-in-out infinite;
+    }
+    @keyframes hf-splash-in { to { opacity: 1; transform: scale(1); } }
+    @keyframes hf-splash-breathe {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.035); }
+    }
+    @keyframes hf-splash-fade { to { opacity: 1; } }
+    @keyframes hf-splash-slide {
+      0% { transform: translateX(-110%); }
+      100% { transform: translateX(260%); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      #hf-splash .hf-splash-logo { animation: hf-splash-in 1ms forwards; }
+      #hf-splash .hf-splash-bar { display: none; }
+    }
+  </style>
+
 </head>
 
 <body>
+  <div id="hf-splash" aria-hidden="true">
+    <img class="hf-splash-logo" src="/logo-raw/logo.png" alt="" draggable="false" />
+    <div class="hf-splash-bar"><span></span></div>
+  </div>
+  <script>
+    // Record when the splash first painted; safety net removes it if the app never mounts.
+    window.__hfSplashStart = Date.now();
+    setTimeout(function () {
+      var el = document.getElementById('hf-splash');
+      if (el) el.remove();
+    }, 10000);
+  </script>
+
   <div id="app"></div>
   <script type="module" src="/src/main.ts"></script>
 </body>

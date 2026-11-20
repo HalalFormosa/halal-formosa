@@ -51,6 +51,7 @@ import { buildScreenView, screenPattern } from '@/utils/screenView';
 import { ActivityLogService } from '@/services/ActivityLogService'
 import { refreshSubscriptionStatus, isDonor } from "@/composables/useSubscriptionStatus";
 import { deepLinkToPath } from '@/utils/urlHost';
+import { hideSplash } from '@/utils/splash';
 
 defineCustomElements(window)
 
@@ -646,6 +647,7 @@ async function bootstrap() {
     router.isReady().then(() => {
         app.mount('#app');
         scheduleBannerUpdate();
+        hideSplash();
     });
 
     // 2️⃣ Background initialization (Native Plugins & Heavy Data)
