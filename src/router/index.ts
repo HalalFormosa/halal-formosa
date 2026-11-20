@@ -29,6 +29,8 @@ import SearchView from '@/views/search/SearchView.vue';
 import ExploreView from '@/views/explore/ExploreView.vue';
 import ScanIngredientsView from '@/views/scan/ScanIngredientsView.vue';
 import { requestYearlySurveyFlow } from '@/composables/useYearlySurvey';
+import { defaultScanMethod } from '@/composables/useDefaultScanMethod';
+import { isLiveVerdictSupported } from '@/utils/liveScanPlatform';
 
 const ALLOWED_WHEN_PROFILE_INCOMPLETE = [
     '/profile',
@@ -241,6 +243,17 @@ const routes: Array<RouteRecordRaw> = [
     { 
       path: '/scan', 
       component: ScanIngredientsView, 
+      // "Remember my choice": Auto Capture and Live Scan are their own screens, so go straight there
+      // instead of opening this page first and forwarding from it (that flashed the picker).
+      // Camera and Gallery are actions on this page, so they still open it. Moving between scan
+      // screens (mode switcher, Back) is left alone so the picker stays reachable.
+      beforeEnter: (_to, from) => {
+        if (from.path.startsWith('/scan')) return true
+        const method = defaultScanMethod.value
+        if (method === 'auto') return '/scan/auto'
+        if (method === 'live' && isLiveVerdictSupported()) return '/scan/live'
+        return true
+      },
       meta: {
         requiresAuth: true,
         adSpaceId: 'ad-space-scan-results',
