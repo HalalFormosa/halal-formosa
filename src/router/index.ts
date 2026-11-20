@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from '@ionic/vue-router';
 import { RouteRecordRaw } from 'vue-router';
-import { supabase } from '@/plugins/supabaseClient';
+import { supabase, readStoredSession } from '@/plugins/supabaseClient';
 import { performBotChecks } from '@/utils/botShield';
 import { Capacitor } from '@capacitor/core';
 import { isDeviceOnline } from '@/utils/connectivity';
@@ -596,6 +596,18 @@ router.beforeEach(async (to, from, next) => {
     // that; trust the already-restored in-memory user instead.
     if (!session && !isDeviceOnline() && currentUser.value) {
         session = { user: currentUser.value } as any;
+    }
+
+    // Same idea while "online": a flaky connection right after the app resumes makes
+    // getSession() return null without touching the saved login. supabase-js removes the
+    // stored session itself when a login is truly over (logout / token rejected by the
+    // server), so a saved session means the user is still logged in — let them through and
+    // the background refresh will catch up.
+    if (!session) {
+        const stored = await readStoredSession();
+        if (stored?.user) {
+            session = { user: stored.user } as any;
+        }
     }
 
     // 🚫 Needs auth but not logged in

@@ -1,4 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
+import { Capacitor } from '@capacitor/core';
+import { Preferences } from '@capacitor/preferences';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
@@ -38,14 +40,102 @@ async function inProcessAuthLock<R>(_name: string, acquireTimeout: number, fn: (
     }
 }
 
+// Session storage. The default (WebView localStorage) can be wiped by the OS under storage
+// pressure (notably iOS), which silently logs the user out. On native we keep the session in
+// Capacitor Preferences (SharedPreferences / UserDefaults) as the source of truth and mirror it
+// to localStorage. Existing users are migrated transparently: if only localStorage has the
+// session we copy it across on first read, so nobody is logged out by this change.
+const useNativeStore = Capacitor.isNativePlatform();
+
+function lsGet(key: string): string | null {
+    try { return window.localStorage.getItem(key); } catch { return null; }
+}
+function lsSet(key: string, value: string) {
+    try { window.localStorage.setItem(key, value); } catch { /* storage unavailable */ }
+}
+function lsRemove(key: string) {
+    try { window.localStorage.removeItem(key); } catch { /* storage unavailable */ }
+}
+
+const sessionStorageAdapter = {
+    async getItem(key: string): Promise<string | null> {
+        if (!useNativeStore) return lsGet(key);
+        try {
+            const { value } = await Preferences.get({ key });
+            if (value) return value;
+        } catch { /* fall through to localStorage */ }
+        const fallback = lsGet(key);
+        if (fallback) {
+            Preferences.set({ key, value: fallback }).catch(() => { /* best effort */ });
+        }
+        return fallback;
+    },
+    async setItem(key: string, value: string): Promise<void> {
+        lsSet(key, value);
+        if (useNativeStore) {
+            try { await Preferences.set({ key, value }); } catch { /* localStorage copy still written */ }
+        }
+    },
+    async removeItem(key: string): Promise<void> {
+        lsRemove(key);
+        if (useNativeStore) {
+            try { await Preferences.remove({ key }); } catch { /* best effort */ }
+        }
+    }
+};
+
+// Same key supabase-js derives by default, so existing sessions keep working.
+const authStorageKey = (() => {
+    try { return `sb-${new URL(supabaseUrl).hostname.split('.')[0]}-auth-token`; } catch { return 'sb-auth-token'; }
+})();
+
+/**
+ * The session as last persisted, without triggering a refresh. supabase-js deletes this entry
+ * itself when a login is genuinely over (explicit sign-out, or the server rejected the refresh
+ * token), so a value here means the user is still logged in even if getSession() came back
+ * empty because of a transient network/server problem.
+ */
+export async function readStoredSession(): Promise<{ user?: any; refresh_token?: string } | null> {
+    try {
+        const raw = await sessionStorageAdapter.getItem(authStorageKey);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        return parsed?.refresh_token ? parsed : null;
+    } catch {
+        return null;
+    }
+}
+
+// supabase-js only keeps the session when a refresh fails with a "retryable" error (network
+// failure, 502/503/504). Anything else — a 500, a 429 rate limit, a gateway hiccup — is treated
+// as "this login is invalid" and wipes the session. Only a 4xx other than 408/429 is the server
+// really rejecting the token, so turn the rest into a network-style failure and let it retry.
+const baseFetch: typeof fetch = (...args) => fetch(...args);
+const resilientFetch: typeof fetch = async (input, init) => {
+    const url = typeof input === 'string' ? input : input instanceof URL ? input.href : (input as Request).url;
+    const response = await baseFetch(input, init);
+    if (
+        url.includes('/auth/v1/token') &&
+        url.includes('grant_type=refresh_token') &&
+        (response.status >= 500 || response.status === 429 || response.status === 408)
+    ) {
+        console.warn('[Auth] Refresh got transient HTTP', response.status, '- keeping session and retrying');
+        throw new TypeError('Failed to fetch');
+    }
+    return response;
+};
+
 export const supabase = createClient(supabaseUrl, supabaseKey, {
     auth: {
-        persistSession: true,       // ✅ Enables storing session in localStorage (or Capacitor Preferences on native)
+        persistSession: true,
         autoRefreshToken: true,     // ✅ Automatically refresh expired tokens
         detectSessionInUrl: true,   // ✅ Parses session from OAuth redirect URL (enabled by default)
+        storage: sessionStorageAdapter,
+        storageKey: authStorageKey,
         lock: inProcessAuthLock
     },
     global: {
+        fetch: resilientFetch,
         headers: {
             'X-App-Client': 'halal-formosa-web',
             'X-CSRF-Token': csrfToken,

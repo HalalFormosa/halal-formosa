@@ -7,7 +7,7 @@ import { App as CapacitorApp } from '@capacitor/app'
 import { Capacitor } from '@capacitor/core'
 import { Keyboard, KeyboardResize } from '@capacitor/keyboard'
 import { Browser } from '@capacitor/browser'
-import { supabase } from '@/plugins/supabaseClient'
+import { supabase, readStoredSession } from '@/plugins/supabaseClient'
 import { getMyPrivateProfile } from '@/services/PrivateProfileService'
 import { isDeviceOnline } from '@/utils/connectivity'
 import { completeLineLogin } from '@/composables/useLineLogin'
@@ -204,11 +204,18 @@ supabase.auth.getSession().then(({ data }) => {
         loadNearbyPromptsFromCache(session.user.id);
         // loadUserProfile and refreshSubscriptionStatus are moved to bootstrap
     } else if (isDeviceOnline()) {
-        // Only trust an empty session as a real "logged out" when we're online —
-        // offline, this can just mean an expired-token refresh failed over a
-        // dead connection, not that the user actually logged out.
-        currentUser.value = null;
-        resetUserProfileState();
+        // Only trust an empty session as a real "logged out" when we're online AND
+        // nothing is saved — a transient refresh failure returns an empty session but
+        // leaves the saved login intact, and that user is still logged in.
+        readStoredSession().then((stored) => {
+            if (stored?.user) {
+                console.warn('[Auth] getSession empty but a saved login exists — keeping user logged in');
+                currentUser.value = stored.user;
+                return;
+            }
+            currentUser.value = null;
+            resetUserProfileState();
+        });
     }
 });
 
