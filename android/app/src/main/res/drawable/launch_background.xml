@@ -1,5 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!-- Flat Halal Formosa orange (#E67E22). The animated logo is drawn by the web splash. -->
-<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
-    <solid android:color="#E67E22" />
-</shape>

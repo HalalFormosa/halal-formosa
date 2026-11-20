@@ -1,5 +1,8 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
+    <!-- Halal Formosa orange. Must stay a COLOR (not a drawable): Capacitor's SystemBars reads windowBackground as a colour to fill the status/nav bar padding. -->
+    <color name="launch_orange">#E67E22</color>
+
     <color name="widget_light_bg">#FFFFFF</color>
     <color name="widget_light_button_bg">#F0F0F0</color>
     <color name="widget_light_text">#1A1A1A</color>
