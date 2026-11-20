@@ -67,7 +67,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { IonIcon } from '@ionic/vue'
 import {
@@ -120,30 +120,86 @@ function stepOf(p: number) {
   return s
 }
 
+/* ---------- Pacing: every step stays on screen long enough to be seen ---------- */
+// A fast scan can race through all four steps in a blink. The step the person
+// sees ("step") trails the real one ("realStep") and only moves forward after
+// a minimum dwell. A slow scan is never delayed: pacing only catches up.
+const DWELL = [600, 1100, 700, 1100] // ms each step is shown at minimum (3.5 s total)
+const DONE_HOLD = 700                 // ms the finished check stays up
+const realStep = computed(() => stepOf(Math.max(props.progress, 0)))
+const step = ref(1)
+const donePaced = ref(false)
+const finished = ref(false)
+let enteredAt = Date.now()
+let paceTimer: ReturnType<typeof setTimeout> | null = null
+let holdTimer: ReturnType<typeof setTimeout> | null = null
+let waiters: Array<() => void> = []
+
+function flushWaiters() {
+  const w = waiters
+  waiters = []
+  w.forEach(fn => fn())
+}
+
+function pace() {
+  if (paceTimer) { clearTimeout(paceTimer); paceTimer = null }
+  const left = (s: number) => Math.max(0, DWELL[s - 1] - (Date.now() - enteredAt))
+  if (step.value < realStep.value) {
+    paceTimer = setTimeout(() => {
+      step.value++
+      enteredAt = Date.now()
+      pace()
+    }, left(step.value))
+  } else if (step.value === TOTAL && props.progress >= 1 && !donePaced.value) {
+    paceTimer = setTimeout(() => {
+      donePaced.value = true
+      holdTimer = setTimeout(() => { finished.value = true; flushWaiters() }, DONE_HOLD)
+    }, left(TOTAL))
+  }
+}
+watch([realStep, () => props.progress >= 1], pace)
+
+/** Resolves once the animation has played out (the caller awaits this before
+ *  closing the overlay). Resolves at once if the scan failed, and never waits
+ *  more than a few seconds. */
+async function whenDone(): Promise<void> {
+  await nextTick() // let the latest progress value reach the props first
+  if (finished.value || props.progress < 1) return
+  return new Promise<void>((resolve) => {
+    waiters.push(resolve)
+    setTimeout(resolve, 6000)
+  })
+}
+defineExpose({ whenDone })
+
 function tick() {
-  const target = props.progress
-  if (target >= 1) {
+  const behind = step.value < realStep.value
+  if (donePaced.value) {
     shown.value += (1 - shown.value) * 0.2
     if (1 - shown.value < 0.002) shown.value = 1
   } else {
-    const s = stepOf(target)
-    const ceiling = (STEP_STARTS[s] ?? 1) - 0.02
-    let next = shown.value + (target - shown.value) * 0.1
-    if (next >= target - 0.004) next = Math.min(shown.value + 0.0007, Math.max(target, ceiling))
+    const nextStart = STEP_STARTS[step.value] ?? 1
+    // Never run past the step on screen; hold just short of 100% until the finish
+    const limit = behind ? nextStart - 0.01 : props.progress >= 1 ? 0.985 : props.progress
+    const ceiling = nextStart - 0.02
+    let next = shown.value + (limit - shown.value) * 0.1
+    if (next >= limit - 0.004) next = Math.min(shown.value + 0.0007, Math.max(limit, ceiling))
     shown.value = Math.max(shown.value, next)
   }
   raf = requestAnimationFrame(tick)
 }
 
-onMounted(() => { raf = requestAnimationFrame(tick) })
+onMounted(() => { raf = requestAnimationFrame(tick); pace() })
 onBeforeUnmount(() => {
   cancelAnimationFrame(raf)
   if (chipTimer) clearInterval(chipTimer)
+  if (paceTimer) clearTimeout(paceTimer)
+  if (holdTimer) clearTimeout(holdTimer)
+  flushWaiters()
 })
 
 const pct = computed(() => Math.min(100, Math.round(shown.value * 100)))
-const step = computed(() => stepOf(Math.max(props.progress, 0)))
-const done = computed(() => props.progress >= 1)
+const done = computed(() => donePaced.value)
 const stepIcon = computed(
   () => [cloudUploadOutline, glassesOutline, languageOutline, shieldCheckmarkOutline][step.value - 1]
 )
@@ -205,7 +261,7 @@ watch(step, (s) => {
     }
     if (next && !chips.value.includes(next)) chips.value = [...chips.value, next]
     else if (next) chips.value = [...chips.value, `${next} `]
-  }, 330)
+  }, 230)
 })
 
 /* ---------- Haptics: a soft tick per step, a pop when it lands ---------- */

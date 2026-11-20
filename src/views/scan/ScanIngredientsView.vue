@@ -577,6 +577,7 @@
           <!-- Full-screen loading overlay inside the cropper modal -->
           <div v-if="ocrLoading" class="ocr-overlay">
             <ScanProgressCard
+              ref="scanCardRef"
               :image-url="croppedPreviewUrl"
               :progress="progress"
               :words="ocrWords"
@@ -1246,6 +1247,9 @@ const {
 } = useHighlightCache()
 
 /** ---------- Cropper OCR pipeline ---------- */
+// The scan card paces itself so a fast scan is still seen; the pipeline waits on it
+const scanCardRef = ref<{ whenDone: () => Promise<void> } | null>(null)
+
 const {
   reset,
   cropperRef,
@@ -1282,6 +1286,7 @@ const {
   incrementUsageCount,
   setError,
   t,
+  waitForAnimation: () => scanCardRef.value?.whenDone() ?? Promise.resolve(),
 })
 
 const dangerousHighlights = computed(() =>

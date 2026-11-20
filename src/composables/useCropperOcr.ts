@@ -6,6 +6,9 @@ import type { OcrPipelineOptions } from "@/composables/useOcrPipeline"
 export interface CropperOcrOptions extends OcrPipelineOptions {
     setBackFile?: (file: File) => void
     onSuccess?: () => void
+    /** Resolves once the on-screen scan animation has finished playing, so a
+     *  very fast scan doesn't close the overlay before it can be seen. */
+    waitForAnimation?: () => Promise<void>
 }
 
 export function useCropperOcr(options: CropperOcrOptions) {
@@ -140,6 +143,8 @@ export function useCropperOcr(options: CropperOcrOptions) {
         const result = cropperRef.value.getResult()
         if (!result?.canvas) return
 
+        // A previous scan leaves progress at 1; start the animation from zero
+        progress.value = 0
         ocrLoading.value = true
         try {
             const blob = await new Promise<Blob | null>((resolve) =>
@@ -168,6 +173,9 @@ export function useCropperOcr(options: CropperOcrOptions) {
                 const resizedBack = await resizeImage(originalFile.value)
                 options?.setBackFile?.(resizedBack)
             }
+
+            // Let the scan animation play out before the overlay closes
+            if (options?.waitForAnimation) await options.waitForAnimation().catch(() => {})
         } catch (err) {
             console.error('❌ OCR failed in confirmCrop:', err)
             throw err // 👈 rethrow to let handleConfirmCrop() know it failed
