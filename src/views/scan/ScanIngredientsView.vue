@@ -576,8 +576,15 @@
           
           <!-- Full-screen loading overlay inside the cropper modal -->
           <div v-if="ocrLoading" class="ocr-overlay">
-            <ion-progress-bar :value="progress" color="carrot" class="ocr-progress" />
-            <p class="ocr-progress-text">{{ progressLabel }}</p>
+            <ScanProgressCard
+              :image-url="croppedPreviewUrl"
+              :progress="progress"
+              :words="ocrWords"
+              :image-width="ocrImageWidth"
+              :image-height="ocrImageHeight"
+              :ingredients="scanIngredientNames"
+              :known-count="allHighlights.length"
+            />
 
             <div v-if="loadingReflection" class="reflection-box">
               <p v-if="loadingReflection.text_ar" class="reflection-ar">{{ loadingReflection.text_ar }}</p>
@@ -762,6 +769,7 @@ import IngredientHighlightImage from '@/components/scan/IngredientHighlightImage
 import ScanDecisionPrompt from '@/components/ScanDecisionPrompt.vue'
 import LiveVerdictHelpModal from '@/components/scan/LiveVerdictHelpModal.vue'
 import ScanLimitSheet from '@/components/scan/ScanLimitSheet.vue'
+import ScanProgressCard from '@/components/scan/ScanProgressCard.vue'
 import AiExplanationTeaser from '@/components/scan/AiExplanationTeaser.vue'
 import { canEarnMoreScans } from '@/services/ScanLimitService'
 import { buildScanDecisionNotice, type ScanDecisionChoice } from '@/utils/scanDecisionNotice'
@@ -1265,7 +1273,8 @@ const {
   stencilProps,
   setAspectRatio,
   ocrImageWidth,
-  ocrImageHeight
+  ocrImageHeight,
+  ocrWords
 } = useCropperOcr({
   allHighlights,
   blacklistPatterns,
@@ -1524,6 +1533,15 @@ const { shareResult } = useShareCard(
     ingredientsText,
     autoStatus,
     ingredientHighlights, ingredientsTextZh
+)
+
+// Ingredient names shown one by one in the scan card's "checking" step
+const scanIngredientNames = computed(() =>
+  (ingredientsText.value || '')
+    .split(/[,;，、]/)
+    .map((s: string) => s.replace(/\(.*?\)/g, '').trim())
+    .filter((s: string) => s.length > 1 && s.length < 40)
+    .slice(0, 30)
 )
 
 function onShareClick() {
@@ -2319,15 +2337,16 @@ onUnmounted(() => {
 .ocr-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(8px);
+  background: rgba(var(--ion-background-color-rgb, 247, 247, 248), 0.94);
+  backdrop-filter: blur(10px);
   z-index: 9999;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  padding: 30px;
-  color: white;
+  padding: 20px;
+  overflow-y: auto;
+  color: var(--ion-text-color);
   text-align: center;
 }
 

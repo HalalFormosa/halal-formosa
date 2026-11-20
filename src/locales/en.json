@@ -436,6 +436,16 @@
       "finalizing": "Finalizing...",
       "failed": "Failed"
     },
+    "scanProgress": {
+      "s1": { "title": "Uploading photo", "sub": "Sending your cropped label for analysis" },
+      "s2": { "title": "Reading the label", "sub": "Scanning the image and extracting the text" },
+      "s3": { "title": "Understanding the text", "sub": "Cleaning and translating the ingredients" },
+      "s4": {
+        "title": "Checking ingredients",
+        "sub": "Comparing the text with known ingredients",
+        "subCount": "Comparing the text with {count} known ingredients"
+      }
+    },
     "aiSummary": {
       "title": "AI Analysis Summary",
       "preparing": "Preparing Analysis...",

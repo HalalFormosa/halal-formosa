@@ -516,6 +516,16 @@
       "finalizing": "Finalizing...",
       "failed": "Failed"
     },
+    "scanProgress": {
+      "s1": { "title": "上傳照片", "sub": "正在傳送裁切後的標籤進行分析" },
+      "s2": { "title": "讀取標籤", "sub": "正在掃描圖片並擷取文字" },
+      "s3": { "title": "理解文字", "sub": "正在整理並翻譯成分" },
+      "s4": {
+        "title": "檢查成分",
+        "sub": "正在將文字與已知成分比對",
+        "subCount": "正在將文字與 {count} 種已知成分比對"
+      }
+    },
     "failure": {
       "title": "無法讀取這個標籤",
       "empty": "這張照片裡找不到成分表。",
