@@ -185,14 +185,20 @@ export function useCropperOcr(options: CropperOcrOptions) {
             console.error('❌ OCR failed in confirmCrop:', err)
             throw err // 👈 rethrow to let handleConfirmCrop() know it failed
         } finally {
-            if (!(opts?.keepOverlay && succeeded)) closeScanOverlay()
+            if (!(opts?.keepOverlay && succeeded)) closeScanOverlay(!!opts?.keepOverlay)
         }
     }
 
-    /** Close the scan overlay and the crop modal behind it. */
-    function closeScanOverlay() {
-        ocrLoading.value = false
+    /** Close the scan overlay and the crop modal behind it.
+     *  `smooth`: dismiss the modal first and keep the overlay up while it slides
+     *  away, so the plain cropper never flashes through underneath. */
+    function closeScanOverlay(smooth = false) {
         showCropper.value = false
+        if (!smooth) {
+            ocrLoading.value = false
+            return
+        }
+        setTimeout(() => { if (!showCropper.value) ocrLoading.value = false }, 600)
     }
 
     function reset() {

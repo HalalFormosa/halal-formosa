@@ -311,6 +311,7 @@
       </div>
 
       <!-- 🔬 STEP 2: Results -->
+      <transition name="results-in">
       <div v-show="currentStep === STEP_RESULTS" class="step-content">
         <div class="form-section">
           <!-- Cropped Image Preview -->
@@ -547,6 +548,7 @@
           </ion-button>
         </div>
       </div>
+      </transition>
 
       <!-- 🎨 Premium Cropper Modal -->
       <ion-modal :is-open="showCropper" @didDismiss="closeCropper">
@@ -1620,9 +1622,11 @@ async function handleConfirmCrop() {
 
       await loadTodayScanCount()
       isMovingToResults.value = false
-      closeScanOverlay() // results are ready: hand over from the animation
+      // Results are ready: bring them in underneath first, then slide the scan
+      // card away so it reads as one continuous handoff
       decisionPromptKey.value++
       nextStep()
+      closeScanOverlay(true)
 
       // 🔍 Proactively check if product exists in database by name
       productFoundInDb.value = null
@@ -1654,7 +1658,7 @@ async function handleConfirmCrop() {
 
     } else {
       console.warn('🚫 OCR text found but no ingredient section detected, skipping log')
-      closeScanOverlay()
+      closeScanOverlay(true)
       showScanFailure('empty')
       ActivityLogService.log("scan_ingredients_error", {
         error: "no_ingredients_detected",
@@ -1665,7 +1669,7 @@ async function handleConfirmCrop() {
 
   } catch (err: any) {
 
-    closeScanOverlay()
+    closeScanOverlay(true)
     showScanFailure(isNetworkError(err) ? 'offline' : 'error')
 
     await ActivityLogService.log("scan_ingredients_error", {
@@ -1683,7 +1687,7 @@ async function handleConfirmCrop() {
     await loadTodayScanCount()
   } finally {
     // Safety net: never leave the overlay stuck open
-    closeScanOverlay()
+    closeScanOverlay(true)
   }
 }
 
@@ -2343,6 +2347,18 @@ onUnmounted(() => {
   color: var(--ion-color-step-600);
   margin-top: 6px;
   margin-bottom: 0;
+}
+
+/* Results fade up as the scan card slides away, instead of snapping in */
+.results-in-enter-active {
+  transition: opacity 0.5s ease, transform 0.55s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.results-in-enter-from {
+  opacity: 0;
+  transform: translateY(20px);
+}
+@media (prefers-reduced-motion: reduce) {
+  .results-in-enter-active { transition: none; }
 }
 
 /* 🔹 OCR Loading Overlay */
