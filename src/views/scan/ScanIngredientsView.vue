@@ -625,8 +625,7 @@
               @click="handleConfirmCrop" 
               style="font-weight: 700; height: 48px;"
             >
-               <ion-spinner v-if="ocrLoading" name="crescent" style="zoom: 0.6; margin-right: 8px;"></ion-spinner>
-               {{ ocrLoading ? 'Processing...' : $t('scanIngredients.scan.done') }}
+               {{ $t('scanIngredients.scan.done') }}
             </ion-button>
           </ion-toolbar>
         </ion-footer>
@@ -1261,6 +1260,7 @@ const {
   onCropperReady,
   autoProcess,
   confirmCrop,
+  closeScanOverlay,
   closeCropper,
   recrop,
   showOk,
@@ -1575,8 +1575,9 @@ async function handleConfirmCrop() {
 
     const reflectionStart = Date.now()
 
-    await confirmCrop()
-    isMovingToResults.value = true // ⚡ Show transition loader immediately after OCR finishes
+    // Keep the scan animation (finished check + reflection) on screen until the
+    // results are ready, so it is the only loading indicator in this flow.
+    await confirmCrop({ keepOverlay: true })
 
     // 🕊 Ensure reflection shown minimum 3 seconds
     const reflectionElapsed = Date.now() - reflectionStart
@@ -1619,6 +1620,7 @@ async function handleConfirmCrop() {
 
       await loadTodayScanCount()
       isMovingToResults.value = false
+      closeScanOverlay() // results are ready: hand over from the animation
       decisionPromptKey.value++
       nextStep()
 
@@ -1652,6 +1654,7 @@ async function handleConfirmCrop() {
 
     } else {
       console.warn('🚫 OCR text found but no ingredient section detected, skipping log')
+      closeScanOverlay()
       showScanFailure('empty')
       ActivityLogService.log("scan_ingredients_error", {
         error: "no_ingredients_detected",
@@ -1662,6 +1665,7 @@ async function handleConfirmCrop() {
 
   } catch (err: any) {
 
+    closeScanOverlay()
     showScanFailure(isNetworkError(err) ? 'offline' : 'error')
 
     await ActivityLogService.log("scan_ingredients_error", {
@@ -1677,6 +1681,9 @@ async function handleConfirmCrop() {
     })
 
     await loadTodayScanCount()
+  } finally {
+    // Safety net: never leave the overlay stuck open
+    closeScanOverlay()
   }
 }
 
