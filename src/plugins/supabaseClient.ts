@@ -111,16 +111,52 @@ export async function readStoredSession(): Promise<{ user?: any; refresh_token?:
 // as "this login is invalid" and wipes the session. Only a 4xx other than 408/429 is the server
 // really rejecting the token, so turn the rest into a network-style failure and let it retry.
 const baseFetch: typeof fetch = (...args) => fetch(...args);
+
+// Set when the server definitively rejected a refresh token (e.g. refresh_token_not_found).
+// Lets the SIGNED_OUT handler tell a genuine server-side logout from the library dropping the
+// session for any other reason.
+let lastRefreshRejection: { at: number; status: number; code?: string } | null = null;
+
+// Error codes GoTrue returns when it genuinely will not accept this refresh token.
+const DEFINITIVE_REFRESH_ERRORS = new Set([
+    'refresh_token_not_found',
+    'refresh_token_already_used',
+    'session_not_found',
+    'session_expired',
+    'bad_jwt',
+    'user_not_found',
+    'user_banned',
+    'invalid_grant',
+]);
+
 const resilientFetch: typeof fetch = async (input, init) => {
     const url = typeof input === 'string' ? input : input instanceof URL ? input.href : (input as Request).url;
     const response = await baseFetch(input, init);
-    if (
-        url.includes('/auth/v1/token') &&
-        url.includes('grant_type=refresh_token') &&
-        (response.status >= 500 || response.status === 429 || response.status === 408)
-    ) {
-        console.warn('[Auth] Refresh got transient HTTP', response.status, '- keeping session and retrying');
-        throw new TypeError('Failed to fetch');
+    const isRefresh = url.includes('/auth/v1/token') && url.includes('grant_type=refresh_token');
+    if (isRefresh) {
+        if (response.status >= 500 || response.status === 429 || response.status === 408) {
+            console.warn('[Auth] Refresh got transient HTTP', response.status, '- keeping session and retrying');
+            throw new TypeError('Failed to fetch');
+        }
+        if (response.ok) {
+            lastRefreshRejection = null;
+        } else {
+            // Only a recognisable answer from Supabase's auth server counts as the token being
+            // rejected. Anything else (a captive portal, carrier proxy or half-dead connection
+            // returning HTML or an empty body) is a connection problem — treat it as one, or
+            // supabase-js would delete a perfectly good session.
+            let body: any = null;
+            try { body = await response.clone().json(); } catch { /* not JSON */ }
+            const code: string | undefined = body?.error_code ?? body?.code;
+            const definitive =
+                (response.status === 400 || response.status === 401 || response.status === 403) &&
+                (DEFINITIVE_REFRESH_ERRORS.has(String(code)) || body?.error === 'invalid_grant');
+            if (!definitive) {
+                console.warn('[Auth] Refresh got an unrecognised HTTP', response.status, '- treating as a connection problem');
+                throw new TypeError('Failed to fetch');
+            }
+            lastRefreshRejection = { at: Date.now(), status: response.status, code };
+        }
     }
     return response;
 };
@@ -145,6 +181,97 @@ export const supabase = createClient(supabaseUrl, supabaseKey, {
         }
     }
 });
+
+// ---- Unexpected sign-out protection ---------------------------------------------------------
+// supabase-js wipes the session in several situations that are not a real logout. We keep a
+// copy of the last good session; if a SIGNED_OUT arrives that the user did not ask for and the
+// server did not reject the token, we restore the session instead of logging the user out.
+const BACKUP_KEY = 'halal-auth-session-backup';
+const DIAG_KEY = 'halal-auth-diag';
+let explicitSignOutInProgress = false;
+let lastRecoveryAt = 0;
+
+supabase.auth.onAuthStateChange((event, session) => {
+    // No supabase calls in here (auth-js holds its lock while notifying subscribers).
+    if (session?.refresh_token && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION')) {
+        sessionStorageAdapter
+            .setItem(BACKUP_KEY, JSON.stringify({ access_token: session.access_token, refresh_token: session.refresh_token }))
+            .catch(() => { /* best effort */ });
+    }
+});
+
+/** Use for every user-initiated logout so it is never mistaken for an unexpected one. */
+export async function signOutExplicitly(options?: { scope?: 'global' | 'local' | 'others' }) {
+    explicitSignOutInProgress = true;
+    try {
+        await sessionStorageAdapter.removeItem(BACKUP_KEY);
+        return await supabase.auth.signOut(options);
+    } finally {
+        explicitSignOutInProgress = false;
+    }
+}
+
+export type SignOutOutcome = 'explicit' | 'rejected' | 'recovered' | 'failed';
+
+async function recordDiag(entry: Record<string, unknown>) {
+    try {
+        const raw = await sessionStorageAdapter.getItem(DIAG_KEY);
+        const list = raw ? JSON.parse(raw) : [];
+        list.push({ at: new Date().toISOString(), ...entry });
+        await sessionStorageAdapter.setItem(DIAG_KEY, JSON.stringify(list.slice(-10)));
+    } catch { /* diagnostics are best effort */ }
+}
+
+/** Entries recorded for unexpected sign-outs since the last call (cleared once read). */
+export async function takeAuthDiagnostics(): Promise<Record<string, unknown>[]> {
+    try {
+        const raw = await sessionStorageAdapter.getItem(DIAG_KEY);
+        if (!raw) return [];
+        await sessionStorageAdapter.removeItem(DIAG_KEY);
+        return JSON.parse(raw);
+    } catch {
+        return [];
+    }
+}
+
+/**
+ * Call after a SIGNED_OUT event (outside the auth callback). Returns 'recovered' if the user is
+ * logged in again, otherwise says why the sign-out stands.
+ */
+export async function recoverUnexpectedSignOut(): Promise<SignOutOutcome> {
+    if (explicitSignOutInProgress) return 'explicit';
+
+    const rejection = lastRefreshRejection && Date.now() - lastRefreshRejection.at < 60_000 ? lastRefreshRejection : null;
+    if (rejection) {
+        await recordDiag({ outcome: 'rejected', status: rejection.status, code: rejection.code });
+        return 'rejected';
+    }
+
+    // At most one attempt per 30s so a bad backup can never loop.
+    if (Date.now() - lastRecoveryAt < 30_000) {
+        await recordDiag({ outcome: 'failed', reason: 'recovery throttled' });
+        return 'failed';
+    }
+    lastRecoveryAt = Date.now();
+
+    try {
+        const raw = await sessionStorageAdapter.getItem(BACKUP_KEY);
+        if (!raw) {
+            await recordDiag({ outcome: 'failed', reason: 'no backup' });
+            return 'failed';
+        }
+        const { access_token, refresh_token } = JSON.parse(raw);
+        const { data, error } = await supabase.auth.setSession({ access_token, refresh_token });
+        if (data?.session) {
+            await recordDiag({ outcome: 'recovered' });
+            return 'recovered';
+        }
+        await recordDiag({ outcome: 'failed', reason: error?.message ?? 'setSession returned no session' });
+    } catch (e: any) {
+        await recordDiag({ outcome: 'failed', reason: e?.message ?? 'exception' });
+    }
+    return 'failed';
+}
 
 // 🚀 Clean client specifically for edge functions to avoid CORS preflight failures caused by global custom headers (X-CSRF-Token / X-Recaptcha-Token)
 const supabaseFunc = createClient(supabaseUrl, supabaseKey, {

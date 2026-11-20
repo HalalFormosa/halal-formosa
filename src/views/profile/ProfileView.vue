@@ -982,7 +982,7 @@
 <script setup lang="ts">
 import {computed, onBeforeUnmount, onMounted, ref, watch} from "vue";
 import {useRouter} from "vue-router";
-import {supabase} from "@/plugins/supabaseClient";
+import {supabase, signOutExplicitly} from "@/plugins/supabaseClient";
 import {MERCHANT_STORE_PUBLIC_COLUMNS} from "@/utils/merchantStore";
 
 // ✅ Ionic components
@@ -1887,7 +1887,7 @@ onBeforeUnmount(() => {
 const handleLogout = async () => {
   ActivityLogService.log('profile_logout')
 
-  const {error} = await supabase.auth.signOut({ scope: 'local' });
+  const {error} = await signOutExplicitly({ scope: 'local' });
   if (!error) {
     userEmail.value = "";
     currentPoints.value = null; // reset points

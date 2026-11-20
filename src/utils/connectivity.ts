@@ -7,18 +7,32 @@ import { Network } from '@capacitor/network'
 // platforms we track Capacitor's Network plugin instead, which queries the
 // OS directly; on web, navigator.onLine is the only signal available.
 let cachedOnline = navigator.onLine
+let restoredCallbacks: Array<() => void> = []
+
+function setOnline(value: boolean) {
+    const wasOffline = !cachedOnline
+    cachedOnline = value
+    if (value && wasOffline && restoredCallbacks.length) {
+        const callbacks = restoredCallbacks
+        restoredCallbacks = []
+        callbacks.forEach(cb => { try { cb() } catch { /* one callback must not block the rest */ } })
+    }
+}
 
 if (Capacitor.isNativePlatform()) {
     Network.getStatus()
         .then(status => { cachedOnline = status.connected })
         .catch(() => { /* keep navigator.onLine fallback */ })
 
-    Network.addListener('networkStatusChange', status => {
-        cachedOnline = status.connected
-    })
+    Network.addListener('networkStatusChange', status => setOnline(status.connected))
 } else {
-    window.addEventListener('online', () => { cachedOnline = true })
-    window.addEventListener('offline', () => { cachedOnline = false })
+    window.addEventListener('online', () => setOnline(true))
+    window.addEventListener('offline', () => setOnline(false))
+}
+
+/** Run `callback` once, the next time the device goes from offline to online. */
+export function onConnectivityRestored(callback: () => void): void {
+    restoredCallbacks.push(callback)
 }
 
 /** Best-effort synchronous connectivity check for guarding offline fallbacks. */
