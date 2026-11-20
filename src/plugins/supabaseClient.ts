@@ -57,18 +57,48 @@ function lsRemove(key: string) {
     try { window.localStorage.removeItem(key); } catch { /* storage unavailable */ }
 }
 
+/** Which stored session is newer? Refresh rotation always pushes expires_at forward. */
+function freshestSession(native: string, local: string): 'native' | 'local' {
+    try {
+        const n = JSON.parse(native)?.expires_at;
+        const l = JSON.parse(local)?.expires_at;
+        if (typeof n === 'number' && typeof l === 'number' && l > n) return 'local';
+    } catch { /* unparseable: keep the native copy */ }
+    return 'native';
+}
+
 const sessionStorageAdapter = {
     async getItem(key: string): Promise<string | null> {
         if (!useNativeStore) return lsGet(key);
+        let native: string | null = null;
         try {
-            const { value } = await Preferences.get({ key });
-            if (value) return value;
-        } catch { /* fall through to localStorage */ }
-        const fallback = lsGet(key);
-        if (fallback) {
-            Preferences.set({ key, value: fallback }).catch(() => { /* best effort */ });
+            native = (await Preferences.get({ key })).value ?? null;
+        } catch { /* fall back to localStorage */ }
+        const local = lsGet(key);
+
+        if (!native || !local || native === local) {
+            const value = native ?? local;
+            if (value && !native) {
+                Preferences.set({ key, value }).catch(() => { /* best effort */ });
+            }
+            return value;
         }
-        return fallback;
+
+        // The two copies disagree (a write to one of them failed or landed out of order).
+        // Serving the older one means sending a refresh token the server has already rotated
+        // away, which logs the user out — so use whichever holds the newer login, and repair
+        // the other copy.
+        if (key !== authStorageKey) return native;
+        const newest = freshestSession(native, local);
+        const winner = newest === 'local' ? local : native;
+        console.warn(`[Auth] Saved login copies differ — using the ${newest} copy`);
+        recordDiag({ outcome: 'storage_mismatch', used: newest }).catch(() => { /* best effort */ });
+        if (newest === 'local') {
+            Preferences.set({ key, value: winner }).catch(() => { /* best effort */ });
+        } else {
+            lsSet(key, winner);
+        }
+        return winner;
     },
     async setItem(key: string, value: string): Promise<void> {
         lsSet(key, value);
