@@ -71,6 +71,13 @@
       animation: hf-splash-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 250ms forwards;
     }
     #hf-splash .hf-splash-tagline b { color: #C96718; font-weight: 700; }
+    /* Dark theme: same source as the app (saved preference, else the phone's setting).
+       Backgrounds match Ionic's dark palette (#121212 Material, #000000 iOS). */
+    #hf-splash.hf-dark { background: #121212; }
+    #hf-splash.hf-dark.hf-ios { background: #000000; }
+    #hf-splash.hf-dark .hf-splash-tagline { color: #F4F5F8; }
+    #hf-splash.hf-dark .hf-splash-tagline b { color: #EA9550; }
+    #hf-splash.hf-dark .hf-splash-bar { background: rgba(255, 255, 255, 0.16); }
     #hf-splash .hf-splash-bar {
       position: absolute;
       left: 50%;
@@ -143,6 +150,17 @@
   <script>
     // Record when the splash first painted; safety net removes it if the app never mounts.
     window.__hfSplashStart = Date.now();
+    // Pick light/dark exactly like useTheme.ts does, before the first paint.
+    (function () {
+      var el = document.getElementById('hf-splash');
+      if (!el) return;
+      var saved = null;
+      try { saved = localStorage.getItem('preferred-theme'); } catch (e) {}
+      var dark = saved === 'dark' ||
+        (saved === null && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      if (dark) el.classList.add('hf-dark');
+      if (/iPhone|iPad|iPod/.test(navigator.userAgent)) el.classList.add('hf-ios');
+    })();
     setTimeout(function () {
       var el = document.getElementById('hf-splash');
       if (el) el.remove();
