@@ -29,7 +29,7 @@
 
   <link rel="preload" as="image" href="/splash-logo.png" />
 
-  <!-- Animated launch splash: white, circular logo (same size/spot as the native launch screen),
+  <!-- Animated launch splash: white, rounded-square logo (same size/spot as the native launch screen),
        then tagline + loading bar, then the logo expands and dissolves into the app.
        Removed by src/utils/splash.ts once the app has mounted. -->
   <style>
@@ -47,9 +47,9 @@
       position: absolute;
       left: 50%;
       top: 50%;
-      width: 192px;
-      height: 192px;
-      margin: -96px 0 0 -96px;
+      width: 160px;
+      height: 160px;
+      margin: -80px 0 0 -80px;
       animation: hf-splash-breathe 2400ms ease-in-out 400ms infinite;
       user-select: none;
       -webkit-user-drag: none;
@@ -58,7 +58,7 @@
       position: absolute;
       left: 0;
       right: 0;
-      top: calc(50% + 96px + 36px);
+      top: calc(50% + 80px + 26px);
       margin: 0;
       padding: 0 32px;
       text-align: center;
@@ -74,7 +74,7 @@
     #hf-splash .hf-splash-bar {
       position: absolute;
       left: 50%;
-      top: calc(50% + 96px + 92px);
+      top: calc(50% + 80px + 80px);
       margin-left: -48px;
       width: 96px;
       height: 4px;
@@ -118,7 +118,7 @@
     @keyframes hf-splash-fade { to { opacity: 1; } }
     @keyframes hf-splash-expand {
       from { transform: scale(var(--hf-from, 1)); opacity: 1; }
-      to { transform: scale(9); opacity: 0; }
+      to { transform: scale(11); opacity: 0; }
     }
     @keyframes hf-splash-slide {
       0% { transform: translateX(-110%); }

@@ -17,10 +17,10 @@
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
                             <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="SplashLogo" translatesAutoresizingMaskIntoConstraints="NO" id="lg1-aa-001">
-                                <rect key="frame" x="91.5" y="237.5" width="192" height="192"/>
+                                <rect key="frame" x="107.5" y="253.5" width="160" height="160"/>
                                 <constraints>
-                                    <constraint firstAttribute="width" constant="192" id="lg1-w"/>
-                                    <constraint firstAttribute="height" constant="192" id="lg1-h"/>
+                                    <constraint firstAttribute="width" constant="160" id="lg1-w"/>
+                                    <constraint firstAttribute="height" constant="160" id="lg1-h"/>
                                 </constraints>
                             </imageView>
                         </subviews>
