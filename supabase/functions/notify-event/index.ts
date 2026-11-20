@@ -88,6 +88,20 @@ const corsHeaders = {
    Helpers
 --------------------------------------------------- */
 const clamp = (s: unknown, n: number) => String(s ?? "").slice(0, n);
+
+// Pushes to "All" reach every user, so nothing that identifies a contributor may go in the text.
+// The caller writes "Added by: name (email)" for Discord; drop that line and any email address
+// before the text leaves for OneSignal. Discord keeps the full message.
+function publicPushText(s: unknown): string {
+  return String(s ?? "")
+    .split("\n")
+    .filter((line) => !/^\s*added by\b/i.test(line))
+    .join("\n")
+    .replace(/[^\s()<>]+@[^\s()<>]+\.[^\s()<>]+/g, "")
+    .replace(/\(\s*\)/g, "")
+    .replace(/[ \t]+\n/g, "\n")
+    .trim();
+}
 const isHttps = (u: unknown) => typeof u === "string" && /^https:\/\/\S+$/.test(u) && u.length <= 1000;
 const DISCORD_HOOK_RE = /^https:\/\/(discord|discordapp)\.com\/api\/webhooks\/\d+\/[\w-]+$/;
 const LINK_RE = /^myapp:\/\/(item|place|news)\/[A-Za-z0-9._~-]{1,64}$/;
@@ -380,8 +394,8 @@ serve(async (req) => {
       const payload = {
         app_id: ONESIGNAL_APP_ID,
         included_segments: ["All"],
-        headings: { en: safeTitle || "📢 New Update" },
-        contents: { en: clamp(safeMessage, MAX_PUSH_MESSAGE) },
+        headings: { en: publicPushText(safeTitle) || "📢 New Update" },
+        contents: { en: clamp(publicPushText(safeMessage), MAX_PUSH_MESSAGE) },
         big_picture: isHttps(image) ? image : undefined,
         data: pushData(data),
         url: finalUrl,
