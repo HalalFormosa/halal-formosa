@@ -457,7 +457,7 @@
                   <div class="card-image-section" :class="{ 'brand-image': listLocations[0].partner_tier && listLocations[0].image }" :style="brandImageStyle(listLocations[0])">
                     <img
                       loading="lazy"
-                      :src="listLocations[0].image || PLACEHOLDER"
+                      :src="getPlaceCardImage(listLocations[0].image) || PLACEHOLDER"
                       :alt="listLocations[0].name"
                       @error="onImageError"
                     />
@@ -530,7 +530,7 @@
                 <div class="card-image-section" :class="{ 'brand-image': place.partner_tier && place.image }" :style="brandImageStyle(place)">
                   <img
                     loading="lazy"
-                    :src="place.image || PLACEHOLDER"
+                    :src="getPlaceCardImage(place.image) || PLACEHOLDER"
                     :alt="place.name"
                     @error="onImageError"
                   />
@@ -721,7 +721,7 @@
                   <div class="card-image-section" :class="{ 'brand-image': visibleMapLocations[0].partner_tier && visibleMapLocations[0].image }" :style="brandImageStyle(visibleMapLocations[0])">
                     <img
                         loading="lazy"
-                        :src="visibleMapLocations[0].image || PLACEHOLDER"
+                        :src="getPlaceCardImage(visibleMapLocations[0].image) || PLACEHOLDER"
                         :alt="visibleMapLocations[0].name"
                         @error="onImageError"
                     />
@@ -822,7 +822,7 @@
                 <div class="card-image-section" :class="{ 'brand-image': place.partner_tier && place.image }" :style="brandImageStyle(place)">
                   <img
                       loading="lazy"
-                      :src="place.image || PLACEHOLDER"
+                      :src="getPlaceCardImage(place.image) || PLACEHOLDER"
                       :alt="place.name"
                       @error="onImageError"
                   />
@@ -1036,6 +1036,7 @@ import { StatusBar, Style } from '@capacitor/status-bar'
 import {supabase} from '@/plugins/supabaseClient'
 import {notifyFetchError, notifySlowConnection} from '@/utils/offlineFeedback'
 import {withTimeoutRetry} from '@/utils/requestTimeout'
+import {getPlaceCardImage, placeThumbFallbackUrl} from '@/utils/imageHelpers'
 import {exploreAreaKey, loadExploreCache, saveExploreCache} from '@/utils/exploreCache'
 import { delayForHuman } from '@/utils/interactionShield'
 import { useRecaptcha } from '@/composables/useRecaptcha'
@@ -2195,6 +2196,13 @@ const setCardRef = (id: number): VNodeRef =>
 const onImageError = (e: Event) => {
   const img = e.currentTarget as HTMLImageElement | null
   if (!img) return
+  // A new-style place photo whose thumbnail is missing: retry once with the full image.
+  const fullUrl = placeThumbFallbackUrl(img.src)
+  if (fullUrl && img.dataset.thumbFallback !== '1') {
+    img.dataset.thumbFallback = '1'
+    img.src = fullUrl
+    return
+  }
   img.onerror = null
   img.src = PLACEHOLDER
 }
