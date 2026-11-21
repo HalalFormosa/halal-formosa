@@ -682,6 +682,9 @@
     "showingPlace": "顯示 1 個地點",
     "results": "搜尋結果",
     "showingResults": "正在顯示 {total} 個地點中的 {count} 個",
+    "mapLoadFailed": "地圖無法載入，下方仍可瀏覽地點清單。",
+    "mapRetry": "重新載入地圖",
+    "slowConnection": "網路較慢，正在重試…",
     "noPlacesInView": "此地圖範圍內沒有其他地點，請移動或縮小地圖查看更多。",
     "details": {
       "title": "地點詳情",

@@ -11,8 +11,8 @@
  * conflated with the brand accent.
  */
 
-/* Inter — modern minimal grotesque */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+/* Inter — modern minimal grotesque. Loaded by a non-blocking <link> in
+   index.html (a cross-origin @import here would block first paint). */
 
 /* Hard guard against horizontal scroll/rubber-band: some mobile browsers
    compute the pannable area from any element's layout box, even ones
