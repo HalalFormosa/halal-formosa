@@ -297,10 +297,20 @@
       />
     </div>
 
+    <!-- Map failed to load or timed out (map view only; list view has its own banner) -->
+    <div v-if="mapLoadFailed && viewMode === 'map'" class="map-load-error" role="alert">
+      <p>{{ $t('explore.mapLoadFailed') }}</p>
+      <ion-button size="small" color="carrot" @click="retryMap">{{ $t('explore.mapRetry') }}</ion-button>
+    </div>
+
     <!-- 4. List View Overlay -->
     <transition name="fade-slide">
       <div v-if="viewMode === 'list'" class="list-view-overlay" :style="{ paddingTop: listPaddingTop }">
         <div class="list-container">
+          <div v-if="mapLoadFailed" class="map-load-error inline" role="alert">
+            <p>{{ $t('explore.mapLoadFailed') }}</p>
+            <ion-button size="small" color="carrot" @click="retryMap">{{ $t('explore.mapRetry') }}</ion-button>
+          </div>
           <div v-if="!isSmallScreen" class="list-header">
             <div class="list-sort-container">
               <ion-button
@@ -1268,6 +1278,31 @@ onUnmounted(() => {
   headerObserver = null
 })
 
+// Plain viewport box. Deliberately free of the `google` global so place data
+// can be fetched and listed before (or without) the Google Maps script.
+type MapBounds = { south: number; west: number; north: number; east: number }
+
+function toPlainBounds(b: google.maps.LatLngBounds): MapBounds {
+  const ne = b.getNorthEast()
+  const sw = b.getSouthWest()
+  return { south: sw.lat(), west: sw.lng(), north: ne.lat(), east: ne.lng() }
+}
+
+function padBounds(b: MapBounds, ratio: number): MapBounds {
+  const latPad = Math.abs(b.north - b.south) * ratio
+  const lngPad = Math.abs(b.east - b.west) * ratio
+  return { south: b.south - latPad, west: b.west - lngPad, north: b.north + latPad, east: b.east + lngPad }
+}
+
+function boundsContainPoint(b: MapBounds, p: { lat: number; lng: number }): boolean {
+  return p.lat >= b.south && p.lat <= b.north && p.lng >= b.west && p.lng <= b.east
+}
+
+function boundsContainBounds(outer: MapBounds, inner: MapBounds): boolean {
+  return inner.south >= outer.south && inner.north <= outer.north &&
+    inner.west >= outer.west && inner.east <= outer.east
+}
+
 const boundsFilteredLocations = computed(() => {
   const bounds = currentMapBounds.value
   if (!bounds) {
@@ -1275,22 +1310,13 @@ const boundsFilteredLocations = computed(() => {
   }
 
   // Filter by map bounds (with a 10% buffer for smooth scrolling feel)
-  const ne = bounds.getNorthEast()
-  const sw = bounds.getSouthWest()
-  const latDiff = Math.abs(ne.lat() - sw.lat())
-  const lngDiff = Math.abs(ne.lng() - sw.lng())
-  const buffer = 0.10 // 10% buffer
-
-  const extendedBounds = new google.maps.LatLngBounds(
-    { lat: sw.lat() - latDiff * buffer, lng: sw.lng() - lngDiff * buffer },
-    { lat: ne.lat() + latDiff * buffer, lng: ne.lng() + lngDiff * buffer }
-  )
+  const extendedBounds = padBounds(bounds, 0.10)
 
   // Gold partners bypass the viewport entirely (that's the whole point of
   // the city-wide radius fetch) — everything else still respects it so the
   // map and list stay in sync.
   return displayedLocations.value.filter(p =>
-    p.partner_tier?.toLowerCase() === 'gold' || extendedBounds.contains(p.position)
+    p.partner_tier?.toLowerCase() === 'gold' || boundsContainPoint(extendedBounds, p.position)
   )
 })
 
@@ -1400,6 +1426,8 @@ let isProgrammaticScroll = false
 /* Google Maps runtime objects */
 let mapInstance: google.maps.Map | null = null
 const mapReady = ref(false)
+const mapLoadFailed = ref(false)
+const MAP_LOAD_TIMEOUT_MS = 10000
 let advancedMarkerLib: typeof google.maps.marker | null = null
 let infoWindow: google.maps.InfoWindow | null = null
 let geocoder: google.maps.Geocoder | null = null
@@ -1414,7 +1442,7 @@ const pendingInfoWindowPlaceId = ref<number | null>(null)
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t
 const hasAutoSelected = ref(false)
 let clusterer: MarkerClusterer | null = null
-const currentMapBounds = ref<google.maps.LatLngBounds | null>(null)
+const currentMapBounds = ref<MapBounds | null>(null)
 let locationWatchId: string | null = null
 
 // Saved Locations State
@@ -2107,16 +2135,7 @@ const visibleMapLocations = computed(() => {
     return displayedLocations.value.slice(0, 25)
   }
 
-  const ne = bounds.getNorthEast()
-  const sw = bounds.getSouthWest()
-  const latDiff = Math.abs(ne.lat() - sw.lat())
-  const lngDiff = Math.abs(ne.lng() - sw.lng())
-  const buffer = 0.15 // 15% buffer
-
-  const extendedBounds = new google.maps.LatLngBounds(
-    { lat: sw.lat() - latDiff * buffer, lng: sw.lng() - lngDiff * buffer },
-    { lat: ne.lat() + latDiff * buffer, lng: ne.lng() + lngDiff * buffer }
-  )
+  const extendedBounds = padBounds(bounds, 0.15) // 15% buffer
 
   // Gold partners bypass the viewport here too (same rule as the list
   // view's boundsFilteredLocations) — otherwise whichever gold partner the
@@ -2129,7 +2148,7 @@ const visibleMapLocations = computed(() => {
   // places actually on screen.
   let outOfViewGoldKept = false
   let filtered = displayedLocations.value.filter(p => {
-    if (extendedBounds.contains(p.position)) return true
+    if (boundsContainPoint(extendedBounds, p.position)) return true
     if (p.partner_tier?.toLowerCase() !== 'gold' || outOfViewGoldKept) return false
     outOfViewGoldKept = true
     return true
@@ -2387,35 +2406,38 @@ const loadRole = async () => {
 }
 
 /* ---------------- Data ---------------- */
-const lastFetchedBounds = ref<google.maps.LatLngBounds | null>(null)
+const lastFetchedBounds = ref<MapBounds | null>(null)
 const wasLocationsCacheHit = ref(false)
+let locationsFetchSeq = 0
 
-const fetchLocations = async (mapBounds?: google.maps.LatLngBounds | null, force = false) => {
-  if (!mapInstance) return
+// Viewport guess used before the map exists: ~ the default-zoom view around the
+// user (or the default center). The 50% padding in fetchLocations covers drift.
+const initialDataBounds = (): MapBounds => {
+  const c = userLocation.value
+    ? { lat: userLocation.value.lat, lng: userLocation.value.lng }
+    : DEFAULT_CENTER
+  return { south: c.lat - 0.03, north: c.lat + 0.03, west: c.lng - 0.04, east: c.lng + 0.04 }
+}
 
-  const boundsToUse = mapBounds || mapInstance.getBounds()
+const fetchLocations = async (mapBounds?: MapBounds | null, force = false) => {
+  const boundsToUse = mapBounds || (mapInstance?.getBounds() ? toPlainBounds(mapInstance.getBounds()!) : null)
   if (!boundsToUse) {
     loadingPlaces.value = false
     return
   }
 
-  const ne = boundsToUse.getNorthEast()
-  const sw = boundsToUse.getSouthWest()
-  const latDiff = Math.abs(ne.lat() - sw.lat())
-  const lngDiff = Math.abs(ne.lng() - sw.lng())
-  const buffer = 0.50 // 50% buffer
-
-  const paddedSw = { lat: sw.lat() - latDiff * buffer, lng: sw.lng() - lngDiff * buffer }
-  const paddedNe = { lat: ne.lat() + latDiff * buffer, lng: ne.lng() + lngDiff * buffer }
-  const paddedBounds = new google.maps.LatLngBounds(paddedSw, paddedNe)
+  const paddedBounds = padBounds(boundsToUse, 0.50) // 50% buffer
+  const paddedSw = { lat: paddedBounds.south, lng: paddedBounds.west }
+  const paddedNe = { lat: paddedBounds.north, lng: paddedBounds.east }
 
   // Cache check: if not forcing, and new bounds are fully contained within lastFetchedBounds
-  if (!force && lastFetchedBounds.value && lastFetchedBounds.value.contains(ne) && lastFetchedBounds.value.contains(sw)) {
+  if (!force && lastFetchedBounds.value && boundsContainBounds(lastFetchedBounds.value, boundsToUse)) {
     wasLocationsCacheHit.value = true
     return
   }
   wasLocationsCacheHit.value = false
   loadingPlaces.value = true
+  const seq = ++locationsFetchSeq
 
   const { data, error } = await supabase
       .from('locations')
@@ -2444,6 +2466,9 @@ const fetchLocations = async (mapBounds?: google.maps.LatLngBounds | null, force
       .gte('lng', paddedSw.lng)
       .lte('lng', paddedNe.lng)
 
+  // A newer fetch started while this one was in flight (e.g. the early
+  // pre-map fetch vs. the map's first idle fetch): drop this stale response.
+  if (seq !== locationsFetchSeq) return
 
   if (!error && data) {
     //@ts-expect-error LocationRow
@@ -2504,7 +2529,7 @@ const fetchLocations = async (mapBounds?: google.maps.LatLngBounds | null, force
     notifyFetchError(error)
   }
 
-  initMarkers()
+  initMarkers() // no-op until the map exists; initMap() builds them on ready
   loadingPlaces.value = false
 }
 
@@ -2629,11 +2654,32 @@ const initMap = async () => {
   }
 
   loading.value = true
+  mapLoadFailed.value = false
 
-  const [{Map}, marker] = await Promise.all([
-    mapsLoader.importLibrary('maps'),
-    mapsLoader.importLibrary('marker')
-  ])
+  let Map: typeof google.maps.Map
+  let marker: google.maps.MarkerLibrary
+  let timeoutId: ReturnType<typeof setTimeout> | undefined
+  try {
+    // A dead or very slow connection must not leave the skeleton up forever.
+    const timeout = new Promise<never>((_, reject) => {
+      timeoutId = setTimeout(() => reject(new Error('Google Maps load timed out')), MAP_LOAD_TIMEOUT_MS)
+    })
+    const libs = await Promise.race([
+      Promise.all([mapsLoader.importLibrary('maps'), mapsLoader.importLibrary('marker')]),
+      timeout
+    ])
+    Map = libs[0].Map
+    marker = libs[1]
+  } catch (err) {
+    console.warn('[Map] Google Maps failed to load:', err)
+    loading.value = false
+    mapLoadFailed.value = true
+    viewMode.value = 'list' // places still load without the map
+    if (!locations.value.length) fetchLocations(initialDataBounds())
+    return
+  } finally {
+    clearTimeout(timeoutId)
+  }
   advancedMarkerLib = marker
 
   // Check for pre-existing fix to provide an "instant" map center
@@ -2694,8 +2740,9 @@ const initMap = async () => {
     if (idleTimeout) clearTimeout(idleTimeout);
     idleTimeout = setTimeout(() => {
       if (mapInstance) {
-        const bounds = mapInstance.getBounds()
-        currentMapBounds.value = bounds || null
+        const gBounds = mapInstance.getBounds()
+        const bounds = gBounds ? toPlainBounds(gBounds) : null
+        currentMapBounds.value = bounds
         if (bounds) {
           fetchLocations(bounds)
         }
@@ -2707,10 +2754,20 @@ const initMap = async () => {
   loading.value = false
   mapReady.value = true
 
-  if (mapInstance) {
-    fetchLocations(mapInstance.getBounds())
-  }
+  // Data may already be in `locations` from the early pre-map fetch: build
+  // its markers now, then fetch for the real viewport (a cache hit if the
+  // early box already covers it).
+  initMarkers()
+  // (Skip if bounds aren't ready yet: the first idle event fetches instead,
+  // and calling now would clear the loading state of an in-flight early fetch.)
+  if (mapInstance.getBounds()) fetchLocations(null)
   fetchPartnerLocationsInRadius()
+}
+
+const retryMap = () => {
+  mapLoadFailed.value = false
+  loading.value = true
+  initMap()
 }
 
 /**
@@ -3047,8 +3104,8 @@ const initCardObserver = () => {
   })
 }
 
-const centerOnUser = async () => {
-  await ActivityLogService.log("explore_center_user")
+const centerOnUser = () => {
+  void ActivityLogService.log("explore_center_user")
 
   if (!userLocation.value || !mapInstance) return
 
@@ -3562,7 +3619,12 @@ onMounted(async () => {
   // START GPS WATCH IMMEDIATELY (Non-blocking)
   startWatching()
 
-  await ActivityLogService.log("explore_page_open")
+  // Fire-and-forget: analytics must never delay the map (log() never throws).
+  void ActivityLogService.log("explore_page_open")
+
+  // Start the place query right away, in parallel with the (much heavier)
+  // Google Maps script, instead of waiting for the map's first idle event.
+  fetchLocations(initialDataBounds())
 
   // Parallelize basic data and map init
   initMap()
@@ -3684,9 +3746,8 @@ onIonViewWillEnter(async () => {
     return
   }
 
-  if (mapInstance) {
-    fetchLocations(mapInstance.getBounds())
-  }
+  // With no map (failed to load), fall back to the initial box.
+  fetchLocations(mapInstance ? null : initialDataBounds())
   await fetchLocationTypes()
   await fetchCampusPartners()
   await nextTick()
@@ -3812,6 +3873,34 @@ const openSaveModal = (place: Place) => {
   inset: 0;
   z-index: 5;
   pointer-events: none;
+}
+
+/* Shown when Google Maps fails to load / times out */
+.map-load-error {
+  position: fixed;
+  left: 16px;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px;
+  border-radius: 12px;
+  text-align: center;
+  background: var(--ion-background-color, #fff);
+  color: var(--ion-text-color, #222);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.18);
+}
+.map-load-error p { margin: 0; font-size: 14px; }
+.map-load-error.inline {
+  position: static;
+  transform: none;
+  margin: 8px 0 12px;
+  box-shadow: none;
+  border: 1px solid var(--ion-border-color, rgba(0, 0, 0, 0.12));
 }
 
 

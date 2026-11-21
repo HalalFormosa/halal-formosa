@@ -732,6 +732,8 @@
     "results": "Results",
     "showResults": "Show {count} results",
     "showingResults": "Showing {count} of {total} locations",
+    "mapLoadFailed": "The map couldn't load. Places are still listed below.",
+    "mapRetry": "Retry map",
     "noPlacesInView": "No other places in this map area. Pan or zoom out to see more.",
     "loadingMoreLocations": "Loading more locations...",
     "details": {
