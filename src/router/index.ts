@@ -27,7 +27,6 @@ import {
 // Preload SearchView in the background
 import SearchView from '@/views/search/SearchView.vue';
 import ExploreView from '@/views/explore/ExploreView.vue';
-import ScanIngredientsView from '@/views/scan/ScanIngredientsView.vue';
 import { requestYearlySurveyFlow } from '@/composables/useYearlySurvey';
 import { defaultScanMethod } from '@/composables/useDefaultScanMethod';
 import { isLiveVerdictSupported } from '@/utils/liveScanPlatform';
@@ -242,7 +241,7 @@ const routes: Array<RouteRecordRaw> = [
 
     { 
       path: '/scan', 
-      component: ScanIngredientsView, 
+      component: () => import('@/views/scan/ScanIngredientsView.vue'),
       // "Remember my choice": Auto Capture and Live Scan are their own screens, so go straight there
       // instead of opening this page first and forwarding from it (that flashed the picker).
       // Camera and Gallery are actions on this page, so they still open it. Moving between scan
