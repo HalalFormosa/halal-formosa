@@ -1078,6 +1078,28 @@ function resolveActivityGroup(activity: string): string | null {
     }
 }
 
+/** One activity_log row. Shared by log() and logMany() so both store identical fields. */
+function buildRow(activity: string, detail: any, userId: string | null, session_id: string) {
+    const { entity_type, entity_id } = resolveEntity(activity, detail)
+
+    const skipWarn = activity === 'add_product_start' || activity === 'add_product_ocr_start'; if (entity_type && !entity_id && !skipWarn) {
+        console.warn(
+            `[ActivityLogService] Missing entity_id for activity "${activity}"`,
+            detail
+        )
+    }
+
+    return {
+        user_id: userId,
+        session_id,
+        activity_type: activity,
+        activity_group: resolveActivityGroup(activity),
+        activity_detail: detail,
+        entity_type,
+        entity_id
+    }
+}
+
 /* -------------------------
    Service
 -------------------------- */
@@ -1103,26 +1125,7 @@ export class ActivityLogService {
         const userId = await currentUserId()
         const session_id = SessionService.getSessionId()
 
-        const { entity_type, entity_id } = resolveEntity(activity, detail)
-
-        const skipWarn = activity === 'add_product_start' || activity === 'add_product_ocr_start'; if (entity_type && !entity_id && !skipWarn) {
-            console.warn(
-                `[ActivityLogService] Missing entity_id for activity "${activity}"`,
-                detail
-            )
-        }
-
-        const activity_group = resolveActivityGroup(activity)
-
-        const payload = {
-            user_id: userId,
-            session_id,
-            activity_type: activity,
-            activity_group,
-            activity_detail: detail,
-            entity_type,
-            entity_id
-        }
+        const payload = buildRow(activity, detail, userId, session_id)
 
         const { error } = await supabase
             .from('activity_log')
@@ -1138,6 +1141,42 @@ export class ActivityLogService {
             // wait on a full mission re-check + potential award/celebration
             // round-trip.
             useDailyMissions().fetchProgress()
+        }
+    }
+
+    /**
+     * Logs many events of the SAME activity in one INSERT (one HTTP request, one session lookup)
+     * instead of one request per event — e.g. a burst of explore_place_impression rows. Each row is
+     * built by exactly the same code as log(), so the stored fields are identical. Like log(), it is
+     * best-effort and never throws.
+     */
+    static async logMany(activity: string, details: any[]) {
+        try {
+            await ActivityLogService.writeMany(activity, details)
+        } catch (err) {
+            console.warn('[ActivityLogService] logMany skipped:', err)
+        }
+    }
+
+    private static async writeMany(activity: string, details: any[]) {
+        if (!ACTIVITY_LOG_ENABLED || !details.length) return
+
+        const userId = await currentUserId()
+        const session_id = SessionService.getSessionId()
+
+        const rows = details.map(detail => buildRow(activity, detail, userId, session_id))
+
+        const { error } = await supabase
+            .from('activity_log')
+            .insert(rows)
+
+        if (error) {
+            console.error('[ActivityLogService] Batch insert error:', error)
+            return
+        }
+
+        if (userId && MISSION_ACTIVITY_TYPES.has(activity)) {
+            useDailyMissions().fetchProgress() // once per batch, not once per row
         }
     }
 }

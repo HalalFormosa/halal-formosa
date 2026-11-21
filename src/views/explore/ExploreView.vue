@@ -1334,13 +1334,15 @@ function scheduleImpressionLog() {
   if (impressionTimer) clearTimeout(impressionTimer)
   impressionTimer = setTimeout(() => {
     const q = searchQuery.value?.trim() || null
-    let logged = 0
+    const burst: { id: number; q: string | null }[] = []
     for (const p of listLocations.value) {
       if (impressedThisSession.has(p.id)) continue
       impressedThisSession.add(p.id)
-      ActivityLogService.log('explore_place_impression', { id: p.id, q })
-      if (++logged >= 30) break // cap burst size
+      burst.push({ id: p.id, q })
+      if (burst.length >= 30) break // cap burst size
     }
+    // One INSERT for the whole burst (was one HTTP request per place).
+    if (burst.length) void ActivityLogService.logMany('explore_place_impression', burst)
   }, 1500)
 }
 // NOTE: watch(listLocations, ...) is registered in onMounted (see below), not here.

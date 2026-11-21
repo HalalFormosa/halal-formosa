@@ -158,6 +158,80 @@ describe('ActivityLogService', () => {
         consoleErrorSpy.mockRestore()
     })
 
+    describe('logMany (batched inserts)', () => {
+        const details = [{ id: 1, q: 'tofu' }, { id: 2, q: 'tofu' }, { id: 3, q: null }]
+
+        it('sends one insert and one session lookup for the whole batch', async () => {
+            const insertMock = vi.fn().mockResolvedValue({ data: null, error: null })
+            vi.mocked(supabase.from).mockReturnValue({ insert: insertMock } as any)
+
+            await ActivityLogService.logMany('explore_place_impression', details)
+
+            expect(supabase.from).toHaveBeenCalledTimes(1)
+            expect(insertMock).toHaveBeenCalledTimes(1)
+            expect(supabase.auth.getSession).toHaveBeenCalledTimes(1)
+            expect(insertMock.mock.calls[0][0]).toHaveLength(3)
+        })
+
+        it('stores rows identical to what single log() produces for each detail', async () => {
+            const singleMock = vi.fn().mockResolvedValue({ data: null, error: null })
+            vi.mocked(supabase.from).mockReturnValue({ insert: singleMock } as any)
+            for (const d of details) await ActivityLogService.log('explore_place_impression', d)
+            const singleRows = singleMock.mock.calls.map(c => c[0])
+
+            const batchMock = vi.fn().mockResolvedValue({ data: null, error: null })
+            vi.mocked(supabase.from).mockReturnValue({ insert: batchMock } as any)
+            await ActivityLogService.logMany('explore_place_impression', details)
+
+            expect(batchMock.mock.calls[0][0]).toEqual(singleRows)
+            expect(batchMock.mock.calls[0][0][0]).toEqual({
+                user_id: 'mock-user-id',
+                session_id: 'mock-session-id',
+                activity_type: 'explore_place_impression',
+                activity_group: 'explore',
+                activity_detail: { id: 1, q: 'tofu' },
+                entity_type: 'place',
+                entity_id: '1'
+            })
+        })
+
+        it('does nothing for an empty batch', async () => {
+            const insertMock = vi.fn()
+            vi.mocked(supabase.from).mockReturnValue({ insert: insertMock } as any)
+
+            await ActivityLogService.logMany('explore_place_impression', [])
+
+            expect(insertMock).not.toHaveBeenCalled()
+            expect(supabase.auth.getSession).not.toHaveBeenCalled()
+        })
+
+        it('logs as anonymous (null user_id) for every row when there is no session', async () => {
+            vi.mocked(supabase.auth.getSession).mockResolvedValueOnce({ data: { session: null }, error: null } as any)
+            const insertMock = vi.fn().mockResolvedValue({ data: null, error: null })
+            vi.mocked(supabase.from).mockReturnValue({ insert: insertMock } as any)
+
+            await ActivityLogService.logMany('explore_place_impression', details)
+
+            expect(insertMock.mock.calls[0][0].every((r: any) => r.user_id === null)).toBe(true)
+        })
+
+        it('never throws into the caller, whether the call rejects or returns an error', async () => {
+            const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+            const err = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+            vi.mocked(supabase.from).mockReturnValue({ insert: vi.fn().mockRejectedValue(new Error('down')) } as any)
+            await expect(ActivityLogService.logMany('explore_place_impression', details)).resolves.toBeUndefined()
+            expect(warn).toHaveBeenCalled()
+
+            vi.mocked(supabase.from).mockReturnValue({ insert: vi.fn().mockResolvedValue({ data: null, error: { message: 'x' } }) } as any)
+            await expect(ActivityLogService.logMany('explore_place_impression', details)).resolves.toBeUndefined()
+            expect(err).toHaveBeenCalled()
+
+            warn.mockRestore()
+            err.mockRestore()
+        })
+    })
+
     describe('business claim funnel events', () => {
         it.each([
             'business_claim_start',
