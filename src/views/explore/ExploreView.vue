@@ -2431,7 +2431,8 @@ const loadRole = async () => {
 /* ---------------- Data ---------------- */
 const lastFetchedBounds = ref<MapBounds | null>(null)
 const wasLocationsCacheHit = ref(false)
-let locationsFetchSeq = 0
+let locationsFetchSeq = 0   // id of the latest fetch started
+let appliedFetchSeq = 0     // id of the latest fetch whose response was applied
 
 // Viewport guess used before the map exists: ~ the default-zoom view around the
 // user (or the default center). The 50% padding in fetchLocations covers drift.
@@ -2544,11 +2545,14 @@ const fetchLocations = async (mapBounds?: MapBounds | null, force = false) => {
     {onRetry: notifySlowConnection}
   )
 
-  // A newer fetch started while this one was in flight (e.g. the early
-  // pre-map fetch vs. the map's first idle fetch): drop this stale response.
-  if (seq !== locationsFetchSeq) return
+  // Out-of-order guard: drop this response only if a NEWER fetch's response has
+  // already been applied. A merely newer fetch still in flight must not discard
+  // it — the early pre-map fetch usually returns before the map's own first
+  // fetch does, and showing its places immediately is the whole point.
+  if (seq < appliedFetchSeq) return
 
   if (!error && data) {
+    appliedFetchSeq = seq
     const typedData = data as unknown as LocationRow[]
 
     const mapped = typedData.map((loc: any) => {
