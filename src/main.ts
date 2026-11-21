@@ -52,6 +52,7 @@ import { ActivityLogService } from '@/services/ActivityLogService'
 import { refreshSubscriptionStatus, isDonor } from "@/composables/useSubscriptionStatus";
 import { deepLinkToPath } from '@/utils/urlHost';
 import { hideSplash } from '@/utils/splash';
+import { installChunkReload } from '@/utils/chunkReload';
 
 defineCustomElements(window)
 
@@ -87,6 +88,9 @@ document.documentElement.dir = ['ar', 'ur'].includes(initialLang) ? 'rtl' : 'ltr
 
 /* Create app */
 const app = createApp(App).use(IonicVue).use(router).use(i18n)
+
+// Reload once when a new deploy has removed the chunks this tab still references
+installChunkReload(router)
 
 // Report uncaught errors (Vue, window, unhandled rejections) as client_error events
 installClientErrorReporting(app, () => screenPattern(router.currentRoute.value))

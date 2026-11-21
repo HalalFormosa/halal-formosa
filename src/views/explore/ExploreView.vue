@@ -3745,22 +3745,18 @@ onMounted(async () => {
 })
 
 const processUrlParams = () => {
+  const consumed: string[] = []
   const focusId = Number(router.currentRoute.value.query.focus)
   if (focusId) {
     const p = locations.value.find(l => l.id === focusId)
     if (p) selectPlace(p)
-
-    const query = { ...router.currentRoute.value.query }
-    delete query.focus
-    router.replace({ query })
+    consumed.push('focus')
   }
 
   const tagParam = router.currentRoute.value.query.tag as string
   if (tagParam) {
     activeTag.value = tagParam
-    const query = { ...router.currentRoute.value.query }
-    delete query.tag
-    router.replace({ query })
+    consumed.push('tag')
   }
 
   const typeParam = router.currentRoute.value.query.type as string
@@ -3769,8 +3765,15 @@ const processUrlParams = () => {
     if (cat) {
       activeCategoryIds.value = [cat.id]
     }
+    consumed.push('type')
+  }
+
+  // Strip every consumed param in ONE replace. Back-to-back router.replace calls
+  // during the enter transition leave Ionic's outlet looking up a route that has
+  // already been superseded (TypeError on ionPageElement / pushedByRoute).
+  if (consumed.length) {
     const query = { ...router.currentRoute.value.query }
-    delete query.type
+    for (const key of consumed) delete query[key]
     router.replace({ query })
   }
 }

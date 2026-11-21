@@ -1212,7 +1212,15 @@ const initMap = async () => {
 
   advancedMarkerLib = markerLib
 
-  map = new Map(document.getElementById('add-map') as HTMLElement, {
+  // Look the container up AFTER the awaits: if the user left the step/page while the
+  // library loaded, #add-map is gone and new Map(null) throws InvalidValueError.
+  const mapEl = document.getElementById('add-map')
+  if (!mapEl) {
+    mapLoading.value = false
+    return
+  }
+
+  map = new Map(mapEl, {
     center: {lat: form.value.lat, lng: form.value.lng},
     zoom: 14,
     disableDefaultUI: true,
@@ -1287,9 +1295,10 @@ const initMap = async () => {
     map!.panTo({lat, lng})
 
     // add a quick "pop" animation for feedback
-    if (pinEl?.element) {
-      pinEl.element.classList.add('marker-pop')
-      setTimeout(() => pinEl.element.classList.remove('marker-pop'), 220)
+    const popEl = pinEl?.element
+    if (popEl) {
+      popEl.classList.add('marker-pop')
+      setTimeout(() => popEl.classList.remove('marker-pop'), 220)
     }
 
     if (!firstTapDone) {

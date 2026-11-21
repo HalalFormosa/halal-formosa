@@ -92,12 +92,17 @@ const emit = defineEmits<{ close: []; saved: [] }>()
 
 const { settings, update, MAX_TUNE_MINUTES } = usePrayerSettings()
 
-const draft = reactive<PrayerSettings>(structuredClone(defaultPrayerSettings()))
+// Settings are plain JSON (save() already round-trips them), so a JSON clone is
+// enough. structuredClone is missing on older WebViews (Safari < 15.4,
+// Chromium < 98) and threw at setup, breaking /home.
+const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v))
+
+const draft = reactive<PrayerSettings>(clone(defaultPrayerSettings()))
 
 // Re-seed the draft from the saved settings each time the sheet opens, so
 // cancelled edits never leak into the next open.
 watch(() => props.isOpen, (open) => {
-  if (open) Object.assign(draft, structuredClone(JSON.parse(JSON.stringify(settings.value))))
+  if (open) Object.assign(draft, clone(settings.value))
 })
 
 function formatTune(n: number) {
@@ -105,7 +110,7 @@ function formatTune(n: number) {
 }
 
 function resetDraft() {
-  Object.assign(draft, structuredClone(defaultPrayerSettings()))
+  Object.assign(draft, clone(defaultPrayerSettings()))
 }
 
 function save() {
