@@ -159,14 +159,25 @@ export default function useSharePlace() {
                 })
             } else {
                 // Clipboard fallback
-                await Clipboard.write({ string: text })
-                alert('📋 Copied place info to clipboard!')
+                await copyText(text)
             }
         } catch (err) {
+            // The user dismissing the share sheet is not a failure; don't copy behind their back.
+            if (err instanceof DOMException && err.name === 'AbortError') return
             console.error('Share failed', err)
             // Always ensure text fallback works if something goes wrong
+            await copyText(text)
+        }
+    }
+
+    /** Copy text and confirm. The web Clipboard API rejects (NotAllowedError, e.g. "Document is
+     *  not focused") when the page lost focus, so a failed copy must never become an unhandled error. */
+    async function copyText(text: string) {
+        try {
             await Clipboard.write({ string: text })
             alert('📋 Copied place info to clipboard!')
+        } catch (err) {
+            console.warn('Clipboard copy failed', err)
         }
     }
 
