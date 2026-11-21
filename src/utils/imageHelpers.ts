@@ -77,6 +77,29 @@ export function getOptimizedImageUrl(
     return `${transformed}${separator}width=${width}&height=${height}&resize=${resize}&quality=${quality}`
 }
 
+// ---- Place (Explore card) images -------------------------------------------------------
+// New place photos are uploaded as <name>_full.jpg plus a small <name>_thumb.jpg beside it
+// (see uploadPlaceCardThumb). Cards load the thumbnail. Photos uploaded before this change
+// have no "_full" marker, so they pass through untouched — no 404s, no transform billing.
+const PLACE_FULL_RE = /\/location-image\/.+_full\.jpg(\?|$)/
+const PLACE_THUMB_RE = /\/location-image\/.+_thumb\.jpg(\?|$)/
+
+/** Storage path of the thumbnail that belongs to a `..._full.jpg` path, or null if it isn't one. */
+export function placeThumbPath(fullPath: string): string | null {
+    return /_full\.jpg$/.test(fullPath) ? fullPath.replace(/_full\.jpg$/, '_thumb.jpg') : null
+}
+
+/** URL to show on a card: the stored thumbnail for new uploads, the original URL otherwise. */
+export function getPlaceCardImage(url: string | undefined | null): string | undefined | null {
+    if (!url || !PLACE_FULL_RE.test(url)) return url
+    return url.replace(/_full\.jpg(\?|$)/, '_thumb.jpg$1')
+}
+
+/** If a card's thumbnail failed to load, the full-size URL to retry with (else null). */
+export function placeThumbFallbackUrl(src: string): string | null {
+    return PLACE_THUMB_RE.test(src) ? src.replace(/_thumb\.jpg(\?|$)/, '_full.jpg$1') : null
+}
+
 // If a product's stored thumbnail is missing (front_thumb.jpg 404s), retry once with the
 // original front.jpg so the card shows the photo instead of broken-image alt text.
 export function onProductImageError(event: Event): void {

@@ -4,6 +4,8 @@ const config: CapacitorConfig = {
   appId: 'com.rcreative.halalformosa',
   appName: 'Halal Formosa',
   webDir: 'dist',
+  // White behind the WebView (matches the launch splash) so nothing flashes before the web splash paints.
+  backgroundColor: '#FFFFFF',
   server: {
     androidScheme: 'https',
   },

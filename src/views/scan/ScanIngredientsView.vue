@@ -311,6 +311,7 @@
       </div>
 
       <!-- 🔬 STEP 2: Results -->
+      <transition name="results-in">
       <div v-show="currentStep === STEP_RESULTS" class="step-content">
         <div class="form-section">
           <!-- Cropped Image Preview -->
@@ -547,6 +548,7 @@
           </ion-button>
         </div>
       </div>
+      </transition>
 
       <!-- 🎨 Premium Cropper Modal -->
       <ion-modal :is-open="showCropper" @didDismiss="closeCropper">
@@ -576,8 +578,16 @@
           
           <!-- Full-screen loading overlay inside the cropper modal -->
           <div v-if="ocrLoading" class="ocr-overlay">
-            <ion-progress-bar :value="progress" color="carrot" class="ocr-progress" />
-            <p class="ocr-progress-text">{{ progressLabel }}</p>
+            <ScanProgressCard
+              ref="scanCardRef"
+              :image-url="croppedPreviewUrl"
+              :progress="progress"
+              :words="ocrWords"
+              :image-width="ocrImageWidth"
+              :image-height="ocrImageHeight"
+              :ingredients="scanIngredientNames"
+              :known-count="allHighlights.length"
+            />
 
             <div v-if="loadingReflection" class="reflection-box">
               <p v-if="loadingReflection.text_ar" class="reflection-ar">{{ loadingReflection.text_ar }}</p>
@@ -617,8 +627,7 @@
               @click="handleConfirmCrop" 
               style="font-weight: 700; height: 48px;"
             >
-               <ion-spinner v-if="ocrLoading" name="crescent" style="zoom: 0.6; margin-right: 8px;"></ion-spinner>
-               {{ ocrLoading ? 'Processing...' : $t('scanIngredients.scan.done') }}
+               {{ $t('scanIngredients.scan.done') }}
             </ion-button>
           </ion-toolbar>
         </ion-footer>
@@ -762,6 +771,7 @@ import IngredientHighlightImage from '@/components/scan/IngredientHighlightImage
 import ScanDecisionPrompt from '@/components/ScanDecisionPrompt.vue'
 import LiveVerdictHelpModal from '@/components/scan/LiveVerdictHelpModal.vue'
 import ScanLimitSheet from '@/components/scan/ScanLimitSheet.vue'
+import ScanProgressCard from '@/components/scan/ScanProgressCard.vue'
 import AiExplanationTeaser from '@/components/scan/AiExplanationTeaser.vue'
 import { canEarnMoreScans } from '@/services/ScanLimitService'
 import { buildScanDecisionNotice, type ScanDecisionChoice } from '@/utils/scanDecisionNotice'
@@ -1238,6 +1248,9 @@ const {
 } = useHighlightCache()
 
 /** ---------- Cropper OCR pipeline ---------- */
+// The scan card paces itself so a fast scan is still seen; the pipeline waits on it
+const scanCardRef = ref<{ whenDone: () => Promise<void> } | null>(null)
+
 const {
   reset,
   cropperRef,
@@ -1249,6 +1262,7 @@ const {
   onCropperReady,
   autoProcess,
   confirmCrop,
+  closeScanOverlay,
   closeCropper,
   recrop,
   showOk,
@@ -1265,7 +1279,8 @@ const {
   stencilProps,
   setAspectRatio,
   ocrImageWidth,
-  ocrImageHeight
+  ocrImageHeight,
+  ocrWords
 } = useCropperOcr({
   allHighlights,
   blacklistPatterns,
@@ -1273,6 +1288,7 @@ const {
   incrementUsageCount,
   setError,
   t,
+  waitForAnimation: () => scanCardRef.value?.whenDone() ?? Promise.resolve(),
 })
 
 const dangerousHighlights = computed(() =>
@@ -1526,6 +1542,15 @@ const { shareResult } = useShareCard(
     ingredientHighlights, ingredientsTextZh
 )
 
+// Ingredient names shown one by one in the scan card's "checking" step
+const scanIngredientNames = computed(() =>
+  (ingredientsText.value || '')
+    .split(/[,;，、]/)
+    .map((s: string) => s.replace(/\(.*?\)/g, '').trim())
+    .filter((s: string) => s.length > 1 && s.length < 40)
+    .slice(0, 30)
+)
+
 function onShareClick() {
   ActivityLogService.log('scan_result_share', { product_name: productName.value, status: autoStatus.value })
   shareResult(originalFile)
@@ -1552,8 +1577,9 @@ async function handleConfirmCrop() {
 
     const reflectionStart = Date.now()
 
-    await confirmCrop()
-    isMovingToResults.value = true // ⚡ Show transition loader immediately after OCR finishes
+    // Keep the scan animation (finished check + reflection) on screen until the
+    // results are ready, so it is the only loading indicator in this flow.
+    await confirmCrop({ keepOverlay: true })
 
     // 🕊 Ensure reflection shown minimum 3 seconds
     const reflectionElapsed = Date.now() - reflectionStart
@@ -1596,8 +1622,11 @@ async function handleConfirmCrop() {
 
       await loadTodayScanCount()
       isMovingToResults.value = false
+      // Results are ready: bring them in underneath first, then slide the scan
+      // card away so it reads as one continuous handoff
       decisionPromptKey.value++
       nextStep()
+      closeScanOverlay(true)
 
       // 🔍 Proactively check if product exists in database by name
       productFoundInDb.value = null
@@ -1629,6 +1658,7 @@ async function handleConfirmCrop() {
 
     } else {
       console.warn('🚫 OCR text found but no ingredient section detected, skipping log')
+      closeScanOverlay(true)
       showScanFailure('empty')
       ActivityLogService.log("scan_ingredients_error", {
         error: "no_ingredients_detected",
@@ -1639,6 +1669,7 @@ async function handleConfirmCrop() {
 
   } catch (err: any) {
 
+    closeScanOverlay(true)
     showScanFailure(isNetworkError(err) ? 'offline' : 'error')
 
     await ActivityLogService.log("scan_ingredients_error", {
@@ -1654,6 +1685,9 @@ async function handleConfirmCrop() {
     })
 
     await loadTodayScanCount()
+  } finally {
+    // Safety net: never leave the overlay stuck open
+    closeScanOverlay(true)
   }
 }
 
@@ -2315,19 +2349,32 @@ onUnmounted(() => {
   margin-bottom: 0;
 }
 
+/* Results fade up as the scan card slides away, instead of snapping in */
+.results-in-enter-active {
+  transition: opacity 0.5s ease, transform 0.55s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.results-in-enter-from {
+  opacity: 0;
+  transform: translateY(20px);
+}
+@media (prefers-reduced-motion: reduce) {
+  .results-in-enter-active { transition: none; }
+}
+
 /* 🔹 OCR Loading Overlay */
 .ocr-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(8px);
+  background: rgba(var(--ion-background-color-rgb, 247, 247, 248), 0.94);
+  backdrop-filter: blur(10px);
   z-index: 9999;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  padding: 30px;
-  color: white;
+  padding: 20px;
+  overflow-y: auto;
+  color: var(--ion-text-color);
   text-align: center;
 }
 

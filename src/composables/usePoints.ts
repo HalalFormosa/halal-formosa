@@ -5,7 +5,6 @@ import { openReward, closeReward } from "@/composables/useRewardOverlay";
 import { useAchievements } from "@/composables/useAchievements";
 import { i18n } from "@/i18n";
 import confetti from "canvas-confetti";
-import lottie from "lottie-web";
 import { Capacitor } from "@capacitor/core";
 import { ActivityLogService } from "@/services/ActivityLogService";
 import { getLevelFromPoints } from "@/utils/xp";
@@ -32,26 +31,29 @@ const fallbackRules: Record<string, { points: number; label: string }> = {
 // 🎉 Confetti helper
 function fireConfetti() {
     if (Capacitor.isNativePlatform()) {
-        // 👉 Use Lottie for native
-        const container = document.createElement("div");
-        container.style.position = "fixed";
-        container.style.top = "0";
-        container.style.left = "0";
-        container.style.width = "100%";
-        container.style.height = "100%";
-        container.style.pointerEvents = "none";
-        container.style.zIndex = "9999";
-        document.body.appendChild(container);
+        // 👉 Use Lottie for native. lottie-web is large and only needed here, so it is
+        // loaded on demand instead of being part of the main bundle.
+        import("lottie-web").then(({ default: lottie }) => {
+            const container = document.createElement("div");
+            container.style.position = "fixed";
+            container.style.top = "0";
+            container.style.left = "0";
+            container.style.width = "100%";
+            container.style.height = "100%";
+            container.style.pointerEvents = "none";
+            container.style.zIndex = "9999";
+            document.body.appendChild(container);
 
-        lottie.loadAnimation({
-            container,
-            renderer: "svg",
-            loop: false,
-            autoplay: true,
-            path: "/lottie/Confetti.json",
-        });
+            lottie.loadAnimation({
+                container,
+                renderer: "svg",
+                loop: false,
+                autoplay: true,
+                path: "/lottie/Confetti.json",
+            });
 
-        setTimeout(() => container.remove(), 10000);
+            setTimeout(() => container.remove(), 10000);
+        }).catch((err) => console.warn("[confetti] lottie failed to load:", err));
         return;
     }
 

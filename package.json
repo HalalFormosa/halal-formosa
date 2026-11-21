@@ -2,7 +2,7 @@
   "name": "halal-formosa",
   "private": true,
   "license": "SEE LICENSE IN LICENSE",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "type": "module",
   "scripts": {
     "dev": "vite --mode development",

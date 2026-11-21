@@ -751,6 +751,16 @@
       "finalizing": "Finalizing...",
       "failed": "Failed"
     },
+    "scanProgress": {
+      "s1": { "title": "Mengunggah foto", "sub": "Mengirim label yang dipotong untuk dianalisis" },
+      "s2": { "title": "Membaca label", "sub": "Memindai gambar dan mengambil teksnya" },
+      "s3": { "title": "Memahami teks", "sub": "Membersihkan dan menerjemahkan bahan" },
+      "s4": {
+        "title": "Memeriksa bahan",
+        "sub": "Mencocokkan teks dengan bahan yang dikenal",
+        "subCount": "Mencocokkan teks dengan {count} bahan yang dikenal"
+      }
+    },
     "failure": {
       "title": "Kami tidak bisa membaca label ini",
       "empty": "Daftar bahan tidak ditemukan pada foto itu.",
