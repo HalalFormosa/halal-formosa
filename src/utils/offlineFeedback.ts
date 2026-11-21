@@ -7,10 +7,25 @@ import { isDeviceOnline } from '@/utils/connectivity'
 export function isNetworkError(err: { message?: string } | null | undefined): boolean {
     if (!isDeviceOnline()) return true
     const msg = err?.message?.toLowerCase() || ''
-    return msg.includes('failed to fetch') || msg.includes('networkerror') || msg.includes('load failed')
+    return msg.includes('failed to fetch') || msg.includes('networkerror') || msg.includes('load failed') || msg.includes('timed out')
 }
 
 let lastToastAt = 0
+let lastSlowToastAt = 0
+
+/** Brief hint while a stalled request is being retried (throttled). */
+export async function notifySlowConnection() {
+    const now = Date.now()
+    if (now - lastSlowToastAt < 15000) return
+    lastSlowToastAt = now
+    const toast = await toastController.create({
+        message: i18n.global.t('explore.slowConnection'),
+        duration: 2500,
+        color: 'medium',
+        position: 'bottom',
+    })
+    await toast.present()
+}
 
 /** Shows a plain-language toast for a failed fetch instead of a raw error
  *  message, throttled so a retry loop can't spam the user with duplicates. */

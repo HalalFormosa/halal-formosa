@@ -602,6 +602,7 @@
     "showingResults": "显示{count}个位置，共{total}个位置",
     "mapLoadFailed": "地图无法加载，下方仍可浏览地点列表。",
     "mapRetry": "重新加载地图",
+    "slowConnection": "网络较慢，正在重试…",
     "loadingMoreLocations": "正在加载更多地点...",
     "details": {
       "title": "地点详情",

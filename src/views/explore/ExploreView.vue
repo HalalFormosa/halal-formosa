@@ -1034,7 +1034,9 @@ import { failedAdSpaceId } from '@/composables/useAdFallback'
 import {Geolocation} from '@capacitor/geolocation'
 import { StatusBar, Style } from '@capacitor/status-bar'
 import {supabase} from '@/plugins/supabaseClient'
-import {notifyFetchError} from '@/utils/offlineFeedback'
+import {notifyFetchError, notifySlowConnection} from '@/utils/offlineFeedback'
+import {withTimeoutRetry} from '@/utils/requestTimeout'
+import {exploreAreaKey, loadExploreCache, saveExploreCache} from '@/utils/exploreCache'
 import { delayForHuman } from '@/utils/interactionShield'
 import { useRecaptcha } from '@/composables/useRecaptcha'
 
@@ -1613,18 +1615,29 @@ watch([userLocation, mapReady], ([newLoc, isReady]) => {
 }, { immediate: true })
 
 
-const fetchLocationTypes = async () => {
-  if (locationTypes.value.length > 0) return
-  loadingCategories.value = true
+// Categories shown from the local cache are refreshed once from the network.
+let typesFromCache = false
 
-  const {data, error} = await supabase
+const fetchLocationTypes = async () => {
+  if (locationTypes.value.length > 0 && !typesFromCache) return
+  if (!typesFromCache) loadingCategories.value = true
+
+  const {data, error} = await withTimeoutRetry<LocationType[]>((signal) =>
+    supabase
       .from('location_types')
       .select('id, name, color, emoji, icon, icon_url')
       .eq('is_active', true)
       .order('sort_order', {ascending: true})
       .order('name', {ascending: true})
+      .abortSignal(signal) as any,
+    {onRetry: notifySlowConnection}
+  )
 
-  if (!error && data) locationTypes.value = data
+  if (!error && data) {
+    locationTypes.value = data
+    typesFromCache = false
+    saveExploreCache('location_types', data)
+  }
 
   loadingCategories.value = false
 }
@@ -2419,6 +2432,56 @@ const initialDataBounds = (): MapBounds => {
   return { south: c.lat - 0.03, north: c.lat + 0.03, west: c.lng - 0.04, east: c.lng + 0.04 }
 }
 
+// ---- Local cache of the user's home-area places (stale-while-revalidate) ----
+const PLACES_CACHE_KEY = 'locations'
+const PLACES_CACHE_MAX_ROWS = 150
+const showingCachedPlaces = ref(false)
+
+const homeCenter = () => {
+  const b = initialDataBounds()
+  return { lat: (b.south + b.north) / 2, lng: (b.west + b.east) / 2 }
+}
+
+function persistPlacesCache(places: Place[], covered: MapBounds) {
+  const c = homeCenter()
+  // Only cache fetches that cover the user's home area, so panning elsewhere
+  // doesn't replace the first-paint data with some unrelated region.
+  if (!boundsContainPoint(covered, c)) return
+  const dist = (p: Place) => (p.position.lat - c.lat) ** 2 + (p.position.lng - c.lng) ** 2
+  const slim = [...places]
+    .sort((a, b) => dist(a) - dist(b))
+    .slice(0, PLACES_CACHE_MAX_ROWS)
+    .map(p => {
+      // isOpen / createdFromNow are recomputed on load, so don't store them
+      const rest: Place = { ...p }
+      delete rest.isOpen
+      delete rest.createdFromNow
+      return rest
+    })
+  saveExploreCache(PLACES_CACHE_KEY, slim, exploreAreaKey(c.lat, c.lng))
+}
+
+/** Render last session's places/categories immediately; fresh fetches replace them. */
+function hydrateFromCache() {
+  const c = homeCenter()
+  const cachedPlaces = loadExploreCache<Place[]>(PLACES_CACHE_KEY, { area: exploreAreaKey(c.lat, c.lng) })
+  if (cachedPlaces?.length && !locations.value.length) {
+    locations.value = cachedPlaces.map(p => ({
+      ...p,
+      isOpen: calculateIsOpenStatus(p),
+      createdFromNow: fromNowToTaipei(p.created_at)
+    }))
+    showingCachedPlaces.value = true
+    loadingPlaces.value = false
+  }
+  const cachedTypes = loadExploreCache<LocationType[]>('location_types')
+  if (cachedTypes?.length && !locationTypes.value.length) {
+    locationTypes.value = cachedTypes
+    typesFromCache = true
+    loadingCategories.value = false
+  }
+}
+
 const fetchLocations = async (mapBounds?: MapBounds | null, force = false) => {
   const boundsToUse = mapBounds || (mapInstance?.getBounds() ? toPlainBounds(mapInstance.getBounds()!) : null)
   if (!boundsToUse) {
@@ -2436,10 +2499,12 @@ const fetchLocations = async (mapBounds?: MapBounds | null, force = false) => {
     return
   }
   wasLocationsCacheHit.value = false
-  loadingPlaces.value = true
+  // Cached places are already on screen: refresh them quietly, no skeleton.
+  loadingPlaces.value = !showingCachedPlaces.value
   const seq = ++locationsFetchSeq
 
-  const { data, error } = await supabase
+  const { data, error } = await withTimeoutRetry<any[]>((signal) =>
+    supabase
       .from('locations')
       .select(`
     id,
@@ -2465,14 +2530,16 @@ const fetchLocations = async (mapBounds?: MapBounds | null, force = false) => {
       .lte('lat', paddedNe.lat)
       .gte('lng', paddedSw.lng)
       .lte('lng', paddedNe.lng)
+      .abortSignal(signal) as any,
+    {onRetry: notifySlowConnection}
+  )
 
   // A newer fetch started while this one was in flight (e.g. the early
   // pre-map fetch vs. the map's first idle fetch): drop this stale response.
   if (seq !== locationsFetchSeq) return
 
   if (!error && data) {
-    //@ts-expect-error LocationRow
-    const typedData = data as LocationRow[]
+    const typedData = data as unknown as LocationRow[]
 
     const mapped = typedData.map((loc: any) => {
       const p: Place = {
@@ -2523,6 +2590,8 @@ const fetchLocations = async (mapBounds?: MapBounds | null, force = false) => {
 
     locations.value = mapped
     lastFetchedBounds.value = paddedBounds
+    showingCachedPlaces.value = false
+    persistPlacesCache(mapped, paddedBounds)
   } else if (error) {
     // Keep whatever markers are already on the map (e.g. offline) instead of
     // clearing them — just let the user know the refresh didn't go through.
@@ -2538,11 +2607,14 @@ async function fetchPartnerLocationsInRadius() {
       ? { lat: userLocation.value.lat, lng: userLocation.value.lng }
       : (mapInstance?.getCenter() ? { lat: mapInstance.getCenter()!.lat(), lng: mapInstance.getCenter()!.lng() } : DEFAULT_CENTER)
 
-  const { data, error } = await supabase.rpc('nearby_partner_locations', {
-    center_lat: center.lat,
-    center_lng: center.lng,
-    radius_km: PARTNER_RADIUS_KM
-  })
+  const { data, error } = await withTimeoutRetry<any[]>((signal) =>
+    supabase.rpc('nearby_partner_locations', {
+      center_lat: center.lat,
+      center_lng: center.lng,
+      radius_km: PARTNER_RADIUS_KM
+    }).abortSignal(signal) as any,
+    {onRetry: notifySlowConnection}
+  )
 
   if (error || !data) return
 
@@ -3621,6 +3693,9 @@ onMounted(async () => {
 
   // Fire-and-forget: analytics must never delay the map (log() never throws).
   void ActivityLogService.log("explore_page_open")
+
+  // Show last session's places/categories instantly (refreshed below).
+  hydrateFromCache()
 
   // Start the place query right away, in parallel with the (much heavier)
   // Google Maps script, instead of waiting for the map's first idle event.
