@@ -22,6 +22,23 @@ const getCachedLocation = (): LatLng | null => {
   }
 }
 
+// The cached location only seeds the map/sort order until the first real fix
+// arrives, so it is stored coarsely (3 decimals, ~110 m) instead of as the
+// exact position: precise coordinates are never written to clear-text storage.
+const CACHE_PRECISION = 1000
+const cacheLocation = (loc: LatLng) => {
+  const coarse: LatLng = {
+    lat: Math.round(loc.lat * CACHE_PRECISION) / CACHE_PRECISION,
+    lng: Math.round(loc.lng * CACHE_PRECISION) / CACHE_PRECISION,
+    city: loc.city
+  }
+  try {
+    localStorage.setItem('hf_user_location', JSON.stringify(coarse))
+  } catch (e) {
+    console.warn('[GPS] Failed to cache location', e)
+  }
+}
+
 const userLocation = ref<LatLng | null>(getCachedLocation())
 const locationAttemptFinished = ref(!!userLocation.value)
 const isLocating = ref(false)
@@ -66,7 +83,7 @@ export function useLocation() {
           city: userLocation.value?.city
         }
         userLocation.value = newLoc
-        localStorage.setItem('hf_user_location', JSON.stringify(newLoc))
+        cacheLocation(newLoc)
 
         // Optional: resolve city name (THROTTLED)
         const now = Date.now()
@@ -127,7 +144,7 @@ export function useLocation() {
             city: userLocation.value?.city
           }
           userLocation.value = newLoc
-          localStorage.setItem('hf_user_location', JSON.stringify(newLoc))
+          cacheLocation(newLoc)
           locationAttemptFinished.value = true
         }
       }).catch(err => {
@@ -161,7 +178,7 @@ export function useLocation() {
           data.address?.town ||
           data.address?.municipality ||
           data.address?.state
-        localStorage.setItem('hf_user_location', JSON.stringify(userLocation.value))
+        cacheLocation(userLocation.value)
       }
     } catch (e) {
       console.warn('[GPS] Reverse geocoding failed', e)
