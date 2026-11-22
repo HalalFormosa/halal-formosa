@@ -1572,13 +1572,15 @@ let nearbyCloseToken = 0
 const infoWindowPopEls = () =>
   Array.from(document.querySelectorAll<HTMLElement>('.gm-style-iw-c, .gm-style-iw-tc'))
 
+// The CSS animation plays by itself when Google creates the window; this
+// replays it when the same window is reused (switching place, reopening).
 const popInfoWindowIn = () => {
-  // wait a tick: the info window DOM is built asynchronously after open()
   setTimeout(() => {
     infoWindowPopEls().forEach(el => {
-      el.classList.remove('iw-pop-in', 'iw-pop-out')
-      void el.offsetWidth // restart the animation if the element is reused
-      el.classList.add('iw-pop-in')
+      el.classList.remove('iw-pop-out')
+      el.style.animation = 'none'
+      void el.offsetWidth // restart the animation
+      el.style.animation = ''
     })
   }, 30)
 }
@@ -1589,7 +1591,7 @@ const dismissNearbyBubble = () => {
   nearbyActiveId = null
   const token = ++nearbyCloseToken
   const els = infoWindowPopEls()
-  els.forEach(el => { el.classList.remove('iw-pop-in'); el.classList.add('iw-pop-out') })
+  els.forEach(el => { el.classList.add('iw-pop-out') })
   setTimeout(() => {
     els.forEach(el => el.classList.remove('iw-pop-out'))
     // a newer open / a user selection took over the window: don't close it
@@ -3095,6 +3097,7 @@ const initMarkers = (places: Place[] = sortedLocations.value) => {
     if (loc.id === pendingInfoWindowPlaceId.value && infoWindow && mapInstance) {
       infoWindow.setContent(buildInfoHtml(loc))
       infoWindow.open(mapInstance, marker)
+      popInfoWindowIn()
       setTimeout(applyInfoWindowDarkClass, 50)
       pendingInfoWindowPlaceId.value = null
     }
@@ -3182,6 +3185,7 @@ const selectPlace = (place: Place) => {
       if (selectedPlace.value?.id === place.id && infoWindow && mapInstance) {
         infoWindow.setContent(buildInfoHtml(place))
         infoWindow.open(mapInstance, m)
+        popInfoWindowIn()
 
         // Wait for DOM to render to attach button listeners
         setTimeout(() => {
@@ -3270,6 +3274,7 @@ const initCardObserver = () => {
                        if (selectedPlace.value?.id === p.id && infoWindow && mapInstance) {
                          infoWindow.setContent(buildInfoHtml(p))
                          infoWindow.open(mapInstance, m)
+                         popInfoWindowIn()
                          setTimeout(applyInfoWindowDarkClass, 50)
                        }
                      }, 350)
@@ -4119,8 +4124,9 @@ const openSaveModal = (place: Place) => {
   color: var(--ion-color-dark);
 }
 
-.gm-style .gm-style-iw-c.iw-pop-in,
-.gm-style .gm-style-iw-tc.iw-pop-in {
+/* The info window pops in from its pin every time Google creates it */
+.gm-style .gm-style-iw-c,
+.gm-style .gm-style-iw-tc {
   animation: iw-pop-in 0.32s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 .gm-style .gm-style-iw-c.iw-pop-out,
@@ -4128,10 +4134,8 @@ const openSaveModal = (place: Place) => {
   animation: iw-pop-out 0.2s ease-in both;
 }
 /* scale from the pin: the tail tip sits 12px below the card */
-.gm-style .gm-style-iw-c.iw-pop-in,
-.gm-style .gm-style-iw-c.iw-pop-out { transform-origin: 50% calc(100% + 12px); }
-.gm-style .gm-style-iw-tc.iw-pop-in,
-.gm-style .gm-style-iw-tc.iw-pop-out { transform-origin: 50% 100%; }
+.gm-style .gm-style-iw-c { transform-origin: 50% calc(100% + 12px); }
+.gm-style .gm-style-iw-tc { transform-origin: 50% 100%; }
 @keyframes iw-pop-in {
   from { scale: 0.2; opacity: 0; }
   to { scale: 1; opacity: 1; }
