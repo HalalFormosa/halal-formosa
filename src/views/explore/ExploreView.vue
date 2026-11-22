@@ -625,8 +625,8 @@
         <ion-icon :icon="addOutline" />
       </ion-button>
       
-      <ion-button v-if="viewMode === 'map'" class="floating-action-btn locate-me-btn" color="carrot" @click="centerOnUser">
-        <ion-icon :icon="navigateCircleOutline" />
+      <ion-button v-if="viewMode === 'map'" class="floating-action-btn locate-me-btn" :class="{ following: followUser }" color="carrot" @click="centerOnUser">
+        <ion-icon :icon="followUser ? navigateCircle : navigateCircleOutline" />
       </ion-button>
     </div>
 
@@ -1013,6 +1013,7 @@ import type { InfiniteScrollCustomEvent } from '@ionic/vue'
 import { useI18n } from 'vue-i18n'
 import {
   navigateCircleOutline,
+  navigateCircle,
   addOutline,
   restaurant, informationCircleOutline, chevronUpOutline, chevronDownOutline, restaurantOutline, leaf, home,
   layersOutline, listOutline, gridOutline, mapOutline, sparkles, shieldCheckmarkOutline, checkmarkCircle,
@@ -1074,7 +1075,8 @@ const {
   userLocation, 
   locationAttemptFinished, 
   hasAutoCentered,
-  startWatching 
+  startWatching,
+  setHighAccuracy
 } = useLocation()
 
 const locations = ref<Place[]>([])
@@ -1101,6 +1103,10 @@ const searchQuery = ref('')
 // The query actually filtered on — only updates when the user commits a
 // search (presses "Go" / Enter), so typing alone never re-filters results.
 const committedSearchQuery = ref('')
+// Locate-me works like Google Maps: first tap centers and locks onto the user
+// (the map follows GPS updates); tapping again, or dragging the map, releases it.
+const followUser = ref(false)
+
 const sortBy = ref<'nearest' | 'recent' | 'popular' | 'trending' | 'for_you'>(userLocation.value ? 'nearest' : 'recent')
 const listLimit = ref(20)
 // locations moved up
@@ -1547,6 +1553,94 @@ const isOpenNow = (place: Place): boolean => {
   return place.isOpen ?? false
 }
 
+// ---- Nearby place pop-up ----
+// While the user is on the map, pop the place's own info bubble open at its
+// marker when they pass within NEARBY_RADIUS_M of it. The map is not moved.
+// Each place is announced once per session; the bubble closes by itself.
+const NEARBY_RADIUS_M = 80
+const NEARBY_MIN_HOLD_MS = 4000 // a bubble can't be swapped out before this
+let nearbyShownAt = 0
+const NEARBY_AUTO_HIDE_MS = 9000
+const nearbyAnnounced = new Set<number>()
+let nearbyActiveId: number | null = null
+let nearbyTimer: ReturnType<typeof setTimeout> | null = null
+
+// Pop animation: Google owns the info window's own transform for positioning,
+// so we animate the individual `scale` property on the card and its tail.
+const NEARBY_POP_OUT_MS = 200
+let nearbyCloseToken = 0
+const infoWindowPopEls = () =>
+  Array.from(document.querySelectorAll<HTMLElement>('.gm-style-iw-c, .gm-style-iw-tc'))
+
+const popInfoWindowIn = () => {
+  // wait a tick: the info window DOM is built asynchronously after open()
+  setTimeout(() => {
+    infoWindowPopEls().forEach(el => {
+      el.classList.remove('iw-pop-in', 'iw-pop-out')
+      void el.offsetWidth // restart the animation if the element is reused
+      el.classList.add('iw-pop-in')
+    })
+  }, 30)
+}
+
+const dismissNearbyBubble = () => {
+  if (nearbyTimer) { clearTimeout(nearbyTimer); nearbyTimer = null }
+  if (nearbyActiveId === null || !infoWindow) { nearbyActiveId = null; return }
+  nearbyActiveId = null
+  const token = ++nearbyCloseToken
+  const els = infoWindowPopEls()
+  els.forEach(el => { el.classList.remove('iw-pop-in'); el.classList.add('iw-pop-out') })
+  setTimeout(() => {
+    els.forEach(el => el.classList.remove('iw-pop-out'))
+    // a newer open / a user selection took over the window: don't close it
+    if (token === nearbyCloseToken) infoWindow?.close()
+  }, NEARBY_POP_OUT_MS)
+}
+
+watch(viewMode, (m) => {
+  if (isPageActive.value) void setHighAccuracy(m === 'map')
+})
+
+watch(userLocation, (loc) => {
+  if (!loc || !isPageActive.value || viewMode.value !== 'map') return
+  if (!mapInstance || !infoWindow) return
+
+  // Distance to the place currently shown (if any), so a closer one can replace it
+  let activeDist = Infinity
+  if (nearbyActiveId !== null) {
+    const ap = locations.value.find(p => p.id === nearbyActiveId)
+    activeDist = ap ? distanceInMeters(loc, ap.position) : Infinity
+    if (activeDist > NEARBY_RADIUS_M) dismissNearbyBubble() // already passed it
+  }
+  if (isUserPanningMap.value) return // don't open new bubbles while the user drags the map
+
+  let best: { place: Place; meters: number } | null = null
+  for (const p of locations.value) {
+    if (nearbyAnnounced.has(p.id) || !markerMap.get(p.id)) continue
+    const d = distanceInMeters(loc, p.position)
+    if (d <= NEARBY_RADIUS_M && (!best || d < best.meters)) best = { place: p, meters: d }
+  }
+  if (!best) return
+  if (nearbyActiveId !== null) {
+    if (best.meters >= activeDist) return // current one is still closest
+    if (Date.now() - nearbyShownAt < NEARBY_MIN_HOLD_MS) return // let it be read first
+  }
+
+  const place = best.place
+  nearbyAnnounced.add(place.id)
+  nearbyActiveId = place.id
+  nearbyShownAt = Date.now()
+  if (nearbyTimer) clearTimeout(nearbyTimer)
+  infoWindow.setContent(buildInfoHtml(place))
+  infoWindow.open(mapInstance, markerMap.get(place.id))
+  nearbyCloseToken++ // cancels any pending pop-out close
+  setTimeout(applyInfoWindowDarkClass, 50)
+  popInfoWindowIn()
+  nearbyTimer = setTimeout(() => {
+    if (nearbyActiveId === place.id) dismissNearbyBubble()
+  }, NEARBY_AUTO_HIDE_MS)
+})
+
 // Re-run the partner-radius lookup once real GPS resolves, since the very
 // first call (at map init) may have used DEFAULT_CENTER as a fallback.
 let partnerRadiusRefetchedForGps = false
@@ -1571,6 +1665,8 @@ watch([userLocation, mapReady], ([newLoc, isReady]) => {
   if (!newLoc || !isReady || !mapInstance || !advancedMarkerLib) return
 
   const userLoc = { lat: newLoc.lat, lng: newLoc.lng }
+
+  if (followUser.value) mapInstance.panTo(userLoc)
 
   // 1. 🔥 CENTER MAP ON FIRST FIX — this is the initial focus: the user's
   // own location, at a wider zoom so their surroundings are visible before
@@ -1927,6 +2023,7 @@ const geocodeAddress = async (query: string) => {
     const latLng = {lat: loc.lat(), lng: loc.lng()}
 
     // Move map
+    followUser.value = false
     mapInstance!.panTo(latLng)
     mapInstance!.setZoom(17)
 
@@ -2813,6 +2910,7 @@ const initMap = async () => {
   })
   // ✅ Interaction Tracking: Stop list-to-map sync if user is touching map
   mapInstance.addListener('dragstart', () => {
+    followUser.value = false // like Google Maps: dragging releases the lock
     isUserPanningMap.value = true
   })
   mapInstance.addListener('zoom_changed', () => {
@@ -3049,6 +3147,9 @@ watch(searchQuery, q => {
 
 /* ---------------- Interactions ---------------- */
 const selectPlace = (place: Place) => {
+  nearbyActiveId = null // user took over the info window
+  nearbyCloseToken++
+  if (nearbyTimer) { clearTimeout(nearbyTimer); nearbyTimer = null }
   selectedPlace.value = place
   lastPannedId = place.id
   
@@ -3067,6 +3168,7 @@ const selectPlace = (place: Place) => {
   // Calculate offset to center info card (~100px North)
   const latOffset = 100 * 360 / (256 * Math.pow(2, targetZoom))
   
+  followUser.value = false
   mapInstance.panTo({
     lat: place.position.lat + latOffset,
     lng: place.position.lng
@@ -3158,6 +3260,7 @@ const initCardObserver = () => {
                 if (mapInstance && isUserScrollingList.value) {
                    const currentZoom = mapInstance.getZoom() || 14
                    const latOffset = 100 * 360 / (256 * Math.pow(2, currentZoom))
+                   followUser.value = false
                    mapInstance.panTo({ lat: p.position.lat + latOffset, lng: p.position.lng });
                    
                    const m = markerMap.get(p.id)
@@ -3193,8 +3296,14 @@ const initCardObserver = () => {
 const centerOnUser = () => {
   void ActivityLogService.log("explore_center_user")
 
+  if (followUser.value) {
+    followUser.value = false
+    return
+  }
+
   if (!userLocation.value || !mapInstance) return
 
+  followUser.value = true
   mapInstance.panTo(userLocation.value)
 
   // Optional: gentle zoom only if far
@@ -3824,6 +3933,7 @@ watch(viewMode, () => { if (isPageActive.value) applyExploreStatusBar() })
 
 onIonViewWillEnter(async () => {
   isPageActive.value = true
+  void setHighAccuracy(viewMode.value === 'map')
   applyExploreStatusBar()
   hasAutoSelected.value = false; // allow re-highlighting when returning
   hasCenteredInitiallyVisible = false;
@@ -3858,6 +3968,8 @@ onIonViewDidEnter(async () => {
 
 onIonViewWillLeave(() => {
   isPageActive.value = false
+  void setHighAccuracy(false)
+  dismissNearbyBubble()
   restoreThemeStatusBar()
   clearCampusOverlays()
   lastStableLoc.value = null   // REQUIRED
@@ -4005,6 +4117,28 @@ const openSaveModal = (place: Place) => {
 
 .gm-style .gm-style-iw-c {
   color: var(--ion-color-dark);
+}
+
+.gm-style .gm-style-iw-c.iw-pop-in,
+.gm-style .gm-style-iw-tc.iw-pop-in {
+  animation: iw-pop-in 0.32s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+.gm-style .gm-style-iw-c.iw-pop-out,
+.gm-style .gm-style-iw-tc.iw-pop-out {
+  animation: iw-pop-out 0.2s ease-in both;
+}
+/* scale from the pin: the tail tip sits 12px below the card */
+.gm-style .gm-style-iw-c.iw-pop-in,
+.gm-style .gm-style-iw-c.iw-pop-out { transform-origin: 50% calc(100% + 12px); }
+.gm-style .gm-style-iw-tc.iw-pop-in,
+.gm-style .gm-style-iw-tc.iw-pop-out { transform-origin: 50% 100%; }
+@keyframes iw-pop-in {
+  from { scale: 0.2; opacity: 0; }
+  to { scale: 1; opacity: 1; }
+}
+@keyframes iw-pop-out {
+  from { scale: 1; opacity: 1; }
+  to { scale: 0.2; opacity: 0; }
 }
 
 .gm-style .gm-style-iw-c.dark-infowindow {
