@@ -4189,9 +4189,10 @@ const openSaveModal = (place: Place) => {
 .gm-style .gm-style-iw-tc.iw-pop-out {
   animation: iw-pop-out 0.2s ease-in both;
 }
-/* scale from the pin: the tail tip sits 12px below the card */
-.gm-style .gm-style-iw-c { transform-origin: 50% calc(100% + 12px); }
-.gm-style .gm-style-iw-tc { transform-origin: 50% 100%; }
+/* scale from the middle of the pin head: the tail tip sits 12px below the card
+   and the 46px pin's head centre is a further ~18px below that tip */
+.gm-style .gm-style-iw-c { transform-origin: 50% calc(100% + 30px); }
+.gm-style .gm-style-iw-tc { transform-origin: 50% calc(100% + 18px); }
 @keyframes iw-pop-in {
   from { scale: 0.2; opacity: 0; }
   to { scale: 1; opacity: 1; }
