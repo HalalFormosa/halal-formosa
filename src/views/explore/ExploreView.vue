@@ -1466,6 +1466,7 @@ const lastCalcLocation = ref<LatLng | null>(null)
 
 // Interaction States for Map/List Sync
 const isUserPanningMap = ref(false)
+const nearbyCardId = ref<number | null>(null)
 const isUserScrollingList = ref(false)
 let lastPannedId: number | null = null
 
@@ -1638,6 +1639,16 @@ watch(userLocation, (loc) => {
   nearbyCloseToken++ // cancels any pending pop-out close
   setTimeout(applyInfoWindowDarkClass, 50)
   popInfoWindowIn()
+  // While following the user, the card strip tracks the bubble too
+  if (followUser.value) {
+    nearbyCardId.value = place.id
+    void scrollCardIntoView(place.id)
+    // The map pan re-filters the strip a moment later and can shift the
+    // cards; re-center once the list has settled
+    setTimeout(() => {
+      if (followUser.value && nearbyActiveId === place.id) void scrollCardIntoView(place.id)
+    }, 1100)
+  }
   nearbyTimer = setTimeout(() => {
     if (nearbyActiveId === place.id) dismissNearbyBubble()
   }, NEARBY_AUTO_HIDE_MS)
@@ -1653,14 +1664,31 @@ watch(userLocation, (loc) => {
   }
 })
 
+let sortChosenByUser = false
+let settingSortAutomatically = false
+
 // Sorting logic: if GPS succeeded, default to 'nearest'
 watch(locationAttemptFinished, (finished) => {
+  settingSortAutomatically = true
   if (finished && userLocation.value) {
     sortBy.value = 'nearest'
   } else if (finished) {
     sortBy.value = 'recent'
   }
+  void nextTick(() => { settingSortAutomatically = false })
 }, { immediate: true })
+
+// A fix that arrives after the first attempt already gave up (fell back to
+// 'recent') must still make the default order tier-first-then-nearest, unless
+// the user chose a sort themselves.
+watch(sortBy,() => { if (!settingSortAutomatically) sortChosenByUser = true })
+watch(() => !!userLocation.value, (hasLoc) => {
+  if (hasLoc && !sortChosenByUser && sortBy.value !== 'nearest') {
+    settingSortAutomatically = true
+    sortBy.value = 'nearest'
+    void nextTick(() => { settingSortAutomatically = false })
+  }
+})
 
 // Center map & Update User Marker (Blue Dot) Reactively
 watch([userLocation, mapReady], ([newLoc, isReady]) => {
@@ -2283,7 +2311,16 @@ const visibleMapLocations = computed(() => {
     }
   }
 
-  return filtered.slice(0, maxCards)
+  filtered = filtered.slice(0, maxCards)
+
+  // The place the follow-mode bubble is showing always gets a card, even when
+  // it falls outside the 25-card cap, so the strip can scroll to it
+  const nearbyId = nearbyCardId.value
+  if (nearbyId !== null && !filtered.some(p => p.id === nearbyId)) {
+    const np = displayedLocations.value.find(p => p.id === nearbyId)
+    if (np) filtered = [np, ...filtered]
+  }
+  return filtered
 })
 
 
@@ -3811,6 +3848,16 @@ const initCategoryBarDrag = () => {
 }
 
 /* ---------------- Lifecycle ---------------- */
+// The strip re-sorts by distance as the user moves, which shifts cards under a
+// finished scroll: keep the bubble's card centered whenever the order changes.
+// Registered on mount because the computeds it reads are declared further down.
+onMounted(() => watch(
+  () => visibleMapLocations.value.map(p => p.id).join(','),
+  () => {
+    if (followUser.value && nearbyActiveId !== null) void scrollCardIntoView(nearbyActiveId)
+  }
+))
+
 onMounted(async () => {
 
 
