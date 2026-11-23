@@ -43,22 +43,29 @@
     "closed": "关闭",
     "instagram": "Instagram",
     "lineId": "线路编号",
-    "underMaintenance": "Under Maintenance",
-    "comingSoon": "Coming Soon",
-    "maintenanceMessage": "This feature is currently undergoing maintenance. We'll be back soon!",
-    "copied": "Copied to clipboard",
-    "change": "Change",
-    "mandatory": "Mandatory",
-    "search": "Search",
-    "noResults": "No results found",
-    "chat": "Chat",
-    "edited": "(Edited)",
+    "underMaintenance": "维護中",
+    "comingSoon": "即将推出",
+    "maintenanceMessage": "此功能目前正在维護中，我们很快就会回来！",
+    "copied": "已复制到剪贴簿",
+    "change": "更改",
+    "mandatory": "必填",
+    "search": "搜索",
+    "noResults": "无搜索结果",
+    "chat": "聊天",
+    "edited": "（已编辑）",
     "remove": "移除",
     "history": "历史记录",
     "added": "添加于",
     "lastEdited": "最后修改",
     "noEditHistory": "无修改记录",
-    "admin": "管理员"
+    "admin": "管理员",
+    "loginRequired": "请登录后再提交评论",
+    "unknown": "未知",
+    "sort": "排序",
+    "sessionExpired": "您的登录已逾时，请重新登录。",
+    "offlineMessage": "您目前处於离线状态。请检查网路连线后再试一次。",
+    "seeOlderChanges": "查看较早的变更",
+    "hideOlderChanges": "隐藏较早的变更"
   },
   "review": {
     "title": "审核提交内容",
@@ -90,7 +97,25 @@
       "--ion-color-primary": "穆斯林友好",
       "--ion-color-warning": "黄昏",
       "--ion-color-danger": "哈拉姆"
-    }
+    },
+    "takePhoto": "拍摄照片",
+    "uploadPhoto": "上传照片",
+    "rotatePhoto": "旋转照片",
+    "cleanBackground": "去除背景",
+    "restoreOriginal": "还原原始照片",
+    "syncToOff": "同步到 Open Food Facts",
+    "confirmRejectHeader": "拒绝提交",
+    "confirmRejectMsg": "请提供拒绝此提交的原因：",
+    "reasonPlaceholder": "例如：重复的清单、位置错误、与清真无关…",
+    "reasonRequired": "拒绝提交必须填写原因。",
+    "confirmMergeHeader": "要合併到现有产品吗？",
+    "confirmMergeMsg": "此提交不会单独发布。其条码将成为现有产品的别名，且此提交会被移除。此动作无法復原。",
+    "merge": "合併",
+    "publish": "发布",
+    "publishing": "发布中…",
+    "publishSuccess": "发布成功！",
+    "approveFailed": "无法发布，请再试一次。",
+    "actionFailed": "操作失敗，请再试一次。"
   },
   "master": {
     "active": "积极的",
@@ -272,7 +297,7 @@
     "unknownAvatar": "？",
     "anonymousWithIndex": "匿名 #{index}",
     "anonymous": "匿名的",
-    "pointsCount": "{points} pts",
+    "pointsCount": "{points} 积分",
     "added": "额外",
     "addedBy": "由{author}添加",
     "leaderboard_popover": {
@@ -288,6 +313,36 @@
       "asr": "晡气",
       "maghrib": "昏礼",
       "isha": "伊莎"
+    },
+    "scanMilestone": {
+      "title": "您已掃描 {count} 项产品",
+      "body": "好的开始。Pro 还能为您增加这些功能。",
+      "benefitScans": "无限掃描与 Live Scan",
+      "benefitAi": "每个判定都有 AI 说明",
+      "benefitHistory": "掃描纪录且无广告",
+      "upgrade": "查看 Pro 内容",
+      "later": "稍后再说"
+    },
+    "home": "首页",
+    "leaderboardDaily": "今日",
+    "leaderboardWeekly": "本周",
+    "leaderboardMonthly": "本月",
+    "leaderboardAllTime": "所有时间",
+    "mediaPartnerContent": "媒体合作伙伴内容",
+    "mediaPartnerDesc": "来自我们认证媒体合作伙伴的真实清真体验",
+    "leaderboard_privacy_hint": "想要在排行榜上显示您的名字吗？请至设定中将您的个人资料设为公开。",
+    "sponsored": "赞助",
+    "houseAdKind": {
+      "partner": "合作伙伴",
+      "product": "产品",
+      "location": "地点",
+      "trip": "行程"
+    },
+    "houseAdProvider": {
+      "soldBy": "由 {name} 销售",
+      "certifiedBy": "由 {name} 认证",
+      "affiliatedWith": "隸属於 {name}",
+      "providedBy": "由 {name} 提供"
     }
   },
   "scanIngredients": {
@@ -367,9 +422,16 @@
         "searching": "正在寻找成分...",
         "scanning": "人工智能扫描...",
         "found": "成分找到了！ 聚焦...",
-        "notFound": "未找到成分，继续持有..."
+        "notFound": "未找到成分，继续持有...",
+        "analyzing": "收到了！正在读取成分…"
       },
-      "label": "自动拍摄"
+      "label": "自动拍摄",
+      "analyzingHint": "已拍照 — 您现在可以放低相機",
+      "highlightsFound": "找到 {count} 项成分",
+      "autoDismiss": "{s} 秒后进行下一次掃描 — 点击可暂停",
+      "dismissPaused": "已暂停 — 点击「再次掃描」继续",
+      "scanAgain": "再次掃描",
+      "viewDetails": "查看详情"
     },
     "scan": {
       "takePhoto": "拍照",
@@ -408,8 +470,18 @@
         "message": "产品“{name}”是{status}，但我们的数据库中似乎还没有它。",
         "motivation": "通过您的贡献，您正在帮助成千上万使用清真福尔摩沙的穆斯林发现更多产品。 帮助他人是一种崇高的行为：“以仁慈和虔诚互相帮助”（《古兰经》5：2）。 先知（SAW）说：“最好的人是那些给他人带来最大利益的人。” （塔巴拉尼）",
         "action": "立即贡献",
-        "skip": "也许稍后"
-      }
+        "skip": "也许稍后",
+        "motivationQuote": "帮助他人是高尚的行为：「你们当为正義和敬畏而互助」(古兰经 5:2)。穆圣 (SAW) 曾说：「最优秀的人是那些对他人最有益的人。」(泰伯拉尼 辑录)"
+      },
+      "rememberChoice": "记住我的选择",
+      "rememberChoiceNote": "下次打开掃描成分时，会直接使用上次的方式。可随时在设定中更改。",
+      "alreadyInDb": "已收录於资料庫",
+      "verifiedListing": "已验证项目：{name}",
+      "tapToEnlarge": "以双指或双击放大",
+      "addedAgo": "{time}新增",
+      "nameMatch": "名称相符 {percent}%",
+      "ingredientsMatch": "成分相符 {percent}%",
+      "ingredientDetails": "成分详情"
     },
     "toast": {
       "ok": "✅ 成分提取！",
@@ -417,34 +489,47 @@
       "copied": "已复制到剪贴板"
     },
     "aiSummary": {
-      "title": "AI Analysis Summary",
-      "preparing": "Preparing Analysis...",
-      "connecting": "Connecting to {model}...",
-      "footer": "Answer written & structured by {model} using Halal Formosa Database",
-      "thinking": "AI is Thinking...",
-      "explanation": "AI Explanation",
-      "unlock": "Unlock AI Explanation",
-      "unlockPro": "Unlock AI Explanation (PRO)"
+      "title": "AI 分析摘要",
+      "preparing": "正在准备分析…",
+      "connecting": "正在连线至 {model}…",
+      "footer": "答案由 {model} 依据清真福尔摩沙资料庫撰写并整理",
+      "thinking": "AI 思考中…",
+      "explanation": "AI 说明",
+      "unlock": "解锁 AI 说明",
+      "unlockPro": "解锁 AI 说明（PRO）",
+      "teaser": {
+        "title": "为什么 {ingredient} 被标记？",
+        "body": "Pro 会用淺显的文字说明它通常来自什么原料，以及该在标签上检查什么。",
+        "note": "上方的判定结果仍然免费。"
+      }
     },
     "limit": {
       "reached": "已达到每日扫描限制。观看广告或贡献缺失的产品/地点以获取更多扫描次数！",
       "reachedContribute": "已达到每日扫描限制。贡献缺失的产品或地点即可获得更多扫描次数！",
       "upgrade": "升级 Pro",
-      "bonus": "Watch Ad +1 Scan",
-      "adLimit": "You can only watch {count} ads per day.",
-      "contributeTip": "每贡献一个新产品或地点可获得 +1 每日扫描次数（每日最多 +3 次）。"
+      "bonus": "观看广告 +1 次掃描",
+      "adLimit": "每天最多只能观看 {count} 則广告。",
+      "contributeTip": "每贡献一个新产品或地点可获得 +1 每日扫描次数（每日最多 +3 次）。",
+      "sheet": {
+        "title": "今天的 {limit} 次掃描已用完",
+        "body": "掃描次数明天会重置。现在升级 Pro 即可继续，或贡獻缺失的产品或地点来获得额外掃描次数。",
+        "bodyNoEarn": "掃描次数明天会重置。升级 Pro 即可立即继续掃描。",
+        "upgrade": "升级 Pro 享无限掃描",
+        "earn": "获得额外掃描次数",
+        "notNow": "稍后再说"
+      }
     },
     "progress": {
-      "initializing": "Initializing...",
-      "loadingDb": "Loading ingredient database...",
-      "runningOcr": "Running OCR...",
-      "detectingLang": "Detecting language...",
-      "cleaningText": "Cleaning text...",
-      "translating": "Translating...",
-      "extractingIng": "Extracting ingredients...",
-      "matchingIng": "Matching ingredients...",
-      "finalizing": "Finalizing...",
-      "failed": "Failed"
+      "initializing": "初始化中…",
+      "loadingDb": "正在载入成分资料庫…",
+      "runningOcr": "正在執行文字辨识…",
+      "detectingLang": "正在偵測语言…",
+      "cleaningText": "正在整理文字…",
+      "translating": "翻译中…",
+      "extractingIng": "正在擷取成分…",
+      "matchingIng": "正在比对成分…",
+      "finalizing": "即将完成…",
+      "failed": "失敗"
     },
     "failure": {
       "title": "无法读取这个标签",
@@ -458,10 +543,39 @@
       "retry": "再试一次"
     },
     "errors": {
-      "ocrFailed": "OCR analysis failed. Please try again with a clearer photo.",
-      "noIngredients": "No ingredients detected. Please try cropping more closely.",
-      "noKeywords": "No ingredient keywords detected. Please crop the ingredients section only.",
-      "couldNotAccessCamera": "Could not access camera. Please check permissions."
+      "ocrFailed": "文字辨识失敗。请用更清晰的照片再试一次。",
+      "noIngredients": "未偵測到成分。请裁切得更贴近一些。",
+      "noKeywords": "未偵測到成分关键字。请只裁切成分栏位。",
+      "couldNotAccessCamera": "无法使用相機，请检查权限。",
+      "adFailed": "无法载入奖励广告，请再试一次。"
+    },
+    "aiErrors": {
+      "unavailable": "AI 说明暂时无法使用，请稍后再试。",
+      "dailyLimit": "您已达到今日 AI 说明次数上限，明天会重置。",
+      "proOnly": "AI 说明为 Pro 专属功能。",
+      "signIn": "请先登录以使用 AI 说明。"
+    },
+    "steps": {
+      "scan": "掃描"
+    },
+    "scanProgress": {
+      "s1": {
+        "title": "上传照片",
+        "sub": "正在传送裁切后的标签进行分析"
+      },
+      "s2": {
+        "title": "读取标签",
+        "sub": "正在掃描图片并擷取文字"
+      },
+      "s3": {
+        "title": "理解文字",
+        "sub": "正在整理并翻译成分"
+      },
+      "s4": {
+        "title": "检查成分",
+        "sub": "正在将文字与已知成分比对",
+        "subCount": "正在将文字与 {count} 种已知成分比对"
+      }
     }
   },
   "search": {
@@ -478,7 +592,8 @@
       "title": "过滤器",
       "stores": "商店",
       "categories": "类别",
-      "statuses": "状态"
+      "statuses": "状态",
+      "sort": "排序"
     },
     "categoriesList": {
       "Snacks": "零食",
@@ -588,7 +703,30 @@
     "viewedCount": "👁️ 浏览 {count} 次",
     "addedDate": "添加了{date}",
     "endOfList": "🙏 抱歉，你已经读到最后了",
-    "scanInstructions": "将条形码在框架内对齐"
+    "scanInstructions": "将条形码在框架内对齐",
+    "noResults": "找不到结果",
+    "barcodeScan": {
+      "title": "掃描条码",
+      "hint": "请将条码对准框内",
+      "close": "关闭",
+      "status": {
+        "init": "正在启动相機…",
+        "searching": "正在寻找条码…",
+        "checking": "正在查询条码…"
+      },
+      "scanAgain": "再次掃描",
+      "viewDetails": "查看详情",
+      "notFound": {
+        "title": "资料庫中尚无此产品",
+        "message": "找不到符合条码 {barcode} 的产品。",
+        "action": "新增此产品"
+      },
+      "cameraError": "无法使用相機，请检查权限。",
+      "unsupportedError": "此设备不支援条码掃描。",
+      "moduleUnavailableError": "正在首次设定条码掃描器 — 请稍后再试。",
+      "permissionError": "需要相機权限才能掃描条码。",
+      "scanError": "掃描时发生问题，请再试一次。"
+    }
   },
   "explore": {
     "title": "探索",
@@ -621,7 +759,24 @@
       "closedNow": "现已关闭",
       "additionalDetails": "其他细节",
       "estimatedPrice": "预计价格",
-      "orderVia": "Order Via"
+      "orderVia": "订购管道",
+      "similarPlaces": "类似地点",
+      "checkIn": "打卡",
+      "checkedIn": "已打卡",
+      "reviewed": "已评论",
+      "review": "评论",
+      "checkInSuccess": "打卡成功！",
+      "checkInAlready": "你最近已在此打卡",
+      "checkInRateLimited": "你剛在其他地点打卡，请幾分钟后再试。",
+      "checkInTooFar": "你需要在此地点才能打卡",
+      "checkInNoLocation": "请开启定位以打卡",
+      "checkInLogin": "请登录后打卡",
+      "checkInFailed": "打卡失敗",
+      "open24Hours": "24 小时",
+      "broughtBy": "提供者",
+      "affiliatedWith": "隸属於",
+      "allHours": "整周",
+      "hideHours": "收合"
     },
     "filters": {
       "priceRange": "价格范围"
@@ -673,7 +828,18 @@
       "tags": "您查看的地点"
     },
     "noResults": "没有找到结果",
-    "moreFilters": "更多的 ..."
+    "moreFilters": "更多的 ...",
+    "delivery": "外送",
+    "deliveryFilter": "可外送",
+    "noPlacesInView": "此地图范围内没有其他地点，请移动或缩小地图查看更多。",
+    "discount": "折扣码",
+    "discountFilter": "有折扣码",
+    "discountChip": "折扣",
+    "discountTag": "折扣码",
+    "showResults": "显示 {count} 笔结果",
+    "go": "前往",
+    "searching": "正在搜索地点…",
+    "searchNotFound": "找不到「{query}」的结果"
   },
   "trip": {
     "title": "穆斯林友好旅行",
@@ -744,7 +910,11 @@
     "nearbyPromptsNote": "当我拜访清真寺或清真餐厅后，私下提醒我分享穆斯林设施。",
     "researchParticipation": "允许我的数据用于学术研究",
     "researchParticipationNote": "允许将我的匿名化、汇总使用数据用于学术研究及发表研究成果。关闭后，你的数据将不再纳入之后的研究；已发表的成果无法撤回。",
-    "researchParticipationError": "无法保存你的选择，请重试。"
+    "researchParticipationError": "无法保存你的选择，请重试。",
+    "scanning": "掃描",
+    "scanMethod": "预设掃描方式",
+    "scanMethodNote": "打开掃描成分时会直接使用此方式。选择「每次询问」可显示所有选项。",
+    "scanMethodAsk": "每次询问"
   },
   "profile": {
     "sections": {
@@ -1121,7 +1291,8 @@
           "6": "Halal Formosa 资深会员"
         }
       }
-    }
+    },
+    "unlockedBadge": "奖盃已解锁！"
   },
   "appReview": {
     "title": "享受清真福尔摩沙吗？",
@@ -1142,7 +1313,9 @@
     "uiUx": "UI/UX 贡献者",
     "database": "数据库贡献者",
     "specialThanks": "特别感谢",
-    "thankYou": "我们衷心感谢所有帮助福尔摩沙清真食品成为可能的社区成员、测试人员和支持者。 愿安拉 SWT 以丰富的善意回报您的贡献。"
+    "thankYou": "我们衷心感谢所有帮助福尔摩沙清真食品成为可能的社区成员、测试人员和支持者。 愿安拉 SWT 以丰富的善意回报您的贡献。",
+    "poweredBy": "技術支援",
+    "poweredByDescription": "Halal Formosa 在台湾的平台发布、注册与营运需求，由艺启文创行销有限公司（YiQi Global Consulting）提供支援。"
   },
   "addProduct": {
     "title": "添加产品",
@@ -1229,7 +1402,24 @@
       "backImageRequired": "需要背面图片。"
     },
     "selectCategory": "选择分类",
-    "searchCategoryPlaceholder": "搜索分类..."
+    "searchCategoryPlaceholder": "搜索分类...",
+    "verifyingBarcode": "正在验证条码...",
+    "offProductFound": "已找到产品信息！",
+    "useThisInfo": "使用此信息",
+    "skipInfo": "跳过",
+    "otherStoreName": "商店名称（选填）",
+    "otherStoreNamePlaceholder": "哪间商店有卖？例如：家乐福中山店",
+    "cameraError": "无法擷取影像。",
+    "scanBarcodeFromGallery": "从相簿上传",
+    "manualEntry": "手动输入",
+    "manualEntryShort": "手动",
+    "galleryShort": "相簿",
+    "tapToStop": "点击以停止相機",
+    "noBarcodeInImage": "在该图片中找不到条码。",
+    "enterIngredientsManually": "无法掃描？手动输入成分",
+    "noIngredientsDetected": "无法在该照片中偵測到成分表。请再试一次，或在下方手动输入成分。",
+    "analyzingIngredients": "正在分析成分…",
+    "highlightedIngredients": "已掃描的成分"
   },
   "addPlace": {
     "title": "添加新地点",
@@ -1331,7 +1521,10 @@
       "errWebsite": "网站必须是有效的链接，例如 https://example.com。",
       "errTooLong": "其中一个栏位太长。",
       "errGeneric": "无法储存，请再试一次。"
-    }
+    },
+    "productsBy": "{name} 的产品",
+    "ourStores": "我们的店家",
+    "availableAt": "贩售地点"
   },
   "points": {
     "title": "查看点日志"
@@ -1367,7 +1560,8 @@
     "needsPermission": "需要指南针权限才能显示方向。",
     "enableButton": "启用指南针",
     "error": "无法初始化指南针。",
-    "facing": "你面对着朝向"
+    "facing": "你面对着朝向",
+    "noSensor": "此设备的罗盘硬体未启用，请参考上方的角度。"
   },
   "savedItems": {
     "freeTier": "免费套餐使用",
@@ -1390,7 +1584,19 @@
     "moveToFolder": "移至文件夹.​​..",
     "itemAlreadyInFolder": "该文件夹中已存在项目！",
     "moveSuccess": "移至{name}",
-    "moveFailed": "无法移动项目。"
+    "moveFailed": "无法移动项目。",
+    "limitSheet": {
+      "title": "您的收藏已满",
+      "body": "免费版最多可收藏 {limit} 个项目。请移除一个，或升级 Pro 以无限收藏。",
+      "upgrade": "升级 Pro",
+      "manage": "管理已收藏项目",
+      "notNow": "稍后再说"
+    },
+    "renameFolder": "重新命名文件夹",
+    "deleteFolder": "刪除文件夹",
+    "deleteConfirm": "确定要刪除此文件夹吗？里面所有已储存的项目都会消失。",
+    "renameSuccess": "文件夹已重新命名",
+    "deleteSuccess": "文件夹已刪除"
   },
   "savedLocations": {
     "title": "保存的地点",
@@ -1453,7 +1659,29 @@
     "archive": "档案",
     "confirmDeletePlace": "您确定要永久删除/拒绝此位置吗？",
     "master": {
-      "published": "已发表"
+      "published": "已发表",
+      "product_categories": "产品类别",
+      "ingredient_highlights": "成分亮点",
+      "location_types": "地点类型",
+      "stores": "商店",
+      "category_rules": "类别规則",
+      "fields": {
+        "name": "名称",
+        "keyword_en": "英文关键字",
+        "keyword_zh": "中文关键字",
+        "status": "状态",
+        "emoji": "表情符号",
+        "color": "颜色 (Hex)",
+        "is_active": "是否启用",
+        "active": "启用",
+        "inactive": "停用",
+        "store_name": "商店名称",
+        "website": "网站",
+        "logo_url": "Logo 网址",
+        "sort_order": "排序",
+        "keyword": "关键字",
+        "category": "类别"
+      }
     },
     "name": "姓名",
     "address": "地址",
@@ -1578,27 +1806,27 @@
       "explore_filter_category": "过滤类别：{category}",
       "explore_marker_click": "单击的地图标记：{name}",
       "explore_place_card_click": "打开的地点卡：{name}",
-      "explore_place_detail_open": "Opened place details: {name}",
-      "explore_place_detail_view": "Viewed place details: {name}",
-      "explore_detail_open_image": "Viewed place image: {name}",
-      "search_page_open": "Opened Search page",
-      "search_performed": "Searched: \"{query}\"",
-      "search_product_click": "Opened product: {name}",
-      "search_sort_change": "Sort product by {sort}",
-      "search_filter_status": "Filter product by {status}",
-      "search_filter_category": "Filter product by {category}",
-      "product_details_open": "Viewed product: {name}",
-      "scan_ingredients_start": "Started ingredient scan ({source})",
-      "scan_ingredients_success": "Scan result: {product} • {status}",
-      "scan_ingredients_error": "Scan failed: {error}",
-      "profile_page_open": "Opened Profile page",
-      "social_link_click": "Clicked social link ({platform})"
+      "explore_place_detail_open": "打开了地点详情：{name}",
+      "explore_place_detail_view": "查看了地点详情：{name}",
+      "explore_detail_open_image": "查看了地点图片：{name}",
+      "search_page_open": "打开了搜索页面",
+      "search_performed": "搜索：「{query}」",
+      "search_product_click": "打开了产品：{name}",
+      "search_sort_change": "按 {sort} 排序产品",
+      "search_filter_status": "按 {status} 篩选产品",
+      "search_filter_category": "按 {category} 篩选产品",
+      "product_details_open": "查看了产品：{name}",
+      "scan_ingredients_start": "开始了成分掃描 ({source})",
+      "scan_ingredients_success": "掃描结果：{product} • {status}",
+      "scan_ingredients_error": "掃描失敗：{error}",
+      "profile_page_open": "打开了个人主页",
+      "social_link_click": "点击了社交链接 ({platform})"
     },
-    "cancelEdit": "Cancel Edit",
+    "cancelEdit": "取消编辑",
     "addNew": "Add New",
-    "existing": "Existing",
-    "pageOf": "Page {page} of {total}",
-    "noDataYet": "No data yet.",
+    "existing": "现有",
+    "pageOf": "第 {page} 页，共 {total} 页",
+    "noDataYet": "尚无资料。",
     "anonymousUser": "匿名用户",
     "userAvatar": "用户头像",
     "flag": "旗帜",
@@ -1667,6 +1895,111 @@
       "answers": "{n} 条回答",
       "average": "平均 {value}",
       "noText": "目前没有文字回答。"
+    },
+    "sections": {
+      "content": "内容审核",
+      "store": "平台商店管理",
+      "management": "管理",
+      "system": "系统与纪录"
+    },
+    "pointsLogs": "查看积分纪录",
+    "scanLogs": "成分掃描纪录",
+    "analytics": "数据分析儀表板",
+    "locationsReview": "地点审核",
+    "users": "用户",
+    "products": "产品管理",
+    "ingredientHighlights": "成分亮点",
+    "locationTypes": "地点类型",
+    "categoryRules": "类别规則",
+    "houseAds": "自营广告（赞助内容）",
+    "adImpressions": "曝光次数",
+    "adClicks": "点击次数",
+    "adCtr": "点击率",
+    "adsByTier": "依等级分类的广告",
+    "adsByKind": "依类别分类的广告",
+    "topAds": "热门赞助内容",
+    "noData": "此期间暂无资料。",
+    "retractConfirm": "要撤回此项目吗？此动作无法復原。",
+    "retractFailed": "撤回失敗：{error}",
+    "never": "从未",
+    "neverActive": "从未活躍",
+    "auditLog": {
+      "title": "审计纪录",
+      "kinds": {
+        "all": "全部",
+        "admin": "管理员",
+        "merchant": "商家",
+        "business_owner": "场所经营者"
+      },
+      "table": "资料表",
+      "allTables": "所有资料表",
+      "actorFilter": "操作者：{name}",
+      "userFilter": "使用者 {id}",
+      "empty": "尚无审计纪录。",
+      "emptyFiltered": "没有符合条件的纪录。",
+      "clearFilters": "清除篩选",
+      "loadFailed": "无法载入审计纪录。",
+      "retry": "重试",
+      "place": "地点 #{id}",
+      "user": "使用者 {id}",
+      "changes": "变更（{count}）",
+      "noChanges": "没有记录到栏位变更。",
+      "hidden": "已隐藏（敏感资料）",
+      "actions": {
+        "create": "建立",
+        "update": "更新",
+        "delete": "刪除",
+        "approve": "核准",
+        "unapprove": "取消核准",
+        "reject": "駁回",
+        "status_change": "状态变更",
+        "activate": "启用",
+        "deactivate": "停用"
+      }
+    },
+    "claims": {
+      "title": "商家认领",
+      "noPending": "没有待处理的认领",
+      "pending": "待处理",
+      "approve": "核准",
+      "reject": "拒绝",
+      "confirmApprove": "核准认领？",
+      "confirmApproveMsg": "要将 {name} 的拥有权授予此使用者吗？",
+      "confirmReject": "拒绝认领？",
+      "confirmRejectMsg": "请让申请人知道认领被拒绝的原因。",
+      "reasonPlaceholder": "拒绝原因",
+      "reasonRequired": "请提供原因",
+      "approveSuccess": "认领已核准 — 已授予拥有权",
+      "rejectSuccess": "认领已拒绝"
+    },
+    "editRequests": {
+      "title": "商家修改申请",
+      "noPending": "没有待处理的修改申请",
+      "pending": "待处理",
+      "submitted": "{date} 送出",
+      "approve": "核准",
+      "reject": "拒绝",
+      "confirmApprove": "核准修改？",
+      "confirmApproveMsg": "要将这些变更套用到 {name} 吗？",
+      "confirmReject": "拒绝修改？",
+      "confirmRejectMsg": "请让店家拥有者知道变更被拒绝的原因。",
+      "reasonPlaceholder": "拒绝原因",
+      "reasonRequired": "请提供原因",
+      "approveSuccess": "变更已套用",
+      "rejectSuccess": "修改申请已拒绝",
+      "fields": {
+        "name": "名称",
+        "address": "地址",
+        "type_id": "类别",
+        "halal_status": "清真状态",
+        "lat": "緯度",
+        "lng": "经度"
+      },
+      "halalStatus": {
+        "certified": "已认证",
+        "self_reported": "自行申報",
+        "muslim_friendly": "穆斯林友善"
+      }
     }
   },
   "merchantApplications": {
@@ -1782,7 +2115,7 @@
       "aboutProduct": "讨论这个产品",
       "today": "今天",
       "yesterday": "昨天",
-      "customer": "Customer"
+      "customer": "顾客"
     },
     "payNow": "立即付款",
     "verifyingPayment": "正在验证付款...",
@@ -1832,78 +2165,80 @@
         "cod_meetup": "亲自",
         "in_person": "亲自见面/货到付款"
       },
-      "senderAddress": "Sender Address",
+      "senderAddress": "寄件地址 / 攬件地址",
       "senderAddressPlaceholder": "Sender Address Placeholder",
-      "senderInfo": "Sender Info",
+      "senderInfo": "寄件人信息",
       "senderInfoHint": "Sender Info Hint",
-      "senderName": "Sender Name",
-      "senderNamePlaceholder": "Sender Name Placeholder",
-      "senderPhone": "Sender Phone",
-      "senderZipcode": "Sender Zipcode",
-      "shippingStoreTitle": "Shipping Store",
-      "selectStore": "Select Store",
-      "changeStore": "Change Store",
-      "shippingHint": "Select the branch where you will drop off packages. This is required for shipping.",
-      "city": "Store City",
-      "cityPlaceholder": "Select your city",
-      "shipsFrom": "Ships from",
-      "locationAndLogistics": "Location & Logistics",
-      "locationHint": "Specify where your products are shipped from"
+      "senderName": "寄件人姓名",
+      "senderNamePlaceholder": "请输入寄件人真实姓名 (须与证件相符)",
+      "senderPhone": "寄件人联络电话",
+      "senderZipcode": "邮递区号",
+      "shippingStoreTitle": "出货门市",
+      "selectStore": "选择门市",
+      "changeStore": "更改门市",
+      "shippingHint": "请选择您要前往寄件的门市。这是物流出货所必需的。",
+      "city": "商店所在城市",
+      "cityPlaceholder": "选择您的城市",
+      "shipsFrom": "出货地",
+      "locationAndLogistics": "所在地与物流",
+      "locationHint": "指定您的商品出货地"
     },
     "construction": {
-      "title": "Under Construction",
-      "message": "We're brewing something amazing! The Halal Formosa store will be available soon."
+      "title": "建设中",
+      "message": "我们正在籌备精彩内容！清真福尔摩沙商店即将开幕。"
     },
-    "selectCvsStore": "Select Pickup Store",
-    "selectCvsStoreHint": "Choose a convenience store branch for pickup",
-    "selectedStore": "Selected Store",
-    "cvsStoreId": "Store ID",
-    "logistics": "Logistics",
-    "logisticsId": "Logistics ID",
-    "shippingNo": "Shipping No",
-    "createShipment": "Create Shipment",
-    "printLabel": "Print Label",
-    "logisticsStatus": "Logistics Status",
-    "trackingNumber": "Tracking Number",
-    "shippingLabel": "Shipping Label",
+    "selectCvsStore": "选择取货门市",
+    "selectCvsStoreHint": "请选择要取货的便利商店门市",
+    "selectedStore": "已选择的门市",
+    "cvsStoreId": "门市代号",
+    "logistics": "物流",
+    "logisticsId": "物流编号",
+    "shippingNo": "配送编号",
+    "createShipment": "建立出货单",
+    "printLabel": "列印标签",
+    "logisticsStatus": "物流状态",
+    "trackingNumber": "追踪编号",
+    "shippingLabel": "运送标签",
     "logisticsStatuses": {
-      "300": "Order Created",
-      "310": "Awaiting Pickup",
-      "325": "Received by Logistics",
-      "330": "In Transit",
-      "2030": "Arrived at Store",
-      "2063": "Picked Up",
-      "2067": "Unclaimed, Returning",
-      "2068": "Returned to Sender",
-      "2073": "Closed"
+      "300": "订单已建立",
+      "310": "等待取件",
+      "325": "物流已收件",
+      "330": "运送中",
+      "2030": "已到店",
+      "2063": "已取货",
+      "2067": "逾期未取，退回中",
+      "2068": "已退回寄件人",
+      "2073": "已结案"
     },
-    "cartSubtotal": "Cart Subtotal",
-    "codOrderConfirmed": "Cod Order Confirmed",
-    "codPayment": "Cash on Delivery (COD)",
-    "codPaymentHint": "Pay with cash when your package arrives",
-    "codPending": "Cod Pending",
-    "deleteConfirm": "Delete Confirm",
-    "deleteSuccess": "Delete Success",
-    "descriptionPlaceholder": "Description Placeholder",
-    "free": "Free",
-    "homeDeliveryLogistics": "Home Delivery Logistics",
-    "inStockShort": "In Stock Short",
-    "shipViaTcat": "Ship Via Tcat",
-    "shippingFee": "Shipping Fee",
-    "sortTopRated": "Top Rated",
-    "buyerInfoDisclaimer": "To ensure accuracy, please use your valid name as it appears on your ID.",
-    "reviews": "Reviews",
-    "writeReview": "Write a Review",
-    "editReview": "Edit Review",
-    "yourRating": "Your Rating",
-    "yourComment": "Your Comment (optional)",
-    "submitReview": "Submit Review",
-    "reviewSubmitted": "Review submitted!",
-    "reviewUpdated": "Review updated!",
-    "noReviews": "No reviews yet. Be the first!",
-    "noReviewsYet": "No reviews yet.",
-    "ratingCount": "({count} reviews)",
-    "loginToReview": "Log in to write a review"
+    "cartSubtotal": "购物車小计",
+    "codOrderConfirmed": "货到付款订单已确认",
+    "codPayment": "货到付款",
+    "codPaymentHint": "包裹送达时以现金付款",
+    "codPending": "货到付款待处理",
+    "deleteConfirm": "您确定要刪除此产品吗？",
+    "deleteSuccess": "产品已成功刪除。",
+    "descriptionPlaceholder": "商品说明",
+    "free": "免费",
+    "homeDeliveryLogistics": "宅配物流",
+    "inStockShort": "件",
+    "shipViaTcat": "黑猫宅急便出货",
+    "shippingFee": "运费",
+    "sortTopRated": "评价最高",
+    "buyerInfoDisclaimer": "为确保配送准确性，请使用与身分证件相符的真实姓名。",
+    "reviews": "评价",
+    "writeReview": "撰写评价",
+    "editReview": "编辑评价",
+    "yourRating": "您的评分",
+    "yourComment": "您的评论 (选填)",
+    "submitReview": "提交评价",
+    "reviewSubmitted": "评价已提交！",
+    "reviewUpdated": "评价已更新！",
+    "noReviews": "目前尚无评价。成为第一个评价的人！",
+    "noReviewsYet": "目前尚无评价。",
+    "ratingCount": "({count} 則评价)",
+    "loginToReview": "登录以撰写评价",
+    "backToShop": "返回商店",
+    "purchasesDisabled": "測试阶段暂停购买"
   },
   "merchant": {
     "register": {
@@ -1962,69 +2297,69 @@
       "halalProofError": "食品类别需要清真证明。"
     },
     "store": {
-      "shippingFee": "Shipping Fee",
-      "codPayment": "Cash on Delivery (COD)",
-      "codPaymentHint": "Pay when you receive the package",
-      "shipViaTcat": "Ship via Black Cat",
-      "trackingNumber": "Tracking Number",
-      "courierTcat": "Black Cat 🐱 黑貓宅急便",
-      "senderInfo": "Sender / Pickup Address",
-      "senderName": "Sender Name",
-      "senderPhone": "Sender Phone",
-      "senderZipcode": "Sender Zipcode",
-      "senderAddress": "Sender Address",
-      "senderInfoHint": "This address is where the courier picks up packages from",
-      "deliveryMethod": "Delivery Method",
-      "cartSubtotal": "Subtotal",
-      "cartTotal": "Total",
+      "shippingFee": "运费",
+      "codPayment": "货到付款",
+      "codPaymentHint": "收到包裹时付款",
+      "shipViaTcat": "黑猫宅急便出货",
+      "trackingNumber": "追踪编号",
+      "courierTcat": "黑猫宅急便 🐱",
+      "senderInfo": "寄件／取件地址",
+      "senderName": "寄件人姓名",
+      "senderPhone": "寄件人电话",
+      "senderZipcode": "寄件人邮递区号",
+      "senderAddress": "寄件人地址",
+      "senderInfoHint": "此地址是物流人员取件的地点",
+      "deliveryMethod": "配送方式",
+      "cartSubtotal": "小计",
+      "cartTotal": "总计",
       "twd": "NT$",
-      "free": "Free",
-      "logistics": "Logistics",
-      "logisticsId": "Logistics ID",
-      "shippingNo": "Shipping No",
-      "createShipment": "Create Shipment",
-      "printLabel": "Print Label",
-      "homeDeliveryLogistics": "Home Delivery — Black Cat",
-      "codOrderConfirmed": "Order placed! You will pay when you receive the package.",
-      "orderPending": "Pending",
-      "codPending": "COD Pending",
-      "orderPaid": "Paid",
-      "orderShipped": "Shipped",
-      "orderCompleted": "Completed",
-      "orderCancelled": "Cancelled",
+      "free": "免费",
+      "logistics": "物流",
+      "logisticsId": "物流编号",
+      "shippingNo": "配送编号",
+      "createShipment": "建立出货单",
+      "printLabel": "列印标签",
+      "homeDeliveryLogistics": "宅配 — 黑猫宅急便",
+      "codOrderConfirmed": "订单已成立！您将在收到包裹时付款。",
+      "orderPending": "待处理",
+      "codPending": "货到付款待处理",
+      "orderPaid": "已付款",
+      "orderShipped": "已出货",
+      "orderCompleted": "已完成",
+      "orderCancelled": "已取消",
       "settings": {
-        "senderInfo": "Sender / Pickup Address",
-        "senderInfoHint": "This address is where the courier picks up packages from",
-        "senderName": "Sender Name",
-        "senderNamePlaceholder": "Name on the package",
-        "senderPhone": "Sender Phone",
-        "senderZipcode": "Sender Zipcode",
-        "senderAddress": "Sender Address",
-        "senderAddressPlaceholder": "Full pickup address for courier",
-        "saveProfile": "Save Settings"
+        "senderInfo": "寄件／取件地址",
+        "senderInfoHint": "此地址是物流人员取件的地点",
+        "senderName": "寄件人姓名",
+        "senderNamePlaceholder": "包裹上的姓名",
+        "senderPhone": "寄件人电话",
+        "senderZipcode": "寄件人邮递区号",
+        "senderAddress": "寄件人地址",
+        "senderAddressPlaceholder": "供物流人员取件的完整地址",
+        "saveProfile": "储存设定"
       }
     },
     "updatePassword": {
-      "title": "Set New Password",
-      "subtitle": "Please enter a strong password to secure your account.",
-      "oldPassword": "Current Password",
-      "newPassword": "New Password",
-      "confirmPassword": "Confirm New Password",
-      "update": "Set Password",
-      "updating": "Updating...",
-      "success": "Password updated successfully!",
-      "error": "Failed to update password.",
-      "mismatchError": "Passwords do not match",
-      "backToProfile": "Back to Profile"
+      "title": "设定新密码",
+      "subtitle": "请输入安全性高的密码来保護您的账号。",
+      "oldPassword": "目前密码",
+      "newPassword": "新密码",
+      "confirmPassword": "确认新密码",
+      "update": "设定密码",
+      "updating": "更新中…",
+      "success": "密码更新成功！",
+      "error": "密码更新失敗。",
+      "mismatchError": "两次输入的密码不一致",
+      "backToProfile": "返回个人资料"
     }
   },
   "analytics": {
-    "productTitle": "Product Analytics",
-    "productDesc": "Comprehensive breakdown of products analyzed and verified by the Halal Formosa ecosystem.",
-    "locationTitle": "Location Analytics",
-    "locationDesc": "Comprehensive breakdown of verified locations categorized by the Halal Formosa ecosystem.",
-    "seeAllProducts": "See All Products",
-    "seeAllLocations": "See All Locations"
+    "productTitle": "产品数据分析",
+    "productDesc": "由 Halal Formosa 生态系统分析并验证的产品详细分类。",
+    "locationTitle": "地点数据分析",
+    "locationDesc": "由 Halal Formosa 生态系统分类的验证地点详细分析。",
+    "seeAllProducts": "查看所有产品",
+    "seeAllLocations": "查看所有地点"
   },
   "facilityReview": {
     "title": "穆斯林设施评论",
@@ -2072,7 +2407,9 @@
       "maybeLater": "稍后再说",
       "yes": "是的，我有去",
       "no": "没有耶"
-    }
+    },
+    "deleteConfirmMsg": "确定要刪除你的评论吗？",
+    "ownerVerified": "已由商家拥有者确认"
   },
   "survey": {
     "cardTitle": "帮助我们进步",
@@ -2143,14 +2480,14 @@
       "publish": "发布",
       "preview": "预览",
       "previewTitle": "公开预览",
-      "previewHint": "这是您的店家资讯发布后的样子。",
+      "previewHint": "这是您的店家信息发布后的样子。",
       "unpublished": "您有尚未发布的变更。变更已存为草稿，公众暂时看不到。",
       "saved": "已存为草稿 — 公众暂时看不到。",
-      "published": "已发布！您的店家资讯已上线。",
+      "published": "已发布！您的店家信息已上线。",
       "publishedQueued": "已发布。以下项目需经管理员审核后才会上线：{fields}"
     },
     "tabs": {
-      "info": "资讯",
+      "info": "信息",
       "photos": "照片",
       "menu": "菜单",
       "halal": "清真",
@@ -2175,7 +2512,7 @@
       "description": "简介",
       "reviewNeeded": "此栏位的变更需经审核后才会上线",
       "reviewBadge": "审核",
-      "legendReview": "上线前需经我们團队审核",
+      "legendReview": "上线前需经我们团队审核",
       "legendInstant": "其他栏位会立即更新",
       "mapHint": "拖曳图钉或点击地图以微调确切位置",
       "coordinates": "座标",
@@ -2267,7 +2604,7 @@
       "reviews30d": "评论数（近 30 天）"
     },
     "reports": {
-      "none": "您的店家资讯目前没有检举。"
+      "none": "您的店家信息目前没有检举。"
     },
     "reviews": {
       "none": "此地点尚无评论。",
@@ -2317,7 +2654,7 @@
       },
       "action": "认领此商家",
       "hintTitle": "您是这家商家的拥有者吗？",
-      "hintBody": "认领您的店家，即可管理店家资讯、回复评论并发布优惠活动。",
+      "hintBody": "认领您的店家，即可管理店家信息、回复评论并发布优惠活动。",
       "title": "认领商家",
       "claiming": "您正在认领",
       "backToListing": "返回店家页面",
@@ -2325,11 +2662,11 @@
       "filesAttached": "个档案已附加",
       "successTitle": "认领申请已送出",
       "successSubtitle": "我们会尽快审核",
-      "successText": "我们的團队会核实您的资料并回复您。核准后，您就能从商家后台管理此店家资讯。",
+      "successText": "我们的团队会核实您的资料并回复您。核准后，您就能从商家后台管理此店家信息。",
       "pendingTitle": "认领审核中",
       "pendingText": "您已对此商家提出认领申请，正在审核中。审核完成后我们会通知您。",
       "reviewBannerTitle": "您的认领申请审核中",
-      "reviewBannerText": "我们正在核实您对此商家的认领申请，核准后即可管理此店家资讯。",
+      "reviewBannerText": "我们正在核实您对此商家的认领申请，核准后即可管理此店家信息。",
       "steps": {
         "role": "您的身分",
         "contact": "联络资料",
@@ -2552,5 +2889,301 @@
     "statusConverted": "已转换",
     "statusCanceled": "已取消",
     "statusSignedUp": "已注册"
+  },
+  "adminPages": {
+    "common": {
+      "all": "全部",
+      "cancel": "取消",
+      "confirm": "确认",
+      "copied": "已复制 {v}",
+      "copy": "复制",
+      "copyFailed": "无法复制",
+      "edit": "编辑",
+      "hideDetails": "隐藏详细资料",
+      "showDetails": "显示详细资料",
+      "lastDays": "最近 {n} 天",
+      "loadFailed": "载入失敗，请再试一次。",
+      "loadMore": "载入更多",
+      "period": "期间",
+      "retry": "再试一次",
+      "save": "储存",
+      "saveFailed": "无法储存",
+      "saved": "已储存"
+    },
+    "tools": {
+      "title": "营运工具",
+      "intro": "仅限管理员的页面：版本、系统状态、订阅与内容。",
+      "group": {
+        "release": "版本",
+        "health": "系统状态",
+        "business": "营运",
+        "content": "内容与社群"
+      },
+      "versions": {
+        "name": "App 版本",
+        "desc": "每位使用者的版本，以及低於最低版本的人"
+      },
+      "settings": {
+        "name": "App 设定",
+        "desc": "最低版本、OCR 登录、商店链接"
+      },
+      "health": {
+        "name": "系统状态",
+        "desc": "每日检查、伺服器事件与安全变更"
+      },
+      "errors": {
+        "name": "App 错误",
+        "desc": "App 回報的错误（已分组）"
+      },
+      "subs": {
+        "name": "订阅",
+        "desc": "Pro 会员、即将到期与不一致"
+      },
+      "announcements": {
+        "name": "公告与通知",
+        "desc": "App 内公告、推播纪录、更新电子邮件"
+      },
+      "survey": {
+        "name": "年度问卷",
+        "desc": "首页问卷的回答与分数"
+      },
+      "barcodes": {
+        "name": "未知条码",
+        "desc": "已掃描但资料庫中没有的商品"
+      },
+      "reviews": {
+        "name": "评论管理",
+        "desc": "查看与移除地点评论"
+      },
+      "line": {
+        "name": "LINE 機器人活动",
+        "desc": "LINE 機器人的事件与使用量"
+      }
+    },
+    "versions": {
+      "title": "App 版本",
+      "note": "{total} 位使用者中有 {live} 位由 App 即时回報。其餘来自各人最后一次掃描，因此只涵盖掃描过的人。即时回報将从下一个 App 版本开始。",
+      "empty": "此期间没有使用者。",
+      "minimum": "最低 {v}",
+      "belowMinimum": "低於最低版本",
+      "liveCount": "{n} 位即时",
+      "lastSeen": "最后出现 {d}",
+      "tileUsers": "出现的使用者",
+      "tileLive": "即时回報",
+      "tileNewest": "使用最新版",
+      "tileBelow": "低於最低版本"
+    },
+    "settings": {
+      "title": "App 设定",
+      "note": "变更会立即套用到所有使用者，并记录在审计纪录中。",
+      "minVersions": "最低 App 版本",
+      "minVersionHelp": "使用旧版的使用者必须先更新才能继续。",
+      "versionInvalid": "请输入像 2.0.1 的版本",
+      "impact": "过去 14 天出现的 {total} 位使用者中，有 {below} 位低於 {v}，将被要求更新。",
+      "impactCurrent": "过去 14 天出现的 {total} 位使用者中，有 {below} 位低於目前的最低版本 {v}，已被要求更新。",
+      "updated": "更新於 {d}",
+      "savedFrom": "{key}：{old} 改为 {new}",
+      "confirmTitle": "请确认",
+      "confirmVersion": "将 {platform} 最低版本设为 {v}？最近 {total} 位使用者中有 {below} 位会被要求更新。",
+      "confirmLink": "将 {label} 链接改为 {value}？",
+      "security": "安全",
+      "ocrTitle": "OCR 需要登录",
+      "ocrHelp": "开启后，只有已登录的使用者可使用文字辨识服务。",
+      "ocrOn": "要开启登录要求吗？",
+      "ocrOff": "要关闭登录要求吗？任何人都能不登录使用文字辨识服务。",
+      "storeLinks": "商店链接",
+      "readOnly": "其他设定",
+      "readOnlyHelp": "此处仅供检视。"
+    },
+    "health": {
+      "title": "系统状态",
+      "tabChecks": "检查",
+      "tabEvents": "事件",
+      "tabSecurity": "安全",
+      "hours": "最近 {n} 小时",
+      "allClear": "一切正常",
+      "flagged": "有 {n} 项需要查看",
+      "generated": "检查时间 {d}",
+      "level": "等级",
+      "tileScanGap": "未记录的掃描",
+      "tileProMismatch": "Pro 不一致",
+      "tileJobErrors": "工作错误",
+      "tileChanges": "审计的变更",
+      "scanLog": "掃描",
+      "scanLogLine": "{events} 次掃描成功，{rows} 笔已储存，缺少 {missing} 笔。",
+      "purchases": "购买未同步",
+      "purchasesHelp": "已在 App 内购买，但伺服器未显示为 Pro。",
+      "logins": "登录失敗",
+      "loginsLine": "{n} 次登录失敗，此期间预期约 {expected} 次。",
+      "webhook": "购买 Webhook",
+      "webhookLine": "{purchases} 笔购买，已处理 {processed} 个 Webhook 事件。",
+      "jobErrors": "{n} 个伺服器工作错误",
+      "cron": "失敗的排程工作",
+      "sensitive": "非管理员的敏感变更",
+      "sensitiveHelp": "这不应该发生，请逐一检查。",
+      "noEvents": "没有事件。",
+      "noSecurity": "没有安全变更纪录。",
+      "securityNote": "对点数、Pro 状态等受保護资料的变更，以及執行者。",
+      "by": "由",
+      "flag": {
+        "scan_log_gap": "掃描未储存",
+        "purchase_not_synced": "购买未同步",
+        "pro_flag_mismatch": "Pro 标记不一致",
+        "login_failure_spike": "登录失敗暴增",
+        "server_job_errors": "伺服器工作错误",
+        "webhook_silent": "Webhook 无动静",
+        "cron_job_failed": "排程工作失敗",
+        "scheduled_call_5xx": "排程呼叫错误",
+        "scheduled_call_unauthorized": "排程呼叫被拒",
+        "sensitive_change_by_non_admin": "非管理员的敏感变更"
+      }
+    },
+    "subs": {
+      "title": "订阅",
+      "note": "{lapsed} 笔已失效、{granted} 笔由推荐或管理员赠送 Pro，共 {total} 笔订阅纪录。",
+      "empty": "此检视没有订阅。",
+      "active": "有效",
+      "lapsed": "已失效",
+      "notRenewing": "不续订",
+      "renews": "续订中",
+      "granted": "赠送 Pro",
+      "mismatch": "个人资料不一致",
+      "first": "首次购买 {d}",
+      "expires": "到期 {d}",
+      "endedOn": "结束於 {d}",
+      "tileActive": "有效 Pro",
+      "tileExpiring": "14 天内到期",
+      "tileNotRenewing": "不续订",
+      "tileMismatch": "不一致",
+      "filter": {
+        "all": "全部",
+        "active": "有效",
+        "expiring": "即将到期",
+        "not_renewing": "不续订",
+        "lapsed": "已失效",
+        "mismatch": "不一致"
+      }
+    },
+    "announcements": {
+      "title": "公告",
+      "tabAnnouncements": "公告",
+      "tabNotifications": "推播纪录",
+      "tabEmails": "更新邮件",
+      "note": "启用中的公告会显示给 App 内的使用者。",
+      "new": "新增公告",
+      "newTitle": "新增公告",
+      "editTitle": "编辑公告",
+      "empty": "尚无公告。",
+      "live": "显示中",
+      "off": "关闭",
+      "nowLive": "公告已显示",
+      "nowOff": "公告已关闭",
+      "fieldTitle": "标题",
+      "fieldContent": "内容",
+      "fieldType": "类型",
+      "fieldImage": "图片链接（选填）",
+      "fieldLink": "链接（选填）",
+      "fieldActive": "显示给使用者",
+      "titleRequired": "请输入标题",
+      "imageHttps": "图片链接必须以 https:// 开头",
+      "linkScheme": "链接必须以 https:// 或 myapp:// 开头",
+      "noNotifications": "没有通知纪录。",
+      "noEmails": "没有排队中的更新邮件。",
+      "emailNote": "此处不显示电子邮件地址。",
+      "emailSent": "已寄出",
+      "emailPending": "等待中",
+      "emailFailed": "失敗",
+      "emailTotal": "佇列中"
+    },
+    "barcodes": {
+      "title": "未知条码",
+      "note": "使用者掃描但资料庫尚未收录的条码。已新增的 {added} 笔不列出。",
+      "empty": "此期间没有缺少的条码。",
+      "scans": "{n} 次掃描",
+      "people": "{n} 人",
+      "last": "最近 {d}",
+      "lookup": "查询",
+      "tileMissing": "仍缺少",
+      "tileScans": "掃描次数",
+      "tileRepeated": "掃描 3 次以上",
+      "tileAdded": "已新增"
+    },
+    "errors": {
+      "title": "App 错误",
+      "note": "由 App 本身回報的错误。只有具备错误回報的版本才会传送，因此数字会在下一个版本后增加。",
+      "empty": "此期间没有错误。",
+      "times": "{n} 次",
+      "users": "{n} 位使用者",
+      "first": "首次 {d}",
+      "stack": "显示堆疊追踪",
+      "tileErrors": "错误",
+      "tileKinds": "不同错误",
+      "tileViews": "画面浏览",
+      "tileRate": "每千次浏览的错误"
+    },
+    "reviews": {
+      "title": "评论管理",
+      "note": "移除评论对使用者而言是永久的。必须填写原因，被移除的评论会保留在审计纪录中。",
+      "rating": "评分",
+      "anyRating": "任何评分",
+      "upTo": "{n} 星以下",
+      "search": "搜索评论或地点",
+      "empty": "找不到评论。",
+      "noComment": "没有留言",
+      "ownerReply": "店家回复",
+      "remove": "移除",
+      "removeTitle": "移除评论",
+      "removeMessage": "要移除对 {place} 的这則评论吗？请简短说明原因。",
+      "reasonPlaceholder": "原因（至少 3 个字）",
+      "removed": "评论已移除"
+    },
+    "line": {
+      "title": "LINE 機器人活动",
+      "note": "仅显示总数。账号 ID 已缩短，不会完整显示。",
+      "empty": "此期间没有 LINE 活动。",
+      "perDay": "每日",
+      "legend": "事件，加号后为使用量。",
+      "byType": "事件类型",
+      "topSources": "最活躍的账号",
+      "masked": "ID 已缩短。",
+      "tileEvents": "事件",
+      "tileUsage": "使用量",
+      "tileAccounts": "账号",
+      "tileActiveDays": "活躍天数"
+    }
+  },
+  "prayerSettings": {
+    "title": "礼拜时间计算",
+    "close": "关闭",
+    "note": "时间为计算所得，您当地的清真寺可能相差幾分钟。",
+    "method": "计算方法",
+    "asr": "晡礼",
+    "asrStandard": "标准",
+    "asrHanafi": "哈奈斐学派",
+    "adjust": "调整分钟数",
+    "adjustHelp": "增減分钟数，以符合您清真寺的时间表。",
+    "plus": "{prayer} 增加一分钟",
+    "minus": "{prayer} 減少一分钟",
+    "save": "储存",
+    "reset": "重设为预设值",
+    "prayers": {
+      "fajr": "晨礼",
+      "dhuhr": "晌礼",
+      "asr": "晡礼",
+      "maghrib": "昏礼",
+      "isha": "宵礼"
+    },
+    "methods": {
+      "MWL": "世界穆斯林联盟",
+      "ISNA": "ISNA（北美伊斯兰协会）",
+      "Egypt": "埃及总測量局",
+      "Makkah": "烏姆庫拉大学（麥加）",
+      "Karachi": "喀拉蚩伊斯兰科学大学",
+      "Tehran": "德黑兰大学地球物理研究所",
+      "Jafari": "什葉派十二伊玛目（賈法里）",
+      "France": "法国伊斯兰组织联盟",
+      "Russia": "俄罗斯穆斯林宗教管理局",
+      "Singapore": "新加坡伊斯兰宗教理事会"
+    }
   }
 }

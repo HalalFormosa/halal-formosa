@@ -36,23 +36,23 @@
     "error": "發生錯誤。",
     "notProvided": "未提供",
     "replay": "重新播放",
-    "noData": "No data found",
-    "viewMore": "View More",
-    "loading": "Loading...",
-    "phone": "Phone",
-    "call": "Call",
-    "open": "Open",
-    "closed": "Closed",
+    "noData": "找不到資料",
+    "viewMore": "查看更多",
+    "loading": "載入中…",
+    "phone": "電話",
+    "call": "撥打",
+    "open": "營業中",
+    "closed": "已打烊",
     "instagram": "Instagram",
     "lineId": "LINE ID",
-    "underMaintenance": "Under Maintenance",
-    "comingSoon": "Coming Soon",
-    "maintenanceMessage": "This feature is currently undergoing maintenance. We'll be back soon!",
-    "copied": "Copied to clipboard",
+    "underMaintenance": "維護中",
+    "comingSoon": "即將推出",
+    "maintenanceMessage": "此功能目前正在維護中，我們很快就會回來！",
+    "copied": "已複製到剪貼簿",
     "change": "更改",
     "mandatory": "必填",
-    "chat": "Chat",
-    "edited": "(Edited)",
+    "chat": "聊天",
+    "edited": "（已編輯）",
     "remove": "移除",
     "history": "歷史紀錄",
     "added": "新增於",
@@ -61,7 +61,11 @@
     "admin": "管理員",
     "loginRequired": "請登入後再提交評論",
     "unknown": "未知",
-    "sort": "排序"
+    "sort": "排序",
+    "sessionExpired": "您的登入已逾時，請重新登入。",
+    "offlineMessage": "您目前處於離線狀態。請檢查網路連線後再試一次。",
+    "seeOlderChanges": "查看較早的變更",
+    "hideOlderChanges": "隱藏較早的變更"
   },
   "review": {
     "title": "審核提交",
@@ -106,7 +110,12 @@
     "reasonRequired": "拒絕提交必須填寫原因。",
     "confirmMergeHeader": "要合併到現有產品嗎？",
     "confirmMergeMsg": "此提交不會單獨發布。其條碼將成為現有產品的別名，且此提交會被移除。此動作無法復原。",
-    "merge": "合併"
+    "merge": "合併",
+    "publish": "發布",
+    "publishing": "發布中…",
+    "publishSuccess": "發布成功！",
+    "approveFailed": "無法發布，請再試一次。",
+    "actionFailed": "操作失敗，請再試一次。"
   },
   "master": {
     "active": "啟用",
@@ -205,8 +214,8 @@
     "error": "更新密碼失敗。",
     "mismatchError": "密碼不匹配",
     "backToProfile": "返回個人資料",
-    "change": "Change Password",
-    "changePassword": "Change Password"
+    "change": "變更密碼",
+    "changePassword": "變更密碼"
   },
   "main": {
     "title": "Halal Formosa",
@@ -321,8 +330,21 @@
       "isha": "宵禮"
     },
     "qibla": "朝向",
-    "altProduct": "product",
-    "pro": "Pro"
+    "altProduct": "產品",
+    "pro": "Pro",
+    "sponsored": "贊助",
+    "houseAdKind": {
+      "partner": "合作夥伴",
+      "product": "產品",
+      "location": "地點",
+      "trip": "行程"
+    },
+    "houseAdProvider": {
+      "soldBy": "由 {name} 銷售",
+      "certifiedBy": "由 {name} 認證",
+      "affiliatedWith": "隸屬於 {name}",
+      "providedBy": "由 {name} 提供"
+    }
   },
   "analytics": {
     "productTitle": "產品數據分析",
@@ -418,9 +440,16 @@
         "searching": "正在尋找成分...",
         "scanning": "AI 掃描中...",
         "found": "找到成分！對焦中...",
-        "notFound": "未找到成分，請繼續保持..."
+        "notFound": "未找到成分，請繼續保持...",
+        "analyzing": "收到了！正在讀取成分…"
       },
-      "label": "自動拍攝"
+      "label": "自動拍攝",
+      "analyzingHint": "已拍照 — 您現在可以放低相機",
+      "highlightsFound": "找到 {count} 項成分",
+      "autoDismiss": "{s} 秒後進行下一次掃描 — 點選可暫停",
+      "dismissPaused": "已暫停 — 點選「再次掃描」繼續",
+      "scanAgain": "再次掃描",
+      "viewDetails": "查看詳情"
     },
     "scan": {
       "takePhoto": "拍照",
@@ -466,7 +495,11 @@
         "motivationQuote": "幫助他人是高尚的行為：「你們當為正義和敬畏而互助」(古蘭經 5:2)。穆聖 (SAW) 曾說：「最優秀的人是那些對他人最有益的人。」(泰伯拉尼 輯錄)",
         "action": "立即貢獻",
         "skip": "稍後再說"
-      }
+      },
+      "addedAgo": "{time}新增",
+      "nameMatch": "名稱相符 {percent}%",
+      "ingredientsMatch": "成分相符 {percent}%",
+      "ingredientDetails": "成分詳情"
     },
     "toast": {
       "ok": "✅ 已提取成分！",
@@ -474,14 +507,14 @@
       "copied": "已複製到剪貼簿"
     },
     "aiSummary": {
-      "title": "AI Analysis Summary",
-      "preparing": "Preparing Analysis...",
-      "connecting": "Connecting to {model}...",
-      "footer": "Answer written & structured by {model} using Halal Formosa Database",
-      "thinking": "AI is Thinking...",
-      "explanation": "AI Explanation",
-      "unlock": "Unlock AI Explanation",
-      "unlockPro": "Unlock AI Explanation (PRO)",
+      "title": "AI 分析摘要",
+      "preparing": "正在準備分析…",
+      "connecting": "正在連線至 {model}…",
+      "footer": "答案由 {model} 依據清真福爾摩沙資料庫撰寫並整理",
+      "thinking": "AI 思考中…",
+      "explanation": "AI 說明",
+      "unlock": "解鎖 AI 說明",
+      "unlockPro": "解鎖 AI 說明（PRO）",
       "teaser": {
         "title": "為什麼 {ingredient} 被標記？",
         "body": "Pro 會用淺顯的文字說明它通常來自什麼原料，以及該在標籤上檢查什麼。",
@@ -492,8 +525,8 @@
       "reached": "已達到每日掃描限制。觀看廣告或貢獻缺失的產品/地點以獲取更多掃描次數！",
       "reachedContribute": "已達到每日掃描限制。貢獻缺失的產品或地點即可獲得更多掃描次數！",
       "upgrade": "升級 Pro",
-      "bonus": "Watch Ad +1 Scan",
-      "adLimit": "You can only watch {count} ads per day.",
+      "bonus": "觀看廣告 +1 次掃描",
+      "adLimit": "每天最多只能觀看 {count} 則廣告。",
       "contributeTip": "每貢獻一個新產品或地點可獲得 +1 每日掃描次數（每日最多 +3 次）。",
       "sheet": {
         "title": "今天的 {limit} 次掃描已用完",
@@ -505,16 +538,16 @@
       }
     },
     "progress": {
-      "initializing": "Initializing...",
-      "loadingDb": "Loading ingredient database...",
-      "runningOcr": "Running OCR...",
-      "detectingLang": "Detecting language...",
-      "cleaningText": "Cleaning text...",
-      "translating": "Translating...",
-      "extractingIng": "Extracting ingredients...",
-      "matchingIng": "Matching ingredients...",
-      "finalizing": "Finalizing...",
-      "failed": "Failed"
+      "initializing": "初始化中…",
+      "loadingDb": "正在載入成分資料庫…",
+      "runningOcr": "正在執行文字辨識…",
+      "detectingLang": "正在偵測語言…",
+      "cleaningText": "正在整理文字…",
+      "translating": "翻譯中…",
+      "extractingIng": "正在擷取成分…",
+      "matchingIng": "正在比對成分…",
+      "finalizing": "即將完成…",
+      "failed": "失敗"
     },
     "scanProgress": {
       "s1": { "title": "上傳照片", "sub": "正在傳送裁切後的標籤進行分析" },
@@ -538,10 +571,11 @@
       "retry": "再試一次"
     },
     "errors": {
-      "ocrFailed": "OCR analysis failed. Please try again with a clearer photo.",
-      "noIngredients": "No ingredients detected. Please try cropping more closely.",
-      "noKeywords": "No ingredient keywords detected. Please crop the ingredients section only.",
-      "couldNotAccessCamera": "Could not access camera. Please check permissions."
+      "ocrFailed": "文字辨識失敗。請用更清晰的照片再試一次。",
+      "noIngredients": "未偵測到成分。請裁切得更貼近一些。",
+      "noKeywords": "未偵測到成分關鍵字。請只裁切成分欄位。",
+      "couldNotAccessCamera": "無法使用相機，請檢查權限。",
+      "adFailed": "無法載入獎勵廣告，請再試一次。"
     }
   },
   "search": {
@@ -558,7 +592,8 @@
       "title": "篩選",
       "stores": "商店",
       "categories": "類別",
-      "statuses": "狀態"
+      "statuses": "狀態",
+      "sort": "排序"
     },
     "categoriesList": {
       "Snacks": "零食",
@@ -668,7 +703,30 @@
     "viewedCount": "👁️ 已瀏覽 {count} 次",
     "addedDate": "新增於 {date}",
     "endOfList": "🙏 抱歉，您已到達列表底部",
-    "scanInstructions": "將條碼對準框架內"
+    "scanInstructions": "將條碼對準框架內",
+    "noResults": "找不到結果",
+    "barcodeScan": {
+      "title": "掃描條碼",
+      "hint": "請將條碼對準框內",
+      "close": "關閉",
+      "status": {
+        "init": "正在啟動相機…",
+        "searching": "正在尋找條碼…",
+        "checking": "正在查詢條碼…"
+      },
+      "scanAgain": "再次掃描",
+      "viewDetails": "查看詳情",
+      "notFound": {
+        "title": "資料庫中尚無此產品",
+        "message": "找不到符合條碼 {barcode} 的產品。",
+        "action": "新增此產品"
+      },
+      "cameraError": "無法使用相機，請檢查權限。",
+      "unsupportedError": "此裝置不支援條碼掃描。",
+      "moduleUnavailableError": "正在首次設定條碼掃描器 — 請稍後再試。",
+      "permissionError": "需要相機權限才能掃描條碼。",
+      "scanError": "掃描時發生問題，請再試一次。"
+    }
   },
   "explore": {
     "title": "探索",
@@ -692,13 +750,13 @@
       "readDescriptionNotice": "請查看此地點下方的特定處理細節。",
       "handlingDetails": "處理細節",
       "phone": "電話",
-      "officialPartner": "OFFICIAL PARTNER",
-      "orderVia": "Order Via",
-      "orderNow": "Order Now",
-      "certifiedBy": "Certified by",
-      "verifiedGoldPartner": "Verified Gold Partner",
-      "address": "Address",
-      "noAddress": "No address available",
+      "officialPartner": "官方合作夥伴",
+      "orderVia": "訂購管道",
+      "orderNow": "立即訂購",
+      "certifiedBy": "認證單位",
+      "verifiedGoldPartner": "認證黃金合作夥伴",
+      "address": "地址",
+      "noAddress": "沒有可用的地址",
       "similarPlaces": "類似地點",
       "checkIn": "打卡",
       "checkedIn": "已打卡",
@@ -711,12 +769,16 @@
       "checkInNoLocation": "請開啟定位以打卡",
       "checkInLogin": "請登入後打卡",
       "checkInFailed": "打卡失敗",
-      "openingHours": "Opening Hours",
-      "openNow": "Open Now",
-      "closedNow": "Closed Now",
-      "additionalDetails": "Additional Details",
-      "estimatedPrice": "Estimated Price",
-      "open24Hours": "24 小時"
+      "openingHours": "營業時間",
+      "openNow": "營業中",
+      "closedNow": "休息中",
+      "additionalDetails": "其他資訊",
+      "estimatedPrice": "預估價格",
+      "open24Hours": "24 小時",
+      "broughtBy": "提供者",
+      "affiliatedWith": "隸屬於",
+      "allHours": "整週",
+      "hideHours": "收合"
     },
     "filters": {
       "priceRange": "價格範圍"
@@ -756,20 +818,28 @@
       "Others": "其他"
     },
     "moreFilters": "更多 ...",
-    "loadingMoreLocations": "Loading more locations...",
+    "loadingMoreLocations": "正在載入更多地點…",
     "forYou": {
       "title": "For You",
-      "gateDesc": "You're viewing For You. This personalized feed unlocks with Halal Formosa Pro and adapts to your explore activity over time.",
-      "upgrade": "Upgrade to Pro",
-      "infoDesc": "We recommend places based on your activity in explore:",
-      "reasonMsg": "💡 You're seeing this because you often explore {reason}.",
-      "learningMsg": "💡 We're learning your preferences as you explore more places.",
-      "nativeOnly": "✨ For You is available on mobile apps only.",
-      "categories": "Categories you filter",
-      "searchTerms": "Recent searches",
-      "tags": "Places you view"
+      "gateDesc": "您正在查看「為您推薦」。此個人化內容需訂閱清真福爾摩沙 Pro 才能解鎖，並會隨著您的探索紀錄逐漸調整。",
+      "upgrade": "升級至 Pro",
+      "infoDesc": "我們會根據您在探索中的行為推薦地點：",
+      "reasonMsg": "💡 您看到這個是因為您經常探索{reason}。",
+      "learningMsg": "💡 隨著您探索更多地點，我們正在了解您的偏好。",
+      "nativeOnly": "✨ 「為您推薦」僅限手機 App 使用。",
+      "categories": "您篩選的類別",
+      "searchTerms": "最近搜尋",
+      "tags": "您瀏覽過的地點"
     },
-    "noResults": "No results found"
+    "noResults": "找不到結果",
+    "discount": "折扣碼",
+    "discountFilter": "有折扣碼",
+    "discountChip": "折扣",
+    "discountTag": "折扣碼",
+    "showResults": "顯示 {count} 筆結果",
+    "go": "前往",
+    "searching": "正在搜尋地點…",
+    "searchNotFound": "找不到「{query}」的結果"
   },
   "trip": {
     "title": "穆斯林友善旅遊",
@@ -1222,7 +1292,8 @@
           "6": "Halal Formosa 資深會員"
         }
       }
-    }
+    },
+    "unlockedBadge": "獎盃已解鎖！"
   },
   "appReview": {
     "title": "喜歡 Halal Formosa 嗎？",
@@ -1339,7 +1410,17 @@
     },
     "selectCategory": "選擇分類",
     "searchCategoryPlaceholder": "搜尋分類...",
-    "cameraError": "無法擷取影像。"
+    "cameraError": "無法擷取影像。",
+    "scanBarcodeFromGallery": "從相簿上傳",
+    "manualEntry": "手動輸入",
+    "manualEntryShort": "手動",
+    "galleryShort": "相簿",
+    "tapToStop": "點選以停止相機",
+    "noBarcodeInImage": "在該圖片中找不到條碼。",
+    "enterIngredientsManually": "無法掃描？手動輸入成分",
+    "noIngredientsDetected": "無法在該照片中偵測到成分表。請再試一次，或在下方手動輸入成分。",
+    "analyzingIngredients": "正在分析成分…",
+    "highlightedIngredients": "已掃描的成分"
   },
   "addPlace": {
     "title": "新增地點",
@@ -1441,7 +1522,10 @@
       "errWebsite": "網站必須是有效的連結，例如 https://example.com。",
       "errTooLong": "其中一個欄位太長。",
       "errGeneric": "無法儲存，請再試一次。"
-    }
+    },
+    "productsBy": "{name} 的產品",
+    "ourStores": "我們的店家",
+    "availableAt": "販售地點"
   },
   "points": {
     "title": "審核積分紀錄"
@@ -1508,7 +1592,12 @@
     "moveToFolder": "移動到資料夾...",
     "itemAlreadyInFolder": "項目已存在於該資料夾中！",
     "moveSuccess": "已移動到 {name}",
-    "moveFailed": "移動項目失敗。"
+    "moveFailed": "移動項目失敗。",
+    "renameFolder": "重新命名資料夾",
+    "deleteFolder": "刪除資料夾",
+    "deleteConfirm": "確定要刪除此資料夾嗎？裡面所有已儲存的項目都會消失。",
+    "renameSuccess": "資料夾已重新命名",
+    "deleteSuccess": "資料夾已刪除"
   },
   "admin": {
     "sections": {
@@ -1689,7 +1778,7 @@
       "scan_ingredients_error": "掃描失敗：{error}",
       "profile_page_open": "打開了個人主頁",
       "social_link_click": "點擊了社交連結 ({platform})",
-      "search_performed": "Searched: \"{query}\""
+      "search_performed": "搜尋：「{query}」"
     },
     "cancelEdit": "取消編輯",
     "addNew": "新增",
@@ -1742,34 +1831,34 @@
         "rejected": "已拒絕"
       }
     },
-    "noReports": "No reports found",
-    "reportDetail": "Report Detail",
-    "reporter": "Reporter",
-    "ingredient_highlights": "Ingredient Highlights",
-    "location_types": "Location Types",
-    "category_rules": "Category Rules",
-    "dau": "Active Sessions",
-    "activity": "Activity",
-    "custom": "Custom Range",
-    "selectDates": "Select Dates",
-    "startDate": "Start Date",
-    "endDate": "End Date",
-    "topSearches": "Top Search Queries",
-    "quickInsights": "Quick Insights",
-    "newUsers": "New Registrations",
-    "conversion": "Conversion Rate",
-    "stickiness": "App Stickiness",
-    "topNationalities": "Top Nationalities",
-    "accountRatios": "Account Distribution",
-    "scanFunnel": "AI Scanner Funnel",
-    "activityTrends": "Activity Trends",
-    "hourlyDistribution": "Activity by Hour",
-    "topFeatures": "Top Features",
-    "topProducts": "Top Products",
-    "topLocations": "Top Locations",
-    "insight_high_scan_success": "AI Scanner is performing exceptionally well (>70% success).",
-    "insight_low_scan_success": "Scanner error rates are higher than usual. Check visibility/lighting logs.",
-    "searchHistory": "Search History",
+    "noReports": "找不到回報",
+    "reportDetail": "回報詳情",
+    "reporter": "回報者",
+    "ingredient_highlights": "成分標示",
+    "location_types": "地點類型",
+    "category_rules": "類別規則",
+    "dau": "活躍工作階段",
+    "activity": "活動",
+    "custom": "自訂範圍",
+    "selectDates": "選擇日期",
+    "startDate": "開始日期",
+    "endDate": "結束日期",
+    "topSearches": "熱門搜尋",
+    "quickInsights": "快速洞察",
+    "newUsers": "新註冊",
+    "conversion": "轉換率",
+    "stickiness": "App 黏著度",
+    "topNationalities": "主要國籍",
+    "accountRatios": "帳號分布",
+    "scanFunnel": "AI 掃描器漏斗",
+    "activityTrends": "活動趨勢",
+    "hourlyDistribution": "各時段活動",
+    "topFeatures": "熱門功能",
+    "topProducts": "熱門產品",
+    "topLocations": "熱門地點",
+    "insight_high_scan_success": "AI 掃描器表現優異（成功率 >70%）。",
+    "insight_low_scan_success": "掃描器錯誤率高於平常。請檢查能見度／光線紀錄。",
+    "searchHistory": "搜尋紀錄",
     "retractConfirm": "要撤回此項目嗎？此動作無法復原。",
     "retractFailed": "撤回失敗：{error}",
     "never": "從未",
@@ -1824,6 +1913,50 @@
       "answers": "{n} 則回答",
       "average": "平均 {value}",
       "noText": "目前沒有文字回答。"
+    },
+    "claims": {
+      "title": "商家認領",
+      "noPending": "沒有待處理的認領",
+      "pending": "待處理",
+      "approve": "核准",
+      "reject": "拒絕",
+      "confirmApprove": "核准認領？",
+      "confirmApproveMsg": "要將 {name} 的擁有權授予此使用者嗎？",
+      "confirmReject": "拒絕認領？",
+      "confirmRejectMsg": "請讓申請人知道認領被拒絕的原因。",
+      "reasonPlaceholder": "拒絕原因",
+      "reasonRequired": "請提供原因",
+      "approveSuccess": "認領已核准 — 已授予擁有權",
+      "rejectSuccess": "認領已拒絕"
+    },
+    "editRequests": {
+      "title": "商家修改申請",
+      "noPending": "沒有待處理的修改申請",
+      "pending": "待處理",
+      "submitted": "{date} 送出",
+      "approve": "核准",
+      "reject": "拒絕",
+      "confirmApprove": "核准修改？",
+      "confirmApproveMsg": "要將這些變更套用到 {name} 嗎？",
+      "confirmReject": "拒絕修改？",
+      "confirmRejectMsg": "請讓店家擁有者知道變更被拒絕的原因。",
+      "reasonPlaceholder": "拒絕原因",
+      "reasonRequired": "請提供原因",
+      "approveSuccess": "變更已套用",
+      "rejectSuccess": "修改申請已拒絕",
+      "fields": {
+        "name": "名稱",
+        "address": "地址",
+        "type_id": "類別",
+        "halal_status": "清真狀態",
+        "lat": "緯度",
+        "lng": "經度"
+      },
+      "halalStatus": {
+        "certified": "已認證",
+        "self_reported": "自行申報",
+        "muslim_friendly": "穆斯林友善"
+      }
     }
   },
   "merchantApplications": {
@@ -1941,7 +2074,7 @@
       "aboutProduct": "正在討論此商品",
       "today": "今天",
       "yesterday": "昨天",
-      "customer": "Customer"
+      "customer": "顧客"
     },
     "payNow": "立即支付",
     "verifyingPayment": "正在驗證付款...",
@@ -1995,10 +2128,10 @@
       "deliveryMethods": {
         "home_delivery": "宅配到府",
         "home_delivery_desc": "直接配送至顧客地址",
-        "7eleven": "7-Eleven",
-        "family_mart": "FamilyMart",
-        "hi_life": "Hi-Life",
-        "ok_mart": "OK Mart",
+        "7eleven": "7-ELEVEN",
+        "family_mart": "全家",
+        "hi_life": "萊爾富",
+        "ok_mart": "OK 超商",
         "cvs_pickup": "超商取貨",
         "cod_meetup": "自取",
         "in_person": "面交自取 / 貨到付款"
@@ -2022,46 +2155,47 @@
       "locationHint": "指定您的商品出貨地"
     },
     "construction": {
-      "title": "Under Construction",
-      "message": "We're brewing something amazing! The Halal Formosa store will be available soon."
+      "title": "建設中",
+      "message": "我們正在籌備精彩內容！清真福爾摩沙商店即將開幕。"
     },
-    "selectCvsStore": "Select Pickup Store",
-    "selectCvsStoreHint": "Choose a convenience store branch for pickup",
-    "selectedStore": "Selected Store",
-    "cvsStoreId": "Store ID",
-    "logistics": "Logistics",
-    "logisticsId": "Logistics ID",
-    "shippingNo": "Shipping No",
-    "createShipment": "Create Shipment",
-    "printLabel": "Print Label",
-    "logisticsStatus": "Logistics Status",
-    "trackingNumber": "Tracking Number",
-    "shippingLabel": "Shipping Label",
+    "selectCvsStore": "選擇取貨門市",
+    "selectCvsStoreHint": "請選擇要取貨的便利商店門市",
+    "selectedStore": "已選擇的門市",
+    "cvsStoreId": "門市代號",
+    "logistics": "物流",
+    "logisticsId": "物流編號",
+    "shippingNo": "配送編號",
+    "createShipment": "建立出貨單",
+    "printLabel": "列印標籤",
+    "logisticsStatus": "物流狀態",
+    "trackingNumber": "追蹤編號",
+    "shippingLabel": "運送標籤",
     "logisticsStatuses": {
-      "300": "Order Created",
-      "310": "Awaiting Pickup",
-      "325": "Received by Logistics",
-      "330": "In Transit",
-      "2030": "Arrived at Store",
-      "2063": "Picked Up",
-      "2067": "Unclaimed, Returning",
-      "2068": "Returned to Sender",
-      "2073": "Closed"
+      "300": "訂單已建立",
+      "310": "等待取件",
+      "325": "物流已收件",
+      "330": "運送中",
+      "2030": "已到店",
+      "2063": "已取貨",
+      "2067": "逾期未取，退回中",
+      "2068": "已退回寄件人",
+      "2073": "已結案"
     },
-    "cartSubtotal": "Cart Subtotal",
-    "codOrderConfirmed": "Cod Order Confirmed",
-    "codPayment": "Cash on Delivery (COD)",
-    "codPaymentHint": "Pay with cash when your package arrives",
-    "codPending": "Cod Pending",
-    "descriptionPlaceholder": "Description Placeholder",
-    "free": "Free",
-    "homeDeliveryLogistics": "Home Delivery Logistics",
-    "shipViaTcat": "Ship Via Tcat",
-    "shippingFee": "Shipping Fee",
-    "sortTopRated": "Top Rated",
+    "cartSubtotal": "購物車小計",
+    "codOrderConfirmed": "貨到付款訂單已確認",
+    "codPayment": "貨到付款",
+    "codPaymentHint": "包裹送達時以現金付款",
+    "codPending": "貨到付款待處理",
+    "descriptionPlaceholder": "商品說明",
+    "free": "免費",
+    "homeDeliveryLogistics": "宅配物流",
+    "shipViaTcat": "黑貓宅急便出貨",
+    "shippingFee": "運費",
+    "sortTopRated": "評價最高",
     "admin": {
       "products": "商品"
-    }
+    },
+    "purchasesDisabled": "測試階段暫停購買"
   },
   "merchant": {
     "register": {
@@ -2120,60 +2254,60 @@
       "halalProofError": "食品類別必須提供清真驗證證明。"
     },
     "store": {
-      "shippingFee": "Shipping Fee",
-      "codPayment": "Cash on Delivery (COD)",
-      "codPaymentHint": "Pay when you receive the package",
-      "shipViaTcat": "Ship via Black Cat",
-      "trackingNumber": "Tracking Number",
-      "courierTcat": "Black Cat 🐱 黑貓宅急便",
-      "senderInfo": "Sender / Pickup Address",
-      "senderName": "Sender Name",
-      "senderPhone": "Sender Phone",
-      "senderZipcode": "Sender Zipcode",
-      "senderAddress": "Sender Address",
-      "senderInfoHint": "This address is where the courier picks up packages from",
-      "deliveryMethod": "Delivery Method",
-      "cartSubtotal": "Subtotal",
-      "cartTotal": "Total",
+      "shippingFee": "運費",
+      "codPayment": "貨到付款",
+      "codPaymentHint": "收到包裹時付款",
+      "shipViaTcat": "黑貓宅急便出貨",
+      "trackingNumber": "追蹤編號",
+      "courierTcat": "黑貓宅急便 🐱",
+      "senderInfo": "寄件／取件地址",
+      "senderName": "寄件人姓名",
+      "senderPhone": "寄件人電話",
+      "senderZipcode": "寄件人郵遞區號",
+      "senderAddress": "寄件人地址",
+      "senderInfoHint": "此地址是物流人員取件的地點",
+      "deliveryMethod": "配送方式",
+      "cartSubtotal": "小計",
+      "cartTotal": "總計",
       "twd": "NT$",
-      "free": "Free",
-      "logistics": "Logistics",
-      "logisticsId": "Logistics ID",
-      "shippingNo": "Shipping No",
-      "createShipment": "Create Shipment",
-      "printLabel": "Print Label",
-      "homeDeliveryLogistics": "Home Delivery — Black Cat",
-      "codOrderConfirmed": "Order placed! You will pay when you receive the package.",
-      "orderPending": "Pending",
-      "codPending": "COD Pending",
-      "orderPaid": "Paid",
-      "orderShipped": "Shipped",
-      "orderCompleted": "Completed",
-      "orderCancelled": "Cancelled",
+      "free": "免費",
+      "logistics": "物流",
+      "logisticsId": "物流編號",
+      "shippingNo": "配送編號",
+      "createShipment": "建立出貨單",
+      "printLabel": "列印標籤",
+      "homeDeliveryLogistics": "宅配 — 黑貓宅急便",
+      "codOrderConfirmed": "訂單已成立！您將在收到包裹時付款。",
+      "orderPending": "待處理",
+      "codPending": "貨到付款待處理",
+      "orderPaid": "已付款",
+      "orderShipped": "已出貨",
+      "orderCompleted": "已完成",
+      "orderCancelled": "已取消",
       "settings": {
-        "senderInfo": "Sender / Pickup Address",
-        "senderInfoHint": "This address is where the courier picks up packages from",
-        "senderName": "Sender Name",
-        "senderNamePlaceholder": "Name on the package",
-        "senderPhone": "Sender Phone",
-        "senderZipcode": "Sender Zipcode",
-        "senderAddress": "Sender Address",
-        "senderAddressPlaceholder": "Full pickup address for courier",
-        "saveProfile": "Save Settings"
+        "senderInfo": "寄件／取件地址",
+        "senderInfoHint": "此地址是物流人員取件的地點",
+        "senderName": "寄件人姓名",
+        "senderNamePlaceholder": "包裹上的姓名",
+        "senderPhone": "寄件人電話",
+        "senderZipcode": "寄件人郵遞區號",
+        "senderAddress": "寄件人地址",
+        "senderAddressPlaceholder": "供物流人員取件的完整地址",
+        "saveProfile": "儲存設定"
       }
     },
     "updatePassword": {
-      "title": "Set New Password",
-      "subtitle": "Please enter a strong password to secure your account.",
-      "oldPassword": "Current Password",
-      "newPassword": "New Password",
-      "confirmPassword": "Confirm New Password",
-      "update": "Set Password",
-      "updating": "Updating...",
-      "success": "Password updated successfully!",
-      "error": "Failed to update password.",
-      "mismatchError": "Passwords do not match",
-      "backToProfile": "Back to Profile"
+      "title": "設定新密碼",
+      "subtitle": "請輸入安全性高的密碼來保護您的帳號。",
+      "oldPassword": "目前密碼",
+      "newPassword": "新密碼",
+      "confirmPassword": "確認新密碼",
+      "update": "設定密碼",
+      "updating": "更新中…",
+      "success": "密碼更新成功！",
+      "error": "密碼更新失敗。",
+      "mismatchError": "兩次輸入的密碼不一致",
+      "backToProfile": "返回個人資料"
     }
   },
   "savedLocations": {
@@ -2267,7 +2401,8 @@
       "yes": "是的，我有去",
       "no": "沒有耶"
     },
-    "deleteConfirmMsg": "確定要刪除你的評論嗎？"
+    "deleteConfirmMsg": "確定要刪除你的評論嗎？",
+    "ownerVerified": "已由商家擁有者確認"
   },
   "survey": {
     "cardTitle": "幫助我們進步",
@@ -3009,5 +3144,39 @@
     "statusConverted": "已轉換",
     "statusCanceled": "已取消",
     "statusSignedUp": "已註冊"
+  },
+  "prayerSettings": {
+    "title": "禮拜時間計算",
+    "close": "關閉",
+    "note": "時間為計算所得，您當地的清真寺可能相差幾分鐘。",
+    "method": "計算方法",
+    "asr": "晡禮",
+    "asrStandard": "標準",
+    "asrHanafi": "哈奈斐學派",
+    "adjust": "調整分鐘數",
+    "adjustHelp": "增減分鐘數，以符合您清真寺的時間表。",
+    "plus": "{prayer} 增加一分鐘",
+    "minus": "{prayer} 減少一分鐘",
+    "save": "儲存",
+    "reset": "重設為預設值",
+    "prayers": {
+      "fajr": "晨禮",
+      "dhuhr": "晌禮",
+      "asr": "晡禮",
+      "maghrib": "昏禮",
+      "isha": "宵禮"
+    },
+    "methods": {
+      "MWL": "世界穆斯林聯盟",
+      "ISNA": "ISNA（北美伊斯蘭協會）",
+      "Egypt": "埃及總測量局",
+      "Makkah": "烏姆庫拉大學（麥加）",
+      "Karachi": "喀拉蚩伊斯蘭科學大學",
+      "Tehran": "德黑蘭大學地球物理研究所",
+      "Jafari": "什葉派十二伊瑪目（賈法里）",
+      "France": "法國伊斯蘭組織聯盟",
+      "Russia": "俄羅斯穆斯林宗教管理局",
+      "Singapore": "新加坡伊斯蘭宗教理事會"
+    }
   }
 }
