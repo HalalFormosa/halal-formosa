@@ -1107,7 +1107,7 @@ const committedSearchQuery = ref('')
 // (the map follows GPS updates); tapping again, or dragging the map, releases it.
 const followUser = ref(false)
 
-const sortBy = ref<'nearest' | 'recent' | 'popular' | 'trending' | 'for_you'>(userLocation.value ? 'nearest' : 'recent')
+const sortBy = ref<'nearest' | 'recent' | 'popular' | 'trending' | 'for_you'>('nearest')
 const listLimit = ref(20)
 // locations moved up
 const loadingPlaces = ref(true)
@@ -1463,6 +1463,8 @@ const selectedLocationForSave = ref<{ id: number; name: string } | null>(null)
 
 const lastStableLoc = ref<LatLng | null>(null)
 const lastCalcLocation = ref<LatLng | null>(null)
+// Without a GPS fix the "nearest" order is measured from the middle of the map
+const mapCenter = ref<LatLng | null>(null)
 
 // Interaction States for Map/List Sync
 const isUserPanningMap = ref(false)
@@ -1673,7 +1675,7 @@ watch(locationAttemptFinished, (finished) => {
   if (finished && userLocation.value) {
     sortBy.value = 'nearest'
   } else if (finished) {
-    sortBy.value = 'recent'
+    sortBy.value = 'nearest' // no GPS: nearest to the map center
   }
   void nextTick(() => { settingSortAutomatically = false })
 }, { immediate: true })
@@ -2215,14 +2217,15 @@ const markerStyles = computed<Record<string, {
 const getDomEl = (node: Element | ComponentPublicInstance | null | undefined) =>
     ((node as ComponentPublicInstance | null)?.$el ?? node) as HTMLElement | null
 
-const formatKm = (n: number) => (Number.isFinite(n) ? n.toFixed(2) : '–')
+// Distances are only shown when measured from the user, not from the map center
+const formatKm = (n: number) => (Number.isFinite(n) && lastCalcLocation.value ? n.toFixed(2) : '–')
 
 const MAX_VISIBLE_TAGS = 2
 const visibleTags = (tags: string[] | undefined | null) => (tags || []).slice(0, MAX_VISIBLE_TAGS)
 const extraTagsCount = (tags: string[] | undefined | null) => Math.max(0, (tags || []).length - MAX_VISIBLE_TAGS)
 
 const getDistanceInKm = (locPos: LatLng) => {
-  const refLoc = lastCalcLocation.value
+  const refLoc = lastCalcLocation.value ?? mapCenter.value
   if (!refLoc || refLoc.lat === undefined || refLoc.lng === undefined) return Number.POSITIVE_INFINITY
   const lat1 = Number(refLoc.lat)
   const lng1 = Number(refLoc.lng)
@@ -2966,6 +2969,12 @@ const initMap = async () => {
         const gBounds = mapInstance.getBounds()
         const bounds = gBounds ? toPlainBounds(gBounds) : null
         currentMapBounds.value = bounds
+        // Only re-anchor on the user's own pans/zooms (and the first idle), so
+        // the strip doesn't re-sort while it drives programmatic map pans
+        const c = mapInstance.getCenter()
+        if (c && (isUserPanningMap.value || !mapCenter.value)) {
+          mapCenter.value = { lat: c.lat(), lng: c.lng() }
+        }
         if (bounds) {
           fetchLocations(bounds)
         }
@@ -3636,7 +3645,7 @@ const sortedLocations = computed(() => {
 
   // Hybrid Sorting Strategy
   const mapped = base.map(p => {
-    const distance = lastCalcLocation.value ? getDistanceInKm(p.position) : Number.POSITIVE_INFINITY;
+    const distance = getDistanceInKm(p.position);
     return { ...p, distance };
   });
 
