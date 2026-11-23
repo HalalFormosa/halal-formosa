@@ -264,7 +264,7 @@
     "prayerNotification": "{label}{time}祈祷",
     "currentLocation": "当前位置",
     "prayerTimes": "祈祷时间",
-    "qibla": "朝拜",
+    "qibla": "朝向",
     "altProduct": "产品",
     "altLocation": "地点",
     "altNews": "消息",
@@ -695,6 +695,30 @@
     "sortViews": "最高观看次数",
     "sortRecentShort": "新的",
     "sortViewsShort": "热的"
+  },
+  "notifications": {
+    "title": "通知",
+    "activity": "动态",
+    "whatsNew": "最新消息",
+    "markAllRead": "全部标为已读",
+    "empty": "暂无通知",
+    "emptyHint": "有新消息时，我们会通知您。",
+    "dailyMissionTitle": "每日任务尚未完成",
+    "dailyMissionBody": "完成任务即可获得额外经验值！",
+    "dailyBonusTitle": "每日奖励可领取",
+    "dailyBonusBody": "所有任务已完成 — 点击领取您的额外经验值！",
+    "category": {
+      "products": "新增商品",
+      "locations": "新增地点",
+      "news": "新公告",
+      "trips": "新行程",
+      "store": "新商店物品",
+      "productsSingle": "新商品",
+      "locationsSingle": "新地点",
+      "newsSingle": "新公告",
+      "tripsSingle": "新行程",
+      "storeSingle": "新商店物品"
+    }
   },
   "news": {
     "title": "清真和伊斯兰教新闻",
@@ -1229,14 +1253,14 @@
     "publishSuccess": "✅ 文章发表了！"
   },
   "qibla": {
-    "title": "寻找朝拜",
-    "direction": "朝拜方向",
+    "title": "寻找朝向",
+    "direction": "朝向",
     "fromNorth": "从正北出发",
     "preparing": "准备指南针...",
     "needsPermission": "需要指南针权限才能显示方向。",
     "enableButton": "启用指南针",
     "error": "无法初始化指南针。",
-    "facing": "你面对着朝拜"
+    "facing": "你面对着朝向"
   },
   "savedItems": {
     "freeTier": "免费套餐使用",

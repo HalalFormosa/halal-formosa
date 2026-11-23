@@ -320,7 +320,7 @@
       "maghrib": "昏禮",
       "isha": "宵禮"
     },
-    "qibla": "Qibla",
+    "qibla": "朝向",
     "altProduct": "product",
     "pro": "Pro"
   },
@@ -791,6 +791,30 @@
     "sortViews": "瀏覽最多",
     "sortRecentShort": "最新",
     "sortViewsShort": "熱門"
+  },
+  "notifications": {
+    "title": "通知",
+    "activity": "動態",
+    "whatsNew": "最新消息",
+    "markAllRead": "全部標示為已讀",
+    "empty": "目前沒有通知",
+    "emptyHint": "有新消息時，我們會通知您。",
+    "dailyMissionTitle": "每日任務尚未完成",
+    "dailyMissionBody": "完成任務即可獲得額外經驗值！",
+    "dailyBonusTitle": "每日獎勵可領取",
+    "dailyBonusBody": "所有任務已完成 — 點選領取您的額外經驗值！",
+    "category": {
+      "products": "新增商品",
+      "locations": "新增地點",
+      "news": "新公告",
+      "trips": "新行程",
+      "store": "新商店品項",
+      "productsSingle": "新商品",
+      "locationsSingle": "新地點",
+      "newsSingle": "新公告",
+      "tripsSingle": "新行程",
+      "storeSingle": "新商店品項"
+    }
   },
   "news": {
     "title": "清真與伊斯蘭新聞",
@@ -1406,7 +1430,7 @@
   },
   "qibla": {
     "title": "尋找朝向",
-    "direction": "朝拜方向",
+    "direction": "朝向",
     "fromNorth": "相對於正北",
     "preparing": "正在準備指南針...",
     "needsPermission": "需要指南針權限才能顯示方向。",
