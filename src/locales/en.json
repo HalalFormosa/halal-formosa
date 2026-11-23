@@ -2058,6 +2058,16 @@
         "review": "Please confirm your details before submitting.",
         "reviewNote": "By submitting, you confirm the information is accurate and you're authorized to represent this business."
       }
+    },
+    "tiers": {
+      "free": "Free",
+      "bronze": "Bronze",
+      "silver": "Silver",
+      "gold": "Gold"
+    },
+    "roles": {
+      "owner": "Owner",
+      "manager": "Manager"
     }
   },
   "admin": {
