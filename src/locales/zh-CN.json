@@ -751,7 +751,7 @@
       "account": "帐户和偏好设置",
       "activity": "活动",
       "about": "关于应用程序",
-      "contributions": "Contributions"
+      "contributions": "贡獻"
     },
     "stats": {
       "products": "商品",
@@ -793,7 +793,9 @@
       "locationReports": "位置报告",
       "productReports": "产品报告",
       "users": "用户",
-      "survey": "年度问卷"
+      "survey": "年度问卷",
+      "auditLog": "审计纪录",
+      "tools": "营运工具"
     },
     "pro": {
       "title": "清真福尔摩沙 Pro ⭐",
@@ -815,7 +817,9 @@
         "unlimitedCollections": "无限收集物品",
         "unlimitedScans": "无限次扫描",
         "prioritySupport": "优先支持"
-      }
+      },
+      "restoreSuccess": "订阅已成功还原",
+      "errorOpening": "无法载入订阅选项，请再试一次。"
     },
     "aboutMe": "关于我",
     "edit": "编辑",
@@ -874,9 +878,9 @@
       "consentContent2": "如果我在“设置”中启用“在排行榜上显示我的名字”，我的个人简介可能会公开可见。",
       "save": "节省",
       "completeToContinue": "完成个人资料以继续",
-      "phone": "Phone Number",
+      "phone": "电话号码",
       "phonePlaceholder": "09xxxxxxxx",
-      "phoneHint": "Used for store delivery notifications, never shared publicly.",
+      "phoneHint": "用於商店配送通知，不会公开。",
       "consentContentPhone": "电话号码仅用于订单与商店配送。",
       "consentContentStats": "生日、国籍和性别均为私密，仅用于统计分析。",
       "consentContentBio": "个人简介仅在开启「公开个人资料」时才可见。",
@@ -884,7 +888,23 @@
       "avatarOptionsTitle": "更换个人头像",
       "selectDate": "选择日期",
       "selectDob": "选择出生日期",
-      "clearNationality": "清除国籍"
+      "clearNationality": "清除国籍",
+      "nameRequired": "请输入显示名称。",
+      "nameRequiredHint": "必填 — 至少 1 个字元。",
+      "nameTooLong": "显示名称不可超过 40 个字元。",
+      "bioTooLong": "简介不可超过 300 个字元。",
+      "phoneInvalid": "请输入有效的电话号码（7–15 位数字）。",
+      "dobInvalid": "请输入有效的出生日期。",
+      "dobFuture": "出生日期不能是未来的日期。",
+      "fixErrors": "请修正标示的栏位。",
+      "saveFailed": "无法储存您的个人资料。",
+      "referralPrompt": "是否有人邀请您？",
+      "referralHaveCode": "我有推荐码",
+      "referralNoCode": "我没有推荐码",
+      "referralCodeLabel": "推荐码",
+      "referralApplied": "已套用推荐码：",
+      "referralNoneRecorded": "没有推荐码 — 已完成设定。",
+      "referralInvalid": "推荐码无效。"
     },
     "merchant": {
       "startSelling": "开始销售",
@@ -896,7 +916,9 @@
       "levelLabel": "等级",
       "toNextLevel": "XP 更上一层楼",
       "infoTitle": "关于经验值 (XP)",
-      "infoMessage": "经验值 (XP) 代表 Halal Formosa 因您的行动与贡献（如扫描产品、提交商品和汇报问题）而给予您的点数，这些点数也会决定您在排行榜上的排名。在未来，这些点数将可用于兑换各种便利优惠，例如合作伙伴的折扣、专属促销活动以及其他自订选项！"
+      "infoMessage": "经验值 (XP) 代表 Halal Formosa 因您的行动与贡献（如扫描产品、提交商品和汇报问题）而给予您的点数，这些点数也会决定您在排行榜上的排名。在未来，这些点数将可用于兑换各种便利优惠，例如合作伙伴的折扣、专属促销活动以及其他自订选项！",
+      "spendable": "可用",
+      "spent": "已使用"
     },
     "social": {
       "instagram": "Instagram",
@@ -904,17 +926,17 @@
       "website": "网站"
     },
     "defaultName": "用户",
-    "submittedProducts": "Submitted Products",
-    "submittedLocations": "Submitted Locations",
+    "submittedProducts": "已提交的产品",
+    "submittedLocations": "已提交的地点",
     "myProducts": {
-      "title": "My Submitted Products",
-      "noProducts": "You haven't submitted any products yet.",
-      "status": "Status",
-      "approval": "Approval"
+      "title": "我提交的产品",
+      "noProducts": "您尚未提交任何产品。",
+      "status": "状态",
+      "approval": "审核"
     },
     "myLocations": {
-      "title": "My Submitted Locations",
-      "noLocations": "You haven't submitted any locations yet."
+      "title": "我提交的地点",
+      "noLocations": "您尚未提交任何地点。"
     },
     "businessSub": {
       "active": "使用中",
@@ -949,6 +971,73 @@
       "reasonPlaceholder": "请告诉我们您打算如何协助（例如：“我想为本地商店翻译成分”或“我常购买进口商品并每天扫描”）。",
       "submit": "提交申请",
       "submitted": "✅ 申请已成功提交！"
+    },
+    "merchantTier": {
+      "bronze": "青铜商家",
+      "silver": "白银商家",
+      "gold": "黄金商家"
+    },
+    "levelShort": "Lv. {level}",
+    "ingredientEncyclopedia": "成分百科",
+    "scanHistory": "掃描历史",
+    "myProductReports": {
+      "title": "我的产品回報",
+      "noReports": "您尚未提交任何产品回報。"
+    },
+    "myLocationReports": {
+      "title": "我的地点回報",
+      "noReports": "您尚未提交任何地点回報。"
+    },
+    "reportsCount": "回報",
+    "reportDetail": "回報详情",
+    "activeReports": "处理中",
+    "historyReports": "历史纪录",
+    "reports": {
+      "noMessages": "尚无消息。",
+      "typeMessage": "输入消息…"
+    },
+    "anonymous": "匿名",
+    "badgeShop": {
+      "title": "徽章商店",
+      "subtitle": "在排行榜上脫穎而出！",
+      "available": "可用",
+      "menuSubtitle": "用经验值兑换光晕、光环等效果",
+      "confirmTitle": "确认购买",
+      "confirmPurchase": "要花费 {cost} 经验值购买「{name}」吗？",
+      "confirmFree": "要免费领取「{name}」吗？",
+      "categories": {
+        "glow": "光晕",
+        "aura": "光环",
+        "outline": "外框",
+        "background": "背景",
+        "nameplate": "名牌",
+        "frame": "边框"
+      },
+      "tiers": {
+        "free": "免费",
+        "pro": "仅限 Pro"
+      },
+      "owned": "已拥有",
+      "equipped": "已装备",
+      "purchase": "购买",
+      "equip": "装备",
+      "unequip": "卸下",
+      "insufficientXp": "经验值不足",
+      "purchaseSuccess": "🎉 您获得了「{name}」！",
+      "proRequired": "升级至 Pro 即可解锁此项目",
+      "preview": "预览",
+      "reset": "重设预览"
+    },
+    "badgeCustomize": {
+      "title": "自订徽章",
+      "subtitle": "光晕、光环、外框等",
+      "livePreview": "即时预览",
+      "ownedItems": "您的项目",
+      "noItems": "尚无外观项目，去商店看看吧！",
+      "noEffects": "尚未装备任何效果。点击项目即可装备！",
+      "goToShop": "前往商店",
+      "saved": "变更已储存！",
+      "unsaved": "尚未储存"
     }
   },
   "achievements": {
@@ -1333,7 +1422,19 @@
     "yourCollections": "您的收藏",
     "locationSavedSuccess": "位置保存成功！",
     "locationAlreadySaved": "该位置已保存在此文件夹中。",
-    "saveFailed": "保存位置失败。 请再试一次。"
+    "saveFailed": "保存位置失败。 请再试一次。",
+    "renameFolder": "重新命名文件夹",
+    "deleteFolder": "刪除文件夹",
+    "deleteConfirm": "确定要刪除此文件夹吗？里面所有已储存的地点都会消失。",
+    "renameSuccess": "文件夹已重新命名",
+    "deleteSuccess": "文件夹已刪除",
+    "limitSheet": {
+      "title": "您储存的地点已满",
+      "body": "免费清单可储存 {limit} 个地点。请移除一个，或升级 Pro 以无限储存。",
+      "upgrade": "升级 Pro",
+      "manage": "管理已储存地点",
+      "notNow": "暂时不要"
+    }
   },
   "admin": {
     "scanDetails": "扫描详情",
@@ -2420,5 +2521,36 @@
       "none": "尚未兑换任何折扣码。",
       "store": "店家"
     }
+  },
+  "referral": {
+    "titleCash": "邀请好友賺取 NT$",
+    "titlePro": "邀请好友賺取 Pro",
+    "yourCode": "您的推荐码",
+    "haveReferrer": "是否有人邀请您？",
+    "enterTheirCode": "对方的推荐码",
+    "applyCode": "套用推荐码",
+    "share": "分享",
+    "shareQr": "分享 QR Code",
+    "linkCopied": "链接已复制 — 可贴到任何地方！",
+    "deadlinePrompt": "在此日期前完成的推荐可賺取 NT$：",
+    "deadlinePassed": "NT$ 賺取期间已结束。",
+    "campaignActive": "活动进行中",
+    "campaignEnds": "{date} 结束",
+    "campaignValidReferrals": "位有效推荐（累计）",
+    "people": "人",
+    "shareText": "在清真福尔摩沙使用我的推荐码 {code}！",
+    "qrHint": "掃描即可使用您的推荐码注册",
+    "referredBy": "推荐您的人是",
+    "someone": "某位使用者",
+    "yourRewardsPro": "您已賺取的 Pro 天数",
+    "yourRewardsCash": "您的收益",
+    "days": "天",
+    "pending": "待处理",
+    "paid": "已支付",
+    "peopleYouReferred": "您推荐的人",
+    "noReferralsYet": "您还没有推荐任何人。",
+    "statusConverted": "已转换",
+    "statusCanceled": "已取消",
+    "statusSignedUp": "已注册"
   }
 }

@@ -1,5 +1,6 @@
 import { ref, computed } from 'vue';
 import { supabase } from '@/plugins/supabaseClient';
+import { i18n } from '@/i18n';
 
 export interface ReferralSummary {
   my_code: string | null;
@@ -43,7 +44,7 @@ const loading = ref(false);
 
 // Menu label reflects whichever reward mode is currently active.
 const inviteMenuLabel = computed(() =>
-  config.value?.mode === 'free_days' ? 'Invite & Earn Pro' : 'Invite & Earn NT$'
+  i18n.global.t(config.value?.mode === 'free_days' ? 'referral.titlePro' : 'referral.titleCash')
 );
 
 async function loadReferralConfig() {
