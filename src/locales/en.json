@@ -1219,7 +1219,25 @@
       "unsaved": "Unsaved"
     },
     "defaultName": "User",
-    "anonymous": "Anonymous"
+    "anonymous": "Anonymous",
+    "itemsCount": "Items",
+    "placesCount": "Places",
+    "contributor": {
+      "title": "Become a Dedicated Contributor",
+      "subtitle": "Help the community & get unlimited contributions",
+      "pendingShort": "⏳ Application pending review",
+      "modalTitle": "Become a Contributor",
+      "heading": "Dedicated Contributor",
+      "intro": "Apply to become a verified contributor. You'll get unlimited daily product & location contributions, and auto-approved submissions!",
+      "pendingTitle": "⏳ Application Pending",
+      "pendingBody": "We are currently reviewing your application. Thank you for your patience!",
+      "declinedTitle": "❌ Previous Application Declined",
+      "declinedBody": "Your previous application was not approved. You can submit a new request below if your circumstances have changed.",
+      "reasonLabel": "Why do you want to contribute more to Halal Formosa?",
+      "reasonPlaceholder": "Let us know how you plan to help (e.g. 'I want to translate ingredients for local stores' or 'I buy many foreign items and scan daily').",
+      "submit": "Submit Application",
+      "submitted": "✅ Application submitted successfully!"
+    }
   },
   "achievements": {
     "title": "My Achievements",

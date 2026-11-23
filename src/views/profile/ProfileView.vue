@@ -471,7 +471,7 @@
               </div>
               <ion-label>
                 <h3>{{ $t('profile.submittedProducts') }}</h3>
-                <p v-if="myProductsCount !== null">{{ myProductsCount }} Items</p>
+                <p v-if="myProductsCount !== null">{{ myProductsCount }} {{ $t('profile.itemsCount') }}</p>
               </ion-label>
             </ion-item>
 
@@ -481,7 +481,7 @@
               </div>
               <ion-label>
                 <h3>{{ $t('profile.submittedLocations') }}</h3>
-                <p v-if="myLocationsCount !== null">{{ myLocationsCount }} Places</p>
+                <p v-if="myLocationsCount !== null">{{ myLocationsCount }} {{ $t('profile.placesCount') }}</p>
               </ion-label>
             </ion-item>
 
@@ -511,9 +511,9 @@
                 <ion-icon :icon="icons.documentTextOutline" />
               </div>
               <ion-label>
-                <h3 style="font-weight: 700; color: var(--ion-color-dark);">Become a Dedicated Contributor</h3>
+                <h3 style="font-weight: 700; color: var(--ion-color-dark);">{{ $t('profile.contributor.title') }}</h3>
                 <p style="font-size: 0.8rem; color: var(--ion-color-medium);">
-                  {{ contributorAppStatus === 'pending' ? '⏳ Application pending review' : 'Help the community & get unlimited contributions' }}
+                  {{ contributorAppStatus === 'pending' ? $t('profile.contributor.pendingShort') : $t('profile.contributor.subtitle') }}
                 </p>
               </ion-label>
             </ion-item>
@@ -811,33 +811,33 @@
         <!-- Dedicated Contributor Application Modal -->
         <ion-modal :is-open="showContributorAppModal" @didDismiss="showContributorAppModal = false">
           <ion-header>
-            <ModalHeader title="Become a Contributor" @close="showContributorAppModal = false" />
+            <ModalHeader :title="$t('profile.contributor.modalTitle')" @close="showContributorAppModal = false" />
           </ion-header>
           
           <ion-content class="ion-padding">
             <div class="ion-text-center ion-padding-bottom">
               <div style="font-size: 48px; margin-bottom: 12px;">🌟</div>
-              <h2 style="font-weight: 700; margin-bottom: 8px;">Dedicated Contributor</h2>
+              <h2 style="font-weight: 700; margin-bottom: 8px;">{{ $t('profile.contributor.heading') }}</h2>
               <p style="color: var(--ion-color-medium); font-size: 14px;">
-                Apply to become a verified contributor. You'll get unlimited daily product & location contributions, and auto-approved submissions!
+                {{ $t('profile.contributor.intro') }}
               </p>
             </div>
 
             <div v-if="contributorAppStatus === 'pending'" style="background: var(--ion-color-light); border-radius: 12px; padding: 16px; margin-top: 16px; text-align: center;">
               <span style="font-size: 14px; color: var(--ion-color-dark); font-weight: 600; display: block; margin-bottom: 4px;">
-                ⏳ Application Pending
+                {{ $t('profile.contributor.pendingTitle') }}
               </span>
               <p style="font-size: 13px; color: var(--ion-color-medium); margin: 0; line-height: 1.4;">
-                We are currently reviewing your application. Thank you for your patience!
+                {{ $t('profile.contributor.pendingBody') }}
               </p>
             </div>
 
             <div v-else-if="contributorAppStatus === 'rejected'" style="background: rgba(var(--ion-color-danger-rgb), 0.1); border-radius: 12px; padding: 16px; margin-top: 16px; text-align: center;">
               <span style="font-size: 14px; color: var(--ion-color-danger); font-weight: 600; display: block; margin-bottom: 4px;">
-                ❌ Previous Application Declined
+                {{ $t('profile.contributor.declinedTitle') }}
               </span>
               <p style="font-size: 13px; color: var(--ion-color-medium); margin: 0; line-height: 1.4; margin-bottom: 12px;">
-                Your previous application was not approved. You can submit a new request below if your circumstances have changed.
+                {{ $t('profile.contributor.declinedBody') }}
               </p>
             </div>
 
@@ -845,9 +845,9 @@
               <ion-item lines="none" style="--background: transparent; margin-bottom: 16px; margin-top: 16px;">
                 <ion-textarea
                   v-model="appReason"
-                  label="Why do you want to contribute more to Halal Formosa?"
+                  :label="$t('profile.contributor.reasonLabel')"
                   label-placement="stacked"
-                  placeholder="Let us know how you plan to help (e.g. 'I want to translate ingredients for local stores' or 'I buy many foreign items and scan daily')."
+                  :placeholder="$t('profile.contributor.reasonPlaceholder')"
                   :rows="5"
                   required
                   style="border: 1px solid var(--ion-color-light); border-radius: 8px; padding: 8px;"
@@ -856,7 +856,7 @@
 
               <ion-button expand="block" color="carrot" :disabled="appSubmitting || !appReason.trim()" @click="submitProfileContributorApp">
                 <ion-spinner v-if="appSubmitting" name="crescent" style="zoom: 0.6; margin-right: 8px;" />
-                Submit Application
+                {{ $t('profile.contributor.submit') }}
               </ion-button>
             </div>
           </ion-content>
@@ -1457,7 +1457,7 @@ async function submitProfileContributorApp() {
     )
     
     const toast = await toastController.create({
-      message: '✅ Application submitted successfully!',
+      message: t('profile.contributor.submitted'),
       duration: 2000,
       color: 'success'
     });

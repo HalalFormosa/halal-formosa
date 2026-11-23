@@ -1098,6 +1098,24 @@
       "cancelNote": "如需取消，請在 App Store 或 Google Play 管理您的訂閱。您的方案會持續到目前週期結束。",
       "webNote": "請開啟清真福爾摩沙手機 App 來管理或取消此訂閱。",
       "complimentaryNote": "此方案由我們的團隊指派 — 無需付款，也無法取消。"
+    },
+    "itemsCount": "件商品",
+    "placesCount": "個地點",
+    "contributor": {
+      "title": "成為專屬貢獻者",
+      "subtitle": "幫助社群，並享有無限貢獻次數",
+      "pendingShort": "⏳ 申請審核中",
+      "modalTitle": "成為貢獻者",
+      "heading": "專屬貢獻者",
+      "intro": "申請成為認證貢獻者。您將可每天無限次提交產品與地點，且提交內容會自動通過審核！",
+      "pendingTitle": "⏳ 申請審核中",
+      "pendingBody": "我們正在審核您的申請，感謝您的耐心等候！",
+      "declinedTitle": "❌ 先前的申請未通過",
+      "declinedBody": "您先前的申請未獲核准。如果情況有所改變，您可以在下方重新提出申請。",
+      "reasonLabel": "您為什麼想為清真福爾摩沙貢獻更多？",
+      "reasonPlaceholder": "請告訴我們您打算如何協助（例如：「我想為本地商店翻譯成分」或「我常購買進口商品並每天掃描」）。",
+      "submit": "送出申請",
+      "submitted": "✅ 申請已成功送出！"
     }
   },
   "achievements": {
