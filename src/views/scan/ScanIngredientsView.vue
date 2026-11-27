@@ -1,6 +1,6 @@
 <template>
   <ion-page>
-    <ion-header :class="{ 'has-ads': isNative && !isDonor && currentStep === STEP_RESULTS, 'house-ad-top': adSlotCollapsed && currentStep === STEP_RESULTS }">
+    <ion-header ref="headerRef" :class="{ 'ion-no-border immersive-header': immersiveResults,'is-scrolled': immersiveResults && isScrolled, 'has-ads': isNative && !isDonor && currentStep === STEP_RESULTS, 'house-ad-top': adSlotCollapsed && currentStep === STEP_RESULTS }">
       <!-- Native (mobile) AdMob banner - shown only on results step -->
       <div v-if="isNative && !isDonor && currentStep === STEP_RESULTS" id="ad-space-scan-results" :style="adSpaceStyle(adSlotCollapsed)"></div>
       <!-- House-ad banner (web, or the real banner failed to fill / LevelPlay is
@@ -18,6 +18,8 @@
           :icon="scanOutline"
           :showBack="true"
           backRoute="/home"
+          :transparent="immersiveResults && !isScrolled"
+          :contrast="immersiveResults && !!croppedPreviewUrl && !isScrolled"
       >
         <template #end>
           <ion-button @click="$router.push('/profile/scan-history')">
@@ -38,7 +40,14 @@
       </app-header>
     </ion-header>
 
-    <ion-content ref="contentRef" class="ion-padding">
+    <ion-content
+        ref="contentRef"
+        :class="{ 'ion-padding': !immersiveResults, 'results-immersive': immersiveResults }"
+        :fullscreen="immersiveResults"
+        :style="headerHeight ? { '--results-header-height': `${headerHeight}px` } : undefined"
+        :scroll-events="true"
+        @ionScroll="handleScroll"
+    >
 
       <ion-modal :is-open="showSimpleDisclaimer" backdrop-dismiss="false">
         <ion-header>
@@ -160,7 +169,7 @@
 
 
       <!-- 🟢 Step Indicator -->
-      <div class="step-container ion-margin-bottom">
+      <div v-if="!immersiveResults" class="step-container ion-margin-bottom">
         <div class="step-item" :class="{ active: currentStep >= 0 }">
            <div class="step-dot">
               <ion-icon :icon="cameraOutline" v-if="currentStep <= 0" />
@@ -313,9 +322,12 @@
       <!-- 🔬 STEP 2: Results -->
       <transition name="results-in">
       <div v-show="currentStep === STEP_RESULTS" class="step-content">
-        <div class="form-section">
-          <!-- Cropped Image Preview -->
-          <div v-if="croppedPreviewUrl" class="ion-margin-bottom ion-text-center">
+        <!-- Full-bleed hero: a blurred copy of the photo runs up behind the transparent
+             header and fills the space around it. The photo itself starts below the
+             header so no ingredient line is hidden. -->
+        <div v-if="croppedPreviewUrl" class="results-hero">
+          <div class="results-hero-bg" :style="{ backgroundImage: `url(${croppedPreviewUrl})` }"></div>
+          <div class="results-hero-inner ion-text-center">
             <IngredientHighlightImage
                 :src="croppedPreviewUrl"
                 :ocr-image-width="ocrImageWidth"
@@ -324,10 +336,13 @@
                 img-class="preview-img-cropped"
                 zoomable
             />
-            <p class="tap-to-enlarge-hint">
-              🔍 {{ $t('scanIngredients.scan.tapToEnlarge') }}
-            </p>
           </div>
+        </div>
+
+        <div class="form-section results-sheet" :class="{ 'no-hero': !croppedPreviewUrl }">
+          <p v-if="croppedPreviewUrl" class="tap-to-enlarge-hint results-sheet-hint">
+            🔍 {{ $t('scanIngredients.scan.tapToEnlarge') }}
+          </p>
 
           <!-- Status & Identity -->
           <div class="ion-text-center ion-margin-bottom">
@@ -551,17 +566,19 @@
       </transition>
 
       <!-- 🎨 Premium Cropper Modal -->
-      <ion-modal :is-open="showCropper" @didDismiss="closeCropper">
-        <ion-header>
+      <ion-modal :is-open="showCropper" :leave-animation="fadeOutLeave" @didDismiss="closeCropper">
+        <ion-header class="ion-no-border immersive-header crop-header">
           <app-header
               :title="$t('scanIngredients.scan.cropTitle')"
               show-back
               :useRouterBack="false"
+              transparent
+              contrast
               @back="closeCropper"
           />
         </ion-header>
 
-        <ion-content :scroll-y="false" class="modal-no-scroll">
+        <ion-content :scroll-y="false" fullscreen class="modal-no-scroll">
           <cropper
               :key="cropperSrc"
               ref="cropperRef"
@@ -597,7 +614,8 @@
           </div>
         </ion-content>
 
-        <ion-footer>
+        <!-- Hidden while the scan runs: nothing to adjust, and the progress screen gets the full height -->
+        <ion-footer v-if="!ocrLoading">
           <!-- 🛠️ Ratio Toolbar -->
           <div class="ratio-toolbar ion-padding-horizontal">
             <ion-button 
@@ -776,7 +794,7 @@ import AiExplanationTeaser from '@/components/scan/AiExplanationTeaser.vue'
 import { canEarnMoreScans } from '@/services/ScanLimitService'
 import { buildScanDecisionNotice, type ScanDecisionChoice } from '@/utils/scanDecisionNotice'
 import { flaggedIngredientNames, type ScanLogId } from '@/utils/scanDecisionLog'
-import {ref, onUnmounted, computed, nextTick} from 'vue'
+import {ref, onMounted, onUnmounted, computed, nextTick} from 'vue'
 import { Swiper, SwiperSlide } from 'swiper/vue'
 import { Autoplay, Pagination } from 'swiper/modules'
 import 'swiper/css'
@@ -822,6 +840,7 @@ import { useRouter } from 'vue-router'
 import { scheduleBannerUpdate } from '@/plugins/admob'
 import { destroyLevelPlayBanner } from '@/lib/levelplay'
 import { onIonViewDidEnter } from '@ionic/vue'
+import { createAnimation } from '@ionic/vue'
 import { useAutoScanStore } from '@/composables/useAutoScanStore'
 import { useNotifier } from "@/composables/useNotifier"
 import { useI18n } from 'vue-i18n'
@@ -871,7 +890,45 @@ const onDecisionAnswered = (choice: ScanDecisionChoice) => {
   void notifyEvent('product_scan_decision', title, message, image, {}, ['discord']).catch(console.error)
 }
 const currentStep = ref(STEP_CAPTURE)
+
+// Results step is immersive: a blurred backdrop runs behind a transparent header and
+// the details sit in a rounded sheet below the photo.
+const immersiveResults = computed(() => currentStep.value === STEP_RESULTS)
+const isScrolled = ref(false)
+function handleScroll(ev: any) {
+  // The photo starts right under the header, so turn it solid as soon as anything moves.
+  isScrolled.value = ev.detail.scrollTop > 8
+}
+watch(immersiveResults, () => { isScrolled.value = false })
+
+// The header floats over the results and its height varies (status bar, ad banner
+// loading or collapsing), so measure it to know where the photo can start.
+const headerRef = ref<any>(null)
+const headerHeight = ref(0)
+let headerObserver: ResizeObserver | null = null
+onMounted(() => {
+  const el: HTMLElement | undefined = headerRef.value?.$el
+  if (!el || typeof ResizeObserver === 'undefined') return
+  headerObserver = new ResizeObserver(() => {
+    // A page kept hidden in the router stack measures 0; keep the last real height.
+    if (el.offsetHeight) headerHeight.value = el.offsetHeight
+  })
+  headerObserver.observe(el)
+})
+onUnmounted(() => headerObserver?.disconnect())
 const contentRef = ref<any>(null)
+
+// Crop modal leaves by fading in place (instead of sliding down), so the scan
+// progress screen dissolves into the results rather than being pulled away.
+const fadeOutLeave = (baseEl: HTMLElement) => {
+  const root = baseEl.shadowRoot || baseEl
+  const wrapper = root.querySelector('.modal-wrapper')
+  const backdrop = root.querySelector('ion-backdrop')
+  const group = createAnimation().duration(450).easing('ease-out')
+  if (wrapper) group.addAnimation(createAnimation().addElement(wrapper).fromTo('opacity', '1', '0'))
+  if (backdrop) group.addAnimation(createAnimation().addElement(backdrop).fromTo('opacity', 'var(--backdrop-opacity)', '0'))
+  return group
+}
 
 /** Runs a scan method (also used to auto-launch the remembered one). */
 function startMethod(method: RememberedScanMethod) {
@@ -2072,8 +2129,8 @@ onUnmounted(() => {
 }
 
 @keyframes fadeInStep {
-  from { opacity: 0; transform: translateY(6px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 
 .hero-desc { color: var(--ion-color-step-600); line-height: 1.5; margin-bottom: 16px; }
@@ -2350,12 +2407,13 @@ onUnmounted(() => {
 }
 
 /* Results fade up as the scan card slides away, instead of snapping in */
+/* Pure crossfade (no movement): the header is identical on both screens, so
+   only the content should appear to change. */
 .results-in-enter-active {
-  transition: opacity 0.5s ease, transform 0.55s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: opacity 0.45s ease;
 }
 .results-in-enter-from {
   opacity: 0;
-  transform: translateY(20px);
 }
 @media (prefers-reduced-motion: reduce) {
   .results-in-enter-active { transition: none; }
@@ -2567,6 +2625,81 @@ onUnmounted(() => {
 
 .modal-no-scroll {
   --overflow: hidden;
+}
+
+/* The crop header floats over the cropper: let touches pass through it so crop
+   handles dragged up under the header stay grabbable; only its buttons catch taps. */
+.crop-header,
+.crop-header :deep(ion-toolbar) {
+  pointer-events: none;
+}
+.crop-header :deep(ion-button),
+.crop-header :deep(ion-buttons) {
+  pointer-events: auto;
+}
+
+/* Cropper modal footer reads as a bottom sheet over the photo */
+ion-footer {
+  border-radius: var(--radius-xl, 24px) var(--radius-xl, 24px) 0 0;
+  overflow: hidden;
+}
+
+/* 🖼️ Immersive results: blurred backdrop behind the header, photo below it,
+   sheet over the backdrop's bottom edge */
+.results-hero {
+  --sheet-overlap: 24px;
+  position: relative;
+  overflow: hidden;
+  background: #111;
+  /* Keeps the photo clear of the header above and the sheet below */
+  padding: var(--results-header-height, calc(var(--ion-safe-area-top, 0px) + 56px)) 0 var(--sheet-overlap);
+}
+
+.results-sheet-hint {
+  text-align: center;
+  margin: 0 0 12px;
+}
+
+/* No card box, rounded corners, shadow or tinted background around the photo here */
+.results-hero :deep(.ihi-wrapper) {
+  border-radius: 0;
+  display: block;
+}
+.results-hero :deep(.preview-img-cropped) {
+  display: block;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+  /* Header and photo together stay within 62vh so the verdict is visible without scrolling */
+  max-height: max(30vh, calc(62vh - var(--results-header-height, 56px)));
+}
+
+.results-hero-bg {
+  position: absolute;
+  inset: -24px;
+  background-size: cover;
+  background-position: center;
+  filter: blur(22px) brightness(0.55);
+  transform: scale(1.1);
+}
+
+.results-hero-inner {
+  position: relative;
+  z-index: 1;
+}
+
+.results-sheet {
+  position: relative;
+  z-index: 2;
+  margin-top: -24px;
+  padding: 20px 16px 24px;
+  background: var(--ion-background-color);
+  border-radius: var(--radius-xl, 24px) var(--radius-xl, 24px) 0 0;
+}
+
+.results-sheet.no-hero {
+  margin-top: 0;
+  padding-top: calc(var(--results-header-height, calc(var(--ion-safe-area-top, 0px) + 56px)) + 16px);
 }
 
 .cropper {
