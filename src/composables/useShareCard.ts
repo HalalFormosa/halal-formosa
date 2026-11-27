@@ -33,8 +33,7 @@ export default function useShareCard(
 ) {
     const shareCTA = `
 Join us and contribute to make Halal Formosa more beneficial for others 🌟
-Get it here: bit.ly/DownloadHalalFormosa
-(iOS coming soon)
+Get it here: https://halalformosa.com
 `
 
     /** Main card builder */

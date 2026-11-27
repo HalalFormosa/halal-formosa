@@ -15,8 +15,7 @@ export interface PlaceShareOptions {
 /** Share text CTA (same spirit as Halal Formosa style) */
 const shareCTA = `
 Shared via Halal Formosa 🕌
-Contribute to our halal map: bit.ly/DownloadHalalFormosa
-(iOS coming soon)
+Contribute to our halal map: https://halalformosa.com
 `
 
 export default function useSharePlace() {
