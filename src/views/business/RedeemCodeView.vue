@@ -9,9 +9,10 @@
         <p class="hint">{{ $t('offers.redeem.hint') }}</p>
 
         <!-- Typed code -->
-        <form class="code-form" @submit.prevent="redeem(codeInput)">
+        <form class="code-form" @submit.prevent="check(codeInput)">
           <input
             v-model="codeInput"
+            @input="pending = null"
             class="code-input"
             type="text"
             inputmode="text"
@@ -22,7 +23,7 @@
           />
           <ion-button type="submit" color="carrot" mode="md" :disabled="busy || !codeInput.trim()">
             <ion-spinner v-if="busy" name="crescent" />
-            <span v-else>{{ $t('offers.redeem.button') }}</span>
+            <span v-else>{{ $t('offers.redeem.check') }}</span>
           </ion-button>
         </form>
 
@@ -32,6 +33,24 @@
           {{ scanning ? $t('offers.redeem.stopScan') : $t('offers.redeem.scan') }}
         </ion-button>
         <div v-show="scanning" id="offer-qr-reader" class="qr-reader"></div>
+
+        <!-- Checked, not yet redeemed: always ask before marking a code as used -->
+        <div v-if="pending" class="pending" aria-live="polite">
+          <strong>{{ pending.offer_title }}<template v-if="pending.discount_label"> · {{ pending.discount_label }}</template></strong>
+          <p v-if="pending.location_name">{{ pending.location_name }}</p>
+          <p class="pending-code">{{ pending.code }}</p>
+          <p v-if="pending.state === 'ok'">{{ $t('offers.redeem.valid') }}</p>
+          <p v-else class="pending-problem">{{ stateText(pending) }}</p>
+          <div class="pending-actions">
+            <ion-button class="pending-cancel" fill="outline" color="medium" mode="md" :disabled="busy" @click="pending = null">
+              {{ pending.state === 'ok' ? $t('common.cancel') : $t('common.ok') }}
+            </ion-button>
+            <ion-button v-if="pending.state === 'ok'" class="pending-confirm" color="carrot" mode="md" :disabled="busy" @click="confirmRedeem">
+              <ion-spinner v-if="busy" name="crescent" />
+              <span v-else>{{ $t('offers.redeem.confirm') }}</span>
+            </ion-button>
+          </div>
+        </div>
 
         <!-- Result -->
         <div v-if="result" class="result" :class="result.ok ? 'ok' : 'bad'">
@@ -68,7 +87,7 @@ import { qrCodeOutline, closeOutline, checkmarkCircle, alertCircle } from 'ionic
 import { Html5Qrcode } from 'html5-qrcode'
 import AppHeader from '@/components/AppHeader.vue'
 import { acceptPendingOwnerInvites } from '@/composables/useStoreAccess'
-import { OfferService, OfferError, type RedemptionRow } from '@/services/OfferService'
+import { OfferService, OfferError, type CodeCheck, type RedemptionRow } from '@/services/OfferService'
 
 const router = useRouter()
 const { t, locale } = useI18n()
@@ -78,6 +97,7 @@ const busy = ref(false)
 const scanning = ref(false)
 const history = ref<RedemptionRow[]>([])
 const result = ref<{ ok: boolean; title: string; detail?: string } | null>(null)
+const pending = ref<CodeCheck | null>(null)
 let scanner: Html5Qrcode | null = null
 
 function formatTime(iso: string) {
@@ -98,9 +118,10 @@ async function confirmVoid(row: RedemptionRow) {
   const alert = await alertController.create({
     header: t('offers.redeem.undoTitle'),
     message: t('offers.redeem.undoBody', { code: row.code }),
+    // Each button names its outcome: "Cancel" and "Undo" read almost the same in Chinese.
     buttons: [
-      { text: t('common.cancel'), role: 'cancel' },
-      { text: t('offers.redeem.undo'), role: 'destructive', handler: () => { void doVoid(row) } },
+      { text: t('offers.redeem.undoKeep'), role: 'cancel' },
+      { text: t('offers.redeem.undoConfirm'), role: 'destructive', handler: () => { void doVoid(row) } },
     ],
   })
   await alert.present()
@@ -125,13 +146,49 @@ async function doVoid(row: RedemptionRow) {
   }
 }
 
-async function redeem(raw: string) {
+function errorTitle(e: unknown, fallback: string) {
+  const err = e instanceof OfferError ? e : null
+  if (err?.code === 'invalid_code') return t('offers.redeem.invalid_code')
+  if (err?.code === 'already_used') return t('offers.redeem.already_used', { when: err.detail ?? '' })
+  if (err?.code === 'expired') return t('offers.redeem.expired')
+  if (err?.code === 'offer_not_active') return t('offers.redeem.offer_not_active')
+  if (err?.code === 'not_allowed') return t('offers.redeem.not_allowed')
+  return fallback
+}
+
+function stateText(info: CodeCheck) {
+  if (info.state === 'already_used') {
+    return t('offers.redeem.already_used', { when: info.redeemed_at ? formatTime(info.redeemed_at) : '' })
+  }
+  return t(`offers.redeem.${info.state}`)
+}
+
+/** Looks the code up without using it. */
+async function check(raw: string) {
   const code = raw.trim()
   if (!code || busy.value) return
   busy.value = true
   result.value = null
+  pending.value = null
+  // An answer for a code that is no longer in the box must not be offered for confirmation.
+  const stale = () => codeInput.value.trim() !== code
   try {
-    const res = await OfferService.redeem(code)
+    const info = await OfferService.checkCode(code)
+    if (!stale()) pending.value = info
+  } catch (e) {
+    if (!stale()) result.value = { ok: false, title: errorTitle(e, t('offers.redeem.checkFailed')) }
+  } finally {
+    busy.value = false
+  }
+}
+
+async function confirmRedeem() {
+  const current = pending.value
+  if (!current || current.state !== 'ok' || busy.value) return
+  busy.value = true
+  try {
+    const res = await OfferService.redeem(current.code)
+    pending.value = null
     result.value = {
       ok: true,
       title: t('offers.redeem.success'),
@@ -142,14 +199,8 @@ async function redeem(raw: string) {
     codeInput.value = ''
     await loadHistory()
   } catch (e) {
-    const err = e instanceof OfferError ? e : null
-    let title = t('offers.redeem.generic')
-    if (err?.code === 'invalid_code') title = t('offers.redeem.invalid_code')
-    else if (err?.code === 'already_used') title = t('offers.redeem.already_used', { when: err.detail ?? '' })
-    else if (err?.code === 'expired') title = t('offers.redeem.expired')
-    else if (err?.code === 'offer_not_active') title = t('offers.redeem.offer_not_active')
-    else if (err?.code === 'not_allowed') title = t('offers.redeem.not_allowed')
-    result.value = { ok: false, title }
+    pending.value = null
+    result.value = { ok: false, title: errorTitle(e, t('offers.redeem.generic')) }
   } finally {
     busy.value = false
   }
@@ -168,6 +219,7 @@ async function toggleScan() {
   if (scanning.value) return stopScan()
   scanning.value = true
   result.value = null
+  pending.value = null
   try {
     scanner = new Html5Qrcode('offer-qr-reader')
     await scanner.start(
@@ -176,7 +228,7 @@ async function toggleScan() {
       async (decoded) => {
         await stopScan()
         codeInput.value = decoded
-        await redeem(decoded)
+        await check(decoded)
       },
       () => { /* per-frame decode misses are normal */ }
     )
@@ -188,6 +240,7 @@ async function toggleScan() {
 
 onIonViewWillEnter(async () => {
   result.value = null
+  pending.value = null
   await acceptPendingOwnerInvites() // a newly added owner can open this straight away
   try {
     history.value = await OfferService.listMyRedemptions(20)
@@ -215,6 +268,11 @@ onBeforeUnmount(stopScan)
 }
 .scan-btn { margin-bottom: 10px; }
 .qr-reader { width: 100%; border-radius: 12px; overflow: hidden; margin-bottom: 12px; }
+.pending { padding: 14px; border-radius: 16px; margin: 12px 0; border: 1px solid var(--ion-color-carrot); }
+.pending p { margin: 4px 0 0; font-size: 14px; }
+.pending .pending-code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: 1px; }
+.pending .pending-problem { font-weight: 700; }
+.pending-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin-top: 10px; }
 .result { display: flex; gap: 10px; align-items: flex-start; padding: 14px; border-radius: 14px; margin: 12px 0; }
 .result ion-icon { font-size: 28px; flex-shrink: 0; }
 .result p { margin: 4px 0 0; font-size: 14px; }
