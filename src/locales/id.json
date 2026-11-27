@@ -751,6 +751,16 @@
       "finalizing": "Finalizing...",
       "failed": "Failed"
     },
+    "scanProgress": {
+      "s1": { "title": "Mengunggah foto", "sub": "Mengirim label yang dipotong untuk dianalisis" },
+      "s2": { "title": "Membaca label", "sub": "Memindai gambar dan mengambil teksnya" },
+      "s3": { "title": "Memahami teks", "sub": "Membersihkan dan menerjemahkan bahan" },
+      "s4": {
+        "title": "Memeriksa bahan",
+        "sub": "Mencocokkan teks dengan bahan yang dikenal",
+        "subCount": "Mencocokkan teks dengan {count} bahan yang dikenal"
+      }
+    },
     "failure": {
       "title": "Kami tidak bisa membaca label ini",
       "empty": "Daftar bahan tidak ditemukan pada foto itu.",
@@ -3037,9 +3047,12 @@
     "redeem": {
       "title": "Tukarkan kode",
       "action": "Tukarkan kode",
-      "hint": "Ketik atau pindai kode pelanggan untuk menandainya telah dipakai.",
+      "hint": "Ketik atau pindai kode pelanggan. Periksa detailnya, lalu tandai telah dipakai.",
       "placeholder": "mis. MRMO-7K4Q-X9MP",
-      "button": "Tukarkan",
+      "check": "Periksa",
+      "checkFailed": "Kode tidak dapat diperiksa. Coba lagi.",
+      "valid": "Kode berlaku dan belum dipakai.",
+      "confirm": "Tandai telah dipakai",
       "scan": "Pindai QR",
       "stopScan": "Berhenti memindai",
       "success": "Kode diterima",
@@ -3053,8 +3066,10 @@
       "generic": "Tidak dapat menukarkan kode. Silakan coba lagi.",
       "cameraDenied": "Kamera tidak tersedia. Ketik kodenya saja.",
       "undo": "Batalkan",
-      "undoTitle": "Batalkan penukaran ini?",
-      "undoBody": "{code} akan dapat dipakai lagi. Lakukan hanya jika kode ini ditukarkan karena kesalahan.",
+      "undoTitle": "Tandai kode ini belum dipakai?",
+      "undoBody": "Lakukan hanya jika kode ditukarkan karena kesalahan. Pelanggan akan bisa memakai {code} lagi.",
+      "undoKeep": "Tetap terpakai",
+      "undoConfirm": "Tandai belum dipakai",
       "undone": "Penukaran dibatalkan",
       "undoneDetail": "{code} dapat dipakai lagi.",
       "errWindow": "Batas waktu pembatalan (10 menit) sudah lewat. Hubungi Halal Formosa untuk memperbaikinya.",

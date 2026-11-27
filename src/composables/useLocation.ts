@@ -22,11 +22,31 @@ const getCachedLocation = (): LatLng | null => {
   }
 }
 
+// The cached location only seeds the map/sort order until the first real fix
+// arrives, so it is stored coarsely (3 decimals, ~110 m) instead of as the
+// exact position: precise coordinates are never written to clear-text storage.
+const CACHE_PRECISION = 1000
+const cacheLocation = (loc: LatLng) => {
+  const coarse: LatLng = {
+    lat: Math.round(loc.lat * CACHE_PRECISION) / CACHE_PRECISION,
+    lng: Math.round(loc.lng * CACHE_PRECISION) / CACHE_PRECISION,
+    city: loc.city
+  }
+  try {
+    localStorage.setItem('hf_user_location', JSON.stringify(coarse))
+  } catch (e) {
+    console.warn('[GPS] Failed to cache location', e)
+  }
+}
+
 const userLocation = ref<LatLng | null>(getCachedLocation())
 const locationAttemptFinished = ref(!!userLocation.value)
 const isLocating = ref(false)
 const hasAutoCentered = ref(false)
 let locationWatchId: string | null = null
+// Battery-saving by default. The Explore map switches to high accuracy while it
+// is on screen so following / nearby pop-ups keep up with a moving user.
+let highAccuracy = false
 
 // Throttling state for geocoding
 const lastGeocodeTime = ref(0)
@@ -36,6 +56,64 @@ const GEOCODE_THROTTLE_MS = 60000 // 1 minute
  * Shared Location Logic
  */
 export function useLocation() {
+
+  const beginWatch = async (): Promise<void> => {
+    const modeUsed = highAccuracy
+    locationWatchId = await Geolocation.watchPosition(
+      modeUsed
+        ? { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 }
+        : {
+            enableHighAccuracy: false, // 🔋 Major battery save & ANR mitigation
+            maximumAge: 60000,         // Relax to 1 minute cache
+            timeout: 15000
+          },
+      (pos, err) => {
+        if (!locationAttemptFinished.value) {
+          locationAttemptFinished.value = true
+        }
+
+        if (err || !pos) {
+          console.warn('[GPS] Watch feedback error', err)
+          return
+        }
+
+        const newLoc = {
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+          city: userLocation.value?.city
+        }
+        userLocation.value = newLoc
+        cacheLocation(newLoc)
+
+        // Optional: resolve city name (THROTTLED)
+        const now = Date.now()
+        if (now - lastGeocodeTime.value > GEOCODE_THROTTLE_MS) {
+          lastGeocodeTime.value = now
+          reverseGeocode(pos.coords.latitude, pos.coords.longitude)
+        }
+      }
+    )
+    // The mode was switched while the watch was being registered: redo it
+    if (modeUsed !== highAccuracy) {
+      await Geolocation.clearWatch({ id: locationWatchId })
+      locationWatchId = null
+      await beginWatch()
+    }
+  }
+
+  /** Switch between high-accuracy (moving, map on screen) and battery-saving updates. */
+  const setHighAccuracy = async (enabled: boolean) => {
+    if (highAccuracy === enabled) return
+    highAccuracy = enabled
+    if (!locationWatchId) return // not watching yet: startWatching will use the new mode
+    try {
+      await Geolocation.clearWatch({ id: locationWatchId })
+      locationWatchId = null
+      await beginWatch()
+    } catch (e) {
+      console.warn('[GPS] Failed to switch accuracy mode', e)
+    }
+  }
 
   const startWatching = async () => {
     if (locationWatchId) return; // Prevent multiple watchers
@@ -66,46 +144,14 @@ export function useLocation() {
             city: userLocation.value?.city
           }
           userLocation.value = newLoc
-          localStorage.setItem('hf_user_location', JSON.stringify(newLoc))
+          cacheLocation(newLoc)
           locationAttemptFinished.value = true
         }
       }).catch(err => {
          console.warn("[GPS] getCurrentPosition failed, watch will take over", err)
       })
 
-      // Continuous watching (relaxed to passive cellular/wifi updates instead of continuous hardware GPS blocks)
-      locationWatchId = await Geolocation.watchPosition(
-        {
-          enableHighAccuracy: false, // 🔋 Major battery save & ANR mitigation
-          maximumAge: 60000,         // Relax to 1 minute cache
-          timeout: 15000
-        },
-        (pos, err) => {
-          if (!locationAttemptFinished.value) {
-            locationAttemptFinished.value = true
-          }
-
-          if (err || !pos) {
-            console.warn('[GPS] Watch feedback error', err)
-            return
-          }
-
-          const newLoc = {
-            lat: pos.coords.latitude,
-            lng: pos.coords.longitude,
-            city: userLocation.value?.city
-          }
-          userLocation.value = newLoc
-          localStorage.setItem('hf_user_location', JSON.stringify(newLoc))
-          
-          // Optional: resolve city name (THROTTLED)
-          const now = Date.now()
-          if (now - lastGeocodeTime.value > GEOCODE_THROTTLE_MS) {
-            lastGeocodeTime.value = now
-            reverseGeocode(pos.coords.latitude, pos.coords.longitude)
-          }
-        }
-      )
+      await beginWatch()
     } catch (e) {
       console.error('[GPS] Location acquisition failed', e)
       locationAttemptFinished.value = true
@@ -132,7 +178,7 @@ export function useLocation() {
           data.address?.town ||
           data.address?.municipality ||
           data.address?.state
-        localStorage.setItem('hf_user_location', JSON.stringify(userLocation.value))
+        cacheLocation(userLocation.value)
       }
     } catch (e) {
       console.warn('[GPS] Reverse geocoding failed', e)
@@ -152,6 +198,7 @@ export function useLocation() {
     isLocating,
     hasAutoCentered,
     startWatching,
-    stopWatching
+    stopWatching,
+    setHighAccuracy
   }
 }

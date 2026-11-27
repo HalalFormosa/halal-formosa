@@ -197,7 +197,7 @@ import { useProximityPrompt } from '@/composables/useProximityPrompt'
 import { useNotifier } from '@/composables/useNotifier'
 import { keyOutline, trashOutline, sparkles, chatboxEllipsesOutline } from 'ionicons/icons'
 import { useRouter } from 'vue-router'
-import { supabase } from '@/plugins/supabaseClient'
+import { supabase, signOutExplicitly } from '@/plugins/supabaseClient'
 import { ActivityLogService } from '@/services/ActivityLogService'
 
 const { locale, t } = useI18n()
@@ -273,7 +273,7 @@ const executeDeleteAccount = async () => {
     const { error } = await supabase.rpc('delete_user_account')
     if (error) throw error
 
-    await supabase.auth.signOut()
+    await signOutExplicitly()
     resetUserProfileState()
 
     const alert = await alertController.create({

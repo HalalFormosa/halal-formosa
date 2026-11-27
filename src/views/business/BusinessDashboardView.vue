@@ -50,7 +50,7 @@
             <div v-if="locations.length" class="account-plan fade-in" :class="accountTier">
               <div class="ap-info">
                 <span class="ap-label">{{ $t('business.plan.yourPlanLabel') }}</span>
-                <span class="ap-tier">{{ accountTier }}</span>
+                <span class="ap-tier">{{ $t(`business.tiers.${accountTier}`) }}</span>
                 <span class="ap-note">{{ $t('business.plan.accountWide') }}</span>
                 <span v-if="quota" class="ap-note">{{ quota.limit < 0 ? $t('business.plan.branchesUnlimited', { used: quota.used }) : $t('business.plan.branches', { used: quota.used, limit: quota.limit }) }}</span>
               </div>
@@ -101,10 +101,10 @@
                 <div class="biz-info">
                   <div class="biz-title-row">
                     <h2>{{ loc.name }}</h2>
-                    <span class="tier-pill" :class="loc.tier">{{ loc.tier }}</span>
+                    <span class="tier-pill" :class="loc.tier">{{ $t(`business.tiers.${loc.tier}`) }}</span>
                   </div>
                   <p v-if="loc.address" class="biz-address">{{ loc.address }}</p>
-                  <p class="biz-role">{{ loc.role }}</p>
+                  <p class="biz-role">{{ $t(`business.roles.${loc.role}`) }}</p>
                 </div>
                 <ion-icon :icon="chevronForward" class="biz-chevron" />
               </div>
@@ -193,7 +193,7 @@ onIonViewWillEnter(load)
 .biz-role { font-size: .72rem; text-transform: uppercase; letter-spacing: .5px; font-weight: 700; color: var(--ion-color-carrot); margin: 4px 0 0; }
 .biz-chevron { color: var(--ion-color-medium); font-size: 20px; }
 
-.tier-pill { font-size: .62rem; font-weight: 800; text-transform: uppercase; letter-spacing: .5px; padding: 2px 8px; border-radius: 999px; background: var(--ion-color-light); color: var(--ion-color-medium); }
+.tier-pill { white-space: nowrap; flex-shrink: 0; font-size: .62rem; font-weight: 800; text-transform: uppercase; letter-spacing: .5px; padding: 2px 8px; border-radius: 999px; background: var(--ion-color-light); color: var(--ion-color-medium); }
 .tier-pill.bronze { background: rgba(205,127,50,.15); color: #b06a2c; }
 .tier-pill.silver { background: rgba(148,163,184,.2); color: #64748b; }
 .tier-pill.gold   { background: rgba(202,138,4,.15); color: #ca8a04; }

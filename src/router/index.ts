@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from '@ionic/vue-router';
 import { RouteRecordRaw } from 'vue-router';
-import { supabase } from '@/plugins/supabaseClient';
+import { supabase, readStoredSession } from '@/plugins/supabaseClient';
 import { performBotChecks } from '@/utils/botShield';
 import { Capacitor } from '@capacitor/core';
 import { isDeviceOnline } from '@/utils/connectivity';
@@ -27,8 +27,9 @@ import {
 // Preload SearchView in the background
 import SearchView from '@/views/search/SearchView.vue';
 import ExploreView from '@/views/explore/ExploreView.vue';
-import ScanIngredientsView from '@/views/scan/ScanIngredientsView.vue';
 import { requestYearlySurveyFlow } from '@/composables/useYearlySurvey';
+import { defaultScanMethod } from '@/composables/useDefaultScanMethod';
+import { isLiveVerdictSupported } from '@/utils/liveScanPlatform';
 
 const ALLOWED_WHEN_PROFILE_INCOMPLETE = [
     '/profile',
@@ -240,7 +241,18 @@ const routes: Array<RouteRecordRaw> = [
 
     { 
       path: '/scan', 
-      component: ScanIngredientsView, 
+      component: () => import('@/views/scan/ScanIngredientsView.vue'),
+      // "Remember my choice": Auto Capture and Live Scan are their own screens, so go straight there
+      // instead of opening this page first and forwarding from it (that flashed the picker).
+      // Camera and Gallery are actions on this page, so they still open it. Moving between scan
+      // screens (mode switcher, Back) is left alone so the picker stays reachable.
+      beforeEnter: (_to, from) => {
+        if (from.path.startsWith('/scan')) return true
+        const method = defaultScanMethod.value
+        if (method === 'auto') return '/scan/auto'
+        if (method === 'live' && isLiveVerdictSupported()) return '/scan/live'
+        return true
+      },
       meta: {
         requiresAuth: true,
         adSpaceId: 'ad-space-scan-results',
@@ -596,6 +608,18 @@ router.beforeEach(async (to, from, next) => {
     // that; trust the already-restored in-memory user instead.
     if (!session && !isDeviceOnline() && currentUser.value) {
         session = { user: currentUser.value } as any;
+    }
+
+    // Same idea while "online": a flaky connection right after the app resumes makes
+    // getSession() return null without touching the saved login. supabase-js removes the
+    // stored session itself when a login is truly over (logout / token rejected by the
+    // server), so a saved session means the user is still logged in — let them through and
+    // the background refresh will catch up.
+    if (!session) {
+        const stored = await readStoredSession();
+        if (stored?.user) {
+            session = { user: stored.user } as any;
+        }
     }
 
     // 🚫 Needs auth but not logged in

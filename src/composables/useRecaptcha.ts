@@ -93,6 +93,9 @@ export function useRecaptcha() {
       };
 
       script.onerror = () => {
+        // Drop the dead tag, otherwise the next loadScript() finds it via the
+        // "already injected" check and polls for grecaptcha forever.
+        script.remove();
         error.value = 'Failed to load reCAPTCHA Enterprise script';
         reject(new Error('Failed to load reCAPTCHA Enterprise script'));
       };
@@ -155,7 +158,9 @@ export function useRecaptcha() {
   };
 
   onMounted(() => {
-    loadScript();
+    // Preload only. A blocked or offline script is already reported via `error`, and
+    // execute() rejects with a clear message when the user actually submits.
+    loadScript().catch(() => {});
   });
 
   return {

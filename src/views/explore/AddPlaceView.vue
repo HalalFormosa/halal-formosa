@@ -528,6 +528,8 @@
 <script setup lang="ts">
 import OpeningHoursEditor from '@/components/OpeningHoursEditor.vue'
 import { emptyWeek, weekFromDb, weekFromGooglePeriods, weekToDb, type WeekShifts } from '@/utils/openingHours'
+import { uploadPlaceCardThumb } from '@/utils/placeThumbnail'
+import { placeThumbPath } from '@/utils/imageHelpers'
 import {
   IonPage,
   IonHeader,
@@ -1210,7 +1212,15 @@ const initMap = async () => {
 
   advancedMarkerLib = markerLib
 
-  map = new Map(document.getElementById('add-map') as HTMLElement, {
+  // Look the container up AFTER the awaits: if the user left the step/page while the
+  // library loaded, #add-map is gone and new Map(null) throws InvalidValueError.
+  const mapEl = document.getElementById('add-map')
+  if (!mapEl) {
+    mapLoading.value = false
+    return
+  }
+
+  map = new Map(mapEl, {
     center: {lat: form.value.lat, lng: form.value.lng},
     zoom: 14,
     disableDefaultUI: true,
@@ -1285,9 +1295,10 @@ const initMap = async () => {
     map!.panTo({lat, lng})
 
     // add a quick "pop" animation for feedback
-    if (pinEl?.element) {
-      pinEl.element.classList.add('marker-pop')
-      setTimeout(() => pinEl.element.classList.remove('marker-pop'), 220)
+    const popEl = pinEl?.element
+    if (popEl) {
+      popEl.classList.add('marker-pop')
+      setTimeout(() => popEl.classList.remove('marker-pop'), 220)
     }
 
     if (!firstTapDone) {
@@ -1427,10 +1438,12 @@ const uploadToSupabase = async (file: File): Promise<string> => {
     if (!user) throw new Error('You must be logged in.')
     const safeBase = makeSafeBase()
     const rand = Math.random().toString(36).slice(2, 8)
-    const path = `${user.id}/${safeBase}/${Date.now()}_${rand}.jpg`   // folder per place
+    // "_full" marks photos that have a matching "_thumb" (older photos have neither)
+    const path = `${user.id}/${safeBase}/${Date.now()}_${rand}_full.jpg`   // folder per place
     const {error: upErr} = await supabase.storage.from('location-image')
         .upload(path, file, {cacheControl: '3600', upsert: false, contentType: 'image/jpeg'})
     if (upErr) throw upErr
+    await uploadPlaceCardThumb(path, file)   // best-effort; never blocks the save
     const {data: pub} = supabase.storage.from('location-image').getPublicUrl(path)
     if (!pub?.publicUrl) throw new Error('Could not get public URL.')
     return pub.publicUrl
@@ -1469,7 +1482,10 @@ const submitPlace = async () => {
     // delete old image if editing + new image selected
     if (isEditing.value && pendingFile.value && form.value.image) {
       const oldPath = form.value.image.split('/storage/v1/object/public/location-image/')[1]
-      if (oldPath) await supabase.storage.from('location-image').remove([oldPath])
+      if (oldPath) {
+        const oldThumb = placeThumbPath(oldPath)   // new-style photos also have a thumbnail
+        await supabase.storage.from('location-image').remove(oldThumb ? [oldPath, oldThumb] : [oldPath])
+      }
     }
 
     // upload new image if selected

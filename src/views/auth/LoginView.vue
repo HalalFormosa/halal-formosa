@@ -242,7 +242,8 @@ const route = useRoute();
 // Initialize hCaptcha on mount
 onMounted(async () => {
   if (isCaptchaEnabled) {
-    await loadScript()
+    // Preload only; a blocked script is surfaced when the user submits.
+    await loadScript().catch(() => {})
   }
 })
 

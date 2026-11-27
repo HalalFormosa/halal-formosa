@@ -20,15 +20,172 @@
   <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
   <link rel="manifest" href="/site.webmanifest">
 
+  <!-- Inter: non-blocking. media=print + onload swap keeps the stylesheet off the
+       render path; display=swap shows system font until Inter arrives. -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" media="print" onload="this.media='all'"
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+  <noscript>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+  </noscript>
+
   <!-- add to homescreen for ios -->
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="Halal Formosa" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black" />
   <meta name="apple-itunes-app" content="app-id=YOUR_APP_ID_HERE, app-argument=https://app.halalformosa.com">
 
+
+  <link rel="preload" as="image" href="/splash-logo.png" />
+
+  <!-- Animated launch splash: white, rounded-square logo (same size/spot as the native launch screen),
+       then tagline + loading bar, then the logo expands and dissolves into the app.
+       Removed by src/utils/splash.ts once the app has mounted. -->
+  <style>
+    #hf-splash {
+      position: fixed;
+      inset: 0;
+      z-index: 2147483000;
+      background: #FFFFFF;
+      opacity: 1;
+      pointer-events: all;
+      will-change: opacity;
+      transition: background-color 500ms ease;
+      font-family: -apple-system, "Segoe UI", Roboto, Inter, system-ui, sans-serif;
+    }
+    #hf-splash .hf-splash-logo {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 160px;
+      height: 160px;
+      margin: -80px 0 0 -80px;
+      animation: hf-splash-breathe 2400ms ease-in-out 400ms infinite;
+      user-select: none;
+      -webkit-user-drag: none;
+    }
+    #hf-splash .hf-splash-tagline {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: calc(50% + 80px + 26px);
+      margin: 0;
+      padding: 0 32px;
+      text-align: center;
+      font-size: 17px;
+      font-weight: 600;
+      letter-spacing: 0.1px;
+      color: #1A1A1A;
+      opacity: 0;
+      transform: translateY(8px);
+      animation: hf-splash-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 250ms forwards;
+    }
+    #hf-splash .hf-splash-tagline b { color: #C96718; font-weight: 700; }
+    /* Dark theme: same source as the app (saved preference, else the phone's setting).
+       Backgrounds match Ionic's dark palette (#121212 Material, #000000 iOS). */
+    #hf-splash .hf-splash-tagline,
+    #hf-splash .hf-splash-tagline b,
+    #hf-splash .hf-splash-bar { transition: color 500ms ease, background-color 500ms ease; }
+    #hf-splash.hf-dark { background: #121212; }
+    #hf-splash.hf-dark.hf-ios { background: #000000; }
+    #hf-splash.hf-dark .hf-splash-tagline { color: #F4F5F8; }
+    #hf-splash.hf-dark .hf-splash-tagline b { color: #EA9550; }
+    #hf-splash.hf-dark .hf-splash-bar { background: rgba(255, 255, 255, 0.16); }
+    #hf-splash .hf-splash-bar {
+      position: absolute;
+      left: 50%;
+      top: calc(50% + 80px + 80px);
+      margin-left: -48px;
+      width: 96px;
+      height: 4px;
+      border-radius: 999px;
+      background: rgba(230, 126, 34, 0.18);
+      overflow: hidden;
+      opacity: 0;
+      animation: hf-splash-fade 400ms ease-out 450ms forwards;
+    }
+    #hf-splash .hf-splash-bar > span {
+      display: block;
+      height: 100%;
+      width: 40%;
+      border-radius: inherit;
+      background: #E67E22;
+      animation: hf-splash-slide 1300ms ease-in-out infinite;
+    }
+    /* Exit: the logo grows toward the viewer and dissolves while the white fades away,
+       revealing the app. Only opacity/transform are animated so it stays smooth even
+       while the app is busy rendering its first screen. */
+    #hf-splash.hf-splash-hide {
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 480ms cubic-bezier(0.4, 0, 0.2, 1) 140ms, background-color 500ms ease;
+    }
+    #hf-splash.hf-splash-hide .hf-splash-logo {
+      will-change: transform, opacity;
+      animation: hf-splash-expand 620ms cubic-bezier(0.55, 0, 0.9, 0.45) forwards;
+    }
+    #hf-splash.hf-splash-hide .hf-splash-tagline,
+    #hf-splash.hf-splash-hide .hf-splash-bar {
+      animation: none;
+      opacity: 0;
+      transition: opacity 140ms ease-out;
+    }
+    @keyframes hf-splash-breathe {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.035); }
+    }
+    @keyframes hf-splash-rise { to { opacity: 1; transform: translateY(0); } }
+    @keyframes hf-splash-fade { to { opacity: 1; } }
+    @keyframes hf-splash-expand {
+      from { transform: scale(var(--hf-from, 1)); opacity: 1; }
+      to { transform: scale(11); opacity: 0; }
+    }
+    @keyframes hf-splash-slide {
+      0% { transform: translateX(-110%); }
+      100% { transform: translateX(260%); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      #hf-splash .hf-splash-logo,
+      #hf-splash.hf-splash-hide .hf-splash-logo { animation: none; }
+      #hf-splash .hf-splash-tagline { animation: none; opacity: 1; transform: none; }
+      #hf-splash .hf-splash-bar { display: none; }
+    }
+  </style>
+
 </head>
 
 <body>
+  <div id="hf-splash" aria-hidden="true">
+    <img class="hf-splash-logo" src="/splash-logo.png" alt="" draggable="false" />
+    <p class="hf-splash-tagline">Halal is Easy with <b>Halal Formosa</b></p>
+    <div class="hf-splash-bar"><span></span></div>
+  </div>
+  <script>
+    // Record when the splash first painted; safety net removes it if the app never mounts.
+    window.__hfSplashStart = Date.now();
+    // Pick light/dark exactly like useTheme.ts does, before the first paint.
+    (function () {
+      var el = document.getElementById('hf-splash');
+      if (!el) return;
+      var saved = null;
+      try { saved = localStorage.getItem('preferred-theme'); } catch (e) {}
+      var sysDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      var dark = saved === 'dark' || (saved === null && sysDark);
+      // Start in the PHONE's theme: that is what the native launch screen is showing, so the
+      // hand-off is seamless. If the app's own choice differs, fade to it once we are on screen.
+      if (sysDark) el.classList.add('hf-dark');
+      if (/iPhone|iPad|iPod/.test(navigator.userAgent)) el.classList.add('hf-ios');
+      if (dark !== sysDark) {
+        setTimeout(function () { el.classList.toggle('hf-dark', dark); }, 350);
+      }
+    })();
+    setTimeout(function () {
+      var el = document.getElementById('hf-splash');
+      if (el) el.remove();
+    }, 10000);
+  </script>
+
   <div id="app"></div>
   <script type="module" src="/src/main.ts"></script>
 </body>

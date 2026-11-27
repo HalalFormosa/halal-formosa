@@ -6,6 +6,9 @@ import type { OcrPipelineOptions } from "@/composables/useOcrPipeline"
 export interface CropperOcrOptions extends OcrPipelineOptions {
     setBackFile?: (file: File) => void
     onSuccess?: () => void
+    /** Resolves once the on-screen scan animation has finished playing, so a
+     *  very fast scan doesn't close the overlay before it can be seen. */
+    waitForAnimation?: () => Promise<void>
 }
 
 export function useCropperOcr(options: CropperOcrOptions) {
@@ -135,12 +138,18 @@ export function useCropperOcr(options: CropperOcrOptions) {
         resetCoordinates(ratio)
     }
 
-    async function confirmCrop() {
+    /** `keepOverlay`: on success leave the scan overlay open so the caller can
+     *  hold the finished animation until the results are ready, then close it
+     *  itself. Failures always close it. */
+    async function confirmCrop(opts?: { keepOverlay?: boolean }) {
         if (!cropperRef.value) return
         const result = cropperRef.value.getResult()
         if (!result?.canvas) return
 
+        // A previous scan leaves progress at 1; start the animation from zero
+        progress.value = 0
         ocrLoading.value = true
+        let succeeded = false
         try {
             const blob = await new Promise<Blob | null>((resolve) =>
                 result.canvas.toBlob((b: Blob | null) => resolve(b), "image/jpeg", 0.9)
@@ -168,13 +177,28 @@ export function useCropperOcr(options: CropperOcrOptions) {
                 const resizedBack = await resizeImage(originalFile.value)
                 options?.setBackFile?.(resizedBack)
             }
+
+            // Let the scan animation play out before the overlay closes
+            if (options?.waitForAnimation) await options.waitForAnimation().catch(() => {})
+            succeeded = true
         } catch (err) {
             console.error('❌ OCR failed in confirmCrop:', err)
             throw err // 👈 rethrow to let handleConfirmCrop() know it failed
         } finally {
-            ocrLoading.value = false
-            showCropper.value = false
+            if (!(opts?.keepOverlay && succeeded)) closeScanOverlay(!!opts?.keepOverlay)
         }
+    }
+
+    /** Close the scan overlay and the crop modal behind it.
+     *  `smooth`: dismiss the modal first and keep the overlay up while it slides
+     *  away, so the plain cropper never flashes through underneath. */
+    function closeScanOverlay(smooth = false) {
+        showCropper.value = false
+        if (!smooth) {
+            ocrLoading.value = false
+            return
+        }
+        setTimeout(() => { if (!showCropper.value) ocrLoading.value = false }, 600)
     }
 
     function reset() {
@@ -291,6 +315,7 @@ export function useCropperOcr(options: CropperOcrOptions) {
         onCropperReady,
         autoProcess,
         confirmCrop,
+        closeScanOverlay,
         closeCropper,
         recrop,
         reset,

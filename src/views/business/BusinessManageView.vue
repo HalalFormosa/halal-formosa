@@ -15,7 +15,7 @@
         <div class="plan-banner" :class="tier">
           <div>
             <span class="plan-label">{{ $t('business.plan.current') }}</span>
-            <span class="plan-tier">{{ tier }}</span>
+            <span class="plan-tier">{{ $t(`business.tiers.${tier}`) }}</span>
             <span class="plan-accountwide">{{ $t('business.plan.accountWide') }}</span>
           </div>
           <!-- Admins can assign a plan tier + preview the paywall -->

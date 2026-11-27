@@ -436,6 +436,16 @@
       "finalizing": "Finalizing...",
       "failed": "Failed"
     },
+    "scanProgress": {
+      "s1": { "title": "Uploading photo", "sub": "Sending your cropped label for analysis" },
+      "s2": { "title": "Reading the label", "sub": "Scanning the image and extracting the text" },
+      "s3": { "title": "Understanding the text", "sub": "Cleaning and translating the ingredients" },
+      "s4": {
+        "title": "Checking ingredients",
+        "sub": "Comparing the text with known ingredients",
+        "subCount": "Comparing the text with {count} known ingredients"
+      }
+    },
     "aiSummary": {
       "title": "AI Analysis Summary",
       "preparing": "Preparing Analysis...",
@@ -732,6 +742,9 @@
     "results": "Results",
     "showResults": "Show {count} results",
     "showingResults": "Showing {count} of {total} locations",
+    "mapLoadFailed": "The map couldn't load. Places are still listed below.",
+    "mapRetry": "Retry map",
+    "slowConnection": "Slow connection, retrying…",
     "noPlacesInView": "No other places in this map area. Pan or zoom out to see more.",
     "loadingMoreLocations": "Loading more locations...",
     "details": {
@@ -1206,7 +1219,25 @@
       "unsaved": "Unsaved"
     },
     "defaultName": "User",
-    "anonymous": "Anonymous"
+    "anonymous": "Anonymous",
+    "itemsCount": "Items",
+    "placesCount": "Places",
+    "contributor": {
+      "title": "Become a Dedicated Contributor",
+      "subtitle": "Help the community & get unlimited contributions",
+      "pendingShort": "⏳ Application pending review",
+      "modalTitle": "Become a Contributor",
+      "heading": "Dedicated Contributor",
+      "intro": "Apply to become a verified contributor. You'll get unlimited daily product & location contributions, and auto-approved submissions!",
+      "pendingTitle": "⏳ Application Pending",
+      "pendingBody": "We are currently reviewing your application. Thank you for your patience!",
+      "declinedTitle": "❌ Previous Application Declined",
+      "declinedBody": "Your previous application was not approved. You can submit a new request below if your circumstances have changed.",
+      "reasonLabel": "Why do you want to contribute more to Halal Formosa?",
+      "reasonPlaceholder": "Let us know how you plan to help (e.g. 'I want to translate ingredients for local stores' or 'I buy many foreign items and scan daily').",
+      "submit": "Submit Application",
+      "submitted": "✅ Application submitted successfully!"
+    }
   },
   "achievements": {
     "title": "My Achievements",
@@ -1764,9 +1795,12 @@
     "redeem": {
       "title": "Redeem a code",
       "action": "Redeem codes",
-      "hint": "Type or scan the customer's code to mark it as used. The store is detected from the code.",
+      "hint": "Type or scan the customer's code. Check the details, then mark it as used.",
       "placeholder": "e.g. MRMO-7K4Q-X9MP",
-      "button": "Redeem",
+      "check": "Check",
+      "checkFailed": "Could not check the code. Please try again.",
+      "valid": "Valid code, not used yet.",
+      "confirm": "Mark as used",
       "scan": "Scan QR",
       "stopScan": "Stop scanning",
       "success": "Code accepted",
@@ -1781,8 +1815,10 @@
       "generic": "Could not redeem the code. Please try again.",
       "cameraDenied": "Camera unavailable. Type the code instead.",
       "undo": "Undo",
-      "undoTitle": "Undo this redemption?",
-      "undoBody": "{code} will become usable again. Only do this if it was redeemed by mistake.",
+      "undoTitle": "Mark this code as unused?",
+      "undoBody": "Only do this if it was redeemed by mistake. The customer will be able to use {code} again.",
+      "undoKeep": "Keep as used",
+      "undoConfirm": "Mark as unused",
       "undone": "Redemption undone",
       "undoneDetail": "{code} can be used again.",
       "errWindow": "The undo window (10 minutes) has passed. Contact Halal Formosa to fix it.",
@@ -2045,6 +2081,16 @@
         "review": "Please confirm your details before submitting.",
         "reviewNote": "By submitting, you confirm the information is accurate and you're authorized to represent this business."
       }
+    },
+    "tiers": {
+      "free": "Free",
+      "bronze": "Bronze",
+      "silver": "Silver",
+      "gold": "Gold"
+    },
+    "roles": {
+      "owner": "Owner",
+      "manager": "Manager"
     }
   },
   "admin": {

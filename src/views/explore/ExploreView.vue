@@ -297,10 +297,20 @@
       />
     </div>
 
+    <!-- Map failed to load or timed out (map view only; list view has its own banner) -->
+    <div v-if="mapLoadFailed && viewMode === 'map'" class="map-load-error" role="alert">
+      <p>{{ $t('explore.mapLoadFailed') }}</p>
+      <ion-button size="small" color="carrot" @click="retryMap">{{ $t('explore.mapRetry') }}</ion-button>
+    </div>
+
     <!-- 4. List View Overlay -->
     <transition name="fade-slide">
       <div v-if="viewMode === 'list'" class="list-view-overlay" :style="{ paddingTop: listPaddingTop }">
         <div class="list-container">
+          <div v-if="mapLoadFailed" class="map-load-error inline" role="alert">
+            <p>{{ $t('explore.mapLoadFailed') }}</p>
+            <ion-button size="small" color="carrot" @click="retryMap">{{ $t('explore.mapRetry') }}</ion-button>
+          </div>
           <div v-if="!isSmallScreen" class="list-header">
             <div class="list-sort-container">
               <ion-button
@@ -447,7 +457,7 @@
                   <div class="card-image-section" :class="{ 'brand-image': listLocations[0].partner_tier && listLocations[0].image }" :style="brandImageStyle(listLocations[0])">
                     <img
                       loading="lazy"
-                      :src="listLocations[0].image || PLACEHOLDER"
+                      :src="getPlaceCardImage(listLocations[0].image) || PLACEHOLDER"
                       :alt="listLocations[0].name"
                       @error="onImageError"
                     />
@@ -520,7 +530,7 @@
                 <div class="card-image-section" :class="{ 'brand-image': place.partner_tier && place.image }" :style="brandImageStyle(place)">
                   <img
                     loading="lazy"
-                    :src="place.image || PLACEHOLDER"
+                    :src="getPlaceCardImage(place.image) || PLACEHOLDER"
                     :alt="place.name"
                     @error="onImageError"
                   />
@@ -615,8 +625,8 @@
         <ion-icon :icon="addOutline" />
       </ion-button>
       
-      <ion-button v-if="viewMode === 'map'" class="floating-action-btn locate-me-btn" color="carrot" @click="centerOnUser">
-        <ion-icon :icon="navigateCircleOutline" />
+      <ion-button v-if="viewMode === 'map'" class="floating-action-btn locate-me-btn" :class="{ following: followUser }" color="carrot" @click="centerOnUser">
+        <ion-icon :icon="followUser ? navigateCircle : navigateCircleOutline" />
       </ion-button>
     </div>
 
@@ -711,7 +721,7 @@
                   <div class="card-image-section" :class="{ 'brand-image': visibleMapLocations[0].partner_tier && visibleMapLocations[0].image }" :style="brandImageStyle(visibleMapLocations[0])">
                     <img
                         loading="lazy"
-                        :src="visibleMapLocations[0].image || PLACEHOLDER"
+                        :src="getPlaceCardImage(visibleMapLocations[0].image) || PLACEHOLDER"
                         :alt="visibleMapLocations[0].name"
                         @error="onImageError"
                     />
@@ -812,7 +822,7 @@
                 <div class="card-image-section" :class="{ 'brand-image': place.partner_tier && place.image }" :style="brandImageStyle(place)">
                   <img
                       loading="lazy"
-                      :src="place.image || PLACEHOLDER"
+                      :src="getPlaceCardImage(place.image) || PLACEHOLDER"
                       :alt="place.name"
                       @error="onImageError"
                   />
@@ -1003,6 +1013,7 @@ import type { InfiniteScrollCustomEvent } from '@ionic/vue'
 import { useI18n } from 'vue-i18n'
 import {
   navigateCircleOutline,
+  navigateCircle,
   addOutline,
   restaurant, informationCircleOutline, chevronUpOutline, chevronDownOutline, restaurantOutline, leaf, home,
   layersOutline, listOutline, gridOutline, mapOutline, sparkles, shieldCheckmarkOutline, checkmarkCircle,
@@ -1024,7 +1035,10 @@ import { failedAdSpaceId } from '@/composables/useAdFallback'
 import {Geolocation} from '@capacitor/geolocation'
 import { StatusBar, Style } from '@capacitor/status-bar'
 import {supabase} from '@/plugins/supabaseClient'
-import {notifyFetchError} from '@/utils/offlineFeedback'
+import {notifyFetchError, notifySlowConnection} from '@/utils/offlineFeedback'
+import {withTimeoutRetry} from '@/utils/requestTimeout'
+import {getPlaceCardImage, placeThumbFallbackUrl} from '@/utils/imageHelpers'
+import {exploreAreaKey, loadExploreCache, saveExploreCache} from '@/utils/exploreCache'
 import { delayForHuman } from '@/utils/interactionShield'
 import { useRecaptcha } from '@/composables/useRecaptcha'
 
@@ -1061,7 +1075,8 @@ const {
   userLocation, 
   locationAttemptFinished, 
   hasAutoCentered,
-  startWatching 
+  startWatching,
+  setHighAccuracy
 } = useLocation()
 
 const locations = ref<Place[]>([])
@@ -1088,7 +1103,11 @@ const searchQuery = ref('')
 // The query actually filtered on — only updates when the user commits a
 // search (presses "Go" / Enter), so typing alone never re-filters results.
 const committedSearchQuery = ref('')
-const sortBy = ref<'nearest' | 'recent' | 'popular' | 'trending' | 'for_you'>(userLocation.value ? 'nearest' : 'recent')
+// Locate-me works like Google Maps: first tap centers and locks onto the user
+// (the map follows GPS updates); tapping again, or dragging the map, releases it.
+const followUser = ref(false)
+
+const sortBy = ref<'nearest' | 'recent' | 'popular' | 'trending' | 'for_you'>('nearest')
 const listLimit = ref(20)
 // locations moved up
 const loadingPlaces = ref(true)
@@ -1268,6 +1287,31 @@ onUnmounted(() => {
   headerObserver = null
 })
 
+// Plain viewport box. Deliberately free of the `google` global so place data
+// can be fetched and listed before (or without) the Google Maps script.
+type MapBounds = { south: number; west: number; north: number; east: number }
+
+function toPlainBounds(b: google.maps.LatLngBounds): MapBounds {
+  const ne = b.getNorthEast()
+  const sw = b.getSouthWest()
+  return { south: sw.lat(), west: sw.lng(), north: ne.lat(), east: ne.lng() }
+}
+
+function padBounds(b: MapBounds, ratio: number): MapBounds {
+  const latPad = Math.abs(b.north - b.south) * ratio
+  const lngPad = Math.abs(b.east - b.west) * ratio
+  return { south: b.south - latPad, west: b.west - lngPad, north: b.north + latPad, east: b.east + lngPad }
+}
+
+function boundsContainPoint(b: MapBounds, p: { lat: number; lng: number }): boolean {
+  return p.lat >= b.south && p.lat <= b.north && p.lng >= b.west && p.lng <= b.east
+}
+
+function boundsContainBounds(outer: MapBounds, inner: MapBounds): boolean {
+  return inner.south >= outer.south && inner.north <= outer.north &&
+    inner.west >= outer.west && inner.east <= outer.east
+}
+
 const boundsFilteredLocations = computed(() => {
   const bounds = currentMapBounds.value
   if (!bounds) {
@@ -1275,22 +1319,13 @@ const boundsFilteredLocations = computed(() => {
   }
 
   // Filter by map bounds (with a 10% buffer for smooth scrolling feel)
-  const ne = bounds.getNorthEast()
-  const sw = bounds.getSouthWest()
-  const latDiff = Math.abs(ne.lat() - sw.lat())
-  const lngDiff = Math.abs(ne.lng() - sw.lng())
-  const buffer = 0.10 // 10% buffer
-
-  const extendedBounds = new google.maps.LatLngBounds(
-    { lat: sw.lat() - latDiff * buffer, lng: sw.lng() - lngDiff * buffer },
-    { lat: ne.lat() + latDiff * buffer, lng: ne.lng() + lngDiff * buffer }
-  )
+  const extendedBounds = padBounds(bounds, 0.10)
 
   // Gold partners bypass the viewport entirely (that's the whole point of
   // the city-wide radius fetch) — everything else still respects it so the
   // map and list stay in sync.
   return displayedLocations.value.filter(p =>
-    p.partner_tier?.toLowerCase() === 'gold' || extendedBounds.contains(p.position)
+    p.partner_tier?.toLowerCase() === 'gold' || boundsContainPoint(extendedBounds, p.position)
   )
 })
 
@@ -1306,13 +1341,15 @@ function scheduleImpressionLog() {
   if (impressionTimer) clearTimeout(impressionTimer)
   impressionTimer = setTimeout(() => {
     const q = searchQuery.value?.trim() || null
-    let logged = 0
+    const burst: { id: number; q: string | null }[] = []
     for (const p of listLocations.value) {
       if (impressedThisSession.has(p.id)) continue
       impressedThisSession.add(p.id)
-      ActivityLogService.log('explore_place_impression', { id: p.id, q })
-      if (++logged >= 30) break // cap burst size
+      burst.push({ id: p.id, q })
+      if (burst.length >= 30) break // cap burst size
     }
+    // One INSERT for the whole burst (was one HTTP request per place).
+    if (burst.length) void ActivityLogService.logMany('explore_place_impression', burst)
   }, 1500)
 }
 // NOTE: watch(listLocations, ...) is registered in onMounted (see below), not here.
@@ -1400,6 +1437,8 @@ let isProgrammaticScroll = false
 /* Google Maps runtime objects */
 let mapInstance: google.maps.Map | null = null
 const mapReady = ref(false)
+const mapLoadFailed = ref(false)
+const MAP_LOAD_TIMEOUT_MS = 10000
 let advancedMarkerLib: typeof google.maps.marker | null = null
 let infoWindow: google.maps.InfoWindow | null = null
 let geocoder: google.maps.Geocoder | null = null
@@ -1414,7 +1453,7 @@ const pendingInfoWindowPlaceId = ref<number | null>(null)
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t
 const hasAutoSelected = ref(false)
 let clusterer: MarkerClusterer | null = null
-const currentMapBounds = ref<google.maps.LatLngBounds | null>(null)
+const currentMapBounds = ref<MapBounds | null>(null)
 let locationWatchId: string | null = null
 
 // Saved Locations State
@@ -1424,9 +1463,12 @@ const selectedLocationForSave = ref<{ id: number; name: string } | null>(null)
 
 const lastStableLoc = ref<LatLng | null>(null)
 const lastCalcLocation = ref<LatLng | null>(null)
+// Without a GPS fix the "nearest" order is measured from the middle of the map
+const mapCenter = ref<LatLng | null>(null)
 
 // Interaction States for Map/List Sync
 const isUserPanningMap = ref(false)
+const nearbyCardId = ref<number | null>(null)
 const isUserScrollingList = ref(false)
 let lastPannedId: number | null = null
 
@@ -1514,6 +1556,106 @@ const isOpenNow = (place: Place): boolean => {
   return place.isOpen ?? false
 }
 
+// ---- Nearby place pop-up ----
+// While the user is on the map, pop the place's own info bubble open at its
+// marker when they pass within NEARBY_RADIUS_M of it. The map is not moved.
+// Each place is announced once per session; the bubble closes by itself.
+const NEARBY_RADIUS_M = 80
+const NEARBY_MIN_HOLD_MS = 4000 // a bubble can't be swapped out before this
+let nearbyShownAt = 0
+const NEARBY_AUTO_HIDE_MS = 9000
+const nearbyAnnounced = new Set<number>()
+let nearbyActiveId: number | null = null
+let nearbyTimer: ReturnType<typeof setTimeout> | null = null
+
+// Pop animation: Google owns the info window's own transform for positioning,
+// so we animate the individual `scale` property on the card and its tail.
+const NEARBY_POP_OUT_MS = 200
+let nearbyCloseToken = 0
+const infoWindowPopEls = () =>
+  Array.from(document.querySelectorAll<HTMLElement>('.gm-style-iw-c, .gm-style-iw-tc'))
+
+// The CSS animation plays by itself when Google creates the window; this
+// replays it when the same window is reused (switching place, reopening).
+const popInfoWindowIn = () => {
+  setTimeout(() => {
+    infoWindowPopEls().forEach(el => {
+      el.classList.remove('iw-pop-out')
+      el.style.animation = 'none'
+      void el.offsetWidth // restart the animation
+      el.style.animation = ''
+    })
+  }, 30)
+}
+
+const dismissNearbyBubble = () => {
+  if (nearbyTimer) { clearTimeout(nearbyTimer); nearbyTimer = null }
+  if (nearbyActiveId === null || !infoWindow) { nearbyActiveId = null; return }
+  nearbyActiveId = null
+  const token = ++nearbyCloseToken
+  const els = infoWindowPopEls()
+  els.forEach(el => { el.classList.add('iw-pop-out') })
+  setTimeout(() => {
+    els.forEach(el => el.classList.remove('iw-pop-out'))
+    // a newer open / a user selection took over the window: don't close it
+    if (token === nearbyCloseToken) infoWindow?.close()
+  }, NEARBY_POP_OUT_MS)
+}
+
+watch(viewMode, (m) => {
+  if (isPageActive.value) void setHighAccuracy(m === 'map')
+})
+
+watch(userLocation, (loc) => {
+  if (!loc || !isPageActive.value || viewMode.value !== 'map') return
+  if (!mapInstance || !infoWindow) return
+
+  // Distance to the place currently shown (if any), so a closer one can replace it
+  let activeDist = Infinity
+  if (nearbyActiveId !== null) {
+    const ap = locations.value.find(p => p.id === nearbyActiveId)
+    activeDist = ap ? distanceInMeters(loc, ap.position) : Infinity
+    if (activeDist > NEARBY_RADIUS_M) dismissNearbyBubble() // already passed it
+  }
+  if (isUserPanningMap.value) return // don't open new bubbles while the user drags the map
+
+  let best: { place: Place; meters: number } | null = null
+  for (const p of locations.value) {
+    if (nearbyAnnounced.has(p.id) || !markerMap.get(p.id)) continue
+    const d = distanceInMeters(loc, p.position)
+    if (d <= NEARBY_RADIUS_M && (!best || d < best.meters)) best = { place: p, meters: d }
+  }
+  if (!best) return
+  if (nearbyActiveId !== null) {
+    if (best.meters >= activeDist) return // current one is still closest
+    if (Date.now() - nearbyShownAt < NEARBY_MIN_HOLD_MS) return // let it be read first
+  }
+
+  const place = best.place
+  nearbyAnnounced.add(place.id)
+  nearbyActiveId = place.id
+  nearbyShownAt = Date.now()
+  if (nearbyTimer) clearTimeout(nearbyTimer)
+  infoWindow.setContent(buildInfoHtml(place))
+  infoWindow.open(mapInstance, markerMap.get(place.id))
+  nearbyCloseToken++ // cancels any pending pop-out close
+  setTimeout(applyInfoWindowDarkClass, 50)
+  popInfoWindowIn()
+  // While following the user, the card strip tracks the bubble too
+  if (followUser.value) {
+    nearbyCardId.value = place.id
+    void scrollCardIntoView(place.id)
+    // The map pan re-filters the strip a moment later and can shift the
+    // cards; re-center once the list has settled
+    setTimeout(() => {
+      if (followUser.value && nearbyActiveId === place.id) void scrollCardIntoView(place.id)
+    }, 1100)
+  }
+  nearbyTimer = setTimeout(() => {
+    if (nearbyActiveId === place.id) dismissNearbyBubble()
+  }, NEARBY_AUTO_HIDE_MS)
+})
+
 // Re-run the partner-radius lookup once real GPS resolves, since the very
 // first call (at map init) may have used DEFAULT_CENTER as a fallback.
 let partnerRadiusRefetchedForGps = false
@@ -1524,20 +1666,39 @@ watch(userLocation, (loc) => {
   }
 })
 
+let sortChosenByUser = false
+let settingSortAutomatically = false
+
 // Sorting logic: if GPS succeeded, default to 'nearest'
 watch(locationAttemptFinished, (finished) => {
+  settingSortAutomatically = true
   if (finished && userLocation.value) {
     sortBy.value = 'nearest'
   } else if (finished) {
-    sortBy.value = 'recent'
+    sortBy.value = 'nearest' // no GPS: nearest to the map center
   }
+  void nextTick(() => { settingSortAutomatically = false })
 }, { immediate: true })
+
+// A fix that arrives after the first attempt already gave up (fell back to
+// 'recent') must still make the default order tier-first-then-nearest, unless
+// the user chose a sort themselves.
+watch(sortBy,() => { if (!settingSortAutomatically) sortChosenByUser = true })
+watch(() => !!userLocation.value, (hasLoc) => {
+  if (hasLoc && !sortChosenByUser && sortBy.value !== 'nearest') {
+    settingSortAutomatically = true
+    sortBy.value = 'nearest'
+    void nextTick(() => { settingSortAutomatically = false })
+  }
+})
 
 // Center map & Update User Marker (Blue Dot) Reactively
 watch([userLocation, mapReady], ([newLoc, isReady]) => {
   if (!newLoc || !isReady || !mapInstance || !advancedMarkerLib) return
 
   const userLoc = { lat: newLoc.lat, lng: newLoc.lng }
+
+  if (followUser.value) mapInstance.panTo(userLoc)
 
   // 1. 🔥 CENTER MAP ON FIRST FIX — this is the initial focus: the user's
   // own location, at a wider zoom so their surroundings are visible before
@@ -1585,18 +1746,29 @@ watch([userLocation, mapReady], ([newLoc, isReady]) => {
 }, { immediate: true })
 
 
-const fetchLocationTypes = async () => {
-  if (locationTypes.value.length > 0) return
-  loadingCategories.value = true
+// Categories shown from the local cache are refreshed once from the network.
+let typesFromCache = false
 
-  const {data, error} = await supabase
+const fetchLocationTypes = async () => {
+  if (locationTypes.value.length > 0 && !typesFromCache) return
+  if (!typesFromCache) loadingCategories.value = true
+
+  const {data, error} = await withTimeoutRetry<LocationType[]>((signal) =>
+    supabase
       .from('location_types')
       .select('id, name, color, emoji, icon, icon_url')
       .eq('is_active', true)
       .order('sort_order', {ascending: true})
       .order('name', {ascending: true})
+      .abortSignal(signal) as any,
+    {onRetry: notifySlowConnection}
+  )
 
-  if (!error && data) locationTypes.value = data
+  if (!error && data) {
+    locationTypes.value = data
+    typesFromCache = false
+    saveExploreCache('location_types', data)
+  }
 
   loadingCategories.value = false
 }
@@ -1883,6 +2055,7 @@ const geocodeAddress = async (query: string) => {
     const latLng = {lat: loc.lat(), lng: loc.lng()}
 
     // Move map
+    followUser.value = false
     mapInstance!.panTo(latLng)
     mapInstance!.setZoom(17)
 
@@ -2044,14 +2217,15 @@ const markerStyles = computed<Record<string, {
 const getDomEl = (node: Element | ComponentPublicInstance | null | undefined) =>
     ((node as ComponentPublicInstance | null)?.$el ?? node) as HTMLElement | null
 
-const formatKm = (n: number) => (Number.isFinite(n) ? n.toFixed(2) : '–')
+// Distances are only shown when measured from the user, not from the map center
+const formatKm = (n: number) => (Number.isFinite(n) && lastCalcLocation.value ? n.toFixed(2) : '–')
 
 const MAX_VISIBLE_TAGS = 2
 const visibleTags = (tags: string[] | undefined | null) => (tags || []).slice(0, MAX_VISIBLE_TAGS)
 const extraTagsCount = (tags: string[] | undefined | null) => Math.max(0, (tags || []).length - MAX_VISIBLE_TAGS)
 
 const getDistanceInKm = (locPos: LatLng) => {
-  const refLoc = lastCalcLocation.value
+  const refLoc = lastCalcLocation.value ?? mapCenter.value
   if (!refLoc || refLoc.lat === undefined || refLoc.lng === undefined) return Number.POSITIVE_INFINITY
   const lat1 = Number(refLoc.lat)
   const lng1 = Number(refLoc.lng)
@@ -2107,16 +2281,7 @@ const visibleMapLocations = computed(() => {
     return displayedLocations.value.slice(0, 25)
   }
 
-  const ne = bounds.getNorthEast()
-  const sw = bounds.getSouthWest()
-  const latDiff = Math.abs(ne.lat() - sw.lat())
-  const lngDiff = Math.abs(ne.lng() - sw.lng())
-  const buffer = 0.15 // 15% buffer
-
-  const extendedBounds = new google.maps.LatLngBounds(
-    { lat: sw.lat() - latDiff * buffer, lng: sw.lng() - lngDiff * buffer },
-    { lat: ne.lat() + latDiff * buffer, lng: ne.lng() + lngDiff * buffer }
-  )
+  const extendedBounds = padBounds(bounds, 0.15) // 15% buffer
 
   // Gold partners bypass the viewport here too (same rule as the list
   // view's boundsFilteredLocations) — otherwise whichever gold partner the
@@ -2129,7 +2294,7 @@ const visibleMapLocations = computed(() => {
   // places actually on screen.
   let outOfViewGoldKept = false
   let filtered = displayedLocations.value.filter(p => {
-    if (extendedBounds.contains(p.position)) return true
+    if (boundsContainPoint(extendedBounds, p.position)) return true
     if (p.partner_tier?.toLowerCase() !== 'gold' || outOfViewGoldKept) return false
     outOfViewGoldKept = true
     return true
@@ -2149,7 +2314,16 @@ const visibleMapLocations = computed(() => {
     }
   }
 
-  return filtered.slice(0, maxCards)
+  filtered = filtered.slice(0, maxCards)
+
+  // The place the follow-mode bubble is showing always gets a card, even when
+  // it falls outside the 25-card cap, so the strip can scroll to it
+  const nearbyId = nearbyCardId.value
+  if (nearbyId !== null && !filtered.some(p => p.id === nearbyId)) {
+    const np = displayedLocations.value.find(p => p.id === nearbyId)
+    if (np) filtered = [np, ...filtered]
+  }
+  return filtered
 })
 
 
@@ -2161,6 +2335,13 @@ const setCardRef = (id: number): VNodeRef =>
 const onImageError = (e: Event) => {
   const img = e.currentTarget as HTMLImageElement | null
   if (!img) return
+  // A new-style place photo whose thumbnail is missing: retry once with the full image.
+  const fullUrl = placeThumbFallbackUrl(img.src)
+  if (fullUrl && img.dataset.thumbFallback !== '1') {
+    img.dataset.thumbFallback = '1'
+    img.src = fullUrl
+    return
+  }
   img.onerror = null
   img.src = PLACEHOLDER
 }
@@ -2387,37 +2568,93 @@ const loadRole = async () => {
 }
 
 /* ---------------- Data ---------------- */
-const lastFetchedBounds = ref<google.maps.LatLngBounds | null>(null)
+const lastFetchedBounds = ref<MapBounds | null>(null)
 const wasLocationsCacheHit = ref(false)
+let locationsFetchSeq = 0   // id of the latest fetch started
+let appliedFetchSeq = 0     // id of the latest fetch whose response was applied
 
-const fetchLocations = async (mapBounds?: google.maps.LatLngBounds | null, force = false) => {
-  if (!mapInstance) return
+// Viewport guess used before the map exists: ~ the default-zoom view around the
+// user (or the default center). The 50% padding in fetchLocations covers drift.
+const initialDataBounds = (): MapBounds => {
+  const c = userLocation.value
+    ? { lat: userLocation.value.lat, lng: userLocation.value.lng }
+    : DEFAULT_CENTER
+  return { south: c.lat - 0.03, north: c.lat + 0.03, west: c.lng - 0.04, east: c.lng + 0.04 }
+}
 
-  const boundsToUse = mapBounds || mapInstance.getBounds()
+// ---- Local cache of the user's home-area places (stale-while-revalidate) ----
+const PLACES_CACHE_KEY = 'locations'
+const PLACES_CACHE_MAX_ROWS = 150
+const showingCachedPlaces = ref(false)
+
+const homeCenter = () => {
+  const b = initialDataBounds()
+  return { lat: (b.south + b.north) / 2, lng: (b.west + b.east) / 2 }
+}
+
+function persistPlacesCache(places: Place[], covered: MapBounds) {
+  const c = homeCenter()
+  // Only cache fetches that cover the user's home area, so panning elsewhere
+  // doesn't replace the first-paint data with some unrelated region.
+  if (!boundsContainPoint(covered, c)) return
+  const dist = (p: Place) => (p.position.lat - c.lat) ** 2 + (p.position.lng - c.lng) ** 2
+  const slim = [...places]
+    .sort((a, b) => dist(a) - dist(b))
+    .slice(0, PLACES_CACHE_MAX_ROWS)
+    .map(p => {
+      // isOpen / createdFromNow are recomputed on load, so don't store them
+      const rest: Place = { ...p }
+      delete rest.isOpen
+      delete rest.createdFromNow
+      return rest
+    })
+  saveExploreCache(PLACES_CACHE_KEY, slim, exploreAreaKey(c.lat, c.lng))
+}
+
+/** Render last session's places/categories immediately; fresh fetches replace them. */
+function hydrateFromCache() {
+  const c = homeCenter()
+  const cachedPlaces = loadExploreCache<Place[]>(PLACES_CACHE_KEY, { area: exploreAreaKey(c.lat, c.lng) })
+  if (cachedPlaces?.length && !locations.value.length) {
+    locations.value = cachedPlaces.map(p => ({
+      ...p,
+      isOpen: calculateIsOpenStatus(p),
+      createdFromNow: fromNowToTaipei(p.created_at)
+    }))
+    showingCachedPlaces.value = true
+    loadingPlaces.value = false
+  }
+  const cachedTypes = loadExploreCache<LocationType[]>('location_types')
+  if (cachedTypes?.length && !locationTypes.value.length) {
+    locationTypes.value = cachedTypes
+    typesFromCache = true
+    loadingCategories.value = false
+  }
+}
+
+const fetchLocations = async (mapBounds?: MapBounds | null, force = false) => {
+  const boundsToUse = mapBounds || (mapInstance?.getBounds() ? toPlainBounds(mapInstance.getBounds()!) : null)
   if (!boundsToUse) {
     loadingPlaces.value = false
     return
   }
 
-  const ne = boundsToUse.getNorthEast()
-  const sw = boundsToUse.getSouthWest()
-  const latDiff = Math.abs(ne.lat() - sw.lat())
-  const lngDiff = Math.abs(ne.lng() - sw.lng())
-  const buffer = 0.50 // 50% buffer
-
-  const paddedSw = { lat: sw.lat() - latDiff * buffer, lng: sw.lng() - lngDiff * buffer }
-  const paddedNe = { lat: ne.lat() + latDiff * buffer, lng: ne.lng() + lngDiff * buffer }
-  const paddedBounds = new google.maps.LatLngBounds(paddedSw, paddedNe)
+  const paddedBounds = padBounds(boundsToUse, 0.50) // 50% buffer
+  const paddedSw = { lat: paddedBounds.south, lng: paddedBounds.west }
+  const paddedNe = { lat: paddedBounds.north, lng: paddedBounds.east }
 
   // Cache check: if not forcing, and new bounds are fully contained within lastFetchedBounds
-  if (!force && lastFetchedBounds.value && lastFetchedBounds.value.contains(ne) && lastFetchedBounds.value.contains(sw)) {
+  if (!force && lastFetchedBounds.value && boundsContainBounds(lastFetchedBounds.value, boundsToUse)) {
     wasLocationsCacheHit.value = true
     return
   }
   wasLocationsCacheHit.value = false
-  loadingPlaces.value = true
+  // Cached places are already on screen: refresh them quietly, no skeleton.
+  loadingPlaces.value = !showingCachedPlaces.value
+  const seq = ++locationsFetchSeq
 
-  const { data, error } = await supabase
+  const { data, error } = await withTimeoutRetry<any[]>((signal) =>
+    supabase
       .from('locations')
       .select(`
     id,
@@ -2443,11 +2680,19 @@ const fetchLocations = async (mapBounds?: google.maps.LatLngBounds | null, force
       .lte('lat', paddedNe.lat)
       .gte('lng', paddedSw.lng)
       .lte('lng', paddedNe.lng)
+      .abortSignal(signal) as any,
+    {onRetry: notifySlowConnection}
+  )
 
+  // Out-of-order guard: drop this response only if a NEWER fetch's response has
+  // already been applied. A merely newer fetch still in flight must not discard
+  // it — the early pre-map fetch usually returns before the map's own first
+  // fetch does, and showing its places immediately is the whole point.
+  if (seq < appliedFetchSeq) return
 
   if (!error && data) {
-    //@ts-expect-error LocationRow
-    const typedData = data as LocationRow[]
+    appliedFetchSeq = seq
+    const typedData = data as unknown as LocationRow[]
 
     const mapped = typedData.map((loc: any) => {
       const p: Place = {
@@ -2498,13 +2743,15 @@ const fetchLocations = async (mapBounds?: google.maps.LatLngBounds | null, force
 
     locations.value = mapped
     lastFetchedBounds.value = paddedBounds
+    showingCachedPlaces.value = false
+    persistPlacesCache(mapped, paddedBounds)
   } else if (error) {
     // Keep whatever markers are already on the map (e.g. offline) instead of
     // clearing them — just let the user know the refresh didn't go through.
     notifyFetchError(error)
   }
 
-  initMarkers()
+  initMarkers() // no-op until the map exists; initMap() builds them on ready
   loadingPlaces.value = false
 }
 
@@ -2513,11 +2760,14 @@ async function fetchPartnerLocationsInRadius() {
       ? { lat: userLocation.value.lat, lng: userLocation.value.lng }
       : (mapInstance?.getCenter() ? { lat: mapInstance.getCenter()!.lat(), lng: mapInstance.getCenter()!.lng() } : DEFAULT_CENTER)
 
-  const { data, error } = await supabase.rpc('nearby_partner_locations', {
-    center_lat: center.lat,
-    center_lng: center.lng,
-    radius_km: PARTNER_RADIUS_KM
-  })
+  const { data, error } = await withTimeoutRetry<any[]>((signal) =>
+    supabase.rpc('nearby_partner_locations', {
+      center_lat: center.lat,
+      center_lng: center.lng,
+      radius_km: PARTNER_RADIUS_KM
+    }).abortSignal(signal) as any,
+    {onRetry: notifySlowConnection}
+  )
 
   if (error || !data) return
 
@@ -2629,11 +2879,32 @@ const initMap = async () => {
   }
 
   loading.value = true
+  mapLoadFailed.value = false
 
-  const [{Map}, marker] = await Promise.all([
-    mapsLoader.importLibrary('maps'),
-    mapsLoader.importLibrary('marker')
-  ])
+  let Map: typeof google.maps.Map
+  let marker: google.maps.MarkerLibrary
+  let timeoutId: ReturnType<typeof setTimeout> | undefined
+  try {
+    // A dead or very slow connection must not leave the skeleton up forever.
+    const timeout = new Promise<never>((_, reject) => {
+      timeoutId = setTimeout(() => reject(new Error('Google Maps load timed out')), MAP_LOAD_TIMEOUT_MS)
+    })
+    const libs = await Promise.race([
+      Promise.all([mapsLoader.importLibrary('maps'), mapsLoader.importLibrary('marker')]),
+      timeout
+    ])
+    Map = libs[0].Map
+    marker = libs[1]
+  } catch (err) {
+    console.warn('[Map] Google Maps failed to load:', err)
+    loading.value = false
+    mapLoadFailed.value = true
+    viewMode.value = 'list' // places still load without the map
+    if (!locations.value.length) fetchLocations(initialDataBounds())
+    return
+  } finally {
+    clearTimeout(timeoutId)
+  }
   advancedMarkerLib = marker
 
   // Check for pre-existing fix to provide an "instant" map center
@@ -2681,6 +2952,7 @@ const initMap = async () => {
   })
   // ✅ Interaction Tracking: Stop list-to-map sync if user is touching map
   mapInstance.addListener('dragstart', () => {
+    followUser.value = false // like Google Maps: dragging releases the lock
     isUserPanningMap.value = true
   })
   mapInstance.addListener('zoom_changed', () => {
@@ -2694,8 +2966,15 @@ const initMap = async () => {
     if (idleTimeout) clearTimeout(idleTimeout);
     idleTimeout = setTimeout(() => {
       if (mapInstance) {
-        const bounds = mapInstance.getBounds()
-        currentMapBounds.value = bounds || null
+        const gBounds = mapInstance.getBounds()
+        const bounds = gBounds ? toPlainBounds(gBounds) : null
+        currentMapBounds.value = bounds
+        // Only re-anchor on the user's own pans/zooms (and the first idle), so
+        // the strip doesn't re-sort while it drives programmatic map pans
+        const c = mapInstance.getCenter()
+        if (c && (isUserPanningMap.value || !mapCenter.value)) {
+          mapCenter.value = { lat: c.lat(), lng: c.lng() }
+        }
         if (bounds) {
           fetchLocations(bounds)
         }
@@ -2707,10 +2986,20 @@ const initMap = async () => {
   loading.value = false
   mapReady.value = true
 
-  if (mapInstance) {
-    fetchLocations(mapInstance.getBounds())
-  }
+  // Data may already be in `locations` from the early pre-map fetch: build
+  // its markers now, then fetch for the real viewport (a cache hit if the
+  // early box already covers it).
+  initMarkers()
+  // (Skip if bounds aren't ready yet: the first idle event fetches instead,
+  // and calling now would clear the loading state of an in-flight early fetch.)
+  if (mapInstance.getBounds()) fetchLocations(null)
   fetchPartnerLocationsInRadius()
+}
+
+const retryMap = () => {
+  mapLoadFailed.value = false
+  loading.value = true
+  initMap()
 }
 
 /**
@@ -2854,6 +3143,7 @@ const initMarkers = (places: Place[] = sortedLocations.value) => {
     if (loc.id === pendingInfoWindowPlaceId.value && infoWindow && mapInstance) {
       infoWindow.setContent(buildInfoHtml(loc))
       infoWindow.open(mapInstance, marker)
+      popInfoWindowIn()
       setTimeout(applyInfoWindowDarkClass, 50)
       pendingInfoWindowPlaceId.value = null
     }
@@ -2906,6 +3196,9 @@ watch(searchQuery, q => {
 
 /* ---------------- Interactions ---------------- */
 const selectPlace = (place: Place) => {
+  nearbyActiveId = null // user took over the info window
+  nearbyCloseToken++
+  if (nearbyTimer) { clearTimeout(nearbyTimer); nearbyTimer = null }
   selectedPlace.value = place
   lastPannedId = place.id
   
@@ -2924,6 +3217,7 @@ const selectPlace = (place: Place) => {
   // Calculate offset to center info card (~100px North)
   const latOffset = 100 * 360 / (256 * Math.pow(2, targetZoom))
   
+  followUser.value = false
   mapInstance.panTo({
     lat: place.position.lat + latOffset,
     lng: place.position.lng
@@ -2937,6 +3231,7 @@ const selectPlace = (place: Place) => {
       if (selectedPlace.value?.id === place.id && infoWindow && mapInstance) {
         infoWindow.setContent(buildInfoHtml(place))
         infoWindow.open(mapInstance, m)
+        popInfoWindowIn()
 
         // Wait for DOM to render to attach button listeners
         setTimeout(() => {
@@ -3015,6 +3310,7 @@ const initCardObserver = () => {
                 if (mapInstance && isUserScrollingList.value) {
                    const currentZoom = mapInstance.getZoom() || 14
                    const latOffset = 100 * 360 / (256 * Math.pow(2, currentZoom))
+                   followUser.value = false
                    mapInstance.panTo({ lat: p.position.lat + latOffset, lng: p.position.lng });
                    
                    const m = markerMap.get(p.id)
@@ -3024,6 +3320,7 @@ const initCardObserver = () => {
                        if (selectedPlace.value?.id === p.id && infoWindow && mapInstance) {
                          infoWindow.setContent(buildInfoHtml(p))
                          infoWindow.open(mapInstance, m)
+                         popInfoWindowIn()
                          setTimeout(applyInfoWindowDarkClass, 50)
                        }
                      }, 350)
@@ -3047,11 +3344,17 @@ const initCardObserver = () => {
   })
 }
 
-const centerOnUser = async () => {
-  await ActivityLogService.log("explore_center_user")
+const centerOnUser = () => {
+  void ActivityLogService.log("explore_center_user")
+
+  if (followUser.value) {
+    followUser.value = false
+    return
+  }
 
   if (!userLocation.value || !mapInstance) return
 
+  followUser.value = true
   mapInstance.panTo(userLocation.value)
 
   // Optional: gentle zoom only if far
@@ -3342,7 +3645,7 @@ const sortedLocations = computed(() => {
 
   // Hybrid Sorting Strategy
   const mapped = base.map(p => {
-    const distance = lastCalcLocation.value ? getDistanceInKm(p.position) : Number.POSITIVE_INFINITY;
+    const distance = getDistanceInKm(p.position);
     return { ...p, distance };
   });
 
@@ -3554,6 +3857,16 @@ const initCategoryBarDrag = () => {
 }
 
 /* ---------------- Lifecycle ---------------- */
+// The strip re-sorts by distance as the user moves, which shifts cards under a
+// finished scroll: keep the bubble's card centered whenever the order changes.
+// Registered on mount because the computeds it reads are declared further down.
+onMounted(() => watch(
+  () => visibleMapLocations.value.map(p => p.id).join(','),
+  () => {
+    if (followUser.value && nearbyActiveId !== null) void scrollCardIntoView(nearbyActiveId)
+  }
+))
+
 onMounted(async () => {
 
 
@@ -3562,7 +3875,15 @@ onMounted(async () => {
   // START GPS WATCH IMMEDIATELY (Non-blocking)
   startWatching()
 
-  await ActivityLogService.log("explore_page_open")
+  // Fire-and-forget: analytics must never delay the map (log() never throws).
+  void ActivityLogService.log("explore_page_open")
+
+  // Show last session's places/categories instantly (refreshed below).
+  hydrateFromCache()
+
+  // Start the place query right away, in parallel with the (much heavier)
+  // Google Maps script, instead of waiting for the map's first idle event.
+  fetchLocations(initialDataBounds())
 
   // Parallelize basic data and map init
   initMap()
@@ -3594,22 +3915,18 @@ onMounted(async () => {
 })
 
 const processUrlParams = () => {
+  const consumed: string[] = []
   const focusId = Number(router.currentRoute.value.query.focus)
   if (focusId) {
     const p = locations.value.find(l => l.id === focusId)
     if (p) selectPlace(p)
-
-    const query = { ...router.currentRoute.value.query }
-    delete query.focus
-    router.replace({ query })
+    consumed.push('focus')
   }
 
   const tagParam = router.currentRoute.value.query.tag as string
   if (tagParam) {
     activeTag.value = tagParam
-    const query = { ...router.currentRoute.value.query }
-    delete query.tag
-    router.replace({ query })
+    consumed.push('tag')
   }
 
   const typeParam = router.currentRoute.value.query.type as string
@@ -3618,8 +3935,15 @@ const processUrlParams = () => {
     if (cat) {
       activeCategoryIds.value = [cat.id]
     }
+    consumed.push('type')
+  }
+
+  // Strip every consumed param in ONE replace. Back-to-back router.replace calls
+  // during the enter transition leave Ionic's outlet looking up a route that has
+  // already been superseded (TypeError on ionPageElement / pushedByRoute).
+  if (consumed.length) {
     const query = { ...router.currentRoute.value.query }
-    delete query.type
+    for (const key of consumed) delete query[key]
     router.replace({ query })
   }
 }
@@ -3670,6 +3994,7 @@ watch(viewMode, () => { if (isPageActive.value) applyExploreStatusBar() })
 
 onIonViewWillEnter(async () => {
   isPageActive.value = true
+  void setHighAccuracy(viewMode.value === 'map')
   applyExploreStatusBar()
   hasAutoSelected.value = false; // allow re-highlighting when returning
   hasCenteredInitiallyVisible = false;
@@ -3684,9 +4009,8 @@ onIonViewWillEnter(async () => {
     return
   }
 
-  if (mapInstance) {
-    fetchLocations(mapInstance.getBounds())
-  }
+  // With no map (failed to load), fall back to the initial box.
+  fetchLocations(mapInstance ? null : initialDataBounds())
   await fetchLocationTypes()
   await fetchCampusPartners()
   await nextTick()
@@ -3705,6 +4029,8 @@ onIonViewDidEnter(async () => {
 
 onIonViewWillLeave(() => {
   isPageActive.value = false
+  void setHighAccuracy(false)
+  dismissNearbyBubble()
   restoreThemeStatusBar()
   clearCampusOverlays()
   lastStableLoc.value = null   // REQUIRED
@@ -3814,6 +4140,34 @@ const openSaveModal = (place: Place) => {
   pointer-events: none;
 }
 
+/* Shown when Google Maps fails to load / times out */
+.map-load-error {
+  position: fixed;
+  left: 16px;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px;
+  border-radius: 12px;
+  text-align: center;
+  background: var(--ion-background-color, #fff);
+  color: var(--ion-text-color, #222);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.18);
+}
+.map-load-error p { margin: 0; font-size: 14px; }
+.map-load-error.inline {
+  position: static;
+  transform: none;
+  margin: 8px 0 12px;
+  box-shadow: none;
+  border: 1px solid var(--ion-border-color, rgba(0, 0, 0, 0.12));
+}
+
 
 /*********************************************
  * GOOGLE MAPS UI OVERRIDES
@@ -3824,6 +4178,28 @@ const openSaveModal = (place: Place) => {
 
 .gm-style .gm-style-iw-c {
   color: var(--ion-color-dark);
+}
+
+/* The info window pops in from its pin every time Google creates it */
+.gm-style .gm-style-iw-c,
+.gm-style .gm-style-iw-tc {
+  animation: iw-pop-in 0.32s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+.gm-style .gm-style-iw-c.iw-pop-out,
+.gm-style .gm-style-iw-tc.iw-pop-out {
+  animation: iw-pop-out 0.2s ease-in both;
+}
+/* scale from the middle of the pin head: the tail tip sits 12px below the card
+   and the 46px pin's head centre is a further ~18px below that tip */
+.gm-style .gm-style-iw-c { transform-origin: 50% calc(100% + 30px); }
+.gm-style .gm-style-iw-tc { transform-origin: 50% calc(100% + 18px); }
+@keyframes iw-pop-in {
+  from { scale: 0.2; opacity: 0; }
+  to { scale: 1; opacity: 1; }
+}
+@keyframes iw-pop-out {
+  from { scale: 1; opacity: 1; }
+  to { scale: 0.2; opacity: 0; }
 }
 
 .gm-style .gm-style-iw-c.dark-infowindow {

@@ -33,8 +33,7 @@ export default function useShareCard(
 ) {
     const shareCTA = `
 Join us and contribute to make Halal Formosa more beneficial for others 🌟
-Get it here: bit.ly/DownloadHalalFormosa
-(iOS coming soon)
+Get it here: https://halalformosa.com
 `
 
     /** Main card builder */
@@ -354,7 +353,8 @@ Get it here: bit.ly/DownloadHalalFormosa
         if ((navigator as any).share) {
             return (navigator as any).share({ title: 'Ingredients', text })
         }
-        return Clipboard.write({ string: text })
+        // Web clipboard can reject (e.g. "Document is not focused"); not worth an unhandled error.
+        return Clipboard.write({ string: text }).catch((err) => console.warn('Clipboard copy failed', err))
     }
 
     /** Main share function */
